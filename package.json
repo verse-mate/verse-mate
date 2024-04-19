@@ -1,0 +1,20 @@
+{
+  "name": "bible-gpt-explain",
+  "module": "./src/index.ts",
+  "type": "module",
+  "scripts": {
+    "format": "biome format --write .",
+    "lint": "biome check .",
+    "lint:watch": "bunx onchange . -- biome check --apply --no-errors-on-unmatched {{changed}}"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.7.0",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "openai": "^4.38.1"
+  }
+}
