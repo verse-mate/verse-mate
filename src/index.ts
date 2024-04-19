@@ -22,7 +22,7 @@ async function getExplanationForPassage(
           content: `Explain ${passage} in a easy way to understand, but detailed enough to learn more about the passage. The output should be well formatted using Markdown`,
         },
       ],
-      model: "gpt-3.5-turbo-0125",
+      model: "gpt-4-turbo",
     });
 
     return chat.choices[0].message.content;
