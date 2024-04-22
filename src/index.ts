@@ -20,8 +20,10 @@ async function getExplanationForPassage(
         {
           role: "user",
           content: `
-             Provide an easy-to-understand explanation of the passage ${passage} from the Bible, ensuring the explanation is at least 500 words long.
-             The response should be well-organized and formatted using Markdown, with headings, subheadings, and bullet points to enhance readability.
+            Provide an easy-to-understand explanation of the passage ${passage} from the ESV Bible.
+            Begin with a brief introduction to the passage. Then, for each group of verses, provide a quotation followed by a detailed analysis that focuses on the overarching themes and insights related to those specific verses.
+            Ensure the explanation is at least 500 words long.
+            The response should be well-organized and formatted using Markdown, using headings for each verse, subheadings for major points, and bullet points to highlight key details.
           `,
         },
       ],
