@@ -27,7 +27,7 @@ async function getExplanationForPassage(
           `,
         },
       ],
-      model: "gpt-4-turbo",
+      model: "gpt-3.5-turbo-0125",
     });
 
     return chat.choices[0].message.content;
