@@ -1,0 +1,15 @@
+# The Great Commandment
+
+In Chapter 22:34-40 of the book of Matthew, Jesus is tested by the Pharisees who were trying to trap Him with their question. They ask Him, "Teacher, which is the great commandment in the Law?" This was a question that was meant to challenge Jesus and to corner Him into taking a position that would contradict the Jewish Law. However, Jesus responds in a way that not only answers their question but also reveals profound truths about the essence of God's commandments.
+
+Jesus begins His answer by quoting from the Old Testament, specifically Deuteronomy 6:5, saying, "You shall love the Lord your God with all your heart and with all your soul and with all your mind." This commandment, known as the Shema, was a central tenet of Jewish faith, emphasizing the importance of loving and serving God with all of one's being. By quoting this commandment, Jesus affirms the significance of this foundational truth in the Jewish faith.
+
+But Jesus does not stop there. He goes on to give another commandment, quoting from Leviticus 19:18, saying, "You shall love your neighbor as yourself." In doing so, Jesus brings together these two commandments, highlighting the interconnectedness of loving God and loving others. By linking these two commandments, Jesus emphasizes the inseparable relationship between our love for God and our love for our fellow human beings.
+
+In essence, Jesus is saying that these two commandments encapsulate the entire Law and the Prophets. All of God's commandments can be summarized in these two principles: loving God with all our heart, soul, and mind, and loving our neighbor as ourselves. This profound revelation simplifies the complexity of the Law and provides a clear framework for how we are to live in obedience to God.
+
+The significance of this teaching to the reader is immense. It challenges us to examine the motives behind our actions and the condition of our hearts. Are we truly loving God with all that we are? Are we demonstrating love and compassion towards our neighbors in the same way we love ourselves? These questions prompt us to reflect on the sincerity of our faith and the authenticity of our relationships with others.
+
+Furthermore, the Great Commandment calls us to action. It compels us to live out our faith in practical ways by showing love, kindness, and compassion to those around us. It challenges us to prioritize love above all else and to view every interaction through the lens of love. In a world filled with conflict, division, and hatred, the Great Commandment serves as a powerful reminder of the transformative power of love.
+
+In conclusion, Chapter 22:34-40 of Matthew's Gospel captures the essence of Jesus' teachings on love and summarizes the fundamental principles of the Christian faith. It challenges us to love God wholeheartedly and to love our neighbors as ourselves, embodying the love that Christ displayed for us. As we seek to obey the Great Commandment, may we be transformed by the love of God and share that love with those around us.
