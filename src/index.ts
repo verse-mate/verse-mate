@@ -19,7 +19,10 @@ async function getExplanationForPassage(
       messages: [
         {
           role: "user",
-          content: `Explain ${passage} in a easy way to understand, but detailed enough to learn more about the passage. The output should be well formatted using Markdown`,
+          content: `
+             Provide an easy-to-understand explanation of the passage ${passage} from the Bible, ensuring the explanation is at least 500 words long.
+             The response should be well-organized and formatted using Markdown, with headings, subheadings, and bullet points to enhance readability.
+          `,
         },
       ],
       model: "gpt-4-turbo",
