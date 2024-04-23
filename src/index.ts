@@ -19,10 +19,16 @@ async function getExplanationForPassage(
       messages: [
         {
           role: "user",
-          content: `Explain ${passage} in a easy way to understand, but detailed enough to learn more about the passage. The output should be well formatted using Markdown`,
+          content: `
+            Explain ${passage} from the ESV Bible in 500-600 words.
+            The response should formatted using Markdown.
+            Ensure to cover the significance to the reader.
+            Remove references to the ESV Bible in the output.
+          `,
         },
       ],
-      model: "gpt-3.5-turbo-0125",
+      model: "gpt-4-turbo"
+      // model: "gpt-3.5-turbo-0125",
     });
 
     return chat.choices[0].message.content;
