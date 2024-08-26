@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "format": "biome format --write .",
-    "lint": "biome check .",
+    "lint": "biome lint .",
     "lint:watch": "bunx onchange . -- biome check --apply --no-errors-on-unmatched {{changed}}"
   },
   "devDependencies": {
@@ -12,9 +12,9 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.4.5"
   },
   "dependencies": {
-    "openai": "^4.38.1"
+    "openai": "^4.56.0"
   }
 }
