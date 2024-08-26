@@ -58,59 +58,48 @@ async function getExplanationForAllVerses(
 
     **Passage Reference:** ${chapterReference}
 
+    **Selected Passages for Analysis:**
+    ${chapterVerses}
+
     **Request Overview:**
-    Provide an in-depth yet accessible explanation of the selected biblical passage. Focus on clarity and depth to help readers understand its significance and message.
+    Provide an in-depth yet accessible explanation of the above biblical passages. Focus on clarity and depth to help readers understand their significance and message.
 
     **Instructions:**
 
     1. **Introduction:**
-        Begin with a brief introduction that contextualizes the passage within the Bible, highlighting its place in the broader narrative and any relevant background information.
+       Begin with a brief introduction that contextualizes the passage within the Bible, highlighting its place in the broader narrative and any relevant background information.
 
-    2. **Verse-by-Verse Analysis:**
-        For each verse or group of verses:
-        - **Quotation:** Start with the verse(s) as a heading.
-        - **Analysis:** Provide a detailed examination focusing on key themes, insights, and theological implications. Use subheadings to organize major points and bullet points for critical details.
-        - **Connection to Broader Themes:** Where relevant, link the verse(s) to broader biblical themes or narratives.
+    2. **Passage Analysis:**
+       - **Quotation:** Use the selected passage(s) as headings.
+       - **Analysis:** Provide a detailed examination focusing on key themes, insights, and theological implications. Organize major points using subheadings, and emphasize critical details with bullet points.
+       - **Connection to Broader Themes:** Where relevant, link the passage(s) to broader biblical themes or narratives.
 
     3. **Overall Significance:**
-        Conclude with a discussion on the overall significance of the passage. Address how it contributes to the overarching narrative of the Bible and its relevance to contemporary readers.
+       Conclude with a discussion on the overall significance of the passage. Address how it contributes to the overarching narrative of the Bible and its relevance to contemporary readers.
 
     4. **Formatting:**
-        - Use Markdown for the response, with clear headings for verses, subheadings for major analysis points, and bullet points for key insights.
-        - Ensure the explanation is comprehensive, typically spanning at least 500 words, but allow for flexibility depending on the complexity and length of the passage.
-        - Aim for readability and engagement, making the analysis informative for both novice and experienced readers.
+       - Use Markdown for the response, with clear headings for the passages, subheadings for major analysis points, and bullet points for key insights.
+       - Ensure the explanation is comprehensive, typically spanning at least 500 words, but allow for flexibility depending on the complexity and length of the passage.
+       - Aim for readability and engagement, making the analysis informative for both novice and experienced readers.
 
     **Content Requirements:**
     - **Accessibility:** Provide easy-to-understand explanations suitable for readers with varying levels of biblical knowledge. Clarify any theological terms or concepts that might be unfamiliar.
-    - **Thoroughness:** Ensure the examination is thorough, covering each verse in the passage provided. Offer insights into the meaning, context, and implications of the text.
+    - **Thoroughness:** Ensure the examination is thorough, covering the passage provided. Offer insights into the meaning, context, and implications of the text.
     - **Relevance:** Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate.
 
     **Example Structure:**
     \`\`\`markdown
     ### Introduction
 
-    (Provide a brief contextual introduction to the passage here)
+    [Brief contextual introduction to the passage here]
 
-    ### Verse 1: [Verse text here]
-    #### Main Theme:
-    - Key Insight 1
-    - Key Insight 2
+    ### Passage Analysis
 
-    #### Connection to Broader Themes:
-    - Broader Theme A
-    - Broader Theme B
-
-    ### Verse 2-3: [Verse text here]
-    #### Interpretation:
-    - Insight A
-    - Insight B
-
-    #### Connection to Broader Themes:
-    - Broader Theme C
+    [Analysis of the passage, integrating quotations and thematic insights as instructed. Organize content with subheadings and bullet points where needed.]
 
     ### Overall Significance
 
-    (Discuss how this passage integrates with broader biblical narratives and its implications for modern readers.)
+    [Discussion on the broader implications and significance to the contemporary reader.]
     \`\`\`
   `;
 
