@@ -1,0 +1,39 @@
+:root {
+  --background: #fff;
+  --foreground: #212531;
+  --brand-hsl: 212 98% 52%;
+  --brand: #0a7bfd;
+  --brand-light: var(--cyan-5);
+  --brand-lighter: var(--cyan-3);
+  --disabled: var(--gray-7);
+  --error: #dc2929;
+  --success: var(--teal-6);
+  --warning: var(--orange-6);
+  --border: #d5d8e1;
+  --neutral-darker: #212531;
+  --neutral: #8f9197;
+  --neutral-lighter: var(--gray-3);
+  --font-label: var(--font-size-00);
+  --font-tittle: var(--font-size-7);
+  --font-tittle2: var(--font-size-5);
+  --gray: #686f82;
+
+  /* VerseMate Colors */
+  --geyser: #dce0e3;
+  --geyser-opacity: #dce0e380;
+  --rodeo-dust: #c2b291;
+  --dust: #b09a6d;
+  --night: #000;
+  --snow: #fff;
+  --oslo-gray: #818990;
+  --porcelain: #f0f0f0;
+  --venus: #888;
+  --charcoal-grey: #3e464d;
+  --fantasy: #f6f3ec;
+  --snow-rock: #eae6de;
+  --shadowed-night: #00000026;
+  --oil: #1B1B1B;
+  --salmon: #f87171;
+  --vivid-burgundy: #9f1b2f;
+  --spring-wood: #fef2f2;
+}

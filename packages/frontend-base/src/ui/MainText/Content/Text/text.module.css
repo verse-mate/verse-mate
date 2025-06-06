@@ -1,0 +1,97 @@
+@import url("../../../../../public/assets/fonts/fonts.css");
+
+.contentBox {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding-bottom: 48px;
+}
+
+.title {
+    font-family: MerriweatherItalic, sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 44px;
+    color: var(--night);
+}
+
+.textBox {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.subtitleBox {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 100%;
+}
+
+.subtitle {
+    font-family: MerriweatherItalic, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 28px;
+    text-align: left;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+    text-wrap: wrap;
+}
+
+.description {
+    font-family: MerriweatherItalic, sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 28px;
+    text-align: left;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+    color: var(--charcoal-grey)
+}
+
+
+.paragraphNumber{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    max-width: 20px;
+    max-height: 20px;
+    color: var(--charcoal-grey);
+}
+
+.versesContainer {
+    line-height: 1.6;
+    text-align: justify;
+}
+  
+.verse {
+    display: inline;
+    margin-right: 0.5em;
+}
+  
+.verseNumber {
+    margin-right: 2px;
+    vertical-align: super;
+    font-size: 12px;
+    max-width: 20px;
+    max-height: 20px;
+    color: var(--charcoal-grey);
+}
+  
+.verseText {
+    display: inline;
+    font-family: MerriweatherRegular, sans-serif;
+    font-weight: 300;
+    font-size: 18px;
+    line-height: 32px;
+    color: var(--night);
+}
+
+@media (max-width: 390px) {
+    .text {
+        font-size: 14px;
+        line-height: 24px;
+    }
+}

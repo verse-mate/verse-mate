@@ -1,0 +1,78 @@
+.avatarWrapper {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  color: var(--background);
+  font-size: 0.9em;
+
+  &[data-outline="true"] {
+    outline: var(--outline-width) solid var(--outline-color);
+  }
+
+  & > img {
+    width: inherit;
+    height: inherit;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+}
+
+.avatarBadge {
+  position: absolute;
+
+  &.topRight {
+    top: 0;
+    right: 0;
+  }
+
+  &.bottomRight {
+    bottom: 0;
+    right: 0;
+  }
+}
+
+.fallback {
+  background-color: var(--gray-10);
+  text-transform: uppercase;
+}
+
+/* formats */
+
+.rounded {
+  border-radius: var(--radius-round);
+}
+
+.soft {
+  border-radius: var(--radius-2);
+}
+
+.square {
+  border-radius: none;
+}
+
+.upload {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  inset: 0;
+  height: inherit;
+  width: inherit;
+  border-radius: inherit;
+  opacity: 0;
+  transition-duration: 200ms;
+  background-color: hsl(var(--gray-9-hsl) / 30%);
+
+  &:hover {
+    opacity: 1;
+  }
+
+  & > input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+  }
+}

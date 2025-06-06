@@ -1,0 +1,73 @@
+.base {
+  display: flex;
+  width: fit-content;
+  font-size: var(--font-size-1);
+  border-radius: var(--radius-round);
+}
+
+.outline,
+.true {
+  outline: 2px solid white;
+
+  &.none {
+    outline: none;
+  }
+}
+
+.badge {
+  padding: var(--size-1);
+
+  &.xs {
+    width: var(--size-2);
+    height: var(--size-2);
+  }
+
+  &.sm {
+    width: var(--size-3);
+    height: var(--size-3);
+  }
+
+  &.md {
+    width: var(--size-7);
+    height: var(--size-7);
+  }
+
+  &.lg {
+    width: var(--size-9);
+    height: var(--size-9);
+  }
+}
+
+.badgeText {
+  padding: var(--size-1) var(--size-2);
+
+  .xs {
+    height: var(--size-3);
+  }
+
+  .sm {
+    height: var(--size-5);
+  }
+
+  .md {
+    height: var(--size-7);
+  }
+
+  .lg {
+    height: var(--size-9);
+  }
+}
+
+/* colors */
+
+.brand {
+  background-color: var(--dust);
+}
+
+.success {
+  background-color: var(--green-7);
+}
+
+.error {
+  background-color: var(--red-7);
+}

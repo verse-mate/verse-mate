@@ -1,0 +1,120 @@
+.container{
+    width: 100vw;
+    height: 100dvh;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.main {
+    display: flex;
+    position: relative;
+    top: 64px;
+    flex: 1;
+    width: 100%;
+    height: calc(100% - 64px - 48px); /* full height - header - footer */
+    transition: transform 0.3s ease;
+}
+
+.leftSide{
+    border-right: 1px solid var(--geyser);
+    width: 65%;
+    position: relative;
+    z-index: 1000;
+    background-color: var(--fantasy);
+    transition: transform 0.3s ease;
+}
+
+.toggleButton {
+    display: none;
+    position: absolute;
+    right: 24px;
+    padding: 0;
+    background-color: transparent;
+    cursor: pointer;
+
+    @media (max-width:834px) {
+        display: block;
+    }
+}
+
+.toggleButton .sidebarIcon {
+    font-size: 24px;
+    fill: var(--geyser);
+
+    &:hover{
+        fill: var(--dust);
+    }
+}
+
+.rightSide{
+    width: 35%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.3s ease;
+}
+
+.right.closed {
+    transform: translateX(0);
+}
+
+.rightPanelContent{
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 172px);
+    width: 100%;
+    overflow-y: auto;
+}
+
+.rating{
+    position: relative;
+    padding: 24px 32px;
+}
+
+/* Ask Verse Mate Page */
+
+.arrowLeft {
+    position: absolute;
+    left: 24px;
+    cursor: pointer;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+@media (max-width: 834px){
+    .main.hide {
+        transform: translateX(-92vw);
+    }
+
+    .leftSide{
+        min-width: 834px;
+    }
+
+    .rightSide{
+        min-width: 762px;
+    }
+}
+
+@media (max-width: 390px){
+    .main {
+        top: 100px;
+        height: calc(100% - 98px - 48px); /* full height - header - footer */
+    }
+
+    .main.hide {
+        transform: translateX(-82vw);
+    }
+
+    .leftSide {
+        min-width: 390px;
+    }
+
+    .rightSide {
+        min-width: 318px;
+    }
+
+    .rightPanelContent{
+        height: calc(100dvh - 188px);
+    }
+}

@@ -1,0 +1,32 @@
+.wrapper {
+  position: relative;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 56px;
+  background-color: var(--oil);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.flexBetween {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 32px;
+}
+
+@container (max-width: 560px) {
+  .container {
+    justify-content: flex-end;
+  }
+}
+
+@media screen and (max-width: 834px) {
+  .container {
+    background-color: var(--night);
+  }
+}

@@ -1,0 +1,13 @@
+@import url('../../../../public/assets/fonts/fonts.css');
+
+.container {
+    display: flex;
+}
+
+.container p {
+    font-family: Inter, sans-serif;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 24px;
+    color: var(--oslo-gray);
+}

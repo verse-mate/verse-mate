@@ -1,0 +1,21 @@
+@import url('../../../../public/assets/fonts/fonts.css');
+
+.container{
+    display: flex;
+}
+
+.userIcon{
+    min-width: 24px;
+    max-width: 24px;
+    min-height: 24px;
+    max-height: 24px;
+    fill: var(--oslo-gray);
+}
+
+.container span {
+    font-family: Inter,sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--oslo-gray);
+}

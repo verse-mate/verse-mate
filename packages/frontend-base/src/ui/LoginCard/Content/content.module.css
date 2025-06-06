@@ -1,0 +1,51 @@
+.background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(to top left, var(--rodeo-dust) 45%, var(--night) 80%);
+}
+
+.content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    color: white;
+    text-align: center;
+    border-radius: 16px;
+    padding: 8px;
+}
+
+.logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.buttonsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.signInButton {
+    width: 100%;
+}
+
+.signUpContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.simpleText {
+    font-size: 14px;
+    color: var(--oil);
+}
+
+.signUpLink {
+    font-size: 14px;
+    color: var(--white);
+    text-decoration: underline;
+}

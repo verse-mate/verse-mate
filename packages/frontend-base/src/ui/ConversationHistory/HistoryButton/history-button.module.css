@@ -1,0 +1,78 @@
+.container {
+  display: flex;
+  position: relative;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 10px;
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 24px;
+  color: var(--night);
+  background-color: transparent;
+  text-align: left;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: var(--fantasy);
+
+    .menuOpen {
+      display: block;
+    }
+  }
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  flex-grow: 1;
+  border-radius: 10px;
+  position: relative;
+}
+
+.mainButton {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  min-width: calc(100% - 56px);
+  min-height: 100%;
+  background-color: transparent;
+}
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 40px);
+}
+
+.menuWrapper {
+  display: none;
+  position: absolute;
+  right: 16px;
+}
+
+.threeDotsIcon {
+  fill: var(--night);
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: transparent;
+}
+
+.selectedChat {
+  background-color: var(--fantasy);
+  color: var(--dust);
+  
+  .menuWrapper {
+    display: block;
+  }
+}

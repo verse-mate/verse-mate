@@ -1,0 +1,32 @@
+.scale {
+  animation: scale 200ms;
+}
+
+.check {
+  stroke-dasharray: 48;
+  stroke-dashoffset: -48;
+  animation: stroke 500ms forwards;
+  animation-delay: 50ms;
+  animation-timing-function: var(--ease-in-out-1);
+}
+
+@keyframes scale {
+  0%,
+  10% {
+    transform: none;
+  }
+
+  50% {
+    transform: scale(0.7);
+  }
+}
+
+@keyframes stroke {
+  0% {
+    stroke-dashoffset: -48;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}

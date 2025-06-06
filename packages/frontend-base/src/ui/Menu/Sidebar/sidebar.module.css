@@ -1,0 +1,39 @@
+.sidebar {
+    position: absolute;
+    left: -300px;
+    width: 300px;
+    overflow-y: auto;
+    background-color: var(--snow);
+    transition: transform 0.3s ease;
+    box-shadow: 2px 0 15px 0 var(--shadowed-night);
+    z-index: 100;
+  
+    &:focus,
+    &:active {
+        outline: none;
+    }
+}
+  
+.sidebar.open {
+    transform: translateX(300px);
+}
+
+.sidebar.fullWidth {
+    width: 100%;
+    left: -100%;
+}
+
+.sidebar.fullWidth.open{
+    transform: translateX(100%);
+}
+
+@media (max-width: 390px){
+    .sidebar {
+        min-width: 100%;
+        left: -100%;
+    }
+    
+    .sidebar.open {
+        transform: translateX(100%);
+    }
+}

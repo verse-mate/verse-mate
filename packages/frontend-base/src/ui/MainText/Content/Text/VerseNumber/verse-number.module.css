@@ -1,0 +1,19 @@
+@import url("../../../../../../public/assets/fonts/fonts.css");
+
+.verseNumber {
+    float: left;
+    font-family: MerriweatherBold, sans-serif;
+    font-weight: 700;
+    font-size: 100px;
+    line-height: 100px;
+    text-align: left;    
+    margin-right: 16px;
+    color: var(--night);
+}
+
+@media (max-width: 390px) {
+    .verseNumber {
+        font-size: 64px;
+        line-height: 72px;
+    }
+}

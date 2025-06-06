@@ -1,0 +1,24 @@
+.container {
+    position: absolute;
+    top: 54px;
+    left: 0;
+    min-width: 100%;
+    min-height: calc(100dvh);
+    z-index: 1;
+    display: none;
+    background-color: var(--snow);
+}
+
+.container.open {
+    display: block;
+}
+
+.container.hidden {
+    display: none;
+}
+
+@media screen and (min-width: 390px) {
+    .container {
+        top: 56px
+    }
+}

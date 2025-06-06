@@ -1,0 +1,18 @@
+{
+  "cssvar.files": [
+    "./node_modules/open-props/open-props.min.css",
+    "packages/frontend-base/styles/vars.css"
+  ],
+
+  // Do not ignore node_modules css files, which is ignored by default
+  "cssvar.ignore": [],
+
+  // add support for autocomplete in JS or JS like files
+  "cssvar.extensions": [
+    "css",
+    "postcss",
+    "jsx",
+    "tsx"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

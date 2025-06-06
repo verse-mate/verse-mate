@@ -1,0 +1,50 @@
+.trigger {  
+    background-color: transparent;
+    fill: var(--snow);
+    border: none;
+    margin: 0;
+    padding: 0;
+        
+    &[data-state="active"] {
+        .active {
+            fill:var(--dust)
+        }
+    }
+}
+
+.listWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 56px;
+    background-color: var(--oil);
+    position: relative;
+    padding: 12px 16px
+}
+
+
+.moreOptionButton{
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.askVerseMateText {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Inter,sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--snow);
+}
+
+.explanationAndChatButton{
+    display: flex;
+    gap: 16px;
+}
+
+.explanationTypesButton{
+    display: flex;
+    gap: 8px
+}

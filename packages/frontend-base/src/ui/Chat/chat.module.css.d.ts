@@ -1,0 +1,24 @@
+declare const styles: {
+  readonly card: string;
+  readonly cardContent: string;
+  readonly scrollArea: string;
+  readonly trigger: string;
+  readonly active: string;
+  readonly separator: string;
+  readonly subHeader: string;
+  readonly flexBetween: string;
+  readonly title: string;
+  readonly chatContainer: string;
+  readonly chatContent: string;
+  readonly input: string;
+  readonly button: string;
+  readonly icon: string;
+  readonly disabled: string;
+  readonly enabled: string;
+  readonly animateSpin: string;
+  readonly spin: string;
+  readonly historyContainer: string;
+  readonly groupContainer: string;
+  readonly simpleText: string;
+};
+export = styles;

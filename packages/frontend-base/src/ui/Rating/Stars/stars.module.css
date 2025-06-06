@@ -1,0 +1,22 @@
+.container {
+    display: flex;
+    gap: 8px;
+    width: max-content;
+}
+
+.star {
+    min-width: 32px;
+    max-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    padding: 2px;
+    fill: var(--geyser);
+
+    &:hover{
+        fill: var(--rodeo-dust);
+    }
+}
+
+.filled {
+    fill: var(--rodeo-dust);
+}

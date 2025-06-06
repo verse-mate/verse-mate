@@ -1,0 +1,43 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.5.2/schema.json",
+  "files": {
+    "ignore": [
+      ".docker",
+      "out",
+      "dist",
+      "generated",
+      ".next",
+      ".vscode",
+      "mockServiceWorker.js",
+      "handlers.ts",
+      "./packages/backend-base/src/bible/data/t_asv.json",
+      "./packages/backend-base/src/bible/data/NASB1995.json"
+    ],
+    "maxSize": 6000000
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noExplicitAny": "off"
+      },
+      "complexity": {
+        "noForEach": "off"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentWidth": 2,
+    "indentStyle": "space"
+  },
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  }
+}

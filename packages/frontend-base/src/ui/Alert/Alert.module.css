@@ -1,0 +1,20 @@
+.container {
+  padding: 12px;
+  border-radius: 5px;
+  display: flex;
+  gap: 12px;
+
+  &.discreet {
+    border: 1px solid var(--gray-3);
+    box-shadow: var(--shadow-2);
+
+    & > svg {
+      color: var(--color);
+    }
+  }
+
+  &.colored {
+    background-color: var(--color);
+    color: white;
+  }
+}

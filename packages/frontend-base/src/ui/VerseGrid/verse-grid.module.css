@@ -1,0 +1,39 @@
+.versesContent{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.versesGrid {
+    all: unset;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 32px;
+    background-color: var(--snow);
+}
+
+.verseNumber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    list-style-type: none;
+    padding: 0; 
+    background-color: transparent;
+
+    &:hover {
+        border-color: var(--fantasy);
+        background-color: var(--fantasy);
+        color: var(--dust);
+    }
+} 
+
+.selected {
+    background-color: var(--dust);
+    color: var(--snow);
+}
+  

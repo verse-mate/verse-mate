@@ -1,0 +1,20 @@
+/* logo.module.css */
+@import url('../../../../public/assets/fonts/fonts.css');
+
+.logo {
+    min-width: 148.47px;
+    min-height: 40px;
+    max-width: 148.47px;
+    max-height: 40px;
+}
+
+  
+@media (max-width: 480px) {
+    .logo {
+        min-width: 48px;
+        min-height: 48px;
+        max-width: 48px;
+        max-height: 48px;
+    }
+}
+  

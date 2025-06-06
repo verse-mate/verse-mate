@@ -1,0 +1,33 @@
+/* styles.css */
+.content {
+    overflow: hidden;
+    position: relative;
+}
+
+.content[data-state='open'] {
+    animation: slide-down 300ms ease-out;
+}
+
+.content[data-state='closed'] {
+    animation: slide-up 300ms ease-out;
+}
+
+@keyframes slide-down {
+    from {
+        height: 0;
+    }
+
+    to {
+        height: var(--radix-accordion-content-height);
+    }
+}
+  
+@keyframes slide-up {
+    from {
+        height: var(--radix-accordion-content-height);
+    }
+    
+    to {
+        height: 0;
+    }
+}

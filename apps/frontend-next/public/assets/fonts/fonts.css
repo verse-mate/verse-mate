@@ -1,0 +1,24 @@
+@font-face {
+  font-family: Inter;
+  src: url("/assets/fonts/Inter-Regular.woff2");
+}
+
+@font-face {
+  font-family: MerriweatherRegular;
+  src: url("/assets/fonts/Merriweather-Regular.woff2");
+}
+
+@font-face {
+  font-family: MerriweatherBold;
+  src: url("/assets/fonts/Merriweather-Regular.woff2");
+}
+
+@font-face {
+  font-family: MerriweatherItalic;
+  src: url("/assets/fonts/Merriweather-Italic.woff2");
+}
+
+@font-face {
+  font-family: MerriweatherBoldItalic;
+  src: url("/assets/fonts/Merriweather-Regular.woff2");
+}

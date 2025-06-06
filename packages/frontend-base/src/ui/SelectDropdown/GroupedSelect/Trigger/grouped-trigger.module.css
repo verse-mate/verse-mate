@@ -1,0 +1,33 @@
+.trigger {
+  background-color: transparent;
+  cursor: pointer;
+  color: var(--snow);
+  fill: var(--snow);
+  padding: 0;
+}
+  
+.trigger[data-state="open"], .trigger[data-state="open"] .icon {
+  color: var(--dust);
+  fill: var(--dust);
+}
+  
+.trigger[data-state="closed"], .trigger[data-state="closed"] .icon {
+  color: var(--snow);
+  fill: var(--snow);
+}
+  
+.trigger:hover, .trigger:hover .icon {
+  color: var(--dust);
+  fill: var(--dust);
+}
+  
+.trigger:focus, .trigger:focus .icon {
+  color: var(--dust);
+  fill: var(--dust);
+}
+
+@media (max-width: 834px){
+  .trigger {
+    display: block;
+  }
+}

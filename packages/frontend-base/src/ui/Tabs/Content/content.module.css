@@ -1,0 +1,8 @@
+.contentTabs {
+    position: relative;
+    top: 128px;
+    left: 0;
+    width: 100%;
+    max-height: 640px;
+    overflow-y: auto;
+}

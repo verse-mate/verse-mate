@@ -1,0 +1,7 @@
+.leftSide{
+    border-right: 1px solid var(--geyser);
+    width: 100%;
+    position: relative;
+    z-index: 1000;
+    background-color: var(--fantasy);
+}

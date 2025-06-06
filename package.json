@@ -1,0 +1,41 @@
+{
+  "name": "application",
+  "scripts": {
+    "format": "biome format --write .",
+    "lint": "biome check .",
+    "lint:watch": "bunx onchange . -- biome check --write --no-errors-on-unmatched {{changed}}",
+    "prepare": "husky install",
+    "stylelint": "stylelint \"{apps,packages}/**/*.css\"",
+    "tsc": "bunx tsc"
+  },
+  "workspaces": ["apps/*", "packages/*"],
+  "devDependencies": {
+    "@biomejs/biome": "^1.8.3",
+    "bun-types": "^1.1.21",
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^14.0.1",
+    "stylelint": "^15.11.0",
+    "stylelint-config-standard": "^34.0.0",
+    "typed-css-modules": "^0.7.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "resolutions": {
+    "elysia": "1.1.4",
+    "@elysiajs/eden": "1.1.2",
+    "nanostores": "0.11.2"
+  },
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "@swc/core",
+    "esbuild",
+    "msw",
+    "sharp"
+  ],
+  "dependencies": {
+    "typescript": "^5.5.4"
+  },
+  "packageManager": "bun@1.1.12"
+}

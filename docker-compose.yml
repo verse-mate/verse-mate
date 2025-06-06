@@ -1,0 +1,60 @@
+services:
+  redis:
+    container_name: redis
+    image: redis:7.2-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./.docker/redis_data:/data
+    command: redis-server --requirepass abcd1234
+
+  postgres:
+    container_name: postgres
+    image: postgres:15.4-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: postgres_db
+    volumes:
+      - ./.docker/postgres_data:/var/lib/postgresql/data
+
+  prisma-studio:
+    container_name: prisma-studio
+    image: timothyjmiller/prisma-studio
+    depends_on:
+      - postgres
+    restart: always
+    ports:
+      - 5555:5555
+    environment:
+      POSTGRES_URL: postgresql://postgres_user:postgres_password@postgres:5432/postgres_db
+
+  # verse-mate-backend:
+  #   container_name: verse-mate-backend
+  #   build:
+  #     context: .
+  #     dockerfile: apps/backend/Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   environment:
+  #     REDIS_URL: redis://:abcd1234@redis:6379/0
+  #     POSTGRES_URL: postgresql://postgres_user:postgres_password@postgres:5432/postgres_db
+  #     ENVIRONMENT: development
+  #     PORT: 3000
+
+  verse-mate-web:
+    container_name: verse-mate-web
+    build:
+      context: .
+      dockerfile: apps/frontend-next/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - API_URL=https://api.verse-mate.apegro.dev

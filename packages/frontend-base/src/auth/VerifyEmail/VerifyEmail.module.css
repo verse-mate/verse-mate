@@ -1,0 +1,24 @@
+.container {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background);
+  align-items: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.title {
+  margin-top: 2.063rem;
+}
+
+.message {
+  margin-top: var(--size-2);
+  max-width: 25rem;
+}

@@ -1,0 +1,73 @@
+.rating{
+    position: relative;
+    padding: 16px;
+}
+
+.content {
+    height: calc(100dvh);
+}
+
+.content, .list{
+    cursor: default;
+}
+
+.rightPanelContent{
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    height: calc(100%);
+    padding-bottom:40px;
+    width: 100%;
+    overflow-y: auto;
+}
+
+.markdown {
+    padding: 0 16px
+}
+
+.chatContainer {
+    height: calc(100dvh - 56px);
+}
+
+.chatContent {
+    width: 100%;
+    height: calc(100% - 80px);
+}
+
+.typingField {
+    width: 100%;
+    padding: 16px;
+    position: absolute;
+    bottom: 0;
+}
+
+.historyContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - 112px);
+    background-color: var(--snow);
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.groupContainer{
+    display: flex;
+    flex-direction: column;
+}
+
+.moreOptionsContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - 102px);
+    background-color: var(--snow);
+}
+
+.moreOptionsContainer > :last-child {
+    margin-top: auto;
+}

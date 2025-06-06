@@ -1,0 +1,10 @@
+@import url("../../../../../public/assets/fonts/fonts.css");
+
+.title{
+    font-family: MerriweatherBoldItalic, sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 28px;
+    text-align: left;
+    color: var(--night);
+}

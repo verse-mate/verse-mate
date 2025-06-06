@@ -1,0 +1,75 @@
+.notifications {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+  box-sizing: border-box;
+  position: fixed;
+  top: var(--notification-container-top, 1rem);
+  right: var(--notification-container-right, 1rem);
+  z-index: 10;
+  direction: rtr;
+  max-width: 500px;
+  white-space: pre-line;
+}
+
+.notificationContainer {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  max-inline-size: none;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: var(--radius-2);
+  overflow: hidden;
+  background-color: var(--background);
+
+  & > .progressBar {
+    position: relative;
+    overflow: hidden;
+    height: 4px;
+    width: 100%;
+
+    & > .bar {
+      position: absolute;
+      background-color: var(--gray-3);
+      width: 100%;
+      height: inherit;
+    }
+  }
+
+  &.discreet {
+    box-shadow: var(--shadow-2);
+
+    & > .progressBar > .bar {
+      background-color: var(--color);
+    }
+  }
+
+  &.outline {
+    border: 2px solid var(--color);
+  }
+}
+
+.notificationContent {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: var(--size-3) 70px var(--size-3) var(--size-3);
+}
+
+.closeButton {
+  position: absolute;
+  top: var(--size-2);
+  right: var(--size-2);
+  background-color: transparent;
+  transition-duration: 300ms;
+  color: var(--gray-7);
+
+  &:hover {
+    color: var(--foreground);
+  }
+}

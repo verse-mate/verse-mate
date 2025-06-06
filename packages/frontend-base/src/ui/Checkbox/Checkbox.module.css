@@ -1,0 +1,85 @@
+.container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--foreground);
+
+  > label {
+    display: flex;
+    gap: var(--size-2);
+  }
+}
+
+.checkbox {
+  background-color: white;
+  width: var(--size-4);
+  height: var(--size-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2);
+  padding: 3px;
+
+  &[data-state="checked"],
+  [data-state="indeterminate"] {
+    background: var(--dust);
+    border-color: var(--dust);
+  }
+
+  &:focus {
+    border-color: var(--dust);
+  }
+}
+
+.container:has(.checkbox:disabled) {
+  opacity: 0.3;
+  cursor: not-allowed;
+
+  > .checkbox {
+    background-color: var(--gray-3);
+  }
+
+  > .checkbox,
+  > label {
+    cursor: not-allowed;
+  }
+}
+
+.check {
+  stroke-dasharray: 48;
+  stroke-dashoffset: -48;
+  animation: stroke-check 200ms forwards;
+  animation-timing-function: var(--ease-in-out-1);
+  stroke: var(--background);
+  stroke-width: 3px;
+}
+
+.minus {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 0;
+  animation: stroke-minus 300ms forwards;
+  animation-timing-function: var(--ease-in-out-1);
+  stroke: var(--background);
+  stroke-width: 3px;
+}
+
+@keyframes stroke-check {
+  0% {
+    stroke-dashoffset: -48;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes stroke-minus {
+  0% {
+    stroke-dashoffset: 48;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}

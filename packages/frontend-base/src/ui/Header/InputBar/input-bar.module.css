@@ -1,0 +1,77 @@
+@import url("../../../../public/assets/fonts/fonts.css");
+
+.searchContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    gap: 16px;
+    padding: 0 4px 0 16px;
+    width: 100%;
+    height: 48px;
+    border-radius: 100px;
+    border: 1px solid var(--geyser);
+  
+    &:focus-within {
+        border: 1px solid var(--rodeo-dust);
+    }
+}
+
+.searchInput {
+    width: 100%;
+    border: none;
+    outline: none;
+    background-color: transparent;
+    font-family: Inter, sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+}
+
+.sendButton {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    opacity: 0.4;
+}
+
+.sendButton .icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 31.67px;
+    height: 31.67px;
+    font-size: 400px;
+    border-radius: 50%;
+}
+  
+.sendButton.active {
+    color: var(--night);
+    opacity: 1;
+}
+  
+.clearButton {
+    opacity: 1;
+}
+
+@media (max-width: 834px) {
+    .searchContainer {
+        width: 100%
+    }
+}
+
+@media (max-width: 480px) {
+    .searchContainer {
+        width: 100%;
+    }
+  
+    .searchContainer.focused {
+        width: 100%;
+    }
+}

@@ -1,0 +1,16 @@
+.legend {
+  display: flex;
+  align-items: center;
+  column-gap: var(--size-1);
+  font-size: 14px;
+}
+
+.square {
+  width: var(--size, 10px);
+  height: var(--size, 10px);
+  border-radius: var(--radius-1);
+}
+
+.legend[data-outline="true"] > .square {
+  border: 1px solid var(--border);
+}

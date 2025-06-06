@@ -1,0 +1,25 @@
+export const bibleVersions = [
+  { key: "NASB1995", value: "New American Standard Bible 1995 (NASB1995)" },
+  // { key: "AMP", value: "Amplified Bible (AMP)" },
+  // { key: "AMPC", value: "Amplified Bible, Classic Edition (AMPC)" },
+  // { key: "ASV", value: "American Standard Version (ASV)" },
+  // { key: "BOOKS", value: "The Books of the Bible NT (BOOKS)" },
+  // { key: "BSB", value: "English: Berean Standard Bible (BSB)" },
+  // { key: "CEB", value: "Common English Bible (CEB)" },
+  // { key: "CEV", value: "Contemporary English Version (CEV)" },
+  // {
+  //   key: "CEVDCI",
+  //   value: "Contemporary English Version Interconfessional Edition (CEVDCI)",
+  // },
+  // {
+  //   key: "CEVUK",
+  //   value: "Contemporary English Version (Anglicised) 2012 (CEVUK)",
+  // },
+  // { key: "CJB", value: "Complete Jewish Bible (CJB)" },
+  // { key: "CPDV", value: "Catholic Public Domain Version (CPDV)" },
+  // { key: "CSB", value: "Christian Standard Bible (CSB)" },
+  // { key: "DARBY", value: "Darby's Translation 1980 (DARBY)" },
+  // { key: "DRC1752", value: "Douay-Rheims Challoner Revision 1752 (DRC1752)" },
+  // { key: "EASY", value: "EasyEnglish Bible 2018 (EASY)" },
+  // { key: "ERV", value: "Holy Bible: Easy-to-Read Version (ERV)" },
+];

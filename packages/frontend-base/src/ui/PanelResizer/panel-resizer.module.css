@@ -1,0 +1,26 @@
+.container {
+    background-color: var(--geyser);
+    position: relative;
+    margin: 0;
+    z-index: 1001;
+}
+
+.button {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    padding: 2px;
+    background-color: #fff;
+    border: 1px solid var(--geyser);
+    cursor: ew-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px #0000001a;
+    transition: all 0.2s ease;
+    z-index: 1002;
+}

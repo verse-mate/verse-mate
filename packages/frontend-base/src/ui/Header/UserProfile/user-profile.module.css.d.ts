@@ -1,0 +1,24 @@
+declare const styles: {
+  readonly personIcon: string;
+  readonly username: string;
+  readonly email: string;
+  readonly trigger: string;
+  readonly arrowUpDownIcon: string;
+  readonly profileIcon: string;
+  readonly userInfo: string;
+  readonly arrowUpDown: string;
+  readonly personIconLabel: string;
+  readonly content: string;
+  readonly "slide-down-and-fade": string;
+  readonly "slide-left-and-fade": string;
+  readonly "slide-up-and-fade": string;
+  readonly "slide-right-and-fade": string;
+  readonly slot: string;
+  readonly subInfo: string;
+  readonly separator: string;
+  readonly groupItem: string;
+  readonly item: string;
+  readonly settingsIcon: string;
+  readonly logoutIcon: string;
+};
+export = styles;

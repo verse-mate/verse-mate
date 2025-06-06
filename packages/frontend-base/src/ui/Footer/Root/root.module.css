@@ -1,0 +1,29 @@
+.container {
+    border-top: 1px solid var(--geyser);
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 48px;
+    background-color: var(--snow);
+}
+
+/* start table landscape */
+
+@media screen and (min-width: 1194px) {
+    .container{
+        display: flex;
+    }
+}
+
+/* end table landscape */
+
+/* start desktop */
+
+@media screen and (min-width: 1195px) and (max-width: 1994px) {
+    .container{
+        display: flex;
+    }
+}
+
+/* end desktop */

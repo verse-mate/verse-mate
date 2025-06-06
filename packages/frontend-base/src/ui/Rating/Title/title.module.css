@@ -1,0 +1,14 @@
+@import url('../../../../public/assets/fonts/fonts.css');
+
+.container {
+    width: 100%;
+}
+
+.container h1 {
+    font-family: MerriweatherItalic, sans-serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 28px;
+    color: var(--night);
+}

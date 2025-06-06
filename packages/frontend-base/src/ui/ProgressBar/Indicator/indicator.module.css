@@ -1,0 +1,8 @@
+.progress {
+    height: 100%;
+    background-color: var(--dust);
+    border-radius: 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}

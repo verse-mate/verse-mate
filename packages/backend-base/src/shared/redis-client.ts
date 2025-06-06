@@ -1,0 +1,105 @@
+import ms from "ms";
+import { type RedisClientType, createClient } from "redis";
+
+class RedisClient {
+  private client: RedisClientType;
+
+  constructor(redisUrl = "redis://localhost:6379") {
+    this.client = createClient({
+      url: redisUrl,
+      socket: {
+        reconnectStrategy: (retries) => {
+          if (retries > 10) {
+            console.log(
+              "Max retry attempts reached. Please check your Redis server.",
+            );
+            return false;
+          }
+
+          return Math.min(retries * 100, 3000); // exponential backoff strategy up to 3 seconds
+        },
+      },
+    });
+
+    this.client.on("error", (error) => {
+      console.error("Redis Client Error", error);
+    });
+
+    this.client.on("connect", () => {
+      console.log("Connected to Redis");
+    });
+
+    this.client.on("reconnecting", () => {
+      console.log("Reconnecting to Redis");
+    });
+
+    this.client.on("end", () => {
+      console.log("Disconnected from Redis");
+    });
+  }
+
+  async connect() {
+    if (!this.client.isOpen) {
+      try {
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Redis connection timeout")), 3000),
+        );
+        await Promise.race([this.client.connect(), timeout]);
+      } catch (error) {
+        console.error("Error connecting to Redis:", error);
+        throw error;
+      }
+    }
+  }
+
+  async disconnect() {
+    if (this.client.isOpen) {
+      try {
+        await this.client.disconnect();
+      } catch (error) {
+        console.error("Error disconnecting from Redis:", error);
+      }
+    }
+  }
+
+  async get<T>(key: string): Promise<T | null> {
+    await this.connect();
+    try {
+      const value = await this.client.get(key);
+      if (value) {
+        return JSON.parse(value);
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error getting key from Redis:", error);
+      throw error;
+    }
+  }
+
+  async set(key: string, value: object, ttl: string): Promise<string | null> {
+    await this.connect();
+    try {
+      return await this.client.set(key, JSON.stringify(value), {
+        PX: ms(ttl),
+      });
+    } catch (error) {
+      console.error("Error setting value in Redis:", error);
+      throw error;
+    }
+  }
+  async delete(key: string): Promise<number> {
+    await this.connect();
+    try {
+      return await this.client.del(key);
+    } catch (error) {
+      console.error("Error deleting key from Redis:", error);
+      throw error;
+    }
+  }
+}
+
+const redisUrl = process.env.REDIS_URL ?? "http://localhost:6379";
+const redisClient = new RedisClient(redisUrl);
+
+export default redisClient;

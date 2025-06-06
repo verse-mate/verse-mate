@@ -1,0 +1,9 @@
+{
+  "name": "frontend-envs",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "nanostores": "0.11.2"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,21 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px 16px 24px;
+}
+
+@media screen and (min-width: 834px) {
+    .container {
+        padding: 16px 80px;
+    }
+}
+
+@media screen and (min-width: 1194px) {
+    .container {
+        padding: 24px;
+    }
+}

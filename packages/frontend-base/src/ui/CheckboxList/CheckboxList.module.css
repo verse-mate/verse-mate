@@ -1,0 +1,28 @@
+.item {
+  display: flex;
+  max-inline-size: initial;
+  padding-inline-start: 0;
+  padding: var(--size-1) 0;
+  border-bottom: 1px solid var(--neutral-lighter);
+
+  &.lastSelected {
+    border-bottom: 1px solid var(--dust);
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  padding-inline-start: 0;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  max-height: var(--max-height, 100%);
+  width: 100%;
+  overflow-y: auto;
+}
+
+.listFooter {
+  display: flex;
+  justify-content: space-between;
+}

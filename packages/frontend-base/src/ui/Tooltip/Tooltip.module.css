@@ -1,0 +1,19 @@
+.content {
+  padding: var(--size-3);
+  border-radius: var(--radius-2);
+  background: var(--background);
+  box-shadow: var(--shadow-1);
+  animation-name: enter;
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes enter {
+  from {
+    scale: 0.9;
+  }
+
+  to {
+    scale: 1;
+  }
+}

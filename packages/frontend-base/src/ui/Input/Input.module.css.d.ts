@@ -1,0 +1,21 @@
+declare const styles: {
+  readonly container: string;
+  readonly head: string;
+  readonly input: string;
+  readonly inputContainer: string;
+  readonly border: string;
+  readonly shadow: string;
+  readonly soft: string;
+  readonly rounded: string;
+  readonly square: string;
+  readonly slot: string;
+  readonly helperMessage: string;
+  readonly dashedEye: string;
+  readonly line: string;
+  readonly dateInputContainer: string;
+  readonly phoneInputContainer: string;
+  readonly timePickerContainer: string;
+  readonly timeOptionsContainer: string;
+  readonly timeOption: string;
+};
+export = styles;

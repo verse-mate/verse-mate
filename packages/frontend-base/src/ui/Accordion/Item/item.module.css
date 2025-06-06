@@ -1,0 +1,16 @@
+@import url("../../../../public/assets/fonts/fonts.css");
+
+.header {
+    display: flex;
+    font-family: Inter, sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+}
+
+.item {
+    display: flex;
+    flex-direction: column;
+    min-width: 100%;
+    border-bottom: 1px solid var(--geyser);
+}

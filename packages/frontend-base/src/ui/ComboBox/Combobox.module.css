@@ -1,0 +1,28 @@
+.wrapper {
+  position: relative;
+}
+
+.content {
+  position: absolute;
+  width: 100%;
+  padding-inline-start: 0;
+  list-style: none;
+  padding: var(--size-2) 0;
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-3);
+  background-color: var(--background);
+  z-index: 50;
+  margin-top: var(--size-1);
+  max-height: var(--size-14);
+  overflow-y: auto;
+}
+
+.item {
+  padding-inline-start: 0;
+  padding: var(--size-1) var(--size-2);
+
+  &:focus,
+  &:hover {
+    background-color: var(--stone-1);
+  }
+}

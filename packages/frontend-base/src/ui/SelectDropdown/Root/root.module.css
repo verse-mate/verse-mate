@@ -1,0 +1,23 @@
+.container{
+    display: inline-flex;
+    max-width: 220px;
+    height: 24px;
+    gap: 4px;
+    background-color: transparent;
+
+    /* z-index: 2; */
+}
+
+.label{
+    color: var(--geyser-opacity);
+    font-family: Inter, sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 24px;
+}
+
+@media (max-width: 390px) {
+    .label {
+        display: none;
+    }
+}

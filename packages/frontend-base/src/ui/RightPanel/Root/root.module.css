@@ -1,0 +1,5 @@
+.rightSideWrapper{
+    width: 100%;
+    height: calc(100dvh - 46px);
+    position: relative;
+}

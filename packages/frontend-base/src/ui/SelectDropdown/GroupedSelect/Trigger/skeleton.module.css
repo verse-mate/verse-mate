@@ -1,0 +1,23 @@
+.skeleton {
+  background-color: var(--charcoal-grey);
+  border-radius: 4px;
+  display: inline-block;
+  animation: pulse 1.5s ease-in-out infinite;
+  min-width: 120px;
+  height: 24px;
+  align-self: center;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}

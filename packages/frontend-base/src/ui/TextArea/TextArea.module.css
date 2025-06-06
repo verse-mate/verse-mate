@@ -1,0 +1,5 @@
+.textarea {
+  width: 100%;
+  background-color: var(--background);
+  padding: 0;
+}

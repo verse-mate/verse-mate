@@ -1,0 +1,17 @@
+@import url("../../../../public/assets/fonts/fonts.css");
+
+.container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    height: 56px;
+}
+
+.container span {
+    font-family: Inter, sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 28px;
+    color: var(--night)
+}

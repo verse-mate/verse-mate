@@ -1,0 +1,60 @@
+/* the props */
+@import url("open-props/style");
+@import url("./vars.css");
+
+/* optional imports that use the props */
+@import url("open-props/normalize.light.min.css");
+@import url("open-props/colors-hsl");
+@import url("./react-day-picker.css");
+
+:where(html) {
+  background-color: var(--background) !important;
+}
+
+body {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  color: var(--foreground);
+}
+
+:where(a) {
+  margin-block: initial;
+  margin-inline: initial;
+  padding-block: initial;
+  padding-inline: initial;
+  text-decoration: none;
+  max-inline-size: initial;
+}
+
+:where(a):where(:not(:hover)) {
+  text-decoration: none;
+}
+
+:where(a):visited {
+  color: var(--foreground);
+}
+
+:where(:not(:active):focus-visible) {
+  outline: none;
+}
+
+:where(ol, ul) {
+  padding-inline-start: 0;
+}
+
+:where(li, dd, figcaption) {
+  max-inline-size: initial;
+}
+
+::-webkit-scrollbar {
+  width: 0.375rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d8e1;
+  border-radius: 0.625rem;
+}
+
+:where(table) {
+  border-radius: 0;
+}

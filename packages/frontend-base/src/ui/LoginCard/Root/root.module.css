@@ -1,0 +1,11 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - 56px);
+    overflow: hidden;
+    font-family: Inter, sans-serif;
+    padding: 24px;
+}

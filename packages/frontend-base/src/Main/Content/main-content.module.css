@@ -1,0 +1,407 @@
+/* start mobile */
+.container {
+    width: 100vw;
+    height: 100dvh;
+    position: relative;
+}
+
+.mobileContent {
+    background-color: var(--night);
+    width: 100%;
+    position: fixed;
+    top: 0;
+}
+
+.headerWrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+}
+
+.mobileTriggersWrapper {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.buttonList{
+    display: flex;
+    gap: 16px;
+}
+
+.iconSize {
+    padding: 0;
+    margin: 0;
+    min-height: 24px;
+    min-width: 24px;
+}
+
+.trigger {  
+    background-color: transparent;
+    fill: var(--snow);
+    border: none;
+    margin: 0;
+    padding: 0;
+        
+    &[data-state="active"] {
+        .active {
+            fill:var(--dust)
+        }
+    }
+}
+
+.contentGroupedTrigger {
+    margin-top: 128px;
+    max-height: calc(100dvh - 248px);
+    overflow-y: auto;
+}
+
+.bookContainer {
+    width: 100%;
+    height: calc(100dvh - 56px);
+    background-color: var(--fantasy);
+    position: relative;
+}
+
+.bookContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: calc(100dvh - 74px);
+    overflow-y: auto;
+    background-color: var(--fantasy);
+    padding: 16px;
+}
+
+.separator {
+    border-top: 1px solid #fff3;
+    margin-left: 16px;
+    margin-right: 16px;
+    margin-bottom: 16px;
+}
+
+.subHeader {
+    background-color: var(--night);
+    display: flex;
+    gap: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 16px;
+}
+
+.button {
+    border-radius: 100px;
+    padding: 2px 8px;
+    background-color: #fff3;
+    color: var(--snow);
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+}
+
+.selectedButton {
+    background-color: var(--dust);
+    color: var(--night);
+}
+
+.explanationContainer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    padding-bottom:112px;
+    width: 100%;
+    overflow-y: auto;
+    background-color: var(--snow);
+}
+
+.markdown {
+    padding: 0 16px
+}
+
+.rating{
+    position: relative;
+    padding: 16px;
+}
+
+.flexBetween {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.askVerseMateText {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Inter,sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--snow);
+}
+
+/* Chat AI */
+.chatContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - 112px);
+    background-color: var(--snow);
+}
+
+.chatContent {
+    width: 100%;
+    height: calc(100% - 80px);
+}
+
+/* Input AI */
+.typingField {
+    width: 100%;
+    padding: 16px;
+    position: absolute;
+    bottom: 0;
+}
+
+/* History Chat */
+.historyContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - 112px);
+    background-color: var(--snow);
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.groupContainer{
+    display: flex;
+    flex-direction: column;
+}
+
+/* More Options (Menu) */
+.moreOptionsContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - 56px);
+    background-color: var(--snow);
+}
+
+.moreOptionsContainer > :last-child {
+    margin-top: auto;
+}
+
+/* Previous and Next buttons */
+.nextChapterBtn, .previousChapterBtn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    bottom: 24px;
+    transform: translateY(-50%);
+    background: #000000b3;
+    width: 40px;
+    height: 40px;
+    border-radius: 100%;
+    padding: 0;
+}
+
+.nextChapterBtn {
+    right: 16px;
+}
+
+.previousChapterBtn {
+    left: 16px;
+}
+
+.chevronForward, .chevronBackward {
+    fill: var(--snow);
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+
+.verseMateLogo {
+    display: none;
+}
+
+.desktopContainer {
+    display: none;
+}
+
+/* end mobile */
+
+/* star tablet portrait */
+
+@media screen and (min-width: 834px) {
+    .headerWrapper {
+        padding: 12px 24px;
+    }
+
+    .subHeader {
+        justify-content: end;
+    }
+
+    .explanationContainer {
+        padding: 16px 32px 128px;
+    }
+
+    .nextChapterBtn, .previousChapterBtn {
+        bottom: 50%;
+    }
+
+    .verseMateLogo {
+        display: block;
+        min-height: 32px;
+        min-width: 118.78px;
+    }
+}
+
+@media screen and (min-width: 834px) and (max-width: 1194px) and (orientation: portrait) {
+    .bookContent {
+        padding: 16px 80px;
+    }
+}
+
+@media screen and (min-width: 834px) and (max-width: 1194px) and (orientation: landscape) {
+    .bookContent {
+        padding: 24px 80px;
+    }
+}
+
+/* end tablet portrait */
+
+/* start table landscape */
+
+@media screen and (min-width: 1194px) {
+    .container {
+        display: none;
+    }
+
+    .desktopContainer{
+        display: block;
+        width: 100vw;
+        height: calc(100dvh - 48px);
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .markdown {
+        padding: 8px 24px;
+    }
+
+    .main {
+        display: flex;
+        position: relative;
+        top: 0;
+        flex: 1;
+        width: 100%;
+        height: calc(100%); /* full height - header - footer */
+    }
+
+    .leftSide{
+        border-right: 1px solid var(--geyser);
+        width: 65%;
+        position: relative;
+        z-index: 1000;
+        background-color: var(--fantasy);
+    }
+
+    .leftPanelDropdown {
+        display: flex;
+        gap: 48px
+    }
+
+    .responsiveLayout {
+        display: none;
+    }
+
+    .rightSideWrapper{
+        width: 100%;
+        max-width: 35%;
+        height: 100%;
+        position: relative;
+    }
+
+    .rightPanelContent{
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        height: calc(100%);
+        padding-bottom:40px;
+        width: 100%;
+        overflow-y: auto;
+    }
+    
+    /* Tabs | content */
+
+    .root {
+        width: 100%;
+        height: 100%;
+    }
+
+    .listWrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 56px;
+        background-color: var(--oil);
+        position: relative;
+        padding: 12px 16px
+    }
+
+    .explanationAndChatButton{
+        display: flex;
+        gap: 16px;
+    }
+
+    .chatContainer {
+        height: calc(100dvh - 56px);
+    }
+
+    .explanationTypesButton{
+        display: flex;
+        gap: 8px
+    }
+
+    .moreOptionButton{
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .content, .list{
+        cursor: default;
+    }
+
+    .verseMateLogo {
+        position: absolute;
+        left: 24px;
+    }
+}
+
+/* end table landscape */
+
+/* start desktop */
+
+@media screen and (min-width: 1195px) and (max-width: 1994px) {
+    .main {
+        display: flex;
+        width: 100%;
+    }
+    
+    .bookContent {
+        padding: 24px 156px;
+    }
+}
+
+/* end desktop */

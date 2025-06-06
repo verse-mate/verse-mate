@@ -1,0 +1,63 @@
+.container {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  > * {
+    max-width: 37.5rem;
+  }
+}
+
+.title,
+.subTitle,
+.instructions,
+.footer {
+  text-align: center;
+  text-wrap: wrap;
+}
+
+.instructions,
+.footer {
+  color: var(--gray);
+}
+
+.title {
+  margin-top: 3.75rem;
+  font-size: 2.5rem;
+  font-weight: bold;
+  line-height: 56px;
+}
+
+.image {
+  margin-top: var(--size-7);
+}
+
+.subTitle {
+  margin-top: var(--size-3);
+  font-size: var(--size-5);
+  font-weight: bold;
+  line-height: 36px;
+}
+
+.instructions {
+  margin-top: var(--size-3);
+  line-height: 24px;
+}
+
+.redirectButton {
+  margin-top: var(--size-7);
+  width: 100%;
+  padding: 0.625rem 0;
+}
+
+.footer {
+  margin-top: var(--size-7);
+  line-height: 24px;
+}
+
+.link {
+  color: var(--dust);
+  text-decoration-line: underline;
+}

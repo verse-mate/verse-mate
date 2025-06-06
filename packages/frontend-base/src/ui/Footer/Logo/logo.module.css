@@ -1,0 +1,34 @@
+@import url("../../../../public/assets/fonts/fonts.css");
+
+.leftBlock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 156px;
+    height: 26px;
+    font-family: Inter, sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    line-height: 26px;
+}
+  
+.leftBlock div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+}
+  
+.leftBlock img {
+    width: 100px;
+    height: 26px;
+}
+
+.verseMateLogo {
+    position: relative;
+    min-width: 69px;
+    min-height: 18px;
+    max-width: 69px;
+    max-height: 18px;
+}
