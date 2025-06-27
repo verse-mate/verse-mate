@@ -4,6 +4,6 @@ install:
 	cp apps/frontend-next/.env.example apps/frontend-next/.env
 	cp packages/backend-base/.env.example packages/backend-base/.env
 	cp packages/database/.env.example packages/database/.env
-	bun install
+	bun install --frozen-lockfile
 	cd packages/database && bun migrate:deploy
 	cd packages/database && bun db:seed
