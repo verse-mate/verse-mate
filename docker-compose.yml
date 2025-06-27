@@ -49,12 +49,12 @@ services:
   #     ENVIRONMENT: development
   #     PORT: 3000
 
-  verse-mate-web:
-    container_name: verse-mate-web
-    build:
-      context: .
-      dockerfile: apps/frontend-next/Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - API_URL=https://api.verse-mate.apegro.dev
+  # verse-mate-web:
+  #   container_name: verse-mate-web
+  #   build:
+  #     context: .
+  #     dockerfile: apps/frontend-next/Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - API_URL=https://api.verse-mate.apegro.dev

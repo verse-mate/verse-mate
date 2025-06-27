@@ -1,6 +1,7 @@
 {
   "name": "application",
   "scripts": {
+    "dev": "concurrently 'cd apps/backend && bun dev' 'cd apps/frontend-next && bun dev'",
     "format": "biome format --write .",
     "lint": "biome check .",
     "lint:watch": "bunx onchange . -- biome check --write --no-errors-on-unmatched {{changed}}",
