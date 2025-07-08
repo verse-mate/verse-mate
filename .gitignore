@@ -172,3 +172,5 @@ dist
 
 .react-email
 infra
+
+.claude/*

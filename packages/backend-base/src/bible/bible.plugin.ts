@@ -108,7 +108,7 @@ const plugin = new Elysia()
                     messages: [
                       { role: "system", content: prompt.prompt },
                       {
-                        role: "system",
+                        role: "user",
                         content: `
                           # Reference
                           ${reference}
