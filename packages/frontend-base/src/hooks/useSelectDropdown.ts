@@ -45,17 +45,10 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     });
   }, [debouncedFilter, selectedTab, testaments]);
 
-  // **Filter logic**: if there's any filter text, match by name across both testaments;
-  // otherwise, show only books in the selectedTab.
   const filteredTestaments: Testament[] =
-    testaments?.filter((t) => {
-      const nameMatches = t.n
-        .toLowerCase()
-        .includes(debouncedFilter.toLowerCase());
-      const tabMatches = t.t === selectedTab;
-      return debouncedFilter ? nameMatches : tabMatches;
-    }) ?? [];
-
+    testaments?.filter((t) =>
+      t.n.toLowerCase().includes(debouncedFilter.toLowerCase()),
+    ) ?? [];
   // Just the names, for backwards compatibility
   const filteredBooks: string[] = filteredTestaments.map((t) => t.n);
 
