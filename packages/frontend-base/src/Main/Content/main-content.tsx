@@ -357,11 +357,6 @@ export const MainContent = () => {
                                 }
                               >
                                 {leftPanelFilteredBooks
-                                  .filter((bookName) =>
-                                    oldTestamentBooks.some(
-                                      (t) => t.n === bookName,
-                                    ),
-                                  )
                                   .map((bookName) =>
                                     oldTestamentBooks.find(
                                       (t) => t.n === bookName,
@@ -437,11 +432,6 @@ export const MainContent = () => {
                                 }
                               >
                                 {leftPanelFilteredBooks
-                                  .filter((bookName) =>
-                                    newTestamentBooks.some(
-                                      (t) => t.n === bookName,
-                                    ),
-                                  )
                                   .map((bookName) =>
                                     newTestamentBooks.find(
                                       (t) => t.n === bookName,
