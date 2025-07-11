@@ -1,7 +1,7 @@
 "use client";
 
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
 
 type Testament = {
@@ -45,10 +45,19 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     });
   }, [debouncedFilter, selectedTab, testaments]);
 
-  const filteredTestaments: Testament[] =
-    testaments?.filter((t) =>
+  const filteredTestaments: Testament[] = useMemo(() => {
+    if (!testaments) return [];
+
+    const searchFiltered = testaments.filter((t) =>
       t.n.toLowerCase().includes(debouncedFilter.toLowerCase()),
-    ) ?? [];
+    );
+
+    if (debouncedFilter.trim()) {
+      return searchFiltered;
+    }
+
+    return searchFiltered.filter((t) => t.t === selectedTab);
+  }, [testaments, debouncedFilter, selectedTab]);
   // Just the names, for backwards compatibility
   const filteredBooks: string[] = filteredTestaments.map((t) => t.n);
 
