@@ -4,8 +4,8 @@
     height: 24px;
     gap: 4px;
     background-color: transparent;
-
-    /* z-index: 2; */
+    position: relative;
+    z-index: 2;
 }
 
 .label{

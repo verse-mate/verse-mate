@@ -357,23 +357,25 @@ export const MainContent = () => {
                                 }
                               >
                                 {leftPanelFilteredBooks
-                                  .filter((bookName) =>
-                                    oldTestamentBooks.some(
-                                      (t) => t.n === bookName,
-                                    ),
-                                  )
                                   .map((bookName) =>
-                                    oldTestamentBooks.find(
-                                      (t) => t.n === bookName,
-                                    ),
+                                    testaments?.find((t) => t.n === bookName),
+                                  )
+                                  .filter(
+                                    (
+                                      book,
+                                    ): book is NonNullable<typeof book> => {
+                                      if (!book) return false;
+                                      return leftPanelDebouncedFilter.trim()
+                                        ? true
+                                        : book.t === "OT";
+                                    },
                                   )
                                   .sort((a, b) => {
-                                    if (a?.b === bookId) return -1;
-                                    if (b?.b === bookId) return 1;
+                                    if (a.b === bookId) return -1;
+                                    if (b.b === bookId) return 1;
                                     return 0;
                                   })
                                   .map((book) => {
-                                    if (!book) return null;
                                     return (
                                       <Accordion.Item
                                         value={book.n}
@@ -437,23 +439,25 @@ export const MainContent = () => {
                                 }
                               >
                                 {leftPanelFilteredBooks
-                                  .filter((bookName) =>
-                                    newTestamentBooks.some(
-                                      (t) => t.n === bookName,
-                                    ),
-                                  )
                                   .map((bookName) =>
-                                    newTestamentBooks.find(
-                                      (t) => t.n === bookName,
-                                    ),
+                                    testaments?.find((t) => t.n === bookName),
+                                  )
+                                  .filter(
+                                    (
+                                      book,
+                                    ): book is NonNullable<typeof book> => {
+                                      if (!book) return false;
+                                      return leftPanelDebouncedFilter.trim()
+                                        ? true
+                                        : book.t === "NT";
+                                    },
                                   )
                                   .sort((a, b) => {
-                                    if (a?.b === bookId) return -1;
-                                    if (b?.b === bookId) return 1;
+                                    if (a.b === bookId) return -1;
+                                    if (b.b === bookId) return 1;
                                     return 0;
                                   })
                                   .map((book) => {
-                                    if (!book) return null;
                                     return (
                                       <Accordion.Item
                                         value={book.n}
