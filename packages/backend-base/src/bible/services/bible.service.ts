@@ -64,11 +64,13 @@ export class BibleService {
     explanation,
     book_id,
     chapter_number,
+    version_id,
   }: {
     type: ExplanationTypeEnum;
     explanation: string;
     book_id: number;
     chapter_number: number;
+    version_id: string;
   }) {
     const { chapter_id } = await this.bibleRepository.getChapterId({
       book_id,
@@ -91,6 +93,7 @@ export class BibleService {
       type,
       explanation,
       chapter_id: chapter_id,
+      version_id,
     });
 
     return { success };

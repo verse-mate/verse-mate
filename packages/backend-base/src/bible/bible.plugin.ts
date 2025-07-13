@@ -35,6 +35,12 @@ const getExplanationTypePrompt = (type: ExplanationTypeEnum): string => {
   }
 };
 
+function getLanguageName(code: string, locale = "en"): string {
+  const display = new Intl.DisplayNames([locale], { type: "language" });
+
+  return display.of(code) ?? display.of("en") ?? "English";
+}
+
 const plugin = new Elysia()
   .use(shared)
   .state((state) => {
@@ -76,14 +82,21 @@ const plugin = new Elysia()
         },
       )
       .get(
-        "/book/explanation/:bookId/:chapterNumber",
-        async ({ params, store: { bibleService, promptService } }) => {
-          const { bookId, chapterNumber } = params;
+        "/book/explanation/:bookId/:chapterNumber/:versionKey?",
+        async ({ params, store: { bibleService, promptService, db } }) => {
+          const { bookId, chapterNumber, versionKey = "NASB1995" } = params;
 
           const explanation = await bibleService.getExplanation({
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
           });
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirstOrThrow();
 
           const missingTypes = Object.keys(ExplanationTypeEnum).filter(
             (type) => !explanation?.some((exp) => exp.type === type),
@@ -110,13 +123,17 @@ const plugin = new Elysia()
                       {
                         role: "user",
                         content: `
-                          # Reference
-                          ${reference}
-                        `,
+                        # Reference
+                        ${reference}
+                      `,
                       },
                       {
                         role: "user",
                         content: getExplanationTypePrompt(type),
+                      },
+                      {
+                        role: "user",
+                        content: `Please respond in ${getLanguageName(version.language_code)}`,
                       },
                       {
                         role: "user",
@@ -132,6 +149,7 @@ const plugin = new Elysia()
                     explanation: chat.choices[0].message.content || "",
                     book_id: Number(bookId),
                     chapter_number: Number(chapterNumber),
+                    version_id: version.id,
                   });
 
                   if (success) return { explanation };

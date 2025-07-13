@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-dbml-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+model books {
+  book_id       Int             @id @default(autoincrement())
+  name          String          @unique @db.VarChar(50)
+  testament     testament_enum
+  genre_id      Int
+  genres        genres          @relation(fields: [genre_id], references: [genre_id], onDelete: Cascade, onUpdate: NoAction)
+  chapters      chapters[]
+  user_progress user_progress[]
+}
+
+model chapters {
+  chapter_id     Int             @id @default(autoincrement())
+  book_id        Int
+  chapter_number Int
+  books          books           @relation(fields: [book_id], references: [book_id], onDelete: Cascade, onUpdate: NoAction)
+  conversations  conversations[]
+  explanations   explanations[]
+  favorites      favorites[]
+  subtitles      subtitles[]
+  user_progress  user_progress[]
+  verses         verses[]
+
+  @@unique([book_id, chapter_number], map: "idx_chapters_book_chapter")
+}
+
+model conversations {
+  conversation_id Int         @id @default(autoincrement())
+  user_id         String      @db.Uuid
+  title           String      @db.VarChar(250)
+  chapter_id      Int
+  status          status_enum
+  created_at      DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?   @default(now()) @db.Timestamp(6)
+  chapters        chapters    @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  user            user        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages        messages[]
+}
+
+model explanation_ratings {
+  rating_id      Int          @id @default(autoincrement())
+  stars          Int
+  user_id        String       @db.Uuid
+  explanation_id Int
+  explanations   explanations @relation(fields: [explanation_id], references: [explanation_id], onDelete: Cascade, onUpdate: NoAction)
+  user           user         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, explanation_id], map: "idx_ratings_user_explanation")
+}
+
+model explanations {
+  explanation_id      Int                   @id @default(autoincrement())
+  type                explanation_type_enum
+  explanation         String
+  chapter_id          Int
+  version_id          String                @db.Uuid
+  explanation_ratings explanation_ratings[]
+  chapters            chapters              @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  bible_versions      bible_versions        @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([chapter_id, type, version_id], map: "idx_explanations_chap_type_version")
+}
+
+model favorites {
+  favorite_id Int                @id @default(autoincrement())
+  type        favorite_type_enum
+  user_id     String             @db.Uuid
+  chapter_id  Int
+  message_id  Int
+  chapters    chapters           @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  messages    messages           @relation(fields: [message_id], references: [message_id], onDelete: Cascade, onUpdate: NoAction)
+  user        user               @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model genres {
+  genre_id Int     @id @default(autoincrement())
+  name     String  @unique @db.VarChar(50)
+  books    books[]
+}
+
+model kysely_migration {
+  name      String @id @db.VarChar(255)
+  timestamp String @db.VarChar(255)
+}
+
+model kysely_migration_lock {
+  id        String @id @db.VarChar(255)
+  is_locked Int    @default(0)
+}
+
+model messages {
+  message_id      Int           @id @default(autoincrement())
+  conversation_id Int
+  content         String
+  role            role_enum
+  generated_at    DateTime?     @default(now()) @db.Timestamp(6)
+  favorites       favorites[]
+  conversations   conversations @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model prompts {
+  prompt_id Int                @id @default(autoincrement())
+  prompt    String
+  status    prompt_status_enum
+}
+
+model subtitles {
+  subtitle_id Int      @id @default(autoincrement())
+  chapter_id  Int
+  subtitle    String   @db.VarChar(250)
+  start_verse Int
+  end_verse   Int
+  chapters    chapters @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([chapter_id, start_verse, end_verse], map: "idx_subtitles_chap_range")
+}
+
+model user {
+  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                   String                @unique @db.VarChar(250)
+  emailVerified           Boolean               @default(false)
+  password                String                @db.VarChar(250)
+  firstName               String                @db.VarChar(100)
+  lastName                String                @db.VarChar(100)
+  imageSrc                String?               @db.VarChar(2000)
+  createdAt               DateTime              @default(now()) @db.Timestamp(6)
+  preferred_language      String?               @default("en") @db.VarChar(5)
+  preferred_bible_version String?               @default("NASB1995") @db.VarChar(20)
+  conversations           conversations[]
+  explanation_ratings     explanation_ratings[]
+  favorites               favorites[]
+  bible_versions          bible_versions?       @relation(fields: [preferred_bible_version], references: [version_key], onDelete: NoAction, onUpdate: NoAction)
+  user_progress           user_progress[]
+
+  @@index([preferred_language], map: "idx_user_language")
+}
+
+model user_progress {
+  user_progress_id Int       @id @default(autoincrement())
+  user_id          String    @db.Uuid
+  book_id          Int
+  chapter_id       Int
+  last_visited_at  DateTime? @default(now()) @db.Timestamp(6)
+  books            books     @relation(fields: [book_id], references: [book_id], onDelete: Cascade, onUpdate: NoAction)
+  chapters         chapters  @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  user             user      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, book_id, chapter_id], map: "idx_progress_user_book_chap")
+}
+
+model verses {
+  verse_id       Int            @id @default(autoincrement())
+  chapter_id     Int
+  verse_number   Int
+  text           String
+  version_id     String         @db.Uuid
+  chapters       chapters       @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  bible_versions bible_versions @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([chapter_id, verse_number, version_id], map: "idx_verses_chap_verse_version")
+  @@index([version_id], map: "idx_verses_version")
+}
+
+model bible_versions {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  version_key   String         @unique @db.VarChar(20)
+  version_name  String         @db.VarChar(100)
+  language_code String         @db.VarChar(5)
+  is_active     Boolean?       @default(true)
+  created_at    DateTime?      @default(now()) @db.Timestamp(6)
+  explanations  explanations[]
+  user          user[]
+  verses        verses[]
+}
+
+enum explanation_type_enum {
+  summary
+  byline
+  detailed
+}
+
+enum favorite_type_enum {
+  chapter
+  message
+}
+
+enum prompt_status_enum {
+  active
+  inactive
+}
+
+enum role_enum {
+  user
+  assistant
+}
+
+enum status_enum {
+  active
+  inactive
+  archived
+}
+
+enum testament_enum {
+  OT
+  NT
+}

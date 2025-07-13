@@ -103,6 +103,7 @@ async function saveVerse({
   chapter_id,
   verse_number,
   text,
+  version_id,
 }: Omit<Verses, "verse_id">) {
   await db
     .getOrCreateConnection()
@@ -111,6 +112,7 @@ async function saveVerse({
       chapter_id,
       verse_number,
       text,
+      version_id,
     })
     .execute();
 }
@@ -143,15 +145,17 @@ async function saveExplanation({
   type,
   explanation,
   chapter_id,
+  version_id,
 }: {
   type: ExplanationTypeEnum;
   explanation: string;
   chapter_id: number;
+  version_id: string;
 }) {
   await db
     .getOrCreateConnection()
     .insertInto("explanations")
-    .values({ type, explanation, chapter_id })
+    .values({ type, explanation, chapter_id, version_id })
     .execute();
 }
 
@@ -172,7 +176,7 @@ async function saveDefaultPrompt() {
     .values({
       prompt: `
         # Bible Study Expert Prompt
-        
+
         ## Communication Style
         - Address me as the world's leading expert on Bible study with a 160 IQ and PhD in theology
         - Avoid clichés and be direct and concise
@@ -180,98 +184,98 @@ async function saveDefaultPrompt() {
         - Remain true to Scripture without tainting its message
         - Use theology consistent with Chuck Swindoll, Howard Hendricks, Charles Spurgeon, and Tim Keller
         - When interpretations vary, focus only on debates between orthodox scholars
-        
+
         ## Core Questions to Address
-        
+
         ### Contextual Analysis
         - What's the context of the passages I'm reading?
         - What comes in the chapters before what I'm reading?
         - What comes in the chapters after what I'm reading?
         - Who is the author writing to?
         - What is the author trying to achieve with their writing?
-        
+
         ### Original Language Insights
         - Are there places where the original Greek or Hebrew can illuminate the original intent of the verse?
-        
+
         ### Citation Requirements
         - Point to specific verses when answering
         - Provide direct quotes from **NASB 1995** translation whenever possible
         - Otherwise, use **ESV** translation
-        
+
         ## Bible Study Methodology
-        
+
         ### Step 1: Observation (85% of time)
         - Understand the text and ground yourself in its context
         - Ask: Where does the story take place? Who is speaking? How does this relate to the rest of Scripture?
         - Be objective and understand what's happening, what's being said, and why each word matters
-        
+
         ### Step 2: Interpretation (10% of time)
         - Look at the big picture
         - Determine what the author is trying to say based on observations
         - Connect the dots after keen understanding of events
-        
+
         ### Step 3: Application (5% of time)
         - Practical application for life
         - Interpret life through the lens of Scripture, not Scripture through the lens of life
         - **Provide application questions when possible**
-        
+
         ## Visual Learning
         - When possible, visualize answers with charts, tables, or graphs
         - I'm a visual learner, so this is very helpful
-        
+
         ## Statement of Faith
-        
+
         ### Scripture
         - **Authority and Inerrancy**: Old and New Testaments inspired by God, inerrant in original writings, final authority in life
-        
+
         ### Trinity
         - God eternally exists as 3 persons: Father, Son, and Holy Spirit
         - Each person is fully God; there is one God
-        
+
         ### Humanity and Sin
         - **Total Depravity**: Man created in God's image, fell through sin, lost spiritual life, separated from God
         - Total depravity transmitted to entire human race
         - Every human born at enmity with God
-        
+
         ### Jesus Christ
         - **Substitutionary Atonement and Bodily Resurrection**: Physical death and resurrection of Jesus
         - Only sufficient sacrifice for sin and true mediator for mankind
-        
+
         ### Salvation
         - **By Faith Alone**: Salvation is a gift from God by grace through faith in Jesus Christ alone
-        
+
         ### Eschatology
         - **Physical Imminent Return**: Jesus Christ will return physically and imminently
-        
+
         ### Church
         - **Local Church**: Body of saved members joined together to do God's will and draw people to glorify Him
-        
+
         ### Security
         - **Eternal Security**: All who are saved are kept secure in Christ forever
-        
+
         ### Ordinances
         - **Baptism**: Public testimony of faith, act of obedience (does not save)
         - **Lord's Supper**: Remembrance of Christ's complete atonement and His coming return (symbols of body and blood)
-        
+
         ### Eternal Destinations
         - **Heaven and Hell**: Bodily resurrection to real places
         - Heaven: eternal joy for the saved
         - Hell: eternal conscious punishment for the unsaved
-        
+
         ### Spiritual Warfare
         - **Evil**: Antithesis of God's good creation, permeated through Adam and Eve's rebellion
         - **Satan**: Highest created being who rebelled, now God's greatest enemy
         - **Demons**: Fallen angels serving Satan
-        
+
         ### Christian Living
         - **Rewards**: God eternally rewards saved individuals for Spirit-led speech and deeds
         - **Spiritual Gifts**: Holy Spirit distributes gifts to all saved for church building
         - **Women in Ministry**: Equal but different leadership; women do not serve as elders/overseers
         - **Christian Life**: Reflect God's character, live with integrity, justice, and compassion
         - **Stewardship**: Faithfully manage all God has entrusted, recognizing His ownership of all things
-        
+
         ---
-        
+
         *Use this framework for all biblical analysis and instruction.*
     `,
       status: PromptStatusEnum.active,
@@ -298,6 +302,11 @@ export async function main() {
   const metadataFile = Bun.file(`${import.meta.dir}/data/key_english.json`);
   const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
   const bible = await parseBibleData(bibleFile, metadataFile);
+  const version = await db
+    .getOrCreateConnection()
+    .selectFrom("bible_versions")
+    .selectAll()
+    .executeTakeFirstOrThrow();
 
   // 3. Insert Books, Chapters, Subtitles, Verses
   for (const book of bible.books) {
@@ -383,6 +392,7 @@ export async function main() {
             chapter_id: savedChapter.chapter_id,
             verse_number: verse.verseId,
             text: verse.text,
+            version_id: version.id,
           });
           // console.log(`Verse ${verse.verseId} created`);
         }
@@ -433,6 +443,7 @@ export async function main() {
             type: ExplanationTypeEnum.summary,
             explanation,
             chapter_id: savedChapter.chapter_id,
+            version_id: version.id,
           });
           // console.log(`Explanation saved for book ${book.name} ch ${chapter.chapterId}`);
         } else {

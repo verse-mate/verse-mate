@@ -99,10 +99,12 @@ export class BibleRepository {
     type,
     explanation,
     chapter_id,
+    version_id,
   }: {
     type: ExplanationTypeEnum;
     explanation: string;
     chapter_id: number;
+    version_id: string;
   }) {
     const savedExplanation = await this.db
       .getOrCreateConnection()
@@ -111,6 +113,7 @@ export class BibleRepository {
         type,
         explanation,
         chapter_id,
+        version_id,
       })
       .execute();
 
