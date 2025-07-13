@@ -289,7 +289,7 @@
     .desktopContainer{
         display: block;
         width: 100vw;
-        height: calc(100dvh - 48px);
+        height: 100dvh;
         margin: 0 auto;
         position: relative;
         overflow: hidden;
@@ -305,7 +305,7 @@
         top: 0;
         flex: 1;
         width: 100%;
-        height: calc(100%); /* full height - header - footer */
+        height: 100%;
     }
 
     .leftSide{

@@ -52,7 +52,11 @@ export const Content = ({
   return (
     <>
       {bookVerseData && (
-        <div className={`${styles.bookContent}`} {...handleDesktopSwipe}>
+        <div
+          className={`${styles.bookContent}`}
+          data-scroll-container="main"
+          {...handleDesktopSwipe}
+        >
           <MainText.Root>
             <MainText.Content
               bookId={String(bookId)}
