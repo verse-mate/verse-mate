@@ -155,6 +155,20 @@ export const MainContent = () => {
   );
 
   useEffect(() => {
+    if (isDropdownOpenBook) {
+      setTimeout(() => {
+        const accordionTrigger = document.querySelector(".accordionTrigger");
+        if (
+          accordionTrigger &&
+          !accordionTrigger.getAttribute("data-state")?.includes("open")
+        ) {
+          (accordionTrigger as HTMLElement).click();
+        }
+      }, 100);
+    }
+  }, [isDropdownOpenBook]);
+
+  useEffect(() => {
     if (bookId && verseId && testament) {
       const testamentLabel = testamentLabelMap[testament];
       const bookName = testaments?.find((b) => b.b === bookId)?.n;
@@ -418,6 +432,7 @@ export const MainContent = () => {
                                                 bookName,
                                                 verse,
                                               );
+                                              closeDropdownBook();
                                             }}
                                             selectedBook={String(bookId)}
                                             selectedVerse={String(verseId)}
@@ -502,6 +517,7 @@ export const MainContent = () => {
                                                 bookName,
                                                 verse,
                                               );
+                                              closeDropdownBook();
                                             }}
                                             selectedVerse={String(verseId)}
                                             selectedBook={String(bookId)}
