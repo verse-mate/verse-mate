@@ -271,13 +271,13 @@
     }
 }
 
-@media screen and (min-width: 834px) and (max-width: 1194px) and (orientation: portrait) {
+@media screen and (min-width: 834px) and (max-width: 1024px) and (orientation: portrait) {
     .bookContent {
         padding: 16px 80px;
     }
 }
 
-@media screen and (min-width: 834px) and (max-width: 1194px) and (orientation: landscape) {
+@media screen and (min-width: 834px) and (max-width: 1024px) and (orientation: landscape) {
     .bookContent {
         padding: 24px 80px;
         height: calc(100% - 90px);
@@ -288,7 +288,7 @@
 
 /* start table landscape */
 
-@media screen and (min-width: 1194px) {
+@media screen and (min-width: 1024px) {
     .container {
         display: none;
     }
@@ -400,7 +400,7 @@
 
 /* start desktop */
 
-@media screen and (min-width: 1195px) and (max-width: 1994px) {
+@media screen and (min-width: 1025px) and (max-width: 1994px) {
     .bookContent {
         /* z-index: 1; */
         height: calc(100dvh - 136px); /* header 56px - footer 48px - progressbar 32px */
