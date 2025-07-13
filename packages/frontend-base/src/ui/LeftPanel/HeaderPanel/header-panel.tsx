@@ -186,7 +186,7 @@ export const Nav = ({
               <div
                 style={{
                   marginTop: "128px",
-                  maxHeight: "calc(100vh - 200px)",
+                  maxHeight: "calc(100vh - 230px)",
                   overflowY: "auto",
                 }}
               >
