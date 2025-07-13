@@ -205,7 +205,8 @@
     justify-content: center;
     align-items: center;
     position: absolute;
-    bottom: 357px;
+    top: 50%;
+    transform: translateY(-50%);
     background: #000000b3;
     width: 44px;
     height: 44px;
@@ -257,7 +258,8 @@
         display: flex;
         justify-content: space-between;
         width: 100%;
-        bottom: 367px;
+        top: 50%;
+        transform: translateY(-50%);
         position: absolute;
         padding: 0 16px;
     }
