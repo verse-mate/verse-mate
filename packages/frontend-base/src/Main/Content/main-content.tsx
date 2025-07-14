@@ -4,7 +4,7 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import {
   fetchAllChaptersByBook,
@@ -209,6 +209,7 @@ export const MainContent = () => {
     const currentChapter = Number(verseId);
 
     if (totalChapters && currentChapter < totalChapters) {
+      resetInactivityTimer();
       saveSearchParams({
         verseId: String(currentChapter + 1),
       });
@@ -220,6 +221,7 @@ export const MainContent = () => {
     const currentChapter = Number(verseId);
 
     if (currentChapter > 1) {
+      resetInactivityTimer();
       saveSearchParams({
         verseId: String(currentChapter - 1),
       });
@@ -278,6 +280,53 @@ export const MainContent = () => {
       oldTestamentBooks.some((t) => t.n === bookName && t.b === bookId) ||
       newTestamentBooks.some((t) => t.n === bookName && t.b === bookId),
   );
+
+  const [buttonsVisible, setButtonsVisible] = useState(true);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bookContentRef = useRef<HTMLDivElement>(null);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+
+    setButtonsVisible(true);
+
+    inactivityTimerRef.current = setTimeout(() => {
+      setButtonsVisible(false);
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    const bookContentElement = bookContentRef.current;
+
+    if (bookContentElement) {
+      const handleScroll = () => {
+        resetInactivityTimer();
+      };
+
+      bookContentElement.addEventListener("scroll", handleScroll, {
+        passive: true,
+      });
+
+      resetInactivityTimer();
+
+      return () => {
+        bookContentElement.removeEventListener("scroll", handleScroll);
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
+        }
+      };
+    }
+  }, [resetInactivityTimer]);
+
+  useEffect(() => {
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -619,6 +668,7 @@ export const MainContent = () => {
                   <div
                     className={`${styles.bookContent}`}
                     {...handleMobileSwipe}
+                    ref={bookContentRef}
                   >
                     <MainText.Root>
                       <MainText.Content
@@ -630,7 +680,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) < chapters && (
                       <button
                         type="button"
-                        className={styles.nextChapterBtn}
+                        className={`${styles.nextChapterBtn} ${!buttonsVisible ? "hidden" : ""}`}
                         onClick={handleNextChapter}
                       >
                         <Icon.ChevronForward
@@ -641,7 +691,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) > 1 && (
                       <button
                         type="button"
-                        className={styles.previousChapterBtn}
+                        className={`${styles.previousChapterBtn} ${!buttonsVisible ? "hidden" : ""}`}
                         onClick={handlePreviousChapter}
                       >
                         <Icon.ChevronBackward

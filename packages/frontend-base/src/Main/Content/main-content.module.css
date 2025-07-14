@@ -212,6 +212,12 @@
     height: 40px;
     border-radius: 100%;
     padding: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nextChapterBtn.hidden, .previousChapterBtn.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .nextChapterBtn {
@@ -256,6 +262,12 @@
 
     .nextChapterBtn, .previousChapterBtn {
         top: 50%;
+        transition: none;
+    }
+
+    .nextChapterBtn.hidden, .previousChapterBtn.hidden {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .verseMateLogo {
