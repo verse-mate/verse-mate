@@ -283,7 +283,6 @@ export const MainContent = () => {
 
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bookContentRef = useRef<HTMLDivElement>(null);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -298,26 +297,38 @@ export const MainContent = () => {
   }, []);
 
   useEffect(() => {
-    const bookContentElement = bookContentRef.current;
+    const handleScroll = () => {
+      resetInactivityTimer();
+    };
 
-    if (bookContentElement) {
-      const handleScroll = () => {
-        resetInactivityTimer();
-      };
+    const scrollableElement = document.querySelector(
+      '[devin-scrollable="true"]',
+    );
 
-      bookContentElement.addEventListener("scroll", handleScroll, {
+    if (scrollableElement) {
+      scrollableElement.addEventListener("scroll", handleScroll, {
         passive: true,
       });
 
       resetInactivityTimer();
 
       return () => {
-        bookContentElement.removeEventListener("scroll", handleScroll);
+        scrollableElement.removeEventListener("scroll", handleScroll);
         if (inactivityTimerRef.current) {
           clearTimeout(inactivityTimerRef.current);
         }
       };
     }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    resetInactivityTimer();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
   }, [resetInactivityTimer]);
 
   useEffect(() => {
@@ -668,7 +679,6 @@ export const MainContent = () => {
                   <div
                     className={`${styles.bookContent}`}
                     {...handleMobileSwipe}
-                    ref={bookContentRef}
                   >
                     <MainText.Root>
                       <MainText.Content
@@ -680,7 +690,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) < chapters && (
                       <button
                         type="button"
-                        className={`${styles.nextChapterBtn} ${!buttonsVisible ? "hidden" : ""}`}
+                        className={`${styles.nextChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
                         onClick={handleNextChapter}
                       >
                         <Icon.ChevronForward
@@ -691,7 +701,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) > 1 && (
                       <button
                         type="button"
-                        className={`${styles.previousChapterBtn} ${!buttonsVisible ? "hidden" : ""}`}
+                        className={`${styles.previousChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
                         onClick={handlePreviousChapter}
                       >
                         <Icon.ChevronBackward

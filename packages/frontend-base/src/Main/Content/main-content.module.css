@@ -215,7 +215,7 @@
     transition: opacity 0.3s ease;
 }
 
-.nextChapterBtn.hidden, .previousChapterBtn.hidden {
+.hidden {
     opacity: 0;
     pointer-events: none;
 }
@@ -265,7 +265,7 @@
         transition: none;
     }
 
-    .nextChapterBtn.hidden, .previousChapterBtn.hidden {
+    .hidden {
         opacity: 1;
         pointer-events: auto;
     }
