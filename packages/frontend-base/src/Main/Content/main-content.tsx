@@ -209,7 +209,6 @@ export const MainContent = () => {
     const currentChapter = Number(verseId);
 
     if (totalChapters && currentChapter < totalChapters) {
-      resetInactivityTimer();
       saveSearchParams({
         verseId: String(currentChapter + 1),
       });
@@ -221,7 +220,6 @@ export const MainContent = () => {
     const currentChapter = Number(verseId);
 
     if (currentChapter > 1) {
-      resetInactivityTimer();
       saveSearchParams({
         verseId: String(currentChapter - 1),
       });
@@ -283,16 +281,17 @@ export const MainContent = () => {
 
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollableRef = useRef<HTMLDivElement>(null);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
     }
 
-    setButtonsVisible(true);
+    setButtonsVisible(() => true);
 
     inactivityTimerRef.current = setTimeout(() => {
-      setButtonsVisible(false);
+      setButtonsVisible(() => false);
     }, 3000);
   }, []);
 
@@ -301,33 +300,35 @@ export const MainContent = () => {
       resetInactivityTimer();
     };
 
-    const scrollableElement = document.querySelector(
-      '[devin-scrollable="true"]',
-    );
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
-    if (scrollableElement) {
-      scrollableElement.addEventListener("scroll", handleScroll, {
-        passive: true,
-      });
-
-      resetInactivityTimer();
-
-      return () => {
-        scrollableElement.removeEventListener("scroll", handleScroll);
-        if (inactivityTimerRef.current) {
-          clearTimeout(inactivityTimerRef.current);
-        }
-      };
+    const scrollElement = scrollableRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
     }
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
     resetInactivityTimer();
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      if (scrollElement) {
+        scrollElement.removeEventListener("scroll", handleScroll);
+      }
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
+    };
+  }, [resetInactivityTimer]);
+
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      resetInactivityTimer();
+    };
+
+    document.addEventListener("click", handleDocumentClick, { passive: true });
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
     };
   }, [resetInactivityTimer]);
 
@@ -679,6 +680,7 @@ export const MainContent = () => {
                   <div
                     className={`${styles.bookContent}`}
                     {...handleMobileSwipe}
+                    ref={scrollableRef}
                   >
                     <MainText.Root>
                       <MainText.Content
