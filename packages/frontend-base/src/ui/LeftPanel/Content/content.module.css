@@ -403,7 +403,7 @@
 @media screen and (min-width: 1025px) and (max-width: 1994px) {
     .bookContent {
         /* z-index: 1; */
-        height: calc(100dvh - 136px); /* header 56px - footer 48px - progressbar 32px */
+        height: calc(100dvh - 88px); /* header 56px - footer 48px (removed the footer, so for now i will remove the footer height as well) - progressbar 32px */
         padding: 24px 88px;
     }
 }
