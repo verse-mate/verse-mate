@@ -318,8 +318,7 @@ export const MainContent = () => {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [resetInactivityTimer]);
-
+  }, [resetInactivityTimer, scrollableRef.current]);
   useEffect(() => {
     const handleDocumentClick = () => {
       resetInactivityTimer();
