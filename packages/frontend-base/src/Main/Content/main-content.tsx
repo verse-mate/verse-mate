@@ -846,12 +846,17 @@ export const MainContent = () => {
           <PanelResizer startResize={startResize} />
 
           <RightPanel.Root
+            activeTab={activeTab}
             setActiveTab={setActiveTab}
             style={{
               width: `${rightWidth}%`,
             }}
           >
-            <RightPanel.Nav activeTab={activeTab} askVerseMate={askVerseMate} />
+            <RightPanel.Nav
+              activeTab={activeTab}
+              askVerseMate={askVerseMate}
+              setActiveTab={setActiveTab}
+            />
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
               explanation={explanation}
