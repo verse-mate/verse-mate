@@ -295,16 +295,29 @@ export const MainContent = () => {
     }, 3000);
   }, []);
 
+  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+
+  const scrollableCallbackRef = useCallback((node: HTMLElement | null) => {
+    //console.log("📋 Ref callback called with:", node);
+    setScrollElement(node);
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
+      //console.log("🔄 Scroll detected!");
       resetInactivityTimer();
     };
 
+    //console.log("🔧 Setting up scroll listeners...");
+    //console.log("📋 scrollElement:", scrollElement);
+
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    const scrollElement = scrollableRef.current;
     if (scrollElement) {
+      //console.log("✅ Adding scroll listener to element");
       scrollElement.addEventListener("scroll", handleScroll, { passive: true });
+    } else {
+      //console.log("❌ No scroll element found");
     }
 
     resetInactivityTimer();
@@ -318,7 +331,8 @@ export const MainContent = () => {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [resetInactivityTimer, scrollableRef.current]);
+  }, [resetInactivityTimer, scrollElement]);
+
   useEffect(() => {
     const handleDocumentClick = () => {
       resetInactivityTimer();
@@ -679,7 +693,7 @@ export const MainContent = () => {
                   <div
                     className={`${styles.bookContent}`}
                     {...handleMobileSwipe}
-                    ref={scrollableRef}
+                    ref={scrollableCallbackRef}
                   >
                     <MainText.Root>
                       <MainText.Content
