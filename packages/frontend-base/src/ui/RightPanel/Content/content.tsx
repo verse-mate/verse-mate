@@ -153,7 +153,7 @@ export const Content = ({
         </>
       )}
 
-      {/* <RadixTabs.Content className={styles.content} value="menu">
+      <RadixTabs.Content className={styles.content} value="menu">
         <div className={styles.moreOptionsContainer}>
           {session?.id ? (
             <ProfileButton link="/" />
@@ -163,7 +163,7 @@ export const Content = ({
             </LoginCard.Root>
           )}
         </div>
-      </RadixTabs.Content> */}
+      </RadixTabs.Content>
     </>
   );
 };

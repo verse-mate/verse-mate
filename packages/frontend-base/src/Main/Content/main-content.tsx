@@ -4,7 +4,7 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import {
   fetchAllChaptersByBook,
@@ -154,6 +154,16 @@ export const MainContent = () => {
     bibleVersion || "NASB1995",
   );
 
+  const accordionRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isDropdownOpenBook && accordionRef.current) {
+      if (!accordionRef.current.getAttribute("data-state")?.includes("open")) {
+        accordionRef.current.click();
+      }
+    }
+  }, [isDropdownOpenBook]);
+
   useEffect(() => {
     if (bookId && verseId && testament) {
       const testamentLabel = testamentLabelMap[testament];
@@ -265,6 +275,80 @@ export const MainContent = () => {
       newTestamentBooks.some((t) => t.n === bookName && t.b === bookId),
   );
 
+  const [buttonsVisible, setButtonsVisible] = useState(true);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollableRef = useRef<HTMLDivElement>(null);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+
+    setButtonsVisible(() => true);
+
+    inactivityTimerRef.current = setTimeout(() => {
+      setButtonsVisible(() => false);
+    }, 3000);
+  }, []);
+
+  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+
+  const scrollableCallbackRef = useCallback((node: HTMLElement | null) => {
+    //console.log("📋 Ref callback called with:", node);
+    setScrollElement(node);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      //console.log("🔄 Scroll detected!");
+      resetInactivityTimer();
+    };
+
+    //console.log("🔧 Setting up scroll listeners...");
+    //console.log("📋 scrollElement:", scrollElement);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    if (scrollElement) {
+      //console.log("✅ Adding scroll listener to element");
+      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
+    } else {
+      //console.log("❌ No scroll element found");
+    }
+
+    resetInactivityTimer();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollElement) {
+        scrollElement.removeEventListener("scroll", handleScroll);
+      }
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [resetInactivityTimer, scrollElement]);
+
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      resetInactivityTimer();
+    };
+
+    document.addEventListener("click", handleDocumentClick, { passive: true });
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
+  }, [resetInactivityTimer]);
+
+  useEffect(() => {
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <>
       <RadixTabs.Root
@@ -314,6 +398,7 @@ export const MainContent = () => {
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="book">
                       <Accordion.GroupedTrigger
+                        ref={accordionRef}
                         selectedContent={
                           selectedTestamentLabel &&
                           selectedBookName &&
@@ -418,6 +503,7 @@ export const MainContent = () => {
                                                 bookName,
                                                 verse,
                                               );
+                                              closeDropdownBook();
                                             }}
                                             selectedBook={String(bookId)}
                                             selectedVerse={String(verseId)}
@@ -502,6 +588,7 @@ export const MainContent = () => {
                                                 bookName,
                                                 verse,
                                               );
+                                              closeDropdownBook();
                                             }}
                                             selectedVerse={String(verseId)}
                                             selectedBook={String(bookId)}
@@ -603,6 +690,7 @@ export const MainContent = () => {
                   <div
                     className={`${styles.bookContent}`}
                     {...handleMobileSwipe}
+                    ref={scrollableCallbackRef}
                   >
                     <MainText.Root>
                       <MainText.Content
@@ -614,7 +702,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) < chapters && (
                       <button
                         type="button"
-                        className={styles.nextChapterBtn}
+                        className={`${styles.nextChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
                         onClick={handleNextChapter}
                       >
                         <Icon.ChevronForward
@@ -625,7 +713,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) > 1 && (
                       <button
                         type="button"
-                        className={styles.previousChapterBtn}
+                        className={`${styles.previousChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
                         onClick={handlePreviousChapter}
                       >
                         <Icon.ChevronBackward
@@ -755,12 +843,17 @@ export const MainContent = () => {
           <PanelResizer startResize={startResize} />
 
           <RightPanel.Root
+            activeTab={activeTab}
             setActiveTab={setActiveTab}
             style={{
               width: `${rightWidth}%`,
             }}
           >
-            <RightPanel.Nav activeTab={activeTab} askVerseMate={askVerseMate} />
+            <RightPanel.Nav
+              activeTab={activeTab}
+              askVerseMate={askVerseMate}
+              setActiveTab={setActiveTab}
+            />
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
               explanation={explanation}
