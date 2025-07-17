@@ -3,6 +3,7 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type RoleEnum from "database/src/models/public/RoleEnum";
 import type StatusEnum from "database/src/models/public/StatusEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import type { UserSession } from "../../../hooks/session";
 import { History } from "../../../ui/ConversationHistory";
 import { Chat } from "../../Chat";
 import { Explanation } from "../../Explanation";
@@ -11,7 +12,7 @@ import { LoginCard } from "../../LoginCard";
 import styles from "./content.module.css";
 
 type Props = {
-  session: UserSession;
+  session: UserSession | null;
   explanation:
     | {
         book_id?: number;

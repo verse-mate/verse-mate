@@ -82,9 +82,15 @@ const plugin = new Elysia()
         },
       )
       .get(
-        "/book/explanation/:bookId/:chapterNumber/:versionKey?",
-        async ({ params, store: { bibleService, promptService, db } }) => {
-          const { bookId, chapterNumber, versionKey = "NASB1995" } = params;
+        "/book/explanation/:bookId/:chapterNumber",
+        async ({
+          params,
+          store: { bibleService, promptService, db },
+          query,
+        }) => {
+          console.log("query", query);
+          const { bookId, chapterNumber } = params;
+          const { versionKey = "NASB1995" } = query;
 
           const explanation = await bibleService.getExplanation({
             book_id: Number(bookId),
@@ -162,6 +168,11 @@ const plugin = new Elysia()
           }
 
           return { explanation };
+        },
+        {
+          query: t.Object({
+            versionKey: t.Optional(t.String()),
+          }),
         },
       )
       .get("/testaments", async ({ store: { bibleService } }) => {

@@ -55,7 +55,7 @@ export const MainContent = () => {
     verseId,
     testament,
     explanationType,
-    bibleVersion = "NASB1995",
+    bibleVersion,
     conversationId,
   } = useGetSearchParams();
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
@@ -68,6 +68,7 @@ export const MainContent = () => {
     bookId,
     Number(verseId),
     explanationType,
+    bibleVersion,
   );
 
   const { lastRead, startTimer } = useLastRead(

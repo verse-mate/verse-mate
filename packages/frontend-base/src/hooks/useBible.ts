@@ -64,7 +64,8 @@ export const fetchBookVerse = (bookId: number, chapterId: number) => {
 export const fetchExplanation = (
   bookId: number,
   chapterId: number,
-  explanationType: string | null,
+  explanationType?: string,
+  bibleVersion?: string,
 ) => {
   const parsedBookId = String(bookId).padStart(2, "0");
   const parsedChapterId = String(chapterId).padStart(2, "0");
@@ -76,13 +77,19 @@ export const fetchExplanation = (
     isFetching,
     isLoading,
   } = useQuery({
-    queryKey: ["explanation", bookId, chapterId, explanationType],
+    queryKey: ["explanation", bookId, chapterId, explanationType, bibleVersion],
     queryFn: async () => {
+      console.log("bibleVersion", bibleVersion);
+
       const response = await api.bible.book
         .explanation({
           bookId: parsedBookId,
         })({ chapterNumber: parsedChapterId })
-        .get();
+        .get({
+          query: {
+            versionKey: bibleVersion,
+          },
+        });
 
       const foundExplanation = response.data?.explanation?.find(
         (exp) => exp.type === explanationType,

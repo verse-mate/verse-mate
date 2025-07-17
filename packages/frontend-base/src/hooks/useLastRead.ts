@@ -3,6 +3,7 @@ import { api } from "backend-api";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { UserSession } from "./session";
 
 type LastRead = {
   result: {
@@ -21,7 +22,7 @@ type LastRead = {
 };
 
 export const useLastRead = (
-  session: UserSession,
+  session: UserSession | null,
   explanation_id?: number | null,
 ) => {
   const [lastRead, setLastRead] = useState<LastRead | null>(null);

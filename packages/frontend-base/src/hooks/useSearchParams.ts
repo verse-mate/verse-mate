@@ -32,7 +32,7 @@ export const useSaveSearchParams = () => {
     if (conversationId) searchParams.set("conversationId", conversationId);
     if (explanationId) searchParams.set("explanationId", explanationId);
     if (explanationType) searchParams.set("explanationType", explanationType);
-    if (bibleVersion) searchParams.set("explanationType", bibleVersion);
+    if (bibleVersion) searchParams.set("bibleVersion", bibleVersion);
 
     const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
 
