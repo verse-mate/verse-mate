@@ -154,17 +154,13 @@ export const MainContent = () => {
     bibleVersion || "NASB1995",
   );
 
+  const accordionRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
-    if (isDropdownOpenBook) {
-      setTimeout(() => {
-        const accordionTrigger = document.querySelector(".accordionTrigger");
-        if (
-          accordionTrigger &&
-          !accordionTrigger.getAttribute("data-state")?.includes("open")
-        ) {
-          (accordionTrigger as HTMLElement).click();
-        }
-      }, 100);
+    if (isDropdownOpenBook && accordionRef.current) {
+      if (!accordionRef.current.getAttribute("data-state")?.includes("open")) {
+        accordionRef.current.click();
+      }
     }
   }, [isDropdownOpenBook]);
 
@@ -402,6 +398,7 @@ export const MainContent = () => {
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="book">
                       <Accordion.GroupedTrigger
+                        ref={accordionRef}
                         selectedContent={
                           selectedTestamentLabel &&
                           selectedBookName &&
