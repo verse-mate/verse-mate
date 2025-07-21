@@ -50,6 +50,7 @@ export const AccordionSelectWithFilter: Story = () => {
     handleChange: leftPanelHandleChange,
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
+    resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
   const book = testaments?.find((testament) => testament.b === bookId)?.n;
@@ -425,11 +426,13 @@ export const GroupedSelect: Story = () => {
     >
       <SelectDropdown.GroupedSelect.GroupedRoot>
         <SelectDropdown.GroupedSelect.GroupedTrigger
-          label="Select a Verse"
+          selectedBook={null}
+          selectedVerse={null}
+          defaultPlaceholder="Select a Verse"
           isOpen={dropdownIsOpened}
           toggleDropdown={toggleMobileDropdown}
           onClose={closeDropdown}
-          contentRef={contentRef}
+          resetFilter={() => {}}
         />
 
         {dropdownIsOpened && (

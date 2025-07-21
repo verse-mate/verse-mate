@@ -28,7 +28,7 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     handleVerseSelect,
     handleBibleVersionSelect,
     selectedBibleVersion,
-  } = useSelectedState(setIsOpen);
+  } = useSelectedState(setIsOpen, resetFilter);
 
   // Reset filter when navigation changes (book or chapter)
   useEffect(() => {
@@ -69,6 +69,7 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     handleBibleVersionSelect,
     selectedBibleVersion,
     toggleDropdown,
+    resetFilter,
   };
 };
 
@@ -103,7 +104,10 @@ export const useFilter = (onReset?: () => void) => {
   return { filter, handleChange, resetFilter };
 };
 
-export const useSelectedState = (setIsOpen: (open: boolean) => void) => {
+export const useSelectedState = (
+  setIsOpen: (open: boolean) => void,
+  resetFilter?: () => void,
+) => {
   const [selectedTab, setSelectedTab] = useState<"OT" | "NT">("NT");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedVerse, setSelectedVerse] = useState<string | null>(null);
@@ -112,9 +116,15 @@ export const useSelectedState = (setIsOpen: (open: boolean) => void) => {
   >(null);
   const { saveSearchParams, saveBibleVersionOnURL } = useSaveSearchParams();
 
-  const handleTabChange = useCallback((value: string) => {
-    setSelectedTab(value as "OT" | "NT");
-  }, []);
+  const handleTabChange = useCallback(
+    (value: string) => {
+      setSelectedTab(value as "OT" | "NT");
+      if (resetFilter) {
+        resetFilter();
+      }
+    },
+    [resetFilter],
+  );
 
   const handleVerseSelect = useCallback(
     (

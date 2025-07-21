@@ -28,6 +28,7 @@ type Props = {
   leftPanelHandleTabChange: (value: string) => void;
   leftPanelDebouncedFilter: string;
   leftPanelHandleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  leftPanelResetFilter: () => void;
   leftPanelFilteredBooks: string[];
   oldTestamentBooks: {
     b: number;
@@ -103,6 +104,7 @@ export const Nav = ({
   leftPanelSelectedTab,
   leftPanelDebouncedFilter,
   leftPanelHandleChange,
+  leftPanelResetFilter,
   leftPanelFilteredBooks,
   oldTestamentBooks,
   newTestamentBooks,
@@ -124,10 +126,10 @@ export const Nav = ({
   setHoverRating,
   saveSearchParams,
 }: Props) => {
-  const fixedItem = leftPanelFilteredBooks.some(
-    (bookName) =>
-      oldTestamentBooks.some((t) => t.n === bookName && t.b === bookId) ||
-      newTestamentBooks.some((t) => t.n === bookName && t.b === bookId),
+  const fixedItem = bookId > 0;
+
+  const selectedBookDetails = [...oldTestamentBooks, ...newTestamentBooks].find(
+    (book) => book.b === bookId,
   );
 
   return (
@@ -146,6 +148,7 @@ export const Nav = ({
         <SelectDropdown.Root
           open={leftPanelIsOpen}
           onOpenChange={leftPanelSetIsOpen}
+          resetFilter={leftPanelResetFilter}
         >
           {!book ? (
             <SelectDropdown.GroupedSelect.Skeleton />
@@ -171,8 +174,16 @@ export const Nav = ({
               onValueChange={leftPanelHandleTabChange}
             >
               <Tabs.List>
-                <Tabs.Trigger value="OT" label="Old Testament" />
-                <Tabs.Trigger value="NT" label="New Testament" />
+                <Tabs.Trigger
+                  value="OT"
+                  label="Old Testament"
+                  resetFilter={leftPanelResetFilter}
+                />
+                <Tabs.Trigger
+                  value="NT"
+                  label="New Testament"
+                  resetFilter={leftPanelResetFilter}
+                />
               </Tabs.List>
 
               <FilterInput
@@ -196,6 +207,32 @@ export const Nav = ({
                       fixedItem ? { position: "relative", marginTop: 48 } : {}
                     }
                   >
+                    {fixedItem && selectedBookDetails && (
+                      <Accordion.Item
+                        value={selectedBookDetails.n}
+                        key={`selected-${selectedBookDetails.n}`}
+                      >
+                        <Accordion.Trigger
+                          label={selectedBookDetails.n}
+                          highlightBook={true}
+                        />
+                        <Accordion.Content styles={{ position: "relative" }}>
+                          <VerseGrid
+                            testament={selectedBookDetails.t}
+                            bookId={String(selectedBookDetails.b)}
+                            bookName={selectedBookDetails.n}
+                            verses={Array.from(
+                              { length: selectedBookDetails.c },
+                              (_, i) => (i + 1).toString(),
+                            )}
+                            onVerseSelect={leftPanelHandleVerseSelect}
+                            selectedVerse={String(verseId)}
+                            selectedBook={String(bookId)}
+                          />
+                        </Accordion.Content>
+                      </Accordion.Item>
+                    )}
+
                     {leftPanelFilteredBooks
                       .map((bookName) => {
                         const allBooks = [
@@ -206,25 +243,20 @@ export const Nav = ({
                       })
                       .filter((book): book is NonNullable<typeof book> => {
                         if (!book) return false;
+                        if (book.b === bookId) return false;
                         return leftPanelDebouncedFilter.trim()
                           ? true
                           : book.t === "OT";
                       })
-                      .sort((a, b) => {
-                        if (a.b === bookId) return -1;
-                        if (b.b === bookId) return 1;
-                        return 0;
-                      })
+                      .sort((a, b) => a.b - b.b)
                       .map((book) => {
                         return (
                           <Accordion.Item value={book.n} key={book.n}>
                             <Accordion.Trigger
                               label={book.n}
-                              highlightBook={bookId === book.b}
+                              highlightBook={false}
                             />
-                            <Accordion.Content
-                              styles={fixedItem ? { position: "relative" } : {}}
-                            >
+                            <Accordion.Content>
                               <VerseGrid
                                 testament={book.t}
                                 bookId={String(book.b)}
@@ -249,6 +281,32 @@ export const Nav = ({
                       fixedItem ? { position: "relative", marginTop: 48 } : {}
                     }
                   >
+                    {fixedItem && selectedBookDetails && (
+                      <Accordion.Item
+                        value={selectedBookDetails.n}
+                        key={`selected-${selectedBookDetails.n}`}
+                      >
+                        <Accordion.Trigger
+                          label={selectedBookDetails.n}
+                          highlightBook={true}
+                        />
+                        <Accordion.Content styles={{ position: "relative" }}>
+                          <VerseGrid
+                            testament={selectedBookDetails.t}
+                            bookId={String(selectedBookDetails.b)}
+                            bookName={selectedBookDetails.n}
+                            verses={Array.from(
+                              { length: selectedBookDetails.c },
+                              (_, i) => (i + 1).toString(),
+                            )}
+                            onVerseSelect={leftPanelHandleVerseSelect}
+                            selectedVerse={String(verseId)}
+                            selectedBook={String(bookId)}
+                          />
+                        </Accordion.Content>
+                      </Accordion.Item>
+                    )}
+
                     {leftPanelFilteredBooks
                       .map((bookName) => {
                         const allBooks = [
@@ -259,21 +317,18 @@ export const Nav = ({
                       })
                       .filter((book): book is NonNullable<typeof book> => {
                         if (!book) return false;
+                        if (book.b === bookId) return false;
                         return leftPanelDebouncedFilter.trim()
                           ? true
                           : book.t === "NT";
                       })
-                      .sort((a, b) => {
-                        if (a.b === bookId) return -1;
-                        if (b.b === bookId) return 1;
-                        return 0;
-                      })
+                      .sort((a, b) => a.b - b.b)
                       .map((book) => {
                         return (
                           <Accordion.Item value={book.n} key={book.n}>
                             <Accordion.Trigger
                               label={book.n}
-                              highlightBook={bookId === book.b}
+                              highlightBook={false}
                             />
                             <Accordion.Content>
                               <VerseGrid

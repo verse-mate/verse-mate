@@ -5,8 +5,7 @@ type GroupedContentProps = {
   style?: React.CSSProperties;
   className?: string;
   isOpen: boolean;
-  onClose: () => void;
-  contentRef: React.RefObject<HTMLDivElement>;
+  align?: string;
 };
 
 export const GroupedContent = ({
@@ -14,13 +13,11 @@ export const GroupedContent = ({
   style,
   className,
   isOpen,
-  contentRef,
 }: GroupedContentProps) => {
   if (!isOpen) return null;
 
   return (
     <div
-      ref={contentRef}
       className={`${styles.container} ${className} ${isOpen ? styles.open : styles.hidden}`}
       style={style}
     >
