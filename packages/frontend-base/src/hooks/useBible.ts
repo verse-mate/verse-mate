@@ -79,7 +79,7 @@ export const fetchExplanation = (
   } = useQuery({
     queryKey: ["explanation", bookId, chapterId, explanationType, bibleVersion],
     queryFn: async () => {
-      console.log("bibleVersion", bibleVersion);
+      const versionKey = bibleVersion ?? "NASB1995";
 
       const response = await api.bible.book
         .explanation({
@@ -87,7 +87,7 @@ export const fetchExplanation = (
         })({ chapterNumber: parsedChapterId })
         .get({
           query: {
-            versionKey: bibleVersion,
+            versionKey,
           },
         });
 

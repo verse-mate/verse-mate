@@ -88,7 +88,6 @@ const plugin = new Elysia()
           store: { bibleService, promptService, db },
           query,
         }) => {
-          console.log("query", query);
           const { bookId, chapterNumber } = params;
           const { versionKey = "NASB1995" } = query;
 
@@ -102,7 +101,11 @@ const plugin = new Elysia()
             .selectFrom("bible_versions")
             .select(["id", "language_code"])
             .where("version_key", "=", versionKey)
-            .executeTakeFirstOrThrow();
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
 
           const missingTypes = Object.keys(ExplanationTypeEnum).filter(
             (type) => !explanation?.some((exp) => exp.type === type),
