@@ -2,7 +2,8 @@
 
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
+import { filterBibleBooks } from "../utils/search";
+import { useSaveSearchParams } from "./useSearchParams";
 
 type Testament = {
   b: number;
@@ -47,17 +48,8 @@ export const useSelectDropdown = (testaments?: Testaments) => {
 
   const filteredTestaments: Testament[] = useMemo(() => {
     if (!testaments) return [];
-
-    const searchFiltered = testaments.filter((t) =>
-      t.n.toLowerCase().includes(debouncedFilter.toLowerCase()),
-    );
-
-    if (debouncedFilter.trim()) {
-      return searchFiltered;
-    }
-
-    return searchFiltered.filter((t) => t.t === selectedTab);
-  }, [testaments, debouncedFilter, selectedTab]);
+    return filterBibleBooks(testaments, debouncedFilter);
+  }, [testaments, debouncedFilter]);
   // Just the names, for backwards compatibility
   const filteredBooks: string[] = filteredTestaments.map((t) => t.n);
 
