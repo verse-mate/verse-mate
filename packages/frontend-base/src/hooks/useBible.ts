@@ -41,7 +41,11 @@ export const fetchAllChaptersByBook = (bookId?: number | null) => {
   return { chapters, isLoading };
 };
 
-export const fetchBookVerse = (bookId: number, chapterId: number) => {
+export const fetchBookVerse = (
+  bookId: number,
+  chapterId: number,
+  bibleVersion: string,
+) => {
   const parsedBookId = String(bookId).padStart(2, "0");
   const parsedChapterId = String(chapterId).padStart(2, "0");
 
@@ -50,12 +54,18 @@ export const fetchBookVerse = (bookId: number, chapterId: number) => {
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["bookVerse", bookId, chapterId],
-    queryFn: async () =>
-      await api.bible
+    queryKey: ["bookVerse", bookId, chapterId, bibleVersion],
+    queryFn: async () => {
+      const versionKey = bibleVersion ?? "NASB1995";
+      return await api.bible
         .book({ bookId: parsedBookId })({ chapterNumber: parsedChapterId })
-        .get()
-        .then((response) => response.data?.book),
+        .get({
+          query: {
+            versionKey,
+          },
+        })
+        .then((response) => response.data?.book);
+    },
   });
 
   return { bookVerseData, error, isLoading };

@@ -20,7 +20,10 @@ export class BibleService {
   async getBook({
     book_id,
     chapter_number,
-  }: Pick<ChapterDto, "book_id" | "chapter_number">) {
+    version_id,
+  }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
+    version_id: string;
+  }) {
     const { book } = await this.bibleRepository.getBook({ book_id });
     if (!book) return { message: "Book not found" };
 
@@ -36,6 +39,7 @@ export class BibleService {
 
     const { verses } = await this.bibleRepository.getVerses({
       chapter_id: chapter.chapter_id,
+      version_id,
     });
 
     return { book: this.formattedBook({ book, chapter, subtitles, verses }) };

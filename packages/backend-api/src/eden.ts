@@ -3,12 +3,16 @@ import type { App } from "backend";
 import { $env } from "frontend-envs";
 
 const fetcher = async (url: string | URL | Request, init?: RequestInit) => {
-  let pathname = "";
-  if (!(url instanceof Request)) {
-    pathname = new URL(url).pathname;
-  }
+  // Converte para URL em qualquer caso
+  const original =
+    url instanceof Request
+      ? new URL(url.url)
+      : new URL(url.toString(), window.location.origin); // precisa de base se for relativo
 
-  return fetch(`${$env.get().apiUrl}${pathname}`, {
+  // pathname + query   (ex.: /books?limit=10&page=2)
+  const pathWithQuery = `${original.pathname}${original.search}`;
+
+  return fetch(`${$env.get().apiUrl}${pathWithQuery}`, {
     ...init,
     headers: {
       ...{ "Access-Control-Allow-Origin": "*" },

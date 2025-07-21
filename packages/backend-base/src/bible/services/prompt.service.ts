@@ -11,10 +11,12 @@ export class PromptService {
   async referenceBook({
     book_id,
     chapter_number,
-  }: { book_id: number; chapter_number: number }) {
+    version_id,
+  }: { book_id: number; chapter_number: number; version_id: string }) {
     const { book } = await this.bibleService.getBook({
       book_id,
       chapter_number,
+      version_id,
     });
 
     if (!book) {

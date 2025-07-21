@@ -70,15 +70,33 @@ const plugin = new Elysia()
       })
       .get(
         "/book/:bookId/:chapterNumber",
-        async ({ params, store: { bibleService } }) => {
+        async ({ params, store: { bibleService, db }, query }) => {
           const { bookId, chapterNumber } = params;
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            throw new Error("Invalid bible version");
+          }
 
           const book = await bibleService.getBook({
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
+            version_id: version.id,
           });
 
           return book;
+        },
+        {
+          query: t.Object({
+            versionKey: t.Optional(t.String()),
+          }),
         },
       )
       .get(
@@ -123,6 +141,7 @@ const plugin = new Elysia()
                 const { reference } = await promptService.referenceBook({
                   book_id: Number(bookId),
                   chapter_number: Number(chapterNumber),
+                  version_id: version.id,
                 });
 
                 try {
@@ -225,12 +244,20 @@ const plugin = new Elysia()
       )
       .post(
         "/book/new-conversation",
-        async ({ body, store: { chatService, bibleService } }) => {
+        async ({ body, store: { chatService, bibleService, db } }) => {
           if (!body.user_id) return { message: "User ID is required" };
+
+          // TODO: propery query
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .executeTakeFirstOrThrow();
 
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            version_id: version.id,
           });
 
           if (!book) {
@@ -429,10 +456,18 @@ const plugin = new Elysia()
       )
       .post(
         "/book/ask-verse-mate/save-ai-message",
-        async ({ body, store: { chatService, bibleService } }) => {
+        async ({ body, store: { chatService, bibleService, db } }) => {
+          // TODO: propery query
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .executeTakeFirstOrThrow();
+
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            version_id: version.id,
           });
 
           if (!book) {

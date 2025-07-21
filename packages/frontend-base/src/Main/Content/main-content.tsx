@@ -63,7 +63,11 @@ export const MainContent = () => {
 
   const { testaments } = fetchAllTestaments();
   const { chapters } = fetchAllChaptersByBook(bookId);
-  const { bookVerseData } = fetchBookVerse(bookId, Number(verseId));
+  const { bookVerseData } = fetchBookVerse(
+    bookId,
+    Number(verseId),
+    bibleVersion,
+  );
   const { explanation } = fetchExplanation(
     bookId,
     Number(verseId),
