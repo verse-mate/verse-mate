@@ -12,7 +12,7 @@
 
 @media screen and (min-width: 1194px) {
     .container{
-        display: flex;
+        display: none;
     }
 }
 
@@ -22,7 +22,7 @@
 
 @media screen and (min-width: 1195px) and (max-width: 1994px) {
     .container{
-        display: flex;
+        display: none;
     }
 }
 

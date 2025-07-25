@@ -1,5 +1,6 @@
 import * as RadixSelect from "@radix-ui/react-select";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import { useCallback } from "react";
 import styles from "./root.module.css";
 
 type RootProps = {
@@ -9,6 +10,7 @@ type RootProps = {
   open?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   onValueChange?: (value: ExplanationTypeEnum) => void;
+  resetFilter?: () => void;
 };
 
 export const Root = ({
@@ -18,12 +20,23 @@ export const Root = ({
   open,
   onOpenChange,
   onValueChange,
+  resetFilter,
 }: RootProps) => {
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      if (!isOpen && resetFilter) {
+        resetFilter();
+      }
+      onOpenChange?.(isOpen);
+    },
+    [onOpenChange, resetFilter],
+  );
+
   return (
     <RadixSelect.Root
       defaultValue={defaultValue}
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       onValueChange={onValueChange}
     >
       <div className={styles.container}>

@@ -69,7 +69,7 @@
   }
 }
 
-@media screen and (min-width: 834px) and (max-width: 1194px) and (
+@media screen and (min-width: 834px) and (max-width: 1024px) and (
     orientation: portrait
   ) {
   .fixedItem {
@@ -80,12 +80,12 @@
   }
 }
 
-@media screen and (min-width: 834px) and (max-width: 1194px) and (
+@media screen and (min-width: 834px) and (max-width: 1024px) and (
     orientation: landscape
   ) {
   .fixedItem {
     position: fixed;
-    top: 144px;
+    top: 248px;
     left: 0;
     z-index: 10;
   }
@@ -95,7 +95,7 @@
 
 /* start table landscape */
 
-@media screen and (min-width: 1194px) {
+@media screen and (min-width: 1024px) {
   .fixedItem {
     position: fixed;
     top: 144px;
@@ -108,7 +108,7 @@
 
 /* start desktop */
 
-@media screen and (min-width: 1195px) and (max-width: 1994px) {
+@media screen and (min-width: 1025px) and (max-width: 1994px) {
   .fixedItem {
     position: fixed;
     top: 144px;

@@ -3,21 +3,26 @@ import { FilterIcon } from "../../../Icons";
 import styles from "./grouped-trigger.module.css";
 
 type GroupedTriggerProps = {
+  selectedBook: string | null;
+  selectedVerse: string | null;
+  defaultPlaceholder: string;
   isOpen: boolean;
   toggleDropdown: () => void;
   onClose: () => void;
-  contentRef: React.RefObject<HTMLDivElement>;
-  label: string;
+  resetFilter: () => void;
 };
 
 export const GroupedTrigger = ({
+  selectedBook,
+  selectedVerse,
+  defaultPlaceholder,
   isOpen,
   toggleDropdown,
   onClose,
-  contentRef,
-  label,
+  resetFilter,
 }: GroupedTriggerProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -27,26 +32,45 @@ export const GroupedTrigger = ({
         contentRef.current &&
         !contentRef.current.contains(event.target as Node)
       ) {
-        onClose();
+        if (resetFilter) {
+          resetFilter();
+        }
+        if (onClose) {
+          onClose();
+        }
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [onClose, contentRef]);
+  }, [isOpen, onClose, resetFilter]);
+
+  const displayText =
+    selectedBook && selectedVerse
+      ? `${selectedBook} ${selectedVerse}`
+      : selectedBook || defaultPlaceholder;
+
+  const handleToggleClick = () => {
+    if (isOpen && resetFilter) {
+      resetFilter();
+    }
+    toggleDropdown();
+  };
 
   return (
     <button
       ref={buttonRef}
       type="button"
-      onClick={toggleDropdown}
+      onClick={handleToggleClick}
       className={styles.trigger}
       data-state={isOpen ? "open" : "closed"}
     >
-      {label}
+      {displayText}
     </button>
   );
 };

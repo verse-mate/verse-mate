@@ -13,9 +13,10 @@ import styles from "./header-panel.module.css";
 type Props = {
   activeTab: string;
   askVerseMate: boolean;
+  setActiveTab: (value: string) => void;
 };
 
-export const Nav = ({ activeTab, askVerseMate }: Props) => {
+export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
   const queryClient = useQueryClient();
   const { explanationType } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
@@ -99,12 +100,22 @@ export const Nav = ({ activeTab, askVerseMate }: Props) => {
           </>
         )}
 
-        {/* <RadixTabs.Trigger className={styles.trigger} value="menu"> */}
-        <Icon.HamburgerIcon
-          className={`${styles.active}`}
-          style={{ fill: "white" }}
-        />
-        {/* </RadixTabs.Trigger> */}
+        <button
+          type="button"
+          className={styles.trigger}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const targetTab = activeTab === "menu" ? "explanation" : "menu";
+            setActiveTab(targetTab);
+          }}
+          style={{ position: "relative", zIndex: 9999 }}
+        >
+          <Icon.HamburgerIcon
+            className={`${styles.active}`}
+            style={{ fill: "white" }}
+          />
+        </button>
       </div>
     </RadixTabs.List>
   );
