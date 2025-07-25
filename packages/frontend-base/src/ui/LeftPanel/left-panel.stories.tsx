@@ -99,6 +99,7 @@ export const Main: Story = () => {
     handleChange: leftPanelHandleChange,
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
+    resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
   const { progress } = useProgressBar({
@@ -203,6 +204,7 @@ export const Main: Story = () => {
                 label="Book: "
                 open={leftPanelIsOpen}
                 onOpenChange={leftPanelSetIsOpen}
+                resetFilter={leftPanelResetFilter}
               >
                 <SelectDropdown.Trigger
                   selectedBook={leftPanelSelectedBook || book || null}
@@ -219,8 +221,16 @@ export const Main: Story = () => {
                     onValueChange={leftPanelHandleTabChange}
                   >
                     <Tabs.List>
-                      <Tabs.Trigger value="OT" label="Old Testament" />
-                      <Tabs.Trigger value="NT" label="New Testament" />
+                      <Tabs.Trigger
+                        value="OT"
+                        label="Old Testament"
+                        resetFilter={leftPanelResetFilter}
+                      />
+                      <Tabs.Trigger
+                        value="NT"
+                        label="New Testament"
+                        resetFilter={leftPanelResetFilter}
+                      />
                     </Tabs.List>
 
                     <FilterInput
@@ -240,81 +250,73 @@ export const Main: Story = () => {
                     >
                       <Tabs.Content value="OT">
                         <Accordion.Root>
-                          {leftPanelFilteredBooks
-                            .filter((bookName) =>
-                              oldTestamentBooks.some((t) => t.n === bookName),
-                            )
-                            .map((bookName) => {
-                              const book = oldTestamentBooks.find(
-                                (t) => t.n === bookName,
-                              );
-                              if (!book) return null;
+                          {leftPanelFilteredBooks.map((bookName) => {
+                            const book = oldTestamentBooks.find(
+                              (t) => t.n === bookName,
+                            );
+                            if (!book) return null;
 
-                              return (
-                                <Accordion.Item value={book.n} key={book.n}>
-                                  <Accordion.Trigger
-                                    label={book.n}
-                                    highlightBook={
-                                      leftPanelSelectedBook === book.n
-                                    }
+                            return (
+                              <Accordion.Item value={book.n} key={book.n}>
+                                <Accordion.Trigger
+                                  label={book.n}
+                                  highlightBook={
+                                    leftPanelSelectedBook === book.n
+                                  }
+                                />
+                                <Accordion.Content>
+                                  <VerseGrid
+                                    testament={book.t as TestamentEnum}
+                                    bookId={String(book.b)}
+                                    bookName={book.n}
+                                    verses={Array.from(
+                                      { length: book.c },
+                                      (_, i) => (i + 1).toString(),
+                                    )}
+                                    onVerseSelect={leftPanelHandleVerseSelect}
+                                    selectedVerse={leftPanelSelectedVerse}
+                                    selectedBook={leftPanelSelectedBook}
                                   />
-                                  <Accordion.Content>
-                                    <VerseGrid
-                                      testament={book.t as TestamentEnum}
-                                      bookId={String(book.b)}
-                                      bookName={book.n}
-                                      verses={Array.from(
-                                        { length: book.c },
-                                        (_, i) => (i + 1).toString(),
-                                      )}
-                                      onVerseSelect={leftPanelHandleVerseSelect}
-                                      selectedVerse={leftPanelSelectedVerse}
-                                      selectedBook={leftPanelSelectedBook}
-                                    />
-                                  </Accordion.Content>
-                                </Accordion.Item>
-                              );
-                            })}
+                                </Accordion.Content>
+                              </Accordion.Item>
+                            );
+                          })}
                         </Accordion.Root>
                       </Tabs.Content>
 
                       <Tabs.Content value="NT">
                         <Accordion.Root>
-                          {leftPanelFilteredBooks
-                            .filter((bookName) =>
-                              newTestamentBooks.some((t) => t.n === bookName),
-                            )
-                            .map((bookName) => {
-                              const book = newTestamentBooks.find(
-                                (t) => t.n === bookName,
-                              );
-                              if (!book) return null;
+                          {leftPanelFilteredBooks.map((bookName) => {
+                            const book = newTestamentBooks.find(
+                              (t) => t.n === bookName,
+                            );
+                            if (!book) return null;
 
-                              return (
-                                <Accordion.Item value={book.n} key={book.n}>
-                                  <Accordion.Trigger
-                                    label={book.n}
-                                    highlightBook={
-                                      leftPanelSelectedBook === book.n
-                                    }
+                            return (
+                              <Accordion.Item value={book.n} key={book.n}>
+                                <Accordion.Trigger
+                                  label={book.n}
+                                  highlightBook={
+                                    leftPanelSelectedBook === book.n
+                                  }
+                                />
+                                <Accordion.Content>
+                                  <VerseGrid
+                                    testament={book.t as TestamentEnum}
+                                    bookId={String(book.b)}
+                                    bookName={book.n}
+                                    verses={Array.from(
+                                      { length: book.c },
+                                      (_, i) => (i + 1).toString(),
+                                    )}
+                                    onVerseSelect={leftPanelHandleVerseSelect}
+                                    selectedVerse={leftPanelSelectedVerse}
+                                    selectedBook={leftPanelSelectedBook}
                                   />
-                                  <Accordion.Content>
-                                    <VerseGrid
-                                      testament={book.t as TestamentEnum}
-                                      bookId={String(book.b)}
-                                      bookName={book.n}
-                                      verses={Array.from(
-                                        { length: book.c },
-                                        (_, i) => (i + 1).toString(),
-                                      )}
-                                      onVerseSelect={leftPanelHandleVerseSelect}
-                                      selectedVerse={leftPanelSelectedVerse}
-                                      selectedBook={leftPanelSelectedBook}
-                                    />
-                                  </Accordion.Content>
-                                </Accordion.Item>
-                              );
-                            })}
+                                </Accordion.Content>
+                              </Accordion.Item>
+                            );
+                          })}
                         </Accordion.Root>
                       </Tabs.Content>
                     </div>

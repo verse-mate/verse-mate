@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import styles from "./filter-input.module.css";
 
 interface FilterInputProps {
@@ -15,6 +16,16 @@ export const FilterInput: React.FC<FilterInputProps> = ({
   handleChange,
   placeholder,
 }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (filterable) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [filterable]);
+
   if (!filterable) return null;
   return (
     <div
@@ -26,6 +37,7 @@ export const FilterInput: React.FC<FilterInputProps> = ({
       }
     >
       <input
+        ref={inputRef}
         className={styles.filterInput}
         type="text"
         placeholder={placeholder}
