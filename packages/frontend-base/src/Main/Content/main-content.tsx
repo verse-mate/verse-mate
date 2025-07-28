@@ -292,11 +292,19 @@ export const MainContent = () => {
     }, 3000);
   }, []);
 
-  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+  const [scrollElements, setScrollElements] = useState<Set<HTMLElement>>(
+    new Set(),
+  );
 
   const scrollableCallbackRef = useCallback((node: HTMLElement | null) => {
     //console.log("📋 Ref callback called with:", node);
-    setScrollElement(node);
+    setScrollElements((prev) => {
+      const newSet = new Set(prev);
+      if (node) {
+        newSet.add(node);
+      }
+      return newSet;
+    });
   }, []);
 
   useEffect(() => {
@@ -306,29 +314,27 @@ export const MainContent = () => {
     };
 
     //console.log("🔧 Setting up scroll listeners...");
-    //console.log("📋 scrollElement:", scrollElement);
+    //console.log("📋 scrollElements:", scrollElements);
 
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    if (scrollElement) {
+    scrollElements.forEach((element) => {
       //console.log("✅ Adding scroll listener to element");
-      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
-    } else {
-      //console.log("❌ No scroll element found");
-    }
+      element.addEventListener("scroll", handleScroll, { passive: true });
+    });
 
     resetInactivityTimer();
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      if (scrollElement) {
-        scrollElement.removeEventListener("scroll", handleScroll);
-      }
+      scrollElements.forEach((element) => {
+        element.removeEventListener("scroll", handleScroll);
+      });
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [resetInactivityTimer, scrollElement]);
+  }, [resetInactivityTimer, scrollElements]);
 
   useEffect(() => {
     const handleDocumentClick = () => {
@@ -910,6 +916,8 @@ export const MainContent = () => {
               handlePreviousChapter={handlePreviousChapter}
               progress={progress}
               chapters={chapters}
+              buttonsVisible={buttonsVisible}
+              scrollableCallbackRef={scrollableCallbackRef}
             />
           </LeftPanel.Root>
 

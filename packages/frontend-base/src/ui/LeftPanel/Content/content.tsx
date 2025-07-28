@@ -37,6 +37,8 @@ type Props = {
   handlePreviousChapter: () => void;
   progress: number;
   handleDesktopSwipe: SwipeableHandlers;
+  buttonsVisible: boolean;
+  scrollableCallbackRef?: (node: HTMLElement | null) => void;
 };
 
 export const Content = ({
@@ -48,11 +50,17 @@ export const Content = ({
   handlePreviousChapter,
   progress,
   handleDesktopSwipe,
+  buttonsVisible,
+  scrollableCallbackRef,
 }: Props) => {
   return (
     <>
       {bookVerseData && (
-        <div className={`${styles.bookContent}`} {...handleDesktopSwipe}>
+        <div
+          className={`${styles.bookContent}`}
+          {...handleDesktopSwipe}
+          ref={scrollableCallbackRef}
+        >
           <MainText.Root>
             <MainText.Content
               bookId={String(bookId)}
@@ -63,7 +71,7 @@ export const Content = ({
           {chapters && Number(verseId) > 1 && (
             <button
               type="button"
-              className={styles.previousChapterBtn}
+              className={`${styles.previousChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
               onClick={handlePreviousChapter}
             >
               <Icon.ChevronBackward className={styles.chevronBackward} />
@@ -73,7 +81,7 @@ export const Content = ({
           {chapters && Number(verseId) < chapters && (
             <button
               type="button"
-              className={styles.nextChapterBtn}
+              className={`${styles.nextChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
               onClick={handleNextChapter}
             >
               <Icon.ChevronForward className={styles.chevronForward} />
