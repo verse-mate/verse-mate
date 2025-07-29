@@ -19,6 +19,7 @@ export const Nav = ({ activeTab, askVerseMate }: Props) => {
   const queryClient = useQueryClient();
   const { explanationType } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
+
   const handleValueChange = (value: ExplanationTypeEnum) => {
     saveSearchParams({ explanationType: value });
     queryClient.invalidateQueries({ queryKey: ["explanation"] });
@@ -99,12 +100,15 @@ export const Nav = ({ activeTab, askVerseMate }: Props) => {
           </>
         )}
 
-        {/* <RadixTabs.Trigger className={styles.trigger} value="menu"> */}
-        <Icon.HamburgerIcon
-          className={`${styles.active}`}
-          style={{ fill: "white" }}
-        />
-        {/* </RadixTabs.Trigger> */}
+        <RadixTabs.Trigger
+          className={styles.trigger}
+          value={activeTab === "menu" ? "explanation" : "menu"}
+        >
+          <Icon.HamburgerIcon
+            className={`${styles.active}`}
+            style={{ fill: "white" }}
+          />
+        </RadixTabs.Trigger>
       </div>
     </RadixTabs.List>
   );

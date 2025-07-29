@@ -340,6 +340,58 @@ export class BibleService {
     };
   }
 
+  async getBookmarks({ id: user_id }: Pick<UserDto, "id">) {
+    const { favorites } = await this.bibleRepository.getFavorites({
+      id: user_id,
+    });
+
+    return { favorites };
+  }
+
+  async addBookmark({
+    user_id,
+    book_id,
+    chapter_number,
+  }: { user_id: string; book_id: number; chapter_number: number }) {
+    const { chapter_id } = await this.bibleRepository.getChapterId({
+      book_id,
+      chapter_number,
+    });
+    if (!chapter_id) return { success: false };
+
+    const { favorite } = await this.bibleRepository.checkFavoriteExists({
+      user_id,
+      chapter_id,
+    });
+    if (favorite) return { success: true };
+
+    const { success } = await this.bibleRepository.addFavorite({
+      user_id,
+      chapter_id,
+    });
+
+    return { success };
+  }
+
+  async removeBookmark({
+    user_id,
+    book_id,
+    chapter_number,
+  }: { user_id: string; book_id: number; chapter_number: number }) {
+    const { chapter_id } = await this.bibleRepository.getChapterId({
+      book_id,
+      chapter_number,
+    });
+    if (!chapter_id) return { success: false };
+
+    const { success } = await this.bibleRepository.removeFavorite({
+      user_id,
+      chapter_id,
+    });
+
+    return { success };
+  }
+
   private formattedBook({
     book,
     chapter,

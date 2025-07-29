@@ -66,8 +66,46 @@
     width: 100%;
     height: calc(100dvh - 102px);
     background-color: var(--snow);
+    padding: 16px;
+    overflow-y: auto;
 }
 
 .moreOptionsContainer > :last-child {
     margin-top: auto;
+}
+
+.menuHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.menuHeader h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--night);
+    margin: 0;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--night);
+}
+
+.closeButton:hover {
+    background-color: var(--dust-light);
+    border-radius: 50%;
+}
+
+.menuOptions {
+    margin-top: 24px;
+    width: 100%;
 }

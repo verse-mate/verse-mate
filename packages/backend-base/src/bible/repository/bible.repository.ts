@@ -1,4 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import FavoriteTypeEnum from "database/src/models/public/FavoriteTypeEnum";
 import type { db } from "../../shared/shared.plugin";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
@@ -343,5 +344,86 @@ export class BibleRepository {
       .executeTakeFirst();
 
     return { averageRating: averageRating ?? null };
+  }
+
+  /**
+   * Favorites
+   */
+  async getFavorites({ id: user_id }: Pick<UserDto, "id">) {
+    const favorites = await this.db
+      .getOrCreateConnection()
+      .selectFrom("favorites")
+      .leftJoin("chapters", "chapters.chapter_id", "favorites.chapter_id")
+      .leftJoin("books", "books.book_id", "chapters.book_id")
+      .where("favorites.user_id", "=", user_id)
+      .where("favorites.type", "=", FavoriteTypeEnum.chapter)
+      .select([
+        "books.name as bookName",
+        "books.book_id as bookId",
+        "chapters.chapter_number as chapter",
+      ])
+      .execute();
+
+    return { favorites: favorites ?? null };
+  }
+
+  async checkFavoriteExists({
+    user_id,
+    chapter_id,
+  }: {
+    user_id: string;
+    chapter_id: number;
+  }) {
+    const favorite = await this.db
+      .getOrCreateConnection()
+      .selectFrom("favorites")
+      .where("user_id", "=", user_id)
+      .where("chapter_id", "=", chapter_id)
+      .where("type", "=", FavoriteTypeEnum.chapter)
+      .select("favorite_id")
+      .executeTakeFirst();
+
+    return { favorite: favorite ?? null };
+  }
+
+  async addFavorite({
+    user_id,
+    chapter_id,
+  }: { user_id: string; chapter_id: number }) {
+    try {
+      await this.db
+        .getOrCreateConnection()
+        .insertInto("favorites")
+        .values({
+          user_id,
+          chapter_id,
+          type: FavoriteTypeEnum.chapter,
+          message_id: null,
+        })
+        .execute();
+
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
+  }
+
+  async removeFavorite({
+    user_id,
+    chapter_id,
+  }: { user_id: string; chapter_id: number }) {
+    try {
+      await this.db
+        .getOrCreateConnection()
+        .deleteFrom("favorites")
+        .where("user_id", "=", user_id)
+        .where("chapter_id", "=", chapter_id)
+        .where("type", "=", FavoriteTypeEnum.chapter)
+        .execute();
+
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
   }
 }
