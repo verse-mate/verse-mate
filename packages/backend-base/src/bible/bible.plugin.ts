@@ -24,14 +24,90 @@ const openai = new OpenAI({
 });
 const model = "gpt-4-turbo";
 
-const getExplanationTypePrompt = (type: ExplanationTypeEnum): string => {
+const getExplanationTypePrompt = (
+  type: ExplanationTypeEnum,
+  bookName: string,
+  chapterNumber: number,
+): { prompt: string; temperature: number } => {
   switch (type) {
     case ExplanationTypeEnum.summary:
-      return "Give me a summary of bible reference above";
+      return {
+        prompt: `# ${bookName} ${chapterNumber} - Summary
+
+Summarize this chapter in approximately 250 words including relevant takeaways and 
+key theological themes. Do not go verse by verse but instead summarize the overall 
+passage in a clear, organized way. 
+
+**Theological Themes**
+- [Include main theological themes with brief explanations]
+
+**Key Takeaways**
+- [Include key takeaways in bullet points]
+
+**Application**
+- [Include practical applications or lessons]`,
+        temperature: 0.3,
+      };
     case ExplanationTypeEnum.byline:
-      return "Explain the bible reference above line by line";
+      return {
+        prompt: `Explain ${bookName} ${chapterNumber} verse by verse, start with the passage then a quick summary 
+of the verse, then relevant key takeaways per line, key definitions as appropriate, 
+key theological themes as appropriate. Ensure the takeaways and themes are full sentences.
+Do not group more verses unless needed, keep a chronological order at all times.`,
+        temperature: 0.2,
+      };
     case ExplanationTypeEnum.detailed:
-      return "Explain the bible reference above in detail";
+      return {
+        prompt: `**Request Overview:**
+Provide an in-depth yet accessible 
+explanation of ${bookName} ${chapterNumber} 500 words per section. Focus on clarity 
+and depth to help readers understand their significance and 
+message.
+
+**Instructions:**
+1. **Introduction:** Begin with a brief 
+introduction that contextualizes the passage within the Bible, 
+highlighting its place in the broader narrative and any relevant 
+background information.
+2. **Passage Analysis:**
+- **Analysis:** Provide a detailed examination focusing on key 
+themes, insights, and theological implications. Organize major 
+points using subheadings, and emphasize critical details with bullet
+points.
+- **Connection to Broader Themes:** Where relevant, 
+link the passage(s) to broader biblical themes or narratives.
+3. **Overall Significance:** Conclude with a discussion on the 
+overall significance of the passage. Address how it contributes to 
+the overarching narrative of the Bible and its relevance to 
+contemporary readers.
+4. **Formatting:**
+- Use Markdown for the response, with clear
+headings for the passages, subheadings for major analysis points, 
+and bullet points for key insights.
+- Ensure the explanation is comprehensive, typically spanning at 
+least 500 words, but allow for flexibility depending on the complexity 
+and length of the passage.  
+- Aim for readability and engagement, making the analysis 
+informative for both novice and experienced readers.
+
+ **Content Requirements:**
+	- Include clear explanation of any commandments, laws, or doctrinally relevant instructions. Treat these as high-priority details for analysis—clarify what the text is saying, what it means doctrinally, and how it connects with both Old and New Testament teachings.
+	- Include these details even if not explicitly requested, as long as they are supported by the text.
+
+- **Doctrinal Detail:** When a passage touches on significant doctrinal topics, explicitly include what the passage teaches—rooted in the Bible text itself, not tradition or denominational bias.
+- **Accessibility:** Provide easy-to-
+understand explanations suitable for readers with varying levels of 
+biblical knowledge. Clarify any theological terms or concepts that 
+might be unfamiliar.
+- **Thoroughness:** Ensure the examination is thorough, covering 
+the passage provided. Offer insights into the meaning, context,
+and implications of the text—especially emphasizing specific doctrines,
+practices, or theological claims that are clearly taught,
+implied, or referenced in the passage. 
+- **Relevance:** Draw connections to broader themes in the Bible and suggest
+contemporary applications where appropriate.`,
+        temperature: 0.1,
+      };
   }
 };
 
@@ -104,6 +180,15 @@ const plugin = new Elysia()
                 });
 
                 try {
+                  const { book } = await bibleService.getBook({
+                    book_id: Number(bookId),
+                    chapter_number: Number(chapterNumber),
+                  });
+                  const explanationConfig = getExplanationTypePrompt(
+                    type,
+                    book?.name || "",
+                    Number(chapterNumber),
+                  );
                   const chat = await openai.chat.completions.create({
                     messages: [
                       { role: "system", content: prompt.prompt },
@@ -116,7 +201,7 @@ const plugin = new Elysia()
                       },
                       {
                         role: "user",
-                        content: getExplanationTypePrompt(type),
+                        content: explanationConfig.prompt,
                       },
                       {
                         role: "user",
@@ -125,6 +210,8 @@ const plugin = new Elysia()
                       },
                     ],
                     model,
+                    max_tokens: 1600,
+                    temperature: explanationConfig.temperature,
                   });
 
                   const { success } = await bibleService.saveExplanation({
