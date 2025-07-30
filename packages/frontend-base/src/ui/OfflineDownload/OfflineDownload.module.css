@@ -1,0 +1,137 @@
+.container {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--color-surface);
+  margin: 8px 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bookInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.bookName {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.chapterInfo {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.statusComplete {
+  color: var(--color-success, #22c55e);
+  font-weight: 500;
+}
+
+.statusPartial {
+  color: var(--color-warning, #f59e0b);
+  font-weight: 500;
+}
+
+.statusNone {
+  color: var(--color-text-tertiary);
+}
+
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.downloadProgress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 6px;
+  background: var(--color-surface-variant);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressIndicator {
+  height: 100%;
+  background: var(--color-primary, #3b82f6);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.progressText {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 32px;
+}
+
+.error {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--color-error-surface, #fef2f2);
+  border: 1px solid var(--color-error, #ef4444);
+  border-radius: 6px;
+  color: var(--color-error, #ef4444);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offlineNotice {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--color-warning-surface, #fffbeb);
+  border: 1px solid var(--color-warning, #f59e0b);
+  border-radius: 6px;
+  color: var(--color-warning-dark, #d97706);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .actions {
+    justify-content: center;
+  }
+  
+  .downloadProgress {
+    min-width: 150px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .error {
+    background: rgb(239 68 68 / 10%);
+    border-color: rgb(239 68 68 / 30%);
+  }
+  
+  .offlineNotice {
+    background: rgb(245 158 11 / 10%);
+    border-color: rgb(245 158 11 / 30%);
+  }
+}

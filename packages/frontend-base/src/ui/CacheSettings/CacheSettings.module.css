@@ -1,0 +1,215 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background: var(--color-surface-variant);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-secondary);
+}
+
+.healthStatus {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.healthStatus.healthy {
+  background: var(--color-success-surface, #f0fdf4);
+  border: 1px solid var(--color-success, #22c55e);
+}
+
+.healthStatus.warning {
+  background: var(--color-warning-surface, #fffbeb);
+  border: 1px solid var(--color-warning, #f59e0b);
+}
+
+.healthStatus.critical {
+  background: var(--color-error-surface, #fef2f2);
+  border: 1px solid var(--color-error, #ef4444);
+}
+
+.healthIcon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.healthContent {
+  flex: 1;
+}
+
+.healthMessage {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.recommendations {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  margin: 0 0 16px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.statItem {
+  padding: 16px;
+  background: var(--color-surface-variant);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+.progressBar {
+  height: 6px;
+  background: var(--color-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--color-primary, #3b82f6);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.settingItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.settingLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .container {
+    padding: 16px;
+    margin: 0;
+    border-radius: 0;
+  }
+  
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .header {
+    margin-bottom: 16px;
+  }
+  
+  .title {
+    font-size: 1.25rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .healthStatus.healthy {
+    background: rgb(34 197 94 / 10%);
+    border-color: rgb(34 197 94 / 30%);
+  }
+  
+  .healthStatus.warning {
+    background: rgb(245 158 11 / 10%);
+    border-color: rgb(245 158 11 / 30%);
+  }
+  
+  .healthStatus.critical {
+    background: rgb(239 68 68 / 10%);
+    border-color: rgb(239 68 68 / 30%);
+  }
+}

@@ -53,5 +53,26 @@ export { NotFound } from "./src/not-found";
 export { Chat } from "./src/ui/Chat";
 export { Explanation } from "./src/ui/Explanation";
 
+/**
+ * PWA & Offline Components
+ */
 export { OfflineIndicator } from "./src/ui/OfflineIndicator";
-export { useNetworkStatus } from "./src/hooks/useNetworkStatus";
+export { OfflineDownload } from "./src/ui/OfflineDownload";
+export { CacheSettings } from "./src/ui/CacheSettings";
+
+/**
+ * PWA & Offline Hooks
+ */
+export { useOfflineStatus } from "./src/hooks/useOfflineStatus";
+export {
+  useOfflineBibleChapter,
+  useOfflineBibleExplanation,
+  useOfflineBookManager,
+} from "./src/hooks/useOfflineBible";
+
+/**
+ * PWA & Offline Utilities
+ */
+export * from "./src/utils/offline-bible-cache";
+export * from "./src/utils/offline-sync";
+export * from "./src/utils/cache-manager";

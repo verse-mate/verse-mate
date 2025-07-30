@@ -1,4 +1,4 @@
-import { useNetworkStatus } from "../../hooks/useNetworkStatus";
+import { useOfflineStatus } from "../../hooks/useOfflineStatus";
 import styles from "./OfflineIndicator.module.css";
 
 interface OfflineIndicatorProps {
@@ -13,7 +13,7 @@ export function OfflineIndicator({
   position = "top",
 }: OfflineIndicatorProps) {
   const { isOnline, isOffline, wasOffline, connectionType } =
-    useNetworkStatus();
+    useOfflineStatus();
 
   // Don't render anything on server-side to avoid hydration mismatch
   if (typeof window === "undefined") {
