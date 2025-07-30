@@ -7,13 +7,15 @@
     "build": "bun --bun run next build",
     "build:worker": "bun run build && bun run prepare:worker",
     "prepare:worker": "mkdir -p .cf/public/_next && cp -r out/* .cf/public/",
-    "start": "bun --bun run next start",
+    "start": "bunx serve out -p 3000 -s",
+    "lint": "biome check .",
     "deploy": "wrangler deploy"
   },
   "dependencies": {
     "frontend-base": "workspace:*",
     "frontend-envs": "workspace:*",
     "next": "^14.2.5",
+    "next-pwa": "^5.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -23,6 +25,7 @@
     "@types/react-dom": "^18.3.0",
     "postcss-nested": "^6.2.0",
     "typescript": "^5.5.4",
-    "wrangler": "^4.27.0"
+    "wrangler": "^4.27.0",
+    "sharp": "^0.34.3"
   }
 }

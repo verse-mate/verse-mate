@@ -108,6 +108,13 @@ web_modules/
 .next
 out
 
+# PWA build artifacts
+
+apps/frontend-next/public/sw.js
+apps/frontend-next/public/sw.js.map
+apps/frontend-next/public/workbox-*.js
+apps/frontend-next/public/workbox-*.js.map
+
 # Nuxt.js build / generate output
 
 .nuxt
