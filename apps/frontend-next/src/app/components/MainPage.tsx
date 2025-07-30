@@ -8,9 +8,15 @@ const DynamicBrowserRouter = NextDynamic(
   { ssr: false },
 );
 
+const DynamicOfflineIndicator = NextDynamic(
+  () => import("frontend-base").then((mod) => mod.OfflineIndicator),
+  { ssr: false },
+);
+
 const MyMainPage = ({ children }: { children: ReactNode }) => {
   return (
     <MainPage.QueryProvider>
+      <DynamicOfflineIndicator position="top" showWhenOnline={true} />
       <DynamicBrowserRouter>{children}</DynamicBrowserRouter>
     </MainPage.QueryProvider>
   );

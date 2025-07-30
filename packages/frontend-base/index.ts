@@ -52,3 +52,6 @@ export { LoginCard } from "./src/ui/LoginCard";
 export { NotFound } from "./src/not-found";
 export { Chat } from "./src/ui/Chat";
 export { Explanation } from "./src/ui/Explanation";
+
+export { OfflineIndicator } from "./src/ui/OfflineIndicator";
+export { useNetworkStatus } from "./src/hooks/useNetworkStatus";
