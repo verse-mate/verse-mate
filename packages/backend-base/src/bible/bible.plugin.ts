@@ -36,7 +36,7 @@ const getExplanationTypePrompt = (
 
 Summarize this chapter in approximately 250 words including relevant takeaways and 
 key theological themes. Do not go verse by verse but instead summarize the overall 
-passage in a clear, organized way, summarize based on section sub-titles (e.g. Babylon Is Fallen Revelation 18:1 - 8).
+passage in a clear, organized way, summarize based on section sub-titles (e.g. Babylon Is Fallen Revelation 18:1 - 8), format it in such way the subtitle is on a new line and the summary is underneath the sub-tittle.
 
 **Theological Themes**
 
