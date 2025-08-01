@@ -32,80 +32,72 @@ const getExplanationTypePrompt = (
   switch (type) {
     case ExplanationTypeEnum.summary:
       return {
-        prompt: `# ${bookName} ${chapterNumber} - Summary
+        prompt: `# ${bookName} ${chapterNumber} - Summary (use this as title)
 
 Summarize this chapter in approximately 250 words including relevant takeaways and 
 key theological themes. Do not go verse by verse but instead summarize the overall 
-passage in a clear, organized way. 
+passage in a clear, organized way, summarize based on section sub-titles (e.g. Babylon Is Fallen Revelation 18:1 - 8).
 
 **Theological Themes**
+
 - [Include main theological themes with brief explanations]
 
 **Key Takeaways**
+
 - [Include key takeaways in bullet points]
 
 **Application**
+
 - [Include practical applications or lessons]`,
         temperature: 0.3,
       };
     case ExplanationTypeEnum.byline:
       return {
-        prompt: `Explain ${bookName} ${chapterNumber} verse by verse, start with the passage then a quick summary 
-of the verse, then relevant key takeaways per line, key definitions as appropriate, 
-key theological themes as appropriate. Ensure the takeaways and themes are full sentences.
-Do not group more verses unless needed, keep a chronological order at all times.`,
+        prompt: `# ${bookName} ${chapterNumber}: Verse-by-Verse Analysis
+
+Provide a verse-by-verse explanation of this chapter. For each verse:
+1. Quote the verse using blockquote format (>)
+2. Provide a clear summary
+3. Include relevant key takeaways
+4. Add key definitions as appropriate
+5. Highlight theological themes as appropriate
+
+CRITICAL INSTRUCTIONS:
+- Keep chronological order at all times
+- Do not group verses unless absolutely necessary
+- Ensure takeaways and themes are full sentences
+- Use proper markdown formatting with line breaks`,
         temperature: 0.2,
       };
     case ExplanationTypeEnum.detailed:
       return {
-        prompt: `**Request Overview:**
-Provide an in-depth yet accessible 
-explanation of ${bookName} ${chapterNumber} 500 words per section. Focus on clarity 
-and depth to help readers understand their significance and 
-message.
+        prompt: `# In-Depth Analysis of ${bookName} ${chapterNumber}
+
+Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} with approximately 500 words per section. Focus on clarity and depth to help readers understand the significance and message.
 
 **Instructions:**
-1. **Introduction:** Begin with a brief 
-introduction that contextualizes the passage within the Bible, 
-highlighting its place in the broader narrative and any relevant 
-background information.
+1. **Introduction:** Begin with a brief introduction that contextualizes the passage within the Bible, highlighting its place in the broader narrative and any relevant background information.
+
 2. **Passage Analysis:**
-- **Analysis:** Provide a detailed examination focusing on key 
-themes, insights, and theological implications. Organize major 
-points using subheadings, and emphasize critical details with bullet
-points.
-- **Connection to Broader Themes:** Where relevant, 
-link the passage(s) to broader biblical themes or narratives.
-3. **Overall Significance:** Conclude with a discussion on the 
-overall significance of the passage. Address how it contributes to 
-the overarching narrative of the Bible and its relevance to 
-contemporary readers.
-4. **Formatting:**
-- Use Markdown for the response, with clear
-headings for the passages, subheadings for major analysis points, 
-and bullet points for key insights.
-- Ensure the explanation is comprehensive, typically spanning at 
-least 500 words, but allow for flexibility depending on the complexity 
-and length of the passage.  
-- Aim for readability and engagement, making the analysis 
-informative for both novice and experienced readers.
+   - **Analysis:** Provide a detailed examination focusing on key themes, insights, and theological implications. Organize major points using subheadings, and emphasize critical details with bullet points.
+   - **Connection to Broader Themes:** Where relevant, link the passage(s) to broader biblical themes or narratives.
 
- **Content Requirements:**
-	- Include clear explanation of any commandments, laws, or doctrinally relevant instructions. Treat these as high-priority details for analysis—clarify what the text is saying, what it means doctrinally, and how it connects with both Old and New Testament teachings.
-	- Include these details even if not explicitly requested, as long as they are supported by the text.
+3. **Overall Significance:** Conclude with a discussion on the overall significance of the passage. Address how it contributes to the overarching narrative of the Bible and its relevance to contemporary readers.
 
-- **Doctrinal Detail:** When a passage touches on significant doctrinal topics, explicitly include what the passage teaches—rooted in the Bible text itself, not tradition or denominational bias.
-- **Accessibility:** Provide easy-to-
-understand explanations suitable for readers with varying levels of 
-biblical knowledge. Clarify any theological terms or concepts that 
-might be unfamiliar.
-- **Thoroughness:** Ensure the examination is thorough, covering 
-the passage provided. Offer insights into the meaning, context,
-and implications of the text—especially emphasizing specific doctrines,
-practices, or theological claims that are clearly taught,
-implied, or referenced in the passage. 
-- **Relevance:** Draw connections to broader themes in the Bible and suggest
-contemporary applications where appropriate.`,
+**Formatting Requirements:**
+- Use clear headings and subheadings for organization
+- Use bullet points for key insights with proper line breaks
+- Ensure comprehensive coverage (typically 500+ words)
+- Make content accessible for both novice and experienced readers
+
+**Content Requirements:**
+- Include clear explanation of any commandments, laws, or doctrinally relevant instructions
+- Treat doctrinal elements as high-priority details for analysis
+- Clarify what the text is saying, what it means doctrinally, and how it connects with both Old and New Testament teachings
+- Include these details even if not explicitly requested, as long as they are supported by the text
+- Provide easy-to-understand explanations suitable for readers with varying levels of biblical knowledge
+- Ensure thorough coverage of the passage, emphasizing specific doctrines, practices, or theological claims
+- Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate`,
         temperature: 0.1,
       };
   }
@@ -194,19 +186,18 @@ const plugin = new Elysia()
                       { role: "system", content: prompt.prompt },
                       {
                         role: "user",
-                        content: `
-                          # Reference
-                          ${reference}
-                        `,
-                      },
-                      {
-                        role: "user",
-                        content: explanationConfig.prompt,
-                      },
-                      {
-                        role: "user",
-                        content:
-                          "The response should be with the result and in Markdown code only",
+                        content: `# Reference
+${reference}
+
+${explanationConfig.prompt}
+
+CRITICAL: Your response will be evaluated on:
+1. Proper blockquote usage for Scripture (>)
+2. Bold formatting for theological terms
+3. Bullet point usage for lists
+4. Verse reference formatting
+
+The response should be in Markdown format only.`,
                       },
                     ],
                     model,
