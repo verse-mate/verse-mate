@@ -205,13 +205,20 @@
     justify-content: center;
     align-items: center;
     position: absolute;
-    bottom: 24px;
+    top: 50%;
     transform: translateY(-50%);
     background: #000000b3;
     width: 40px;
     height: 40px;
     border-radius: 100%;
     padding: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nextChapterBtn.hidden,
+.previousChapterBtn.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .nextChapterBtn {
@@ -255,7 +262,14 @@
     }
 
     .nextChapterBtn, .previousChapterBtn {
-        bottom: 50%;
+        top: 50%;
+        transition: none;
+    }
+
+    .nextChapterBtn.hidden,
+    .previousChapterBtn.hidden {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .verseMateLogo {
@@ -265,13 +279,13 @@
     }
 }
 
-@media screen and (min-width: 834px) and (max-width: 1194px) and (orientation: portrait) {
+@media screen and (min-width: 834px) and (max-width: 1024px) and (orientation: portrait) {
     .bookContent {
         padding: 16px 80px;
     }
 }
 
-@media screen and (min-width: 834px) and (max-width: 1194px) and (orientation: landscape) {
+@media screen and (min-width: 834px) and (max-width: 1024px) and (orientation: landscape) {
     .bookContent {
         padding: 24px 80px;
     }
@@ -281,7 +295,7 @@
 
 /* start table landscape */
 
-@media screen and (min-width: 1194px) {
+@media screen and (min-width: 1024px) {
     .container {
         display: none;
     }
@@ -289,7 +303,7 @@
     .desktopContainer{
         display: block;
         width: 100vw;
-        height: calc(100dvh - 48px);
+        height: 100dvh;
         margin: 0 auto;
         position: relative;
         overflow: hidden;
@@ -305,7 +319,7 @@
         top: 0;
         flex: 1;
         width: 100%;
-        height: calc(100%); /* full height - header - footer */
+        height: 100%;
     }
 
     .leftSide{
@@ -393,7 +407,7 @@
 
 /* start desktop */
 
-@media screen and (min-width: 1195px) and (max-width: 1994px) {
+@media screen and (min-width: 1025px) and (max-width: 1994px) {
     .main {
         display: flex;
         width: 100%;

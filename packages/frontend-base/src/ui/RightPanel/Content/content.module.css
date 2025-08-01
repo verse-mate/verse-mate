@@ -64,7 +64,7 @@
     justify-content: start;
     position: relative;
     width: 100%;
-    height: calc(100dvh - 102px);
+    height: calc(100dvh - 56px);
     background-color: var(--snow);
     padding: 16px;
     overflow-y: auto;

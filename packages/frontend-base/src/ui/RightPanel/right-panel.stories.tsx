@@ -39,8 +39,12 @@ export const Default: Story = () => {
   const askVerseMate = process.env.NEXT_PUBLIC_ASK_VERSE_MATE === "true";
 
   return (
-    <RightPanel.Root setActiveTab={setActiveTab}>
-      <RightPanel.Nav activeTab={activeTab} askVerseMate={askVerseMate} />
+    <RightPanel.Root activeTab={activeTab} setActiveTab={setActiveTab}>
+      <RightPanel.Nav
+        activeTab={activeTab}
+        askVerseMate={askVerseMate}
+        setActiveTab={setActiveTab}
+      />
       <RightPanel.Content
         conversationsHistory={conversationsHistory}
         explanation={explanation}

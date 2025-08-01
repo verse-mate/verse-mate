@@ -4,7 +4,7 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import {
   fetchAllChaptersByBook,
@@ -105,6 +105,7 @@ export const MainContent = () => {
     handleChange: leftPanelHandleChange,
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
+    resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
   const { progress } = useProgressBar({
@@ -153,6 +154,16 @@ export const MainContent = () => {
   const [bibleVersionSelected, setBibleVersionSelected] = useState(
     bibleVersion || "NASB1995",
   );
+
+  const accordionRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isDropdownOpenBook && accordionRef.current) {
+      if (!accordionRef.current.getAttribute("data-state")?.includes("open")) {
+        accordionRef.current.click();
+      }
+    }
+  }, [isDropdownOpenBook]);
 
   useEffect(() => {
     if (bookId && verseId && testament) {
@@ -259,11 +270,85 @@ export const MainContent = () => {
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
 
-  const fixedItem = leftPanelFilteredBooks.some(
-    (bookName) =>
-      oldTestamentBooks.some((t) => t.n === bookName && t.b === bookId) ||
-      newTestamentBooks.some((t) => t.n === bookName && t.b === bookId),
+  const fixedItem = bookId > 0;
+
+  const selectedBookDetails = [...oldTestamentBooks, ...newTestamentBooks].find(
+    (book) => book.b === bookId,
   );
+
+  const [buttonsVisible, setButtonsVisible] = useState(true);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollableRef = useRef<HTMLDivElement>(null);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+
+    setButtonsVisible(() => true);
+
+    inactivityTimerRef.current = setTimeout(() => {
+      setButtonsVisible(() => false);
+    }, 3000);
+  }, []);
+
+  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+
+  const scrollableCallbackRef = useCallback((node: HTMLElement | null) => {
+    //console.log("📋 Ref callback called with:", node);
+    setScrollElement(node);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      //console.log("🔄 Scroll detected!");
+      resetInactivityTimer();
+    };
+
+    //console.log("🔧 Setting up scroll listeners...");
+    //console.log("📋 scrollElement:", scrollElement);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    if (scrollElement) {
+      //console.log("✅ Adding scroll listener to element");
+      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
+    } else {
+      //console.log("❌ No scroll element found");
+    }
+
+    resetInactivityTimer();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollElement) {
+        scrollElement.removeEventListener("scroll", handleScroll);
+      }
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [resetInactivityTimer, scrollElement]);
+
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      resetInactivityTimer();
+    };
+
+    document.addEventListener("click", handleDocumentClick, { passive: true });
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
+  }, [resetInactivityTimer]);
+
+  useEffect(() => {
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -283,37 +368,40 @@ export const MainContent = () => {
                 <>
                   {/* Book trigger */}
                   <SelectDropdown.GroupedSelect.GroupedTrigger
+                    selectedBook={leftPanelSelectedBook || book}
+                    selectedVerse={verseIdToString}
+                    defaultPlaceholder="Select a Book"
                     isOpen={isDropdownOpenBook}
                     toggleDropdown={toggleMobileDropdownBook}
                     onClose={closeDropdownBook}
-                    contentRef={contentRefBook}
-                    label={`${leftPanelSelectedBook || book} ${verseIdToString}`}
+                    resetFilter={leftPanelResetFilter}
                   />
                 </>
               )}
 
               {/* Version trigger */}
               <SelectDropdown.GroupedSelect.GroupedTrigger
-                isOpen={isDropdownOpenVersion}
-                toggleDropdown={toggleMobileDropdownVersion}
-                onClose={closeDropdownVersion}
-                contentRef={contentRefVersion}
-                label={String(
+                selectedBook={null}
+                selectedVerse={null}
+                defaultPlaceholder={String(
                   bibleVersions.find(
                     (version) => version.key === bibleVersionSelected,
                   )?.key,
                 )}
+                isOpen={isDropdownOpenVersion}
+                toggleDropdown={toggleMobileDropdownVersion}
+                onClose={closeDropdownVersion}
+                resetFilter={() => {}}
               />
               {/* Book content */}
               <SelectDropdown.GroupedSelect.GroupedRoot>
                 <SelectDropdown.GroupedSelect.GroupedContent
                   isOpen={isDropdownOpenBook}
-                  onClose={closeDropdownBook}
-                  contentRef={contentRefBook}
                 >
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="book">
                       <Accordion.GroupedTrigger
+                        ref={accordionRef}
                         selectedContent={
                           selectedTestamentLabel &&
                           selectedBookName &&
@@ -332,10 +420,12 @@ export const MainContent = () => {
                             <Tabs.Trigger
                               value={TestamentEnum.OT}
                               label="Old Testament"
+                              resetFilter={leftPanelResetFilter}
                             />
                             <Tabs.Trigger
                               value={TestamentEnum.NT}
                               label="New Testament"
+                              resetFilter={leftPanelResetFilter}
                             />
                           </Tabs.List>
 
@@ -356,6 +446,52 @@ export const MainContent = () => {
                                     : {}
                                 }
                               >
+                                {fixedItem && selectedBookDetails && (
+                                  <Accordion.Item
+                                    value={selectedBookDetails.n}
+                                    key={`selected-${selectedBookDetails.n}`}
+                                  >
+                                    <Accordion.Trigger
+                                      label={selectedBookDetails.n}
+                                      highlightBook={true}
+                                    />
+                                    <Accordion.Content
+                                      styles={{ position: "relative" }}
+                                    >
+                                      <VerseGrid
+                                        testament={selectedBookDetails.t}
+                                        bookId={String(selectedBookDetails.b)}
+                                        bookName={selectedBookDetails.n}
+                                        verses={Array.from(
+                                          { length: selectedBookDetails.c },
+                                          (_, i) => (i + 1).toString(),
+                                        )}
+                                        onVerseSelect={(
+                                          bookId,
+                                          bookName,
+                                          verse,
+                                          testament,
+                                        ) => {
+                                          leftPanelHandleVerseSelect(
+                                            bookId,
+                                            bookName,
+                                            verse,
+                                            testament,
+                                          );
+                                          handleMobileVerseSelect(
+                                            testament,
+                                            bookName,
+                                            verse,
+                                          );
+                                          closeDropdownBook();
+                                        }}
+                                        selectedVerse={String(verseId)}
+                                        selectedBook={String(bookId)}
+                                      />
+                                    </Accordion.Content>
+                                  </Accordion.Item>
+                                )}
+
                                 {leftPanelFilteredBooks
                                   .map((bookName) =>
                                     testaments?.find((t) => t.n === bookName),
@@ -365,16 +501,13 @@ export const MainContent = () => {
                                       book,
                                     ): book is NonNullable<typeof book> => {
                                       if (!book) return false;
+                                      if (book.b === bookId) return false;
                                       return leftPanelDebouncedFilter.trim()
                                         ? true
                                         : book.t === "OT";
                                     },
                                   )
-                                  .sort((a, b) => {
-                                    if (a.b === bookId) return -1;
-                                    if (b.b === bookId) return 1;
-                                    return 0;
-                                  })
+                                  .sort((a, b) => a.b - b.b)
                                   .map((book) => {
                                     return (
                                       <Accordion.Item
@@ -383,17 +516,9 @@ export const MainContent = () => {
                                       >
                                         <Accordion.Trigger
                                           label={book.n}
-                                          highlightBook={bookId === book.b}
+                                          highlightBook={false}
                                         />
-                                        <Accordion.Content
-                                          styles={
-                                            fixedItem
-                                              ? {
-                                                  position: "relative",
-                                                }
-                                              : {}
-                                          }
-                                        >
+                                        <Accordion.Content>
                                           <VerseGrid
                                             bookId={String(book.b)}
                                             bookName={book.n}
@@ -418,6 +543,7 @@ export const MainContent = () => {
                                                 bookName,
                                                 verse,
                                               );
+                                              closeDropdownBook();
                                             }}
                                             selectedBook={String(bookId)}
                                             selectedVerse={String(verseId)}
@@ -438,6 +564,52 @@ export const MainContent = () => {
                                     : {}
                                 }
                               >
+                                {fixedItem && selectedBookDetails && (
+                                  <Accordion.Item
+                                    value={selectedBookDetails.n}
+                                    key={`selected-${selectedBookDetails.n}`}
+                                  >
+                                    <Accordion.Trigger
+                                      label={selectedBookDetails.n}
+                                      highlightBook={true}
+                                    />
+                                    <Accordion.Content
+                                      styles={{ position: "relative" }}
+                                    >
+                                      <VerseGrid
+                                        testament={selectedBookDetails.t}
+                                        bookId={String(selectedBookDetails.b)}
+                                        bookName={selectedBookDetails.n}
+                                        verses={Array.from(
+                                          { length: selectedBookDetails.c },
+                                          (_, i) => (i + 1).toString(),
+                                        )}
+                                        onVerseSelect={(
+                                          bookId,
+                                          bookName,
+                                          verse,
+                                          testament,
+                                        ) => {
+                                          leftPanelHandleVerseSelect(
+                                            bookId,
+                                            bookName,
+                                            verse,
+                                            testament,
+                                          );
+                                          handleMobileVerseSelect(
+                                            testament || "",
+                                            bookName,
+                                            verse,
+                                          );
+                                          closeDropdownBook();
+                                        }}
+                                        selectedVerse={String(verseId)}
+                                        selectedBook={String(bookId)}
+                                      />
+                                    </Accordion.Content>
+                                  </Accordion.Item>
+                                )}
+
                                 {leftPanelFilteredBooks
                                   .map((bookName) =>
                                     testaments?.find((t) => t.n === bookName),
@@ -447,16 +619,13 @@ export const MainContent = () => {
                                       book,
                                     ): book is NonNullable<typeof book> => {
                                       if (!book) return false;
+                                      if (book.b === bookId) return false;
                                       return leftPanelDebouncedFilter.trim()
                                         ? true
                                         : book.t === "NT";
                                     },
                                   )
-                                  .sort((a, b) => {
-                                    if (a.b === bookId) return -1;
-                                    if (b.b === bookId) return 1;
-                                    return 0;
-                                  })
+                                  .sort((a, b) => a.b - b.b)
                                   .map((book) => {
                                     return (
                                       <Accordion.Item
@@ -465,18 +634,9 @@ export const MainContent = () => {
                                       >
                                         <Accordion.Trigger
                                           label={book.n}
-                                          highlightBook={bookId === book.b}
+                                          highlightBook={false}
                                         />
-                                        <Accordion.Content
-                                          styles={
-                                            fixedItem
-                                              ? {
-                                                  position: "relative",
-                                                  // marginTop: 48,
-                                                }
-                                              : {}
-                                          }
-                                        >
+                                        <Accordion.Content>
                                           <VerseGrid
                                             testament={book.t}
                                             bookId={String(book.b)}
@@ -502,6 +662,7 @@ export const MainContent = () => {
                                                 bookName,
                                                 verse,
                                               );
+                                              closeDropdownBook();
                                             }}
                                             selectedVerse={String(verseId)}
                                             selectedBook={String(bookId)}
@@ -523,8 +684,6 @@ export const MainContent = () => {
               <SelectDropdown.GroupedSelect.GroupedRoot>
                 <SelectDropdown.GroupedSelect.GroupedContent
                   isOpen={isDropdownOpenVersion}
-                  onClose={closeDropdownVersion}
-                  contentRef={contentRefVersion}
                 >
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="bibleVersion">
@@ -603,6 +762,7 @@ export const MainContent = () => {
                   <div
                     className={`${styles.bookContent}`}
                     {...handleMobileSwipe}
+                    ref={scrollableCallbackRef}
                   >
                     <MainText.Root>
                       <MainText.Content
@@ -614,7 +774,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) < chapters && (
                       <button
                         type="button"
-                        className={styles.nextChapterBtn}
+                        className={`${styles.nextChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
                         onClick={handleNextChapter}
                       >
                         <Icon.ChevronForward
@@ -625,7 +785,7 @@ export const MainContent = () => {
                     {chapters && Number(verseId) > 1 && (
                       <button
                         type="button"
-                        className={styles.previousChapterBtn}
+                        className={`${styles.previousChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
                         onClick={handlePreviousChapter}
                       >
                         <Icon.ChevronBackward
@@ -724,6 +884,7 @@ export const MainContent = () => {
               leftPanelDebouncedFilter={leftPanelDebouncedFilter}
               leftPanelFilteredBooks={leftPanelFilteredBooks}
               leftPanelHandleChange={leftPanelHandleChange}
+              leftPanelResetFilter={leftPanelResetFilter}
               leftPanelHandleTabChange={leftPanelHandleTabChange}
               leftPanelHandleVerseSelect={leftPanelHandleVerseSelect}
               leftPanelIsOpen={leftPanelIsOpen}
@@ -755,12 +916,17 @@ export const MainContent = () => {
           <PanelResizer startResize={startResize} />
 
           <RightPanel.Root
+            activeTab={activeTab}
             setActiveTab={setActiveTab}
             style={{
               width: `${rightWidth}%`,
             }}
           >
-            <RightPanel.Nav activeTab={activeTab} askVerseMate={askVerseMate} />
+            <RightPanel.Nav
+              activeTab={activeTab}
+              askVerseMate={askVerseMate}
+              setActiveTab={setActiveTab}
+            />
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
               explanation={explanation}
