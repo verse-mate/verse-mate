@@ -4,7 +4,6 @@
 import type { ColumnType, Insertable, Selectable, Updateable } from "kysely";
 import type { ChaptersChapterId } from "./Chapters";
 import type { default as FavoriteTypeEnum } from "./FavoriteTypeEnum";
-import type { MessagesMessageId } from "./Messages";
 import type { UserId } from "./User";
 
 export type FavoritesFavoriteId = number;
@@ -25,12 +24,6 @@ export default interface FavoritesTable {
     ChaptersChapterId,
     ChaptersChapterId,
     ChaptersChapterId
-  >;
-
-  message_id: ColumnType<
-    MessagesMessageId,
-    MessagesMessageId,
-    MessagesMessageId
   >;
 }
 
