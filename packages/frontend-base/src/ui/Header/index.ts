@@ -1,6 +1,7 @@
 import { Content } from "./Content/content";
 import { InputBar } from "./InputBar/input-bar";
 import { Logo } from "./Logo/logo";
+import { NotesButton } from "./NotesButton/notes-button";
 import { Root } from "./Root/root";
 import { ProfileButton } from "./UserProfile/user-profile";
 
@@ -9,5 +10,6 @@ export const Header = {
   Content,
   Logo,
   InputBar,
+  NotesButton,
   ProfileButton,
 };
