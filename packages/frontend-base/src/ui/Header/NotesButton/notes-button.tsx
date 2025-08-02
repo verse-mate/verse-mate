@@ -2,6 +2,16 @@ import type React from "react";
 import { useState } from "react";
 import { NotesModal } from "../../Notes/notes-modal";
 
+// Feature flag for notes functionality
+const isNotesEnabled = () => {
+  // Check environment variable first
+  if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_NOTES_ENABLED !== undefined) {
+    return process.env.NEXT_PUBLIC_NOTES_ENABLED === 'true';
+  }
+  // Default to enabled in development, disabled in production
+  return process.env.NODE_ENV === 'development';
+};
+
 export interface NotesButtonProps {
   bookName: string;
   chapterNumber: number;
@@ -22,6 +32,11 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
     isAuthenticated,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Don't render if feature is disabled
+  if (!isNotesEnabled()) {
+    return null;
+  }
 
   // Don't render if not authenticated
   if (!isAuthenticated) {
