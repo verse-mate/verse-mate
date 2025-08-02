@@ -133,6 +133,7 @@ export const NotesModal: React.FC<NotesModalProps> = ({
         justifyContent: "center",
         zIndex: 1000,
       }}
+      onClick={onClose}
     >
       <div
         style={{
@@ -146,6 +147,7 @@ export const NotesModal: React.FC<NotesModalProps> = ({
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
           border: "1px solid #444",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
