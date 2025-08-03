@@ -40,17 +40,23 @@
     margin-bottom: 16px;
 }
 
+.markdown strong,
+.markdown b {
+    font-weight: 700;
+    color: var(--night);
+}
+
 .markdown ul, .markdown ol {
-    padding: 0;
+    padding: 0 0 0 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
     font-family: MerriweatherRegular, sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 400;
     line-height: 24px;
     text-align: left;
-    list-style: none;
+    list-style: disc;
 }
 
 .markdown ul li,

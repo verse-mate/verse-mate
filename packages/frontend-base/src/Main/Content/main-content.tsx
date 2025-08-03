@@ -279,56 +279,96 @@ export const MainContent = () => {
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
+  const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
+  const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
+
+  const [isNearNext, setIsNearNext] = useState(false);
+  const [isNearPrev, setIsNearPrev] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 1024) return;
+
+      const checkProximity = (
+        buttonRef: React.RefObject<HTMLButtonElement>,
+        setIsNear: React.Dispatch<React.SetStateAction<boolean>>,
+      ) => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const distance = Math.sqrt(
+            (e.clientX - centerX) ** 2 + (e.clientY - centerY) ** 2,
+          );
+          setIsNear(distance < 150);
+        } else {
+          setIsNear(false);
+        }
+      };
+
+      checkProximity(nextChapterButtonRef, setIsNearNext);
+      checkProximity(prevChapterButtonRef, setIsNearPrev);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
     }
 
-    setButtonsVisible(() => true);
+    setButtonsVisible(true);
 
     inactivityTimerRef.current = setTimeout(() => {
-      setButtonsVisible(() => false);
+      if (!isNearNext && !isNearPrev) {
+        setButtonsVisible(false);
+      }
     }, 3000);
-  }, []);
+  }, [isNearNext, isNearPrev]);
 
-  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+  const [scrollElements, setScrollElements] = useState<Set<HTMLElement>>(
+    new Set(),
+  );
 
   const scrollableCallbackRef = useCallback((node: HTMLElement | null) => {
     //console.log("📋 Ref callback called with:", node);
-    setScrollElement(node);
+    setScrollElements((prev) => {
+      const newSet = new Set(prev);
+      if (node) {
+        newSet.add(node);
+      }
+      return newSet;
+    });
   }, []);
 
   useEffect(() => {
     const handleScroll = () => {
-      //console.log("🔄 Scroll detected!");
       resetInactivityTimer();
     };
 
-    //console.log("🔧 Setting up scroll listeners...");
-    //console.log("📋 scrollElement:", scrollElement);
-
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    if (scrollElement) {
-      //console.log("✅ Adding scroll listener to element");
-      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
-    } else {
-      //console.log("❌ No scroll element found");
-    }
+    scrollElements.forEach((element) => {
+      element.addEventListener("scroll", handleScroll, { passive: true });
+    });
 
     resetInactivityTimer();
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      if (scrollElement) {
-        scrollElement.removeEventListener("scroll", handleScroll);
-      }
+      scrollElements.forEach((element) => {
+        element.removeEventListener("scroll", handleScroll);
+      });
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [resetInactivityTimer, scrollElement]);
+  }, [resetInactivityTimer, scrollElements]);
 
   useEffect(() => {
     const handleDocumentClick = () => {
@@ -773,8 +813,9 @@ export const MainContent = () => {
                     </MainText.Root>
                     {chapters && Number(verseId) < chapters && (
                       <button
+                        ref={nextChapterButtonRef}
                         type="button"
-                        className={`${styles.nextChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
+                        className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
                         onClick={handleNextChapter}
                       >
                         <Icon.ChevronForward
@@ -784,8 +825,9 @@ export const MainContent = () => {
                     )}
                     {chapters && Number(verseId) > 1 && (
                       <button
+                        ref={prevChapterButtonRef}
                         type="button"
-                        className={`${styles.previousChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
+                        className={`${styles.previousChapterBtn} ${!buttonsVisible && !isNearPrev ? styles.hidden : ""}`}
                         onClick={handlePreviousChapter}
                       >
                         <Icon.ChevronBackward
@@ -910,6 +952,8 @@ export const MainContent = () => {
               handlePreviousChapter={handlePreviousChapter}
               progress={progress}
               chapters={chapters}
+              buttonsVisible={buttonsVisible}
+              scrollableCallbackRef={scrollableCallbackRef}
             />
           </LeftPanel.Root>
 
