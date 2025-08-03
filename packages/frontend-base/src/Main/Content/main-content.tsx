@@ -36,6 +36,7 @@ import * as Icon from "../../ui/Icons";
 import { LeftPanel } from "../../ui/LeftPanel";
 import { LoginCard } from "../../ui/LoginCard";
 import { MainText } from "../../ui/MainText";
+import { OfflineDownload } from "../../ui/OfflineDownload";
 import { PanelResizer } from "../../ui/PanelResizer/PanelResizer";
 import { ProgressBar } from "../../ui/ProgressBar";
 import { RightPanel } from "../../ui/RightPanel";
@@ -844,6 +845,13 @@ export const MainContent = () => {
                     </ProgressBar.IndicatorBackground>
                     <ProgressBar.Label value={progress} />
                   </ProgressBar.Root>
+                )}
+                {bookVerseData && (
+                  <OfflineDownload
+                    bookId={bookId}
+                    bookName={book || "Unknown Book"}
+                    totalChapters={chapters || 0}
+                  />
                 )}
               </div>
             </RadixTabs.Content>

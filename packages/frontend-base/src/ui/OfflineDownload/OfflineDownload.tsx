@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { api } from "backend-api";
+import { useCallback, useEffect, useState } from "react";
+import { useNetworkStatus } from "../../hooks/useNetworkStatus";
 import { useOfflineBookManager } from "../../hooks/useOfflineBible";
-import { useOfflineStatus } from "../../hooks/useOfflineStatus";
 import { Button } from "../Button/Button";
 import { ProgressBar } from "../ProgressBar";
 import styles from "./OfflineDownload.module.css";
@@ -9,7 +10,6 @@ interface OfflineDownloadProps {
   bookId: number;
   bookName: string;
   totalChapters: number;
-  fetchChapterFunction: (chapterNumber: number) => Promise<any>;
   className?: string;
 }
 
@@ -17,10 +17,9 @@ export function OfflineDownload({
   bookId,
   bookName,
   totalChapters,
-  fetchChapterFunction,
   className = "",
 }: OfflineDownloadProps) {
-  const { isOffline } = useOfflineStatus();
+  const { isOffline } = useNetworkStatus();
   const {
     downloadBookForOffline,
     isDownloading,
@@ -32,12 +31,25 @@ export function OfflineDownload({
 
   const progress = getOfflineProgress(bookId);
 
-  // Load cached chapters count on component mount
-  useState(() => {
-    getCachedChaptersCount(bookId).then(setCachedChapters);
-  });
+  const fetchChapterFunction = useCallback(
+    async (chapterNumber: number) => {
+      const parsedBookId = String(bookId).padStart(2, "0");
+      const parsedChapterId = String(chapterNumber).padStart(2, "0");
 
-  const handleDownload = async () => {
+      const response = await api.bible
+        .book({ bookId: parsedBookId })({ chapterNumber: parsedChapterId })
+        .get();
+      return response.data?.book;
+    },
+    [bookId],
+  );
+
+  // Load cached chapters count on component mount
+  useEffect(() => {
+    getCachedChaptersCount(bookId).then(setCachedChapters);
+  }, [bookId, getCachedChaptersCount]);
+
+  const handleDownload = useCallback(async () => {
     if (isOffline) {
       setError("Cannot download while offline");
       return;
@@ -52,7 +64,14 @@ export function OfflineDownload({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Download failed");
     }
-  };
+  }, [
+    bookId,
+    totalChapters,
+    fetchChapterFunction,
+    downloadBookForOffline,
+    getCachedChaptersCount,
+    isOffline,
+  ]);
 
   const isFullyDownloaded = cachedChapters >= totalChapters;
   const isPartiallyDownloaded =
@@ -83,11 +102,10 @@ export function OfflineDownload({
         <div className={styles.actions}>
           {isDownloading ? (
             <div className={styles.downloadProgress}>
-              <ProgressBar.Root className={styles.progressBar}>
-                <ProgressBar.Indicator
-                  style={{ width: `${progress}%` }}
-                  className={styles.progressIndicator}
-                />
+              <ProgressBar.Root>
+                <ProgressBar.IndicatorBackground>
+                  <ProgressBar.Indicator value={progress} />
+                </ProgressBar.IndicatorBackground>
               </ProgressBar.Root>
               <span className={styles.progressText}>{progress}%</span>
             </div>
@@ -95,8 +113,7 @@ export function OfflineDownload({
             <Button
               onClick={handleDownload}
               disabled={isOffline || isFullyDownloaded}
-              variant={isFullyDownloaded ? "secondary" : "primary"}
-              size="sm"
+              variant={isFullyDownloaded ? "outlined" : "contained"}
             >
               {isFullyDownloaded ? (
                 <>

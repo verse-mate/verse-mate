@@ -24,6 +24,7 @@
     list-style-type: none;
     padding: 0; 
     background-color: transparent;
+    position: relative;
 
     &:hover {
         border-color: var(--fantasy);
@@ -35,5 +36,30 @@
 .selected {
     background-color: var(--dust);
     color: var(--snow);
+}
+
+.cached {
+    background-color: var(--success-light, #d4edda);
+    border: 1px solid var(--success, #28a745);
+}
+
+.cached:hover {
+    background-color: var(--success, #28a745);
+    border-color: var(--success-dark, #1e7e34);
+    color: var(--snow);
+}
+
+.offlineIndicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    font-size: 8px;
+    background-color: var(--success, #28a745);
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;    
 }
   

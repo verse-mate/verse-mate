@@ -193,6 +193,8 @@
     width: 100%;
     height: calc(100dvh - 56px);
     background-color: var(--snow);
+    overflow-y: auto;
+    padding: 16px;
 }
 
 .moreOptionsContainer > :last-child {

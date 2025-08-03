@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   type BibleChapter,
   type BibleExplanation,
@@ -8,7 +8,7 @@ import {
   getCachedBibleChapter,
   getCachedBibleExplanation,
 } from "../utils/offline-bible-cache";
-import { useOfflineStatus } from "./useOfflineStatus";
+import { useNetworkStatus } from "./useNetworkStatus";
 
 interface UseBibleChapterOptions {
   bookId: number;
@@ -35,7 +35,7 @@ export function useOfflineBibleChapter({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
-  const { isOffline } = useOfflineStatus();
+  const { isOffline } = useNetworkStatus();
 
   useEffect(() => {
     let isCancelled = false;
@@ -124,7 +124,7 @@ export function useOfflineBibleChapter({
     isFromCache,
   ]);
 
-  const cacheChapter = async () => {
+  const cacheChapter = useCallback(async () => {
     if (data) {
       await cacheBibleChapter({
         bookId,
@@ -133,7 +133,7 @@ export function useOfflineBibleChapter({
         cachedAt: Date.now(),
       });
     }
-  };
+  }, [data, bookId, chapterNumber]);
 
   return {
     data,
@@ -161,7 +161,7 @@ export function useOfflineBibleExplanation({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
-  const { isOffline } = useOfflineStatus();
+  const { isOffline } = useNetworkStatus();
 
   useEffect(() => {
     let isCancelled = false;
@@ -265,45 +265,55 @@ export function useOfflineBookManager() {
   }>({});
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const downloadBookForOffline = async (
-    bookId: number,
-    totalChapters: number,
-    fetchChapterFunction: (chapterNumber: number) => Promise<any>,
-  ) => {
-    setIsDownloading(true);
-    setDownloadProgress((prev) => ({ ...prev, [bookId]: 0 }));
+  const downloadBookForOffline = useCallback(
+    async (
+      bookId: number,
+      totalChapters: number,
+      fetchChapterFunction: (chapterNumber: number) => Promise<any>,
+    ) => {
+      setIsDownloading(true);
+      setDownloadProgress((prev) => ({ ...prev, [bookId]: 0 }));
 
-    try {
-      for (let chapter = 1; chapter <= totalChapters; chapter++) {
-        const chapterData = await fetchChapterFunction(chapter);
+      try {
+        for (let chapter = 1; chapter <= totalChapters; chapter++) {
+          const chapterData = await fetchChapterFunction(chapter);
 
-        if (chapterData) {
-          await cacheBibleChapter({
-            bookId,
-            chapterNumber: chapter,
-            ...chapterData,
-            cachedAt: Date.now(),
-          });
+          if (chapterData) {
+            const dataToCache = {
+              bookId,
+              chapterNumber: chapter,
+              ...chapterData,
+              cachedAt: Date.now(),
+            };
+            await cacheBibleChapter(dataToCache);
+          }
+
+          const progress = Math.round((chapter / totalChapters) * 100);
+          setDownloadProgress((prev) => ({ ...prev, [bookId]: progress }));
         }
-
-        const progress = Math.round((chapter / totalChapters) * 100);
-        setDownloadProgress((prev) => ({ ...prev, [bookId]: progress }));
+      } catch (error) {
+        console.error("Error downloading book for offline:", error);
+        throw error;
+      } finally {
+        setIsDownloading(false);
+        setDownloadProgress((prev) => ({ ...prev, [bookId]: 100 }));
       }
-    } catch (error) {
-      console.error("Error downloading book for offline:", error);
-      throw error;
-    } finally {
-      setIsDownloading(false);
-      setDownloadProgress((prev) => ({ ...prev, [bookId]: 100 }));
-    }
-  };
+    },
+    [],
+  );
 
-  const getOfflineProgress = (bookId: number) => downloadProgress[bookId] || 0;
+  const getOfflineProgress = useCallback(
+    (bookId: number) => downloadProgress[bookId] || 0,
+    [downloadProgress],
+  );
 
-  const getCachedChaptersCount = async (bookId: number): Promise<number> => {
-    const cachedChapters = await bibleCache.getCachedChaptersForBook(bookId);
-    return cachedChapters.length;
-  };
+  const getCachedChaptersCount = useCallback(
+    async (bookId: number): Promise<number> => {
+      const cachedChapters = await bibleCache.getCachedChaptersForBook(bookId);
+      return cachedChapters.length;
+    },
+    [],
+  );
 
   return {
     downloadBookForOffline,

@@ -63,7 +63,7 @@ export { CacheSettings } from "./src/ui/CacheSettings";
 /**
  * PWA & Offline Hooks
  */
-export { useOfflineStatus } from "./src/hooks/useOfflineStatus";
+export { useNetworkStatus } from "./src/hooks/useNetworkStatus";
 export {
   useOfflineBibleChapter,
   useOfflineBibleExplanation,

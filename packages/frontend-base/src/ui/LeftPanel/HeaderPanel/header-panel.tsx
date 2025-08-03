@@ -11,6 +11,7 @@ import { Accordion } from "../../Accordion";
 import { TestamentControl } from "../../Control";
 import { VersionDropdown } from "../../Dropdown";
 import { MarkdownRenderer } from "../../MarkdownRenderer";
+import { OfflineDownload } from "../../OfflineDownload";
 import { Rating } from "../../Rating";
 import { SelectDropdown } from "../../SelectDropdown";
 import { FilterInput } from "../../SelectDropdown/FilterInput/filter-input";
@@ -225,6 +226,11 @@ export const Nav = ({
           <Accordion.Content
             styles={fixedItem && isSelectedBook ? { position: "relative" } : {}}
           >
+            <OfflineDownload
+              bookId={book.b}
+              bookName={book.n}
+              totalChapters={book.c}
+            />
             <VerseGrid
               testament={book.t}
               bookId={String(book.b)}

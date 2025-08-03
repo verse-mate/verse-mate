@@ -96,10 +96,10 @@ function BookPage({ book }) {
 
 ### 4. Offline Status Hook
 ```tsx
-import { useOfflineStatus } from 'frontend-base';
+import { useNetworkStatus } from 'frontend-base';
 
 function NetworkStatus() {
-  const { isOnline, isOffline, wasOffline, connectionType } = useOfflineStatus();
+  const { isOnline, isOffline, wasOffline, connectionType } = useNetworkStatus();
 
   return (
     <div>

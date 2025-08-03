@@ -1,5 +1,6 @@
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCachedBibleChapter } from "../../utils/offline-bible-cache";
 import styles from "./verse-grid.module.css";
 
 type VerseGridProps = {
@@ -51,26 +52,51 @@ export const VerseGrid = ({
   selectedBook,
   testament,
 }: VerseGridProps) => {
+  const [cachedChapters, setCachedChapters] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const checkCachedChapters = async () => {
+      const cached = new Set<string>();
+
+      for (const verse of verses) {
+        try {
+          const cachedChapter = await getCachedBibleChapter(
+            Number(bookId),
+            Number(verse),
+          );
+          if (cachedChapter) {
+            cached.add(verse);
+          }
+        } catch (error) {
+          // Chapter not cached, continue
+        }
+      }
+
+      setCachedChapters(cached);
+    };
+
+    checkCachedChapters();
+  }, [bookId, verses]);
+
   return (
     <div className={styles.versesContent}>
       <ul className={styles.versesGrid}>
         {verses.map((verse, index) => {
           const { handleVerseSelect } = useSelectedVerse();
+          const isCached = cachedChapters.has(verse);
+          const isSelected = selectedVerse === verse && selectedBook === bookId;
+
           return (
             <li
               key={index.toString()}
               className={`${styles.verseNumber} ${
-                selectedVerse === verse &&
-                selectedBook === bookId &&
-                styles.selected
-              }`}
+                isSelected && styles.selected
+              } ${isCached && styles.cached}`}
             >
               <button
                 className={`${styles.verseNumber} ${
-                  selectedVerse === verse &&
-                  selectedBook === bookId &&
-                  styles.selected
-                }`}
+                  isSelected && styles.selected
+                } ${isCached && styles.cached}`}
                 onClick={() => {
                   onVerseSelect(
                     bookId,
@@ -81,11 +107,17 @@ export const VerseGrid = ({
                   handleVerseSelect(testament || "", bookName, verse);
                 }}
                 type="button"
-                aria-selected={
-                  selectedVerse === verse && selectedBook === bookId
+                aria-selected={isSelected}
+                title={
+                  isCached
+                    ? `Chapter ${verse} (Available offline)`
+                    : `Chapter ${verse}`
                 }
               >
                 {verse}
+                {isCached && (
+                  <span className={styles.offlineIndicator}>📱</span>
+                )}
               </button>
             </li>
           );
