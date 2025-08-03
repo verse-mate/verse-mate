@@ -27,6 +27,7 @@ declare const styles: {
   readonly moreOptionsContainer: string;
   readonly nextChapterBtn: string;
   readonly previousChapterBtn: string;
+  readonly hidden: string;
   readonly chevronForward: string;
   readonly chevronBackward: string;
   readonly verseMateLogo: string;

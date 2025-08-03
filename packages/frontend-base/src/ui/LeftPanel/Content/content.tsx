@@ -1,4 +1,5 @@
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import { useEffect, useRef, useState } from "react";
 import type { SwipeableHandlers } from "react-swipeable";
 import * as Icon from "../../../ui/Icons";
 import { MainText } from "../../MainText";
@@ -37,6 +38,8 @@ type Props = {
   handlePreviousChapter: () => void;
   progress: number;
   handleDesktopSwipe: SwipeableHandlers;
+  buttonsVisible: boolean;
+  scrollableCallbackRef?: (node: HTMLElement | null) => void;
 };
 
 export const Content = ({
@@ -48,11 +51,55 @@ export const Content = ({
   handlePreviousChapter,
   progress,
   handleDesktopSwipe,
+  buttonsVisible,
+  scrollableCallbackRef,
 }: Props) => {
+  const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
+  const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
+
+  const [isNearNext, setIsNearNext] = useState(false);
+  const [isNearPrev, setIsNearPrev] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 1024) return;
+
+      const checkProximity = (
+        buttonRef: React.RefObject<HTMLButtonElement>,
+        setIsNear: React.Dispatch<React.SetStateAction<boolean>>,
+      ) => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const distance = Math.sqrt(
+            (e.clientX - centerX) ** 2 + (e.clientY - centerY) ** 2,
+          );
+          setIsNear(distance < 150);
+        } else {
+          setIsNear(false);
+        }
+      };
+
+      checkProximity(nextChapterButtonRef, setIsNearNext);
+      checkProximity(prevChapterButtonRef, setIsNearPrev);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
   return (
     <>
       {bookVerseData && (
-        <div className={`${styles.bookContent}`} {...handleDesktopSwipe}>
+        <div
+          className={`${styles.bookContent}`}
+          {...handleDesktopSwipe}
+          ref={scrollableCallbackRef}
+        >
           <MainText.Root>
             <MainText.Content
               bookId={String(bookId)}
@@ -62,8 +109,9 @@ export const Content = ({
           </MainText.Root>
           {chapters && Number(verseId) > 1 && (
             <button
+              ref={prevChapterButtonRef}
               type="button"
-              className={styles.previousChapterBtn}
+              className={`${styles.previousChapterBtn} ${!buttonsVisible && !isNearPrev ? styles.hidden : ""}`}
               onClick={handlePreviousChapter}
             >
               <Icon.ChevronBackward className={styles.chevronBackward} />
@@ -72,8 +120,9 @@ export const Content = ({
 
           {chapters && Number(verseId) < chapters && (
             <button
+              ref={nextChapterButtonRef}
               type="button"
-              className={styles.nextChapterBtn}
+              className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
               onClick={handleNextChapter}
             >
               <Icon.ChevronForward className={styles.chevronForward} />

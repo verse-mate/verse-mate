@@ -90,6 +90,8 @@ async function getExplanationForAllVerses(
         },
       ],
       model: "gpt-4o",
+      max_tokens: 1600,
+      temperature: 0.2,
     });
     return chat.choices[0].message.content;
   } catch (error) {
