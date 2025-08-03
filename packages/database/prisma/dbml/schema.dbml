@@ -75,9 +75,7 @@ Table favorites {
   type favorite_type_enum [not null]
   user_id String [not null]
   chapter_id Int [not null]
-  message_id Int [not null]
   chapters chapters [not null]
-  messages messages [not null]
   user user [not null]
 }
 
@@ -103,7 +101,6 @@ Table messages {
   content String [not null]
   role role_enum [not null]
   generated_at DateTime [default: `now()`]
-  favorites favorites [not null]
   conversations conversations [not null]
 }
 
@@ -234,8 +231,6 @@ Ref: explanations.chapter_id > chapters.chapter_id [delete: Cascade]
 Ref: explanations.version_id > bible_versions.id [delete: Cascade]
 
 Ref: favorites.chapter_id > chapters.chapter_id [delete: Cascade]
-
-Ref: favorites.message_id > messages.message_id [delete: Cascade]
 
 Ref: favorites.user_id > user.id [delete: Cascade]
 

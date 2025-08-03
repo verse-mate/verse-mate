@@ -143,7 +143,10 @@ export class BibleRepository {
   async getExplanation({
     book_id,
     chapter_number,
-  }: Pick<ChapterDto, "book_id" | "chapter_number">) {
+    version_id,
+  }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
+    version_id: string;
+  }) {
     const explanation = await this.db
       .getOrCreateConnection()
       .selectFrom("chapters")
@@ -163,6 +166,7 @@ export class BibleRepository {
         eb.and([
           eb("chapters.book_id", "=", book_id),
           eb("chapters.chapter_number", "=", chapter_number),
+          eb("explanations.version_id", "=", version_id),
         ]),
       )
       .execute();

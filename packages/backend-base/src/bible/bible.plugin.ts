@@ -177,11 +177,6 @@ const plugin = new Elysia()
           const { bookId, chapterNumber } = params;
           const { versionKey = "NASB1995" } = query;
 
-          const explanation = await bibleService.getExplanation({
-            book_id: Number(bookId),
-            chapter_number: Number(chapterNumber),
-          });
-
           const version = await db
             .getOrCreateConnection()
             .selectFrom("bible_versions")
@@ -192,6 +187,12 @@ const plugin = new Elysia()
           if (!version) {
             return { status: 400, body: { error: "Invalid bible version" } };
           }
+
+          const explanation = await bibleService.getExplanation({
+            book_id: Number(bookId),
+            chapter_number: Number(chapterNumber),
+            version_id: version.id,
+          });
 
           const missingTypes = Object.keys(ExplanationTypeEnum).filter(
             (type) => !explanation?.some((exp) => exp.type === type),

@@ -87,6 +87,7 @@ export class BibleService {
       await this.bibleRepository.getExplanation({
         book_id,
         chapter_number,
+        version_id,
       });
     const explanationTypeExists = explanations.some(
       (explanation) => explanation.type === type,
@@ -106,10 +107,14 @@ export class BibleService {
   async getExplanation({
     book_id,
     chapter_number,
-  }: Pick<ChapterDto, "book_id" | "chapter_number">) {
+    version_id,
+  }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
+    version_id: string;
+  }) {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
+      version_id,
     });
 
     const explanationExists = this.explanationExists({ explanation });
@@ -131,6 +136,7 @@ export class BibleService {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
+      version_id: "NASB1995", // TODO: FIX THIS
     });
     const explanationExists = this.explanationExists({ explanation });
     if (explanationExists) return { message: "Explanation not found" };
@@ -170,6 +176,7 @@ export class BibleService {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
+      version_id: "NASB1995", // TODO: FIX THIS
     });
     if (!explanation || !explanation_id)
       return { error: "Explanation not found" };
@@ -205,6 +212,7 @@ export class BibleService {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
+      version_id: "NASB1995", // TODO: FIX THIS
     });
     const explanationExists = this.explanationExists({ explanation });
     if (explanationExists) return { userRating: { stars: 0 } };
@@ -231,6 +239,7 @@ export class BibleService {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
+      version_id: "NASB1995", // TODO: FIX THIS
     });
     const explanationExists = this.explanationExists({ explanation });
     if (explanationExists) return { total_users: 0 };
@@ -256,6 +265,7 @@ export class BibleService {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
+      version_id: "NASB1995", // TODO: FIX THIS
     });
     const explanationExists = this.explanationExists({ explanation });
     if (explanationExists) return { averageRating: 0 };
@@ -336,6 +346,7 @@ export class BibleService {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id: detailsOfTheLastChapterRead.book_id,
       chapter_number: detailsOfTheLastChapterRead.chapterNumber,
+      version_id: "NASB1995", // TODO: FIX THIS
     });
 
     return {
