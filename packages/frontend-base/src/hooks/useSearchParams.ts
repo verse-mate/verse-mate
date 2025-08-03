@@ -3,10 +3,8 @@
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useSearchParams } from "next/navigation";
-import { useNavigate } from "react-router-dom";
 
 export const useSaveSearchParams = () => {
-  const navigate = useNavigate();
   const saveSearchParams = ({
     bookId,
     verseId,
@@ -36,7 +34,7 @@ export const useSaveSearchParams = () => {
 
     const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
 
-    navigate(newUrl, { replace: true });
+    window.history.replaceState({}, "", newUrl);
   };
 
   const saveBibleVersionOnURL = (bibleVersion: string) => {
@@ -62,7 +60,8 @@ export const useGetSearchParams = () => {
   const conversationId = searchParams.get("conversationId") || "newChat";
   const explanationId = Number(searchParams.get("explanationId"));
   const explanationType =
-    searchParams.get("explanationType") || ExplanationTypeEnum.summary;
+    (searchParams.get("explanationType") as ExplanationTypeEnum) ||
+    ExplanationTypeEnum.summary;
 
   return {
     bookId,

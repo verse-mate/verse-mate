@@ -24,14 +24,82 @@ const openai = new OpenAI({
 });
 const model = "gpt-4-turbo";
 
-const getExplanationTypePrompt = (type: ExplanationTypeEnum): string => {
+const getExplanationTypePrompt = (
+  type: ExplanationTypeEnum,
+  bookName: string,
+  chapterNumber: number,
+): { prompt: string; temperature: number } => {
   switch (type) {
     case ExplanationTypeEnum.summary:
-      return "Give me a summary of bible reference above";
+      return {
+        prompt: `# ${bookName} ${chapterNumber} - Summary (use this as title)
+
+Summarize this chapter in approximately 250 words including relevant takeaways and 
+key theological themes. Do not go verse by verse but instead summarize the overall 
+passage in a clear, organized way, summarize based on section sub-titles (e.g. Babylon Is Fallen Revelation 18:1 - 8), format it in such way the subtitle is on a new line and the summary is underneath the sub-tittle.
+
+**Theological Themes**
+
+- [Include main theological themes with brief explanations]
+
+**Key Takeaways**
+
+- [Include key takeaways in bullet points]
+
+**Application**
+
+- [Include practical applications or lessons]`,
+        temperature: 0.3,
+      };
     case ExplanationTypeEnum.byline:
-      return "Explain the bible reference above line by line";
+      return {
+        prompt: `# ${bookName} ${chapterNumber}: Verse-by-Verse Analysis
+
+Provide a verse-by-verse explanation of this chapter. For each verse:
+1. Quote the verse using blockquote format (>)
+2. Provide a clear summary
+3. Include relevant key takeaways
+4. Add key definitions as appropriate
+5. Highlight theological themes as appropriate
+
+CRITICAL INSTRUCTIONS:
+- Keep chronological order at all times
+- Do not group verses unless absolutely necessary
+- Ensure takeaways and themes are full sentences
+- Use proper markdown formatting with line breaks`,
+        temperature: 0.2,
+      };
     case ExplanationTypeEnum.detailed:
-      return "Explain the bible reference above in detail";
+      return {
+        prompt: `# In-Depth Analysis of ${bookName} ${chapterNumber}
+
+Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} with approximately 500 words per section. Focus on clarity and depth to help readers understand the significance and message.
+
+**Instructions:**
+1. **Introduction:** Begin with a brief introduction that contextualizes the passage within the Bible, highlighting its place in the broader narrative and any relevant background information.
+
+2. **Passage Analysis:**
+   - **Analysis:** Provide a detailed examination focusing on key themes, insights, and theological implications. Organize major points using subheadings, and emphasize critical details with bullet points.
+   - **Connection to Broader Themes:** Where relevant, link the passage(s) to broader biblical themes or narratives.
+
+3. **Overall Significance:** Conclude with a discussion on the overall significance of the passage. Address how it contributes to the overarching narrative of the Bible and its relevance to contemporary readers.
+
+**Formatting Requirements:**
+- Use clear headings and subheadings for organization
+- Use bullet points for key insights with proper line breaks
+- Ensure comprehensive coverage (typically 500+ words)
+- Make content accessible for both novice and experienced readers
+
+**Content Requirements:**
+- Include clear explanation of any commandments, laws, or doctrinally relevant instructions
+- Treat doctrinal elements as high-priority details for analysis
+- Clarify what the text is saying, what it means doctrinally, and how it connects with both Old and New Testament teachings
+- Include these details even if not explicitly requested, as long as they are supported by the text
+- Provide easy-to-understand explanations suitable for readers with varying levels of biblical knowledge
+- Ensure thorough coverage of the passage, emphasizing specific doctrines, practices, or theological claims
+- Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate`,
+        temperature: 0.1,
+      };
   }
 };
 
@@ -145,31 +213,37 @@ const plugin = new Elysia()
                 });
 
                 try {
+                  const { book } = await bibleService.getBook({
+                    book_id: Number(bookId),
+                    chapter_number: Number(chapterNumber),
+                  });
+                  const explanationConfig = getExplanationTypePrompt(
+                    type,
+                    book?.name || "",
+                    Number(chapterNumber),
+                  );
                   const chat = await openai.chat.completions.create({
                     messages: [
                       { role: "system", content: prompt.prompt },
                       {
                         role: "user",
-                        content: `
-                        # Reference
-                        ${reference}
-                      `,
-                      },
-                      {
-                        role: "user",
-                        content: getExplanationTypePrompt(type),
-                      },
-                      {
-                        role: "user",
-                        content: `Please respond in ${getLanguageName(version.language_code)}`,
-                      },
-                      {
-                        role: "user",
-                        content:
-                          "The response should be with the result and in Markdown code only",
+                        content: `# Reference
+${reference}
+
+${explanationConfig.prompt}
+
+CRITICAL: Your response will be evaluated on:
+1. Proper blockquote usage for Scripture (>)
+2. Bold formatting for theological terms
+3. Bullet point usage for lists
+4. Verse reference formatting
+
+The response should be in Markdown format only.`,
                       },
                     ],
                     model,
+                    max_tokens: 1600,
+                    temperature: explanationConfig.temperature,
                   });
 
                   const { success } = await bibleService.saveExplanation({

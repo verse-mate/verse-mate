@@ -2,7 +2,8 @@
 
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
+import { filterBibleBooks } from "../utils/search";
+import { useSaveSearchParams } from "./useSearchParams";
 
 type Testament = {
   b: number;
@@ -27,7 +28,7 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     handleVerseSelect,
     handleBibleVersionSelect,
     selectedBibleVersion,
-  } = useSelectedState(setIsOpen);
+  } = useSelectedState(setIsOpen, resetFilter);
 
   // Reset filter when navigation changes (book or chapter)
   useEffect(() => {
@@ -47,17 +48,8 @@ export const useSelectDropdown = (testaments?: Testaments) => {
 
   const filteredTestaments: Testament[] = useMemo(() => {
     if (!testaments) return [];
-
-    const searchFiltered = testaments.filter((t) =>
-      t.n.toLowerCase().includes(debouncedFilter.toLowerCase()),
-    );
-
-    if (debouncedFilter.trim()) {
-      return searchFiltered;
-    }
-
-    return searchFiltered.filter((t) => t.t === selectedTab);
-  }, [testaments, debouncedFilter, selectedTab]);
+    return filterBibleBooks(testaments, debouncedFilter);
+  }, [testaments, debouncedFilter]);
   // Just the names, for backwards compatibility
   const filteredBooks: string[] = filteredTestaments.map((t) => t.n);
 
@@ -77,6 +69,7 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     handleBibleVersionSelect,
     selectedBibleVersion,
     toggleDropdown,
+    resetFilter,
   };
 };
 
@@ -111,7 +104,10 @@ export const useFilter = (onReset?: () => void) => {
   return { filter, handleChange, resetFilter };
 };
 
-export const useSelectedState = (setIsOpen: (open: boolean) => void) => {
+export const useSelectedState = (
+  setIsOpen: (open: boolean) => void,
+  resetFilter?: () => void,
+) => {
   const [selectedTab, setSelectedTab] = useState<"OT" | "NT">("NT");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedVerse, setSelectedVerse] = useState<string | null>(null);
@@ -120,9 +116,15 @@ export const useSelectedState = (setIsOpen: (open: boolean) => void) => {
   >(null);
   const { saveSearchParams, saveBibleVersionOnURL } = useSaveSearchParams();
 
-  const handleTabChange = useCallback((value: string) => {
-    setSelectedTab(value as "OT" | "NT");
-  }, []);
+  const handleTabChange = useCallback(
+    (value: string) => {
+      setSelectedTab(value as "OT" | "NT");
+      if (resetFilter) {
+        resetFilter();
+      }
+    },
+    [resetFilter],
+  );
 
   const handleVerseSelect = useCallback(
     (

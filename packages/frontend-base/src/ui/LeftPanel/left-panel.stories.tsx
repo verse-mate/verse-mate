@@ -99,6 +99,7 @@ export const Main: Story = () => {
     handleChange: leftPanelHandleChange,
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
+    resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
   const { progress } = useProgressBar({
@@ -203,6 +204,7 @@ export const Main: Story = () => {
                 label="Book: "
                 open={leftPanelIsOpen}
                 onOpenChange={leftPanelSetIsOpen}
+                resetFilter={leftPanelResetFilter}
               >
                 <SelectDropdown.Trigger
                   selectedBook={leftPanelSelectedBook || book || null}
@@ -219,8 +221,16 @@ export const Main: Story = () => {
                     onValueChange={leftPanelHandleTabChange}
                   >
                     <Tabs.List>
-                      <Tabs.Trigger value="OT" label="Old Testament" />
-                      <Tabs.Trigger value="NT" label="New Testament" />
+                      <Tabs.Trigger
+                        value="OT"
+                        label="Old Testament"
+                        resetFilter={leftPanelResetFilter}
+                      />
+                      <Tabs.Trigger
+                        value="NT"
+                        label="New Testament"
+                        resetFilter={leftPanelResetFilter}
+                      />
                     </Tabs.List>
 
                     <FilterInput
