@@ -20,8 +20,9 @@
   },
 
   // Static assets configuration
-  "site": {
-    "bucket": ".cf/public"
+  "assets": {
+    "directory": ".cf/public",
+    "binding": "ASSETS"
   },
 
   // Environment variables
