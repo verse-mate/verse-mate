@@ -71,19 +71,12 @@
   // Environment configurations
   "env": {
     "preview": {
-      "name": "verse-mate-frontend-preview",
+      "name": "v-m-preview",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
-        //        "APP_URL": "https://pr-${PR_NUMBER}.verse-mate.workers.dev",
-        "APP_URL": "https://preview.verse-mate.workers.dev",
+        "APP_URL": "https://v-m-preview.verse-mate.workers.dev",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
-      },
-      "routes": [
-        {
-          "pattern": "preview.verse-mate.workers.dev",
-          "custom_domain": false
-        }
-      ]
+      }
     },
     "staging": {
       "name": "verse-mate-frontend-staging",
