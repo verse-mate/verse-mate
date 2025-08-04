@@ -68,7 +68,11 @@ jobs:
 
       - name: Run type checking
         working-directory: ./apps/frontend-next
-        run: bun run tsc
+        run: |
+          if ! bun run tsc; then
+            echo "::warning::Type checking failed but continuing build"
+            exit 1
+          fi
         continue-on-error: true
 
   cloudflare-deploy:
