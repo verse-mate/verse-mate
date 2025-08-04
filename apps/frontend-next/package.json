@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "bun --bun run next dev --turbo",
     "build": "bun --bun run next build",
-    "start": "bun --bun run next start"
+    "build:worker": "bun run build && bun run prepare:worker",
+    "prepare:worker": "cp -r .next/static .cf/public/_next/static && cp -r public/* .cf/public/",
+    "start": "bun --bun run next start",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "frontend-base": "workspace:*",

@@ -1,0 +1,76 @@
+{
+  // Wrangler configuration for VerseMate frontend deployment to Cloudflare Workers
+  "$schema": "https://raw.githubusercontent.com/cloudflare/wrangler/main/config-schema.json",
+  "name": "verse-mate-frontend",
+  "compatibility_date": "2024-08-04",
+  "account_id": "e8f0b566ba1c8227a25e3784def4300e", // Add your Cloudflare account ID here
+
+  // Main worker entry point
+  "main": ".cf/worker/index.js",
+
+  // Build configuration
+  "build": {
+    "command": "bun run build:worker",
+    "cwd": ".",
+    "watch_paths": ["src", "public", ".cf/worker"]
+  },
+
+  // Static assets configuration
+  "site": {
+    "bucket": ".cf/public"
+  },
+
+  // Environment variables
+  "vars": {
+    "API_URL": "https://api.verse-mate.apegro.dev",
+    "APP_URL": "https://verse-mate.workers.dev", // Update with your workers.dev subdomain
+    "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
+  },
+
+  // Workers-specific route configuration
+  "route": {
+    "pattern": "verse-mate.xyz/*", // Replace with your actual domain
+    "zone_id": "f9ba31b15cafd9aacb90a29f861a5931" // Required if using custom domain
+  },
+
+  // Node.js compatibility
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Node.js built-ins
+  "node_compat": true,
+
+  // KV namespaces for caching
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "YOUR_KV_NAMESPACE_ID", // Create with: wrangler kv:namespace create CACHE
+      "preview_id": "YOUR_PREVIEW_KV_NAMESPACE_ID" // For development
+    }
+  ],
+
+  // R2 bucket for static assets (optional, more efficient than site.bucket)
+  "r2_buckets": [
+    {
+      "binding": "ASSETS",
+      "bucket_name": "verse-mate-assets"
+    }
+  ],
+
+  // Development settings
+  "dev": {
+    "ip": "localhost",
+    "port": 8787,
+    "local_protocol": "http",
+    "upstream_protocol": "https"
+  },
+
+  // Tail consumers for logging (optional)
+  "tail_consumers": [
+    {
+      "service": "verse-mate-logger"
+    }
+  ],
+
+  // Usage model
+  "usage_model": "bundled"
+}
