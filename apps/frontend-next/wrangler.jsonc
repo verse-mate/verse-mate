@@ -11,8 +11,7 @@
   // Build configuration
   "build": {
     "command": "bun run build:worker",
-    "cwd": ".",
-    "watch_paths": ["src", "public", ".cf/worker"]
+    "cwd": "."
   },
 
   // Static assets configuration
@@ -36,15 +35,12 @@
   // Node.js compatibility
   "compatibility_flags": ["nodejs_compat"],
 
-  // Node.js built-ins
-  "node_compat": true,
-
   // KV namespaces for caching
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "YOUR_KV_NAMESPACE_ID", // Create with: wrangler kv:namespace create CACHE
-      "preview_id": "YOUR_PREVIEW_KV_NAMESPACE_ID" // For development
+      "id": "148bacc8fbc14a318da7c590a324efb5", // Create with: wrangler kv namespace create CACHE
+      "preview_id": "189059813b874bf6b5d27f9b4d3f2f11" // For development
     }
   ],
 
@@ -69,8 +65,5 @@
     {
       "service": "verse-mate-logger"
     }
-  ],
-
-  // Usage model
-  "usage_model": "bundled"
+  ]
 }
