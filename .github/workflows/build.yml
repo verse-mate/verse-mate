@@ -30,7 +30,11 @@ jobs:
 
       - name: Run backend tests
         working-directory: ./apps/backend
-        run: bun test --passWithNoTests
+        run: |
+          if ! bun test --passWithNoTests; then
+            echo "::warning::Backend tests failed but continuing build"
+            exit 1
+          fi
         continue-on-error: true
 
   build-frontend:
@@ -55,7 +59,11 @@ jobs:
 
       - name: Run frontend linting
         working-directory: ./apps/frontend-next
-        run: bun run lint
+        run: |
+          if ! bun run lint; then
+            echo "::warning::Frontend linting failed but continuing build"
+            exit 1
+          fi
         continue-on-error: true
 
       - name: Run type checking
