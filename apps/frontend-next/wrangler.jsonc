@@ -74,9 +74,15 @@
       "name": "verse-mate-frontend-preview-${PR_NUMBER}",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
-        "APP_URL": "https://verse-mate-frontend-preview-${PR_NUMBER}.verse-mate-cloudflare-account.workers.dev",
+        //        "APP_URL": "https://pr-${PR_NUMBER}.verse-mate.workers.dev",
+        "APP_URL": "https://preview.verse-mate.workers.dev",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
-      }
+      },
+      "routes": [
+        {
+          "pattern": "preview.verse-mate.workers.dev"
+        }
+      ]
     },
     "staging": {
       "name": "verse-mate-frontend-staging",
