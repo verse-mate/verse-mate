@@ -64,11 +64,14 @@ export { CacheSettings } from "./src/ui/CacheSettings";
  * PWA & Offline Hooks
  */
 export { useNetworkStatus } from "./src/hooks/useNetworkStatus";
+export { useOfflineBibleChapter } from "./src/hooks/useOfflineBibleChapter";
+export { useOfflineBibleExplanation } from "./src/hooks/useOfflineBibleExplanation";
 export {
-  useOfflineBibleChapter,
-  useOfflineBibleExplanation,
-  useOfflineBookManager,
-} from "./src/hooks/useOfflineBible";
+  useExplanation,
+  useExplanationControl,
+} from "./src/hooks/useExplanation";
+export { useChapter } from "./src/hooks/useChapter";
+export { useOfflineBookManager } from "./src/hooks/useOfflineBookManager";
 
 /**
  * PWA & Offline Utilities

@@ -9,10 +9,10 @@ import { useSwipeable } from "react-swipeable";
 import {
   fetchAllChaptersByBook,
   fetchAllTestaments,
-  fetchBookVerse,
-  fetchExplanation,
 } from "../../hooks/useBible";
+import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
+import { useExplanation } from "../../hooks/useExplanation";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { useLastRead } from "../../hooks/useLastRead";
 import { useProgressBar } from "../../hooks/useProgressBar";
@@ -64,16 +64,19 @@ export const MainContent = () => {
 
   const { testaments } = fetchAllTestaments();
   const { chapters } = fetchAllChaptersByBook(bookId);
-  const { bookVerseData } = fetchBookVerse(bookId, Number(verseId));
-  const { explanation } = fetchExplanation(
+  const { bookVerseData } = useChapter({
     bookId,
-    Number(verseId),
+    chapterNumber: Number(verseId),
+  });
+  const { explanation: explanationData, isFromCache } = useExplanation({
+    bookId,
+    chapterNumber: Number(verseId),
     explanationType,
-  );
+  });
 
   const { lastRead, startTimer } = useLastRead(
     session,
-    explanation?.explanation_id,
+    explanationData?.explanation_id,
   );
 
   useEffect(() => {
@@ -122,7 +125,7 @@ export const MainContent = () => {
     averageRating,
     setRating,
     setHoverRating,
-  } = useRating(5, session, bookId, verseId, explanation?.explanation_id);
+  } = useRating(5, session, bookId, verseId, explanationData?.explanation_id);
 
   const oldTestamentBooks =
     testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [];
@@ -923,7 +926,7 @@ export const MainContent = () => {
               bibleVersionSelected={bibleVersionSelected}
               bookId={bookId}
               verseId={verseId}
-              explanation={explanation}
+              explanation={explanationData}
               currentRating={currentRating}
               explanationType={explanationType}
               handleBibleVersionSelected={handleBibleVersionSelected}
@@ -981,7 +984,7 @@ export const MainContent = () => {
             />
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
-              explanation={explanation}
+              explanation={explanationData}
               session={session}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}

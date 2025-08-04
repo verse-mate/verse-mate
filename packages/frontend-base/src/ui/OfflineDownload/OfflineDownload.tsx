@@ -1,7 +1,7 @@
 import { api } from "backend-api";
 import { useCallback, useEffect, useState } from "react";
 import { useNetworkStatus } from "../../hooks/useNetworkStatus";
-import { useOfflineBookManager } from "../../hooks/useOfflineBible";
+import { useOfflineBookManager } from "../../hooks/useOfflineBookManager";
 import { Button } from "../Button/Button";
 import { ProgressBar } from "../ProgressBar";
 import styles from "./OfflineDownload.module.css";
@@ -58,6 +58,7 @@ export function OfflineDownload({
     setError(null);
 
     try {
+      // Enhanced download with smart explanation caching from React Query cache
       await downloadBookForOffline(bookId, totalChapters, fetchChapterFunction);
       const newCachedCount = await getCachedChaptersCount(bookId);
       setCachedChapters(newCachedCount);

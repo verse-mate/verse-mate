@@ -1,10 +1,10 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import { useExplanation } from "../../hooks/useExplanation";
+import { useExplanationControl } from "../../hooks/useExplanation";
 import { explanationTypes } from "../../utils/commentary-options";
 import styles from "./explanation.module.css";
 
 export const NavLinks = () => {
-  const { explanationType, handleValueChange } = useExplanation();
+  const { explanationType, handleValueChange } = useExplanationControl();
 
   return (
     <>

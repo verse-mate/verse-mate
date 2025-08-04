@@ -1,4 +1,4 @@
-import { fetchExplanation } from "../../hooks/useBible";
+import { useExplanation } from "../../hooks/useExplanation";
 import { useRating } from "../../hooks/useRating";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
 import { userSession } from "../../hooks/userSession";
@@ -10,11 +10,16 @@ import styles from "./explanation.module.css";
 export const Content = () => {
   const { session } = userSession();
   const { bookId, verseId, explanationType } = useGetSearchParams();
-  const { explanation, error, isLoading } = fetchExplanation(
+  const {
+    explanation,
+    loading: isLoading,
+    error,
+    isFromCache,
+  } = useExplanation({
     bookId,
-    Number(verseId),
+    chapterNumber: Number(verseId),
     explanationType,
-  );
+  });
   const {
     maxRating,
     currentRating,
@@ -27,9 +32,7 @@ export const Content = () => {
 
   return (
     <>
-      {error && (
-        <div className={styles.explanationContent}>Error: {error.message}</div>
-      )}
+      {error && <div className={styles.explanationContent}>Error: {error}</div>}
 
       {isLoading && !explanation && (
         <div className={styles.explanationContent}>
