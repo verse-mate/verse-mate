@@ -34,7 +34,7 @@
   // Custom domain routes
   "routes": [
     {
-      "pattern": "verse-mate.xyz/*",
+      "pattern": "verse-mate.xyz",
       "custom_domain": true
     }
   ],
