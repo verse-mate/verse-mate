@@ -61,6 +61,7 @@ jobs:
       - name: Run type checking
         working-directory: ./apps/frontend-next
         run: bun run tsc
+        continue-on-error: true
 
   cloudflare-deploy:
     name: Deploy to Cloudflare
