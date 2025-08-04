@@ -45,12 +45,12 @@
   ],
 
   // R2 bucket for static assets (optional, more efficient than site.bucket)
-  "r2_buckets": [
-    {
-      "binding": "ASSETS",
-      "bucket_name": "verse-mate-assets"
-    }
-  ],
+  // "r2_buckets": [
+  //   {
+  //     "binding": "ASSETS",
+  //     "bucket_name": "verse-mate-assets"
+  //   }
+  // ],
 
   // Development settings
   "dev": {
@@ -58,12 +58,12 @@
     "port": 8787,
     "local_protocol": "http",
     "upstream_protocol": "https"
-  },
+  }
 
   // Tail consumers for logging (optional)
-  "tail_consumers": [
-    {
-      "service": "verse-mate-logger"
-    }
-  ]
+  // "tail_consumers": [
+  //   {
+  //     "service": "verse-mate-logger"
+  //   }
+  // ]
 }
