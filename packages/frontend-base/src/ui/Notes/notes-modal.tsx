@@ -7,7 +7,7 @@ interface NotesModalProps {
   onClose: () => void;
   bookName: string;
   chapterNumber: number;
-  translation: string;
+  onNotesChange?: () => void; // Callback to notify parent when notes change
 }
 
 export const NotesModal: React.FC<NotesModalProps> = ({
@@ -15,7 +15,7 @@ export const NotesModal: React.FC<NotesModalProps> = ({
   onClose,
   bookName,
   chapterNumber,
-  translation,
+  onNotesChange,
 }) => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     if (isOpen) {
       fetchNotes();
     }
-  }, [isOpen, bookName, chapterNumber, translation]);
+  }, [isOpen, bookName, chapterNumber]);
 
   const fetchNotes = async () => {
     setLoading(true);
@@ -38,13 +38,8 @@ export const NotesModal: React.FC<NotesModalProps> = ({
       console.log("[NotesModal] Fetching notes for:", {
         bookName,
         chapterNumber,
-        translation,
       });
-      const fetchedNotes = await notesApi.getNotes(
-        bookName,
-        chapterNumber,
-        translation,
-      );
+      const fetchedNotes = await notesApi.getNotes(bookName, chapterNumber);
       setNotes(fetchedNotes);
     } catch (err) {
       console.error("[NotesModal] Error fetching notes:", err);
@@ -62,11 +57,12 @@ export const NotesModal: React.FC<NotesModalProps> = ({
       const newNote = await notesApi.createNote({
         bookName,
         chapterNumber,
-        translation,
         content: newNoteContent.trim(),
       });
       setNotes((prev) => [newNote, ...prev]);
       setNewNoteContent("");
+      // Notify parent that notes have changed
+      onNotesChange?.();
     } catch (err) {
       console.error("[NotesModal] Error creating note:", err);
       setError("Failed to create note");
@@ -98,6 +94,8 @@ export const NotesModal: React.FC<NotesModalProps> = ({
       const success = await notesApi.deleteNote(noteId);
       if (success) {
         setNotes((prev) => prev.filter((note) => note.note_id !== noteId));
+        // Notify parent that notes have changed
+        onNotesChange?.();
       } else {
         setError("Failed to delete note");
       }

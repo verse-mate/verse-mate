@@ -6,7 +6,6 @@ export interface Note {
   user_id: string;
   book_name: string;
   chapter_number: number;
-  translation: string;
   content: string;
   created_at: Date;
   updated_at: Date;
@@ -16,7 +15,6 @@ export interface CreateNoteRequest {
   user_id: string;
   book_name: string;
   chapter_number: number;
-  translation: string;
   content: string;
 }
 
@@ -35,11 +33,10 @@ export class NotesService {
     userId: string,
     bookName: string,
     chapterNumber: number,
-    translation: string,
   ): Promise<Note[]> {
     try {
       console.log(
-        `[NotesService] Getting notes from database for ${bookName} ${chapterNumber} (${translation})`,
+        `[NotesService] Getting notes from database for ${bookName} ${chapterNumber}`,
       );
 
       const result = await sql`
@@ -47,7 +44,6 @@ export class NotesService {
         WHERE user_id = ${userId} 
           AND book_name = ${bookName} 
           AND chapter_number = ${chapterNumber} 
-          AND translation = ${translation} 
         ORDER BY created_at DESC
       `.execute(this.db.getOrCreateConnection());
 
@@ -66,8 +62,8 @@ export class NotesService {
       console.log("[NotesService] Creating note in database:", noteData);
 
       const result = await sql`
-        INSERT INTO notes (user_id, book_name, chapter_number, translation, content, created_at, updated_at)
-        VALUES (${noteData.user_id}, ${noteData.book_name}, ${noteData.chapter_number}, ${noteData.translation}, ${noteData.content}, NOW(), NOW())
+        INSERT INTO notes (user_id, book_name, chapter_number, content, created_at, updated_at)
+        VALUES (${noteData.user_id}, ${noteData.book_name}, ${noteData.chapter_number}, ${noteData.content}, NOW(), NOW())
         RETURNING *
       `.execute(this.db.getOrCreateConnection());
 

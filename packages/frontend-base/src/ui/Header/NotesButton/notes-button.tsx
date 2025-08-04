@@ -48,31 +48,33 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
     return null;
   }
 
-  // Check if current chapter has notes
+  // Function to check if current chapter has notes
+  const checkForNotes = async () => {
+    if (!bookName || !chapterNumber || !translation || !isNotesEnabled()) {
+      return;
+    }
+
+    try {
+      const notes = await notesApi.getNotes(bookName, chapterNumber);
+      setHasNotes(notes.length > 0);
+      console.log(
+        `[NotesButton] Found ${notes.length} notes for ${bookName} ${chapterNumber}`,
+      );
+    } catch (error) {
+      console.error("[NotesButton] Error checking for notes:", error);
+      setHasNotes(false);
+    }
+  };
+
+  // Check if current chapter has notes when component mounts or chapter changes
   useEffect(() => {
-    const checkForNotes = async () => {
-      if (!bookName || !chapterNumber || !translation || !isNotesEnabled()) {
-        return;
-      }
-
-      try {
-        const notes = await notesApi.getNotes(
-          bookName,
-          chapterNumber,
-          translation,
-        );
-        setHasNotes(notes.length > 0);
-        console.log(
-          `[NotesButton] Found ${notes.length} notes for ${bookName} ${chapterNumber}`,
-        );
-      } catch (error) {
-        console.error("[NotesButton] Error checking for notes:", error);
-        setHasNotes(false);
-      }
-    };
-
     checkForNotes();
   }, [bookName, chapterNumber, translation]);
+
+  // Callback to refresh notes count when notes are added/deleted from modal
+  const handleNotesChange = () => {
+    checkForNotes();
+  };
 
   const handleOpenModal = () => {
     console.log("[NotesButton] Opening notes modal for:", {
@@ -161,7 +163,7 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
         onClose={handleCloseModal}
         bookName={bookName}
         chapterNumber={chapterNumber}
-        translation={translation}
+        onNotesChange={handleNotesChange}
       />
     </>
   );

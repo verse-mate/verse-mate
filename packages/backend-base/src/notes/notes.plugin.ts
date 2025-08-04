@@ -14,7 +14,7 @@ export const notesPlugin = new Elysia({ prefix: "/notes" })
     };
   })
   .get(
-    "/:bookName/:chapterNumber/:translation",
+    "/:bookName/:chapterNumber",
     async ({ params, query, store, set }) => {
       console.log("[Notes Plugin] GET notes request:", { params, query });
 
@@ -32,7 +32,6 @@ export const notesPlugin = new Elysia({ prefix: "/notes" })
           userId,
           params.bookName,
           Number.parseInt(params.chapterNumber),
-          params.translation,
         );
 
         console.log("[Notes Plugin] Retrieved notes:", notes.length);
@@ -47,7 +46,6 @@ export const notesPlugin = new Elysia({ prefix: "/notes" })
       params: t.Object({
         bookName: t.String(),
         chapterNumber: t.String(),
-        translation: t.String(),
       }),
       query: t.Object({
         userId: t.Optional(t.String()),
@@ -70,7 +68,6 @@ export const notesPlugin = new Elysia({ prefix: "/notes" })
           user_id: body.userId || "mock-user-id",
           book_name: body.bookName,
           chapter_number: body.chapterNumber,
-          translation: body.translation,
           content: body.content,
         });
 
@@ -87,7 +84,6 @@ export const notesPlugin = new Elysia({ prefix: "/notes" })
         userId: t.Optional(t.String()),
         bookName: t.String(),
         chapterNumber: t.Number(),
-        translation: t.String(),
         content: t.String(),
       }),
     },
