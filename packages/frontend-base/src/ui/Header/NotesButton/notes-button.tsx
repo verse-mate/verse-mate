@@ -1,6 +1,5 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { notesApi } from "../../../api/notesApi";
 import { NotesIcon } from "../../Icons/notesIcon";
 import { NotesModal } from "../../Notes/notes-modal";
 
@@ -56,10 +55,11 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
     }
 
     try {
-      const notes = await notesApi.getNotes(
-        bookName,
-        chapterNumber,
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${bookName}/${chapterNumber}?userId=550e8400-e29b-41d4-a716-446655440000`,
       );
+      const data = await response.json();
+      const notes = data.notes || [];
       setHasNotes(notes.length > 0);
       console.log(
         `[NotesButton] Found ${notes.length} notes for ${bookName} ${chapterNumber}`,
@@ -126,11 +126,7 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
         }}
         title={hasNotes ? "Notes (has saved notes)" : "Notes"}
       >
-        <NotesIcon
-          width={16}
-          height={16}
-          fill="currentColor"
-        />
+        <NotesIcon width={16} height={16} fill="currentColor" />
         Notes
         {hasNotes && (
           <span
@@ -140,9 +136,9 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
               right: "2px",
               width: "8px",
               height: "8px",
-              backgroundColor: "#007bff",
+              backgroundColor: "var(--brand)",
               borderRadius: "50%",
-              border: "1px solid white",
+              border: "1px solid var(--snow)",
               boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
             }}
           />

@@ -23,10 +23,39 @@ export interface UpdateNoteRequest {
 }
 
 export class NotesService {
+  private inMemoryNotes: Note[] = [];
+  private useInMemory = false;
+
   constructor(private db: db) {
     console.log(
       "[NotesService] Initialized with real PostgreSQL database connection",
     );
+    // Test database connection and fallback to in-memory if needed
+    this.testDatabaseConnection();
+  }
+
+  private async testDatabaseConnection() {
+    try {
+      // Try a simple query to test the connection
+      await sql`SELECT 1`.execute(this.db.getOrCreateConnection());
+      console.log("[NotesService] Database connection successful");
+
+      // Test the notes table structure
+      const tableInfo = await sql`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_name = 'notes' 
+        ORDER BY ordinal_position
+      `.execute(this.db.getOrCreateConnection());
+
+      console.log("[NotesService] Notes table structure:", tableInfo.rows);
+    } catch (error) {
+      console.warn(
+        "[NotesService] Database connection failed, using in-memory storage:",
+        error,
+      );
+      this.useInMemory = true;
+    }
   }
 
   async getNotesByChapter(
@@ -34,6 +63,22 @@ export class NotesService {
     bookName: string,
     chapterNumber: number,
   ): Promise<Note[]> {
+    if (this.useInMemory) {
+      console.log("[NotesService] Fetching notes from in-memory storage:", {
+        userId,
+        bookName,
+        chapterNumber,
+      });
+      const notes = this.inMemoryNotes.filter(
+        (note) =>
+          note.user_id === userId &&
+          note.book_name === bookName &&
+          note.chapter_number === chapterNumber,
+      );
+      console.log(`[NotesService] Found ${notes.length} notes in memory`);
+      return notes;
+    }
+
     try {
       console.log(
         `[NotesService] Getting notes from database for ${bookName} ${chapterNumber}`,
@@ -58,8 +103,36 @@ export class NotesService {
   }
 
   async createNote(noteData: CreateNoteRequest): Promise<Note> {
+    if (this.useInMemory) {
+      console.log("[NotesService] Creating note in memory:", noteData);
+      const newNote: Note = {
+        note_id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        user_id: noteData.user_id,
+        book_name: noteData.book_name,
+        chapter_number: noteData.chapter_number,
+        content: noteData.content,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      this.inMemoryNotes.push(newNote);
+      console.log("[NotesService] Created note in memory:", newNote.note_id);
+      return newNote;
+    }
+
     try {
       console.log("[NotesService] Creating note in database:", noteData);
+      console.log("[NotesService] Data types:", {
+        user_id: typeof noteData.user_id,
+        book_name: typeof noteData.book_name,
+        chapter_number: typeof noteData.chapter_number,
+        content: typeof noteData.content,
+      });
+      console.log("[NotesService] Data values:", {
+        user_id: noteData.user_id,
+        book_name: noteData.book_name,
+        chapter_number: noteData.chapter_number,
+        content: noteData.content,
+      });
 
       const result = await sql`
         INSERT INTO notes (user_id, book_name, chapter_number, content, created_at, updated_at)
@@ -81,6 +154,7 @@ export class NotesService {
         stack: err.stack,
         name: err.name,
       });
+      console.error("[NotesService] Failed data:", noteData);
       throw new Error(`Failed to create note: ${err.message}`);
     }
   }

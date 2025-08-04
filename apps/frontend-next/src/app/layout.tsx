@@ -11,7 +11,7 @@ export default function RootLayout({
 }>) {
   console.log("process.env.API_URL", process.env.API_URL);
   const envValues: Env = {
-    apiUrl: process.env.API_URL ?? "http://localhost:3000",
+    apiUrl: process.env.API_URL ?? "http://localhost:4000",
     askVerseMate: process.env.NEXT_PUBLIC_ASK_VERSE_MATE === "true",
   };
   $env.set(envValues);

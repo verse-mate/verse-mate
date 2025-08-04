@@ -1,6 +1,17 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { type Note, notesApi } from "../../api/notesApi";
+import { Button } from "../Button/Button";
+import styles from "./NotesModal.module.css";
+
+type Note = {
+  note_id: string;
+  user_id: string;
+  book_name: string;
+  chapter_number: number;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
 
 interface NotesModalProps {
   isOpen: boolean;
@@ -39,7 +50,12 @@ export const NotesModal: React.FC<NotesModalProps> = ({
         bookName,
         chapterNumber,
       });
-      const fetchedNotes = await notesApi.getNotes(bookName, chapterNumber);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${bookName}/${chapterNumber}?userId=550e8400-e29b-41d4-a716-446655440000`,
+      );
+      const data = await response.json();
+      const fetchedNotes = data.notes || [];
       setNotes(fetchedNotes);
     } catch (err) {
       console.error("[NotesModal] Error fetching notes:", err);
@@ -54,11 +70,49 @@ export const NotesModal: React.FC<NotesModalProps> = ({
 
     try {
       console.log("[NotesModal] Creating note:", newNoteContent);
-      const newNote = await notesApi.createNote({
+      const requestBody = {
         bookName,
         chapterNumber,
         content: newNoteContent.trim(),
-      });
+        userId: "550e8400-e29b-41d4-a716-446655440000",
+      };
+      console.log("[NotesModal] Request body:", requestBody);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        },
+      );
+
+      console.log("[NotesModal] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[NotesModal] Error response:", errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`,
+        );
+      }
+
+      const data = await response.json();
+      console.log("[NotesModal] Response data:", data);
+
+      const newNote = data.note;
+
+      if (!newNote) {
+        console.error("[NotesModal] No note in response:", data);
+        throw new Error("No note returned from server");
+      }
+
+      if (!newNote.note_id) {
+        console.error("[NotesModal] Note missing note_id:", newNote);
+        throw new Error("Note missing note_id");
+      }
+
+      console.log("[NotesModal] Successfully created note:", newNote);
       setNotes((prev) => [newNote, ...prev]);
       setNewNoteContent("");
       // Notify parent that notes have changed
@@ -74,9 +128,29 @@ export const NotesModal: React.FC<NotesModalProps> = ({
 
     try {
       console.log("[NotesModal] Updating note:", noteId, editContent);
-      const updatedNote = await notesApi.updateNote(noteId, {
-        content: editContent.trim(),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${noteId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: editContent.trim(),
+            userId: "550e8400-e29b-41d4-a716-446655440000",
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const updatedNote = data.note || data;
+
+      if (!updatedNote || !updatedNote.note_id) {
+        throw new Error("Invalid note response from server");
+      }
+
       setNotes((prev) =>
         prev.map((note) => (note.note_id === noteId ? updatedNote : note)),
       );
@@ -91,7 +165,19 @@ export const NotesModal: React.FC<NotesModalProps> = ({
   const handleDeleteNote = async (noteId: string) => {
     try {
       console.log("[NotesModal] Deleting note:", noteId);
-      const success = await notesApi.deleteNote(noteId);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${noteId}?userId=550e8400-e29b-41d4-a716-446655440000`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const success = data.success !== false; // Consider any response as success unless explicitly false
       if (success) {
         setNotes((prev) => prev.filter((note) => note.note_id !== noteId));
         // Notify parent that notes have changed
@@ -118,295 +204,167 @@ export const NotesModal: React.FC<NotesModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: "#2c2c2c",
-          borderRadius: "12px",
-          padding: "20px",
-          width: "90%",
-          maxWidth: "480px",
-          maxHeight: "75vh",
-          overflow: "auto",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
-          border: "1px solid #444",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-            borderBottom: "1px solid #555",
-            paddingBottom: "12px",
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "18px",
-              fontWeight: "400",
-              color: "#ffffff",
-            }}
-          >
+        <div className={styles.header}>
+          <h2 className={styles.title}>
             Notes for {bookName} {chapterNumber}
           </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "24px",
-              cursor: "pointer",
-              color: "#cccccc",
-              padding: "0",
-              width: "24px",
-              height: "24px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <button onClick={onClose} className={styles.closeButton}>
             ×
           </button>
         </div>
 
-        {/* Error message */}
-        {error && (
-          <div
-            style={{
-              backgroundColor: "#fef2f2",
-              border: "1px solid #fecaca",
-              color: "#dc2626",
-              padding: "8px 12px",
-              borderRadius: "4px",
-              marginBottom: "16px",
-              fontSize: "14px",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        <div className={styles.content}>
+          {/* Error message */}
+          {error && <div className={styles.errorState}>{error}</div>}
 
-        {/* Loading state */}
-        {loading && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "20px",
-              color: "#6b7280",
-            }}
-          >
-            Loading notes...
-          </div>
-        )}
+          {/* Loading state */}
+          {loading && (
+            <div className={styles.loadingState}>Loading notes...</div>
+          )}
 
-        {/* Notes list */}
-        {!loading && (
-          <div style={{ marginBottom: "20px" }}>
-            {notes.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "20px",
-                  color: "#cccccc",
-                  fontStyle: "italic",
-                }}
-              >
-                No notes yet. Add your first note below.
-              </div>
-            ) : (
-              notes.map((note) => (
-                <div
-                  key={note.note_id}
-                  style={{
-                    border: "1px solid #555",
-                    borderRadius: "8px",
-                    padding: "12px",
-                    marginBottom: "10px",
-                    backgroundColor: "#404040",
-                  }}
-                >
-                  {editingNoteId === note.note_id ? (
-                    <div>
-                      <textarea
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        style={{
-                          width: "100%",
-                          minHeight: "60px",
-                          padding: "8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "4px",
-                          fontSize: "14px",
-                          fontFamily: "inherit",
-                          resize: "vertical",
-                        }}
-                      />
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          marginTop: "8px",
-                        }}
-                      >
-                        <button
-                          onClick={() => handleUpdateNote(note.note_id)}
-                          style={{
-                            backgroundColor: "#007bff",
-                            color: "white",
-                            border: "none",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={cancelEditing}
-                          style={{
-                            backgroundColor: "#6c757d",
-                            color: "white",
-                            border: "none",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          lineHeight: "1.5",
-                          marginBottom: "8px",
-                          color: "#ffffff",
-                        }}
-                      >
-                        {note.content}
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#cccccc",
-                          }}
-                        >
-                          {new Date(note.created_at).toLocaleDateString()}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "8px",
-                          }}
-                        >
-                          <button
-                            onClick={() => startEditing(note)}
+          {/* Notes list */}
+          {!loading && (
+            <ul className={styles.notesList}>
+              {notes.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p>No notes yet. Add your first note below.</p>
+                  <small>
+                    Your notes will appear here once you create them.
+                  </small>
+                </div>
+              ) : (
+                notes.map((note) => (
+                  <li key={note.note_id} className={styles.noteItem}>
+                    {editingNoteId === note.note_id ? (
+                      <div className={styles.editForm}>
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className={styles.editTextarea}
+                          placeholder="Edit your note..."
+                        />
+                        <div className={styles.editActions}>
+                          <Button
+                            type="button"
+                            onClick={() => handleUpdateNote(note.note_id)}
+                            variant="contained"
                             style={{
-                              backgroundColor: "#d4a574",
-                              color: "#2c2c2c",
+                              backgroundColor: "#D4A474",
+                              color: "#000000",
                               border: "none",
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                              fontWeight: "500",
+                              borderRadius: "8px",
+                              padding: "2px 12px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              height: "28px",
+                              minHeight: "28px",
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={cancelEditing}
+                            variant="contained"
+                            style={{
+                              backgroundColor: "#A0A0A0",
+                              color: "#000000",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "2px 12px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              height: "28px",
+                              minHeight: "28px",
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className={styles.noteContent}>{note.content}</p>
+                        <div className={styles.noteActions}>
+                          <Button
+                            type="button"
+                            onClick={() => startEditing(note)}
+                            variant="contained"
+                            style={{
+                              backgroundColor: "#D4A474",
+                              color: "#000000",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "2px 12px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              height: "28px",
+                              minHeight: "28px",
                             }}
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            type="button"
                             onClick={() => handleDeleteNote(note.note_id)}
+                            variant="contained"
                             style={{
-                              backgroundColor: "#a0a0a0",
-                              color: "#2c2c2c",
+                              backgroundColor: "#A0A0A0",
+                              color: "#000000",
                               border: "none",
-                              padding: "4px 8px",
-                              borderRadius: "4px",
-                              fontSize: "12px",
-                              cursor: "pointer",
-                              fontWeight: "500",
+                              borderRadius: "8px",
+                              padding: "2px 12px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              height: "28px",
+                              minHeight: "28px",
                             }}
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
+                      </>
+                    )}
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
 
-        {/* Add new note */}
-        <div>
-          <textarea
-            value={newNoteContent}
-            onChange={(e) => setNewNoteContent(e.target.value)}
-            placeholder="Write a new note..."
-            style={{
-              width: "100%",
-              minHeight: "60px",
-              padding: "10px",
-              border: "1px solid #555",
-              borderRadius: "4px",
-              fontSize: "13px",
-              fontFamily: "inherit",
-              resize: "vertical",
-              marginBottom: "10px",
-              backgroundColor: "#333",
-              color: "#ffffff",
-            }}
-          />
-          <button
-            onClick={handleCreateNote}
-            disabled={!newNoteContent.trim()}
-            style={{
-              backgroundColor: newNoteContent.trim() ? "#d4a574" : "#666",
-              color: newNoteContent.trim() ? "#2c2c2c" : "#999",
-              border: "none",
-              padding: "10px 20px",
-              borderRadius: "6px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor: newNoteContent.trim() ? "pointer" : "not-allowed",
-              width: "100%",
-            }}
-          >
-            Add Note
-          </button>
+          {/* Add new note form */}
+          <div className={styles.newNoteForm}>
+            <textarea
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              className={styles.newNoteTextarea}
+              placeholder="Add a new note..."
+            />
+            <div className={styles.addButtonContainer}>
+              <Button
+                type="button"
+                onClick={handleCreateNote}
+                disabled={!newNoteContent.trim()}
+                variant="contained"
+                style={{
+                  backgroundColor: "#D4A474",
+                  color: "#000000",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "4px 24px",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  width: "100%",
+                  height: "32px",
+                  minHeight: "32px",
+                }}
+              >
+                Add Note
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

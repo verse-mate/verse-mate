@@ -1,0 +1,197 @@
+/* Notes Modal CSS Module */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--shadowed-night);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #2C2C2C;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 450px;
+  max-height: 70vh;
+  overflow: hidden;
+  box-shadow: 0 10px 25px var(--shadowed-night);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--oslo-gray);
+}
+
+.header {
+  padding: 20px;
+  border-bottom: 1px solid var(--oslo-gray);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #2C2C2C;
+}
+
+.title {
+  margin: 0;
+  color: var(--snow);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--snow);
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.closeButton:hover {
+  background-color: #e9ecef;
+}
+
+.content {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+  color: var(--snow);
+}
+
+.loadingState {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--neutral);
+}
+
+.errorState {
+  text-align: center;
+  padding: 20px;
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.notesList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+
+.noteItem {
+  background: #404040;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.noteContent {
+  margin: 0;
+  line-height: 1.4;
+  color: var(--snow);
+  flex: 1;
+}
+
+.noteActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.editTextarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border: 1px solid var(--oslo-gray);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  background: white;
+  color: #000;
+}
+
+.editTextarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgb(0 123 255 / 25%);
+}
+
+.editActions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.newNoteForm {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 20px;
+}
+
+.newNoteTextarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid var(--oslo-gray);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 15px;
+  background: #333;
+  color: var(--snow);
+}
+
+.newNoteTextarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--brand-lighter);
+}
+
+.newNoteTextarea::placeholder {
+  color: #6c757d;
+}
+
+.addButtonContainer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.emptyState p {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.emptyState small {
+  font-size: 14px;
+  color: #adb5bd;
+}

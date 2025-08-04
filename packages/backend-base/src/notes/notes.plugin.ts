@@ -25,8 +25,8 @@ const plugin = new Elysia({ prefix: "/notes" })
       }
 
       try {
-        // Extract user ID from query or use mock for development
-        const userId = query.userId || "mock-user-id";
+        // Extract user ID from query or use proper UUID for development
+        const userId = query.userId || "550e8400-e29b-41d4-a716-446655440000";
 
         const notes = await notesService.getNotesByChapter(
           userId,
@@ -100,7 +100,7 @@ const plugin = new Elysia({ prefix: "/notes" })
       }
 
       try {
-        const userId = body.userId || "mock-user-id";
+        const userId = body.userId || "550e8400-e29b-41d4-a716-446655440000";
         const note = await notesService.updateNote(params.noteId, userId, {
           content: body.content,
         });
@@ -140,7 +140,7 @@ const plugin = new Elysia({ prefix: "/notes" })
       }
 
       try {
-        const userId = query.userId || "mock-user-id";
+        const userId = query.userId || "550e8400-e29b-41d4-a716-446655440000";
         const success = await notesService.deleteNote(params.noteId, userId);
 
         if (!success) {
