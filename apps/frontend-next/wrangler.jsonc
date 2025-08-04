@@ -31,15 +31,10 @@
     "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
   },
 
-  // Workers-specific route configuration
-  "route": {
-    "pattern": "verse-mate.xyz/*", // Replace with your actual domain
-    "zone_id": "f9ba31b15cafd9aacb90a29f861a5931" // Required if using custom domain
-  },
-
+  // Custom domain routes
   "routes": [
     {
-      "pattern": "verse-mate.xyz",
+      "pattern": "verse-mate.xyz/*",
       "custom_domain": true
     }
   ],
