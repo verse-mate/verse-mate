@@ -7,6 +7,14 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  CLOUDFLARE_ENV: ${{ 
+    github.event_name == 'pull_request' && 'preview' || 
+    startsWith(github.ref, 'refs/tags/v') && 'production' || 
+    github.ref == 'refs/heads/main' && 'staging' || 
+    'staging' 
+  }}
+
 jobs:
   build-backend:
     name: Build Backend
@@ -131,10 +139,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: ./apps/frontend-next
-          command: deploy --env preview
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --env ${{ env.CLOUDFLARE_ENV }}
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
@@ -144,5 +149,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🚀 Preview deployment is ready! Check it out at: https://preview.verse-mate.xyz'
+              body: `🚀 Preview deployment is ready! Check it out at: ${previewUrl}`
             })
