@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import shared from "../shared/shared.plugin";
 import { NotesService } from "./notes.service";
 
-export const notesPlugin = new Elysia({ prefix: "/notes" })
+const plugin = new Elysia({ prefix: "/notes" })
   .use(shared)
   .state((state) => {
     console.log(
@@ -165,3 +165,8 @@ export const notesPlugin = new Elysia({ prefix: "/notes" })
       }),
     },
   );
+
+export type NotesPlugin = typeof plugin;
+
+export default plugin;
+export { plugin as notesPlugin };
