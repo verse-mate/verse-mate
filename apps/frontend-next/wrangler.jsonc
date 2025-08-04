@@ -8,6 +8,11 @@
   // Main worker entry point
   "main": ".cf/worker/index.js",
 
+  /**
+   * Workers.dev route enabled, in addition to the custom domain
+   */
+  "workers_dev": true,
+
   // Build configuration
   "build": {
     "command": "bun run build:worker",
@@ -31,6 +36,13 @@
     "pattern": "verse-mate.xyz/*", // Replace with your actual domain
     "zone_id": "f9ba31b15cafd9aacb90a29f861a5931" // Required if using custom domain
   },
+
+  "routes": [
+    {
+      "pattern": "verse-mate.xyz",
+      "custom_domain": true
+    }
+  ],
 
   // Node.js compatibility
   "compatibility_flags": ["nodejs_compat"],
