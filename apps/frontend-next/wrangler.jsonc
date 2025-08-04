@@ -28,7 +28,7 @@
   // Environment variables
   "vars": {
     "API_URL": "https://api.verse-mate.apegro.dev",
-    "APP_URL": "https://verse-mate.xyz", // Update with your workers.dev subdomain
+    "APP_URL": "https://preview.verse-mate.xyz", // Update with your workers.dev subdomain
     "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
   },
 
