@@ -137,15 +137,15 @@ jobs:
         working-directory: ./apps/frontend-next
         run: |
           # Show original file for debugging
-          echo "Original wrangler.jsonc:"
-          cat wrangler.jsonc | grep -A5 -B5 "PR_NUMBER" || echo "No PR_NUMBER found"
+          #echo "Original wrangler.jsonc:"
+          #cat wrangler.jsonc | grep -A5 -B5 "PR_NUMBER" || echo "No PR_NUMBER found"
           
           # Replace PR_NUMBER with actual number
-          sed -i.bak 's/\${PR_NUMBER}/${{ github.event.number }}/g' wrangler.jsonc
+          #sed -i.bak 's/\${PR_NUMBER}/${{ github.event.number }}/g' wrangler.jsonc
           
           # Show modified file for debugging
-          echo "Modified wrangler.jsonc:"
-          cat wrangler.jsonc | grep -A5 -B5 "${{ github.event.number }}" || echo "No PR number found after substitution"
+          #echo "Modified wrangler.jsonc:"
+          #cat wrangler.jsonc | grep -A5 -B5 "${{ github.event.number }}" || echo "No PR number found after substitution"
 
       - name: Build frontend for deployment
         working-directory: ./apps/frontend-next
@@ -163,7 +163,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const previewUrl = `https://pr-${{ github.event.number }}-verse-mate-preview.verse-mate.workers.dev`;
+            const previewUrl = `https://verse-mate-preview.verse-mate.workers.dev`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
