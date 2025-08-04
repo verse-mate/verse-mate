@@ -8,12 +8,13 @@ on:
     branches: [ main ]
 
 env:
-  CLOUDFLARE_ENV: ${{ 
-    github.event_name == 'pull_request' && 'preview' 
-    || startsWith(github.ref, 'refs/tags/v') && 'production' 
-    || github.ref == 'refs/heads/main' && 'staging' 
-    || 'staging'
-  }}
+  CLOUDFLARE_ENV: |-
+    ${{ 
+      github.event_name == 'pull_request' && 'preview' 
+      || startsWith(github.ref, 'refs/tags/v') && 'production' 
+      || github.ref == 'refs/heads/main' && 'staging' 
+      || 'staging'
+    }}
 
 jobs:
   build-backend:
