@@ -133,20 +133,6 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Substitute PR number in wrangler config
-        working-directory: ./apps/frontend-next
-        run: |
-          # Show original file for debugging
-          #echo "Original wrangler.jsonc:"
-          #cat wrangler.jsonc | grep -A5 -B5 "PR_NUMBER" || echo "No PR_NUMBER found"
-          
-          # Replace PR_NUMBER with actual number
-          #sed -i.bak 's/\${PR_NUMBER}/${{ github.event.number }}/g' wrangler.jsonc
-          
-          # Show modified file for debugging
-          #echo "Modified wrangler.jsonc:"
-          #cat wrangler.jsonc | grep -A5 -B5 "${{ github.event.number }}" || echo "No PR number found after substitution"
-
       - name: Build frontend for deployment
         working-directory: ./apps/frontend-next
         run: bun run build:worker
