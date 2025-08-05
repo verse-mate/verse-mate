@@ -79,7 +79,7 @@
       }
     },
     "staging": {
-      "name": "verse-mate-frontend-staging",
+      "name": "verse-mate-staging",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
         "APP_URL": "https://staging.verse-mate.xyz",
@@ -93,7 +93,7 @@
       ]
     },
     "production": {
-      "name": "verse-mate-frontend",
+      "name": "verse-mate-production",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
         "APP_URL": "https://verse-mate.xyz",
