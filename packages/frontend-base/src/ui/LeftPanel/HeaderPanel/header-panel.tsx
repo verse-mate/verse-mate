@@ -163,7 +163,29 @@ export const Nav = ({
         const estimatedRows = Math.ceil(chapterCount / chaptersPerRow);
         const estimatedContentHeight = estimatedRows * estimatedRowHeight;
 
-        let targetScrollTop = triggerTop - fixedBookOffset;
+        const availableSpaceBelow =
+          containerHeight - (triggerTop - currentScrollTop);
+        const bufferSpace = estimatedRowHeight + 20;
+        const needsScrolling =
+          estimatedContentHeight > availableSpaceBelow ||
+          availableSpaceBelow < bufferSpace;
+
+        let targetScrollTop: number;
+        if (needsScrolling) {
+          const minScrollForContent = Math.max(
+            0,
+            triggerTop +
+              estimatedContentHeight -
+              containerHeight +
+              fixedBookOffset +
+              8,
+          );
+          const scrollToTop = triggerTop - fixedBookOffset;
+          targetScrollTop = Math.min(minScrollForContent, scrollToTop);
+        } else {
+          targetScrollTop = currentScrollTop;
+        }
+
         targetScrollTop = Math.max(0, targetScrollTop);
 
         if (Math.abs(targetScrollTop - currentScrollTop) > 10) {
