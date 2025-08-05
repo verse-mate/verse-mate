@@ -1,4 +1,4 @@
-# VerseMate ![Static Badge](https://img.shields.io/badge/MVP-b09a6d) ![Static Badge](https://img.shields.io/badge/Open_Source-000)
+# VerseMate ![Static Badge](https://img.shields.io/badge/MVP-b09a6d) ![Static Badge](https://img.shields.io/badge/Open_Source-000) ![Build Status](https://github.com/verse-mate/verse-mate/workflows/Build/badge.svg)
 
 ## Introduction 
 
