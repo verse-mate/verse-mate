@@ -5,7 +5,7 @@
   "compatibility_date": "2024-08-04",
   "account_id": "e8f0b566ba1c8227a25e3784def4300e", // Add your Cloudflare account ID here
 
-  // Main worker entry point
+  // Main worker entry point (ES Module)
   "main": ".cf/worker/index.js",
 
   /**
