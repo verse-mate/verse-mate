@@ -13,6 +13,8 @@
 /.next/
 /out/
 
+.cf/public/*
+
 # production
 /build
 
