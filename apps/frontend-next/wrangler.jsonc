@@ -1,7 +1,7 @@
 {
   // Wrangler configuration for VerseMate frontend deployment to Cloudflare Workers
   "$schema": "https://raw.githubusercontent.com/cloudflare/wrangler/main/config-schema.json",
-  "name": "verse-mate-frontend",
+  "name": "verse-mate-production",
   "compatibility_date": "2024-08-04",
   "account_id": "e8f0b566ba1c8227a25e3784def4300e", // Add your Cloudflare account ID here
 
