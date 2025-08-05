@@ -190,6 +190,7 @@ export const MainContent = () => {
   }, [bookId, verseId, testament, testaments, bibleVersion, setSelectedTab]);
   const contentRefBook = useRef<HTMLDivElement>(null);
   const contentRefVersion = useRef<HTMLDivElement>(null);
+  const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleBibleVersionSelected = (versionKey: string) => {
     saveBibleVersionOnURL(versionKey);
@@ -243,6 +244,68 @@ export const MainContent = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const handleMobileAccordionTriggerClick = useCallback(
+    (bookName: string, chapterCount: number, isSelectedBook: boolean) => {
+      setTimeout(() => {
+        if (!mobileScrollContainerRef.current) return;
+
+        const scrollContainer = mobileScrollContainerRef.current;
+        const containerHeight = scrollContainer.clientHeight;
+        const currentScrollTop = scrollContainer.scrollTop;
+
+        const accordionTrigger = scrollContainer.querySelector(
+          `[data-mobile-accordion-trigger="${bookName}"]`,
+        ) as HTMLElement;
+        if (!accordionTrigger) return;
+
+        const triggerRect = accordionTrigger.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+
+        const triggerTop =
+          triggerRect.top - containerRect.top + currentScrollTop;
+
+        const fixedBookOffset = 48;
+        const chaptersPerRow = 5;
+        const estimatedRowHeight = 64;
+        const estimatedRows = Math.ceil(chapterCount / chaptersPerRow);
+        const estimatedContentHeight = estimatedRows * estimatedRowHeight;
+
+        const availableSpaceBelow =
+          containerHeight - (triggerTop - currentScrollTop);
+        const bufferSpace = estimatedRowHeight + 16;
+        const needsScrolling =
+          estimatedContentHeight > availableSpaceBelow ||
+          availableSpaceBelow < bufferSpace;
+
+        let targetScrollTop: number;
+        if (needsScrolling) {
+          const minScrollForContent = Math.max(
+            0,
+            triggerTop +
+              estimatedContentHeight -
+              containerHeight +
+              fixedBookOffset +
+              8,
+          );
+          const scrollToTop = triggerTop - fixedBookOffset;
+          targetScrollTop = Math.min(minScrollForContent, scrollToTop);
+        } else {
+          targetScrollTop = currentScrollTop;
+        }
+
+        targetScrollTop = Math.max(0, targetScrollTop);
+
+        if (Math.abs(targetScrollTop - currentScrollTop) > 10) {
+          scrollContainer.scrollTo({
+            top: targetScrollTop,
+            behavior: "smooth",
+          });
+        }
+      }, 200);
+    },
+    [],
+  );
 
   useEffect(() => {
     scrollToBottom();
@@ -477,7 +540,10 @@ export const MainContent = () => {
                             position="under"
                           />
 
-                          <div className={`${styles.contentGroupedTrigger}`}>
+                          <div
+                            ref={mobileScrollContainerRef}
+                            className={`${styles.contentGroupedTrigger}`}
+                          >
                             <Tabs.Content value="OT">
                               <Accordion.Root
                                 style={
@@ -491,10 +557,36 @@ export const MainContent = () => {
                                     value={selectedBookDetails.n}
                                     key={`selected-${selectedBookDetails.n}`}
                                   >
-                                    <Accordion.Trigger
-                                      label={selectedBookDetails.n}
-                                      highlightBook={true}
-                                    />
+                                    <div
+                                      data-mobile-accordion-trigger={
+                                        selectedBookDetails.n
+                                      }
+                                      onClick={() =>
+                                        handleMobileAccordionTriggerClick(
+                                          selectedBookDetails.n,
+                                          selectedBookDetails.c,
+                                          true,
+                                        )
+                                      }
+                                      onKeyDown={(event) => {
+                                        if (
+                                          event.key === "Enter" ||
+                                          event.key === " "
+                                        )
+                                          handleMobileAccordionTriggerClick(
+                                            selectedBookDetails.n,
+                                            selectedBookDetails.c,
+                                            true,
+                                          );
+                                      }}
+                                      role="button"
+                                      tabIndex={0}
+                                    >
+                                      <Accordion.Trigger
+                                        label={selectedBookDetails.n}
+                                        highlightBook={true}
+                                      />
+                                    </div>
                                     <Accordion.Content
                                       styles={{ position: "relative" }}
                                     >
@@ -554,10 +646,34 @@ export const MainContent = () => {
                                         value={book.n}
                                         key={book.n}
                                       >
-                                        <Accordion.Trigger
-                                          label={book.n}
-                                          highlightBook={false}
-                                        />
+                                        <div
+                                          data-mobile-accordion-trigger={book.n}
+                                          onClick={() =>
+                                            handleMobileAccordionTriggerClick(
+                                              book.n,
+                                              book.c,
+                                              false,
+                                            )
+                                          }
+                                          onKeyDown={(event) => {
+                                            if (
+                                              event.key === "Enter" ||
+                                              event.key === " "
+                                            )
+                                              handleMobileAccordionTriggerClick(
+                                                book.n,
+                                                book.c,
+                                                false,
+                                              );
+                                          }}
+                                          role="button"
+                                          tabIndex={0}
+                                        >
+                                          <Accordion.Trigger
+                                            label={book.n}
+                                            highlightBook={false}
+                                          />
+                                        </div>
                                         <Accordion.Content>
                                           <VerseGrid
                                             bookId={String(book.b)}
@@ -609,10 +725,36 @@ export const MainContent = () => {
                                     value={selectedBookDetails.n}
                                     key={`selected-${selectedBookDetails.n}`}
                                   >
-                                    <Accordion.Trigger
-                                      label={selectedBookDetails.n}
-                                      highlightBook={true}
-                                    />
+                                    <div
+                                      data-mobile-accordion-trigger={
+                                        selectedBookDetails.n
+                                      }
+                                      onClick={() =>
+                                        handleMobileAccordionTriggerClick(
+                                          selectedBookDetails.n,
+                                          selectedBookDetails.c,
+                                          true,
+                                        )
+                                      }
+                                      onKeyDown={(event) => {
+                                        if (
+                                          event.key === "Enter" ||
+                                          event.key === " "
+                                        )
+                                          handleMobileAccordionTriggerClick(
+                                            selectedBookDetails.n,
+                                            selectedBookDetails.c,
+                                            true,
+                                          );
+                                      }}
+                                      role="button"
+                                      tabIndex={0}
+                                    >
+                                      <Accordion.Trigger
+                                        label={selectedBookDetails.n}
+                                        highlightBook={true}
+                                      />
+                                    </div>
                                     <Accordion.Content
                                       styles={{ position: "relative" }}
                                     >
@@ -672,10 +814,34 @@ export const MainContent = () => {
                                         value={book.n}
                                         key={book.n}
                                       >
-                                        <Accordion.Trigger
-                                          label={book.n}
-                                          highlightBook={false}
-                                        />
+                                        <div
+                                          data-mobile-accordion-trigger={book.n}
+                                          onClick={() =>
+                                            handleMobileAccordionTriggerClick(
+                                              book.n,
+                                              book.c,
+                                              false,
+                                            )
+                                          }
+                                          onKeyDown={(event) => {
+                                            if (
+                                              event.key === "Enter" ||
+                                              event.key === " "
+                                            )
+                                              handleMobileAccordionTriggerClick(
+                                                book.n,
+                                                book.c,
+                                                false,
+                                              );
+                                          }}
+                                          role="button"
+                                          tabIndex={0}
+                                        >
+                                          <Accordion.Trigger
+                                            label={book.n}
+                                            highlightBook={false}
+                                          />
+                                        </div>
                                         <Accordion.Content>
                                           <VerseGrid
                                             testament={book.t}
