@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "bun --bun run next dev --turbo",
     "build": "bun --bun run next build",
-    "build:worker": "bun run build && bun run prepare:worker",
-    "prepare:worker": "mkdir -p .cf/public/_next && cp -r out/* .cf/public/",
+    "build:worker": "npx @cloudflare/next-on-pages",
     "start": "bun --bun run next start",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "preview": "bun run build:worker && wrangler dev"
   },
   "dependencies": {
     "frontend-base": "workspace:*",
@@ -18,6 +18,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.13",
     "@types/node": "^20.14.13",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

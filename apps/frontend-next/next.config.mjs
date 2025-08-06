@@ -1,13 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  // Removed output: "export" to enable SSR on Cloudflare Workers
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Disable image optimization for static export
+  // Keep image optimization settings for Workers
   images: {
     unoptimized: true,
   },
