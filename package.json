@@ -26,7 +26,8 @@
   "resolutions": {
     "elysia": "1.1.4",
     "@elysiajs/eden": "1.1.2",
-    "nanostores": "0.11.2"
+    "nanostores": "0.11.2",
+    "esbuild": "0.25.0"
   },
   "trustedDependencies": [
     "@biomejs/biome",

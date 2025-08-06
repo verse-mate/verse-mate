@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Removed output: "export" to enable SSR on Cloudflare Workers
+  // Enable standalone output for OpenNext
+  output: "standalone",
+  // OpenNext handles SSR automatically
   typescript: {
     ignoreBuildErrors: true,
   },
