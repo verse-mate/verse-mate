@@ -29,6 +29,13 @@
   // Node.js compatibility (required for OpenNext)
   "compatibility_flags": ["nodejs_compat"],
 
+  // Static assets configuration for OpenNext
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+    "run_worker_first": false
+  },
+
   // KV namespaces for caching
   "kv_namespaces": [
     {

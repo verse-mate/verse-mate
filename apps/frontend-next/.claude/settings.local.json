@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["Bash(wrangler versions upload:*)"],
+    "deny": []
+  }
+}

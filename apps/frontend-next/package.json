@@ -24,6 +24,6 @@
     "@types/react-dom": "^18.3.0",
     "postcss-nested": "^6.2.0",
     "typescript": "^5.5.4",
-    "wrangler": "^4.27.0"
+    "wrangler": "^4.28.0"
   }
 }
