@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bun --bun run next dev --turbo",
     "build": "bun --bun run next build",
-    "build:worker": "npx @cloudflare/next-on-pages --outdir .cf/output/static",
+    "build:worker": "npx @cloudflare/next-on-pages --outdir .cf/output/static && echo _worker.js > .cf/output/static/.assetsignore",
     "start": "bun --bun run next start",
     "deploy": "wrangler deploy",
     "preview": "bun run build:worker && wrangler dev"
