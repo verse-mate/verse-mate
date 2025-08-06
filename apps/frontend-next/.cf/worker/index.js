@@ -1,45 +1,54 @@
-// Cloudflare Workers entry point for Next.js app
+// Cloudflare Workers ES Module entry point for Next.js app
 import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
 
-// Event listener for fetch requests
-addEventListener("fetch", (event) => {
-  event.respondWith(handleRequest(event));
-});
+// ES Module export with fetch handler
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
-async function handleRequest(event) {
-  const url = new URL(event.request.url);
+    try {
+      // Handle static assets first
+      if (isStaticAsset(url.pathname)) {
+        // Create event-like object for KV asset handler
+        const event = {
+          request,
+          waitUntil: (promise) => ctx.waitUntil(promise),
+        };
 
-  try {
-    // Handle static assets first
-    if (isStaticAsset(url.pathname)) {
-      return await getAssetFromKV(event, {
-        cacheControl: {
-          bypassCache: false,
-          edgeTTL: 2 * 60 * 60 * 24, // 2 days
-          browserTTL: 60 * 60 * 24, // 1 day
-        },
-      });
+        return await getAssetFromKV(event, {
+          cacheControl: {
+            bypassCache: false,
+            edgeTTL: 2 * 60 * 60 * 24, // 2 days
+            browserTTL: 60 * 60 * 24, // 1 day
+          },
+        });
+      }
+
+      // Handle API routes
+      if (url.pathname.startsWith("/api/")) {
+        return handleAPIRoute(request, url, env);
+      }
+
+      // Handle Next.js pages
+      return handleNextPage(request, url, ctx);
+    } catch (e) {
+      // Fall back to serving index.html for client-side routing
+      if (e.status === 404) {
+        const event = {
+          request,
+          waitUntil: (promise) => ctx.waitUntil(promise),
+        };
+
+        return getAssetFromKV(event, {
+          mapRequestToAsset: (req) =>
+            new Request(`${url.origin}/index.html`, req),
+        });
+      }
+
+      return new Response("Internal Server Error", { status: 500 });
     }
-
-    // Handle API routes
-    if (url.pathname.startsWith("/api/")) {
-      return handleAPIRoute(event.request, url);
-    }
-
-    // Handle Next.js pages
-    return handleNextPage(event.request, url);
-  } catch (e) {
-    // Fall back to serving index.html for client-side routing
-    if (e.status === 404) {
-      return getAssetFromKV(event, {
-        mapRequestToAsset: (req) =>
-          new Request(`${url.origin}/index.html`, req),
-      });
-    }
-
-    return new Response("Internal Server Error", { status: 500 });
-  }
-}
+  },
+};
 
 function isStaticAsset(pathname) {
   // Check if the path is for a static asset
@@ -61,7 +70,7 @@ function isStaticAsset(pathname) {
   );
 }
 
-async function handleAPIRoute(request, url) {
+async function handleAPIRoute(request, url, env) {
   // Forward API requests to your backend
   const apiUrl = `${env.API_URL}${url.pathname}${url.search}`;
 
@@ -74,26 +83,29 @@ async function handleAPIRoute(request, url) {
   return fetch(apiRequest);
 }
 
-async function handleNextPage(request, url) {
+async function handleNextPage(request, url, ctx) {
   // For SSG pages, serve the pre-built HTML
   try {
     const htmlPath =
       url.pathname === "/" ? "/index.html" : `${url.pathname}.html`;
-    return await getAssetFromKV(
-      { request, waitUntil: () => {} },
-      {
-        mapRequestToAsset: (req) =>
-          new Request(`${url.origin}${htmlPath}`, req),
-      },
-    );
+
+    const event = {
+      request,
+      waitUntil: (promise) => ctx.waitUntil(promise),
+    };
+
+    return await getAssetFromKV(event, {
+      mapRequestToAsset: (req) => new Request(`${url.origin}${htmlPath}`, req),
+    });
   } catch (e) {
     // Fall back to index.html for client-side routing
-    return getAssetFromKV(
-      { request, waitUntil: () => {} },
-      {
-        mapRequestToAsset: (req) =>
-          new Request(`${url.origin}/index.html`, req),
-      },
-    );
+    const event = {
+      request,
+      waitUntil: (promise) => ctx.waitUntil(promise),
+    };
+
+    return getAssetFromKV(event, {
+      mapRequestToAsset: (req) => new Request(`${url.origin}/index.html`, req),
+    });
   }
 }
