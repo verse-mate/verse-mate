@@ -3,7 +3,7 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import Image from "next/image";
 import type { Dispatch, SetStateAction } from "react";
-import { useCallback, useRef } from "react"; // Added imports
+import { useCallback, useRef } from "react";
 import * as Icon from "../../../ui/Icons";
 import { bibleVersions } from "../../../utils/bible-versions";
 import { explanationTypes } from "../../../utils/commentary-options";
@@ -127,7 +127,6 @@ export const Nav = ({
   setHoverRating,
   saveSearchParams,
 }: Props) => {
-  // Updated fixedItem logic
   const fixedItem = leftPanelFilteredBooks.some(
     (bookName) =>
       oldTestamentBooks.some((t) => t.n === bookName && t.b === bookId) ||
@@ -136,70 +135,27 @@ export const Nav = ({
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Added smooth scrolling function
-  const handleAccordionTriggerClick = useCallback(
-    (bookName: string, chapterCount: number, isSelectedBook: boolean) => {
-      setTimeout(() => {
-        if (!scrollContainerRef.current) return;
+  const handleAccordionTriggerClick = useCallback((bookName: string) => {
+    setTimeout(() => {
+      const scrollContainer = scrollContainerRef.current;
+      if (!scrollContainer) return;
 
-        const scrollContainer = scrollContainerRef.current;
-        const containerHeight = scrollContainer.clientHeight;
-        const currentScrollTop = scrollContainer.scrollTop;
+      const accordionTrigger = scrollContainer.querySelector(
+        `[data-accordion-trigger="${bookName}"]`,
+      ) as HTMLElement;
+      if (!accordionTrigger) return;
 
-        const accordionTrigger = scrollContainer.querySelector(
-          `[data-accordion-trigger="${bookName}"]`,
-        ) as HTMLElement;
-        if (!accordionTrigger) return;
+      const accordionContent =
+        accordionTrigger.nextElementSibling as HTMLElement;
+      if (!accordionContent) return;
 
-        const triggerRect = accordionTrigger.getBoundingClientRect();
-        const containerRect = scrollContainer.getBoundingClientRect();
+      accordionContent.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 200);
+  }, []);
 
-        const triggerTop =
-          triggerRect.top - containerRect.top + currentScrollTop;
-        const fixedBookOffset = fixedItem ? 48 : 0;
-
-        const chaptersPerRow = 5;
-        const estimatedRowHeight = 64;
-        const estimatedRows = Math.ceil(chapterCount / chaptersPerRow);
-        const estimatedContentHeight = estimatedRows * estimatedRowHeight;
-
-        const availableSpaceBelow =
-          containerHeight - (triggerTop - currentScrollTop);
-        const bufferSpace = estimatedRowHeight + 20;
-        const needsScrolling =
-          estimatedContentHeight > availableSpaceBelow ||
-          availableSpaceBelow < bufferSpace;
-
-        let targetScrollTop: number;
-        if (needsScrolling) {
-          const minScrollForContent = Math.max(
-            0,
-            triggerTop +
-              estimatedContentHeight -
-              containerHeight +
-              fixedBookOffset +
-              8,
-          );
-          const scrollToTop = triggerTop - fixedBookOffset;
-          targetScrollTop = Math.min(minScrollForContent, scrollToTop);
-        } else {
-          targetScrollTop = currentScrollTop;
-        }
-
-        targetScrollTop = Math.max(0, targetScrollTop);
-
-        if (Math.abs(targetScrollTop - currentScrollTop) > 10) {
-          scrollContainer.scrollTo({
-            top: targetScrollTop,
-            behavior: "smooth",
-          });
-        }
-      }, 200);
-    },
-    [fixedItem],
-  );
-
-  // Added renderAccordionItems function
   const renderAccordionItems = (
     books: typeof oldTestamentBooks,
     testament: "OT" | "NT",
@@ -232,12 +188,10 @@ export const Nav = ({
         <Accordion.Item value={book.n} key={book.n}>
           <div
             data-accordion-trigger={book.n}
-            onClick={() =>
-              handleAccordionTriggerClick(book.n, book.c, isSelectedBook)
-            }
+            onClick={() => handleAccordionTriggerClick(book.n)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ")
-                handleAccordionTriggerClick(book.n, book.c, isSelectedBook);
+                handleAccordionTriggerClick(book.n);
             }}
             role="button"
             tabIndex={0}
@@ -280,7 +234,7 @@ export const Nav = ({
         <SelectDropdown.Root
           open={leftPanelIsOpen}
           onOpenChange={leftPanelSetIsOpen}
-          resetFilter={leftPanelResetFilter} // Kept resetFilter prop
+          resetFilter={leftPanelResetFilter}
         >
           {!book ? (
             <SelectDropdown.GroupedSelect.Skeleton />
@@ -309,12 +263,12 @@ export const Nav = ({
                 <Tabs.Trigger
                   value="OT"
                   label="Old Testament"
-                  resetFilter={leftPanelResetFilter} // Kept resetFilter prop
+                  resetFilter={leftPanelResetFilter}
                 />
                 <Tabs.Trigger
                   value="NT"
                   label="New Testament"
-                  resetFilter={leftPanelResetFilter} // Kept resetFilter prop
+                  resetFilter={leftPanelResetFilter}
                 />
               </Tabs.List>
 
@@ -327,12 +281,13 @@ export const Nav = ({
               />
 
               <div
-                ref={scrollContainerRef} // Added ref
+                ref={scrollContainerRef}
                 style={{
                   marginTop: "128px",
                   maxHeight: "min(calc(100vh - 230px), 512px)",
                   overflowY: "auto",
-                  scrollBehavior: "smooth", // Added smooth scrolling
+                  scrollBehavior: "smooth",
+                  paddingBottom: "16px",
                 }}
               >
                 <Tabs.Content value="OT">

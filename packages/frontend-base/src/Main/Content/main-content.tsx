@@ -245,67 +245,26 @@ export const MainContent = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleMobileAccordionTriggerClick = useCallback(
-    (bookName: string, chapterCount: number, isSelectedBook: boolean) => {
-      setTimeout(() => {
-        if (!mobileScrollContainerRef.current) return;
+  const handleMobileAccordionTriggerClick = useCallback((bookName: string) => {
+    setTimeout(() => {
+      const scrollContainer = mobileScrollContainerRef.current;
+      if (!scrollContainer) return;
 
-        const scrollContainer = mobileScrollContainerRef.current;
-        const containerHeight = scrollContainer.clientHeight;
-        const currentScrollTop = scrollContainer.scrollTop;
+      const accordionTrigger = scrollContainer.querySelector(
+        `[data-mobile-accordion-trigger="${bookName}"]`,
+      ) as HTMLElement;
+      if (!accordionTrigger) return;
 
-        const accordionTrigger = scrollContainer.querySelector(
-          `[data-mobile-accordion-trigger="${bookName}"]`,
-        ) as HTMLElement;
-        if (!accordionTrigger) return;
+      const accordionContent =
+        accordionTrigger.nextElementSibling as HTMLElement;
+      if (!accordionContent) return;
 
-        const triggerRect = accordionTrigger.getBoundingClientRect();
-        const containerRect = scrollContainer.getBoundingClientRect();
-
-        const triggerTop =
-          triggerRect.top - containerRect.top + currentScrollTop;
-
-        const fixedBookOffset = 48;
-        const chaptersPerRow = 5;
-        const estimatedRowHeight = 64;
-        const estimatedRows = Math.ceil(chapterCount / chaptersPerRow);
-        const estimatedContentHeight = estimatedRows * estimatedRowHeight;
-
-        const availableSpaceBelow =
-          containerHeight - (triggerTop - currentScrollTop);
-        const bufferSpace = estimatedRowHeight + 16;
-        const needsScrolling =
-          estimatedContentHeight > availableSpaceBelow ||
-          availableSpaceBelow < bufferSpace;
-
-        let targetScrollTop: number;
-        if (needsScrolling) {
-          const minScrollForContent = Math.max(
-            0,
-            triggerTop +
-              estimatedContentHeight -
-              containerHeight +
-              fixedBookOffset +
-              8,
-          );
-          const scrollToTop = triggerTop - fixedBookOffset;
-          targetScrollTop = Math.min(minScrollForContent, scrollToTop);
-        } else {
-          targetScrollTop = currentScrollTop;
-        }
-
-        targetScrollTop = Math.max(0, targetScrollTop);
-
-        if (Math.abs(targetScrollTop - currentScrollTop) > 10) {
-          scrollContainer.scrollTo({
-            top: targetScrollTop,
-            behavior: "smooth",
-          });
-        }
-      }, 200);
-    },
-    [],
-  );
+      accordionContent.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 200);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -543,6 +502,7 @@ export const MainContent = () => {
                           <div
                             ref={mobileScrollContainerRef}
                             className={`${styles.contentGroupedTrigger}`}
+                            style={{ paddingBottom: "16px" }}
                           >
                             <Tabs.Content value="OT">
                               <Accordion.Root
@@ -564,8 +524,6 @@ export const MainContent = () => {
                                       onClick={() =>
                                         handleMobileAccordionTriggerClick(
                                           selectedBookDetails.n,
-                                          selectedBookDetails.c,
-                                          true,
                                         )
                                       }
                                       onKeyDown={(event) => {
@@ -575,8 +533,6 @@ export const MainContent = () => {
                                         )
                                           handleMobileAccordionTriggerClick(
                                             selectedBookDetails.n,
-                                            selectedBookDetails.c,
-                                            true,
                                           );
                                       }}
                                       role="button"
@@ -651,8 +607,6 @@ export const MainContent = () => {
                                           onClick={() =>
                                             handleMobileAccordionTriggerClick(
                                               book.n,
-                                              book.c,
-                                              false,
                                             )
                                           }
                                           onKeyDown={(event) => {
@@ -662,8 +616,6 @@ export const MainContent = () => {
                                             )
                                               handleMobileAccordionTriggerClick(
                                                 book.n,
-                                                book.c,
-                                                false,
                                               );
                                           }}
                                           role="button"
@@ -732,8 +684,6 @@ export const MainContent = () => {
                                       onClick={() =>
                                         handleMobileAccordionTriggerClick(
                                           selectedBookDetails.n,
-                                          selectedBookDetails.c,
-                                          true,
                                         )
                                       }
                                       onKeyDown={(event) => {
@@ -743,8 +693,6 @@ export const MainContent = () => {
                                         )
                                           handleMobileAccordionTriggerClick(
                                             selectedBookDetails.n,
-                                            selectedBookDetails.c,
-                                            true,
                                           );
                                       }}
                                       role="button"
@@ -819,8 +767,6 @@ export const MainContent = () => {
                                           onClick={() =>
                                             handleMobileAccordionTriggerClick(
                                               book.n,
-                                              book.c,
-                                              false,
                                             )
                                           }
                                           onKeyDown={(event) => {
@@ -830,8 +776,6 @@ export const MainContent = () => {
                                             )
                                               handleMobileAccordionTriggerClick(
                                                 book.n,
-                                                book.c,
-                                                false,
                                               );
                                           }}
                                           role="button"
