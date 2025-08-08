@@ -28,6 +28,7 @@ import {
   useSelectDropdown,
 } from "../../hooks/useSelectDropdown";
 import { userSession } from "../../hooks/userSession";
+import { updateSelectedBook } from "../../store/book-selection";
 import { Accordion } from "../../ui/Accordion";
 import { Chat } from "../../ui/Chat";
 import { Explanation } from "../../ui/Explanation";
@@ -108,6 +109,22 @@ export const MainContent = () => {
     resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
+  const {
+    isOpen: isDropdownOpenBook,
+    toggleDropdown: toggleMobileDropdownBook,
+    closeDropdown: closeDropdownBook,
+  } = useDropdownToggle();
+
+  const book = testaments?.find((item) => {
+    return item.b === Number(bookId);
+  })?.n;
+
+  useEffect(() => {
+    if (book) {
+      updateSelectedBook(book);
+    }
+  }, [book]);
+
   const { progress } = useProgressBar({
     totalChapters: chapters,
     currentVerse: Number(verseId),
@@ -127,13 +144,7 @@ export const MainContent = () => {
     testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [];
   const newTestamentBooks =
     testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [];
-  const book = testaments?.find((testament) => testament.b === bookId)?.n;
 
-  const {
-    isOpen: isDropdownOpenBook,
-    toggleDropdown: toggleMobileDropdownBook,
-    closeDropdown: closeDropdownBook,
-  } = useDropdownToggle();
   const {
     isOpen: isDropdownOpenVersion,
     toggleDropdown: toggleMobileDropdownVersion,
@@ -188,6 +199,7 @@ export const MainContent = () => {
       }
     }
   }, [bookId, verseId, testament, testaments, bibleVersion, setSelectedTab]);
+
   const contentRefBook = useRef<HTMLDivElement>(null);
   const contentRefVersion = useRef<HTMLDivElement>(null);
 
@@ -479,7 +491,7 @@ export const MainContent = () => {
                                             testament,
                                           );
                                           handleMobileVerseSelect(
-                                            testament,
+                                            testament || "",
                                             bookName,
                                             verse,
                                           );
@@ -539,14 +551,14 @@ export const MainContent = () => {
                                                 testament,
                                               );
                                               handleMobileVerseSelect(
-                                                testament,
+                                                testament || "",
                                                 bookName,
                                                 verse,
                                               );
                                               closeDropdownBook();
                                             }}
-                                            selectedBook={String(bookId)}
                                             selectedVerse={String(verseId)}
+                                            selectedBook={String(bookId)}
                                             testament={book.t}
                                           />
                                         </Accordion.Content>

@@ -3,7 +3,8 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import Image from "next/image";
 import type { Dispatch, SetStateAction } from "react";
-import { useCallback, useRef } from "react"; // Added imports
+import { useCallback, useEffect, useRef, useState } from "react";
+import { selectedBookStore } from "../../../store/book-selection";
 import * as Icon from "../../../ui/Icons";
 import { bibleVersions } from "../../../utils/bible-versions";
 import { explanationTypes } from "../../../utils/commentary-options";
@@ -127,6 +128,8 @@ export const Nav = ({
   setHoverRating,
   saveSearchParams,
 }: Props) => {
+  const selectedBook = selectedBookStore.get();
+
   // Updated fixedItem logic
   const fixedItem = leftPanelFilteredBooks.some(
     (bookName) =>
@@ -265,7 +268,7 @@ export const Nav = ({
           ) : (
             <>
               <SelectDropdown.Trigger
-                selectedBook={leftPanelSelectedBook || book || null}
+                selectedBook={selectedBook}
                 selectedVerse={verseIdToString || leftPanelSelectedVerse}
                 icon={<Icon.ChevronDownIcon />}
                 defaultPlaceholder="Book"

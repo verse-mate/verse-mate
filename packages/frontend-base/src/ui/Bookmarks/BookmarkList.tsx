@@ -2,6 +2,7 @@ import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useState } from "react";
 import { type Bookmark, useBookmarks } from "../../hooks/useBookmarks";
 import { useSaveSearchParams } from "../../hooks/useSearchParams";
+import { updateSelectedBook } from "../../store/book-selection";
 import * as Icon from "../Icons";
 import styles from "./bookmarks.module.css";
 
@@ -11,6 +12,11 @@ export const BookmarkList = () => {
   const [removingIds, setRemovingIds] = useState<Record<string, boolean>>({});
 
   const handleBookmarkClick = (bookmark: Bookmark) => {
+    // Update the global selected book store
+    if (bookmark.book_name) {
+      updateSelectedBook(bookmark.book_name);
+    }
+
     // Use chapter_number as verseId to navigate to the correct chapter
     saveSearchParams({
       bookId: String(bookmark.book_id),

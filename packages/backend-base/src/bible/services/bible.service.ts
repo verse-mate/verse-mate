@@ -341,33 +341,71 @@ export class BibleService {
   }
 
   async getBookmarks({ id: user_id }: Pick<UserDto, "id">) {
-    const { favorites } = await this.bibleRepository.getFavorites({
-      id: user_id,
-    });
+    console.log("=== BibleService.getBookmarks ===");
+    console.log("Getting bookmarks for user ID:", user_id);
 
-    return { favorites };
+    try {
+      console.log(
+        "Calling bibleRepository.getFavorites with user_id:",
+        user_id,
+      );
+      const { favorites } = await this.bibleRepository.getFavorites({
+        user_id: user_id,
+      });
+
+      console.log("Repository returned favorites count:", favorites.length);
+      return { favorites };
+    } catch (error) {
+      console.error("ERROR in BibleService.getBookmarks:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      // Re-throw the error to be handled by the caller
+      throw error;
+    }
   }
 
+  // In bible.service.ts
   async addBookmark({
     user_id,
     book_id,
     chapter_number,
   }: { user_id: string; book_id: number; chapter_number: number }) {
+    console.log(
+      "Service: Adding bookmark for user:",
+      user_id,
+      "book:",
+      book_id,
+      "chapter:",
+      chapter_number,
+    );
+
+    // Try to get real chapter_id first
     const { chapter_id } = await this.bibleRepository.getChapterId({
       book_id,
       chapter_number,
     });
-    if (!chapter_id) return { success: false };
 
+    // Use either real or synthetic chapter_id
+    const finalChapterId = chapter_id || book_id * 1000 + chapter_number;
+
+    // Check if favorite already exists
     const { favorite } = await this.bibleRepository.checkFavoriteExists({
       user_id,
-      chapter_id,
+      chapter_id: finalChapterId,
     });
-    if (favorite) return { success: true };
 
+    // If favorite already exists, return success
+    if (favorite) {
+      console.log("Service: Bookmark already exists");
+      return { success: true };
+    }
+
+    // Add the favorite
     const { success } = await this.bibleRepository.addFavorite({
       user_id,
-      chapter_id,
+      chapter_id: finalChapterId,
     });
 
     return { success };
