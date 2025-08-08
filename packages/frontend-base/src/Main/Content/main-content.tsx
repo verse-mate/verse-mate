@@ -28,6 +28,7 @@ import {
   useSelectDropdown,
 } from "../../hooks/useSelectDropdown";
 import { userSession } from "../../hooks/userSession";
+import { ModalContainer } from "../../modal/ModalContainer";
 import { updateSelectedBook } from "../../store/book-selection";
 import { Accordion } from "../../ui/Accordion";
 import { Chat } from "../../ui/Chat";
@@ -949,6 +950,7 @@ export const MainContent = () => {
           </RightPanel.Root>
         </main>
       </div>
+      <ModalContainer />
     </>
   );
 };

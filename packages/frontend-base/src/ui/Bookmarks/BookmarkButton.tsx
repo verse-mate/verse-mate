@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useBookmarks } from "../../hooks/useBookmarks";
+import { userSession } from "../../hooks/userSession";
+import { addModal } from "../../modal/store";
 import * as Icon from "../Icons";
 import styles from "./bookmarks.module.css";
 
@@ -20,6 +22,7 @@ export const BookmarkButton = ({
 }: BookmarkButtonProps) => {
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
   const [isLoading, setIsLoading] = useState(false);
+  const { session } = userSession();
 
   // Check if this chapter is bookmarked
   const bookmarked = isBookmarked(bookId, chapterNumber);
@@ -27,6 +30,24 @@ export const BookmarkButton = ({
   const handleToggleBookmark = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // If user is not logged in, show login required modal
+    if (!session) {
+      addModal({
+        content: (
+          <div className={styles.loginModal}>
+            <h3>Login Required</h3>
+            <p>You need to be logged in to bookmark chapters.</p>
+            <div className={styles.loginModalButtons}>
+              <a href="/login" className={styles.loginButton}>
+                Login Now
+              </a>
+            </div>
+          </div>
+        ),
+      });
+      return;
+    }
 
     setIsLoading(true);
 

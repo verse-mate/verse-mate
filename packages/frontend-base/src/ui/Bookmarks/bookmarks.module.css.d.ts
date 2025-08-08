@@ -18,5 +18,8 @@ declare const styles: {
   readonly bookmarked: string;
   readonly bookmarkedIcon: string;
   readonly animating: string;
+  readonly loginModal: string;
+  readonly loginModalButtons: string;
+  readonly loginButton: string;
 };
 export = styles;
