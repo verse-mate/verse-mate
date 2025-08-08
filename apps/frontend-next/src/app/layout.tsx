@@ -2,8 +2,6 @@ import "frontend-base/styles/global.css";
 import { $env, type Env, StoreInitializer } from "frontend-envs";
 import MyMainPage from "./components/MainPage";
 
-// Removed dynamic = "force-dynamic" for static export compatibility
-
 export default function RootLayout({
   children,
 }: Readonly<{

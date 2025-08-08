@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  // Using standalone output mode for OpenNext adapter
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Disable image optimization for static export
+  // Keep image optimization settings for Workers
   images: {
     unoptimized: true,
   },
