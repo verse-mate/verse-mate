@@ -309,6 +309,7 @@ export const MainContent = () => {
       };
 
       const measureAndScroll = () => {
+        if (!mobileScrollContainerRef.current) return;
         attempts += 1;
 
         const { content: accordionContent, rowHeight: measuredRow } =
@@ -381,7 +382,10 @@ export const MainContent = () => {
       };
 
       setTimeout(() => {
-        requestAnimationFrame(measureAndScroll);
+        if (mobileScrollContainerRef.current) {
+          // Check if component is still mounted before proceeding
+          requestAnimationFrame(measureAndScroll);
+        }
       }, 250);
     },
     [fixedItem],

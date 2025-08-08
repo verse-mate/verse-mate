@@ -200,6 +200,7 @@ export const Nav = ({
       };
 
       const measureAndScroll = () => {
+        if (!scrollContainerRef.current) return;
         attempts += 1;
 
         const { content: accordionContent, rowHeight: measuredRow } =
@@ -264,7 +265,10 @@ export const Nav = ({
       };
 
       setTimeout(() => {
-        requestAnimationFrame(measureAndScroll);
+        // Check if component is still mounted before proceeding
+        if (scrollContainerRef.current) {
+          requestAnimationFrame(measureAndScroll);
+        }
       }, 220);
     },
     [fixedItem],
