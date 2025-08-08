@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable export output for static site generation
-  output: "export",
-  // Static export doesn't support SSR features
+  // Using standalone output mode for OpenNext adapter
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },
