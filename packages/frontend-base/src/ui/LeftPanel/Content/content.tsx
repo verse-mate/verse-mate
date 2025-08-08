@@ -39,7 +39,7 @@ type Props = {
   progress: number;
   handleDesktopSwipe: SwipeableHandlers;
   buttonsVisible: boolean;
-  scrollableCallbackRef?: (node: HTMLElement | null) => void;
+  scrollableCallbackRef: (node: HTMLElement | null) => void; // Made required from second version
 };
 
 export const Content = ({
@@ -54,9 +54,9 @@ export const Content = ({
   buttonsVisible,
   scrollableCallbackRef,
 }: Props) => {
+  // Preserve proximity functionality from first version
   const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
   const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
-
   const [isNearNext, setIsNearNext] = useState(false);
   const [isNearPrev, setIsNearPrev] = useState(false);
 

@@ -83,17 +83,13 @@ async function getExplanationForAllVerses(
 
   try {
     const chat = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      model: "gpt-4o",
-      max_tokens: 1600,
-      temperature: 0.2,
+      ...({
+        model: "gpt-5",
+        messages: [{ role: "user", content: prompt }],
+        max_completion_tokens: 10000,
+      } as any),
     });
-    return chat.choices[0].message.content;
+    return chat.choices[0].message.content || "";
   } catch (error) {
     console.error("Error fetching explanation:", error);
     return null;
