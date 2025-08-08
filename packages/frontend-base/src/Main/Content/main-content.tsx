@@ -244,27 +244,148 @@ export const MainContent = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+  const fixedItem = bookId > 0;
 
-  const handleMobileAccordionTriggerClick = useCallback((bookName: string) => {
-    setTimeout(() => {
+  const handleMobileAccordionTriggerClick = useCallback(
+    (bookName: string) => {
       const scrollContainer = mobileScrollContainerRef.current;
       if (!scrollContainer) return;
 
       const accordionTrigger = scrollContainer.querySelector(
         `[data-mobile-accordion-trigger="${bookName}"]`,
-      ) as HTMLElement;
+      ) as HTMLElement | null;
       if (!accordionTrigger) return;
 
-      const accordionContent =
-        accordionTrigger.nextElementSibling as HTMLElement;
-      if (!accordionContent) return;
+      const FIXED_OFFSET = fixedItem ? 48 : 0;
+      const BUFFER = 12;
+      const THRESHOLD = 2;
 
-      accordionContent.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
-    }, 200);
-  }, []);
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const triggerRect = accordionTrigger.getBoundingClientRect();
+
+      let attempts = 0;
+      const maxAttempts = 36;
+
+      const getContentAndRowHeight = () => {
+        const content =
+          accordionTrigger.nextElementSibling as HTMLElement | null;
+        let rowHeight = 0;
+        if (content) {
+          const firstCell = content.querySelector(
+            ".verseNumber",
+          ) as HTMLElement | null;
+          if (firstCell) {
+            const rect = firstCell.getBoundingClientRect();
+            rowHeight = Math.max(0, rect.height);
+          }
+        }
+        return { content, rowHeight };
+      };
+
+      // Custom smooth scroll function with slower, nicer animation
+      const smoothScrollTo = (targetPosition: number, duration = 800) => {
+        const startPosition = scrollContainer.scrollTop;
+        const distance = targetPosition - startPosition;
+        const startTime = performance.now();
+
+        // Ease-out cubic for smoother deceleration
+        const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+        const animateScroll = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          const easedProgress = easeOutCubic(progress);
+          const currentPosition = startPosition + distance * easedProgress;
+
+          scrollContainer.scrollTop = currentPosition;
+
+          if (progress < 1) {
+            requestAnimationFrame(animateScroll);
+          }
+        };
+
+        requestAnimationFrame(animateScroll);
+      };
+
+      const measureAndScroll = () => {
+        attempts += 1;
+
+        const { content: accordionContent, rowHeight: measuredRow } =
+          getContentAndRowHeight();
+
+        const currentScrollTop = scrollContainer.scrollTop;
+        const containerHeight = scrollContainer.clientHeight;
+
+        const triggerTop =
+          triggerRect.top - containerRect.top + currentScrollTop;
+        const triggerBottom = triggerTop + triggerRect.height;
+        const targetTopCap = Math.max(0, triggerTop - FIXED_OFFSET - BUFFER);
+        const maxScrollTop =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+        const isOpen = accordionContent?.getAttribute("data-state") === "open";
+        const contentFullHeight = Math.max(
+          0,
+          accordionContent?.scrollHeight ?? 0,
+        );
+
+        if (!accordionContent || !isOpen || contentFullHeight === 0) {
+          if (attempts < maxAttempts) requestAnimationFrame(measureAndScroll);
+          return;
+        }
+
+        const availableBelow =
+          containerHeight - (triggerBottom - currentScrollTop);
+        const desiredDelta = Math.max(
+          0,
+          contentFullHeight - availableBelow + BUFFER,
+        );
+
+        if (desiredDelta <= 0) {
+          return;
+        }
+
+        const maxScrollTopNow =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        if (
+          attempts < maxAttempts &&
+          currentScrollTop >= maxScrollTopNow &&
+          desiredDelta > 0
+        ) {
+          requestAnimationFrame(measureAndScroll);
+          return;
+        }
+
+        const fallbackRowHeight = 60;
+        const rowHeight = measuredRow > 0 ? measuredRow : fallbackRowHeight;
+        const rowsFloat = desiredDelta / rowHeight;
+        const fractional = rowsFloat - Math.floor(rowsFloat);
+        const snapThreshold = 0.4;
+        const rows =
+          fractional <= snapThreshold
+            ? Math.round(rowsFloat)
+            : Math.ceil(rowsFloat);
+        const snappedDelta = Math.max(0, rows) * rowHeight;
+
+        let targetScrollTop = Math.min(
+          currentScrollTop + snappedDelta,
+          targetTopCap,
+        );
+        targetScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+
+        if (Math.abs(targetScrollTop - currentScrollTop) > THRESHOLD) {
+          // Use custom smooth scroll instead of browser's "smooth" behavior
+          smoothScrollTo(targetScrollTop, 600); // 600ms duration for slower, nicer animation
+        }
+      };
+
+      setTimeout(() => {
+        requestAnimationFrame(measureAndScroll);
+      }, 250);
+    },
+    [fixedItem],
+  );
 
   useEffect(() => {
     scrollToBottom();
@@ -291,8 +412,6 @@ export const MainContent = () => {
 
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
-
-  const fixedItem = bookId > 0;
 
   const selectedBookDetails = [...oldTestamentBooks, ...newTestamentBooks].find(
     (book) => book.b === bookId,
