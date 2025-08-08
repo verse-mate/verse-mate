@@ -1,143 +1,143 @@
 .content {
-    overflow: hidden;
-    position: relative;
-    border-radius: 10px;
-    box-shadow: 0 0 15px 0 #00000026;
-    background-color: var(--snow);
-    width: 100%;
-    max-width: 480px;
-    max-height: 640px;
-    z-index: 9999;
+  overflow: hidden;
+  position: relative;
+  border-radius: 10px;
+  box-shadow: 0 0 15px 0 #00000026;
+  background-color: var(--snow);
+  width: 100%;
+  max-width: 480px;
+  max-height: 640px;
+  z-index: 9999;
 
-    &[data-highlighted] {
-        background-color: var(--dust);
-        color: var(--snow);
-    }
-}
-  
-&[data-side="top"] {
+  &[data-highlighted] {
+    background-color: var(--dust);
+    color: var(--snow);
+  }
+
+  &[data-side="top"] {
     animation-name: slide-down-and-fade;
-}
+  }
 
-&[data-side="right"] {
+  &[data-side="right"] {
     animation-name: slide-left-and-fade;
-}
+  }
 
-&[data-side="bottom"] {
+  &[data-side="bottom"] {
     animation-name: slide-up-and-fade;
+  }
+
+  &[data-side="left"] {
+    animation-name: slide-right-and-fade;
+  }
 }
 
-&[data-side="left"] {
-    animation-name: slide-right-and-fade;
-}
-  
 .item,
 .radioItem {
-    font-family: Inter, sans-serif;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 24px;
-    color: var(--night);
-    text-transform: capitalize;
-    display: flex;
-    align-items: center;
-    height: 48px;
-    padding: 0 1.5rem;
-    position: relative;
-    user-select: none;
-    border-bottom: 1px solid var(--geyser);
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--night);
+  text-transform: capitalize;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 1.5rem;
+  position: relative;
+  user-select: none;
+  border-bottom: 1px solid var(--geyser);
 
-    &[data-disabled] {
-        color: var(--venus);
-        background-color: var(--porcelain);
-        pointer-events: none;
-        opacity: 0.5;
-    }
+  &[data-disabled] {
+    color: var(--venus);
+    background-color: var(--porcelain);
+    pointer-events: none;
+    opacity: 0.5;
+  }
 
-    &[data-highlighted] {
-        outline: none;
-        background-color: var(--fantasy);
-        color: var(--dust);
-    }
+  &[data-highlighted] {
+    outline: none;
+    background-color: var(--fantasy);
+    color: var(--dust);
+  }
 
-    &[data-state="checked"] {
-        background-color: var(--dust);
-        color: var(--snow);
-    }
+  &[data-state="checked"] {
+    background-color: var(--dust);
+    color: var(--snow);
+  }
 }
 
 .radioItem[data-highlighted] {
-    background-color: var(--dust);
-    color: var(--snow);
+  background-color: var(--dust);
+  color: var(--snow);
 }
-  
+
 .item:hover:not([data-state="checked"]) {
-    background-color: var(--fantasy);
-    color: var(--dust)
+  background-color: var(--fantasy);
+  color: var(--dust);
 }
 
 .itemIndicator {
-    position: absolute;
-    right: 1rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  position: absolute;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .itemIndicator svg {
-    fill: var(--snow);
+  fill: var(--snow);
 }
-  
-@keyframes slide-up-and-fade {
-    from {
-        opacity: 0;
-        transform: translateY(2px);
-    }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes slide-up-and-fade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-right-and-fade {
-    from {
-        opacity: 0;
-        transform: translateX(-2px);
-    }
+  from {
+    opacity: 0;
+    transform: translateX(-2px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slide-down-and-fade {
-    from {
-        opacity: 0;
-        transform: translateY(-2px);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slide-left-and-fade {
-    from {
-        opacity: 0;
-        transform: translateX(2px);
-    }
+  from {
+    opacity: 0;
+    transform: translateX(2px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @media (max-width: 1920px) {
-    .content {
-        min-width: 480px;
-    }
+  .content {
+    min-width: 480px;
+  }
 }

@@ -143,13 +143,13 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: ./apps/frontend-next
-          command: deploy --env ${{ env.CLOUDFLARE_ENV }}
+          command: versions upload --env ${{ env.CLOUDFLARE_ENV }} --preview-alias pr-${{ github.event.number }}
 
       - name: Comment PR with preview URL
         uses: actions/github-script@v7
         with:
           script: |
-            const previewUrl = `https://verse-mate-preview.verse-mate.workers.dev`;
+            const previewUrl = `https://pr-${{ github.event.number }}-v-m-preview.verse-mate.workers.dev`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
