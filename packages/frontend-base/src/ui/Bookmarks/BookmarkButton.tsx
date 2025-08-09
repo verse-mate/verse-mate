@@ -20,7 +20,8 @@ export const BookmarkButton = ({
   testament,
   className,
 }: BookmarkButtonProps) => {
-  const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
+  const { isBookmarked, addBookmark, removeBookmark, savePendingBookmark } =
+    useBookmarks();
   const [isLoading, setIsLoading] = useState(false);
   const { session } = userSession();
 
@@ -31,8 +32,12 @@ export const BookmarkButton = ({
     e.preventDefault();
     e.stopPropagation();
 
-    // If user is not logged in, show login required modal
+    // If user is not logged in, show login required modal and save bookmark intention
     if (!session) {
+      // Save this chapter as a pending bookmark in localStorage
+      savePendingBookmark(bookId, chapterNumber, bookName, testament);
+
+      // Show login modal
       addModal({
         content: (
           <div className={styles.loginModal}>
