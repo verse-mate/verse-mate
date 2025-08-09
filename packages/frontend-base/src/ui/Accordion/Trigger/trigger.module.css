@@ -37,9 +37,9 @@
   background-color: var(--fantasy);
 }
 
-.trigger:not[data-state="active"]:hover {
+/* .trigger:not[data-state="active"]:hover {
   background-color: none;
-}
+} */
 
 .trigger:not([data-state="open"]):hover svg,
 .trigger:not([data-state="open"]):hover span {

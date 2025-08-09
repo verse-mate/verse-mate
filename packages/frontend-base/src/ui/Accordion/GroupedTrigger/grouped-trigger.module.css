@@ -51,13 +51,13 @@
     color: var(--dust);
 }
 
-.trigger:not([data-state="open"]):hover {
+/* .trigger:not([data-state="open"]):hover {
     background-color: var(--fantasy);
-}
+} */
 
-.trigger:not[data-state="active"]:hover {
+/* .trigger:not[data-state="active"]:hover {
     background-color: none;
-}
+} */
 
 .content {
     display: flex;

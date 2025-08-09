@@ -132,6 +132,25 @@ function getLanguageName(code: string, locale = "en"): string {
   return display.of(code) ?? display.of("en") ?? "English";
 }
 
+const getUserPrompt = ({
+  reference,
+  explanationPrompt,
+  language,
+}: { reference: string; explanationPrompt: string; language: string }) => {
+  return `# Reference
+${reference}
+
+${explanationPrompt}
+
+CRITICAL: Your response will be evaluated on:
+1. Proper blockquote usage for Scripture (>)
+2. Bold formatting for theological terms
+3. Bullet point usage for lists
+4. Verse reference formatting
+
+The response should be in ${language} using Markdown format only.`;
+};
+
 const plugin = new Elysia()
   .use(shared)
   .state((state) => {
@@ -248,21 +267,16 @@ const plugin = new Elysia()
                     book?.name || "",
                     Number(chapterNumber),
                   );
-                  const userPrompt = `# Reference
-${reference}
 
-${explanationConfig.prompt}
+                  const language = getLanguageName(version.language_code);
 
-CRITICAL: Your response will be evaluated on:
-1. Proper blockquote usage for Scripture (>)
-2. Bold formatting for theological terms
-3. Bullet point usage for lists
-4. Verse reference formatting
-
-The response should be in Markdown format only.`;
                   const text = await gpt5Text({
                     system: prompt.prompt,
-                    user: userPrompt,
+                    user: getUserPrompt({
+                      reference,
+                      explanationPrompt: explanationConfig.prompt,
+                      language,
+                    }),
                   });
 
                   const { success } = await bibleService.saveExplanation({
@@ -337,15 +351,20 @@ The response should be in Markdown format only.`;
       )
       .post(
         "/book/new-conversation",
-        async ({ body, store: { chatService, bibleService, db } }) => {
+        async ({ body, store: { chatService, bibleService, db }, query }) => {
           if (!body.user_id) return { message: "User ID is required" };
+          const { versionKey = "NASB1995" } = query;
 
-          // TODO: propery query
           const version = await db
             .getOrCreateConnection()
             .selectFrom("bible_versions")
             .select(["id", "language_code"])
-            .executeTakeFirstOrThrow();
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
 
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
@@ -545,13 +564,19 @@ The response should be in Markdown format only.`;
       )
       .post(
         "/book/ask-verse-mate/save-ai-message",
-        async ({ body, store: { chatService, bibleService, db } }) => {
-          // TODO: propery query
+        async ({ body, store: { chatService, bibleService, db }, query }) => {
+          const { versionKey = "NASB1995" } = query;
+
           const version = await db
             .getOrCreateConnection()
             .selectFrom("bible_versions")
             .select(["id", "language_code"])
-            .executeTakeFirstOrThrow();
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
 
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
