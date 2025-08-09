@@ -36,7 +36,6 @@ const getPendingBookmarks = (): Array<{
     const stored = localStorage.getItem(PENDING_BOOKMARKS_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch (error) {
-    console.error("Error reading pending bookmarks from localStorage:", error);
     return [];
   }
 };
@@ -51,9 +50,7 @@ const savePendingBookmarks = (
 ): void => {
   try {
     localStorage.setItem(PENDING_BOOKMARKS_KEY, JSON.stringify(bookmarks));
-  } catch (error) {
-    console.error("Error saving pending bookmarks to localStorage:", error);
-  }
+  } catch (error) {}
 };
 
 // Add a chapter to pending bookmarks
@@ -88,20 +85,8 @@ export const useBookmarks = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Debug session info
-  useEffect(() => {
-    console.log("=== SESSION DEBUG INFO ===");
-    console.log("Session:", session);
-    console.log("User ID:", session?.id);
-    console.log("Email:", session?.email);
-    console.log("=========================");
-  }, [session]);
-
   // Get API URL from environment
   const apiUrl = $env.get().apiUrl;
-
-  // Debug logging
-  console.log("Original API URL:", apiUrl);
 
   // Helper to get full API path
   const getApiPath = useCallback(
@@ -120,19 +105,11 @@ export const useBookmarks = () => {
       testament: string,
     ) => {
       if (!session) {
-        console.error("Cannot add bookmark: User not logged in");
         setError("You must be logged in to add bookmarks");
         return null;
       }
 
       try {
-        console.log("Adding bookmark:", {
-          bookId,
-          chapterNumber,
-          bookName,
-          testament,
-        });
-
         // Create an object that will be added to both local state and sent to API
         const bookmarkData = {
           user_id: session.id,
@@ -149,22 +126,13 @@ export const useBookmarks = () => {
           body: JSON.stringify(bookmarkData),
         });
 
-        // Log the raw response for debugging
-        console.log("Add bookmark response status:", response.status);
-
-        // Try to get response text even if not JSON
-        const responseText = await response.text();
-        console.log("Add bookmark response text:", responseText);
-
         let result: any;
         try {
           // Try to parse as JSON if possible
-          result = JSON.parse(responseText);
-          console.log("Add bookmark parsed response:", result);
+          result = JSON.parse(await response.text());
         } catch (e) {
-          console.error("Failed to parse response as JSON:", e);
           throw new Error(
-            `Error adding bookmark: ${response.status} - ${responseText}`,
+            `Error adding bookmark: ${response.status} - ${await response.text()}`,
           );
         }
 
@@ -195,15 +163,10 @@ export const useBookmarks = () => {
           // Notify any other components that are listening to this state
           notifyListeners();
 
-          console.log(
-            `Added bookmark successfully. New bookmark count: ${updatedBookmarks.length}`,
-          );
-
           return newBookmark;
         }
         throw new Error("Server returned success: false");
       } catch (err) {
-        console.error("Error adding bookmark:", err);
         setError("Failed to add bookmark");
         return null;
       }
@@ -214,14 +177,11 @@ export const useBookmarks = () => {
   const removeBookmark = useCallback(
     async (bookId: number, chapterNumber: number) => {
       if (!session) {
-        console.error("Cannot remove bookmark: User not logged in");
         setError("You must be logged in to remove bookmarks");
         return;
       }
 
       try {
-        console.log("Removing bookmark:", { bookId, chapterNumber });
-
         // Prepare query parameters for the DELETE request
         const queryParams = new URLSearchParams({
           user_id: session.id,
@@ -237,20 +197,14 @@ export const useBookmarks = () => {
           },
         );
 
-        // Log the raw response for debugging
-        console.log("Remove bookmark response status:", response.status);
-
         // Try to get response text even if not JSON
         const responseText = await response.text();
-        console.log("Remove bookmark response text:", responseText);
 
         let result: any = { success: false };
         try {
           // Try to parse as JSON if possible
           result = JSON.parse(responseText);
-          console.log("Remove bookmark parsed response:", result);
         } catch (e) {
-          console.error("Failed to parse response as JSON:", e);
           // If we couldn't parse as JSON but response was ok, assume success
           if (response.ok) {
             result = { success: true };
@@ -277,13 +231,8 @@ export const useBookmarks = () => {
         // Notify any other components that are listening to this state
         notifyListeners();
 
-        console.log(
-          `Removed bookmark successfully. New bookmark count: ${updatedBookmarks.length}`,
-        );
-
         return result.success;
       } catch (err) {
-        console.error("Error removing bookmark:", err);
         setError("Failed to remove bookmark");
         return false;
       }
@@ -305,33 +254,22 @@ export const useBookmarks = () => {
     setError(null);
 
     try {
-      console.log(
-        `Fetching bookmarks from: ${getApiPath("/book/bookmarks/") + session.id}`,
-      );
-
       // Real API call to get user bookmarks
       const response = await fetch(getApiPath("/book/bookmarks/") + session.id);
 
       // For debugging production issues - capture detailed error info
       if (!response.ok) {
-        console.error(
-          `Bookmark API error: ${response.status} ${response.statusText}`,
-        );
-
-        // Try to get response body even for error responses
         try {
           const errorText = await response.text();
-          console.error(`Bookmark API error body: ${errorText}`);
 
           // Try parsing as JSON if possible
           try {
             const errorJson = JSON.parse(errorText);
-            console.error("Parsed error response:", errorJson);
           } catch (e) {
             // Not JSON, that's fine
           }
         } catch (e) {
-          console.error("Could not read error response body");
+          // Could not read error response body
         }
 
         throw new Error(`Error fetching bookmarks: ${response.status}`);
@@ -343,25 +281,20 @@ export const useBookmarks = () => {
       const fetchedBookmarks = data.favorites.map((fav: any) => ({
         id: fav.favorite_id,
         user_id: session.id,
-        book_id: fav.book_id, // Use the correct field name from backend
-        chapter_number: fav.chapter_number, // Use the correct field name from backend
-        book_name: fav.book_name, // Use the correct field name from backend
-        testament: "", // API might not provide testament directly
+        book_id: fav.book_id,
+        chapter_number: fav.chapter_number,
+        book_name: fav.book_name,
+        testament: "",
         created_at: new Date().toISOString(),
         type: "bookmark" as const,
       }));
-
-      console.log("Raw favorites data from API:", data.favorites);
-      console.log("Mapped bookmarks:", fetchedBookmarks);
 
       // Update global state
       globalBookmarks = fetchedBookmarks;
 
       // Update local state
       setBookmarks(globalBookmarks);
-      console.log("Fetched bookmarks:", globalBookmarks);
     } catch (err) {
-      console.error("Error fetching bookmarks:", err);
       setError("Failed to fetch bookmarks");
     } finally {
       setIsLoading(false);
@@ -372,12 +305,10 @@ export const useBookmarks = () => {
   useEffect(() => {
     const syncPendingBookmarks = async () => {
       // If user just logged in, check for pending bookmarks
-      if (session) {
+      if (session?.id) {
         const pendingBookmarks = getPendingBookmarks();
 
         if (pendingBookmarks.length > 0) {
-          console.log("Found pending bookmarks to sync:", pendingBookmarks);
-
           // Add each pending bookmark to the user's account
           for (const bookmark of pendingBookmarks) {
             try {
@@ -388,7 +319,7 @@ export const useBookmarks = () => {
                 bookmark.testament,
               );
             } catch (error) {
-              console.error("Error syncing pending bookmark:", error);
+              // Error syncing pending bookmark
             }
           }
 
@@ -429,7 +360,6 @@ export const useBookmarks = () => {
   // Load bookmarks on initial render or when session/user changes
   useEffect(() => {
     if (session) {
-      console.log("Session detected, fetching bookmarks...");
       fetchBookmarks();
     }
   }, [fetchBookmarks, session]);

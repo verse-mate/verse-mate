@@ -63,7 +63,7 @@ export const BookmarkButton = ({
         await addBookmark(bookId, chapterNumber, bookName, testament);
       }
     } catch (error) {
-      console.error("Error toggling bookmark:", error);
+      // Silently handle bookmark toggle errors
     } finally {
       setIsLoading(false);
     }
