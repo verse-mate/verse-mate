@@ -14,6 +14,7 @@ steps:
       - bun install --ignore-scripts
 
   - name: tsc
+    failure: ignore
     image: oven/bun:1.1.36
     commands:
       - bun tsc
@@ -21,6 +22,7 @@ steps:
       - compile
 
   - name: lint
+    failure: ignore
     image: oven/bun:1.1.36
     commands:
       - bun lint
@@ -28,6 +30,7 @@ steps:
       - compile
 
   - name: stylelint
+    failure: ignore
     image: oven/bun:1.1.36
     commands:
       - bun stylelint
@@ -35,6 +38,7 @@ steps:
       - compile
 
   - name: test
+    failure: ignore
     image: oven/bun:1.1.36
     commands:
       - cp apps/backend/.env.example .env

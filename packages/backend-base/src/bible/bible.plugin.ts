@@ -22,7 +22,30 @@ import { PromptService } from "./services/prompt.service";
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY, // This is the default and can be omitted
 });
-const model = "gpt-4-turbo";
+const model = "gpt-5";
+
+async function gpt5Text({
+  system,
+  user,
+}: {
+  system?: string;
+  user: string;
+}) {
+  const messages: OpenAI.ChatCompletionMessageParam[] = [];
+  if (system) {
+    messages.push({ role: "system", content: system });
+  }
+  messages.push({ role: "user", content: user });
+
+  const options: any = {
+    model,
+    messages,
+    max_completion_tokens: 10000,
+  };
+
+  const chat = await openai.chat.completions.create(options as any);
+  return chat.choices[0].message.content || "";
+}
 
 const getExplanationTypePrompt = (
   type: ExplanationTypeEnum,
@@ -225,12 +248,7 @@ const plugin = new Elysia()
                     book?.name || "",
                     Number(chapterNumber),
                   );
-                  const chat = await openai.chat.completions.create({
-                    messages: [
-                      { role: "system", content: prompt.prompt },
-                      {
-                        role: "user",
-                        content: `# Reference
+                  const userPrompt = `# Reference
 ${reference}
 
 ${explanationConfig.prompt}
@@ -241,17 +259,15 @@ CRITICAL: Your response will be evaluated on:
 3. Bullet point usage for lists
 4. Verse reference formatting
 
-The response should be in ${getLanguageName(version.language_code)} using Markdown format only`,
-                      },
-                    ],
-                    model,
-                    max_tokens: 1600,
-                    temperature: explanationConfig.temperature,
+The response should be in Markdown format only.`;
+                  const text = await gpt5Text({
+                    system: prompt.prompt,
+                    user: userPrompt,
                   });
 
                   const { success } = await bibleService.saveExplanation({
                     type,
-                    explanation: chat.choices[0].message.content || "",
+                    explanation: text || "",
                     book_id: Number(bookId),
                     chapter_number: Number(chapterNumber),
                     version_id: version.id,
@@ -379,19 +395,15 @@ The response should be in ${getLanguageName(version.language_code)} using Markdo
             Context: ${bookAsContext}
           `;
 
-          const chat = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model,
-          });
+          const chatText = await gpt5Text({ user: prompt });
 
           const promptCreateChatTitle = `
           - Create a short title for this chat based on the chat below:
-          ${chat.choices[0].message.content}
+          ${chatText}
           `;
 
-          const generatedTitle = await openai.chat.completions.create({
-            messages: [{ role: "user", content: promptCreateChatTitle }],
-            model,
+          const generatedTitleText = await gpt5Text({
+            user: promptCreateChatTitle,
           });
           // await new Promise((resolve) => setTimeout(resolve, 3000));
           // const generatedTitle = {
@@ -400,14 +412,14 @@ The response should be in ${getLanguageName(version.language_code)} using Markdo
 
           const newConversation = await chatService.createNewChat({
             user_id: body.user_id,
-            title: generatedTitle.choices[0].message.content || "",
+            title: generatedTitleText || "",
             book_id: body.book_id,
             chapter_number: body.chapter_number,
           });
 
           return {
             newConversation,
-            generatedTitle: generatedTitle.choices[0].message.content,
+            generatedTitle: generatedTitleText,
           };
         },
         {
@@ -589,10 +601,7 @@ The response should be in ${getLanguageName(version.language_code)} using Markdo
             Context: ${bookAsContext}
           `;
 
-          const chat = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model,
-          });
+          const chatText = await gpt5Text({ user: prompt });
           // await new Promise((resolve) => setTimeout(resolve, 3000));
           // const chat = {
           //   choices: [{ message: { content: "Fake message, test only" } }],
@@ -601,7 +610,7 @@ The response should be in ${getLanguageName(version.language_code)} using Markdo
           const saveAiMessage = await chatService.addMessageToChat({
             chat_id: body.chat_id,
             role: RoleEnum.assistant,
-            content: chat.choices[0].message.content || "",
+            content: chatText || "",
           });
 
           return { result: saveAiMessage.newMessage };
