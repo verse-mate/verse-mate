@@ -5,20 +5,25 @@
   "scripts": {
     "dev": "bun --bun run next dev --turbo",
     "build": "bun --bun run next build",
-    "start": "bun --bun run next start"
+    "build:worker": "opennextjs-cloudflare build",
+    "start": "bun --bun run next start",
+    "deploy": "opennextjs-cloudflare deploy",
+    "preview": "opennextjs-cloudflare preview"
   },
   "dependencies": {
     "frontend-base": "workspace:*",
     "frontend-envs": "workspace:*",
-    "next": "^14.2.5",
+    "next": "^15.4.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.6.5",
     "@types/node": "^20.14.13",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "postcss-nested": "^6.2.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "wrangler": "^4.28.1"
   }
 }

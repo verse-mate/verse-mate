@@ -263,13 +263,6 @@
 
     .nextChapterBtn, .previousChapterBtn {
         top: 50%;
-        transition: none;
-    }
-
-    .nextChapterBtn.hidden,
-    .previousChapterBtn.hidden {
-        opacity: 1;
-        pointer-events: auto;
     }
 
     .verseMateLogo {

@@ -139,48 +139,144 @@ export const Nav = ({
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Added smooth scrolling function
   const handleAccordionTriggerClick = useCallback(
-    (bookName: string, chapterCount: number, isSelectedBook: boolean) => {
-      setTimeout(() => {
+    (bookName: string) => {
+      const scrollContainer = scrollContainerRef.current;
+      if (!scrollContainer) return;
+
+      const accordionTrigger = scrollContainer.querySelector(
+        `[data-accordion-trigger="${bookName}"]`,
+      ) as HTMLElement | null;
+      if (!accordionTrigger) return;
+
+      const FIXED_OFFSET = fixedItem ? 48 : 0;
+      const BUFFER = 12;
+      const THRESHOLD = 2;
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const triggerRect = accordionTrigger.getBoundingClientRect();
+
+      let attempts = 0;
+      const maxAttempts = 36;
+
+      const getContentAndRowHeight = () => {
+        const content =
+          accordionTrigger.nextElementSibling as HTMLElement | null;
+        let rowHeight = 0;
+
+        if (content) {
+          const firstCell = content.querySelector(
+            ".verseNumber",
+          ) as HTMLElement | null;
+          if (firstCell) {
+            const rect = firstCell.getBoundingClientRect();
+            rowHeight = Math.max(0, rect.height);
+          }
+        }
+        return { content, rowHeight };
+      };
+
+      // Custom smooth scroll function with slower, nicer animation
+      const smoothScrollTo = (targetPosition: number, duration = 600) => {
+        const startPosition = scrollContainer.scrollTop;
+        const distance = targetPosition - startPosition;
+        const startTime = performance.now();
+
+        const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+        const animateScroll = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          const easedProgress = easeOutCubic(progress);
+          const currentPosition = startPosition + distance * easedProgress;
+
+          scrollContainer.scrollTo({
+            top: currentPosition,
+          });
+
+          if (progress < 1) {
+            requestAnimationFrame(animateScroll);
+          }
+        };
+
+        requestAnimationFrame(animateScroll);
+      };
+
+      const measureAndScroll = () => {
         if (!scrollContainerRef.current) return;
+        attempts += 1;
 
-        const scrollContainer = scrollContainerRef.current;
-        const containerHeight = scrollContainer.clientHeight;
+        const { content: accordionContent, rowHeight: measuredRow } =
+          getContentAndRowHeight();
+
         const currentScrollTop = scrollContainer.scrollTop;
-
-        const accordionTrigger = scrollContainer.querySelector(
-          `[data-accordion-trigger="${bookName}"]`,
-        ) as HTMLElement;
-        if (!accordionTrigger) return;
-
-        const triggerRect = accordionTrigger.getBoundingClientRect();
-        const containerRect = scrollContainer.getBoundingClientRect();
+        const containerHeight = scrollContainer.clientHeight;
 
         const triggerTop =
           triggerRect.top - containerRect.top + currentScrollTop;
-        const fixedBookOffset = fixedItem ? 48 : 0;
+        const triggerBottom = triggerTop + triggerRect.height;
+        const targetTopCap = Math.max(0, triggerTop - FIXED_OFFSET - BUFFER);
+        const maxScrollTop =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
 
-        const chaptersPerRow = 5;
-        const estimatedRowHeight = 64;
-        const estimatedRows = Math.ceil(chapterCount / chaptersPerRow);
-        const estimatedContentHeight = estimatedRows * estimatedRowHeight;
+        const isOpen = accordionContent?.getAttribute("data-state") === "open";
+        const contentFullHeight = Math.max(
+          0,
+          accordionContent?.scrollHeight ?? 0,
+        );
 
-        let targetScrollTop = triggerTop - fixedBookOffset;
-        targetScrollTop = Math.max(0, targetScrollTop);
-
-        if (Math.abs(targetScrollTop - currentScrollTop) > 10) {
-          scrollContainer.scrollTo({
-            top: targetScrollTop,
-            behavior: "smooth",
-          });
+        if (!accordionContent || !isOpen || contentFullHeight === 0) {
+          if (attempts < maxAttempts) requestAnimationFrame(measureAndScroll);
+          return;
         }
-      }, 200);
+
+        const availableBelow =
+          containerHeight - (triggerBottom - currentScrollTop);
+        const desiredDelta = Math.max(
+          0,
+          contentFullHeight - availableBelow + BUFFER,
+        );
+
+        if (desiredDelta <= 0) {
+          return;
+        }
+
+        const maxScrollTopNow =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        if (
+          attempts < maxAttempts &&
+          currentScrollTop >= maxScrollTopNow &&
+          desiredDelta > 0
+        ) {
+          requestAnimationFrame(measureAndScroll);
+          return;
+        }
+
+        const fallbackRowHeight = 60;
+        const rowHeight = measuredRow > 0 ? measuredRow : fallbackRowHeight;
+        const snappedDelta = Math.ceil(desiredDelta / rowHeight) * rowHeight;
+
+        let targetScrollTop = Math.min(
+          currentScrollTop + snappedDelta,
+          targetTopCap,
+        );
+        targetScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+
+        if (Math.abs(targetScrollTop - currentScrollTop) > THRESHOLD) {
+          smoothScrollTo(targetScrollTop, 400);
+        }
+      };
+
+      setTimeout(() => {
+        // Check if component is still mounted before proceeding
+        if (scrollContainerRef.current) {
+          requestAnimationFrame(measureAndScroll);
+        }
+      }, 220);
     },
     [fixedItem],
   );
-
-  // Added renderAccordionItems function
   const renderAccordionItems = (
     books: typeof oldTestamentBooks,
     testament: "OT" | "NT",
@@ -213,12 +309,10 @@ export const Nav = ({
         <Accordion.Item value={book.n} key={book.n}>
           <div
             data-accordion-trigger={book.n}
-            onClick={() =>
-              handleAccordionTriggerClick(book.n, book.c, isSelectedBook)
-            }
+            onClick={() => handleAccordionTriggerClick(book.n)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ")
-                handleAccordionTriggerClick(book.n, book.c, isSelectedBook);
+                handleAccordionTriggerClick(book.n);
             }}
             role="button"
             tabIndex={0}
@@ -261,7 +355,7 @@ export const Nav = ({
         <SelectDropdown.Root
           open={leftPanelIsOpen}
           onOpenChange={leftPanelSetIsOpen}
-          resetFilter={leftPanelResetFilter} // Kept resetFilter prop
+          resetFilter={leftPanelResetFilter}
         >
           {!book ? (
             <SelectDropdown.GroupedSelect.Skeleton />
@@ -290,12 +384,12 @@ export const Nav = ({
                 <Tabs.Trigger
                   value="OT"
                   label="Old Testament"
-                  resetFilter={leftPanelResetFilter} // Kept resetFilter prop
+                  resetFilter={leftPanelResetFilter}
                 />
                 <Tabs.Trigger
                   value="NT"
                   label="New Testament"
-                  resetFilter={leftPanelResetFilter} // Kept resetFilter prop
+                  resetFilter={leftPanelResetFilter}
                 />
               </Tabs.List>
 
@@ -308,12 +402,13 @@ export const Nav = ({
               />
 
               <div
-                ref={scrollContainerRef} // Added ref
+                ref={scrollContainerRef}
                 style={{
                   marginTop: "128px",
                   maxHeight: "min(calc(100vh - 230px), 512px)",
                   overflowY: "auto",
-                  scrollBehavior: "smooth", // Added smooth scrolling
+                  scrollBehavior: "smooth",
+                  paddingBottom: "16px",
                 }}
               >
                 <Tabs.Content value="OT">

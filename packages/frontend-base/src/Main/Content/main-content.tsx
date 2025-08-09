@@ -203,6 +203,7 @@ export const MainContent = () => {
 
   const contentRefBook = useRef<HTMLDivElement>(null);
   const contentRefVersion = useRef<HTMLDivElement>(null);
+  const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleBibleVersionSelected = (versionKey: string) => {
     saveBibleVersionOnURL(versionKey);
@@ -256,6 +257,152 @@ export const MainContent = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+  const fixedItem = bookId > 0;
+
+  const handleMobileAccordionTriggerClick = useCallback(
+    (bookName: string) => {
+      const scrollContainer = mobileScrollContainerRef.current;
+      if (!scrollContainer) return;
+
+      const accordionTrigger = scrollContainer.querySelector(
+        `[data-mobile-accordion-trigger="${bookName}"]`,
+      ) as HTMLElement | null;
+      if (!accordionTrigger) return;
+
+      const FIXED_OFFSET = fixedItem ? 48 : 0;
+      const BUFFER = 12;
+      const THRESHOLD = 2;
+
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const triggerRect = accordionTrigger.getBoundingClientRect();
+
+      let attempts = 0;
+      const maxAttempts = 36;
+
+      const getContentAndRowHeight = () => {
+        const content =
+          accordionTrigger.nextElementSibling as HTMLElement | null;
+        let rowHeight = 0;
+        if (content) {
+          const firstCell = content.querySelector(
+            ".verseNumber",
+          ) as HTMLElement | null;
+          if (firstCell) {
+            const rect = firstCell.getBoundingClientRect();
+            rowHeight = Math.max(0, rect.height);
+          }
+        }
+        return { content, rowHeight };
+      };
+
+      // Custom smooth scroll function with slower, nicer animation
+      const smoothScrollTo = (targetPosition: number, duration = 800) => {
+        const startPosition = scrollContainer.scrollTop;
+        const distance = targetPosition - startPosition;
+        const startTime = performance.now();
+
+        // Ease-out cubic for smoother deceleration
+        const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+        const animateScroll = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          const easedProgress = easeOutCubic(progress);
+          const currentPosition = startPosition + distance * easedProgress;
+
+          scrollContainer.scrollTop = currentPosition;
+
+          if (progress < 1) {
+            requestAnimationFrame(animateScroll);
+          }
+        };
+
+        requestAnimationFrame(animateScroll);
+      };
+
+      const measureAndScroll = () => {
+        if (!mobileScrollContainerRef.current) return;
+        attempts += 1;
+
+        const { content: accordionContent, rowHeight: measuredRow } =
+          getContentAndRowHeight();
+
+        const currentScrollTop = scrollContainer.scrollTop;
+        const containerHeight = scrollContainer.clientHeight;
+
+        const triggerTop =
+          triggerRect.top - containerRect.top + currentScrollTop;
+        const triggerBottom = triggerTop + triggerRect.height;
+        const targetTopCap = Math.max(0, triggerTop - FIXED_OFFSET - BUFFER);
+        const maxScrollTop =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+        const isOpen = accordionContent?.getAttribute("data-state") === "open";
+        const contentFullHeight = Math.max(
+          0,
+          accordionContent?.scrollHeight ?? 0,
+        );
+
+        if (!accordionContent || !isOpen || contentFullHeight === 0) {
+          if (attempts < maxAttempts) requestAnimationFrame(measureAndScroll);
+          return;
+        }
+
+        const availableBelow =
+          containerHeight - (triggerBottom - currentScrollTop);
+        const desiredDelta = Math.max(
+          0,
+          contentFullHeight - availableBelow + BUFFER,
+        );
+
+        if (desiredDelta <= 0) {
+          return;
+        }
+
+        const maxScrollTopNow =
+          scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        if (
+          attempts < maxAttempts &&
+          currentScrollTop >= maxScrollTopNow &&
+          desiredDelta > 0
+        ) {
+          requestAnimationFrame(measureAndScroll);
+          return;
+        }
+
+        const fallbackRowHeight = 60;
+        const rowHeight = measuredRow > 0 ? measuredRow : fallbackRowHeight;
+        const rowsFloat = desiredDelta / rowHeight;
+        const fractional = rowsFloat - Math.floor(rowsFloat);
+        const snapThreshold = 0.4;
+        const rows =
+          fractional <= snapThreshold
+            ? Math.round(rowsFloat)
+            : Math.ceil(rowsFloat);
+        const snappedDelta = Math.max(0, rows) * rowHeight;
+
+        let targetScrollTop = Math.min(
+          currentScrollTop + snappedDelta,
+          targetTopCap,
+        );
+        targetScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+
+        if (Math.abs(targetScrollTop - currentScrollTop) > THRESHOLD) {
+          // Use custom smooth scroll instead of browser's "smooth" behavior
+          smoothScrollTo(targetScrollTop, 600); // 600ms duration for slower, nicer animation
+        }
+      };
+
+      setTimeout(() => {
+        if (mobileScrollContainerRef.current) {
+          // Check if component is still mounted before proceeding
+          requestAnimationFrame(measureAndScroll);
+        }
+      }, 250);
+    },
+    [fixedItem],
+  );
 
   useEffect(() => {
     scrollToBottom();
@@ -283,8 +430,6 @@ export const MainContent = () => {
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
 
-  const fixedItem = bookId > 0;
-
   const selectedBookDetails = [...oldTestamentBooks, ...newTestamentBooks].find(
     (book) => book.b === bookId,
   );
@@ -292,56 +437,96 @@ export const MainContent = () => {
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
+  const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
+  const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
+
+  const [isNearNext, setIsNearNext] = useState(false);
+  const [isNearPrev, setIsNearPrev] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 1024) return;
+
+      const checkProximity = (
+        buttonRef: React.RefObject<HTMLButtonElement>,
+        setIsNear: React.Dispatch<React.SetStateAction<boolean>>,
+      ) => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const distance = Math.sqrt(
+            (e.clientX - centerX) ** 2 + (e.clientY - centerY) ** 2,
+          );
+          setIsNear(distance < 150);
+        } else {
+          setIsNear(false);
+        }
+      };
+
+      checkProximity(nextChapterButtonRef, setIsNearNext);
+      checkProximity(prevChapterButtonRef, setIsNearPrev);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
     }
 
-    setButtonsVisible(() => true);
+    setButtonsVisible(true);
 
     inactivityTimerRef.current = setTimeout(() => {
-      setButtonsVisible(() => false);
+      if (!isNearNext && !isNearPrev) {
+        setButtonsVisible(false);
+      }
     }, 3000);
-  }, []);
+  }, [isNearNext, isNearPrev]);
 
-  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+  const [scrollElements, setScrollElements] = useState<Set<HTMLElement>>(
+    new Set(),
+  );
 
   const scrollableCallbackRef = useCallback((node: HTMLElement | null) => {
     //console.log("📋 Ref callback called with:", node);
-    setScrollElement(node);
+    setScrollElements((prev) => {
+      const newSet = new Set(prev);
+      if (node) {
+        newSet.add(node);
+      }
+      return newSet;
+    });
   }, []);
 
   useEffect(() => {
     const handleScroll = () => {
-      //console.log("🔄 Scroll detected!");
       resetInactivityTimer();
     };
 
-    //console.log("🔧 Setting up scroll listeners...");
-    //console.log("📋 scrollElement:", scrollElement);
-
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    if (scrollElement) {
-      //console.log("✅ Adding scroll listener to element");
-      scrollElement.addEventListener("scroll", handleScroll, { passive: true });
-    } else {
-      //console.log("❌ No scroll element found");
-    }
+    scrollElements.forEach((element) => {
+      element.addEventListener("scroll", handleScroll, { passive: true });
+    });
 
     resetInactivityTimer();
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      if (scrollElement) {
-        scrollElement.removeEventListener("scroll", handleScroll);
-      }
+      scrollElements.forEach((element) => {
+        element.removeEventListener("scroll", handleScroll);
+      });
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, [resetInactivityTimer, scrollElement]);
+  }, [resetInactivityTimer, scrollElements]);
 
   useEffect(() => {
     const handleDocumentClick = () => {
@@ -450,7 +635,11 @@ export const MainContent = () => {
                             position="under"
                           />
 
-                          <div className={`${styles.contentGroupedTrigger}`}>
+                          <div
+                            ref={mobileScrollContainerRef}
+                            className={`${styles.contentGroupedTrigger}`}
+                            style={{ paddingBottom: "16px" }}
+                          >
                             <Tabs.Content value="OT">
                               <Accordion.Root
                                 style={
@@ -464,10 +653,32 @@ export const MainContent = () => {
                                     value={selectedBookDetails.n}
                                     key={`selected-${selectedBookDetails.n}`}
                                   >
-                                    <Accordion.Trigger
-                                      label={selectedBookDetails.n}
-                                      highlightBook={true}
-                                    />
+                                    <div
+                                      data-mobile-accordion-trigger={
+                                        selectedBookDetails.n
+                                      }
+                                      onClick={() =>
+                                        handleMobileAccordionTriggerClick(
+                                          selectedBookDetails.n,
+                                        )
+                                      }
+                                      onKeyDown={(event) => {
+                                        if (
+                                          event.key === "Enter" ||
+                                          event.key === " "
+                                        )
+                                          handleMobileAccordionTriggerClick(
+                                            selectedBookDetails.n,
+                                          );
+                                      }}
+                                      role="button"
+                                      tabIndex={0}
+                                    >
+                                      <Accordion.Trigger
+                                        label={selectedBookDetails.n}
+                                        highlightBook={true}
+                                      />
+                                    </div>
                                     <Accordion.Content
                                       styles={{ position: "relative" }}
                                     >
@@ -527,10 +738,30 @@ export const MainContent = () => {
                                         value={book.n}
                                         key={book.n}
                                       >
-                                        <Accordion.Trigger
-                                          label={book.n}
-                                          highlightBook={false}
-                                        />
+                                        <div
+                                          data-mobile-accordion-trigger={book.n}
+                                          onClick={() =>
+                                            handleMobileAccordionTriggerClick(
+                                              book.n,
+                                            )
+                                          }
+                                          onKeyDown={(event) => {
+                                            if (
+                                              event.key === "Enter" ||
+                                              event.key === " "
+                                            )
+                                              handleMobileAccordionTriggerClick(
+                                                book.n,
+                                              );
+                                          }}
+                                          role="button"
+                                          tabIndex={0}
+                                        >
+                                          <Accordion.Trigger
+                                            label={book.n}
+                                            highlightBook={false}
+                                          />
+                                        </div>
                                         <Accordion.Content>
                                           <VerseGrid
                                             bookId={String(book.b)}
@@ -582,10 +813,32 @@ export const MainContent = () => {
                                     value={selectedBookDetails.n}
                                     key={`selected-${selectedBookDetails.n}`}
                                   >
-                                    <Accordion.Trigger
-                                      label={selectedBookDetails.n}
-                                      highlightBook={true}
-                                    />
+                                    <div
+                                      data-mobile-accordion-trigger={
+                                        selectedBookDetails.n
+                                      }
+                                      onClick={() =>
+                                        handleMobileAccordionTriggerClick(
+                                          selectedBookDetails.n,
+                                        )
+                                      }
+                                      onKeyDown={(event) => {
+                                        if (
+                                          event.key === "Enter" ||
+                                          event.key === " "
+                                        )
+                                          handleMobileAccordionTriggerClick(
+                                            selectedBookDetails.n,
+                                          );
+                                      }}
+                                      role="button"
+                                      tabIndex={0}
+                                    >
+                                      <Accordion.Trigger
+                                        label={selectedBookDetails.n}
+                                        highlightBook={true}
+                                      />
+                                    </div>
                                     <Accordion.Content
                                       styles={{ position: "relative" }}
                                     >
@@ -645,10 +898,30 @@ export const MainContent = () => {
                                         value={book.n}
                                         key={book.n}
                                       >
-                                        <Accordion.Trigger
-                                          label={book.n}
-                                          highlightBook={false}
-                                        />
+                                        <div
+                                          data-mobile-accordion-trigger={book.n}
+                                          onClick={() =>
+                                            handleMobileAccordionTriggerClick(
+                                              book.n,
+                                            )
+                                          }
+                                          onKeyDown={(event) => {
+                                            if (
+                                              event.key === "Enter" ||
+                                              event.key === " "
+                                            )
+                                              handleMobileAccordionTriggerClick(
+                                                book.n,
+                                              );
+                                          }}
+                                          role="button"
+                                          tabIndex={0}
+                                        >
+                                          <Accordion.Trigger
+                                            label={book.n}
+                                            highlightBook={false}
+                                          />
+                                        </div>
                                         <Accordion.Content>
                                           <VerseGrid
                                             testament={book.t}
@@ -786,8 +1059,9 @@ export const MainContent = () => {
                     </MainText.Root>
                     {chapters && Number(verseId) < chapters && (
                       <button
+                        ref={nextChapterButtonRef}
                         type="button"
-                        className={`${styles.nextChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
+                        className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
                         onClick={handleNextChapter}
                       >
                         <Icon.ChevronForward
@@ -797,8 +1071,9 @@ export const MainContent = () => {
                     )}
                     {chapters && Number(verseId) > 1 && (
                       <button
+                        ref={prevChapterButtonRef}
                         type="button"
-                        className={`${styles.previousChapterBtn} ${!buttonsVisible ? styles.hidden : ""}`}
+                        className={`${styles.previousChapterBtn} ${!buttonsVisible && !isNearPrev ? styles.hidden : ""}`}
                         onClick={handlePreviousChapter}
                       >
                         <Icon.ChevronBackward
@@ -923,6 +1198,8 @@ export const MainContent = () => {
               handlePreviousChapter={handlePreviousChapter}
               progress={progress}
               chapters={chapters}
+              buttonsVisible={buttonsVisible}
+              scrollableCallbackRef={scrollableCallbackRef}
             />
           </LeftPanel.Root>
 

@@ -174,3 +174,6 @@ dist
 infra
 
 .claude/*
+bugs.txt
+
+test-opennext
