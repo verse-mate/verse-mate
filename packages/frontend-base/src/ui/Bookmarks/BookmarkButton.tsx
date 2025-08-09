@@ -41,11 +41,15 @@ export const BookmarkButton = ({
       addModal({
         content: (
           <div className={styles.loginModal}>
-            <h3>Login Required</h3>
-            <p>You need to be logged in to bookmark chapters.</p>
+            <h3>Sign in Required to Use Bookmarks</h3>
+            <p>
+              Bookmarking is available only for signed-in accounts. We've saved
+              this chapter for you and will add it to your bookmarks as soon as
+              you log in.
+            </p>
             <div className={styles.loginModalButtons}>
               <a href="/login" className={styles.loginButton}>
-                Login Now
+                Sign In
               </a>
             </div>
           </div>

@@ -3,23 +3,26 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  padding: 8px 0;
+  padding: 12px 8px;
+  border-top: 1px solid var(--geyser-opacity);
+  background-color: var(--fantasy);
+  max-height: 300px; /* Limit height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: var(--geyser) transparent; /* For Firefox */
 }
 
-.bookmarkItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background-color: var(--snow);
-  border: 1px solid var(--dust-light);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+.bookmarkList::-webkit-scrollbar {
+  width: 6px;
 }
 
-.bookmarkItem:hover {
-  background-color: var(--dust-light);
+.bookmarkList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bookmarkList::-webkit-scrollbar-thumb {
+  background-color: var(--geyser);
+  border-radius: 20px;
 }
 
 .bookmarkInfo {
@@ -38,21 +41,77 @@
   color: var(--night-light);
 }
 
+.bookmarkItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: var(--snow);
+  border: 1px solid var(--geyser-opacity);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+}
+
+.bookmarkItem + .bookmarkItem {
+  margin-top: 2px;
+}
+
+.bookmarkItem:hover {
+  background-color: var(--dust);
+  color: var(--snow);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 5%);
+}
+
+.bookmarkItem:hover .bookmarkTitle {
+  color: var(--snow);
+}
+
+.bookmarkItem:hover .bookmarkMeta {
+  color: var(--geyser);
+}
+
 .removeButton {
   background: none;
   border: none;
   color: var(--night-light);
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  transition: all 0.2s ease;
+  width: 36px;
+  height: 36px;
+  position: relative;
 }
 
 .removeButton:hover {
-  background-color: var(--dust-light);
+  background-color: rgb(0 0 0 / 10%);
   color: var(--night);
+}
+
+.removeButton:hover::after {
+  content: "Remove Bookmark";
+  position: absolute;
+  bottom: -28px;
+  right: -18px;
+  background-color: var(--night);
+  color: var(--snow);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
+}
+
+.removeButton:active {
+  transform: scale(0.95);
+  background-color: rgb(0 0 0 / 15%);
 }
 
 .loading, .error, .empty {
@@ -70,7 +129,6 @@
   font-style: italic;
 }
 
-/* BookmarkButton styles */
 .bookmarkButton {
   background: none;
   border: none;
@@ -91,6 +149,11 @@
   transform: scale(0.9);
 }
 
+.bookmarkButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .animating {
   animation: pulse 0.3s ease;
 }
@@ -109,12 +172,6 @@
   fill: var(--primary);
 }
 
-.bookmarkButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Login Modal Styles */
 .loginModal {
   display: flex;
   flex-direction: column;

@@ -1,5 +1,6 @@
-import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useState } from "react";
+import { fetchAllTestaments } from "../../hooks/useBible";
 import { type Bookmark, useBookmarks } from "../../hooks/useBookmarks";
 import { useSaveSearchParams } from "../../hooks/useSearchParams";
 import { updateSelectedBook } from "../../store/book-selection";
@@ -11,17 +12,34 @@ export const BookmarkList = () => {
   const { saveSearchParams } = useSaveSearchParams();
   const [removingIds, setRemovingIds] = useState<Record<string, boolean>>({});
 
+  // Get Bible book data to determine testament
+  const { testaments } = fetchAllTestaments();
+
   const handleBookmarkClick = (bookmark: Bookmark) => {
     // Update the global selected book store
     if (bookmark.book_name) {
       updateSelectedBook(bookmark.book_name);
     }
 
+    // Default to using the bookmark's testament if available
+    let testament: TestamentEnum = bookmark.testament as TestamentEnum;
+
+    // If testament is missing or invalid, look it up from book data
+    if (!testament && testaments) {
+      const bookData = testaments.find((book) => book.b === bookmark.book_id);
+      if (bookData?.t) {
+        testament = bookData.t as TestamentEnum;
+      } else {
+        // Fallback to OT if we can't determine the testament
+        testament = TestamentEnum.OT;
+      }
+    }
+
     // Use chapter_number as verseId to navigate to the correct chapter
     saveSearchParams({
       bookId: String(bookmark.book_id),
       verseId: String(bookmark.chapter_number),
-      testament: bookmark.testament as TestamentEnum,
+      testament,
     });
   };
 
@@ -69,9 +87,6 @@ export const BookmarkList = () => {
             <div className={styles.bookmarkInfo}>
               <div className={styles.bookmarkTitle}>
                 {bookmark.book_name} {bookmark.chapter_number}
-              </div>
-              <div className={styles.bookmarkMeta}>
-                {new Date(bookmark.created_at).toLocaleDateString()}
               </div>
             </div>
             <button
