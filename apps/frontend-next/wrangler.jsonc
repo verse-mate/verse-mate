@@ -89,12 +89,12 @@
       "name": "verse-mate-production",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
-        "APP_URL": "https://verse-mate.xyz",
+        "APP_URL": "https://versemate.org",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
       },
       "routes": [
         {
-          "pattern": "verse-mate.xyz",
+          "pattern": "versemate.org",
           "custom_domain": true
         }
       ]
