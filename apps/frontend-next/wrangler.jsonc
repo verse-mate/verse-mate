@@ -100,11 +100,4 @@
       ]
     }
   }
-
-  // Tail consumers for logging (optional)
-  // "tail_consumers": [
-  //   {
-  //     "service": "verse-mate-logger"
-  //   }
-  // ]
 }
