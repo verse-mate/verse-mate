@@ -21,11 +21,12 @@ export function useNetworkStatus(): NetworkStatus {
       const online = navigator.onLine;
       console.log("useNetworkStatus: navigator.onLine =", online);
 
-      if (!online && isOnline) {
-        setWasOffline(true);
-      }
-
-      setIsOnline(online);
+      setIsOnline((prevIsOnline) => {
+        if (!online && prevIsOnline) {
+          setWasOffline(true);
+        }
+        return online;
+      });
 
       // Get connection info if available
       if ("connection" in navigator) {
@@ -64,7 +65,7 @@ export function useNetworkStatus(): NetworkStatus {
         }
       }
     };
-  }, [isOnline]);
+  }, []);
 
   return {
     isOnline,

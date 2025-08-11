@@ -72,13 +72,8 @@ export function PWAServiceWorkerRegistration() {
       };
 
       // Monitor network changes
-      window.addEventListener("online", () => {
-        console.log("[PWA] 🟢 Back online");
-      });
-
-      window.addEventListener("offline", () => {
-        console.log("[PWA] 🔴 Gone offline - using cached content");
-      });
+      window.addEventListener("online", updateNetworkStatus);
+      window.addEventListener("offline", updateNetworkStatus);
 
       // Check initial network status
       updateNetworkStatus();
