@@ -6,7 +6,7 @@
     "dev": "bun --bun run next dev --turbo",
     "build": "bun --bun run next build",
     "build:worker": "opennextjs-cloudflare build",
-    "start": "bun --bun run next start",
+    "start": "bun --bun run .next/standalone/apps/frontend-next/server.js",
     "deploy": "opennextjs-cloudflare deploy",
     "preview": "opennextjs-cloudflare preview"
   },

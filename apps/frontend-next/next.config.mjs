@@ -22,6 +22,20 @@ const cacheLoggingPlugin = {
       `[SW Cache UPDATE] 🔄 Cache "${cacheName}" updated for: ${request.url}`,
     );
   },
+  cacheWillUpdate: async ({ request, response }) => {
+    // Only cache successful responses
+    if (response.status === 200) {
+      console.log(
+        `[SW Cache] ✅ Will cache successful response for: ${request.url}`,
+      );
+      return response;
+    } else {
+      console.log(
+        `[SW Cache] ❌ Skipping cache for non-200 response (${response.status}): ${request.url}`,
+      );
+      return null;
+    }
+  },
   fetchDidFail: async ({ request, error }) => {
     console.log(
       `[SW Network FAIL] ❌ Network request failed for: ${request.url}`,
@@ -62,6 +76,8 @@ export default withPWA({
   disable: process.env.NODE_ENV === "development",
   register: false, // Manual registration in PWAServiceWorkerRegistration component
   skipWaiting: true,
+  cleanupOutdatedCaches: true, // Important: clean up old caches
+  reloadOnOnline: true,
   runtimeCaching: [
     {
       urlPattern: /.*\/bible\/books.*/,
