@@ -1,4 +1,4 @@
-import withPWA from "next-pwa";
+import withPWA from "@ducanh2912/next-pwa";
 
 const cacheLoggingPlugin = {
   cacheKeyWillBeUsed: async ({ request, mode }) => {
@@ -74,159 +74,161 @@ const nextConfig = {
 export default withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  register: false, // Manual registration in PWAServiceWorkerRegistration component
+  register: true, // Automatic service worker registration
   skipWaiting: true,
   cleanupOutdatedCaches: true, // Important: clean up old caches
   reloadOnOnline: true,
-  runtimeCaching: [
-    {
-      urlPattern: /.*\/bible\/books.*/,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "bible-books-cache",
-        plugins: [cacheLoggingPlugin],
-        matchOptions: {
-          ignoreVary: true,
-        },
-        expiration: {
-          maxEntries: 10,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-        },
-      },
-    },
-    {
-      urlPattern: /.*\/bible\/testaments.*/,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "bible-testaments-cache",
-        plugins: [cacheLoggingPlugin],
-        matchOptions: {
-          ignoreVary: true,
-        },
-        expiration: {
-          maxEntries: 5,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+  workboxOptions: {
+    runtimeCaching: [
+      {
+        urlPattern: /.*\/bible\/books.*/,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "bible-books-cache",
+          plugins: [cacheLoggingPlugin],
+          matchOptions: {
+            ignoreVary: true,
+          },
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
         },
       },
-    },
-    {
-      urlPattern: /.*\/bible\/book\/\d+\/\d+.*/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "bible-chapters-cache",
-        plugins: [cacheLoggingPlugin],
-        matchOptions: {
-          ignoreVary: true,
-        },
-        expiration: {
-          maxEntries: 200,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
-        },
-        networkTimeoutSeconds: 5,
-      },
-    },
-    {
-      urlPattern: /.*\/bible\/book\/explanation\/\d+\/\d+.*/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "bible-explanations-cache",
-        plugins: [cacheLoggingPlugin],
-        matchOptions: {
-          ignoreVary: true,
-        },
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-        },
-        networkTimeoutSeconds: 8,
-      },
-    },
-    {
-      urlPattern: /.*\/bible\/book\/.*conversations-history.*/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "chat-history-cache",
-        plugins: [cacheLoggingPlugin],
-        matchOptions: {
-          ignoreVary: true,
-        },
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 2 * 60 * 60, // 2 hours
+      {
+        urlPattern: /.*\/bible\/testaments.*/,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "bible-testaments-cache",
+          plugins: [cacheLoggingPlugin],
+          matchOptions: {
+            ignoreVary: true,
+          },
+          expiration: {
+            maxEntries: 5,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
         },
       },
-    },
-    {
-      urlPattern: /^https?:\/\/localhost:3000\/.*$/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "local-api-cache",
-        plugins: [cacheLoggingPlugin],
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+      {
+        urlPattern: /.*\/bible\/book\/\d+\/\d+.*/,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "bible-chapters-cache",
+          plugins: [cacheLoggingPlugin],
+          matchOptions: {
+            ignoreVary: true,
+          },
+          expiration: {
+            maxEntries: 200,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+          networkTimeoutSeconds: 5,
         },
       },
-    },
-    {
-      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "google-fonts-cache",
-        plugins: [cacheLoggingPlugin],
-        expiration: {
-          maxEntries: 10,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+      {
+        urlPattern: /.*\/bible\/book\/explanation\/\d+\/\d+.*/,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "bible-explanations-cache",
+          plugins: [cacheLoggingPlugin],
+          matchOptions: {
+            ignoreVary: true,
+          },
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
+          networkTimeoutSeconds: 8,
         },
       },
-    },
-    {
-      urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "static-font-assets",
-        plugins: [cacheLoggingPlugin],
-        expiration: {
-          maxEntries: 10,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+      {
+        urlPattern: /.*\/bible\/book\/.*conversations-history.*/,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "chat-history-cache",
+          plugins: [cacheLoggingPlugin],
+          matchOptions: {
+            ignoreVary: true,
+          },
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 2 * 60 * 60, // 2 hours
+          },
         },
       },
-    },
-    {
-      urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "static-image-assets",
-        plugins: [cacheLoggingPlugin],
-        expiration: {
-          maxEntries: 64,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+      {
+        urlPattern: /^https?:\/\/localhost:3000\/.*$/,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "local-api-cache",
+          plugins: [cacheLoggingPlugin],
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
         },
       },
-    },
-    {
-      urlPattern: /\/_next\/static.+\.js$/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "next-static-js-assets",
-        plugins: [cacheLoggingPlugin],
-        expiration: {
-          maxEntries: 64,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+      {
+        urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "google-fonts-cache",
+          plugins: [cacheLoggingPlugin],
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          },
         },
       },
-    },
-    {
-      urlPattern: /\/_next\/static.+\.css$/i,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "next-static-css-assets",
-        plugins: [cacheLoggingPlugin],
-        expiration: {
-          maxEntries: 64,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+      {
+        urlPattern: /\.(?:eot|otf|ttc|ttf|woff|woff2|font.css)$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "static-font-assets",
+          plugins: [cacheLoggingPlugin],
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          },
         },
       },
-    },
-  ],
+      {
+        urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "static-image-assets",
+          plugins: [cacheLoggingPlugin],
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+        },
+      },
+      {
+        urlPattern: /\/_next\/static.+\.js$/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "next-static-js-assets",
+          plugins: [cacheLoggingPlugin],
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          },
+        },
+      },
+      {
+        urlPattern: /\/_next\/static.+\.css$/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "next-static-css-assets",
+          plugins: [cacheLoggingPlugin],
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+          },
+        },
+      },
+    ],
+  },
 })(nextConfig);

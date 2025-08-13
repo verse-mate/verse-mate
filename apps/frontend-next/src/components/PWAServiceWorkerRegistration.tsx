@@ -35,19 +35,6 @@ export function PWAServiceWorkerRegistration() {
               error,
             );
           });
-      } else {
-        // Fallback to manual registration
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then(() => {
-            console.log("[PWA] ✅ Service worker registered successfully");
-          })
-          .catch((error: unknown) => {
-            console.error(
-              "[PWA] ❌ Service worker registration failed:",
-              error,
-            );
-          });
       }
 
       // Network status monitoring
