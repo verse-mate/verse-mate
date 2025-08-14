@@ -659,6 +659,190 @@ const plugin = new Elysia()
         {
           params: t.Pick(ChatDto, ["conversation_id"]),
         },
+      )
+      .get(
+        "/book/bookmarks/:user_id",
+        async ({ params, store: { bibleService } }) => {
+          console.log("=== GET /book/bookmarks/:user_id ENDPOINT ===");
+          console.log("Request params:", params);
+          console.log("Environment:", {
+            NODE_ENV: process.env.NODE_ENV,
+            API_URL: process.env.API_URL,
+            POSTGRES_URL: process.env.POSTGRES_URL
+              ? "Set (value hidden)"
+              : "Not set",
+          });
+
+          try {
+            console.log(
+              "Attempting to get bookmarks for user:",
+              params.user_id,
+            );
+            const { favorites } = await bibleService.getBookmarks({
+              id: params.user_id,
+            });
+
+            console.log(
+              "Successfully retrieved bookmarks, count:",
+              favorites.length,
+            );
+            return { favorites };
+          } catch (error) {
+            console.error("ERROR in GET /book/bookmarks/:user_id:", error);
+            if (error instanceof Error) {
+              console.error("Error details:", error.message);
+              console.error("Error stack:", error.stack);
+            }
+
+            // Return a more detailed error response instead of just failing with 500
+            return {
+              error: "Failed to retrieve bookmarks",
+              details: error instanceof Error ? error.message : String(error),
+              favorites: [],
+            };
+          }
+        },
+        {
+          params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+        },
+      )
+      .post(
+        "/book/bookmark/add",
+        async ({ body, store: { bibleService } }) => {
+          try {
+            console.log("Adding bookmark:", body);
+
+            if (
+              !body.user_id ||
+              !body.book_id ||
+              body.chapter_number === undefined
+            ) {
+              console.error("Missing required fields for adding bookmark");
+              return {
+                success: false,
+                error: "Missing required fields",
+              };
+            }
+
+            const { success } = await bibleService.addBookmark({
+              user_id: body.user_id,
+              book_id: body.book_id,
+              chapter_number: body.chapter_number,
+            });
+
+            return { success };
+          } catch (error) {
+            console.error("Error adding bookmark:", error);
+            return {
+              success: false,
+              error: "Failed to add bookmark",
+            };
+          }
+        },
+        {
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+          }),
+        },
+      )
+      .delete(
+        "/book/bookmark/remove",
+        async ({ query, store: { bibleService } }) => {
+          try {
+            console.log("Removing bookmark - query params:", query);
+
+            const user_id = query.user_id;
+            const book_id = Number(query.book_id);
+            const chapter_number = Number(query.chapter_number);
+
+            if (
+              !user_id ||
+              Number.isNaN(book_id) ||
+              Number.isNaN(chapter_number)
+            ) {
+              console.error(
+                "Missing or invalid required fields for removing bookmark",
+              );
+              return {
+                success: false,
+                error: "Missing or invalid required fields",
+              };
+            }
+
+            const { success } = await bibleService.removeBookmark({
+              user_id,
+              book_id,
+              chapter_number,
+            });
+
+            return { success };
+          } catch (error) {
+            console.error("Error removing bookmark:", error);
+            return {
+              success: false,
+              error: "Failed to remove bookmark",
+            };
+          }
+        },
+        {
+          query: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.String(),
+            chapter_number: t.String(),
+          }),
+        },
+      )
+      .post(
+        "/book/bookmark/remove",
+        async ({ body, request, store: { bibleService } }) => {
+          try {
+            console.log("POST method for removing bookmark:", body);
+            console.log("Headers:", request.headers);
+
+            // Check if this is meant to be a DELETE request
+            const methodOverride = request.headers.get(
+              "x-http-method-override",
+            );
+            if (methodOverride && methodOverride.toLowerCase() !== "delete") {
+              console.warn(`Unexpected method override: ${methodOverride}`);
+            }
+
+            if (
+              !body.user_id ||
+              !body.book_id ||
+              body.chapter_number === undefined
+            ) {
+              console.error("Missing required fields for removing bookmark");
+              return {
+                success: false,
+                error: "Missing required fields",
+              };
+            }
+
+            const { success } = await bibleService.removeBookmark({
+              user_id: body.user_id,
+              book_id: body.book_id,
+              chapter_number: body.chapter_number,
+            });
+
+            return { success };
+          } catch (error) {
+            console.error("Error removing bookmark via POST:", error);
+            return {
+              success: false,
+              error: "Failed to remove bookmark",
+            };
+          }
+        },
+        {
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+          }),
+        },
       ),
   );
 

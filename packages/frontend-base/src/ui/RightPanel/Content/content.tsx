@@ -5,9 +5,12 @@ import type StatusEnum from "database/src/models/public/StatusEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { UserSession } from "../../../hooks/session";
 import { History } from "../../../ui/ConversationHistory";
+import { homeOptions } from "../../../utils/home-options";
+import { Accordion } from "../../Accordion";
 import { Chat } from "../../Chat";
 import { Explanation } from "../../Explanation";
 import { ProfileButton } from "../../Header/UserProfile/user-profile";
+import * as Icon from "../../Icons";
 import { LoginCard } from "../../LoginCard";
 import styles from "./content.module.css";
 
@@ -157,7 +160,22 @@ export const Content = ({
       <RadixTabs.Content className={styles.content} value="menu">
         <div className={styles.moreOptionsContainer}>
           {session?.id ? (
-            <ProfileButton link="/" />
+            <>
+              <ProfileButton link="/" />
+              <div className={styles.menuOptions}>
+                <Accordion.Root type="multiple">
+                  {homeOptions.map((option) => (
+                    <Accordion.Item key={option.name} value={option.name}>
+                      <Accordion.Trigger
+                        label={option.label}
+                        icon={option.icon}
+                      />
+                      <Accordion.Content>{option.content}</Accordion.Content>
+                    </Accordion.Item>
+                  ))}
+                </Accordion.Root>
+              </div>
+            </>
           ) : (
             <LoginCard.Root>
               <LoginCard.Content />

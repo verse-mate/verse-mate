@@ -1,4 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import FavoriteTypeEnum from "database/src/models/public/FavoriteTypeEnum";
 import type { db } from "../../shared/shared.plugin";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
@@ -130,14 +131,52 @@ export class BibleRepository {
     book_id,
     chapter_number,
   }: Pick<ChapterDto, "book_id" | "chapter_number">) {
-    const chapter = await this.db
-      .getOrCreateConnection()
-      .selectFrom("chapters")
-      .where("book_id", "=", book_id)
-      .where("chapter_number", "=", chapter_number)
-      .select("chapter_id")
-      .executeTakeFirst();
-    return { chapter_id: chapter?.chapter_id ?? null };
+    try {
+      console.log(
+        "Repository: Getting chapter_id for book_id:",
+        book_id,
+        "chapter_number:",
+        chapter_number,
+      );
+
+      // Log connection attempt
+      console.log(
+        "Repository: Attempting database connection for getChapterId",
+      );
+      const connection = this.db.getOrCreateConnection();
+      console.log(
+        "Repository: Connection established successfully for getChapterId",
+      );
+
+      // Log SQL query details
+      console.log("Repository: Executing getChapterId query");
+      const chapter = await connection
+        .selectFrom("chapters")
+        .where("book_id", "=", book_id)
+        .where("chapter_number", "=", chapter_number)
+        .select("chapter_id")
+        .executeTakeFirst();
+
+      console.log("Repository: getChapterId result:", chapter);
+
+      if (!chapter?.chapter_id) {
+        console.log(
+          "Repository: No chapter_id found for book_id:",
+          book_id,
+          "chapter_number:",
+          chapter_number,
+        );
+      }
+
+      return { chapter_id: chapter?.chapter_id ?? null };
+    } catch (error) {
+      console.error("Repository: Error getting chapter_id:", error);
+      if (error instanceof Error) {
+        console.error("Repository: Error details:", error.message);
+        console.error("Repository: Error stack:", error.stack);
+      }
+      return { chapter_id: null };
+    }
   }
 
   async getExplanation({
@@ -356,5 +395,211 @@ export class BibleRepository {
       .executeTakeFirst();
 
     return { averageRating: averageRating ?? null };
+  }
+
+  /**
+   * Favorites
+   */
+  async getFavorites({ user_id }: { user_id: string }) {
+    try {
+      console.log("=== BibleRepository.getFavorites ===");
+      console.log("DATABASE DEBUG: getFavorites for user_id:", user_id);
+
+      // Log database connection details
+      const connection = this.db.getOrCreateConnection();
+      console.log("DATABASE DEBUG: Connection info:", {
+        database: process.env.POSTGRES_URL
+          ? process.env.POSTGRES_URL.split("@")[1]
+              ?.split("/")[1]
+              ?.split("?")[0] || "URL parsing failed"
+          : "Not defined in env",
+        connectionType: connection.constructor.name,
+      });
+
+      // Debug SQL query construction
+      console.log(
+        "DATABASE DEBUG: Executing getFavorites query for user:",
+        user_id,
+      );
+      console.log(
+        "DATABASE DEBUG: SQL query will join tables: favorites, chapters, books",
+      );
+      console.log(
+        "DATABASE DEBUG: SQL where conditions: favorites.user_id =",
+        user_id,
+        "AND favorites.type = chapter",
+      );
+
+      // Execute query with detailed logging
+      console.log("DATABASE DEBUG: Executing database query...");
+      const startTime = Date.now();
+
+      const favorites = await connection
+        .selectFrom("favorites as f")
+        .innerJoin("chapters as c", "f.chapter_id", "c.chapter_id")
+        .innerJoin("books as b", "c.book_id", "b.book_id")
+        .where("f.user_id", "=", user_id)
+        .where("f.type", "=", FavoriteTypeEnum.chapter)
+        .select([
+          "f.favorite_id",
+          "c.chapter_number",
+          "c.book_id",
+          "b.name as book_name",
+        ])
+        .execute();
+
+      const endTime = Date.now();
+      console.log(`DATABASE DEBUG: Query executed in ${endTime - startTime}ms`);
+      console.log("DATABASE DEBUG: Found favorites count:", favorites.length);
+
+      if (favorites.length > 0) {
+        console.log(
+          "DATABASE DEBUG: First favorite sample:",
+          JSON.stringify(favorites[0]),
+        );
+      } else {
+        console.log("DATABASE DEBUG: No favorites found for user");
+      }
+
+      return { favorites };
+    } catch (error) {
+      console.error("DATABASE DEBUG: Error getting favorites:", error);
+      if (error instanceof Error) {
+        console.error("DATABASE DEBUG: Error details:", error.message);
+        console.error("DATABASE DEBUG: Error stack:", error.stack);
+
+        // Check for common database errors
+        if (
+          error.message.includes("relation") &&
+          error.message.includes("does not exist")
+        ) {
+          console.error("DATABASE DEBUG: Schema error - table may not exist");
+        } else if (error.message.includes("permission denied")) {
+          console.error(
+            "DATABASE DEBUG: Permission error - check database credentials",
+          );
+        } else if (error.message.includes("connect")) {
+          console.error(
+            "DATABASE DEBUG: Connection error - check database availability",
+          );
+        }
+      }
+      return { favorites: [] };
+    }
+  }
+
+  async checkFavoriteExists({
+    user_id,
+    chapter_id,
+  }: {
+    user_id: string;
+    chapter_id: number;
+  }) {
+    const favorite = await this.db
+      .getOrCreateConnection()
+      .selectFrom("favorites")
+      .where("user_id", "=", user_id)
+      .where("chapter_id", "=", chapter_id)
+      .where("type", "=", FavoriteTypeEnum.chapter)
+      .select("favorite_id")
+      .executeTakeFirst();
+
+    return { favorite: favorite ?? null };
+  }
+
+  async addFavorite({
+    user_id,
+    chapter_id,
+  }: { user_id: string; chapter_id: number }) {
+    try {
+      console.log(
+        "Repository: Adding favorite for user:",
+        user_id,
+        "chapter:",
+        chapter_id,
+      );
+
+      // Log connection attempt
+      console.log("Repository: Attempting database connection for addFavorite");
+      const connection = this.db.getOrCreateConnection();
+      console.log(
+        "Repository: Connection established successfully for addFavorite",
+      );
+
+      // Log SQL query details
+      console.log("Repository: Executing addFavorite insert query");
+      await connection
+        .insertInto("favorites")
+        .values({
+          user_id,
+          chapter_id,
+          type: FavoriteTypeEnum.chapter,
+        })
+        .execute();
+
+      console.log("Repository: Successfully added favorite");
+      return { success: true };
+    } catch (error) {
+      console.error("Repository: Error adding favorite:", error);
+      if (error instanceof Error) {
+        console.error("Repository: Error details:", error.message);
+        console.error("Repository: Error stack:", error.stack);
+
+        // Check for specific error types
+        if (error.message.includes("foreign key constraint")) {
+          console.error(
+            "Repository: Foreign key constraint violation - check if user_id and chapter_id exist",
+          );
+        }
+        if (error.message.includes("duplicate key")) {
+          console.error(
+            "Repository: Duplicate key violation - favorite may already exist",
+          );
+        }
+      }
+      return { success: false };
+    }
+  }
+
+  async removeFavorite({
+    user_id,
+    chapter_id,
+  }: { user_id: string; chapter_id: number }) {
+    try {
+      console.log(
+        "Repository: Removing favorite for user:",
+        user_id,
+        "chapter:",
+        chapter_id,
+      );
+
+      // Log connection attempt
+      console.log(
+        "Repository: Attempting database connection for removeFavorite",
+      );
+      const connection = this.db.getOrCreateConnection();
+      console.log(
+        "Repository: Connection established successfully for removeFavorite",
+      );
+
+      // Log SQL query details
+      console.log("Repository: Executing removeFavorite delete query");
+      const result = await connection
+        .deleteFrom("favorites")
+        .where("user_id", "=", user_id)
+        .where("chapter_id", "=", chapter_id)
+        .where("type", "=", FavoriteTypeEnum.chapter)
+        .execute();
+
+      console.log("Repository: Delete result:", result);
+      return { success: true };
+    } catch (error) {
+      console.error("Repository: Error removing favorite:", error);
+      if (error instanceof Error) {
+        console.error("Repository: Error details:", error.message);
+        console.error("Repository: Error stack:", error.stack);
+      }
+      return { success: false };
+    }
   }
 }

@@ -47,7 +47,12 @@ export const Content = ({ bookId, verseId, book }: ContentProps) => {
     <section className={styles.content}>
       {book.chapters?.map((chapter) => (
         <div key={chapter.chapterNumber}>
-          <MainText.Text text={chapter} bookName={book.name} />
+          <MainText.Text
+            text={chapter}
+            bookName={book.name}
+            testament={book.testament}
+            bookId={Number(bookId)}
+          />
         </div>
       ))}
     </section>
