@@ -88,6 +88,7 @@ class RedisClient {
       throw error;
     }
   }
+
   async delete(key: string): Promise<number> {
     await this.connect();
     try {
@@ -99,7 +100,8 @@ class RedisClient {
   }
 }
 
-const redisUrl = process.env.REDIS_URL ?? "http://localhost:6379";
-const redisClient = new RedisClient(redisUrl);
+const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
 
-export default redisClient;
+// Export both the class and instance with explicit typing
+export { RedisClient };
+export default new RedisClient(redisUrl);

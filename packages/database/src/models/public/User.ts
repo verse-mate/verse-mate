@@ -22,6 +22,8 @@ export default interface UserTable {
   imageSrc: ColumnType<string | null, string | null, string | null>;
 
   createdAt: ColumnType<Date, Date | string | undefined, Date | string>;
+
+  is_admin: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
 export type User = Selectable<UserTable>;
