@@ -99,7 +99,7 @@ class RedisClient {
   }
 }
 
-const redisUrl = process.env.REDIS_URL ?? "http://localhost:6379";
+const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
 const redisClient = new RedisClient(redisUrl);
 
 export default redisClient;
