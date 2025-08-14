@@ -253,6 +253,7 @@ export const MainContent = () => {
   });
 
   const { activeTab, setActiveTab } = useHandleTab();
+  const previousTabRef = useRef<string>("explanation");
 
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
@@ -557,7 +558,7 @@ export const MainContent = () => {
     <>
       <RadixTabs.Root
         className={`${styles.container}`}
-        defaultValue="book"
+        value={activeTab}
         onValueChange={setActiveTab}
       >
         <div className={`${styles.mobileContent}`}>
@@ -1039,12 +1040,25 @@ export const MainContent = () => {
                 </RadixTabs.Trigger>
               )}
 
-              <RadixTabs.Trigger className={styles.trigger} value="menu">
+              <button
+                type="button"
+                className={styles.trigger}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (activeTab === "menu") {
+                    setActiveTab(previousTabRef.current);
+                  } else {
+                    previousTabRef.current = activeTab;
+                    setActiveTab("menu");
+                  }
+                }}
+              >
                 <Icon.AnimatedHamburgerIcon
                   isOpen={activeTab === "menu"}
                   className={` ${styles.active} ${styles.iconSize}`}
                 />
-              </RadixTabs.Trigger>
+              </button>
             </RadixTabs.List>
           </div>
           <div>
