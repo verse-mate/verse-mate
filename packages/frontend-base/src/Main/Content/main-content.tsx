@@ -1040,7 +1040,8 @@ export const MainContent = () => {
               )}
 
               <RadixTabs.Trigger className={styles.trigger} value="menu">
-                <Icon.HamburgerIcon
+                <Icon.AnimatedHamburgerIcon
+                  isOpen={activeTab === "menu"}
                   className={` ${styles.active} ${styles.iconSize}`}
                 />
               </RadixTabs.Trigger>
