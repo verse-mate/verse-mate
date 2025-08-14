@@ -84,11 +84,17 @@ export class BibleRepository {
     return { subtitles: subtitles ?? null };
   }
 
-  async getVerses({ chapter_id }: Pick<ChapterDto, "chapter_id">) {
+  async getVerses({
+    chapter_id,
+    version_id,
+  }: Pick<ChapterDto, "chapter_id"> & {
+    version_id: string;
+  }) {
     const verses = await this.db
       .getOrCreateConnection()
       .selectFrom("verses")
       .where("chapter_id", "=", chapter_id)
+      .where("version_id", "=", version_id)
       .select(["verses.verse_number as verseNumber", "verses.text"])
       .orderBy("verseNumber", "asc")
       .execute();
@@ -100,10 +106,12 @@ export class BibleRepository {
     type,
     explanation,
     chapter_id,
+    version_id,
   }: {
     type: ExplanationTypeEnum;
     explanation: string;
     chapter_id: number;
+    version_id: string;
   }) {
     const savedExplanation = await this.db
       .getOrCreateConnection()
@@ -112,6 +120,7 @@ export class BibleRepository {
         type,
         explanation,
         chapter_id,
+        version_id,
       })
       .execute();
 
@@ -173,7 +182,10 @@ export class BibleRepository {
   async getExplanation({
     book_id,
     chapter_number,
-  }: Pick<ChapterDto, "book_id" | "chapter_number">) {
+    version_id,
+  }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
+    version_id: string;
+  }) {
     const explanation = await this.db
       .getOrCreateConnection()
       .selectFrom("chapters")
@@ -193,6 +205,7 @@ export class BibleRepository {
         eb.and([
           eb("chapters.book_id", "=", book_id),
           eb("chapters.chapter_number", "=", chapter_number),
+          eb("explanations.version_id", "=", version_id),
         ]),
       )
       .execute();

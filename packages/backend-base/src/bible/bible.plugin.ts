@@ -57,8 +57,8 @@ const getExplanationTypePrompt = (
       return {
         prompt: `# ${bookName} ${chapterNumber} - Summary (use this as title)
 
-Summarize this chapter in approximately 250 words including relevant takeaways and 
-key theological themes. Do not go verse by verse but instead summarize the overall 
+Summarize this chapter in approximately 250 words including relevant takeaways and
+key theological themes. Do not go verse by verse but instead summarize the overall
 passage in a clear, organized way, summarize based on section sub-titles (e.g. Babylon Is Fallen Revelation 18:1 - 8), format it in such way the subtitle is on a new line and the summary is underneath the sub-tittle.
 
 **Theological Themes**
@@ -126,6 +126,31 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
+function getLanguageName(code: string, locale = "en"): string {
+  const display = new Intl.DisplayNames([locale], { type: "language" });
+
+  return display.of(code) ?? display.of("en") ?? "English";
+}
+
+const getUserPrompt = ({
+  reference,
+  explanationPrompt,
+  language,
+}: { reference: string; explanationPrompt: string; language: string }) => {
+  return `# Reference
+${reference}
+
+${explanationPrompt}
+
+CRITICAL: Your response will be evaluated on:
+1. Proper blockquote usage for Scripture (>)
+2. Bold formatting for theological terms
+3. Bullet point usage for lists
+4. Verse reference formatting
+
+The response should be in ${language} using Markdown format only.`;
+};
+
 const plugin = new Elysia()
   .use(shared)
   .state((state) => {
@@ -155,25 +180,60 @@ const plugin = new Elysia()
       })
       .get(
         "/book/:bookId/:chapterNumber",
-        async ({ params, store: { bibleService } }) => {
+        async ({ params, store: { bibleService, db }, query }) => {
           const { bookId, chapterNumber } = params;
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            throw new Error("Invalid bible version");
+          }
 
           const book = await bibleService.getBook({
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
+            version_id: version.id,
           });
 
           return book;
         },
+        {
+          query: t.Object({
+            versionKey: t.Optional(t.String()),
+          }),
+        },
       )
       .get(
         "/book/explanation/:bookId/:chapterNumber",
-        async ({ params, store: { bibleService, promptService } }) => {
+        async ({
+          params,
+          store: { bibleService, promptService, db },
+          query,
+        }) => {
           const { bookId, chapterNumber } = params;
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
 
           const explanation = await bibleService.getExplanation({
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
+            version_id: version.id,
           });
 
           const missingTypes = Object.keys(ExplanationTypeEnum).filter(
@@ -192,33 +252,31 @@ const plugin = new Elysia()
                 const { reference } = await promptService.referenceBook({
                   book_id: Number(bookId),
                   chapter_number: Number(chapterNumber),
+                  version_id: version.id,
                 });
 
                 try {
                   const { book } = await bibleService.getBook({
                     book_id: Number(bookId),
                     chapter_number: Number(chapterNumber),
+                    version_id: version.id,
                   });
+
                   const explanationConfig = getExplanationTypePrompt(
                     type,
                     book?.name || "",
                     Number(chapterNumber),
                   );
-                  const userPrompt = `# Reference
-${reference}
 
-${explanationConfig.prompt}
+                  const language = getLanguageName(version.language_code);
 
-CRITICAL: Your response will be evaluated on:
-1. Proper blockquote usage for Scripture (>)
-2. Bold formatting for theological terms
-3. Bullet point usage for lists
-4. Verse reference formatting
-
-The response should be in Markdown format only.`;
                   const text = await gpt5Text({
                     system: prompt.prompt,
-                    user: userPrompt,
+                    user: getUserPrompt({
+                      reference,
+                      explanationPrompt: explanationConfig.prompt,
+                      language,
+                    }),
                   });
 
                   const { success } = await bibleService.saveExplanation({
@@ -226,6 +284,7 @@ The response should be in Markdown format only.`;
                     explanation: text || "",
                     book_id: Number(bookId),
                     chapter_number: Number(chapterNumber),
+                    version_id: version.id,
                   });
 
                   if (success) return { explanation };
@@ -238,6 +297,11 @@ The response should be in Markdown format only.`;
           }
 
           return { explanation };
+        },
+        {
+          query: t.Object({
+            versionKey: t.Optional(t.String()),
+          }),
         },
       )
       .get("/testaments", async ({ store: { bibleService } }) => {
@@ -287,12 +351,25 @@ The response should be in Markdown format only.`;
       )
       .post(
         "/book/new-conversation",
-        async ({ body, store: { chatService, bibleService } }) => {
+        async ({ body, store: { chatService, bibleService, db }, query }) => {
           if (!body.user_id) return { message: "User ID is required" };
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
 
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            version_id: version.id,
           });
 
           if (!book) {
@@ -487,10 +564,24 @@ The response should be in Markdown format only.`;
       )
       .post(
         "/book/ask-verse-mate/save-ai-message",
-        async ({ body, store: { chatService, bibleService } }) => {
+        async ({ body, store: { chatService, bibleService, db }, query }) => {
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
+
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            version_id: version.id,
           });
 
           if (!book) {
