@@ -1,0 +1,25 @@
+declare const styles: {
+  readonly bookmarkList: string;
+  readonly bookmarkItem: string;
+  readonly bookmarkInfo: string;
+  readonly bookmarkTitle: string;
+  readonly bookmarkMeta: string;
+  readonly removeButton: string;
+  readonly loading: string;
+  readonly error: string;
+  readonly empty: string;
+  readonly bookmarkButton: string;
+  readonly bookmarked: string;
+  readonly bookmarkedIcon: string;
+  readonly loading: string;
+  readonly error: string;
+  readonly empty: string;
+  readonly bookmarkButton: string;
+  readonly bookmarked: string;
+  readonly bookmarkedIcon: string;
+  readonly animating: string;
+  readonly loginModal: string;
+  readonly loginModalButtons: string;
+  readonly loginButton: string;
+};
+export = styles;
