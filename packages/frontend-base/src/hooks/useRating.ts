@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
 import { useEffect, useState } from "react";
+import type { UserSession } from "./session";
 
 type useRatingType = {
   maxRating: number;
@@ -16,7 +17,7 @@ type useRatingType = {
 
 export const useRating = (
   maxRating: number,
-  session: UserSession,
+  session: UserSession | null,
   bookId: number,
   chapterId: number,
   explanation_id?: number | null,

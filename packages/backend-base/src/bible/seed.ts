@@ -103,6 +103,7 @@ async function saveVerse({
   chapter_id,
   verse_number,
   text,
+  version_id,
 }: Omit<Verses, "verse_id">) {
   await db
     .getOrCreateConnection()
@@ -111,6 +112,7 @@ async function saveVerse({
       chapter_id,
       verse_number,
       text,
+      version_id,
     })
     .execute();
 }
@@ -143,15 +145,17 @@ async function saveExplanation({
   type,
   explanation,
   chapter_id,
+  version_id,
 }: {
   type: ExplanationTypeEnum;
   explanation: string;
   chapter_id: number;
+  version_id: string;
 }) {
   await db
     .getOrCreateConnection()
     .insertInto("explanations")
-    .values({ type, explanation, chapter_id })
+    .values({ type, explanation, chapter_id, version_id })
     .execute();
 }
 
@@ -333,6 +337,11 @@ export async function main() {
   const metadataFile = Bun.file(`${import.meta.dir}/data/key_english.json`);
   const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
   const bible = await parseBibleData(bibleFile, metadataFile);
+  const version = await db
+    .getOrCreateConnection()
+    .selectFrom("bible_versions")
+    .selectAll()
+    .executeTakeFirstOrThrow();
 
   // 3. Insert Books, Chapters, Subtitles, Verses
   for (const book of bible.books) {
@@ -418,6 +427,7 @@ export async function main() {
             chapter_id: savedChapter.chapter_id,
             verse_number: verse.verseId,
             text: verse.text,
+            version_id: version.id,
           });
           // console.log(`Verse ${verse.verseId} created`);
         }
@@ -468,6 +478,7 @@ export async function main() {
             type: ExplanationTypeEnum.summary,
             explanation,
             chapter_id: savedChapter.chapter_id,
+            version_id: version.id,
           });
           // console.log(`Explanation saved for book ${book.name} ch ${chapter.chapterId}`);
         } else {

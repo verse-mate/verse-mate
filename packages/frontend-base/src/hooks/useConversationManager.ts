@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useState } from "react";
+import type { UserSession } from "./session";
 import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
 
-export const useConversationManager = (session: UserSession) => {
+export const useConversationManager = (session: UserSession | null) => {
   const queryClient = useQueryClient();
   const { saveSearchParams } = useSaveSearchParams();
   const { conversationId } = useGetSearchParams();

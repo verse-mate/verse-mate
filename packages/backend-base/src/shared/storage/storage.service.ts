@@ -108,6 +108,7 @@ class S3Helper {
     folder: string;
     fileName: string;
   }): Promise<string> {
+    // @ts-ignore
     const filename = fileName.replaceAll(/\s/gu, "_");
     const mainFolder = storageConstants.mainFolder;
 

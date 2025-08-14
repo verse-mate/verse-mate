@@ -1,0 +1,251 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table books {
+  book_id Int [pk, increment]
+  name String [unique, not null]
+  testament testament_enum [not null]
+  genre_id Int [not null]
+  genres genres [not null]
+  chapters chapters [not null]
+  user_progress user_progress [not null]
+}
+
+Table chapters {
+  chapter_id Int [pk, increment]
+  book_id Int [not null]
+  chapter_number Int [not null]
+  books books [not null]
+  conversations conversations [not null]
+  explanations explanations [not null]
+  favorites favorites [not null]
+  subtitles subtitles [not null]
+  user_progress user_progress [not null]
+  verses verses [not null]
+
+  indexes {
+    (book_id, chapter_number) [unique]
+  }
+}
+
+Table conversations {
+  conversation_id Int [pk, increment]
+  user_id String [not null]
+  title String [not null]
+  chapter_id Int [not null]
+  status status_enum [not null]
+  created_at DateTime [default: `now()`]
+  updated_at DateTime [default: `now()`]
+  chapters chapters [not null]
+  user user [not null]
+  messages messages [not null]
+}
+
+Table explanation_ratings {
+  rating_id Int [pk, increment]
+  stars Int [not null]
+  user_id String [not null]
+  explanation_id Int [not null]
+  explanations explanations [not null]
+  user user [not null]
+
+  indexes {
+    (user_id, explanation_id) [unique]
+  }
+}
+
+Table explanations {
+  explanation_id Int [pk, increment]
+  type explanation_type_enum [not null]
+  explanation String [not null]
+  chapter_id Int [not null]
+  version_id String [not null]
+  explanation_ratings explanation_ratings [not null]
+  chapters chapters [not null]
+  bible_versions bible_versions [not null]
+
+  indexes {
+    (chapter_id, type, version_id) [unique]
+  }
+}
+
+Table favorites {
+  favorite_id Int [pk, increment]
+  type favorite_type_enum [not null]
+  user_id String [not null]
+  chapter_id Int [not null]
+  chapters chapters [not null]
+  user user [not null]
+}
+
+Table genres {
+  genre_id Int [pk, increment]
+  name String [unique, not null]
+  books books [not null]
+}
+
+Table kysely_migration {
+  name String [pk]
+  timestamp String [not null]
+}
+
+Table kysely_migration_lock {
+  id String [pk]
+  is_locked Int [not null, default: 0]
+}
+
+Table messages {
+  message_id Int [pk, increment]
+  conversation_id Int [not null]
+  content String [not null]
+  role role_enum [not null]
+  generated_at DateTime [default: `now()`]
+  conversations conversations [not null]
+}
+
+Table prompts {
+  prompt_id Int [pk, increment]
+  prompt String [not null]
+  status prompt_status_enum [not null]
+}
+
+Table subtitles {
+  subtitle_id Int [pk, increment]
+  chapter_id Int [not null]
+  subtitle String [not null]
+  start_verse Int [not null]
+  end_verse Int [not null]
+  chapters chapters [not null]
+
+  indexes {
+    (chapter_id, start_verse, end_verse) [unique]
+  }
+}
+
+Table user {
+  id String [pk]
+  email String [unique, not null]
+  emailVerified Boolean [not null, default: false]
+  password String [not null]
+  firstName String [not null]
+  lastName String [not null]
+  imageSrc String
+  createdAt DateTime [default: `now()`, not null]
+  preferred_language String [default: 'en']
+  preferred_bible_version String [default: 'NASB1995']
+  conversations conversations [not null]
+  explanation_ratings explanation_ratings [not null]
+  favorites favorites [not null]
+  bible_versions bible_versions
+  user_progress user_progress [not null]
+}
+
+Table user_progress {
+  user_progress_id Int [pk, increment]
+  user_id String [not null]
+  book_id Int [not null]
+  chapter_id Int [not null]
+  last_visited_at DateTime [default: `now()`]
+  books books [not null]
+  chapters chapters [not null]
+  user user [not null]
+
+  indexes {
+    (user_id, book_id, chapter_id) [unique]
+  }
+}
+
+Table verses {
+  verse_id Int [pk, increment]
+  chapter_id Int [not null]
+  verse_number Int [not null]
+  text String [not null]
+  version_id String [not null]
+  chapters chapters [not null]
+  bible_versions bible_versions [not null]
+
+  indexes {
+    (chapter_id, verse_number, version_id) [unique]
+  }
+}
+
+Table bible_versions {
+  id String [pk]
+  version_key String [unique, not null]
+  version_name String [not null]
+  language_code String [not null]
+  is_active Boolean [default: true]
+  created_at DateTime [default: `now()`]
+  explanations explanations [not null]
+  user user [not null]
+  verses verses [not null]
+}
+
+Enum explanation_type_enum {
+  summary
+  byline
+  detailed
+}
+
+Enum favorite_type_enum {
+  chapter
+  message
+}
+
+Enum prompt_status_enum {
+  active
+  inactive
+}
+
+Enum role_enum {
+  user
+  assistant
+}
+
+Enum status_enum {
+  active
+  inactive
+  archived
+}
+
+Enum testament_enum {
+  OT
+  NT
+}
+
+Ref: books.genre_id > genres.genre_id [delete: Cascade]
+
+Ref: chapters.book_id > books.book_id [delete: Cascade]
+
+Ref: conversations.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: conversations.user_id > user.id [delete: Cascade]
+
+Ref: explanation_ratings.explanation_id > explanations.explanation_id [delete: Cascade]
+
+Ref: explanation_ratings.user_id > user.id [delete: Cascade]
+
+Ref: explanations.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: explanations.version_id > bible_versions.id [delete: Cascade]
+
+Ref: favorites.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: favorites.user_id > user.id [delete: Cascade]
+
+Ref: messages.conversation_id > conversations.conversation_id [delete: Cascade]
+
+Ref: subtitles.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: user.preferred_bible_version > bible_versions.version_key [delete: No Action]
+
+Ref: user_progress.book_id > books.book_id [delete: Cascade]
+
+Ref: user_progress.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: user_progress.user_id > user.id [delete: Cascade]
+
+Ref: verses.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: verses.version_id > bible_versions.id [delete: Cascade]

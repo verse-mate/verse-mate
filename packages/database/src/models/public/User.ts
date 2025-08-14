@@ -22,6 +22,14 @@ export default interface UserTable {
   imageSrc: ColumnType<string | null, string | null, string | null>;
 
   createdAt: ColumnType<Date, Date | string | undefined, Date | string>;
+
+  preferred_language: ColumnType<string | null, string | null, string | null>;
+
+  preferred_bible_version: ColumnType<
+    string | null,
+    string | null,
+    string | null
+  >;
 }
 
 export type User = Selectable<UserTable>;

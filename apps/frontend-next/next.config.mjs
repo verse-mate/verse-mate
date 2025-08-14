@@ -29,12 +29,11 @@ const cacheLoggingPlugin = {
         `[SW Cache] ✅ Will cache successful response for: ${request.url}`,
       );
       return response;
-    } else {
-      console.log(
-        `[SW Cache] ❌ Skipping cache for non-200 response (${response.status}): ${request.url}`,
-      );
-      return null;
     }
+    console.log(
+      `[SW Cache] ❌ Skipping cache for non-200 response (${response.status}): ${request.url}`,
+    );
+    return null;
   },
   fetchDidFail: async ({ request, error }) => {
     console.log(
@@ -44,7 +43,7 @@ const cacheLoggingPlugin = {
       `[SW Network FAIL] 🔍 Error: ${error?.message || "Unknown error"}`,
     );
     console.log(
-      `[SW Network FAIL] 💾 Will attempt to serve from cache if available`,
+      "[SW Network FAIL] 💾 Will attempt to serve from cache if available",
     );
   },
 };

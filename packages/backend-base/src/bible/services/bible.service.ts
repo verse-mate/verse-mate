@@ -20,7 +20,10 @@ export class BibleService {
   async getBook({
     book_id,
     chapter_number,
-  }: Pick<ChapterDto, "book_id" | "chapter_number">) {
+    version_id,
+  }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
+    version_id: string;
+  }) {
     const { book } = await this.bibleRepository.getBook({ book_id });
     if (!book) return { message: "Book not found" };
 
@@ -36,6 +39,7 @@ export class BibleService {
 
     const { verses } = await this.bibleRepository.getVerses({
       chapter_id: chapter.chapter_id,
+      version_id,
     });
 
     return { book: this.formattedBook({ book, chapter, subtitles, verses }) };
@@ -64,11 +68,13 @@ export class BibleService {
     explanation,
     book_id,
     chapter_number,
+    version_id,
   }: {
     type: ExplanationTypeEnum;
     explanation: string;
     book_id: number;
     chapter_number: number;
+    version_id: string;
   }) {
     const { chapter_id } = await this.bibleRepository.getChapterId({
       book_id,
@@ -81,6 +87,7 @@ export class BibleService {
       await this.bibleRepository.getExplanation({
         book_id,
         chapter_number,
+        version_id,
       });
     const explanationTypeExists = explanations.some(
       (explanation) => explanation.type === type,
@@ -91,6 +98,7 @@ export class BibleService {
       type,
       explanation,
       chapter_id: chapter_id,
+      version_id,
     });
 
     return { success };
@@ -99,10 +107,14 @@ export class BibleService {
   async getExplanation({
     book_id,
     chapter_number,
-  }: Pick<ChapterDto, "book_id" | "chapter_number">) {
+    version_id,
+  }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
+    version_id: string;
+  }) {
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
+      version_id,
     });
 
     const explanationExists = this.explanationExists({ explanation });
@@ -116,22 +128,14 @@ export class BibleService {
 
   async saveRating({
     user,
-    book_id,
-    chapter_number,
     rating,
     explanation_id,
   }: RatingDto): Promise<{ message: string }> {
-    const { explanation } = await this.bibleRepository.getExplanation({
-      book_id,
-      chapter_number,
-    });
-    const explanationExists = this.explanationExists({ explanation });
-    if (explanationExists) return { message: "Explanation not found" };
-
     const { exists } = await this.bibleRepository.ratingExists({
       user,
       explanation_id,
     });
+
     if (exists) {
       const { updated } = await this.bibleRepository.updateUserRating({
         user,
@@ -155,22 +159,14 @@ export class BibleService {
 
   async updatedUserRating({
     user,
-    book_id,
-    chapter_number,
     explanation_id,
     rating,
   }: RatingDto): Promise<{ success: string } | { error: string }> {
-    const { explanation } = await this.bibleRepository.getExplanation({
-      book_id,
-      chapter_number,
-    });
-    if (!explanation || !explanation_id)
-      return { error: "Explanation not found" };
-
     const { exists } = await this.bibleRepository.ratingExists({
       user,
       explanation_id,
     });
+
     if (exists) {
       const { updated } = await this.bibleRepository.updateUserRating({
         user,
@@ -195,25 +191,19 @@ export class BibleService {
       stars: number;
     };
   }> {
-    const { explanation } = await this.bibleRepository.getExplanation({
-      book_id,
-      chapter_number,
-    });
-    const explanationExists = this.explanationExists({ explanation });
-    if (explanationExists) return { userRating: { stars: 0 } };
-
     const { userRating } = await this.bibleRepository.ratingByUser({
       user,
       explanation_id,
     });
-    if (!userRating) return { userRating: { stars: 0 } };
+
+    if (!userRating) {
+      return { userRating: { stars: 0 } };
+    }
 
     return { userRating };
   }
 
   async totalUsersWhoRated({
-    book_id,
-    chapter_number,
     explanation_id,
   }: Pick<
     RatingDto,
@@ -221,17 +211,12 @@ export class BibleService {
   >): Promise<{
     total_users: number;
   }> {
-    const { explanation } = await this.bibleRepository.getExplanation({
-      book_id,
-      chapter_number,
-    });
-    const explanationExists = this.explanationExists({ explanation });
-    if (explanationExists) return { total_users: 0 };
-
     const { totalUserRatings } = await this.bibleRepository.totalUserWhoRated({
       explanation_id,
     });
-    if (!totalUserRatings) return { total_users: 0 };
+    if (!totalUserRatings) {
+      return { total_users: 0 };
+    }
 
     return { total_users: Number(totalUserRatings.total_users) };
   }
@@ -246,17 +231,13 @@ export class BibleService {
   >): Promise<{
     averageRating: number;
   }> {
-    const { explanation } = await this.bibleRepository.getExplanation({
-      book_id,
-      chapter_number,
-    });
-    const explanationExists = this.explanationExists({ explanation });
-    if (explanationExists) return { averageRating: 0 };
-
     const { averageRating } = await this.bibleRepository.averageRating({
       explanation_id,
     });
-    if (!averageRating) return { averageRating: 0 };
+
+    if (!averageRating) {
+      return { averageRating: 0 };
+    }
 
     return { averageRating: Number(averageRating.average_rating) };
   }
@@ -323,20 +304,16 @@ export class BibleService {
       !detailsOfTheLastChapterRead.name ||
       !detailsOfTheLastChapterRead.genre_id ||
       !detailsOfTheLastChapterRead.testament
-    )
+    ) {
       return null;
-
-    const { explanation } = await this.bibleRepository.getExplanation({
-      book_id: detailsOfTheLastChapterRead.book_id,
-      chapter_number: detailsOfTheLastChapterRead.chapterNumber,
-    });
+    }
 
     return {
       book_id: detailsOfTheLastChapterRead.book_id,
       chapterNumber: detailsOfTheLastChapterRead.chapterNumber,
       bookName: detailsOfTheLastChapterRead.name,
       testament: detailsOfTheLastChapterRead.testament,
-      explanation: explanation,
+      explanation: [],
     };
   }
 

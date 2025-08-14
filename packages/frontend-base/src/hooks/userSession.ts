@@ -1,10 +1,11 @@
 import { api } from "backend-api";
 import { parseCookies } from "nookies";
 import { useCallback, useEffect, useState } from "react";
+import type { UserSession } from "./session";
 
 export const userSession = () => {
   const { accessToken } = parseCookies();
-  const [session, setSession] = useState<UserSession>(null);
+  const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSession = useCallback(async () => {

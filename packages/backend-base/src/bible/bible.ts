@@ -1,4 +1,5 @@
 import type { BunFile } from "bun";
+import type { Bible, Book, BookMeta, Genre, Testament } from "./types";
 
 const genres: Genre[] = [
   { g: 1, n: "Law" },
