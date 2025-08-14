@@ -2,7 +2,9 @@ import { bearer } from "@elysiajs/bearer";
 import { cors } from "@elysiajs/cors";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
+import { User } from "../user/entities/user.entity";
+import { UserService } from "../user/user.service";
 
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import redisClient from "./redis-client";
@@ -23,12 +25,36 @@ export type JWT = (typeof jwt)["decorator"]["jwt"];
 
 const setup = new Elysia({ name: "shared" })
   .use(cors())
-  // .use(bearer())
+  .use(bearer())
   .use(jwt)
   .state("db", Database)
   .state("cache", redisClient)
-  .state("notification", new EmailNotificationConsumer());
-// .state("storage", storage);
+  .state("notification", new EmailNotificationConsumer())
+  .derive(async ({ jwt, cookie: { auth }, store }) => {
+    const payload = await jwt.verify(auth?.value);
+    if (!payload) {
+      return { user: null };
+    }
+
+    const userService = new UserService(store.db);
+    const user = await userService.findOne(payload.id as string);
+
+    return {
+      user,
+    };
+  })
+  .macro(({ onBeforeHandle }) => {
+    return {
+      isAuthenticated() {
+        onBeforeHandle(({ user, set }) => {
+          if (!user) {
+            set.status = 401;
+            return "Unauthorized";
+          }
+        });
+      },
+    };
+  });
 
 setup.onStop(() => {
   console.log("onStop on shared plugin");

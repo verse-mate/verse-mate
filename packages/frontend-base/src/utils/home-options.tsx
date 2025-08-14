@@ -1,4 +1,5 @@
 import { DefaultContent } from "../ui/Accordion/Content/default-content";
+import { BookmarkList } from "../ui/Bookmarks";
 import * as Icon from "../ui/Icons";
 
 export const homeOptions = [
@@ -6,7 +7,7 @@ export const homeOptions = [
     name: "bookmarks",
     icon: <Icon.BookmarkIcon />,
     label: "Bookmarks",
-    content: <DefaultContent value="N/A" />,
+    content: <BookmarkList />,
   },
   {
     name: "favorites",

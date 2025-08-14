@@ -1,3 +1,5 @@
+import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import { BookmarkButton } from "../../../Bookmarks";
 import styles from "./text.module.css";
 
 type Verse = {
@@ -20,14 +22,27 @@ type Chapter = {
 type TextProps = {
   text: Chapter;
   bookName: string;
+  testament?: TestamentEnum;
+  bookId?: number;
 };
 
-export const Text = ({ text, bookName }: TextProps) => {
+export const Text = ({ text, bookName, testament, bookId }: TextProps) => {
   return (
     <section className={styles.contentBox}>
-      <h1 className={styles.title}>
-        {bookName} {text.chapterNumber}
-      </h1>
+      <div className={styles.titleContainer}>
+        <h1 className={styles.title}>
+          {bookName} {text.chapterNumber}
+        </h1>
+        {bookId && testament && (
+          <BookmarkButton
+            bookId={bookId}
+            chapterNumber={text.chapterNumber}
+            bookName={bookName}
+            testament={testament}
+            className={styles.bookmarkButton}
+          />
+        )}
+      </div>
 
       {text.subtitles.map((subtitle) => (
         <div key={subtitle.subtitle} className={styles.textBox}>

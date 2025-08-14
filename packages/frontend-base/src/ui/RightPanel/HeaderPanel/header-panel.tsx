@@ -20,6 +20,7 @@ export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
   const queryClient = useQueryClient();
   const { explanationType } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
+
   const handleValueChange = (value: ExplanationTypeEnum) => {
     saveSearchParams({ explanationType: value });
     queryClient.invalidateQueries({ queryKey: ["explanation"] });

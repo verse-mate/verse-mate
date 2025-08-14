@@ -132,7 +132,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
       col.references("chapters.chapter_id").onDelete("cascade").notNull(),
     )
     .addColumn("message_id", "integer", (col) =>
-      col.references("messages.message_id").onDelete("cascade").notNull(),
+      col.references("messages.message_id").onDelete("cascade"),
     )
     .execute();
 

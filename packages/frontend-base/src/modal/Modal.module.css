@@ -8,16 +8,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 9999; /* Add high z-index */
 }
 
 .modalContent {
-  background-color: white;
+  background-color: var(--snow);
   border-radius: 0.5rem;
   padding: 1.5rem;
   width: 500px;
   max-width: 90%;
   box-shadow: 0 0 10px rgba(0 0 0 / 20%);
   position: relative;
+  border: 1px solid var(--night);
+  color: var(--night);
+  font-family: inherit;
 }
 
 .closeButton {
@@ -28,9 +32,12 @@
   height: 1.5rem;
   background-color: transparent;
   padding: 0;
+  border: none; /* Add border: none */
+  cursor: pointer; /* Add cursor: pointer */
   
   > svg {
     width: 1.5rem;
     height: 1.5rem;
+    stroke: var(--night);
   }
 }

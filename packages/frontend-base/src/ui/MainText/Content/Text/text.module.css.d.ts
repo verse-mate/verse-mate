@@ -11,5 +11,7 @@ declare const styles: {
   readonly verseNumber: string;
   readonly verseText: string;
   readonly text: string;
+  readonly titleContainer: string;
+  readonly bookmarkButton: string;
 };
 export = styles;

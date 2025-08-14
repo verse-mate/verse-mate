@@ -10,5 +10,8 @@ declare const styles: {
   readonly historyContainer: string;
   readonly groupContainer: string;
   readonly moreOptionsContainer: string;
+  readonly menuHeader: string;
+  readonly closeButton: string;
+  readonly menuOptions: string;
 };
 export = styles;
