@@ -4,7 +4,7 @@
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "scripts": {
-    "build": "bun build ./src/index.ts --target bun --minify --outdir ./dist",
+    "build": "bun build ./src/index.ts --target bun --outdir ./dist",
     "dev": "bun run --watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
