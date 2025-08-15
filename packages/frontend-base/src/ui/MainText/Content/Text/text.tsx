@@ -1,5 +1,10 @@
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import { useMemo } from "react";
+import { useGetSearchParams } from "../../../../hooks/useSearchParams";
+import { generateShareableUrl } from "../../../../utils/sharing";
 import { BookmarkButton } from "../../../Bookmarks";
+import { CopyLinkButton } from "../../../CopyLinkButton";
+import { ShareButton } from "../../../ShareButton";
 import styles from "./text.module.css";
 
 type Verse = {
@@ -27,21 +32,54 @@ type TextProps = {
 };
 
 export const Text = ({ text, bookName, testament, bookId }: TextProps) => {
+  const searchParams = useGetSearchParams();
+
+  const shareUrl = useMemo(
+    () =>
+      generateShareableUrl({
+        bookId: bookId?.toString(),
+        verseId: searchParams.verseId.toString(),
+        testament: testament,
+        explanationType: searchParams.explanationType,
+        bibleVersion: searchParams.bibleVersion,
+      }),
+    [
+      bookId,
+      searchParams.verseId,
+      testament,
+      searchParams.explanationType,
+      searchParams.bibleVersion,
+    ],
+  );
+
   return (
     <section className={styles.contentBox}>
       <div className={styles.titleContainer}>
         <h1 className={styles.title}>
           {bookName} {text.chapterNumber}
         </h1>
-        {bookId && testament && (
-          <BookmarkButton
-            bookId={bookId}
-            chapterNumber={text.chapterNumber}
-            bookName={bookName}
-            testament={testament}
-            className={styles.bookmarkButton}
+        <div className={styles.actionButtons}>
+          {bookId && testament && (
+            <BookmarkButton
+              bookId={bookId}
+              chapterNumber={text.chapterNumber}
+              bookName={bookName}
+              testament={testament}
+              className={styles.bookmarkButton}
+            />
+          )}
+          <CopyLinkButton
+            className={styles.copyLinkButton}
+            url={shareUrl}
+            variant="icon"
           />
-        )}
+          <ShareButton
+            url={shareUrl}
+            title={`${bookName} ${text.chapterNumber}`}
+            text={`Read ${bookName} chapter ${text.chapterNumber} on VerseMate`}
+            variant="icon"
+          />
+        </div>
       </div>
 
       {text.subtitles.map((subtitle) => (
