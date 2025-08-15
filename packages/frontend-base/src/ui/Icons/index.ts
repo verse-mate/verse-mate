@@ -19,6 +19,7 @@ export { PlaybackIcon } from "./PlaybackIcon";
 export { PlayIcon } from "./PlayIcon";
 export { PlusIcon } from "./PlusIcon";
 export { ResetIcon } from "./ResetIcon";
+export { AnimatedHamburgerIcon } from "./AnimatedHamburgerIcon/animated-hamburger-icon";
 export { SearchIcon } from "./SearchIcon";
 export { SettingsIcon } from "./SettingsIcon";
 export { TrashIcon } from "./TrashIcon";

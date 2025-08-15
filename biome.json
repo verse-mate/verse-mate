@@ -11,7 +11,8 @@
       "mockServiceWorker.js",
       "handlers.ts",
       "./packages/backend-base/src/bible/data/t_asv.json",
-      "./packages/backend-base/src/bible/data/NASB1995.json"
+      "./packages/backend-base/src/bible/data/NASB1995.json",
+      "./apps/frontend-next/public/*"
     ],
     "maxSize": 6000000
   },

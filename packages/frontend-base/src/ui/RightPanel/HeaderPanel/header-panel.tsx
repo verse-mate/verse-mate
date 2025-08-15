@@ -112,7 +112,8 @@ export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
           }}
           style={{ position: "relative", zIndex: 9999 }}
         >
-          <Icon.HamburgerIcon
+          <Icon.AnimatedHamburgerIcon
+            isOpen={activeTab === "menu"}
             className={`${styles.active}`}
             style={{ fill: "white" }}
           />
