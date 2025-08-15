@@ -114,14 +114,10 @@ function getLanguageName(code: string, locale = "en"): string {
 }
 
 const getUserPrompt = ({
-  reference,
   explanationPrompt,
   language,
-}: { reference: string; explanationPrompt: string; language: string }) => {
-  return `# Reference
-${reference}
-
-${explanationPrompt}
+}: { explanationPrompt: string; language: string }) => {
+  return `${explanationPrompt}
 
 CRITICAL: Your response will be evaluated on:
 1. Proper blockquote usage for Scripture (>)
@@ -230,12 +226,6 @@ const plugin = new Elysia()
                   return { explanation };
                 }
 
-                const { reference } = await promptService.referenceBook({
-                  book_id: Number(bookId),
-                  chapter_number: Number(chapterNumber),
-                  version_id: version.id,
-                });
-
                 try {
                   const { book } = await bibleService.getBook({
                     book_id: Number(bookId),
@@ -254,7 +244,6 @@ const plugin = new Elysia()
                   const text = await gpt5Text({
                     system: prompt.prompt,
                     user: getUserPrompt({
-                      reference,
                       explanationPrompt: explanationConfig.prompt,
                       language,
                     }),
@@ -366,25 +355,11 @@ const plugin = new Elysia()
             book.testament !== null ? testamentMap[book.testament] : "";
 
           const bookAsContext = `
-            Book: ${book.bookId}
+            Book ID: ${book.bookId}
             Book Name: ${book.name}
             Testament: ${testament}
             Genre: ${book.genre.n}
-            Chapters: ${book.chapters
-              .map(
-                (chapter) => `
-              Chapter: ${chapter.chapterNumber}
-              Verses: ${chapter.verses
-                .map(
-                  (verse) => `
-                Verse Number: ${verse.verseNumber}
-                Text: ${verse.text}
-              `,
-                )
-                .join("")}
-            `,
-              )
-              .join("")}
+            Chapter Number: ${body.chapter_number}
           `;
 
           const prompt = `
@@ -578,25 +553,11 @@ const plugin = new Elysia()
             book.testament !== null ? testamentMap[book.testament] : "";
 
           const bookAsContext = `
-            Book: ${book.bookId}
+            Book ID: ${book.bookId}
             Book Name: ${book.name}
             Testament: ${testament}
             Genre: ${book.genre.n}
-            Chapters: ${book.chapters
-              .map(
-                (chapter) => `
-              Chapter: ${chapter.chapterNumber}
-              Verses: ${chapter.verses
-                .map(
-                  (verse) => `
-                Verse Number: ${verse.verseNumber}
-                Text: ${verse.text}
-              `,
-                )
-                .join("")}
-            `,
-              )
-              .join("")}
+            Chapter Number: ${body.chapter_number}
           `;
 
           const prompt = `
