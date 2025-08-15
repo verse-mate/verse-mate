@@ -7,7 +7,6 @@ export const OpenedBook = (props: SVGProps<SVGSVGElement>) => {
       height="24px"
       viewBox="0 -960 960 960"
       width="24px"
-      fill="#e8eaed"
       aria-hidden="true"
       {...props}
     >
