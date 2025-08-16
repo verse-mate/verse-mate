@@ -57,17 +57,14 @@ const getExplanationTypePrompt = (
       return {
         prompt: `# Summary
 
-**Request Overview:**     Provide a line-by-line explanation of all of ${bookName} ${chapterNumber} without stopping. Ensure you do each line and do not group for flow - even if the passage has many lines. Focus on clarity and depth to help readers understand their significance and message. Be sure to output in full sentences - even within the bullets. Output without any commentary or questions before or after the response. 
+Request Overview: Provide a high-level summary explanation of all of ${bookName} ${chapterNumber} in 300 words or so. Focus on clarity and depth to help readers understand their significance and message. Be sure to output in full sentences. Output without any commentary or questions before or after the response. Only include the book name and number in the title.
 
-**Instructions:**     
-1. **Introduction:**     Begin with the verse
+Instructions:
 
-2. **Passage Summary and Analysis:**   
-**Summary:** Provide and overall summary of the verse in at least 3-4 sentences.
-**Analysis:** Provide an analysis of the verse focusing on key themes, insights, and theological implications. Organize major points using subheadings, and emphasize critical details. Include relevant definitions as appropriate. Be sure that each analysis can standalone.
+Passage Summary and Analysis:
+Summary: Provide an overall summary in approximately 300 words. Connection to Broader Themes: Where relevant, link the passage(s) to broader biblical themes or narratives.
 
-3. **Formatting:**     - Use Markdown for the response, with clear headings for the passages, subheadings for major analysis points, and bullet points for key insights.  - Aim for readability and engagement, making the analysis informative for both novice and experienced readers. **Content Requirements:**     - **Accessibility:** Provide easy-to- understand explanations suitable for readers with varying levels of biblical knowledge. Clarify any theological terms or concepts that might be unfamiliar.     - **Thoroughness:** Ensure the examination is thorough, covering the passage provided. Offer insights into the meaning, context, and implications of the text.     - **Relevance:** Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate.
-`,
+Formatting: - Use Markdown for the response, with clear headings for the passages, subheadings for major analysis points. - Aim for readability and engagement, making the analysis informative for both novice and experienced readers. Content Requirements: - Accessibility: Provide easy-to- understand explanations suitable for readers with varying levels of biblical knowledge. Clarify any theological terms or concepts that might be unfamiliar. - Thoroughness: Ensure the examination is thorough, covering the passage provided. Offer insights into the meaning, context, and implications of the text. - Relevance: Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate.`,
         temperature: 0.3,
       };
     case ExplanationTypeEnum.byline:
