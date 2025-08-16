@@ -1,7 +1,7 @@
 import { type StoreValue, map } from "nanostores";
 
 export const $env = map({
-  apiUrl: "http://localhost:3000",
+  apiUrl: "http://localhost:4000",
   askVerseMate: false,
 });
 

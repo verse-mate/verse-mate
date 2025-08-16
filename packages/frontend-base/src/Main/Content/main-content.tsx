@@ -28,6 +28,8 @@ import {
   useSelectDropdown,
 } from "../../hooks/useSelectDropdown";
 import { userSession } from "../../hooks/userSession";
+import { ModalContainer } from "../../modal/ModalContainer";
+import { updateSelectedBook } from "../../store/book-selection";
 import { Accordion } from "../../ui/Accordion";
 import { Chat } from "../../ui/Chat";
 import { Explanation } from "../../ui/Explanation";
@@ -55,7 +57,7 @@ export const MainContent = () => {
     verseId,
     testament,
     explanationType,
-    bibleVersion = "NASB1995",
+    bibleVersion,
     conversationId,
   } = useGetSearchParams();
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
@@ -63,11 +65,16 @@ export const MainContent = () => {
 
   const { testaments } = fetchAllTestaments();
   const { chapters } = fetchAllChaptersByBook(bookId);
-  const { bookVerseData } = fetchBookVerse(bookId, Number(verseId));
+  const { bookVerseData } = fetchBookVerse(
+    bookId,
+    Number(verseId),
+    bibleVersion,
+  );
   const { explanation } = fetchExplanation(
     bookId,
     Number(verseId),
     explanationType,
+    bibleVersion,
   );
 
   const { lastRead, startTimer } = useLastRead(
@@ -108,6 +115,22 @@ export const MainContent = () => {
     resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
+  const {
+    isOpen: isDropdownOpenBook,
+    toggleDropdown: toggleMobileDropdownBook,
+    closeDropdown: closeDropdownBook,
+  } = useDropdownToggle();
+
+  const book = testaments?.find((item) => {
+    return item.b === Number(bookId);
+  })?.n;
+
+  useEffect(() => {
+    if (book) {
+      updateSelectedBook(book);
+    }
+  }, [book]);
+
   const { progress } = useProgressBar({
     totalChapters: chapters,
     currentVerse: Number(verseId),
@@ -127,13 +150,7 @@ export const MainContent = () => {
     testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [];
   const newTestamentBooks =
     testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [];
-  const book = testaments?.find((testament) => testament.b === bookId)?.n;
 
-  const {
-    isOpen: isDropdownOpenBook,
-    toggleDropdown: toggleMobileDropdownBook,
-    closeDropdown: closeDropdownBook,
-  } = useDropdownToggle();
   const {
     isOpen: isDropdownOpenVersion,
     toggleDropdown: toggleMobileDropdownVersion,
@@ -188,6 +205,7 @@ export const MainContent = () => {
       }
     }
   }, [bookId, verseId, testament, testaments, bibleVersion, setSelectedTab]);
+
   const contentRefBook = useRef<HTMLDivElement>(null);
   const contentRefVersion = useRef<HTMLDivElement>(null);
   const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
@@ -235,6 +253,7 @@ export const MainContent = () => {
   });
 
   const { activeTab, setActiveTab } = useHandleTab();
+  const previousTabRef = useRef<string>("explanation");
 
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
@@ -539,7 +558,7 @@ export const MainContent = () => {
     <>
       <RadixTabs.Root
         className={`${styles.container}`}
-        defaultValue="book"
+        value={activeTab}
         onValueChange={setActiveTab}
       >
         <div className={`${styles.mobileContent}`}>
@@ -690,7 +709,7 @@ export const MainContent = () => {
                                             testament,
                                           );
                                           handleMobileVerseSelect(
-                                            testament,
+                                            testament || "",
                                             bookName,
                                             verse,
                                           );
@@ -770,14 +789,14 @@ export const MainContent = () => {
                                                 testament,
                                               );
                                               handleMobileVerseSelect(
-                                                testament,
+                                                testament || "",
                                                 bookName,
                                                 verse,
                                               );
                                               closeDropdownBook();
                                             }}
-                                            selectedBook={String(bookId)}
                                             selectedVerse={String(verseId)}
+                                            selectedBook={String(bookId)}
                                             testament={book.t}
                                           />
                                         </Accordion.Content>
@@ -1021,11 +1040,25 @@ export const MainContent = () => {
                 </RadixTabs.Trigger>
               )}
 
-              <RadixTabs.Trigger className={styles.trigger} value="menu">
-                <Icon.HamburgerIcon
+              <button
+                type="button"
+                className={styles.trigger}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (activeTab === "menu") {
+                    setActiveTab(previousTabRef.current);
+                  } else {
+                    previousTabRef.current = activeTab;
+                    setActiveTab("menu");
+                  }
+                }}
+              >
+                <Icon.AnimatedHamburgerIcon
+                  isOpen={activeTab === "menu"}
                   className={` ${styles.active} ${styles.iconSize}`}
                 />
-              </RadixTabs.Trigger>
+              </button>
             </RadixTabs.List>
           </div>
           <div>
@@ -1214,6 +1247,7 @@ export const MainContent = () => {
           </RightPanel.Root>
         </main>
       </div>
+      <ModalContainer />
     </>
   );
 };

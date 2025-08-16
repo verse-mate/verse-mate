@@ -7,6 +7,7 @@
     "migrate:dev": "bun ./src/migrator.ts migrate-dev",
     "migrate:down": "bun ./src/migrator.ts migrate-down",
     "model:generate": "kanel && biome check --write ./src/models",
+    "dbml:generate": "prisma db pull && prisma generate",
     "db:seed": "bun ./src/seeder.ts"
   },
   "dependencies": {
@@ -19,6 +20,8 @@
     "@types/pg": "^8.11.6",
     "@types/yargs": "^17.0.32",
     "kanel": "^3.9.1",
-    "kanel-kysely": "^0.5.0"
+    "kanel-kysely": "^0.5.0",
+    "prisma": "^5.22.0",
+    "prisma-dbml-generator": "^0.12.0"
   }
 }

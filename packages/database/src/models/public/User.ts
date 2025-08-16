@@ -23,6 +23,14 @@ export default interface UserTable {
 
   createdAt: ColumnType<Date, Date | string | undefined, Date | string>;
 
+  preferred_language: ColumnType<string | null, string | null, string | null>;
+
+  preferred_bible_version: ColumnType<
+    string | null,
+    string | null,
+    string | null
+  >;
+
   is_admin: ColumnType<boolean, boolean | undefined, boolean>;
 }
 

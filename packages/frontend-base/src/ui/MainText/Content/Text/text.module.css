@@ -7,12 +7,23 @@
     padding-bottom: 48px;
 }
 
+.titleContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
 .title {
     font-family: MerriweatherItalic, sans-serif;
     font-weight: 700;
     font-size: 32px;
     line-height: 44px;
     color: var(--night);
+}
+
+.bookmarkButton {
+    flex-shrink: 0;
 }
 
 .textBox {

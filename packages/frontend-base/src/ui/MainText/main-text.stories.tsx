@@ -18,7 +18,7 @@ export const Default: Story = () => {
   const bookId = 40;
   const verseId = "22";
 
-  const { bookVerseData } = fetchBookVerse(bookId, Number(verseId));
+  const { bookVerseData } = fetchBookVerse(bookId, Number(verseId), "NASB1995");
 
   return (
     <MainText.Root>
