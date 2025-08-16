@@ -374,14 +374,13 @@ export class BibleService {
         g: book.genre_id,
         n: book.genre_name,
       },
-      chapters:
-        [
-          {
-            chapterNumber: chapter.chapter_number,
-            subtitles: subtitles,
-            verses: verses,
-          },
-        ] || [],
+      chapters: [
+        {
+          chapterNumber: chapter.chapter_number,
+          subtitles: subtitles,
+          verses: verses,
+        },
+      ], //the first array is always "truthy"
     };
   }
 
