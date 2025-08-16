@@ -158,7 +158,9 @@ export const Content = ({
       )}
 
       <RadixTabs.Content className={styles.content} value="menu">
-        <div className={styles.moreOptionsContainer}>
+        <div
+          className={`${styles.moreOptionsContainer} ${!session?.id && styles.noPadding}`}
+        >
           {session?.id ? (
             <>
               <ProfileButton link="/" />
