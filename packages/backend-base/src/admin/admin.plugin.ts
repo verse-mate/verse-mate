@@ -5,6 +5,7 @@ import { authDerive } from "../auth/auth.utils";
 import shared from "../shared/shared.plugin";
 import { AdminDatabaseService } from "./services/admin-database.service";
 import { BatchOperationService } from "./services/batch-operations.service";
+import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
 // Define the plugin type explicitly
 const plugin = new Elysia()
@@ -14,6 +15,9 @@ const plugin = new Elysia()
       ...state,
       batchOperationService: new BatchOperationService(state.db),
       adminDatabaseService: new AdminDatabaseService(state.db),
+      explanationRegenerationService: new ExplanationRegenerationService(
+        state.db,
+      ),
     };
   })
   .guard((app) => {
@@ -123,12 +127,17 @@ const plugin = new Elysia()
           )
           .post(
             "/explanation/regenerate",
-            async ({ body, store: { adminDatabaseService } }) => {
-              return await adminDatabaseService.regenerateChapter(
+            async ({
+              body,
+              store: { adminDatabaseService },
+              currentUserId,
+            }) => {
+              return await adminDatabaseService.regenerateExplanation(
                 body.bookId,
                 body.chapterNumber,
-                body.explanationType,
+                body.explanationType as any,
                 body.bibleVersion,
+                currentUserId,
               );
             },
             {
@@ -136,7 +145,61 @@ const plugin = new Elysia()
                 bookId: t.Number(),
                 chapterNumber: t.Number(),
                 explanationType: t.String(),
-                bibleVersion: t.Optional(t.String()),
+                bibleVersion: t.String(),
+              }),
+            },
+          )
+          .post(
+            "/explanation/regenerate/:regenerationId/generate",
+            async ({
+              params,
+              body,
+              store: { explanationRegenerationService },
+              currentUserId,
+            }) => {
+              return await explanationRegenerationService.generateNewExplanation(
+                params.regenerationId,
+                body.bookId,
+                body.chapterNumber,
+                body.explanationType as any,
+                body.bibleVersion,
+                currentUserId,
+              );
+            },
+            {
+              body: t.Object({
+                bookId: t.Number(),
+                chapterNumber: t.Number(),
+                explanationType: t.String(),
+                bibleVersion: t.String(),
+              }),
+            },
+          )
+          .get(
+            "/explanation/regenerate/:regenerationId/comparison",
+            async ({ params, store: { adminDatabaseService } }) => {
+              return await adminDatabaseService.getExplanationComparison(
+                params.regenerationId,
+              );
+            },
+          )
+          .post(
+            "/explanation/regenerate/:regenerationId/choose",
+            async ({
+              params,
+              body,
+              store: { adminDatabaseService },
+              currentUserId,
+            }) => {
+              return await adminDatabaseService.chooseExplanationVersion(
+                params.regenerationId,
+                body.chosenExplanationId,
+                currentUserId,
+              );
+            },
+            {
+              body: t.Object({
+                chosenExplanationId: t.Number(),
               }),
             },
           )
