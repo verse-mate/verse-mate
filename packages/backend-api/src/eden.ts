@@ -37,8 +37,11 @@ export const fetcher = async (
 export const api = treaty<App>($env.get().apiUrl, {
   fetcher,
   onResponse(response) {
+    // In development, don't auto-redirect on 401 so callers can implement fallbacks
     if (response.status === 401) {
-      window.location.href = "/logout";
+      if (process.env.NODE_ENV !== "development") {
+        window.location.href = "/logout";
+      }
     }
   },
 });

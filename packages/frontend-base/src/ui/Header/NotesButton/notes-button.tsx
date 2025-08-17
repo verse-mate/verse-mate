@@ -1,3 +1,4 @@
+import { api } from "backend-api";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { userSession } from "../../../hooks/userSession";
@@ -57,30 +58,25 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
     return null;
   }
 
+  // No hardcoded login; require real authentication
+
   // Function to check if current chapter has notes
   const checkForNotes = useCallback(async () => {
-    if (!bookName || !chapterNumber || !translation || !isNotesEnabled()) {
-      return;
-    }
-
-    if (!isAuthedForNotes || !effectiveUserId) {
-      setHasNotes(false);
+    if (!bookName || !chapterNumber || !isNotesEnabled()) {
       return;
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${encodeURIComponent(
-          bookName,
-        )}/${chapterNumber}?userId=${encodeURIComponent(effectiveUserId as string)}`,
-      );
-      const data = await response.json();
-      const notes = data.notes || [];
-      setHasNotes(notes.length > 0);
+      const res: any = await (api as any)
+        .notes({ bookName })({ chapterNumber: String(chapterNumber) })
+        .get();
+      const notes = res?.data?.notes ?? [];
+      setHasNotes((notes?.length ?? 0) > 0);
     } catch (error) {
-      setHasNotes(false);
+      // Keep previous state on unexpected errors to avoid visual flicker
+      return;
     }
-  }, [bookName, chapterNumber, translation, isAuthedForNotes, effectiveUserId]);
+  }, [bookName, chapterNumber]);
 
   // Check if current chapter has notes when component mounts or chapter changes
   useEffect(() => {
@@ -89,7 +85,12 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
 
   // Callback to refresh notes count when notes are added/deleted from modal
   const handleNotesChange = () => {
-    checkForNotes();
+    // Optimistically assume there are notes after an add, and re-validate
+    setHasNotes(true);
+    // Defer server check to avoid flicker and allow backend to persist
+    setTimeout(() => {
+      checkForNotes();
+    }, 600);
   };
 
   const handleOpenModal = () => {

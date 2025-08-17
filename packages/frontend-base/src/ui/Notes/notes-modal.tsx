@@ -1,3 +1,4 @@
+import { api } from "backend-api";
 // Using direct fetch calls to the existing endpoints to avoid regressions
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -45,35 +46,18 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      if (!effectiveUserId) {
-        setNotes([]);
-        return;
-      }
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${encodeURIComponent(
-          bookName,
-        )}/${chapterNumber}?userId=${encodeURIComponent(effectiveUserId as string)}`,
-      );
-
-      if (response.status === 404) {
-        // Treat 404 as no notes for this chapter
-        setNotes([]);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-
-      const data = await response.json();
-      const fetchedNotes = data.notes || [];
+      const res = await (api as any)
+        .notes({ bookName })({ chapterNumber: String(chapterNumber) })
+        .get();
+      const fetchedNotes = res?.data?.notes ?? [];
       setNotes(fetchedNotes);
+      return;
     } catch (err) {
       setError("Failed to load notes");
     } finally {
       setLoading(false);
     }
-  }, [bookName, chapterNumber, effectiveUserId]);
+  }, [bookName, chapterNumber]);
 
   // Fetch notes when modal opens or dependencies change
   useEffect(() => {
@@ -86,39 +70,17 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     if (!newNoteContent.trim()) return;
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookName,
-            chapterNumber,
-            content: newNoteContent.trim(),
-            userId: effectiveUserId,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const newNote = data.note;
-
-      if (!newNote) {
-        throw new Error("No note returned from server");
-      }
-
-      if (!newNote.note_id) {
-        throw new Error("Note missing note_id");
-      }
-
+      const res = await (api as any).notes.post({
+        bookName,
+        chapterNumber,
+        content: newNoteContent.trim(),
+      });
+      const newNote = res?.data?.note ?? res?.data;
+      if (!newNote?.note_id) throw new Error("Invalid note");
       setNotes((prev) => [newNote, ...prev]);
       setNewNoteContent("");
-      // Notify parent that notes have changed
       onNotesChange?.();
+      return;
     } catch (err) {
       setError("Failed to create note");
     }
@@ -128,34 +90,17 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     if (!editContent.trim()) return;
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: editContent.trim(),
-            userId: effectiveUserId,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const updatedNote = data.note || data;
-
-      if (!updatedNote || !updatedNote.note_id) {
-        throw new Error("Invalid note response from server");
-      }
-
+      const res = await (api as any).notes({ noteId })("put")({
+        content: editContent.trim(),
+      });
+      const updatedNote = res?.data?.note ?? res?.data;
+      if (!updatedNote?.note_id) throw new Error("Invalid note");
       setNotes((prev) =>
         prev.map((note) => (note.note_id === noteId ? updatedNote : note)),
       );
       setEditingNoteId(null);
       setEditContent("");
+      return;
     } catch (err) {
       setError("Failed to update note");
     }
@@ -163,26 +108,15 @@ export const NotesModal: React.FC<NotesModalProps> = ({
 
   const handleDeleteNote = async (noteId: string) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${noteId}?userId=${encodeURIComponent(
-          effectiveUserId as string,
-        )}`,
-        { method: "DELETE" },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const success = data.success !== false;
+      const res = await (api as any).notes({ noteId })("delete")();
+      const success = res?.data?.success !== false;
       if (success) {
         setNotes((prev) => prev.filter((note) => note.note_id !== noteId));
-        // Notify parent that notes have changed
         onNotesChange?.();
       } else {
         setError("Failed to delete note");
       }
+      return;
     } catch (err) {
       setError("Failed to delete note");
     }
@@ -205,12 +139,20 @@ export const NotesModal: React.FC<NotesModalProps> = ({
       className={styles.overlay}
       role="button"
       tabIndex={0}
-      onClick={onClose}
+      onMouseDown={onClose}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onClose();
+        // Only close on Escape and only if the overlay itself received the keydown
+        if (e.key === "Escape" && e.currentTarget === e.target) onClose();
       }}
     >
-      <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        tabIndex={-1}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className={styles.header}>
           <h2 className={styles.title}>
