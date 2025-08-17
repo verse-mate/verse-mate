@@ -7,10 +7,11 @@ export async function up(db: Kysely<any>): Promise<void> {
       col.primaryKey().defaultTo(sql`gen_random_uuid()`),
     )
     .addColumn("user_id", "uuid", (col) =>
-      col.notNull().references("users.user_id").onDelete("cascade"),
+      col.notNull().references("user.id").onDelete("cascade"),
     )
-    .addColumn("book_name", "varchar(100)", (col) => col.notNull())
-    .addColumn("chapter_number", "integer", (col) => col.notNull())
+    .addColumn("chapter_id", "integer", (col) =>
+      col.references("chapters.chapter_id").onDelete("cascade").notNull(),
+    )
     .addColumn("translation", "varchar(50)", (col) => col.notNull())
     .addColumn("content", "text", (col) => col.notNull())
     .addColumn("created_at", "timestamp", (col) =>
@@ -23,9 +24,9 @@ export async function up(db: Kysely<any>): Promise<void> {
 
   // Create index for efficient querying by user, book, chapter and translation
   await db.schema
-    .createIndex("notes_user_book_chapter_translation_idx")
+    .createIndex("notes_user_chapter_translation_idx")
     .on("notes")
-    .columns(["user_id", "book_name", "chapter_number", "translation"])
+    .columns(["user_id", "chapter_id", "translation"])
     .execute();
 }
 
