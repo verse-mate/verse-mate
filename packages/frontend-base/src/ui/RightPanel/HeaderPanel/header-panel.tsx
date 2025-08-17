@@ -95,6 +95,7 @@ export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
   const { explanationType, bookId, verseId, bibleVersion } =
     useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
+
   const handleValueChange = (value: ExplanationTypeEnum) => {
     saveSearchParams({ explanationType: value });
     queryClient.invalidateQueries({ queryKey: ["explanation"] });
@@ -194,7 +195,8 @@ export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
           }}
           style={{ position: "relative", zIndex: 9999 }}
         >
-          <Icon.HamburgerIcon
+          <Icon.AnimatedHamburgerIcon
+            isOpen={activeTab === "menu"}
             className={`${styles.active}`}
             style={{ fill: "white" }}
           />

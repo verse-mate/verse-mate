@@ -212,6 +212,13 @@
     height: 44px;
     border-radius: 100%;
     padding: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nextChapterBtn.hidden,
+.previousChapterBtn.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .nextChapterBtn {

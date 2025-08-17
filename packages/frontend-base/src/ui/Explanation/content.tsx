@@ -9,11 +9,13 @@ import styles from "./explanation.module.css";
 
 export const Content = () => {
   const { session } = userSession();
-  const { bookId, verseId, explanationType } = useGetSearchParams();
+  const { bookId, verseId, explanationType, bibleVersion } =
+    useGetSearchParams();
   const { explanation, error, isLoading } = fetchExplanation(
     bookId,
     Number(verseId),
     explanationType,
+    bibleVersion,
   );
   const {
     maxRating,

@@ -13,6 +13,8 @@
 /.next/
 /out/
 
+.cf/public/*
+
 # production
 /build
 
@@ -28,8 +30,11 @@ yarn-error.log*
 # local env files
 .env*.local
 
-# vercel
+# open-next / output
 .vercel
+.cf
+.open-next
+
 
 # typescript
 *.tsbuildinfo

@@ -22,17 +22,107 @@ import { PromptService } from "./services/prompt.service";
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY, // This is the default and can be omitted
 });
-const model = "gpt-4-turbo";
+const model = "gpt-5";
 
-const getExplanationTypePrompt = (type: ExplanationTypeEnum): string => {
+async function gpt5Text({
+  system,
+  user,
+}: {
+  system?: string;
+  user: string;
+}) {
+  const messages: OpenAI.ChatCompletionMessageParam[] = [];
+  if (system) {
+    messages.push({ role: "system", content: system });
+  }
+  messages.push({ role: "user", content: user });
+
+  const options: any = {
+    model,
+    messages,
+    max_completion_tokens: 10000,
+  };
+
+  const chat = await openai.chat.completions.create(options as any);
+  return chat.choices[0].message.content || "";
+}
+
+const getExplanationTypePrompt = (
+  type: ExplanationTypeEnum,
+  bookName: string,
+  chapterNumber: number,
+): { prompt: string; temperature: number } => {
   switch (type) {
     case ExplanationTypeEnum.summary:
-      return "Give me a summary of bible reference above";
+      return {
+        prompt: `# Summary
+
+Request Overview: Provide a high-level summary explanation of all of ${bookName} ${chapterNumber} in 300 words or so. Focus on clarity and depth to help readers understand their significance and message. Be sure to output in full sentences. Output without any commentary or questions before or after the response. Only include the book name and number in the title.
+
+Instructions:
+
+Passage Summary and Analysis:
+Summary: Provide an overall summary in approximately 300 words. Connection to Broader Themes: Where relevant, link the passage(s) to broader biblical themes or narratives.
+
+Formatting: - Use Markdown for the response, with clear headings for the passages, subheadings for major analysis points. - Aim for readability and engagement, making the analysis informative for both novice and experienced readers. Content Requirements: - Accessibility: Provide easy-to- understand explanations suitable for readers with varying levels of biblical knowledge. Clarify any theological terms or concepts that might be unfamiliar. - Thoroughness: Ensure the examination is thorough, covering the passage provided. Offer insights into the meaning, context, and implications of the text. - Relevance: Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate.`,
+        temperature: 0.3,
+      };
     case ExplanationTypeEnum.byline:
-      return "Explain the bible reference above line by line";
+      return {
+        prompt: `# Verse-by-Verse Analysis
+
+Request Overview: Provide a line-by-line explanation of all of ${bookName} ${chapterNumber} without stopping. Ensure you do each line and do not group for flow - even if the passage has many lines. Focus on clarity and depth to help readers understand their significance and message. Be sure to output in full sentences - even within the bullets. Output without any commentary or questions before or after the response.
+
+Instructions:
+
+Introduction: Begin with the verse
+
+Passage Summary and Analysis:
+Summary: Provide and overall summary of the verse in at least 3-4 sentences. Analysis: Provide an analysis of the verse focusing on key themes, insights, and theological implications. Organize major points using subheadings, and emphasize critical details. Include relevant definitions as appropriate. Be sure that each analysis can standalone.
+
+Formatting: - Use Markdown for the response, with clear headings for the passages, subheadings for major analysis points, and bullet points for key insights. - Aim for readability and engagement, making the analysis informative for both novice and experienced readers. Content Requirements: - Accessibility: Provide easy-to- understand explanations suitable for readers with varying levels of biblical knowledge. Clarify any theological terms or concepts that might be unfamiliar. - Thoroughness: Ensure the examination is thorough, covering the passage provided. Offer insights into the meaning, context, and implications of the text. - Relevance: Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate.`,
+        temperature: 0.2,
+      };
     case ExplanationTypeEnum.detailed:
-      return "Explain the bible reference above in detail";
+      return {
+        prompt: `# In-Depth Analysis
+
+Request Overview: Provide an in-depth yet accessible explanation of all of ${bookName} ${chapterNumber} 500 words per section. Focus on clarity and depth to help readers understand their significance and message. Do not include the verses in the output before the introduction. Be sure to output in full sentences - even within the bullets. Output without any commentary or questions before or after the response.
+
+Instructions:
+
+Introduction: Begin with a brief introduction that contextualizes the passage within the Bible, highlighting its place in the broader narrative and any relevant background information.
+
+Passage Analysis:
+Analysis: Provide a detailed examination focusing on key themes, insights, and theological implications. Organize major points using subheadings, and emphasize critical details. Be sure that each analysis can standalone. - Connection to Broader Themes: Where relevant, link the passage(s) to broader biblical themes or narratives.
+
+Overall Significance: Conclude with a discussion on the overall significance of the passage. Address how it contributes to the overarching narrative of the Bible and its relevance to contemporary readers.
+
+Formatting: - Use Markdown for the response, with clear headings for the passages, subheadings for major analysis points, and bullet points for key insights. - Ensure the explanation is comprehensive, typically spanning at least 500 words, but allow for flexibility depending on the complexity and length of the passage. - Aim for readability and engagement, making the analysis informative for both novice and experienced readers. Content Requirements: - Accessibility: Provide easy-to- understand explanations suitable for readers with varying levels of biblical knowledge. Clarify any theological terms or concepts that might be unfamiliar. - Thoroughness: Ensure the examination is thorough, covering the passage provided. Offer insights into the meaning, context, and implications of the text. - Relevance: Draw connections to broader themes in the Bible and suggest contemporary applications where appropriate. Application: Practical application for live. Interpret life through the lens of Scripture, not Scripture through the lens of life. Provide application questions when possible.`,
+        temperature: 0.1,
+      };
   }
+};
+
+function getLanguageName(code: string, locale = "en"): string {
+  const display = new Intl.DisplayNames([locale], { type: "language" });
+
+  return display.of(code) ?? display.of("en") ?? "English";
+}
+
+const getUserPrompt = ({
+  explanationPrompt,
+  language,
+}: { explanationPrompt: string; language: string }) => {
+  return `${explanationPrompt}
+
+CRITICAL: Your response will be evaluated on:
+1. Proper blockquote usage for Scripture (>)
+2. Bold formatting for theological terms
+3. Bullet point usage for lists
+4. Verse reference formatting
+
+The response should be in ${language} using Markdown format only.`;
 };
 
 const plugin = new Elysia()
@@ -64,25 +154,60 @@ const plugin = new Elysia()
       })
       .get(
         "/book/:bookId/:chapterNumber",
-        async ({ params, store: { bibleService } }) => {
+        async ({ params, store: { bibleService, db }, query }) => {
           const { bookId, chapterNumber } = params;
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            throw new Error("Invalid bible version");
+          }
 
           const book = await bibleService.getBook({
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
+            version_id: version.id,
           });
 
           return book;
         },
+        {
+          query: t.Object({
+            versionKey: t.Optional(t.String()),
+          }),
+        },
       )
       .get(
         "/book/explanation/:bookId/:chapterNumber",
-        async ({ params, store: { bibleService, promptService } }) => {
+        async ({
+          params,
+          store: { bibleService, promptService, db },
+          query,
+        }) => {
           const { bookId, chapterNumber } = params;
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
 
           const explanation = await bibleService.getExplanation({
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
+            version_id: version.id,
           });
 
           const missingTypes = Object.keys(ExplanationTypeEnum).filter(
@@ -98,40 +223,35 @@ const plugin = new Elysia()
                   return { explanation };
                 }
 
-                const { reference } = await promptService.referenceBook({
-                  book_id: Number(bookId),
-                  chapter_number: Number(chapterNumber),
-                });
-
                 try {
-                  const chat = await openai.chat.completions.create({
-                    messages: [
-                      { role: "system", content: prompt.prompt },
-                      {
-                        role: "user",
-                        content: `
-                          # Reference
-                          ${reference}
-                        `,
-                      },
-                      {
-                        role: "user",
-                        content: getExplanationTypePrompt(type),
-                      },
-                      {
-                        role: "user",
-                        content:
-                          "The response should be with the result and in Markdown code only",
-                      },
-                    ],
-                    model,
+                  const { book } = await bibleService.getBook({
+                    book_id: Number(bookId),
+                    chapter_number: Number(chapterNumber),
+                    version_id: version.id,
+                  });
+
+                  const explanationConfig = getExplanationTypePrompt(
+                    type,
+                    book?.name || "",
+                    Number(chapterNumber),
+                  );
+
+                  const language = getLanguageName(version.language_code);
+
+                  const text = await gpt5Text({
+                    system: prompt.prompt,
+                    user: getUserPrompt({
+                      explanationPrompt: explanationConfig.prompt,
+                      language,
+                    }),
                   });
 
                   const { success } = await bibleService.saveExplanation({
                     type,
-                    explanation: chat.choices[0].message.content || "",
+                    explanation: text || "",
                     book_id: Number(bookId),
                     chapter_number: Number(chapterNumber),
+                    version_id: version.id,
                   });
 
                   if (success) return { explanation };
@@ -144,6 +264,11 @@ const plugin = new Elysia()
           }
 
           return { explanation };
+        },
+        {
+          query: t.Object({
+            versionKey: t.Optional(t.String()),
+          }),
         },
       )
       .get("/testaments", async ({ store: { bibleService } }) => {
@@ -193,12 +318,25 @@ const plugin = new Elysia()
       )
       .post(
         "/book/new-conversation",
-        async ({ body, store: { chatService, bibleService } }) => {
+        async ({ body, store: { chatService, bibleService, db }, query }) => {
           if (!body.user_id) return { message: "User ID is required" };
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
 
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            version_id: version.id,
           });
 
           if (!book) {
@@ -214,25 +352,11 @@ const plugin = new Elysia()
             book.testament !== null ? testamentMap[book.testament] : "";
 
           const bookAsContext = `
-            Book: ${book.bookId}
+            Book ID: ${book.bookId}
             Book Name: ${book.name}
             Testament: ${testament}
             Genre: ${book.genre.n}
-            Chapters: ${book.chapters
-              .map(
-                (chapter) => `
-              Chapter: ${chapter.chapterNumber}
-              Verses: ${chapter.verses
-                .map(
-                  (verse) => `
-                Verse Number: ${verse.verseNumber}
-                Text: ${verse.text}
-              `,
-                )
-                .join("")}
-            `,
-              )
-              .join("")}
+            Chapter Number: ${body.chapter_number}
           `;
 
           const prompt = `
@@ -243,19 +367,15 @@ const plugin = new Elysia()
             Context: ${bookAsContext}
           `;
 
-          const chat = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model,
-          });
+          const chatText = await gpt5Text({ user: prompt });
 
           const promptCreateChatTitle = `
           - Create a short title for this chat based on the chat below:
-          ${chat.choices[0].message.content}
+          ${chatText}
           `;
 
-          const generatedTitle = await openai.chat.completions.create({
-            messages: [{ role: "user", content: promptCreateChatTitle }],
-            model,
+          const generatedTitleText = await gpt5Text({
+            user: promptCreateChatTitle,
           });
           // await new Promise((resolve) => setTimeout(resolve, 3000));
           // const generatedTitle = {
@@ -264,14 +384,14 @@ const plugin = new Elysia()
 
           const newConversation = await chatService.createNewChat({
             user_id: body.user_id,
-            title: generatedTitle.choices[0].message.content || "",
+            title: generatedTitleText || "",
             book_id: body.book_id,
             chapter_number: body.chapter_number,
           });
 
           return {
             newConversation,
-            generatedTitle: generatedTitle.choices[0].message.content,
+            generatedTitle: generatedTitleText,
           };
         },
         {
@@ -397,10 +517,24 @@ const plugin = new Elysia()
       )
       .post(
         "/book/ask-verse-mate/save-ai-message",
-        async ({ body, store: { chatService, bibleService } }) => {
+        async ({ body, store: { chatService, bibleService, db }, query }) => {
+          const { versionKey = "NASB1995" } = query;
+
+          const version = await db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .select(["id", "language_code"])
+            .where("version_key", "=", versionKey)
+            .executeTakeFirst();
+
+          if (!version) {
+            return { status: 400, body: { error: "Invalid bible version" } };
+          }
+
           const { book } = await bibleService.getBook({
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            version_id: version.id,
           });
 
           if (!book) {
@@ -416,25 +550,11 @@ const plugin = new Elysia()
             book.testament !== null ? testamentMap[book.testament] : "";
 
           const bookAsContext = `
-            Book: ${book.bookId}
+            Book ID: ${book.bookId}
             Book Name: ${book.name}
             Testament: ${testament}
             Genre: ${book.genre.n}
-            Chapters: ${book.chapters
-              .map(
-                (chapter) => `
-              Chapter: ${chapter.chapterNumber}
-              Verses: ${chapter.verses
-                .map(
-                  (verse) => `
-                Verse Number: ${verse.verseNumber}
-                Text: ${verse.text}
-              `,
-                )
-                .join("")}
-            `,
-              )
-              .join("")}
+            Chapter Number: ${body.chapter_number}
           `;
 
           const prompt = `
@@ -445,10 +565,7 @@ const plugin = new Elysia()
             Context: ${bookAsContext}
           `;
 
-          const chat = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model,
-          });
+          const chatText = await gpt5Text({ user: prompt });
           // await new Promise((resolve) => setTimeout(resolve, 3000));
           // const chat = {
           //   choices: [{ message: { content: "Fake message, test only" } }],
@@ -457,7 +574,7 @@ const plugin = new Elysia()
           const saveAiMessage = await chatService.addMessageToChat({
             chat_id: body.chat_id,
             role: RoleEnum.assistant,
-            content: chat.choices[0].message.content || "",
+            content: chatText || "",
           });
 
           return { result: saveAiMessage.newMessage };
@@ -480,6 +597,190 @@ const plugin = new Elysia()
         },
         {
           params: t.Pick(ChatDto, ["conversation_id"]),
+        },
+      )
+      .get(
+        "/book/bookmarks/:user_id",
+        async ({ params, store: { bibleService } }) => {
+          console.log("=== GET /book/bookmarks/:user_id ENDPOINT ===");
+          console.log("Request params:", params);
+          console.log("Environment:", {
+            NODE_ENV: process.env.NODE_ENV,
+            API_URL: process.env.API_URL,
+            POSTGRES_URL: process.env.POSTGRES_URL
+              ? "Set (value hidden)"
+              : "Not set",
+          });
+
+          try {
+            console.log(
+              "Attempting to get bookmarks for user:",
+              params.user_id,
+            );
+            const { favorites } = await bibleService.getBookmarks({
+              id: params.user_id,
+            });
+
+            console.log(
+              "Successfully retrieved bookmarks, count:",
+              favorites.length,
+            );
+            return { favorites };
+          } catch (error) {
+            console.error("ERROR in GET /book/bookmarks/:user_id:", error);
+            if (error instanceof Error) {
+              console.error("Error details:", error.message);
+              console.error("Error stack:", error.stack);
+            }
+
+            // Return a more detailed error response instead of just failing with 500
+            return {
+              error: "Failed to retrieve bookmarks",
+              details: error instanceof Error ? error.message : String(error),
+              favorites: [],
+            };
+          }
+        },
+        {
+          params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+        },
+      )
+      .post(
+        "/book/bookmark/add",
+        async ({ body, store: { bibleService } }) => {
+          try {
+            console.log("Adding bookmark:", body);
+
+            if (
+              !body.user_id ||
+              !body.book_id ||
+              body.chapter_number === undefined
+            ) {
+              console.error("Missing required fields for adding bookmark");
+              return {
+                success: false,
+                error: "Missing required fields",
+              };
+            }
+
+            const { success } = await bibleService.addBookmark({
+              user_id: body.user_id,
+              book_id: body.book_id,
+              chapter_number: body.chapter_number,
+            });
+
+            return { success };
+          } catch (error) {
+            console.error("Error adding bookmark:", error);
+            return {
+              success: false,
+              error: "Failed to add bookmark",
+            };
+          }
+        },
+        {
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+          }),
+        },
+      )
+      .delete(
+        "/book/bookmark/remove",
+        async ({ query, store: { bibleService } }) => {
+          try {
+            console.log("Removing bookmark - query params:", query);
+
+            const user_id = query.user_id;
+            const book_id = Number(query.book_id);
+            const chapter_number = Number(query.chapter_number);
+
+            if (
+              !user_id ||
+              Number.isNaN(book_id) ||
+              Number.isNaN(chapter_number)
+            ) {
+              console.error(
+                "Missing or invalid required fields for removing bookmark",
+              );
+              return {
+                success: false,
+                error: "Missing or invalid required fields",
+              };
+            }
+
+            const { success } = await bibleService.removeBookmark({
+              user_id,
+              book_id,
+              chapter_number,
+            });
+
+            return { success };
+          } catch (error) {
+            console.error("Error removing bookmark:", error);
+            return {
+              success: false,
+              error: "Failed to remove bookmark",
+            };
+          }
+        },
+        {
+          query: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.String(),
+            chapter_number: t.String(),
+          }),
+        },
+      )
+      .post(
+        "/book/bookmark/remove",
+        async ({ body, request, store: { bibleService } }) => {
+          try {
+            console.log("POST method for removing bookmark:", body);
+            console.log("Headers:", request.headers);
+
+            // Check if this is meant to be a DELETE request
+            const methodOverride = request.headers.get(
+              "x-http-method-override",
+            );
+            if (methodOverride && methodOverride.toLowerCase() !== "delete") {
+              console.warn(`Unexpected method override: ${methodOverride}`);
+            }
+
+            if (
+              !body.user_id ||
+              !body.book_id ||
+              body.chapter_number === undefined
+            ) {
+              console.error("Missing required fields for removing bookmark");
+              return {
+                success: false,
+                error: "Missing required fields",
+              };
+            }
+
+            const { success } = await bibleService.removeBookmark({
+              user_id: body.user_id,
+              book_id: body.book_id,
+              chapter_number: body.chapter_number,
+            });
+
+            return { success };
+          } catch (error) {
+            console.error("Error removing bookmark via POST:", error);
+            return {
+              success: false,
+              error: "Failed to remove bookmark",
+            };
+          }
+        },
+        {
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+          }),
         },
       ),
   );

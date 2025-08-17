@@ -41,7 +41,11 @@ export const fetchAllChaptersByBook = (bookId?: number | null) => {
   return { chapters, isLoading };
 };
 
-export const fetchBookVerse = (bookId: number, chapterId: number) => {
+export const fetchBookVerse = (
+  bookId: number,
+  chapterId: number,
+  bibleVersion: string,
+) => {
   const parsedBookId = String(bookId).padStart(2, "0");
   const parsedChapterId = String(chapterId).padStart(2, "0");
 
@@ -50,12 +54,18 @@ export const fetchBookVerse = (bookId: number, chapterId: number) => {
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["bookVerse", bookId, chapterId],
-    queryFn: async () =>
-      await api.bible
+    queryKey: ["bookVerse", bookId, chapterId, bibleVersion],
+    queryFn: async () => {
+      const versionKey = bibleVersion ?? "NASB1995";
+      return await api.bible
         .book({ bookId: parsedBookId })({ chapterNumber: parsedChapterId })
-        .get()
-        .then((response) => response.data?.book),
+        .get({
+          query: {
+            versionKey,
+          },
+        })
+        .then((response) => response.data?.book);
+    },
   });
 
   return { bookVerseData, error, isLoading };
@@ -64,7 +74,8 @@ export const fetchBookVerse = (bookId: number, chapterId: number) => {
 export const fetchExplanation = (
   bookId: number,
   chapterId: number,
-  explanationType: string | null,
+  explanationType?: string,
+  bibleVersion?: string,
 ) => {
   const parsedBookId = String(bookId).padStart(2, "0");
   const parsedChapterId = String(chapterId).padStart(2, "0");
@@ -76,13 +87,19 @@ export const fetchExplanation = (
     isFetching,
     isLoading,
   } = useQuery({
-    queryKey: ["explanation", bookId, chapterId, explanationType],
+    queryKey: ["explanation", bookId, chapterId, explanationType, bibleVersion],
     queryFn: async () => {
+      const versionKey = bibleVersion ?? "NASB1995";
+
       const response = await api.bible.book
         .explanation({
           bookId: parsedBookId,
         })({ chapterNumber: parsedChapterId })
-        .get();
+        .get({
+          query: {
+            versionKey,
+          },
+        });
 
       const foundExplanation = response.data?.explanation?.find(
         (exp) => exp.type === explanationType,

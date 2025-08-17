@@ -1,7 +1,7 @@
 import { type StoreValue, map } from "nanostores";
 
 export const $env = map({
-  apiUrl: "https://api.verse-mate.apegro.dev",
+  apiUrl: "http://localhost:4000",
   askVerseMate: false,
 });
 

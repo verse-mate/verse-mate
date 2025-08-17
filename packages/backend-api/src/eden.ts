@@ -6,9 +6,14 @@ export const fetcher = async (
   url: string | URL | Request,
   init?: RequestInit,
 ) => {
-  // Ensure we preserve both pathname and search/query string
-  const u = url instanceof Request ? new URL(url.url) : new URL(url);
-  const full = `${$env.get().apiUrl}${u.pathname}${u.search}`;
+  // Build URL robustly (supports relative paths and Request objects)
+  const original =
+    url instanceof Request
+      ? new URL(url.url)
+      : new URL(url.toString(), window.location.origin);
+
+  // Preserve pathname + query (ex.: /books?limit=10&page=2)
+  const pathWithQuery = `${original.pathname}${original.search}`;
 
   // Try to read access token from cookies in browser
   let authHeader: Record<string, string> = {};
@@ -24,7 +29,7 @@ export const fetcher = async (
     }
   } catch {}
 
-  return fetch(full, {
+  return fetch(`${$env.get().apiUrl}${pathWithQuery}`, {
     ...init,
     headers: {
       ...{ "Access-Control-Allow-Origin": "*" },

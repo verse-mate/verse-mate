@@ -49,3 +49,42 @@
     color: var(--white);
     text-decoration: underline;
 }
+
+.benefitsSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.benefitsIcons {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    align-items: center;
+}
+
+.benefitIcon {
+    width: 24px;
+    height: 24px;
+    fill: var(--snow);
+    opacity: 0.8;
+}
+
+.benefitsTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--white);
+    text-align: center;
+    margin: 0;
+}
+
+.benefitsDescription {
+    font-size: 14px;
+    color: var(--oil);
+    text-align: center;
+    line-height: 1.4;
+    max-width: 280px;
+    margin: 0;
+}
