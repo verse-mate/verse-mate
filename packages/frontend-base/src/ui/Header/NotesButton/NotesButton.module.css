@@ -1,0 +1,21 @@
+.button {
+  position: relative;
+  border: none;
+  padding: 2px 8px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+/* No-notes state: mimic "By Line" pill */
+.muted {
+  background: rgb(255 255 255 / 20%);
+  color: var(--snow);
+}
+
+/* When contained + var(--dust) color is applied (has notes), rely on shared Button styles */

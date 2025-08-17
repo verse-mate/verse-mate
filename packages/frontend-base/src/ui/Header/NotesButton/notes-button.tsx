@@ -1,7 +1,10 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { userSession } from "../../../hooks/userSession";
+import { Button } from "../../Button/Button";
 import { NotesIcon } from "../../Icons/notesIcon";
 import { NotesModal } from "../../Notes/notes-modal";
+import styles from "./NotesButton.module.css";
 
 // Feature flag for notes functionality
 const isNotesEnabled = () => {
@@ -16,64 +19,73 @@ const isNotesEnabled = () => {
   return process.env.NODE_ENV === "development";
 };
 
+// (No test override) — uses real session
+
 export interface NotesButtonProps {
   bookName: string;
   chapterNumber: number;
   translation: string;
   isAuthenticated?: boolean;
+  onRequireAuth?: () => void;
 }
 
 export const NotesButton: React.FC<NotesButtonProps> = ({
   bookName,
   chapterNumber,
   translation,
-  isAuthenticated = true, // Default to true for development
+  isAuthenticated, // If undefined, we'll infer from cookie at runtime
+  onRequireAuth,
 }) => {
-  console.log("[NotesButton] Received props:", {
-    bookName,
-    chapterNumber,
-    translation,
-    isAuthenticated,
-  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hasNotes, setHasNotes] = useState(false);
+
+  // Infer auth from cookie if not explicitly provided
+  const hasAccessToken = () =>
+    typeof document !== "undefined" &&
+    /(?:^|; )accessToken=/.test(document.cookie);
+  const authed = isAuthenticated ?? hasAccessToken();
+
+  // Current user session (for user-specific notes)
+  const { session } = userSession();
+
+  // Effective user id and auth (real session only)
+  const effectiveUserId = session?.id;
+  const isAuthedForNotes = authed;
 
   // Don't render if feature is disabled
   if (!isNotesEnabled()) {
     return null;
   }
 
-  // Don't render if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
-
   // Function to check if current chapter has notes
-  const checkForNotes = async () => {
+  const checkForNotes = useCallback(async () => {
     if (!bookName || !chapterNumber || !translation || !isNotesEnabled()) {
+      return;
+    }
+
+    if (!isAuthedForNotes || !effectiveUserId) {
+      setHasNotes(false);
       return;
     }
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${bookName}/${chapterNumber}?userId=550e8400-e29b-41d4-a716-446655440000`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${encodeURIComponent(
+          bookName,
+        )}/${chapterNumber}?userId=${encodeURIComponent(effectiveUserId as string)}`,
       );
       const data = await response.json();
       const notes = data.notes || [];
       setHasNotes(notes.length > 0);
-      console.log(
-        `[NotesButton] Found ${notes.length} notes for ${bookName} ${chapterNumber}`,
-      );
     } catch (error) {
-      console.error("[NotesButton] Error checking for notes:", error);
       setHasNotes(false);
     }
-  };
+  }, [bookName, chapterNumber, translation, isAuthedForNotes, effectiveUserId]);
 
   // Check if current chapter has notes when component mounts or chapter changes
   useEffect(() => {
     checkForNotes();
-  }, [bookName, chapterNumber, translation]);
+  }, [checkForNotes]);
 
   // Callback to refresh notes count when notes are added/deleted from modal
   const handleNotesChange = () => {
@@ -81,69 +93,32 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
   };
 
   const handleOpenModal = () => {
-    console.log("[NotesButton] Opening notes modal for:", {
-      bookName,
-      chapterNumber,
-      translation,
-    });
+    if (!isAuthedForNotes) {
+      // Route to sign-in/menu using provided callback, else fallback
+      if (onRequireAuth) onRequireAuth();
+      else window.location.href = "/login";
+      return;
+    }
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    console.log("[NotesButton] Closing notes modal");
     setIsModalOpen(false);
   };
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        className={`${styles.button} ${!isAuthedForNotes || !hasNotes ? styles.muted : ""}`}
+        format="rounded"
+        variant={isAuthedForNotes && hasNotes ? "contained" : "ghost"}
+        color={isAuthedForNotes && hasNotes ? "var(--dust)" : "var(--snow)"}
         onClick={handleOpenModal}
-        style={{
-          borderRadius: "100px",
-          padding: "2px 8px",
-          backgroundColor: "#FFFFFF33",
-          color: "var(--snow)",
-          fontFamily: "Inter",
-          fontSize: "14px",
-          fontWeight: "500",
-          lineHeight: "24px",
-          border: "none",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          position: "relative",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "var(--dust)";
-          e.currentTarget.style.color = "var(--night)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#FFFFFF33";
-          e.currentTarget.style.color = "var(--snow)";
-        }}
         title={hasNotes ? "Notes (has saved notes)" : "Notes"}
       >
         <NotesIcon width={16} height={16} fill="currentColor" />
         Notes
-        {hasNotes && (
-          <span
-            style={{
-              position: "absolute",
-              top: "2px",
-              right: "2px",
-              width: "8px",
-              height: "8px",
-              backgroundColor: "var(--brand)",
-              borderRadius: "50%",
-              border: "1px solid var(--snow)",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-            }}
-          />
-        )}
-      </button>
+      </Button>
 
       <NotesModal
         isOpen={isModalOpen}

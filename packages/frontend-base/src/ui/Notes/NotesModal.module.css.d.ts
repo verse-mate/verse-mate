@@ -17,6 +17,8 @@ declare const styles: {
   readonly newNoteForm: string;
   readonly newNoteTextarea: string;
   readonly addButtonContainer: string;
+  readonly smallButton: string;
+  readonly addButton: string;
   readonly emptyState: string;
 };
 

@@ -24,6 +24,7 @@ export interface ButtonProps {
   name?: string;
   className?: string;
   tabIndex?: number;
+  title?: string;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

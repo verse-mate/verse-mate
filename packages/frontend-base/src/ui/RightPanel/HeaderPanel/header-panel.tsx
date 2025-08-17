@@ -122,7 +122,8 @@ export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
               bookName={getBookNameFromId(bookId)}
               chapterNumber={verseId || 1}
               translation={bibleVersion || "NASB1995"}
-              isAuthenticated={true} // TODO: Get from auth context
+              isAuthenticated={false} // TODO: wire to real auth state
+              onRequireAuth={() => setActiveTab("menu")}
             />
             {explanationTypes.map((option, index) => (
               <button

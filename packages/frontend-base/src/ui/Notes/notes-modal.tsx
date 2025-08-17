@@ -1,5 +1,7 @@
+// Using direct fetch calls to the existing endpoints to avoid regressions
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { userSession } from "../../hooks/userSession";
 import { Button } from "../Button/Button";
 import styles from "./NotesModal.module.css";
 
@@ -12,6 +14,8 @@ type Note = {
   created_at: string;
   updated_at: string;
 };
+
+// (No test override) — uses real session
 
 interface NotesModalProps {
   isOpen: boolean;
@@ -34,91 +38,88 @@ export const NotesModal: React.FC<NotesModalProps> = ({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [newNoteContent, setNewNoteContent] = useState("");
+  const { session } = userSession();
+  const effectiveUserId = session?.id;
 
-  // Fetch notes when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      fetchNotes();
-    }
-  }, [isOpen, bookName, chapterNumber]);
-
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      console.log("[NotesModal] Fetching notes for:", {
-        bookName,
-        chapterNumber,
-      });
-
+      if (!effectiveUserId) {
+        setNotes([]);
+        return;
+      }
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${bookName}/${chapterNumber}?userId=550e8400-e29b-41d4-a716-446655440000`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${encodeURIComponent(
+          bookName,
+        )}/${chapterNumber}?userId=${encodeURIComponent(effectiveUserId as string)}`,
       );
+
+      if (response.status === 404) {
+        // Treat 404 as no notes for this chapter
+        setNotes([]);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+
       const data = await response.json();
       const fetchedNotes = data.notes || [];
       setNotes(fetchedNotes);
     } catch (err) {
-      console.error("[NotesModal] Error fetching notes:", err);
       setError("Failed to load notes");
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookName, chapterNumber, effectiveUserId]);
+
+  // Fetch notes when modal opens or dependencies change
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotes();
+    }
+  }, [isOpen, fetchNotes]);
 
   const handleCreateNote = async () => {
     if (!newNoteContent.trim()) return;
 
     try {
-      console.log("[NotesModal] Creating note:", newNoteContent);
-      const requestBody = {
-        bookName,
-        chapterNumber,
-        content: newNoteContent.trim(),
-        userId: "550e8400-e29b-41d4-a716-446655440000",
-      };
-      console.log("[NotesModal] Request body:", requestBody);
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            bookName,
+            chapterNumber,
+            content: newNoteContent.trim(),
+            userId: effectiveUserId,
+          }),
         },
       );
 
-      console.log("[NotesModal] Response status:", response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[NotesModal] Error response:", errorText);
-        throw new Error(
-          `HTTP error! status: ${response.status} - ${errorText}`,
-        );
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("[NotesModal] Response data:", data);
-
       const newNote = data.note;
 
       if (!newNote) {
-        console.error("[NotesModal] No note in response:", data);
         throw new Error("No note returned from server");
       }
 
       if (!newNote.note_id) {
-        console.error("[NotesModal] Note missing note_id:", newNote);
         throw new Error("Note missing note_id");
       }
 
-      console.log("[NotesModal] Successfully created note:", newNote);
       setNotes((prev) => [newNote, ...prev]);
       setNewNoteContent("");
       // Notify parent that notes have changed
       onNotesChange?.();
     } catch (err) {
-      console.error("[NotesModal] Error creating note:", err);
       setError("Failed to create note");
     }
   };
@@ -127,7 +128,6 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     if (!editContent.trim()) return;
 
     try {
-      console.log("[NotesModal] Updating note:", noteId, editContent);
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${noteId}`,
         {
@@ -135,7 +135,7 @@ export const NotesModal: React.FC<NotesModalProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             content: editContent.trim(),
-            userId: "550e8400-e29b-41d4-a716-446655440000",
+            userId: effectiveUserId,
           }),
         },
       );
@@ -157,19 +157,17 @@ export const NotesModal: React.FC<NotesModalProps> = ({
       setEditingNoteId(null);
       setEditContent("");
     } catch (err) {
-      console.error("[NotesModal] Error updating note:", err);
       setError("Failed to update note");
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
     try {
-      console.log("[NotesModal] Deleting note:", noteId);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${noteId}?userId=550e8400-e29b-41d4-a716-446655440000`,
-        {
-          method: "DELETE",
-        },
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/notes/${noteId}?userId=${encodeURIComponent(
+          effectiveUserId as string,
+        )}`,
+        { method: "DELETE" },
       );
 
       if (!response.ok) {
@@ -177,7 +175,7 @@ export const NotesModal: React.FC<NotesModalProps> = ({
       }
 
       const data = await response.json();
-      const success = data.success !== false; // Consider any response as success unless explicitly false
+      const success = data.success !== false;
       if (success) {
         setNotes((prev) => prev.filter((note) => note.note_id !== noteId));
         // Notify parent that notes have changed
@@ -186,7 +184,6 @@ export const NotesModal: React.FC<NotesModalProps> = ({
         setError("Failed to delete note");
       }
     } catch (err) {
-      console.error("[NotesModal] Error deleting note:", err);
       setError("Failed to delete note");
     }
   };
@@ -204,14 +201,26 @@ export const NotesModal: React.FC<NotesModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={styles.overlay}
+      role="button"
+      tabIndex={0}
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onClose();
+      }}
+    >
+      <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.header}>
           <h2 className={styles.title}>
             Notes for {bookName} {chapterNumber}
           </h2>
-          <button onClick={onClose} className={styles.closeButton}>
+          <button
+            type="button"
+            onClick={onClose}
+            className={styles.closeButton}
+          >
             ×
           </button>
         </div>
@@ -251,17 +260,8 @@ export const NotesModal: React.FC<NotesModalProps> = ({
                             type="button"
                             onClick={() => handleUpdateNote(note.note_id)}
                             variant="contained"
-                            style={{
-                              backgroundColor: "#D4A474",
-                              color: "#000000",
-                              border: "none",
-                              borderRadius: "8px",
-                              padding: "2px 12px",
-                              fontSize: "14px",
-                              fontWeight: "600",
-                              height: "28px",
-                              minHeight: "28px",
-                            }}
+                            color="#D4A474"
+                            className={styles.smallButton}
                           >
                             Save
                           </Button>
@@ -269,17 +269,8 @@ export const NotesModal: React.FC<NotesModalProps> = ({
                             type="button"
                             onClick={cancelEditing}
                             variant="contained"
-                            style={{
-                              backgroundColor: "#A0A0A0",
-                              color: "#000000",
-                              border: "none",
-                              borderRadius: "8px",
-                              padding: "2px 12px",
-                              fontSize: "14px",
-                              fontWeight: "600",
-                              height: "28px",
-                              minHeight: "28px",
-                            }}
+                            color="#A0A0A0"
+                            className={styles.smallButton}
                           >
                             Cancel
                           </Button>
@@ -293,17 +284,8 @@ export const NotesModal: React.FC<NotesModalProps> = ({
                             type="button"
                             onClick={() => startEditing(note)}
                             variant="contained"
-                            style={{
-                              backgroundColor: "#D4A474",
-                              color: "#000000",
-                              border: "none",
-                              borderRadius: "8px",
-                              padding: "2px 12px",
-                              fontSize: "14px",
-                              fontWeight: "600",
-                              height: "28px",
-                              minHeight: "28px",
-                            }}
+                            color="#D4A474"
+                            className={styles.smallButton}
                           >
                             Edit
                           </Button>
@@ -311,17 +293,8 @@ export const NotesModal: React.FC<NotesModalProps> = ({
                             type="button"
                             onClick={() => handleDeleteNote(note.note_id)}
                             variant="contained"
-                            style={{
-                              backgroundColor: "#A0A0A0",
-                              color: "#000000",
-                              border: "none",
-                              borderRadius: "8px",
-                              padding: "2px 12px",
-                              fontSize: "14px",
-                              fontWeight: "600",
-                              height: "28px",
-                              minHeight: "28px",
-                            }}
+                            color="#A0A0A0"
+                            className={styles.smallButton}
                           >
                             Delete
                           </Button>
@@ -348,18 +321,8 @@ export const NotesModal: React.FC<NotesModalProps> = ({
                 onClick={handleCreateNote}
                 disabled={!newNoteContent.trim()}
                 variant="contained"
-                style={{
-                  backgroundColor: "#D4A474",
-                  color: "#000000",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "4px 24px",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  width: "100%",
-                  height: "32px",
-                  minHeight: "32px",
-                }}
+                color="#D4A474"
+                className={styles.addButton}
               >
                 Add Note
               </Button>
