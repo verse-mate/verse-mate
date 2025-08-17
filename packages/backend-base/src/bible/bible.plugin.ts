@@ -47,11 +47,39 @@ async function gpt5Text({
   return chat.choices[0].message.content || "";
 }
 
-const getExplanationTypePrompt = (
+import { UserPromptRepository } from "./repository/user-prompt.repository";
+
+const getExplanationTypePrompt = async (
   type: ExplanationTypeEnum,
   bookName: string,
   chapterNumber: number,
-): { prompt: string; temperature: number } => {
+  dbInstance: any,
+): Promise<{ prompt: string; temperature: number }> => {
+  try {
+    const userPromptRepo = new UserPromptRepository(dbInstance);
+    const promptTemplate = await userPromptRepo.getActivePromptByType(type);
+
+    if (promptTemplate && (promptTemplate as any).prompt_template) {
+      const temperature =
+        type === ExplanationTypeEnum.detailed
+          ? 0.1
+          : type === ExplanationTypeEnum.byline
+            ? 0.2
+            : 0.3;
+      return {
+        prompt: (promptTemplate as any).prompt_template
+          .replace("{bookName}", bookName)
+          .replace("{chapterNumber}", chapterNumber.toString()),
+        temperature,
+      };
+    }
+  } catch (error) {
+    console.warn(
+      "Failed to fetch prompt from database, using fallback:",
+      error,
+    );
+  }
+
   switch (type) {
     case ExplanationTypeEnum.summary:
       return {
@@ -230,10 +258,11 @@ const plugin = new Elysia()
                     version_id: version.id,
                   });
 
-                  const explanationConfig = getExplanationTypePrompt(
+                  const explanationConfig = await getExplanationTypePrompt(
                     type,
                     book?.name || "",
                     Number(chapterNumber),
+                    db,
                   );
 
                   const language = getLanguageName(version.language_code);
