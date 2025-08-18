@@ -7,13 +7,15 @@ import { AdminDatabaseService } from "./services/admin-database.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
-// Define the plugin type explicitly
 const plugin = new Elysia()
   .use(shared)
   .state((state) => {
     return {
       ...state,
-      batchOperationService: new BatchOperationService(state.db),
+      batchOperationService: new BatchOperationService(
+        state.db,
+        state.batchMonitoringQueue as any,
+      ),
       adminDatabaseService: new AdminDatabaseService(state.db),
       explanationRegenerationService: new ExplanationRegenerationService(
         state.db,
@@ -61,60 +63,84 @@ const plugin = new Elysia()
           )
 
           .post(
-            "/batch-explanations/book",
-            async ({ body, store: { batchOperationService } }) => {
-              return await batchOperationService.startBookBatch(
-                body.bookId,
-                body.explanationType,
-                body.bibleVersion,
-              );
+            "/batch-explanations",
+            async ({ body, currentUserId, store }) => {
+              const { batchOperationService } = store;
+
+              if (body.type === "book") {
+                if (!body.bookId) {
+                  throw new Error("bookId is required for book batch");
+                }
+                return await batchOperationService.generateBookBatch(
+                  body.bookId,
+                  body.bibleVersion,
+                  body.explanationTypes as any,
+                  body.model,
+                  currentUserId,
+                );
+              }
+              if (body.type === "bible") {
+                return await batchOperationService.generateBibleBatch(
+                  body.bibleVersion,
+                  body.explanationTypes as any,
+                  body.model,
+                  currentUserId,
+                );
+              }
+
+              throw new Error("Invalid batch type");
             },
             {
               body: t.Object({
-                bookId: t.Number(),
-                explanationType: t.String(),
+                type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                bookId: t.Optional(t.Number()),
                 bibleVersion: t.String(),
-              }),
-            },
-          )
-          .post(
-            "/batch-explanations/bible",
-            async ({ body, store: { batchOperationService } }) => {
-              return await batchOperationService.startBibleBatch(
-                body.explanationType,
-                body.bibleVersion,
-              );
-            },
-            {
-              body: t.Object({
-                explanationType: t.String(),
-                bibleVersion: t.String(),
+                model: t.String(),
+                explanationTypes: t.Array(t.String()),
               }),
             },
           )
           .get(
-            "/batch-explanations/:batchId/status",
-            async ({ params, store: { batchOperationService } }) => {
-              return await batchOperationService.getBatchStatus(params.batchId);
+            "/batch/:batchJobId",
+            async ({ params, store }) => {
+              const { batchOperationService } = store;
+              return await batchOperationService.getBatchStatus(
+                params.batchJobId,
+              );
+            },
+            {
+              params: t.Object({
+                batchJobId: t.String(),
+              }),
             },
           )
           .delete(
-            "/batch-explanations/:batchId",
-            async ({ params, store: { batchOperationService } }) => {
-              return await batchOperationService.cancelBatch(params.batchId);
+            "/batch/:batchJobId",
+            async ({ params, store }) => {
+              const { batchOperationService } = store;
+              return await batchOperationService.cancelBatch(params.batchJobId);
+            },
+            {
+              params: t.Object({
+                batchJobId: t.String(),
+              }),
             },
           )
           .get(
-            "/batch-explanations",
-            async ({ query, store: { batchOperationService } }) => {
-              const limit = query.limit ? Number(query.limit) : 50;
-              const offset = query.offset ? Number(query.offset) : 0;
-              return await batchOperationService.getAllBatches(limit, offset);
+            "/batch-history",
+            async ({ query, currentUserId, store }) => {
+              const { batchOperationService } = store;
+              return await batchOperationService.getAllBatches(
+                query.limit ? Number(query.limit) : 50,
+                query.offset ? Number(query.offset) : 0,
+                query.adminOnly === "true" ? currentUserId : undefined,
+              );
             },
             {
               query: t.Object({
                 limit: t.Optional(t.String()),
                 offset: t.Optional(t.String()),
+                adminOnly: t.Optional(t.String()),
               }),
             },
           )

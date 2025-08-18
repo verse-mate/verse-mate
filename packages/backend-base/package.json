@@ -16,7 +16,8 @@
     "ms": "^2.1.3",
     "nookies": "^2.5.2",
     "openai": "^4.67.3",
-    "redis": "^4.7.0"
+    "redis": "^4.7.0",
+    "bullmq": "^5.7.0"
   },
   "devDependencies": {
     "@elysiajs/eden": "1.1.2",

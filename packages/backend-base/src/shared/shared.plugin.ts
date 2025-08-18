@@ -6,7 +6,9 @@ import { Elysia, t } from "elysia";
 import { User } from "../user/entities/user.entity";
 import { UserService } from "../user/user.service";
 
+import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
+import { batchMonitoringWorker } from "../queue/queue";
 import redisClient from "./redis-client";
 
 export type cache = typeof redisClient;
@@ -30,6 +32,7 @@ const setup = new Elysia({ name: "shared" })
   .state("db", Database)
   .state("cache", redisClient)
   .state("notification", new EmailNotificationConsumer())
+  .state("batchMonitoringQueue", batchMonitoringQueue)
   .derive(async ({ jwt, cookie: { auth }, store }) => {
     const payload = await jwt.verify(auth?.value);
     if (!payload) {
@@ -56,10 +59,19 @@ const setup = new Elysia({ name: "shared" })
     };
   });
 
+setup.onStart(() => {
+  console.log("Starting BullMQ worker...");
+  if (!batchMonitoringWorker.isRunning()) {
+    batchMonitoringWorker.run();
+  }
+});
+
 setup.onStop(() => {
   console.log("onStop on shared plugin");
   Database.closeConnection();
   redisClient.disconnect();
+  batchMonitoringQueue.close();
+  batchMonitoringWorker.close();
 });
 
 export default setup;
