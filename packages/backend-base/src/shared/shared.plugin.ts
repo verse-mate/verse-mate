@@ -9,6 +9,7 @@ import { UserService } from "../user/user.service";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
+import bullmqRedisConnection from "./bullmq-redis";
 import redisClient from "./redis-client";
 
 export type cache = typeof redisClient;
@@ -70,6 +71,7 @@ setup.onStop(() => {
   console.log("onStop on shared plugin");
   Database.closeConnection();
   redisClient.disconnect();
+  bullmqRedisConnection.disconnect();
   batchMonitoringQueue.close();
   batchMonitoringWorker.close();
 });
