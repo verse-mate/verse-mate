@@ -88,7 +88,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
           .getOrCreateConnection()
           .updateTable("batch_jobs")
           .set({ status: "completed", actual_cost: actualCost })
-          .where("id", "=", batchId)
+          .where("openai_batch_id", "=", batchId)
           .execute();
       }
     } else if (
@@ -103,7 +103,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
         .getOrCreateConnection()
         .updateTable("batch_jobs")
         .set({ status: batch.status })
-        .where("id", "=", batchId)
+        .where("openai_batch_id", "=", batchId)
         .execute();
     } else {
       console.log(
@@ -138,7 +138,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
         .getOrCreateConnection()
         .updateTable("batch_jobs")
         .set({ status: "failed" })
-        .where("id", "=", batchId)
+        .where("openai_batch_id", "=", batchId)
         .execute();
     }
   }

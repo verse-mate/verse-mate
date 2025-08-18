@@ -87,10 +87,20 @@ export class ExplanationRegenerationService {
         }
       }
 
+      const version = await connection
+        .selectFrom("bible_versions")
+        .select("id")
+        .where("version_key", "=", bibleVersion)
+        .executeTakeFirst();
+
+      if (!version) {
+        throw new Error(`Bible version ${bibleVersion} not found`);
+      }
+
       const verses = await connection
         .selectFrom("verses")
         .where("chapter_id", "=", chapter_id)
-        .where("version_id", "=", bibleVersion)
+        .where("version_id", "=", version.id)
         .select(["verse_number", "text"])
         .orderBy("verse_number", "asc")
         .execute();
@@ -119,7 +129,7 @@ export class ExplanationRegenerationService {
         .selectFrom("explanations")
         .where("chapter_id", "=", chapter_id)
         .where("type", "=", explanationType)
-        .where("version_id", "=", bibleVersion)
+        .where("version_id", "=", version.id)
         .select("explanation_id")
         .executeTakeFirst();
 
@@ -133,7 +143,7 @@ export class ExplanationRegenerationService {
         originalExplanation.explanation_id,
         chapter_id,
         explanationType,
-        bibleVersion,
+        version.id,
         adminUserId,
       );
 
