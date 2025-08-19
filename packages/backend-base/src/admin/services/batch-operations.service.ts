@@ -6,8 +6,6 @@ import OpenAI from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
-import { BibleService } from "../../bible/services/bible.service";
-import { PromptService } from "../../bible/services/prompt.service";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
 import type { db } from "../../shared/shared.plugin";
 
@@ -105,18 +103,13 @@ The response should be in ${language} using Markdown format only.`;
 };
 
 export class BatchOperationService {
-  private promptService: PromptService;
-  private bibleService: BibleService;
+  private promptRepository: PromptRepository;
 
   constructor(
     private readonly db: db,
     private readonly batchMonitoringQueue: Queue,
   ) {
-    this.bibleService = new BibleService(this.db, new BibleRepository(this.db));
-    this.promptService = new PromptService(
-      this.bibleService,
-      new PromptRepository(this.db),
-    );
+    this.promptRepository = new PromptRepository(this.db);
   }
 
   async generateBookBatch(
@@ -270,7 +263,7 @@ export class BatchOperationService {
   ): Promise<{ filePath: string; fileId: string; totalRequests: number }> {
     const connection = this.db.getOrCreateConnection();
 
-    const systemPrompt = await this.promptService.getActivePrompt();
+    const systemPrompt = await this.promptRepository.getActivePrompt();
     if (!systemPrompt) {
       throw new Error("No active system prompt found");
     }
