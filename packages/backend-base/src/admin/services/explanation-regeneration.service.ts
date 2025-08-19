@@ -1,4 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import OpenAI from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
 import { BibleService } from "../../bible/services/bible.service";
@@ -8,10 +9,14 @@ import { AdminDatabaseService } from "./admin-database.service";
 export class ExplanationRegenerationService {
   private bibleService: BibleService;
   private adminDatabaseService: AdminDatabaseService;
+  private openai: OpenAI;
 
   constructor(private readonly db: db) {
     this.bibleService = new BibleService(db, new BibleRepository(db));
     this.adminDatabaseService = new AdminDatabaseService(db);
+    this.openai = new OpenAI({
+      apiKey: process.env.OPEN_AI_KEY,
+    });
   }
 
   async generateNewExplanation(
@@ -123,7 +128,21 @@ export class ExplanationRegenerationService {
         `[REGENERATION] Using prompt: ${fullPrompt.substring(0, 200)}...`,
       );
 
-      const newExplanationContent = `[REGENERATED] This is a placeholder for the new AI-generated explanation for ${book.name} ${chapterNumber} (${explanationType}). In a real implementation, this would call the OpenAI API with the prompt and return the generated content.`;
+      const completion = await this.openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "user",
+            content: fullPrompt,
+          },
+        ],
+        temperature,
+        max_tokens: 4000,
+      });
+
+      const newExplanationContent =
+        completion.choices[0]?.message?.content ||
+        "Failed to generate explanation content";
 
       const originalExplanation = await connection
         .selectFrom("explanations")

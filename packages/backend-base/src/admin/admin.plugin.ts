@@ -46,13 +46,20 @@ const plugin = new Elysia()
           .patch(
             "/user/:id/admin-status",
             async ({ params, body, store: { db } }) => {
-              console.log(
-                `[TEMPLATE] Toggle admin status for user ${params.id}:`,
-                body,
-              );
+              const result = await db
+                .getOrCreateConnection()
+                .updateTable("user")
+                .set({ is_admin: body.is_admin })
+                .where("id", "=", params.id)
+                .executeTakeFirst();
+
+              if (result.numUpdatedRows === 0n) {
+                throw new Error(`User ${params.id} not found`);
+              }
+
               return {
                 success: true,
-                message: `User ${params.id} admin status updated`,
+                message: `User ${params.id} admin status updated to ${body.is_admin}`,
               };
             },
             {
@@ -261,7 +268,6 @@ const plugin = new Elysia()
           })
 
           .get("/prompts/system", async ({ store: { db } }) => {
-            console.log("[TEMPLATE] Getting active system prompt");
             const prompt = await db
               .getOrCreateConnection()
               .selectFrom("prompts")
@@ -276,26 +282,32 @@ const plugin = new Elysia()
             );
           })
           .get("/prompts/user", async ({ store: { db } }) => {
-            console.log("[TEMPLATE] Getting all user prompt templates");
-            return [
-              {
-                id: 1,
-                template_name: "summary",
-                explanation_type: "summary",
-                prompt_template: "Template placeholder...",
-              },
-              {
-                id: 2,
-                template_name: "detailed",
-                explanation_type: "detailed",
-                prompt_template: "Template placeholder...",
-              },
-            ];
+            const prompts = await db
+              .getOrCreateConnection()
+              .selectFrom("user_prompt_templates")
+              .selectAll()
+              .execute();
+            return prompts;
           })
           .put(
             "/prompts/system",
             async ({ body, store: { db } }) => {
-              console.log("[TEMPLATE] Updating system prompt:", body);
+              await db
+                .getOrCreateConnection()
+                .updateTable("prompts")
+                .set({ status: "inactive" as any })
+                .where("status", "=", "active" as any)
+                .execute();
+
+              await db
+                .getOrCreateConnection()
+                .insertInto("prompts")
+                .values({
+                  prompt: body.prompt,
+                  status: "active" as any,
+                })
+                .execute();
+
               return { success: true, message: "System prompt updated" };
             },
             {
@@ -307,10 +319,17 @@ const plugin = new Elysia()
           .put(
             "/prompts/user/:id",
             async ({ params, body, store: { db } }) => {
-              console.log(
-                `[TEMPLATE] Updating user prompt template ${params.id}:`,
-                body,
-              );
+              const result = await db
+                .getOrCreateConnection()
+                .updateTable("user_prompt_templates")
+                .set({ prompt_template: body.prompt_template })
+                .where("id", "=", Number(params.id))
+                .executeTakeFirst();
+
+              if (result.numUpdatedRows === 0n) {
+                throw new Error(`User prompt template ${params.id} not found`);
+              }
+
               return {
                 success: true,
                 message: `User prompt template ${params.id} updated`,
@@ -325,13 +344,21 @@ const plugin = new Elysia()
           .post(
             "/prompts/user",
             async ({ body, store: { db } }) => {
-              console.log(
-                "[TEMPLATE] Creating new user prompt template:",
-                body,
-              );
+              const result = await db
+                .getOrCreateConnection()
+                .insertInto("user_prompt_templates")
+                .values({
+                  template_name: body.template_name,
+                  explanation_type: body.explanation_type as any,
+                  prompt_template: body.prompt_template,
+                  status: "active" as any,
+                })
+                .returning("id")
+                .executeTakeFirst();
+
               return {
                 success: true,
-                id: Math.floor(Math.random() * 1000),
+                id: result?.id,
                 message: "User prompt template created",
               };
             },
@@ -345,7 +372,6 @@ const plugin = new Elysia()
           )
 
           .get("/commentary/grades", async ({ store: { db } }) => {
-            console.log("[TEMPLATE] Getting commentary grading data");
             return {
               message: "Commentary grading feature - to be implemented",
               grades: [],
@@ -359,7 +385,6 @@ const plugin = new Elysia()
           .post(
             "/commentary/grade",
             async ({ body, store: { db } }) => {
-              console.log("[TEMPLATE] Grading commentary:", body);
               return {
                 success: true,
                 grade: 0,

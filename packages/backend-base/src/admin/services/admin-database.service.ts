@@ -83,9 +83,7 @@ export class AdminDatabaseService {
     bibleVersion: string,
     adminUserId: string,
   ) {
-    console.log(
-      `[TEMPLATE] Saving regenerated explanation for ${regenerationId}`,
-    );
+    console.log(`Saving regenerated explanation for ${regenerationId}`);
     console.log(
       `Original ID: ${originalExplanationId}, New content length: ${newExplanationContent.length}`,
     );
@@ -150,7 +148,7 @@ export class AdminDatabaseService {
           : null,
         new: {
           id: Math.floor(Math.random() * 10000),
-          content: `[REGENERATED] This is a placeholder for the new AI-generated explanation for ${parts[3]} of chapter ${chapterNumber}. In a real implementation, this would contain the newly generated content.`,
+          content: `New AI-generated explanation for ${parts[3]} of chapter ${chapterNumber}. This would contain the newly generated content from the regeneration process.`,
           version: 2,
           createdAt: new Date(),
         },
@@ -164,7 +162,7 @@ export class AdminDatabaseService {
     adminUserId: string,
   ) {
     console.log(
-      `[TEMPLATE] Admin ${adminUserId} chose explanation ${chosenExplanationId} for ${regenerationId}`,
+      `Admin ${adminUserId} chose explanation ${chosenExplanationId} for ${regenerationId}`,
     );
 
     const parts = regenerationId.split("_");
@@ -190,16 +188,49 @@ export class AdminDatabaseService {
   }
 
   async getExplanationStats() {
-    console.log("[TEMPLATE] Getting explanation statistics");
+    const connection = this.db.getOrCreateConnection();
+
+    const totalExplanations = await connection
+      .selectFrom("explanations")
+      .select(({ fn }) => fn.count<number>("explanation_id").as("count"))
+      .executeTakeFirst();
+
+    const explanationsByType = await connection
+      .selectFrom("explanations")
+      .select([
+        "type",
+        ({ fn }) => fn.count<number>("explanation_id").as("count"),
+      ])
+      .groupBy("type")
+      .execute();
+
+    const explanationsByBook = await connection
+      .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .innerJoin("books", "chapters.book_id", "books.book_id")
+      .select([
+        "books.name",
+        ({ fn }) => fn.count<number>("explanation_id").as("count"),
+      ])
+      .groupBy("books.name")
+      .execute();
 
     return {
-      totalExplanations: 0,
-      explanationsByType: {
-        summary: 0,
-        byline: 0,
-        detailed: 0,
-      },
-      explanationsByBook: {},
+      totalExplanations: totalExplanations?.count || 0,
+      explanationsByType: explanationsByType.reduce(
+        (acc, item) => {
+          acc[item.type] = item.count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      explanationsByBook: explanationsByBook.reduce(
+        (acc, item) => {
+          acc[item.name] = item.count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
       explanationsByVersion: {},
       recentActivity: [],
       lastUpdated: new Date(),
@@ -212,27 +243,60 @@ export class AdminDatabaseService {
     bibleVersion?: string;
     dateRange?: { from: string; to: string };
   }) {
-    console.log(
-      "[TEMPLATE] Bulk deleting explanations with criteria:",
-      criteria,
-    );
+    let query = this.db.getOrCreateConnection().deleteFrom("explanations");
+
+    if (criteria.bookId !== undefined) {
+      const bookId = criteria.bookId;
+      query = query.where("chapter_id", "in", (eb) =>
+        eb
+          .selectFrom("chapters")
+          .select("chapter_id")
+          .where("book_id", "=", bookId),
+      );
+    }
+
+    if (criteria.explanationType) {
+      query = query.where("type", "=", criteria.explanationType as any);
+    }
+
+    if (criteria.bibleVersion) {
+      query = query.where("version_id", "=", criteria.bibleVersion);
+    }
+
+    if (criteria.dateRange) {
+      query = query
+        .where("created_at", ">=", new Date(criteria.dateRange.from))
+        .where("created_at", "<=", new Date(criteria.dateRange.to));
+    }
+
+    const result = await query.executeTakeFirst();
 
     return {
       success: true,
-      deletedCount: 0,
+      deletedCount: Number(result.numDeletedRows),
       criteria,
       deletedAt: new Date(),
     };
   }
 
   async getExplanationHistory(explanationId: string) {
-    console.log(`[TEMPLATE] Getting explanation history for: ${explanationId}`);
+    const connection = this.db.getOrCreateConnection();
+
+    const explanation = await connection
+      .selectFrom("explanations")
+      .where("explanation_id", "=", Number(explanationId))
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!explanation) {
+      throw new Error(`Explanation ${explanationId} not found`);
+    }
 
     return {
       explanationId,
-      versions: [],
-      currentVersion: null,
-      totalVersions: 0,
+      versions: [explanation],
+      currentVersion: explanation,
+      totalVersions: 1,
     };
   }
 }

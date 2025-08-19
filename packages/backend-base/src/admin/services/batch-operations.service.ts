@@ -132,7 +132,7 @@ export class BatchOperationService {
       )}`,
     );
 
-    const { fileId } = await this.generateJSONLFile(
+    const { fileId, filePath, totalRequests } = await this.generateJSONLFile(
       bookId,
       bibleVersion,
       explanationTypes,
@@ -144,6 +144,26 @@ export class BatchOperationService {
       endpoint: "/v1/chat/completions",
       completion_window: "24h",
     });
+
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "book",
+        openai_batch_id: batch.id,
+        status: "validating",
+        book_id: bookId,
+        bible_version: bibleVersion,
+        model,
+        explanation_types: explanationTypes,
+        total_requests: totalRequests,
+        completed_requests: 0,
+        failed_requests: 0,
+        input_file_path: filePath,
+        created_by: adminUserId,
+        created_at: new Date(),
+      })
+      .execute();
 
     await this.batchMonitoringQueue.add(BATCH_MONITORING_QUEUE, {
       batchId: batch.id,
@@ -223,10 +243,20 @@ export class BatchOperationService {
     console.log(
       `[BATCH] Getting all batches with limit: ${limit}, offset: ${offset}, adminUserId: ${adminUserId}`,
     );
-    return openai.batches.list({
-      limit,
-      after: offset > 0 ? String(offset) : undefined,
-    });
+
+    let query = this.db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .selectAll()
+      .orderBy("created_at", "desc")
+      .limit(limit)
+      .offset(offset);
+
+    if (adminUserId) {
+      query = query.where("created_by", "=", adminUserId);
+    }
+
+    return await query.execute();
   }
 
   private async generateJSONLFile(
@@ -234,7 +264,7 @@ export class BatchOperationService {
     bibleVersion: string,
     explanationTypes: ExplanationTypeEnum[],
     model: string,
-  ): Promise<{ filePath: string; fileId: string }> {
+  ): Promise<{ filePath: string; fileId: string; totalRequests: number }> {
     const connection = this.db.getOrCreateConnection();
 
     const systemPrompt = await this.promptService.getActivePrompt();
@@ -343,6 +373,6 @@ export class BatchOperationService {
       purpose: "batch",
     });
 
-    return { filePath, fileId: file.id };
+    return { filePath, fileId: file.id, totalRequests: batchRequests.length };
   }
 }
