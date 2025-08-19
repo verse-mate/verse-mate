@@ -2,6 +2,8 @@
 import type { Job } from "bullmq";
 import { db } from "database";
 import OpenAI from "openai";
+import { BibleRepository } from "../../bible/repository/bible.repository";
+import { BibleService } from "../../bible/services/bible.service";
 
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,
@@ -57,20 +59,102 @@ export const batchMonitoringConsumer = async (job: Job) => {
       const outputFileId = batch.output_file_id;
       if (outputFileId) {
         const fileContent = await openai.files.content(outputFileId);
-
-        // The response is a stream. We need to read it as text.
         const jsonl = await fileContent.text();
-
         const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
         let totalPromptTokens = 0;
         let totalCompletionTokens = 0;
+        let successfulExplanations = 0;
+        let failedExplanations = 0;
+
+        const batchJob = await db
+          .getOrCreateConnection()
+          .selectFrom("batch_jobs")
+          .where("openai_batch_id", "=", batchId)
+          .select(["bible_version", "book_id"])
+          .executeTakeFirst();
+
+        if (!batchJob) {
+          console.error(
+            `[BATCH_MONITORING] Batch job not found for ${batchId}`,
+          );
+          return;
+        }
 
         for (const line of lines) {
           const parsedLine = JSON.parse(line);
+
           if (parsedLine.response?.body?.usage) {
             totalPromptTokens += parsedLine.response.body.usage.prompt_tokens;
             totalCompletionTokens +=
               parsedLine.response.body.usage.completion_tokens;
+          }
+
+          if (
+            parsedLine.custom_id &&
+            parsedLine.response?.body?.choices?.[0]?.message?.content
+          ) {
+            try {
+              const customIdParts = parsedLine.custom_id.split("-");
+              const explanationType = customIdParts[customIdParts.length - 1];
+              const chapterNumber = Number.parseInt(
+                customIdParts[customIdParts.length - 2],
+              );
+
+              const explanationContent =
+                parsedLine.response.body.choices[0].message.content;
+
+              if (!batchJob.book_id || !batchJob.bible_version) {
+                console.error(
+                  `[BATCH_MONITORING] Missing batch job data for ${batchId}`,
+                );
+                failedExplanations++;
+                continue;
+              }
+
+              const chapter = await db
+                .getOrCreateConnection()
+                .selectFrom("chapters")
+                .where("book_id", "=", batchJob.book_id)
+                .where("chapter_number", "=", chapterNumber)
+                .select("chapter_id")
+                .executeTakeFirst();
+
+              if (!chapter) {
+                console.error(
+                  `[BATCH_MONITORING] Chapter not found: book ${batchJob.book_id}, chapter ${chapterNumber}`,
+                );
+                failedExplanations++;
+                continue;
+              }
+
+              await db
+                .getOrCreateConnection()
+                .insertInto("explanations")
+                .values({
+                  type: explanationType as any,
+                  explanation: explanationContent,
+                  chapter_id: chapter.chapter_id,
+                  version_id: batchJob.bible_version,
+                })
+                .onConflict((oc) =>
+                  oc.columns(["chapter_id", "type", "version_id"]).doUpdateSet({
+                    explanation: explanationContent,
+                  }),
+                )
+                .execute();
+
+              successfulExplanations++;
+              console.log(
+                `[BATCH_MONITORING] Saved explanation: ${parsedLine.custom_id}`,
+              );
+            } catch (error) {
+              failedExplanations++;
+              console.error(
+                `[BATCH_MONITORING] Error processing explanation ${parsedLine.custom_id}:`,
+                error,
+              );
+            }
           }
         }
 
@@ -81,13 +165,18 @@ export const batchMonitoringConsumer = async (job: Job) => {
         );
 
         console.log(
-          `[BATCH_MONITORING] Batch ${batchId} actual cost: ${actualCost}`,
+          `[BATCH_MONITORING] Batch ${batchId} completed: ${successfulExplanations} explanations saved, ${failedExplanations} failed, cost: ${actualCost}`,
         );
 
         await db
           .getOrCreateConnection()
           .updateTable("batch_jobs")
-          .set({ status: "completed", actual_cost: actualCost })
+          .set({
+            status: "completed",
+            actual_cost: actualCost,
+            completed_requests: successfulExplanations,
+            failed_requests: failedExplanations,
+          })
           .where("openai_batch_id", "=", batchId)
           .execute();
       }

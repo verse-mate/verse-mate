@@ -125,6 +125,7 @@ export class BatchOperationService {
     explanationTypes: ExplanationTypeEnum[],
     model: string,
     adminUserId: string,
+    skipExisting = false,
   ) {
     console.log(
       `[BATCH] Starting book batch for book ${bookId}, version ${bibleVersion}, types: ${explanationTypes.join(
@@ -137,6 +138,7 @@ export class BatchOperationService {
       bibleVersion,
       explanationTypes,
       model,
+      skipExisting,
     );
 
     const batch = await openai.batches.create({
@@ -264,6 +266,7 @@ export class BatchOperationService {
     bibleVersion: string,
     explanationTypes: ExplanationTypeEnum[],
     model: string,
+    skipExisting = false,
   ): Promise<{ filePath: string; fileId: string; totalRequests: number }> {
     const connection = this.db.getOrCreateConnection();
 
@@ -307,8 +310,37 @@ export class BatchOperationService {
 
     const batchRequests: BatchJobRequest[] = [];
 
+    let existingExplanations: Set<string> = new Set();
+    if (skipExisting) {
+      const existing = await connection
+        .selectFrom("explanations")
+        .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+        .where("chapters.book_id", "=", bookId)
+        .where("explanations.version_id", "=", version.id)
+        .where("explanations.type", "in", explanationTypes)
+        .select(["chapters.chapter_number", "explanations.type"])
+        .execute();
+
+      existingExplanations = new Set(
+        existing.map((e) => `${e.chapter_number}-${e.type}`),
+      );
+
+      console.log(
+        `[BATCH] Found ${existingExplanations.size} existing explanations to skip`,
+      );
+    }
+
     for (const chapter of chapters) {
       for (const explanationType of explanationTypes) {
+        const chapterTypeKey = `${chapter.chapter_number}-${explanationType}`;
+
+        if (skipExisting && existingExplanations.has(chapterTypeKey)) {
+          console.log(
+            `[BATCH] Skipping existing explanation: ${book.name} ${chapter.chapter_number} ${explanationType}`,
+          );
+          continue;
+        }
+
         const explanationConfig = await getExplanationTypePrompt(
           explanationType,
           book.name,

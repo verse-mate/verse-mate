@@ -72,6 +72,8 @@ export const BatchOperations = () => {
   const [selectedExplanationTypes, setSelectedExplanationTypes] = useState<
     string[]
   >(["summary"]);
+  const [skipExistingExplanations, setSkipExistingExplanations] =
+    useState(true);
 
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
@@ -120,6 +122,7 @@ export const BatchOperations = () => {
         bibleVersion: selectedBibleVersion,
         model: selectedModel,
         explanationTypes: selectedExplanationTypes,
+        skipExisting: skipExistingExplanations,
       });
       await fetchBatchJobs();
     } catch (err) {
@@ -399,6 +402,35 @@ export const BatchOperations = () => {
               </label>
             ))}
           </div>
+        </div>
+
+        <div style={{ marginBottom: "20px" }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontWeight: "bold",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={skipExistingExplanations}
+              onChange={(e) => setSkipExistingExplanations(e.target.checked)}
+            />
+            Don't replace existing explanations
+          </label>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#666",
+              marginTop: "4px",
+              marginLeft: "24px",
+            }}
+          >
+            When checked, only generates explanations for chapters that don't
+            already have explanations of the selected types.
+          </p>
         </div>
 
         <div style={{ marginBottom: "20px" }}>
