@@ -255,6 +255,22 @@ export const MainContent = () => {
   const { activeTab, setActiveTab } = useHandleTab();
   const previousTabRef = useRef<string>("explanation");
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && activeTab === "book") {
+        setActiveTab("explanation");
+      } else if (window.innerWidth < 1024 && activeTab === "explanation") {
+        setActiveTab("book");
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [activeTab, setActiveTab]);
+
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
 
