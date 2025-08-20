@@ -254,6 +254,7 @@ export const MainContent = () => {
 
   const { activeTab, setActiveTab } = useHandleTab();
   const previousTabRef = useRef<string>("explanation");
+  const [rightPanelContent, setRightPanelContent] = useState("default");
 
   useEffect(() => {
     const handleResize = () => {
@@ -1244,6 +1245,8 @@ export const MainContent = () => {
           <RightPanel.Root
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            rightPanelContent={rightPanelContent}
+            setRightPanelContent={setRightPanelContent}
             style={{
               width: `${rightWidth}%`,
             }}
@@ -1252,6 +1255,8 @@ export const MainContent = () => {
               activeTab={activeTab}
               askVerseMate={askVerseMate}
               setActiveTab={setActiveTab}
+              rightPanelContent={rightPanelContent}
+              setRightPanelContent={setRightPanelContent}
             />
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
@@ -1259,6 +1264,8 @@ export const MainContent = () => {
               session={session}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}
+              rightPanelContent={rightPanelContent}
+              setRightPanelContent={setRightPanelContent}
             />
           </RightPanel.Root>
         </main>

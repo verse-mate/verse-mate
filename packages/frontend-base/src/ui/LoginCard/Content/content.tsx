@@ -10,9 +10,25 @@ import {
 import { Text } from "../../Text/Text";
 import styles from "./content.module.css";
 
-type ContentProps = {} & React.HTMLAttributes<HTMLDivElement>;
+type ContentProps = {
+  setRightPanelContent?: (value: string) => void;
+} & React.HTMLAttributes<HTMLDivElement>;
 
-export const Content = ({ ...rest }: ContentProps) => {
+export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
+  const handleSignInClick = (e: React.MouseEvent) => {
+    if (window.innerWidth >= 1024 && setRightPanelContent) {
+      e.preventDefault();
+      setRightPanelContent("login");
+    }
+  };
+
+  const handleSignUpClick = (e: React.MouseEvent) => {
+    if (window.innerWidth >= 1024 && setRightPanelContent) {
+      e.preventDefault();
+      setRightPanelContent("signup");
+    }
+  };
+
   return (
     <div className={styles.content}>
       <span className={styles.logo}>
@@ -37,13 +53,17 @@ export const Content = ({ ...rest }: ContentProps) => {
       </div>
 
       <div className={styles.buttonsContainer}>
-        <Link href={"/login"}>
+        <Link href={"/login"} onClick={handleSignInClick}>
           <Button className={styles.signInButton}>Sign In</Button>
         </Link>
 
         <Text className={styles.signUpContainer}>
           <span className={styles.simpleText}>Don't have account?</span>
-          <Link href="/create-account" className={styles.signUpLink}>
+          <Link
+            href="/create-account"
+            className={styles.signUpLink}
+            onClick={handleSignUpClick}
+          >
             Create New Account
           </Link>
         </Text>
