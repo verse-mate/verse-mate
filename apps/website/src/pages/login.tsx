@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { navigateToLogin, getAppUrl } from "@/lib/navigation";
 
 export default function Login() {
   useEffect(() => {
-    // Redirect to app subdomain login
-    window.location.href = "https://app.versemate.org/login";
+    navigateToLogin();
   }, []);
 
   return (
@@ -15,7 +15,7 @@ export default function Login() {
         <p className="text-gray-600">
           You will be redirected to{" "}
           <a
-            href="https://app.versemate.org/login"
+            href={`${getAppUrl()}/login`}
             className="text-purple-600 underline"
           >
             app.versemate.org
