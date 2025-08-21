@@ -36,8 +36,8 @@ export const Table = <T,>({
       <table className={styles.table} data-zebra={zebra}>
         <TableHead>
           <TableRow>
-            {columns.map((col) => (
-              <TableCell tag="th" key={String(col.property)}>
+            {columns.map((col, colIndex) => (
+              <TableCell tag="th" key={`${String(col.property)}-${colIndex}`}>
                 {col.title}
               </TableCell>
             ))}
@@ -60,8 +60,10 @@ export const Table = <T,>({
           {!isLoading &&
             data.map((item) => (
               <TableRow key={item.id} {...item.rowProps}>
-                {columns.map((col) => (
-                  <TableCell key={`${item.id}-${String(col.property)}`}>
+                {columns.map((col, colIndex) => (
+                  <TableCell
+                    key={`${item.id}-${String(col.property)}-${colIndex}`}
+                  >
                     {col.render
                       ? col.render(item)
                       : (item[col.property] as any)}

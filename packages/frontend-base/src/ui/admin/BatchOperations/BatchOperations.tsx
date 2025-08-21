@@ -1,6 +1,6 @@
 "use client";
 import { api } from "backend-api";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { bibleVersions } from "../../../utils/bible-versions";
 import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
@@ -101,6 +101,7 @@ export const BatchOperations = () => {
       setLoading(false);
     }
   }, []);
+  const hasFetchedRef = useRef(false);
 
   const handleCreateBatch = async () => {
     if (!selectedBook) {
@@ -148,6 +149,8 @@ export const BatchOperations = () => {
   };
 
   useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchBatchJobs();
   }, [fetchBatchJobs]);
 
