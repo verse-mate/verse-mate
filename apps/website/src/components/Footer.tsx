@@ -112,7 +112,7 @@ export default function Footer() {
                 textDecoration: "none",
               }}
             >
-              Home
+              About
             </Link>
 
             <Link
@@ -132,7 +132,7 @@ export default function Footer() {
                 textDecoration: "none",
               }}
             >
-              Volunteer
+              Story
             </Link>
 
             <Link
@@ -152,7 +152,7 @@ export default function Footer() {
                 textDecoration: "none",
               }}
             >
-              Give
+              Team
             </Link>
 
             <Link
@@ -172,7 +172,7 @@ export default function Footer() {
                 textDecoration: "none",
               }}
             >
-              About
+              Careers
             </Link>
 
             <Link
@@ -192,7 +192,7 @@ export default function Footer() {
                 textDecoration: "none",
               }}
             >
-              Login
+              Contact
             </Link>
           </div>
 
