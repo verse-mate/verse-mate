@@ -1,6 +1,8 @@
 import { api } from "backend-api";
 import { parseCookies } from "nookies";
 import { useCallback, useEffect, useState } from "react";
+import { ACCESS_TOKEN_COOKIE } from "../auth/lib";
+import { deleteCookie } from "../utils/auth-utils";
 import type { UserSession } from "./session";
 
 export const userSession = () => {
@@ -21,6 +23,15 @@ export const userSession = () => {
         return response.data;
       } catch (error) {
         console.error("Error fetching user session", error);
+        try {
+          deleteCookie(ACCESS_TOKEN_COOKIE);
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.removeItem("accessToken");
+            } catch {}
+            window.location.replace("/login");
+          }
+        } catch {}
         setSession(null);
         setLoading(false);
       }
