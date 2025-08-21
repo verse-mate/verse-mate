@@ -33,13 +33,13 @@ async function gpt5Text({
 }) {
   const response = await openai.responses.create({
     model,
-    reasoning: { effort: "high" },
+    reasoning: { effort: "medium" },
     instructions: system,
     input: user,
-    max_output_tokens: 10000,
+    max_output_tokens: 20000,
   });
 
-  return response.output_text || "";
+  return response.output_text || "oopsies";
 }
 
 const getExplanationTypePrompt = (
@@ -50,7 +50,7 @@ const getExplanationTypePrompt = (
   switch (type) {
     case ExplanationTypeEnum.summary:
       return {
-        prompt: `# Summary (start with title: "Summary of ${bookName} ${chapterNumber}" font size 20)
+        prompt: `# Summary (start with title: "# Summary of ${bookName} ${chapterNumber}")
 
 **Request Overview:** Provide a high-level summary
 explanation of all of ${bookName} ${chapterNumber} in 300 words or so. Focus on clarity and
@@ -79,14 +79,15 @@ applications where appropriate.
 - Does the summary accurately reflect the main points of the chapter?
 - Is the summary approximately 300 words?
 - Is the output in full sentences?
-- Does the title follow the format "Summary of ${bookName} ${chapterNumber}" and is it of font size 20?
+- Does the title follow the format "# Summary of ${bookName} ${chapterNumber}"?
 - Does the response use the specified Markdown formatting?
 
 **Use this template to format your response:**
 
-##Summary of ${bookName} ${chapterNumber}
+# Summary of ${bookName} ${chapterNumber}
 
-Overview
+
+## Overview
 
 Hebrews 3 contrasts Jesus Christ with Moses and issues a solemn warning against unbelief. The chapter emphasizes Jesus’ superiority in God’s redemptive plan, calls believers to steadfast faith, and warns against the dangers of hardened hearts, using Israel’s wilderness rebellion as a cautionary example.
 Christ Greater than Moses (Hebrews 3:1–6)
@@ -100,11 +101,11 @@ The author admonishes believers to “encourage one another day after day… so 
 Broader Themes
 
 Hebrews 3 aligns with the biblical narrative of God’s covenant faithfulness and man’s frequent rebellion. The wilderness generation symbolizes unbelieving hearts, while Christ embodies the perfect Son leading His people into the greater “rest” of salvation (cf. Hebrews 4). This chapter contributes to the overarching theme of perseverance in faith, warning against apostasy, and elevating Christ as the ultimate High Priest who surpasses all previous mediators.`,
-        temperature: 0.3,
+        temperature: 0.3, //not used
       };
     case ExplanationTypeEnum.byline:
       return {
-        prompt: `# Verse-by-Verse Analysis (start with title "Line-by-Line Analysis of ${bookName} ${chapterNumber}" font size 20)
+        prompt: `# Verse-by-Verse Analysis (start with title "# Line-by-Line Analysis of ${bookName} ${chapterNumber}")
 
 **Request Overview:**
 - Provide a line-by-line explanation of all
@@ -135,7 +136,7 @@ headings for the passages, subheadings for major analysis points, and
 bullet points for key insights. 
 - Aim for readability and engagement,
 making the analysis informative for both novice and experienced
-readers, title should be in font size 20. 
+readers. 
 - **Accessibility:** 
   - Provide easy-to- understand
   explanations suitable for readers with varying levels of biblical
@@ -152,18 +153,21 @@ readers, title should be in font size 20.
 - Is grouping of verses for flow avoided?
 - Is the summary for each verse at least 2-3 sentences?
 - Does the analysis for each verse have a maximum of 2-3 bullet points?
-- Does the title follow the format "Line-by-Line Analysis of ${bookName} ${chapterNumber}" and is it of font size 20?
+- Does the title follow the format "# Line-by-Line Analysis of ${bookName} ${chapterNumber}"?
+- Does the summary and analysis follow the format "### Summary" and "### Analysis"?
+- Are all the markdown templates followed?
   
   **Use this template to format your response:**
 
-##Line-by-Line Analysis of ${bookName} ${chapterNumber}
+# Line-by-Line Analysis of ${bookName} ${chapterNumber}
 
-**Hebrews 1:1**
+
+## Hebrews 1:1
 
 "God, after He spoke long ago to the fathers in the prophets in many
 portions and in many ways," ({bible_version})
 
-**Summary**
+### Summary
 
 This verse declares that God is the initiator of revelation. He spoke in
 the past to Israel's ancestors through the prophets. The revelation came
@@ -171,24 +175,24 @@ in many parts and various forms, indicating progressive disclosure over
 time.
 
 
-**Analysis**
+### Analysis
 
 **Progressive revelation:**
-- The Greek adverbs *polumerōs* ("in many
-  parts") and *polutropōs* ("in many ways") denote truth given across
+- The Greek adverbs *polumerōs* ("in many
+  parts") and *polutropōs* ("in many ways") denote truth given across
   eras, genres, and messengers, preparing for a climactic word.
 
 **Covenantal continuity:**
 -"To the fathers" anchors Christian faith within Israel's history, not apart from it.
 `,
-        temperature: 0.2,
+        temperature: 0.2, //not used
       };
     case ExplanationTypeEnum.detailed:
       return {
-        prompt: `# In-Depth Analysis (start with title "In-Depth Analysis of ${bookName} ${chapterNumber}" font size 20)
+        prompt: `# In-Depth Analysis (start with title "# In-Depth Analysis of ${bookName} ${chapterNumber}")
 
 **Request Overview:** Provide an in-depth yet accessible
-explanation of all of Hebrews 1 500-600 words per section. Focus on
+explanation of all of ${bookName} ${chapterNumber} 500-600 words per section. Focus on
 clarity and depth to help readers understand their significance and
 message. Do not include the verses in the output before the
 introduction. Be sure to output in full sentences - even within the
@@ -235,14 +239,16 @@ interpretation and application questions.
 - Is there an introduction that contextualizes the passage?
 - Is there a discussion of the overall significance?
 - Are there interpretation and application questions?
-- Does the title follow the format "In-Depth Analysis of ${bookName} ${chapterNumber}" and is it of font size 20?
+- Does the title follow the format "# In-Depth Analysis of ${bookName} ${chapterNumber}"?
+- Are all the markdown templates followed?
 - Are verses not included in the output before the introduction?
 
 **Use this template to format your response:**
 
-## In-Depth Analysis of ${bookName} ${chapterNumber}
+# In-Depth Analysis of ${bookName} ${chapterNumber}
 
-**Introduction**
+
+## Introduction
 
 Hebrews 1 opens one of the most profound Christological arguments in the
 New Testament. The letter to the Hebrews, though anonymous, was written
@@ -257,9 +263,9 @@ to all others in His person, His work, and His eternal reign. Hebrews 1
 is not merely a doctrinal statement but a pastoral call to recognize
 Jesus as the center of God's plan and to remain faithful to Him.
 
-**Passage Analysis**
+## Passage Analysis
 
-**God's Final Revelation in the Son (Hebrews 1:1--4)**
+### God's Final Revelation in the Son (Hebrews 1:1--4)
 
 The opening contrasts God's past revelations through the prophets with
 His definitive revelation in Jesus Christ. While the prophets spoke "at
@@ -283,7 +289,7 @@ This introduction establishes Jesus not only as a prophet but as the
 very embodiment of God's nature, surpassing all others in role and
 essence.
 
-**The Superiority of the Son Over Angels (Hebrews 1:5--14)**
+### The Superiority of the Son Over Angels (Hebrews 1:5--14)
 
 The author turns to a series of Old Testament quotations to demonstrate
 that Jesus is superior to angels. Angels were revered in Jewish
@@ -315,7 +321,7 @@ kingship of the Son.
 Through these comparisons, the author underscores that the Son is not a
 mere heavenly messenger but the eternal ruler who is both God and King.
 
-**Overall Significance**
+### Overall Significance
 
 Hebrews 1 firmly establishes the identity of Jesus Christ as the supreme
 revelation of God, surpassing prophets, angels, and all other mediators.
@@ -330,7 +336,7 @@ and unparalleled authority of Christ. It challenges believers not to
 drift toward lesser sources of security or revelation but to anchor
 themselves in Jesus, who is the same yesterday, today, and forever.
 
-**Interpretation and Application Questions:**
+### Interpretation and Application Questions:
 
 - How does understanding Jesus as the final revelation of God affect the
   way we approach Scripture and faith today?
@@ -346,7 +352,7 @@ believers to revere Him as the center of God's plan of salvation and to
 remain steadfast in faith, knowing that He reigns eternally and
 unshakably.
 `,
-        temperature: 0.1,
+        temperature: 0.1, //not used
       };
   }
 };
