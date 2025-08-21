@@ -112,6 +112,47 @@ export class BatchOperationService {
     this.promptRepository = new PromptRepository(this.db);
   }
 
+  async generateBookBatchByName(
+    bookName: string,
+    bibleVersion: string,
+    explanationTypes: ExplanationTypeEnum[],
+    model: string,
+    adminUserId: string,
+    skipExisting = false,
+  ) {
+    console.log(
+      `[BATCH] Starting book batch for book "${bookName}", version ${bibleVersion}, types: ${explanationTypes.join(
+        ", ",
+      )}`,
+    );
+
+    // Look up book ID by name
+    const book = await this.db
+      .getOrCreateConnection()
+      .selectFrom("books")
+      .where("name", "=", bookName)
+      .select(["book_id"])
+      .executeTakeFirst();
+
+    if (!book) {
+      throw new Error(`Book "${bookName}" not found in database`);
+    }
+
+    console.log(
+      `[BATCH] Found book "${bookName}" with book_id=${book.book_id}`,
+    );
+
+    // Call the existing method with the looked-up book_id
+    return this.generateBookBatch(
+      book.book_id,
+      bibleVersion,
+      explanationTypes,
+      model,
+      adminUserId,
+      skipExisting,
+    );
+  }
+
   async generateBookBatch(
     bookId: number,
     bibleVersion: string,
@@ -134,11 +175,28 @@ export class BatchOperationService {
       skipExisting,
     );
 
+    // Add small delay before creating batch to ensure file is fully processed
+    console.log(`[BATCH] Waiting before creating batch with file ${fileId}...`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     const batch = await openai.batches.create({
       input_file_id: fileId,
       endpoint: "/v1/chat/completions",
       completion_window: "24h",
     });
+
+    console.log(
+      "[BATCH] Batch created successfully:",
+      JSON.stringify(batch, null, 2),
+    );
+
+    // Log any initial errors
+    if (batch.errors?.data && batch.errors.data.length > 0) {
+      console.error(
+        `[BATCH] Batch ${batch.id} created with errors:`,
+        JSON.stringify(batch.errors, null, 2),
+      );
+    }
 
     await this.db
       .getOrCreateConnection()
@@ -160,10 +218,11 @@ export class BatchOperationService {
       })
       .execute();
 
-    await this.batchMonitoringQueue.add(BATCH_MONITORING_QUEUE, {
-      batchId: batch.id,
-      model,
-    });
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
 
     return batch;
   }
@@ -226,7 +285,53 @@ export class BatchOperationService {
 
   async getBatchStatus(batchId: string) {
     console.log(`[BATCH] Getting batch status for: ${batchId}`);
-    return openai.batches.retrieve(batchId);
+    const batchStatus = await openai.batches.retrieve(batchId);
+    console.log(
+      `[BATCH] Status response for ${batchId}:`,
+      JSON.stringify(batchStatus, null, 2),
+    );
+
+    // Log any validation issues
+    if (batchStatus.status === "validating") {
+      const timeSinceCreation = Date.now() - batchStatus.created_at * 1000;
+      console.log(
+        `[BATCH] Batch has been validating for ${Math.round(timeSinceCreation / 60000)} minutes`,
+      );
+    }
+
+    if (batchStatus.status === "failed" && batchStatus.errors) {
+      console.error(
+        `[BATCH] Batch ${batchId} failed with errors:`,
+        JSON.stringify(batchStatus.errors, null, 2),
+      );
+    }
+
+    // If batch completed but has failed requests, download error file
+    if (
+      batchStatus.status === "completed" &&
+      batchStatus.request_counts &&
+      batchStatus.request_counts.failed > 0 &&
+      batchStatus.error_file_id
+    ) {
+      console.error(
+        `[BATCH] Batch ${batchId} completed with ${batchStatus.request_counts.failed} failed requests. Downloading error file...`,
+      );
+      try {
+        const errorFileContent = await openai.files.content(
+          batchStatus.error_file_id,
+        );
+        const errorText = await errorFileContent.text();
+        console.error(`[BATCH] Error file content for ${batchId}:`);
+        console.error(errorText);
+      } catch (error) {
+        console.error(
+          `[BATCH] Could not download error file ${batchStatus.error_file_id}:`,
+          error,
+        );
+      }
+    }
+
+    return batchStatus;
   }
 
   async cancelBatch(batchId: string) {
@@ -242,13 +347,15 @@ export class BatchOperationService {
     let query = this.db
       .getOrCreateConnection()
       .selectFrom("batch_jobs")
-      .selectAll()
-      .orderBy("created_at", "desc")
+      .leftJoin("books", "batch_jobs.book_id", "books.book_id")
+      .selectAll("batch_jobs")
+      .select("books.name as book_name")
+      .orderBy("batch_jobs.created_at", "desc")
       .limit(limit)
       .offset(offset);
 
     if (adminUserId) {
-      query = query.where("created_by", "=", adminUserId);
+      query = query.where("batch_jobs.created_by", "=", adminUserId);
     }
 
     return await query.execute();
@@ -289,6 +396,10 @@ export class BatchOperationService {
     if (!book) {
       throw new Error(`Book ${bookId} not found`);
     }
+
+    console.log(
+      `[BATCH] Database query result: bookId=${bookId}, book.name="${book.name}"`,
+    );
 
     const chapters = await connection
       .selectFrom("chapters")
@@ -346,6 +457,15 @@ export class BatchOperationService {
           language,
         });
 
+        // Sanitize content to prevent JSONL parsing issues
+        const sanitizedSystemPrompt = systemPrompt.prompt
+          .replace(/\r\n/g, "\n") // Convert Windows line endings
+          .replace(/\r/g, "\n"); // Convert old Mac line endings
+
+        const sanitizedUserPrompt = userPrompt
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n");
+
         batchRequests.push({
           custom_id: `${book.name
             .toLowerCase()
@@ -360,17 +480,24 @@ export class BatchOperationService {
             messages: [
               {
                 role: "system",
-                content: systemPrompt.prompt,
+                content: sanitizedSystemPrompt,
               },
               {
                 role: "user",
-                content: userPrompt,
+                content: sanitizedUserPrompt,
               },
             ],
             max_completion_tokens: 10000,
           },
         });
       }
+    }
+
+    // Check if we have any requests to process
+    if (batchRequests.length === 0) {
+      throw new Error(
+        `No requests to process for ${book.name}. All explanations may already exist.`,
+      );
     }
 
     const batchDir = path.join(process.cwd(), "batch_files");
@@ -393,10 +520,89 @@ export class BatchOperationService {
       `[BATCH] Generated JSONL file: ${filePath} with ${batchRequests.length} requests`,
     );
 
+    // Log first request for debugging
+    if (batchRequests.length > 0) {
+      console.log(
+        "[BATCH] Sample JSONL request:",
+        JSON.stringify(batchRequests[0], null, 2),
+      );
+
+      // Check line length - this might be the issue!
+      const firstLine = JSON.stringify(batchRequests[0]);
+      console.log(`[BATCH] First line length: ${firstLine.length} characters`);
+      if (firstLine.length > 10000) {
+        console.warn(
+          `[BATCH] WARNING: Line length (${firstLine.length}) may be too long for OpenAI batch processing!`,
+        );
+      }
+    }
+
+    // Validate JSONL format by parsing each line
+    const lines = jsonlContent.split("\n");
+    let validLines = 0;
+    for (let i = 0; i < lines.length; i++) {
+      try {
+        const parsed = JSON.parse(lines[i]);
+        validLines++;
+
+        // Additional validation checks
+        if (
+          !parsed.custom_id ||
+          !parsed.method ||
+          !parsed.url ||
+          !parsed.body
+        ) {
+          console.error(
+            `[BATCH] Line ${i + 1} missing required fields:`,
+            Object.keys(parsed),
+          );
+        }
+        if (parsed.body && (!parsed.body.model || !parsed.body.messages)) {
+          console.error(
+            `[BATCH] Line ${i + 1} body missing required fields:`,
+            Object.keys(parsed.body),
+          );
+        }
+      } catch (error) {
+        console.error(
+          `[BATCH] Invalid JSON at line ${i + 1}:`,
+          `${lines[i].substring(0, 200)}...`,
+        );
+        console.error("[BATCH] Parse error:", error);
+      }
+    }
+    console.log(
+      `[BATCH] JSONL validation: ${validLines}/${lines.length} lines valid`,
+    );
+
+    // Log file size and content info
+    const stats = fs.statSync(filePath);
+    console.log(
+      `[BATCH] File size: ${stats.size} bytes, ${lines.length} lines, avg line length: ${Math.round(jsonlContent.length / lines.length)} chars`,
+    );
+
     const file = await openai.files.create({
       file: fs.createReadStream(filePath),
       purpose: "batch",
     });
+
+    console.log(
+      `[BATCH] File uploaded successfully: ${file.id}, status: ${file.status}, bytes: ${file.bytes}`,
+    );
+
+    // Wait a moment and verify file is processed
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    const fileCheck = await openai.files.retrieve(file.id);
+    console.log(
+      `[BATCH] File verification: ${fileCheck.id}, status: ${fileCheck.status}, bytes: ${fileCheck.bytes}`,
+    );
+
+    if (fileCheck.status === "error") {
+      throw new Error(
+        `File upload failed with error status: ${JSON.stringify(fileCheck)}`,
+      );
+    }
 
     return { filePath, fileId: file.id, totalRequests: batchRequests.length };
   }

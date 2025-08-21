@@ -9,5 +9,7 @@ export const batchMonitoringWorker = new Worker(
   batchMonitoringConsumer,
   {
     connection: bullmqRedisConnection,
+    concurrency: 1,
+    lockDuration: 60000,
   },
 );

@@ -18,6 +18,7 @@ interface BatchJob {
   actual_cost?: number | null;
   created_by: string;
   book_id?: number | null;
+  book_name?: string | null;
   bible_version?: string;
   model?: string;
   explanation_types?: string[];
@@ -62,11 +63,13 @@ const modelOptions: ModelOption[] = [
 
 export const BatchOperations = () => {
   const [batchJobs, setBatchJobs] = useState<BatchJob[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [monitoringId, setMonitoringId] = useState<string | null>(null);
 
   const [selectedModel, setSelectedModel] = useState<string>("gpt-5-mini");
-  const [selectedBook, setSelectedBook] = useState<number | null>(null);
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedBibleVersion, setSelectedBibleVersion] =
     useState<string>("NASB1995");
   const [selectedExplanationTypes, setSelectedExplanationTypes] = useState<
@@ -81,7 +84,7 @@ export const BatchOperations = () => {
 
   const fetchBatchJobs = useCallback(async () => {
     try {
-      setLoading(true);
+      setListLoading(true);
       setError(null);
       const response = await api.admin["batch-history"].get({ query: {} });
       if (response.data) {
@@ -98,13 +101,13 @@ export const BatchOperations = () => {
       setError("Failed to fetch batch jobs");
       console.error("Error fetching batch jobs:", err);
     } finally {
-      setLoading(false);
+      setListLoading(false);
     }
   }, []);
   const hasFetchedRef = useRef(false);
 
   const handleCreateBatch = async () => {
-    if (!selectedBook) {
+    if (selectedBook === null) {
       setError("Please select a book");
       return;
     }
@@ -115,11 +118,11 @@ export const BatchOperations = () => {
     }
 
     try {
-      setLoading(true);
+      setCreating(true);
       setError(null);
       await api.admin["batch-explanations"].post({
         type: "book",
-        bookId: selectedBook,
+        bookName: selectedBook,
         bibleVersion: selectedBibleVersion,
         model: selectedModel,
         explanationTypes: selectedExplanationTypes,
@@ -130,13 +133,13 @@ export const BatchOperations = () => {
       setError("Failed to create batch job");
       console.error("Error creating batch job:", err);
     } finally {
-      setLoading(false);
+      setCreating(false);
     }
   };
 
   const handleMonitorBatch = async (batchId: string) => {
     try {
-      setLoading(true);
+      setMonitoringId(batchId);
       setError(null);
       await (api.admin.batch as any)[batchId].get();
       await fetchBatchJobs();
@@ -144,7 +147,7 @@ export const BatchOperations = () => {
       setError("Failed to monitor batch job");
       console.error("Error monitoring batch job:", err);
     } finally {
-      setLoading(false);
+      setMonitoringId(null);
     }
   };
 
@@ -158,6 +161,22 @@ export const BatchOperations = () => {
     {
       title: "ID",
       property: "id",
+    },
+    {
+      title: "Book",
+      property: "book_name",
+      render: (job) => (
+        <span>
+          {job.book_name || "N/A"}
+          {job.bible_version && (
+            <span
+              style={{ fontSize: "12px", color: "#666", marginLeft: "4px" }}
+            >
+              ({job.bible_version})
+            </span>
+          )}
+        </span>
+      ),
     },
     {
       title: "Type",
@@ -196,7 +215,9 @@ export const BatchOperations = () => {
         <Button
           variant="outlined"
           onClick={() => handleMonitorBatch(job.openai_batch_id || "")}
-          disabled={loading}
+          disabled={
+            !!monitoringId && monitoringId === (job.openai_batch_id || "")
+          }
         >
           Monitor
         </Button>
@@ -204,7 +225,7 @@ export const BatchOperations = () => {
     },
   ];
 
-  const selectedBookData = testaments.find((book) => book.b === selectedBook);
+  const selectedBookData = testaments.find((book) => book.n === selectedBook);
   const selectedVersionData = bibleVersions.find(
     (version) => version.key === selectedBibleVersion,
   );
@@ -251,6 +272,7 @@ export const BatchOperations = () => {
             <SelectDropdown.Root
               open={modelDropdownOpen}
               onOpenChange={setModelDropdownOpen}
+              onValueChange={(val) => setSelectedModel(val)}
             >
               <SelectDropdown.Trigger
                 selectedBook={null}
@@ -264,10 +286,6 @@ export const BatchOperations = () => {
                     key={model.value}
                     value={model.value}
                     icon={<CheckIcon />}
-                    onClick={() => {
-                      setSelectedModel(model.value);
-                      setModelDropdownOpen(false);
-                    }}
                   >
                     {model.label}
                   </SelectDropdown.Item>
@@ -289,6 +307,7 @@ export const BatchOperations = () => {
             <SelectDropdown.Root
               open={bookDropdownOpen}
               onOpenChange={setBookDropdownOpen}
+              onValueChange={(val) => setSelectedBook(val)}
             >
               <SelectDropdown.Trigger
                 selectedBook={null}
@@ -309,10 +328,6 @@ export const BatchOperations = () => {
                     key={book.b}
                     value={book.n}
                     icon={<CheckIcon />}
-                    onClick={() => {
-                      setSelectedBook(book.b);
-                      setBookDropdownOpen(false);
-                    }}
                   >
                     {book.n} ({book.t})
                   </SelectDropdown.Item>
@@ -334,6 +349,7 @@ export const BatchOperations = () => {
             <SelectDropdown.Root
               open={versionDropdownOpen}
               onOpenChange={setVersionDropdownOpen}
+              onValueChange={(val) => setSelectedBibleVersion(val)}
             >
               <SelectDropdown.Trigger
                 selectedBook={null}
@@ -354,12 +370,8 @@ export const BatchOperations = () => {
                 {bibleVersions.map((version) => (
                   <SelectDropdown.Item
                     key={version.key}
-                    value={version.value}
+                    value={version.key}
                     icon={<CheckIcon />}
-                    onClick={() => {
-                      setSelectedBibleVersion(version.key);
-                      setVersionDropdownOpen(false);
-                    }}
                   >
                     {version.value}
                   </SelectDropdown.Item>
@@ -440,16 +452,18 @@ export const BatchOperations = () => {
           <Button
             onClick={handleCreateBatch}
             disabled={
-              loading || !selectedBook || selectedExplanationTypes.length === 0
+              creating ||
+              selectedBook === null ||
+              selectedExplanationTypes.length === 0
             }
-            loading={loading}
+            loading={creating}
           >
-            {loading ? "Creating..." : "Create New Batch"}
+            {creating ? "Creating..." : "Create New Batch"}
           </Button>
           <Button
             variant="outlined"
             onClick={fetchBatchJobs}
-            disabled={loading}
+            disabled={listLoading}
             style={{ marginLeft: "10px" }}
           >
             Refresh
@@ -458,7 +472,12 @@ export const BatchOperations = () => {
       </div>
 
       <div className={styles.tableContainer}>
-        <Table columns={columns} data={batchJobs} isLoading={loading} zebra />
+        <Table
+          columns={columns}
+          data={batchJobs}
+          isLoading={listLoading}
+          zebra
+        />
       </div>
     </div>
   );

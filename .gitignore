@@ -184,3 +184,4 @@ infra
 bugs.txt
 
 test-opennext
+apps/backend/batch_files/

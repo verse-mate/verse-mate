@@ -72,8 +72,23 @@ const plugin = new Elysia()
               const batchOperationService = store.getBatchOperationService();
 
               if (body.type === "book") {
-                if (!body.bookId) {
-                  throw new Error("bookId is required for book batch");
+                // Support both bookId (legacy) and bookName (new)
+                if (!body.bookId && !body.bookName) {
+                  throw new Error(
+                    "bookId or bookName is required for book batch",
+                  );
+                }
+
+                // If bookName is provided, use it; otherwise fall back to bookId
+                if (body.bookName) {
+                  return await batchOperationService.generateBookBatchByName(
+                    body.bookName,
+                    body.bibleVersion,
+                    body.explanationTypes as any,
+                    body.model,
+                    currentUserId,
+                    body.skipExisting,
+                  );
                 }
                 return await batchOperationService.generateBookBatch(
                   body.bookId,
@@ -99,6 +114,7 @@ const plugin = new Elysia()
               body: t.Object({
                 type: t.Union([t.Literal("book"), t.Literal("bible")]),
                 bookId: t.Optional(t.Number()),
+                bookName: t.Optional(t.String()),
                 bibleVersion: t.String(),
                 model: t.String(),
                 explanationTypes: t.Array(t.String()),
