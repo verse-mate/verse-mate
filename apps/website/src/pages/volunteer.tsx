@@ -9,9 +9,8 @@ export default function Volunteer() {
         alignItems: "flex-start",
         padding: "0px",
         position: "relative",
-        width: "1440px",
-        height: "3008px",
-        overflowY: "scroll",
+        width: "100%",
+        minHeight: "100vh",
         background: "#FFFFFF",
         margin: "0 auto",
       }}
