@@ -55,6 +55,7 @@ The response should be in ${language} using Markdown format only.`;
     type: ExplanationTypeEnum,
     bookName: string,
     chapterNumber: number,
+    language: string,
   ): Promise<{ prompt: string }> {
     try {
       const userPromptRepo = new UserPromptRepository(this.db);
@@ -64,7 +65,8 @@ The response should be in ${language} using Markdown format only.`;
         return {
           prompt: (promptTemplate as any).prompt_template
             .replace("{bookName}", bookName)
-            .replace("{chapterNumber}", chapterNumber.toString()),
+            .replace("{chapterNumber}", chapterNumber.toString())
+            .replace("{language}", language),
         };
       }
     } catch (error) {
@@ -422,12 +424,6 @@ unshakably.`,
         throw new Error("No active system prompt found");
       }
 
-      const explanationConfig = await this.getExplanationTypePrompt(
-        explanationType,
-        book.name,
-        chapterNumber,
-      );
-
       const version = await connection
         .selectFrom("bible_versions")
         .select(["id", "language_code"])
@@ -437,6 +433,15 @@ unshakably.`,
       if (!version) {
         throw new Error(`Bible version ${bibleVersion} not found`);
       }
+
+      const language = this.getLanguageName(version.language_code);
+
+      const explanationConfig = await this.getExplanationTypePrompt(
+        explanationType,
+        book.name,
+        chapterNumber,
+        language,
+      );
 
       const verses = await connection
         .selectFrom("verses")
@@ -451,8 +456,6 @@ unshakably.`,
           `No verses found for chapter ${chapterNumber} in version ${bibleVersion}`,
         );
       }
-
-      const language = this.getLanguageName(version.language_code);
 
       const versesText = verses
         .map((v) => `${v.verse_number}. ${v.text}`)

@@ -95,13 +95,12 @@
     min-width: 120px;
   }
 
-  .statusColumn > * {
-    margin-left: 50px;
-  }
+  
 
   .statusWithSpacing {
     margin-left: 50px;
     text-align: center;
+    display: inline-block;
   }
 
   .costColumn {

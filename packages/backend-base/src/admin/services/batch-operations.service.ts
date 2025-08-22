@@ -68,6 +68,7 @@ const getExplanationTypePrompt = async (
   bookName: string,
   chapterNumber: number,
   dbInstance: any,
+  language: string,
 ): Promise<{ prompt: string }> => {
   try {
     const userPromptRepo = new UserPromptRepository(dbInstance);
@@ -876,6 +877,7 @@ export class BatchOperationService {
           book.name,
           chapter.chapter_number,
           this.db,
+          language,
         );
 
         const userPrompt = getUserPrompt({

@@ -54,6 +54,7 @@ const getExplanationTypePrompt = async (
   bookName: string,
   chapterNumber: number,
   dbInstance: any,
+  language: string,
 ): Promise<{ prompt: string; temperature: number }> => {
   try {
     const userPromptRepo = new UserPromptRepository(dbInstance);
@@ -258,14 +259,15 @@ const plugin = new Elysia()
                     version_id: version.id,
                   });
 
+                  const language = getLanguageName(version.language_code);
+
                   const explanationConfig = await getExplanationTypePrompt(
                     type,
                     book?.name || "",
                     Number(chapterNumber),
                     db,
+                    language,
                   );
-
-                  const language = getLanguageName(version.language_code);
 
                   const text = await gpt5Text({
                     system: prompt.prompt,
