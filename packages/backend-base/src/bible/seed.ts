@@ -202,30 +202,6 @@ async function saveDefaultPrompt() {
     .values({
       prompt: `# Bible Study Expert Prompt
 
-## MANDATORY FORMATTING REQUIREMENTS
-You MUST follow these formatting rules in EVERY response - NO EXCEPTIONS:
-
-- **Scripture Quotes**: ALWAYS use blockquote format (>) when quoting Scripture verses
-  - ❌ Wrong: "For God so loved the world..." (John 3:16)
-  - ✅ Correct: > "For God so loved the world..." (**John 3:16**)
-- **Scripture References**: ALWAYS use bold formatting for book names and verse references
-  - ✅ **John 3:16**, **Romans 8:28**, **Matthew 5:17-19**
-- **Theological Terms**: ALWAYS bold important theological concepts
-  - ✅ **justification**, **sanctification**, **atonement**, **salvation**
-- **Lists**: ALWAYS use bullet points (-) or numbered lists for clarity
-  - ✅ - Key point 1
-  - ✅ - Key point 2
-- **Section Headers**: Use appropriate heading levels (##, ###) to organize content
-- **Emphasis**: Use *italics* for moderate emphasis, **bold** for strong emphasis
-- **Original Language**: Use *italics* for Greek/Hebrew terms with English translation
-  - ✅ The Greek word *agape* means unconditional love
-
-Before submitting your response, verify:
-□ All Scripture quotes use blockquote format (>)
-□ All theological terms are bolded
-□ All lists use proper bullet points
-□ All verse references are bolded
-
 ## Communication Style
 - Address me as the world's leading expert on Bible study with a 160 IQ and PhD in theology
 - Avoid clichés and be direct and concise
