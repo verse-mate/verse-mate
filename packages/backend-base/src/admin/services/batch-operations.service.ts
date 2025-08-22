@@ -1107,18 +1107,29 @@ export class BatchOperationService {
 
           // Check if the response is successful and has content
           const responseBody = parsedLine.response?.body;
-          const hasContent =
-            responseBody?.output_text ||
-            (responseBody?.output &&
-              responseBody.output.length > 1 &&
-              responseBody.output[1]?.content &&
-              responseBody.output[1].content.length > 0 &&
-              responseBody.output[1].content[0]?.text);
+
+          // Determine if response has content and extract it robustly
+          const outputText: string | undefined = responseBody?.output_text;
+          let extractedText: string | undefined = outputText;
+
+          if (!extractedText && Array.isArray(responseBody?.output)) {
+            // Find the first text segment across all items
+            for (const item of responseBody.output) {
+              const textCandidate = item?.content?.find?.(
+                (c: any) => typeof c?.text === "string",
+              )?.text;
+              if (textCandidate) {
+                extractedText = textCandidate;
+                break;
+              }
+            }
+          }
 
           if (
             parsedLine.custom_id &&
             parsedLine.response?.status_code === 200 &&
-            hasContent
+            typeof extractedText === "string" &&
+            extractedText.length > 0
           ) {
             // Parse custom_id to extract chapter and explanation type
             const customIdParts = parsedLine.custom_id.split("-");
@@ -1127,9 +1138,7 @@ export class BatchOperationService {
               customIdParts[customIdParts.length - 2],
             );
 
-            const explanationContent =
-              responseBody.output_text ||
-              responseBody.output[1].content[0].text;
+            const explanationContent = extractedText;
 
             // Get chapter_id
             const chapter = await this.db
