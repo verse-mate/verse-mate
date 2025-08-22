@@ -91,6 +91,9 @@ const plugin = new Elysia()
                     body.effort || "medium",
                   );
                 }
+                if (!body.bookId) {
+                  throw new Error("bookId is required");
+                }
                 return await batchOperationService.generateBookBatch(
                   body.bookId,
                   body.bibleVersion,
