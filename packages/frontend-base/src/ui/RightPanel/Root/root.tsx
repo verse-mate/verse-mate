@@ -1,4 +1,5 @@
 import * as RadixTabs from "@radix-ui/react-tabs";
+import React from "react";
 import styles from "./root.module.css";
 
 type RootProps = {
@@ -6,6 +7,8 @@ type RootProps = {
   style?: React.CSSProperties;
   activeTab: string;
   setActiveTab: (value: string) => void;
+  rightPanelContent: string;
+  setRightPanelContent: (value: string) => void;
 };
 
 export const Root = ({
@@ -13,6 +16,8 @@ export const Root = ({
   style,
   activeTab,
   setActiveTab,
+  rightPanelContent,
+  setRightPanelContent,
 }: RootProps) => {
   return (
     <RadixTabs.Root
@@ -21,7 +26,15 @@ export const Root = ({
       value={activeTab}
       onValueChange={setActiveTab}
     >
-      {children}
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child as React.ReactElement<any>, {
+            rightPanelContent,
+            setRightPanelContent,
+          });
+        }
+        return child;
+      })}
     </RadixTabs.Root>
   );
 };
