@@ -617,6 +617,16 @@ export class BatchOperationService {
         `[BATCH] Batch ${batchId} failed with errors:`,
         JSON.stringify(batchStatus.errors, null, 2),
       );
+      // Clean up JSONL file for failed batches
+      await this.cleanupBatchFiles(batchId);
+    }
+
+    // Clean up JSONL files for expired or cancelled batches
+    if (
+      batchStatus.status === "expired" ||
+      batchStatus.status === "cancelled"
+    ) {
+      await this.cleanupBatchFiles(batchId);
     }
 
     // If batch completed but has failed requests, download error file
@@ -694,6 +704,11 @@ export class BatchOperationService {
           })
           .where("openai_batch_id", "=", batchId)
           .execute();
+
+        // Clean up JSONL file for permanently failed batches
+        if (correctStatus === "failed") {
+          await this.cleanupBatchFiles(batchId);
+        }
       }
 
       // Process explanations for completed batches that need processing
@@ -1011,6 +1026,33 @@ export class BatchOperationService {
     return { filePath, fileId: file.id, totalRequests: batchRequests.length };
   }
 
+  private async cleanupBatchFiles(batchId: string): Promise<void> {
+    try {
+      // Get the batch job to find the input file path
+      const batchJob = await this.db
+        .getOrCreateConnection()
+        .selectFrom("batch_jobs")
+        .where("openai_batch_id", "=", batchId)
+        .select("input_file_path")
+        .executeTakeFirst();
+
+      if (
+        batchJob?.input_file_path &&
+        fs.existsSync(batchJob.input_file_path)
+      ) {
+        fs.unlinkSync(batchJob.input_file_path);
+        console.log(
+          `[BATCH] Cleaned up JSONL file: ${batchJob.input_file_path}`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[BATCH] Error cleaning up files for batch ${batchId}:`,
+        error,
+      );
+    }
+  }
+
   private async processOutputFile(batchId: string, outputFileId: string) {
     try {
       // Get batch job info
@@ -1194,6 +1236,9 @@ export class BatchOperationService {
       console.log(
         `[BATCH] Marked batch ${batchId} as explanations processed with cost $${actualCost.toFixed(4)}`,
       );
+
+      // Clean up JSONL file after successful processing
+      await this.cleanupBatchFiles(batchId);
     } catch (error) {
       console.error(
         `[BATCH] Error processing output file for batch ${batchId}:`,

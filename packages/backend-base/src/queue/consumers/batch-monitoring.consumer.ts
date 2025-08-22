@@ -1,4 +1,5 @@
 // packages/backend-base/src/queue/consumers/batch-monitoring.consumer.ts
+import * as fs from "node:fs";
 import type { Job } from "bullmq";
 import { db } from "database";
 import OpenAI from "openai";
@@ -48,6 +49,30 @@ async function calculateActualCost(
   const batchDiscount = 0.5;
 
   return totalCost * batchDiscount;
+}
+
+async function cleanupBatchFiles(batchId: string): Promise<void> {
+  try {
+    // Get the batch job to find the input file path
+    const batchJob = await db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("openai_batch_id", "=", batchId)
+      .select("input_file_path")
+      .executeTakeFirst();
+
+    if (batchJob?.input_file_path && fs.existsSync(batchJob.input_file_path)) {
+      fs.unlinkSync(batchJob.input_file_path);
+      console.log(
+        `[BATCH_MONITORING] Cleaned up JSONL file: ${batchJob.input_file_path}`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `[BATCH_MONITORING] Error cleaning up files for batch ${batchId}:`,
+      error,
+    );
+  }
 }
 
 export const batchMonitoringConsumer = async (job: Job) => {
@@ -230,6 +255,9 @@ export const batchMonitoringConsumer = async (job: Job) => {
           })
           .where("openai_batch_id", "=", batchId)
           .execute();
+
+        // Clean up JSONL file after successful processing
+        await cleanupBatchFiles(batchId);
       }
     } else if (
       batch.status === "failed" ||
@@ -245,6 +273,9 @@ export const batchMonitoringConsumer = async (job: Job) => {
         .set({ status: batch.status })
         .where("openai_batch_id", "=", batchId)
         .execute();
+
+      // Clean up JSONL file for failed/expired/cancelled batches
+      await cleanupBatchFiles(batchId);
     } else {
       console.log(
         `[BATCH_MONITORING] Batch ${batchId} still in progress. Status: ${batch.status}. Re-queuing.`,
@@ -350,5 +381,8 @@ export const batchMonitoringConsumer = async (job: Job) => {
       .set({ status: "failed" })
       .where("openai_batch_id", "=", batchId)
       .execute();
+
+    // Clean up JSONL file for permanently failed batches
+    await cleanupBatchFiles(batchId);
   }
 };
