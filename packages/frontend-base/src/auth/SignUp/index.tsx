@@ -7,7 +7,7 @@ import { PasswordRequirements } from "../PasswordRequirements";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignUpForm } from "./useSignUpForm";
 
-export function SignUp() {
+export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
   const {
     hookForm: { register, formState, watch },
     isLoading,
@@ -76,7 +76,26 @@ export function SignUp() {
         </Button>
       </form>
       <Text align="center" color="var(--gray)">
-        Already have an account? <Link href="/login">Login</Link>
+        Already have an account?{" "}
+        {onSwitch ? (
+          <button
+            type="button"
+            onClick={() => onSwitch("login")}
+            style={{
+              color: "var(--white)",
+              textDecoration: "underline",
+              background: "none",
+              border: "none",
+              padding: 0,
+              font: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            Login
+          </button>
+        ) : (
+          <Link href="/login">Login</Link>
+        )}
       </Text>
       <Text align="center" color="var(--gray)">
         <Link href="/">Continue without an account</Link>

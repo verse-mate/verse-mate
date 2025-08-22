@@ -254,6 +254,30 @@ export const MainContent = () => {
 
   const { activeTab, setActiveTab } = useHandleTab();
   const previousTabRef = useRef<string>("explanation");
+  const [rightPanelContent, setRightPanelContent] = useState("default");
+
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && activeTabRef.current === "book") {
+        setActiveTab("explanation");
+      } else if (
+        window.innerWidth < 1024 &&
+        activeTabRef.current === "explanation"
+      ) {
+        setActiveTab("book");
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [setActiveTab]);
 
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
@@ -1228,6 +1252,8 @@ export const MainContent = () => {
           <RightPanel.Root
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            rightPanelContent={rightPanelContent}
+            setRightPanelContent={setRightPanelContent}
             style={{
               width: `${rightWidth}%`,
             }}
@@ -1236,6 +1262,8 @@ export const MainContent = () => {
               activeTab={activeTab}
               askVerseMate={askVerseMate}
               setActiveTab={setActiveTab}
+              rightPanelContent={rightPanelContent}
+              setRightPanelContent={setRightPanelContent}
             />
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
@@ -1243,6 +1271,8 @@ export const MainContent = () => {
               session={session}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}
+              rightPanelContent={rightPanelContent}
+              setRightPanelContent={setRightPanelContent}
             />
           </RightPanel.Root>
         </main>
