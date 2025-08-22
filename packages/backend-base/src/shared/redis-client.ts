@@ -6,11 +6,11 @@ class RedisClient {
 
   constructor(redisUrl = "redis://localhost:6379") {
     const url = new URL(redisUrl);
-    const password = url.password || "abcd1234";
+    const password = url.password || undefined;
 
     this.client = createClient({
       url: redisUrl,
-      password: password,
+      ...(password ? { password } : {}),
       socket: {
         reconnectStrategy: (retries) => {
           if (retries > 10) {
