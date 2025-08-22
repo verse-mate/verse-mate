@@ -57,6 +57,74 @@
     background-color: #cce5ff;
     color: #004085;
   }
+
+  .status.partialFailure {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+  }
+
+  /* Column width classes */
+  .idColumn {
+    width: 10px;
+    min-width: 10px;
+    max-width: 10px;
+  }
+
+  .bookColumn {
+    width: 120px;
+    min-width: 120px;
+  }
+
+  .typeColumn {
+    width: 80px;
+    min-width: 80px;
+  }
+
+  .openaiBatchIdColumn {
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .statusColumn {
+    width: 120px;
+    min-width: 120px;
+  }
+
+  .statusColumn > * {
+    margin-left: 50px;
+  }
+
+  .statusWithSpacing {
+    margin-left: 50px;
+    text-align: center;
+  }
+
+  .costColumn {
+    width: 80px;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  .createdColumn {
+    width: 100px;
+    min-width: 100px;
+  }
+
+  .actionsColumn {
+    width: 100px;
+    min-width: 100px;
+  }
+
+  .nowrapColumn {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   
   .actions {
     display: flex;

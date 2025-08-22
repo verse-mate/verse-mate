@@ -182,15 +182,23 @@ export const batchMonitoringConsumer = async (job: Job) => {
           model,
         );
 
+        // Determine final status based on success/failure ratio
+        let finalStatus = "completed";
+        if (successfulExplanations === 0 && failedExplanations > 0) {
+          finalStatus = "failed";
+        } else if (failedExplanations > 0) {
+          finalStatus = "partial_failure";
+        }
+
         console.log(
-          `[BATCH_MONITORING] Batch ${batchId} completed: ${successfulExplanations} explanations saved, ${failedExplanations} failed, cost: ${actualCost}`,
+          `[BATCH_MONITORING] Batch ${batchId} ${finalStatus}: ${successfulExplanations} explanations saved, ${failedExplanations} failed, cost: ${actualCost}`,
         );
 
         await db
           .getOrCreateConnection()
           .updateTable("batch_jobs")
           .set({
-            status: "completed",
+            status: finalStatus,
             actual_cost: actualCost,
             completed_requests: successfulExplanations,
             failed_requests: failedExplanations,

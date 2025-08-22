@@ -82,28 +82,91 @@ export const BatchOperations = () => {
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
 
+  const fetchBatchJobsOnly = useCallback(async () => {
+    try {
+      const response = await api.admin["batch-history"].get({ query: {} });
+      if (response.data) {
+        const jobs = Array.isArray(response.data)
+          ? response.data.map((job) => ({
+              ...job,
+              id: String(job.id),
+            }))
+          : [];
+        setBatchJobs(jobs);
+        return jobs;
+      }
+      return [];
+    } catch (err) {
+      setError("Failed to fetch batch jobs");
+      console.error("Error fetching batch jobs:", err);
+      return [];
+    }
+  }, []);
+
   const fetchBatchJobs = useCallback(async () => {
     try {
       setListLoading(true);
       setError(null);
-      const response = await api.admin["batch-history"].get({ query: {} });
-      if (response.data) {
-        setBatchJobs(
-          Array.isArray(response.data)
-            ? response.data.map((job) => ({
-                ...job,
-                id: String(job.id),
-              }))
-            : [],
-        );
-      }
+      await fetchBatchJobsOnly();
     } catch (err) {
       setError("Failed to fetch batch jobs");
       console.error("Error fetching batch jobs:", err);
     } finally {
       setListLoading(false);
     }
-  }, []);
+  }, [fetchBatchJobsOnly]);
+
+  const refreshAndMonitorAll = useCallback(async () => {
+    try {
+      setListLoading(true);
+      setError(null);
+
+      // First fetch all jobs
+      const jobs = await fetchBatchJobsOnly();
+
+      // Monitor all active batches (not completed, failed, cancelled, or expired)
+      const activeBatches = jobs.filter(
+        (job) =>
+          job.openai_batch_id &&
+          ![
+            "completed",
+            "failed",
+            "cancelled",
+            "expired",
+            "partial_failure",
+          ].includes(job.status),
+      );
+
+      // Monitor each active batch in parallel
+      if (activeBatches.length > 0) {
+        console.log(
+          `[BATCH_UI] Monitoring ${activeBatches.length} active batches`,
+        );
+        const monitorPromises = activeBatches.map(async (job) => {
+          try {
+            if (job.openai_batch_id) {
+              await (api.admin.batch as any)[job.openai_batch_id].get();
+            }
+          } catch (err) {
+            console.error(
+              `Error monitoring batch ${job.openai_batch_id}:`,
+              err,
+            );
+          }
+        });
+
+        await Promise.all(monitorPromises);
+
+        // Fetch updated data after monitoring
+        await fetchBatchJobsOnly();
+      }
+    } catch (err) {
+      setError("Failed to refresh and monitor batch jobs");
+      console.error("Error refreshing and monitoring batch jobs:", err);
+    } finally {
+      setListLoading(false);
+    }
+  }, [fetchBatchJobsOnly]);
   const hasFetchedRef = useRef(false);
 
   const handleCreateBatch = async () => {
@@ -161,12 +224,14 @@ export const BatchOperations = () => {
     {
       title: "ID",
       property: "id",
+      className: styles.idColumn,
     },
     {
       title: "Book",
       property: "book_name",
+      className: styles.bookColumn,
       render: (job) => (
-        <span>
+        <span className={styles.nowrapColumn}>
           {job.book_name || "N/A"}
           {job.bible_version && (
             <span
@@ -181,36 +246,50 @@ export const BatchOperations = () => {
     {
       title: "Type",
       property: "batch_type",
+      className: styles.typeColumn,
     },
     {
       title: "OpenAI Batch ID",
       property: "openai_batch_id",
+      className: styles.openaiBatchIdColumn,
     },
     {
-      title: "Status",
+      title: <span style={{ marginLeft: "50px" }}>Status</span>,
       property: "status",
+      className: styles.statusColumn,
       render: (job) => (
         <span
-          className={`${styles.status} ${styles[job.status === "in_progress" ? "inProgress" : job.status]}`}
+          className={`${styles.status} ${styles.statusWithSpacing} ${
+            styles[
+              job.status === "in_progress"
+                ? "inProgress"
+                : job.status === "partial_failure"
+                  ? "partialFailure"
+                  : job.status
+            ]
+          }`}
         >
-          {job.status}
+          {job.status === "partial_failure" ? "Partial Failure" : job.status}
         </span>
       ),
     },
     {
       title: "Cost",
       property: "actual_cost",
+      className: styles.costColumn,
       render: (job) =>
         job.actual_cost ? `$${job.actual_cost.toFixed(4)}` : "N/A",
     },
     {
       title: "Created",
       property: "created_at",
+      className: styles.createdColumn,
       render: (job) => new Date(job.created_at).toLocaleDateString(),
     },
     {
       title: "Actions",
       property: "id",
+      className: styles.actionsColumn,
       render: (job) => (
         <Button
           variant="outlined"
@@ -462,11 +541,12 @@ export const BatchOperations = () => {
           </Button>
           <Button
             variant="outlined"
-            onClick={fetchBatchJobs}
+            onClick={refreshAndMonitorAll}
             disabled={listLoading}
+            loading={listLoading}
             style={{ marginLeft: "10px" }}
           >
-            Refresh
+            {listLoading ? "Refreshing..." : "Refresh & Monitor All"}
           </Button>
         </div>
       </div>
