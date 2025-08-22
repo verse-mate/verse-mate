@@ -5,7 +5,8 @@ import styles from "../Table.module.css";
 export const TableCell = ({
   children,
   tag = "td",
-}: PropsWithChildren & { tag?: "td" | "th" }) => {
+  className,
+}: PropsWithChildren & { tag?: "td" | "th"; className?: string }) => {
   const Tag = tag;
-  return <Tag className={styles.table}>{children}</Tag>;
+  return <Tag className={`${styles.table} ${className || ""}`}>{children}</Tag>;
 };

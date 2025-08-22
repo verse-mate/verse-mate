@@ -1,12 +1,13 @@
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
-import { authPlugin, biblePlugin, userPlugin } from "backend-base";
+import { adminPlugin, authPlugin, biblePlugin, userPlugin } from "backend-base";
 import { Elysia } from "elysia";
 
 const app = new Elysia()
   .use(authPlugin)
   .use(userPlugin)
   .use(biblePlugin)
+  .use(adminPlugin)
   .use(cors())
   .use(swagger());
 

@@ -31,6 +31,20 @@ export default interface ExplanationsTable {
   >;
 
   version_id: ColumnType<BibleVersionsId, BibleVersionsId, BibleVersionsId>;
+
+  version: ColumnType<number, number | undefined, number>;
+
+  is_active: ColumnType<boolean, boolean | undefined, boolean>;
+
+  created_by_admin: ColumnType<boolean, boolean | undefined, boolean>;
+
+  parent_explanation_id: ColumnType<
+    ExplanationsExplanationId | null,
+    ExplanationsExplanationId | null,
+    ExplanationsExplanationId | null
+  >;
+
+  created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
 export type Explanations = Selectable<ExplanationsTable>;

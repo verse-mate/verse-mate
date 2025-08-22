@@ -10,8 +10,8 @@ export const ModalContainer = () => {
 
   return (
     <AnimatePresence mode="popLayout">
-      {notifications.map((item, index) => {
-        return <Modal key={index.toString()} {...item} />;
+      {notifications.map((item) => {
+        return <Modal key={item.id} {...item} />;
       })}
     </AnimatePresence>
   );

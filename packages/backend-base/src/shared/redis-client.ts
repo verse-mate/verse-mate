@@ -5,18 +5,22 @@ class RedisClient {
   private client: RedisClientType;
 
   constructor(redisUrl = "redis://localhost:6379") {
+    const url = new URL(redisUrl);
+    const password = url.password || undefined;
+
     this.client = createClient({
       url: redisUrl,
+      ...(password ? { password } : {}),
       socket: {
         reconnectStrategy: (retries) => {
           if (retries > 10) {
             console.log(
-              "Max retry attempts reached. Please check your Redis server.",
+              `Max retry attempts reached. Please check your Redis server at ${redisUrl}`,
             );
             return false;
           }
-
-          return Math.min(retries * 100, 3000); // exponential backoff strategy up to 3 seconds
+          console.log(`Redis connection attempt ${retries}`);
+          return Math.min(retries * 100, 3000);
         },
       },
     });
@@ -88,6 +92,7 @@ class RedisClient {
       throw error;
     }
   }
+
   async delete(key: string): Promise<number> {
     await this.connect();
     try {
@@ -99,7 +104,8 @@ class RedisClient {
   }
 }
 
-const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
-const redisClient = new RedisClient(redisUrl);
+const redisUrl = process.env.REDIS_URL ?? "redis://:abcd1234@localhost:6379/0";
 
-export default redisClient;
+// Export both the class and instance with explicit typing
+export { RedisClient };
+export default new RedisClient(redisUrl);

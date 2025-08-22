@@ -3,4 +3,5 @@ export type UserSession = {
   email: string;
   firstName: string;
   lastName: string;
+  is_admin: boolean;
 };

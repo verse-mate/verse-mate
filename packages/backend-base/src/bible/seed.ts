@@ -7,6 +7,7 @@ import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import type { Subtitles } from "database/src/models/public/Subtitles";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { Verses } from "database/src/models/public/Verses";
+import { defaultUserPromptTemplates } from "../shared/prompts";
 import { parseBibleData } from "./bible";
 
 // --------------- Utility Insert Functions ---------------
@@ -167,6 +168,31 @@ async function checkPromptExists() {
     .execute();
 
   return { exists: prompts.length > 0 };
+}
+
+async function saveDefaultUserPromptTemplates() {
+  // Check if user prompt templates already exist
+  const existingTemplates = await db
+    .getOrCreateConnection()
+    .selectFrom("user_prompt_templates")
+    .select("id")
+    .execute();
+
+  if (existingTemplates.length > 0) {
+    console.log("User prompt templates already exist, skipping seed.");
+    return;
+  }
+
+  // Insert each template
+  for (const template of defaultUserPromptTemplates) {
+    await db
+      .getOrCreateConnection()
+      .insertInto("user_prompt_templates")
+      .values(template)
+      .execute();
+  }
+
+  console.log("Default user prompt templates created.");
 }
 
 async function saveDefaultPrompt() {
@@ -471,6 +497,9 @@ export async function main() {
     await saveDefaultPrompt();
     console.log("Default prompt saved.");
   }
+
+  // 6. Seed user prompt templates
+  await saveDefaultUserPromptTemplates();
 
   console.log("Seed completed!");
 }
