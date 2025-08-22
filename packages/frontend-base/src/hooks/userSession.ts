@@ -29,7 +29,7 @@ export const userSession = () => {
             try {
               localStorage.removeItem("accessToken");
             } catch {}
-            window.location.replace("/login");
+            Promise.resolve().then(() => window.location.replace("/login"));
           }
         } catch {}
         setSession(null);

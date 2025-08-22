@@ -39,7 +39,7 @@ async function gpt5Text({
     max_output_tokens: 20000,
   });
 
-  return response.output_text || "oopsies";
+  return response.output_text ?? "oopsies";
 }
 
 const getExplanationTypePrompt = (

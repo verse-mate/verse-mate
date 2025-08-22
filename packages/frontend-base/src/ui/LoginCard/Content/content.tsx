@@ -16,14 +16,22 @@ type ContentProps = {
 
 export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
   const handleSignInClick = (e: React.MouseEvent) => {
-    if (window.innerWidth >= 1024 && setRightPanelContent) {
+    if (
+      typeof window !== "undefined" &&
+      window.innerWidth >= 1024 &&
+      setRightPanelContent
+    ) {
       e.preventDefault();
       setRightPanelContent("login");
     }
   };
 
   const handleSignUpClick = (e: React.MouseEvent) => {
-    if (window.innerWidth >= 1024 && setRightPanelContent) {
+    if (
+      typeof window !== "undefined" &&
+      window.innerWidth >= 1024 &&
+      setRightPanelContent
+    ) {
       e.preventDefault();
       setRightPanelContent("signup");
     }
