@@ -87,7 +87,8 @@ const plugin = new Elysia()
                     body.explanationTypes as any,
                     body.model,
                     currentUserId,
-                    body.skipExisting,
+                    body.skipExisting || false,
+                    body.effort || "medium",
                   );
                 }
                 return await batchOperationService.generateBookBatch(
@@ -96,7 +97,8 @@ const plugin = new Elysia()
                   body.explanationTypes as any,
                   body.model,
                   currentUserId,
-                  body.skipExisting,
+                  body.skipExisting || false,
+                  body.effort || "medium",
                 );
               }
               if (body.type === "bible") {
@@ -105,6 +107,7 @@ const plugin = new Elysia()
                   body.explanationTypes as any,
                   body.model,
                   currentUserId,
+                  body.effort || "medium",
                 );
               }
 
@@ -119,6 +122,13 @@ const plugin = new Elysia()
                 model: t.String(),
                 explanationTypes: t.Array(t.String()),
                 skipExisting: t.Optional(t.Boolean()),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
               }),
             },
           )

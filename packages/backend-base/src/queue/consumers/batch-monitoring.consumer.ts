@@ -103,15 +103,22 @@ export const batchMonitoringConsumer = async (job: Job) => {
           const parsedLine = JSON.parse(line);
 
           if (parsedLine.response?.body?.usage) {
-            totalPromptTokens += parsedLine.response.body.usage.prompt_tokens;
+            totalPromptTokens +=
+              parsedLine.response.body.usage.input_tokens || 0;
             totalCompletionTokens +=
-              parsedLine.response.body.usage.completion_tokens;
+              parsedLine.response.body.usage.output_tokens || 0;
           }
 
-          if (
-            parsedLine.custom_id &&
-            parsedLine.response?.body?.choices?.[0]?.message?.content
-          ) {
+          const responseBody = parsedLine.response?.body;
+          const hasContent =
+            responseBody?.output_text ||
+            (responseBody?.output &&
+              responseBody.output.length > 1 &&
+              responseBody.output[1]?.content &&
+              responseBody.output[1].content.length > 0 &&
+              responseBody.output[1].content[0]?.text);
+
+          if (parsedLine.custom_id && hasContent) {
             try {
               const customIdParts = parsedLine.custom_id.split("-");
               const explanationType = customIdParts[customIdParts.length - 1];
@@ -120,7 +127,8 @@ export const batchMonitoringConsumer = async (job: Job) => {
               );
 
               const explanationContent =
-                parsedLine.response.body.choices[0].message.content;
+                responseBody.output_text ||
+                responseBody.output[1].content[0].text;
 
               if (!batchJob.book_id || !batchJob.bible_version) {
                 console.error(

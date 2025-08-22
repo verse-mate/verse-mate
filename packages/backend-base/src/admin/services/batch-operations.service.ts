@@ -12,11 +12,13 @@ import type { db } from "../../shared/shared.plugin";
 interface BatchJobRequest {
   custom_id: string;
   method: "POST";
-  url: "/v1/chat/completions";
+  url: "/v1/responses";
   body: {
     model: string;
-    messages: Array<{ role: "system" | "user"; content: string }>;
-    max_completion_tokens: number;
+    reasoning: { effort: "low" | "medium" | "high" };
+    instructions?: string;
+    input: string;
+    max_output_tokens: number;
   };
 }
 
@@ -156,6 +158,7 @@ export class BatchOperationService {
     model: string,
     adminUserId: string,
     skipExisting = false,
+    effort: "low" | "medium" | "high" = "medium",
   ) {
     console.log(
       `[BATCH] Starting book batch for book "${bookName}", version ${bibleVersion}, types: ${explanationTypes.join(
@@ -187,6 +190,7 @@ export class BatchOperationService {
       model,
       adminUserId,
       skipExisting,
+      effort,
     );
   }
 
@@ -197,6 +201,7 @@ export class BatchOperationService {
     model: string,
     adminUserId: string,
     skipExisting = false,
+    effort: "low" | "medium" | "high" = "medium",
   ) {
     console.log(
       `[BATCH] Starting book batch for book ${bookId}, version ${bibleVersion}, types: ${explanationTypes.join(
@@ -210,6 +215,7 @@ export class BatchOperationService {
       explanationTypes,
       model,
       skipExisting,
+      effort,
     );
 
     // Add small delay before creating batch to ensure file is fully processed
@@ -218,7 +224,7 @@ export class BatchOperationService {
 
     const batch = await openai.batches.create({
       input_file_id: fileId,
-      endpoint: "/v1/chat/completions",
+      endpoint: "/v1/responses",
       completion_window: "24h",
     });
 
@@ -269,6 +275,7 @@ export class BatchOperationService {
     explanationTypes: ExplanationTypeEnum[],
     model: string,
     adminUserId: string,
+    effort: "low" | "medium" | "high" = "medium",
   ) {
     console.log(
       `[BATCH] Starting Bible batch for version ${bibleVersion}, types: ${explanationTypes.join(
@@ -300,6 +307,8 @@ export class BatchOperationService {
           explanationTypes,
           model,
           adminUserId,
+          false,
+          effort,
         );
         batchResults.push({ success: true, ...bookBatch });
       } catch (error) {
@@ -501,6 +510,7 @@ export class BatchOperationService {
     explanationTypes: ExplanationTypeEnum[],
     model: string,
     skipExisting = false,
+    effort: "low" | "medium" | "high" = "medium",
   ): Promise<{ filePath: string; fileId: string; totalRequests: number }> {
     const connection = this.db.getOrCreateConnection();
 
@@ -608,20 +618,13 @@ export class BatchOperationService {
               "-",
             )}-${chapter.chapter_number}-${explanationType}`,
           method: "POST",
-          url: "/v1/chat/completions",
+          url: "/v1/responses",
           body: {
             model,
-            messages: [
-              {
-                role: "system",
-                content: sanitizedSystemPrompt,
-              },
-              {
-                role: "user",
-                content: sanitizedUserPrompt,
-              },
-            ],
-            max_completion_tokens: 25000,
+            reasoning: { effort },
+            instructions: sanitizedSystemPrompt,
+            input: sanitizedUserPrompt,
+            max_output_tokens: 25000,
           },
         });
       }
@@ -691,7 +694,7 @@ export class BatchOperationService {
             Object.keys(parsed),
           );
         }
-        if (parsed.body && (!parsed.body.model || !parsed.body.messages)) {
+        if (parsed.body && (!parsed.body.model || !parsed.body.input)) {
           console.error(
             `[BATCH] Line ${i + 1} body missing required fields:`,
             Object.keys(parsed.body),
@@ -788,16 +791,25 @@ export class BatchOperationService {
           // Track token usage for cost calculation
           if (parsedLine.response?.body?.usage) {
             totalPromptTokens +=
-              parsedLine.response.body.usage.prompt_tokens || 0;
+              parsedLine.response.body.usage.input_tokens || 0;
             totalCompletionTokens +=
-              parsedLine.response.body.usage.completion_tokens || 0;
+              parsedLine.response.body.usage.output_tokens || 0;
           }
 
           // Check if the response is successful and has content
+          const responseBody = parsedLine.response?.body;
+          const hasContent =
+            responseBody?.output_text ||
+            (responseBody?.output &&
+              responseBody.output.length > 1 &&
+              responseBody.output[1]?.content &&
+              responseBody.output[1].content.length > 0 &&
+              responseBody.output[1].content[0]?.text);
+
           if (
             parsedLine.custom_id &&
             parsedLine.response?.status_code === 200 &&
-            parsedLine.response?.body?.choices?.[0]?.message?.content
+            hasContent
           ) {
             // Parse custom_id to extract chapter and explanation type
             const customIdParts = parsedLine.custom_id.split("-");
@@ -807,7 +819,8 @@ export class BatchOperationService {
             );
 
             const explanationContent =
-              parsedLine.response.body.choices[0].message.content;
+              responseBody.output_text ||
+              responseBody.output[1].content[0].text;
 
             // Get chapter_id
             const chapter = await this.db
@@ -849,8 +862,14 @@ export class BatchOperationService {
             // Log detailed reason for skipping
             const customId = parsedLine.custom_id || "UNKNOWN";
             const statusCode = parsedLine.response?.status_code || "NO_STATUS";
-            const hasContent =
-              !!parsedLine.response?.body?.choices?.[0]?.message?.content;
+            const hasContent = !!(
+              parsedLine.response?.body?.output_text ||
+              (parsedLine.response?.body?.output &&
+                parsedLine.response.body.output.length > 1 &&
+                parsedLine.response.body.output[1]?.content &&
+                parsedLine.response.body.output[1].content.length > 0 &&
+                parsedLine.response.body.output[1].content[0]?.text)
+            );
             const error = parsedLine.response?.body?.error || null;
 
             console.warn(

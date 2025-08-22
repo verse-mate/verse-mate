@@ -53,11 +53,29 @@ const modelOptions: ModelOption[] = [
     inputCost: 0.05,
     outputCost: 0.4,
   },
+];
+
+interface EffortOption {
+  value: string;
+  label: string;
+  description: string;
+}
+
+const effortOptions: EffortOption[] = [
   {
-    value: "gpt-5-chat-latest",
-    label: "GPT-5 Chat Latest ($1.25/$10.00 per 1M tokens)",
-    inputCost: 1.25,
-    outputCost: 10,
+    value: "low",
+    label: "Low Effort",
+    description: "Faster, less reasoning",
+  },
+  {
+    value: "medium",
+    label: "Medium Effort",
+    description: "Balanced reasoning (default)",
+  },
+  {
+    value: "high",
+    label: "High Effort",
+    description: "Slower, more thorough reasoning",
   },
 ];
 
@@ -68,19 +86,21 @@ export const BatchOperations = () => {
   const [error, setError] = useState<string | null>(null);
   const [monitoringId, setMonitoringId] = useState<string | null>(null);
 
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-5-mini");
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-5");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedBibleVersion, setSelectedBibleVersion] =
     useState<string>("NASB1995");
   const [selectedExplanationTypes, setSelectedExplanationTypes] = useState<
     string[]
-  >(["summary"]);
+  >(["summary", "detailed", "byline"]);
   const [skipExistingExplanations, setSkipExistingExplanations] =
-    useState(true);
+    useState(false);
+  const [selectedEffort, setSelectedEffort] = useState<string>("medium");
 
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
+  const [effortDropdownOpen, setEffortDropdownOpen] = useState(false);
 
   const fetchBatchJobsOnly = useCallback(async () => {
     try {
@@ -190,6 +210,7 @@ export const BatchOperations = () => {
         model: selectedModel,
         explanationTypes: selectedExplanationTypes,
         skipExisting: skipExistingExplanations,
+        effort: selectedEffort as "low" | "medium" | "high",
       });
       await fetchBatchJobs();
     } catch (err) {
@@ -311,6 +332,9 @@ export const BatchOperations = () => {
   const selectedModelData = modelOptions.find(
     (model) => model.value === selectedModel,
   );
+  const selectedEffortData = effortOptions.find(
+    (effort) => effort.value === selectedEffort,
+  );
 
   return (
     <div className={styles.container}>
@@ -333,7 +357,7 @@ export const BatchOperations = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr",
             gap: "20px",
             marginBottom: "20px",
           }}
@@ -367,6 +391,48 @@ export const BatchOperations = () => {
                     icon={<CheckIcon />}
                   >
                     {model.label}
+                  </SelectDropdown.Item>
+                ))}
+              </SelectDropdown.Content>
+            </SelectDropdown.Root>
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              Effort Level:
+            </label>
+            <SelectDropdown.Root
+              open={effortDropdownOpen}
+              onOpenChange={setEffortDropdownOpen}
+              onValueChange={(val) => setSelectedEffort(val)}
+            >
+              <SelectDropdown.Trigger
+                selectedBook={null}
+                selectedVerse={null}
+                defaultPlaceholder={
+                  selectedEffortData?.label || "Select Effort"
+                }
+                icon={<ChevronDownIcon />}
+              />
+              <SelectDropdown.Content align="start" style={{ width: "300px" }}>
+                {effortOptions.map((effort) => (
+                  <SelectDropdown.Item
+                    key={effort.value}
+                    value={effort.value}
+                    icon={<CheckIcon />}
+                  >
+                    <div>
+                      <div>{effort.label}</div>
+                      <div style={{ fontSize: "12px", color: "#666" }}>
+                        {effort.description}
+                      </div>
+                    </div>
                   </SelectDropdown.Item>
                 ))}
               </SelectDropdown.Content>
@@ -461,40 +527,49 @@ export const BatchOperations = () => {
         </div>
 
         <div style={{ marginBottom: "20px" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "8px",
-              fontWeight: "bold",
-            }}
-          >
-            Explanation Types:
-          </label>
-          <div style={{ display: "flex", gap: "10px" }}>
-            {["summary", "detailed", "byline"].map((type) => (
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <div>
               <label
-                key={type}
-                style={{ display: "flex", alignItems: "center", gap: "5px" }}
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
               >
-                <input
-                  type="checkbox"
-                  checked={selectedExplanationTypes.includes(type)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedExplanationTypes([
-                        ...selectedExplanationTypes,
-                        type,
-                      ]);
-                    } else {
-                      setSelectedExplanationTypes(
-                        selectedExplanationTypes.filter((t) => t !== type),
-                      );
-                    }
-                  }}
-                />
-                {type.charAt(0).toUpperCase() + type.slice(1)}
+                Explanation Types:
               </label>
-            ))}
+              <div style={{ display: "flex", gap: "10px" }}>
+                {["summary", "detailed", "byline"].map((type) => (
+                  <label
+                    key={type}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedExplanationTypes.includes(type)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedExplanationTypes([
+                            ...selectedExplanationTypes,
+                            type,
+                          ]);
+                        } else {
+                          setSelectedExplanationTypes(
+                            selectedExplanationTypes.filter((t) => t !== type),
+                          );
+                        }
+                      }}
+                    />
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div style={{ flex: 1 }} />
           </div>
         </div>
 
@@ -527,7 +602,15 @@ export const BatchOperations = () => {
           </p>
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "16px",
+            marginBottom: "20px",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
           <Button
             onClick={handleCreateBatch}
             disabled={
@@ -536,6 +619,7 @@ export const BatchOperations = () => {
               selectedExplanationTypes.length === 0
             }
             loading={creating}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
           >
             {creating ? "Creating..." : "Create New Batch"}
           </Button>
@@ -544,7 +628,7 @@ export const BatchOperations = () => {
             onClick={refreshAndMonitorAll}
             disabled={listLoading}
             loading={listLoading}
-            style={{ marginLeft: "10px" }}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
           >
             {listLoading ? "Refreshing..." : "Refresh & Monitor All"}
           </Button>
