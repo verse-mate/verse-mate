@@ -51,9 +51,11 @@ async function calculateActualCost(
 }
 
 export const batchMonitoringConsumer = async (job: Job) => {
-  const { batchId, model } = job.data;
+  const { batchId, model, monitoringAttempt = 1 } = job.data;
 
-  console.log(`[BATCH_MONITORING] Processing batch ${batchId}`);
+  console.log(
+    `[BATCH_MONITORING] Processing batch ${batchId} (monitoring attempt ${monitoringAttempt})`,
+  );
 
   try {
     const batch = await openai.batches.retrieve(batchId);
@@ -277,15 +279,21 @@ export const batchMonitoringConsumer = async (job: Job) => {
         }
       }
 
+      console.log(
+        `[BATCH_MONITORING] Re-queuing job for batch ${batchId} with 5 minute delay...`,
+      );
       await batchMonitoringQueue.add(
         BATCH_MONITORING_QUEUE,
-        { batchId, model },
+        { batchId, model, monitoringAttempt: monitoringAttempt + 1 },
         {
-          jobId: batchId,
+          jobId: `${batchId}-${Date.now()}`, // Unique job ID to avoid conflicts
           delay: 5 * 60 * 1000,
           removeOnComplete: true,
           removeOnFail: 100,
         },
+      );
+      console.log(
+        `[BATCH_MONITORING] Successfully re-queued job for batch ${batchId}`,
       );
       return;
     }
@@ -308,9 +316,9 @@ export const batchMonitoringConsumer = async (job: Job) => {
       );
       await batchMonitoringQueue.add(
         BATCH_MONITORING_QUEUE,
-        { batchId, model },
+        { batchId, model, monitoringAttempt: monitoringAttempt + 1 },
         {
-          jobId: batchId,
+          jobId: `${batchId}-${Date.now()}`, // Unique job ID to avoid conflicts
           delay,
           removeOnComplete: true,
           removeOnFail: 100,
