@@ -101,6 +101,21 @@ export const batchMonitoringConsumer = async (job: Job) => {
           return;
         }
 
+        // Get the actual version_id (UUID) for the bible version
+        const version = await db
+          .getOrCreateConnection()
+          .selectFrom("bible_versions")
+          .where("version_key", "=", batchJob.bible_version)
+          .select("id")
+          .executeTakeFirst();
+
+        if (!version) {
+          console.error(
+            `[BATCH_MONITORING] Bible version not found: ${batchJob.bible_version}`,
+          );
+          return;
+        }
+
         for (const line of lines) {
           const parsedLine = JSON.parse(line);
 
@@ -163,7 +178,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
                   type: explanationType as any,
                   explanation: explanationContent,
                   chapter_id: chapter.chapter_id,
-                  version_id: batchJob.bible_version,
+                  version_id: version.id,
                 })
                 .onConflict((oc) =>
                   oc.columns(["chapter_id", "type", "version_id"]).doUpdateSet({
