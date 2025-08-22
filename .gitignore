@@ -107,6 +107,7 @@ web_modules/
 
 .next
 out
+apps/website/.next
 
 # PWA build artifacts
 

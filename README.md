@@ -2,7 +2,9 @@
 
 ## Introduction 
 
-VerseMate is a Bible reading platform enhanced by AI-driven translations, designed to make biblical texts more accessible and understandable. The platform’s core feature set focuses on offering complete, seamless reading experiences for two foundational books: Genesis and Matthew. With AI-generated translations, VerseMate allows users to toggle between the original scripture and a detailed, GPT-powered translation, enhancing comprehension without simplifying the text.
+VerseMate is a Bible reading platform enhanced by AI-driven translations, designed to make biblical texts more accessible and understandable. The platform's core feature set focuses on offering complete, seamless reading experiences for two foundational books: Genesis and Matthew. With AI-generated translations, VerseMate allows users to toggle between the original scripture and a detailed, GPT-powered translation, enhancing comprehension without simplifying the text.
+
+This repository includes both the main VerseMate application and the marketing website located in `apps/website/`.
 
 A unique feature of VerseMate is the ability for users to request more detailed, AI-driven explanations of specific chapters and verses. In this interactive mode, the AI provides in-depth discussions on the chosen book and chapter, offering valuable insights tailored to the user’s inquiries. The app also prioritizes user experience through a minimalist, accessible design that supports both mobile and desktop use, with features like dark mode and adjustable font sizes.
 
