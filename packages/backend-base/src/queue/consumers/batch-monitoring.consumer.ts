@@ -116,12 +116,20 @@ export const batchMonitoringConsumer = async (job: Job) => {
           .getOrCreateConnection()
           .selectFrom("batch_jobs")
           .where("openai_batch_id", "=", batchId)
-          .select(["bible_version", "book_id"])
+          .select(["bible_version", "book_id", "explanations_processed"])
           .executeTakeFirst();
 
         if (!batchJob) {
           console.error(
             `[BATCH_MONITORING] Batch job not found for ${batchId}`,
+          );
+          return;
+        }
+
+        // Check if explanations have already been processed
+        if (batchJob.explanations_processed) {
+          console.log(
+            `[BATCH_MONITORING] Batch ${batchId} explanations already processed, skipping duplicate processing`,
           );
           return;
         }
@@ -252,6 +260,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
             actual_cost: actualCost,
             completed_requests: successfulExplanations,
             failed_requests: failedExplanations,
+            explanations_processed: true,
           })
           .where("openai_batch_id", "=", batchId)
           .execute();
