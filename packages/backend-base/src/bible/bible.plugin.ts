@@ -42,11 +42,40 @@ async function gpt5Text({
   return response.output_text ?? "oopsies";
 }
 
-const getExplanationTypePrompt = (
+import { UserPromptRepository } from "./repository/user-prompt.repository";
+
+const getExplanationTypePrompt = async (
   type: ExplanationTypeEnum,
   bookName: string,
   chapterNumber: number,
-): { prompt: string; temperature: number } => {
+  dbInstance: any,
+  language: string,
+): Promise<{ prompt: string; temperature: number }> => {
+  try {
+    const userPromptRepo = new UserPromptRepository(dbInstance);
+    const promptTemplate = await userPromptRepo.getActivePromptByType(type);
+
+    if (promptTemplate && (promptTemplate as any).prompt_template) {
+      const temperature =
+        type === ExplanationTypeEnum.detailed
+          ? 0.1
+          : type === ExplanationTypeEnum.byline
+            ? 0.2
+            : 0.3;
+      return {
+        prompt: (promptTemplate as any).prompt_template
+          .replace("{bookName}", bookName)
+          .replace("{chapterNumber}", chapterNumber.toString()),
+        temperature,
+      };
+    }
+  } catch (error) {
+    console.warn(
+      "Failed to fetch prompt from database, using fallback:",
+      error,
+    );
+  }
+
   switch (type) {
     case ExplanationTypeEnum.summary:
       return {
@@ -477,13 +506,15 @@ const plugin = new Elysia()
                     version_id: version.id,
                   });
 
-                  const explanationConfig = getExplanationTypePrompt(
+                  const language = getLanguageName(version.language_code);
+
+                  const explanationConfig = await getExplanationTypePrompt(
                     type,
                     book?.name || "",
                     Number(chapterNumber),
+                    db,
+                    language,
                   );
-
-                  const language = getLanguageName(version.language_code);
 
                   const text = await gpt5Text({
                     system: prompt.prompt,
