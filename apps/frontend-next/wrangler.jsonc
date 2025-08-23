@@ -72,7 +72,7 @@
       }
     },
     "staging": {
-n      "name": "verse-mate-staging-app",
+      "name": "verse-mate-staging-app",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
         "APP_URL": "https://staging.app.verse-mate.xyz",
