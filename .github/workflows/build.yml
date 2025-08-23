@@ -81,8 +81,8 @@ jobs:
           fi
         continue-on-error: true
 
-  cloudflare-deploy:
-    name: CloudFlare Deploy
+  frontend-cloudflare-deploy:
+    name: Frontend CloudFlare Deploy
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
     if: github.event_name != 'pull_request'
@@ -112,8 +112,8 @@ jobs:
           command: deploy --env ${{ env.CLOUDFLARE_ENV }}
 
   # Optional: Deploy preview for PRs
-  cloudflare-deploy-preview:
-    name: CloudFlare PR Preview
+  frontend-cloudflare-deploy-preview:
+    name: Frontend CloudFlare PR Preview
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -149,10 +149,86 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const previewUrl = `https://pr-${{ github.event.number }}-v-m-preview.verse-mate.workers.dev`;
+            const previewUrl = `https://pr-${{ github.event.number }}-v-m-preview-app.verse-mate.workers.dev`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Preview deployment is ready! Check it out at: ${previewUrl}`
+              body: `🚀 Frontend preview deployment is ready! Check it out at: ${previewUrl}`
+            })
+
+  website-cloudflare-deploy:
+    name: Website CloudFlare Deploy
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build website for deployment
+        working-directory: ./apps/website
+        run: bun run build
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: ./apps/website
+          command: deploy --env ${{ env.CLOUDFLARE_ENV }}
+
+  # Optional: Deploy preview for PRs
+  website-cloudflare-deploy-preview:
+    name: Website CloudFlare PR Preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    needs: [build-backend, build-frontend]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build website for deployment
+        working-directory: ./apps/website
+        run: bun run build
+
+      - name: Deploy Preview to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: ./apps/website
+          command: versions upload --env ${{ env.CLOUDFLARE_ENV }} --preview-alias pr-${{ github.event.number }}
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = `https://pr-${{ github.event.number }}-verse-mate-website-preview.verse-mate.workers.dev`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Website preview deployment is ready! Check it out at: ${previewUrl}`
             })

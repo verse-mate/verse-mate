@@ -20,6 +20,7 @@ export function getWebsiteUrl(): string {
 
 // Navigate to the main app
 export function navigateToApp(path = "") {
+  if (typeof window === "undefined") return;
   const appUrl = getAppUrl();
   const fullUrl = `${appUrl}${path.startsWith("/") ? path : `/${path}`}`;
   window.location.href = fullUrl;

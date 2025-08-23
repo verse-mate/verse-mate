@@ -64,23 +64,23 @@
   // Environment configurations
   "env": {
     "preview": {
-      "name": "v-m-preview",
+      "name": "v-m-preview-app",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
-        "APP_URL": "https://v-m-preview.verse-mate.workers.dev",
+        "APP_URL": "https://v-m-preview-app.verse-mate.workers.dev",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
       }
     },
     "staging": {
-      "name": "verse-mate-staging",
+n      "name": "verse-mate-staging-app",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
-        "APP_URL": "https://staging.verse-mate.xyz",
+        "APP_URL": "https://staging.app.verse-mate.xyz",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
       },
       "routes": [
         {
-          "pattern": "staging.verse-mate.xyz",
+          "pattern": "staging.app.verse-mate.xyz",
           "custom_domain": true
         }
       ]
@@ -89,12 +89,12 @@
       "name": "verse-mate-production",
       "vars": {
         "API_URL": "https://api.verse-mate.apegro.dev",
-        "APP_URL": "https://versemate.org",
+        "APP_URL": "https://app.versemate.org",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false"
       },
       "routes": [
         {
-          "pattern": "versemate.org",
+          "pattern": "app.versemate.org",
           "custom_domain": true
         }
       ]
