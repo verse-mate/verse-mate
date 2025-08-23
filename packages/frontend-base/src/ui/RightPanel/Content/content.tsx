@@ -3,6 +3,8 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type RoleEnum from "database/src/models/public/RoleEnum";
 import type StatusEnum from "database/src/models/public/StatusEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import { SignIn } from "../../../auth/SignIn";
+import { SignUp } from "../../../auth/SignUp";
 import type { UserSession } from "../../../hooks/session";
 import { History } from "../../../ui/ConversationHistory";
 import { homeOptions } from "../../../utils/home-options";
@@ -62,6 +64,8 @@ type Props = {
     testament: TestamentEnum;
   }) => void;
   askVerseMate: boolean;
+  rightPanelContent: string;
+  setRightPanelContent: (value: string) => void;
 };
 
 export const Content = ({
@@ -69,6 +73,8 @@ export const Content = ({
   conversationsHistory,
   selectConversation,
   askVerseMate,
+  rightPanelContent,
+  setRightPanelContent,
 }: Props) => {
   return (
     <>
@@ -87,7 +93,9 @@ export const Content = ({
               </Chat.Card>
             ) : (
               <LoginCard.Root>
-                <LoginCard.Content />
+                <LoginCard.Content
+                  setRightPanelContent={setRightPanelContent}
+                />
               </LoginCard.Root>
             )}
           </RadixTabs.Content>
@@ -99,7 +107,9 @@ export const Content = ({
               </Chat.Card>
             ) : (
               <LoginCard.Root>
-                <LoginCard.Content />
+                <LoginCard.Content
+                  setRightPanelContent={setRightPanelContent}
+                />
               </LoginCard.Root>
             )}
           </RadixTabs.Content>
@@ -150,7 +160,9 @@ export const Content = ({
               </div>
             ) : (
               <LoginCard.Root>
-                <LoginCard.Content />
+                <LoginCard.Content
+                  setRightPanelContent={setRightPanelContent}
+                />
               </LoginCard.Root>
             )}
           </RadixTabs.Content>
@@ -158,7 +170,9 @@ export const Content = ({
       )}
 
       <RadixTabs.Content className={styles.content} value="menu">
-        <div className={styles.moreOptionsContainer}>
+        <div
+          className={`${styles.moreOptionsContainer} ${!session?.id && styles.noPadding}`}
+        >
           {session?.id ? (
             <>
               <ProfileButton link="/" />
@@ -177,9 +191,21 @@ export const Content = ({
               </div>
             </>
           ) : (
-            <LoginCard.Root>
-              <LoginCard.Content />
-            </LoginCard.Root>
+            <>
+              {rightPanelContent === "login" && (
+                <SignIn onSwitch={() => setRightPanelContent("signup")} />
+              )}
+              {rightPanelContent === "signup" && (
+                <SignUp onSwitch={() => setRightPanelContent("login")} />
+              )}
+              {rightPanelContent === "default" && (
+                <LoginCard.Root>
+                  <LoginCard.Content
+                    setRightPanelContent={setRightPanelContent}
+                  />
+                </LoginCard.Root>
+              )}
+            </>
           )}
         </div>
       </RadixTabs.Content>

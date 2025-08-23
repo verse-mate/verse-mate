@@ -107,6 +107,7 @@ web_modules/
 
 .next
 out
+apps/website/.next
 
 # PWA build artifacts
 
@@ -184,3 +185,4 @@ infra
 bugs.txt
 
 test-opennext
+apps/backend/batch_files/

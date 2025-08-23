@@ -2,10 +2,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative;
     width: 100%;
-    height: calc(100dvh - 56px);
-    overflow: hidden;
+    overflow-y: auto;
+    height: calc(100dvh);   
     font-family: Inter, sans-serif;
     padding: 24px;
+    background-image: linear-gradient(to top left, var(--rodeo-dust) 45%, var(--night) 80%);
 }

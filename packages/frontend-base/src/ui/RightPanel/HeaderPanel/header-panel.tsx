@@ -88,9 +88,16 @@ type Props = {
   activeTab: string;
   askVerseMate: boolean;
   setActiveTab: (value: string) => void;
+  rightPanelContent: string;
+  setRightPanelContent: (value: string) => void;
 };
 
-export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
+export const Nav = ({
+  activeTab,
+  askVerseMate,
+  setActiveTab,
+  setRightPanelContent,
+}: Props) => {
   const queryClient = useQueryClient();
   const { explanationType, bookId, verseId, bibleVersion } =
     useGetSearchParams();
@@ -191,6 +198,7 @@ export const Nav = ({ activeTab, askVerseMate, setActiveTab }: Props) => {
             e.stopPropagation();
             const targetTab = activeTab === "menu" ? "explanation" : "menu";
             setActiveTab(targetTab);
+            setRightPanelContent("default");
           }}
           style={{ position: "relative", zIndex: 9999 }}
         >

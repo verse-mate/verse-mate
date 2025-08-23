@@ -59,6 +59,19 @@ export const ProfileButton = ({ link }: UserProfileProps) => {
             onValueChange={setPerson}
             className={`${styles.groupItem}`}
           >
+            {session?.is_admin && (
+              <>
+                <Link href="/admin">
+                  <DropdownMenu.Item className={styles.item}>
+                    Admin Panel
+                    <div className={styles.slot}>
+                      <SettingsIcon className={styles.settingsIcon} />
+                    </div>
+                  </DropdownMenu.Item>
+                </Link>
+                <DropdownMenu.Separator className={styles.separator} />
+              </>
+            )}
             {/* <Link href={link}>
               <DropdownMenu.Item className={styles.item}>
                 Settings
