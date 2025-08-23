@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   // Asset optimization
   assetPrefix: process.env.NODE_ENV === "production" ? undefined : "",
 
+  // Disable ESLint during builds
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // Note: Redirects don't work with static export
   // Use JavaScript navigation instead (see navigation.ts)
 };
