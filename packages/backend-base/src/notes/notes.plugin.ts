@@ -1,9 +1,13 @@
+import bearer from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
+import { authDerive } from "../auth/auth.utils";
 import shared from "../shared/shared.plugin";
 import { NotesService } from "./notes.service";
 
 const plugin = new Elysia({ prefix: "/notes" })
   .use(shared)
+  .use(bearer())
+  .resolve({ as: "scoped" }, authDerive)
   .state((state) => {
     console.log(
       "[Notes Plugin] Initializing NotesService with real database connection...",
@@ -15,8 +19,11 @@ const plugin = new Elysia({ prefix: "/notes" })
   })
   .get(
     "/:bookName/:chapterNumber",
-    async ({ params, query, store, set }) => {
-      console.log("[Notes Plugin] GET notes request:", { params, query });
+    async ({ params, store, set, currentUserId }) => {
+      console.log("[Notes Plugin] GET notes request:", {
+        params,
+        currentUserId,
+      });
 
       const { notesService } = store as any;
       if (!notesService) {
@@ -25,11 +32,8 @@ const plugin = new Elysia({ prefix: "/notes" })
       }
 
       try {
-        // Extract user ID from query or use proper UUID for development
-        const userId = query.userId || "550e8400-e29b-41d4-a716-446655440000";
-
         const notes = await notesService.getNotesByChapter(
-          userId,
+          currentUserId,
           params.bookName,
           Number.parseInt(params.chapterNumber),
         );
@@ -47,15 +51,12 @@ const plugin = new Elysia({ prefix: "/notes" })
         bookName: t.String(),
         chapterNumber: t.String(),
       }),
-      query: t.Object({
-        userId: t.Optional(t.String()),
-      }),
     },
   )
   .post(
     "/",
-    async ({ body, store, set }) => {
-      console.log("[Notes Plugin] POST note request:", body);
+    async ({ body, store, set, currentUserId }) => {
+      console.log("[Notes Plugin] POST note request:", { body, currentUserId });
 
       const { notesService } = store as any;
       if (!notesService) {
@@ -64,10 +65,19 @@ const plugin = new Elysia({ prefix: "/notes" })
       }
 
       try {
+        // Get chapter_id from book name and chapter number
+        const chapterId = await notesService.getChapterId(
+          body.bookName,
+          body.chapterNumber,
+        );
+        if (!chapterId) {
+          set.status = 400;
+          return { error: "Invalid book or chapter" };
+        }
+
         const note = await notesService.createNote({
-          user_id: body.userId || "mock-user-id",
-          book_name: body.bookName,
-          chapter_number: body.chapterNumber,
+          user_id: currentUserId,
+          chapter_id: chapterId,
           content: body.content,
         });
 
@@ -81,7 +91,6 @@ const plugin = new Elysia({ prefix: "/notes" })
     },
     {
       body: t.Object({
-        userId: t.Optional(t.String()),
         bookName: t.String(),
         chapterNumber: t.Number(),
         content: t.String(),
@@ -90,8 +99,12 @@ const plugin = new Elysia({ prefix: "/notes" })
   )
   .put(
     "/:noteId",
-    async ({ params, body, store, set }) => {
-      console.log("[Notes Plugin] PUT note request:", { params, body });
+    async ({ params, body, store, set, currentUserId }) => {
+      console.log("[Notes Plugin] PUT note request:", {
+        params,
+        body,
+        currentUserId,
+      });
 
       const { notesService } = store as any;
       if (!notesService) {
@@ -100,10 +113,13 @@ const plugin = new Elysia({ prefix: "/notes" })
       }
 
       try {
-        const userId = body.userId || "550e8400-e29b-41d4-a716-446655440000";
-        const note = await notesService.updateNote(params.noteId, userId, {
-          content: body.content,
-        });
+        const note = await notesService.updateNote(
+          params.noteId,
+          currentUserId,
+          {
+            content: body.content,
+          },
+        );
 
         if (!note) {
           set.status = 404;
@@ -123,15 +139,17 @@ const plugin = new Elysia({ prefix: "/notes" })
         noteId: t.String(),
       }),
       body: t.Object({
-        userId: t.Optional(t.String()),
         content: t.String(),
       }),
     },
   )
   .delete(
     "/:noteId",
-    async ({ params, query, store, set }) => {
-      console.log("[Notes Plugin] DELETE note request:", { params, query });
+    async ({ params, store, set, currentUserId }) => {
+      console.log("[Notes Plugin] DELETE note request:", {
+        params,
+        currentUserId,
+      });
 
       const { notesService } = store as any;
       if (!notesService) {
@@ -140,8 +158,10 @@ const plugin = new Elysia({ prefix: "/notes" })
       }
 
       try {
-        const userId = query.userId || "550e8400-e29b-41d4-a716-446655440000";
-        const success = await notesService.deleteNote(params.noteId, userId);
+        const success = await notesService.deleteNote(
+          params.noteId,
+          currentUserId,
+        );
 
         if (!success) {
           set.status = 404;
@@ -159,9 +179,6 @@ const plugin = new Elysia({ prefix: "/notes" })
     {
       params: t.Object({
         noteId: t.String(),
-      }),
-      query: t.Object({
-        userId: t.Optional(t.String()),
       }),
     },
   );

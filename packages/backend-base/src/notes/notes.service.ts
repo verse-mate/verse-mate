@@ -1,11 +1,9 @@
-import { sql } from "kysely";
 import type { db } from "../shared/shared.plugin";
 
 export interface Note {
   note_id: string;
   user_id: string;
-  book_name: string;
-  chapter_number: number;
+  chapter_id: number;
   content: string;
   created_at: Date;
   updated_at: Date;
@@ -13,9 +11,13 @@ export interface Note {
 
 export interface CreateNoteRequest {
   user_id: string;
+  chapter_id: number;
+  content: string;
+}
+
+export interface NoteWithChapterInfo extends Note {
   book_name: string;
   chapter_number: number;
-  content: string;
 }
 
 export interface UpdateNoteRequest {
@@ -37,18 +39,13 @@ export class NotesService {
   private async testDatabaseConnection() {
     try {
       // Try a simple query to test the connection
-      await sql`SELECT 1`.execute(this.db.getOrCreateConnection());
+      await this.db
+        .getOrCreateConnection()
+        .selectFrom("notes")
+        .select("note_id")
+        .limit(1)
+        .execute();
       console.log("[NotesService] Database connection successful");
-
-      // Test the notes table structure
-      const tableInfo = await sql`
-        SELECT column_name, data_type 
-        FROM information_schema.columns 
-        WHERE table_name = 'notes' 
-        ORDER BY ordinal_position
-      `.execute(this.db.getOrCreateConnection());
-
-      console.log("[NotesService] Notes table structure:", tableInfo.rows);
     } catch (error) {
       console.warn(
         "[NotesService] Database connection failed, using in-memory storage:",
@@ -62,7 +59,7 @@ export class NotesService {
     userId: string,
     bookName: string,
     chapterNumber: number,
-  ): Promise<Note[]> {
+  ): Promise<NoteWithChapterInfo[]> {
     if (this.useInMemory) {
       console.log("[NotesService] Fetching notes from in-memory storage:", {
         userId,
@@ -72,11 +69,15 @@ export class NotesService {
       const notes = this.inMemoryNotes.filter(
         (note) =>
           note.user_id === userId &&
-          note.book_name === bookName &&
-          note.chapter_number === chapterNumber,
+          note.chapter_id ===
+            this.getChapterIdFromMemory(bookName, chapterNumber),
       );
       console.log(`[NotesService] Found ${notes.length} notes in memory`);
-      return notes;
+      return notes.map((note) => ({
+        ...note,
+        book_name: bookName,
+        chapter_number: chapterNumber,
+      }));
     }
 
     try {
@@ -84,22 +85,52 @@ export class NotesService {
         `[NotesService] Getting notes from database for ${bookName} ${chapterNumber}`,
       );
 
-      const result = await sql`
-        SELECT * FROM notes 
-        WHERE user_id = ${userId} 
-          AND book_name = ${bookName} 
-          AND chapter_number = ${chapterNumber} 
-        ORDER BY created_at DESC
-      `.execute(this.db.getOrCreateConnection());
+      // First, get the chapter_id from book name and chapter number
+      const chapterResult = await this.db
+        .getOrCreateConnection()
+        .selectFrom("chapters")
+        .innerJoin("books", "books.book_id", "chapters.book_id")
+        .select("chapters.chapter_id")
+        .where("books.name", "=", bookName)
+        .where("chapters.chapter_number", "=", chapterNumber)
+        .executeTakeFirst();
 
-      console.log(
-        `[NotesService] Found ${result.rows.length} notes in database`,
-      );
-      return result.rows as Note[];
+      if (!chapterResult) {
+        console.log(
+          `[NotesService] Chapter not found: ${bookName} ${chapterNumber}`,
+        );
+        return [];
+      }
+
+      // Then get notes for that chapter
+      const notes = await this.db
+        .getOrCreateConnection()
+        .selectFrom("notes")
+        .selectAll()
+        .where("user_id", "=", userId)
+        .where("chapter_id", "=", chapterResult.chapter_id)
+        .orderBy("created_at", "desc")
+        .execute();
+
+      console.log(`[NotesService] Found ${notes.length} notes in database`);
+
+      return notes.map((note) => ({
+        ...note,
+        book_name: bookName,
+        chapter_number: chapterNumber,
+      }));
     } catch (error) {
       console.error("[NotesService] Error fetching notes:", error);
       return [];
     }
+  }
+
+  private getChapterIdFromMemory(
+    bookName: string,
+    chapterNumber: number,
+  ): number {
+    // Simple hash for in-memory mode
+    return bookName.length * 1000 + chapterNumber;
   }
 
   async createNote(noteData: CreateNoteRequest): Promise<Note> {
@@ -108,8 +139,7 @@ export class NotesService {
       const newNote: Note = {
         note_id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         user_id: noteData.user_id,
-        book_name: noteData.book_name,
-        chapter_number: noteData.chapter_number,
+        chapter_id: noteData.chapter_id,
         content: noteData.content,
         created_at: new Date(),
         updated_at: new Date(),
@@ -121,26 +151,18 @@ export class NotesService {
 
     try {
       console.log("[NotesService] Creating note in database:", noteData);
-      console.log("[NotesService] Data types:", {
-        user_id: typeof noteData.user_id,
-        book_name: typeof noteData.book_name,
-        chapter_number: typeof noteData.chapter_number,
-        content: typeof noteData.content,
-      });
-      console.log("[NotesService] Data values:", {
-        user_id: noteData.user_id,
-        book_name: noteData.book_name,
-        chapter_number: noteData.chapter_number,
-        content: noteData.content,
-      });
 
-      const result = await sql`
-        INSERT INTO notes (user_id, book_name, chapter_number, content, created_at, updated_at)
-        VALUES (${noteData.user_id}, ${noteData.book_name}, ${noteData.chapter_number}, ${noteData.content}, NOW(), NOW())
-        RETURNING *
-      `.execute(this.db.getOrCreateConnection());
+      const createdNote = await this.db
+        .getOrCreateConnection()
+        .insertInto("notes")
+        .values({
+          user_id: noteData.user_id,
+          chapter_id: noteData.chapter_id,
+          content: noteData.content,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
-      const createdNote = result.rows[0] as Note;
       console.log(
         "[NotesService] Created note in database:",
         createdNote.note_id,
@@ -149,12 +171,6 @@ export class NotesService {
     } catch (error) {
       const err = error as Error;
       console.error("[NotesService] Error creating note:", err);
-      console.error("[NotesService] Error details:", {
-        message: err.message,
-        stack: err.stack,
-        name: err.name,
-      });
-      console.error("[NotesService] Failed data:", noteData);
       throw new Error(`Failed to create note: ${err.message}`);
     }
   }
@@ -171,19 +187,23 @@ export class NotesService {
         updateData,
       });
 
-      const result = await sql`
-        UPDATE notes 
-        SET content = ${updateData.content}, updated_at = NOW()
-        WHERE note_id = ${noteId} AND user_id = ${userId}
-        RETURNING *
-      `.execute(this.db.getOrCreateConnection());
+      const updatedNote = await this.db
+        .getOrCreateConnection()
+        .updateTable("notes")
+        .set({
+          content: updateData.content,
+          updated_at: new Date(),
+        })
+        .where("note_id", "=", noteId)
+        .where("user_id", "=", userId)
+        .returningAll()
+        .executeTakeFirst();
 
-      if (result.rows.length === 0) {
+      if (!updatedNote) {
         console.log("[NotesService] Note not found for update:", noteId);
         return null;
       }
 
-      const updatedNote = result.rows[0] as Note;
       console.log(
         "[NotesService] Updated note in database:",
         updatedNote.note_id,
@@ -202,12 +222,14 @@ export class NotesService {
         userId,
       });
 
-      const result = await sql`
-        DELETE FROM notes 
-        WHERE note_id = ${noteId} AND user_id = ${userId}
-      `.execute(this.db.getOrCreateConnection());
+      const result = await this.db
+        .getOrCreateConnection()
+        .deleteFrom("notes")
+        .where("note_id", "=", noteId)
+        .where("user_id", "=", userId)
+        .executeTakeFirst();
 
-      const deleted = (result.numAffectedRows || 0) > 0;
+      const deleted = Number(result.numDeletedRows) > 0;
       console.log(
         "[NotesService] Deleted note from database:",
         noteId,
@@ -218,6 +240,27 @@ export class NotesService {
     } catch (error) {
       console.error("[NotesService] Error deleting note:", error);
       return false;
+    }
+  }
+
+  async getChapterId(
+    bookName: string,
+    chapterNumber: number,
+  ): Promise<number | null> {
+    try {
+      const result = await this.db
+        .getOrCreateConnection()
+        .selectFrom("chapters")
+        .innerJoin("books", "books.book_id", "chapters.book_id")
+        .select("chapters.chapter_id")
+        .where("books.name", "=", bookName)
+        .where("chapters.chapter_number", "=", chapterNumber)
+        .executeTakeFirst();
+
+      return result?.chapter_id || null;
+    } catch (error) {
+      console.error("[NotesService] Error getting chapter ID:", error);
+      return null;
     }
   }
 }

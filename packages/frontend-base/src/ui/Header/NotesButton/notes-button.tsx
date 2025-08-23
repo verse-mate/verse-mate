@@ -67,10 +67,24 @@ export const NotesButton: React.FC<NotesButtonProps> = ({
     }
 
     try {
-      const res: any = await (api as any)
-        .notes({ bookName })({ chapterNumber: String(chapterNumber) })
-        .get();
-      const notes = res?.data?.notes ?? [];
+      const response = await fetch(
+        `/api/notes/${encodeURIComponent(bookName)}/${chapterNumber}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${document.cookie.match(/(?:^|; )accessToken=([^;]+)/)?.[1] || ""}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        // Keep previous state on unexpected errors to avoid visual flicker
+        return;
+      }
+
+      const data = await response.json();
+      const notes = data?.notes ?? [];
       setHasNotes((notes?.length ?? 0) > 0);
     } catch (error) {
       // Keep previous state on unexpected errors to avoid visual flicker

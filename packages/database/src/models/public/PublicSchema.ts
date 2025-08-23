@@ -12,6 +12,7 @@ import type { default as GenresTable } from "./Genres";
 import type { default as KyselyMigrationTable } from "./KyselyMigration";
 import type { default as KyselyMigrationLockTable } from "./KyselyMigrationLock";
 import type { default as MessagesTable } from "./Messages";
+import type { default as NotesTable } from "./Notes";
 import type { default as PromptsTable } from "./Prompts";
 import type { default as SubtitlesTable } from "./Subtitles";
 import type { default as UserTable } from "./User";
@@ -42,6 +43,8 @@ export default interface PublicSchema {
   conversations: ConversationsTable;
 
   messages: MessagesTable;
+
+  notes: NotesTable;
 
   favorites: FavoritesTable;
 

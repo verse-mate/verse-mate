@@ -9,11 +9,15 @@ import styles from "./NotesModal.module.css";
 type Note = {
   note_id: string;
   user_id: string;
-  book_name: string;
-  chapter_number: number;
+  chapter_id: number;
   content: string;
   created_at: string;
   updated_at: string;
+};
+
+type NoteWithChapterInfo = Note & {
+  book_name: string;
+  chapter_number: number;
 };
 
 // (No test override) — uses real session
@@ -46,10 +50,23 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const res = await (api as any)
-        .notes({ bookName })({ chapterNumber: String(chapterNumber) })
-        .get();
-      const fetchedNotes = res?.data?.notes ?? [];
+      const response = await fetch(
+        `/api/notes/${encodeURIComponent(bookName)}/${chapterNumber}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${document.cookie.match(/(?:^|; )accessToken=([^;]+)/)?.[1] || ""}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const fetchedNotes = data?.notes ?? [];
       setNotes(fetchedNotes);
       return;
     } catch (err) {
@@ -70,14 +87,35 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     if (!newNoteContent.trim()) return;
 
     try {
-      const res = await (api as any).notes.post({
-        bookName,
-        chapterNumber,
-        content: newNoteContent.trim(),
+      const response = await fetch("/api/notes", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${document.cookie.match(/(?:^|; )accessToken=([^;]+)/)?.[1] || ""}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookName,
+          chapterNumber,
+          content: newNoteContent.trim(),
+        }),
       });
-      const newNote = res?.data?.note ?? res?.data;
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const newNote = data?.note;
       if (!newNote?.note_id) throw new Error("Invalid note");
-      setNotes((prev) => [newNote, ...prev]);
+
+      // Add book/chapter info for display
+      const noteWithInfo = {
+        ...newNote,
+        book_name: bookName,
+        chapter_number: chapterNumber,
+      };
+
+      setNotes((prev) => [noteWithInfo, ...prev]);
       setNewNoteContent("");
       onNotesChange?.();
       return;
@@ -90,13 +128,35 @@ export const NotesModal: React.FC<NotesModalProps> = ({
     if (!editContent.trim()) return;
 
     try {
-      const res = await (api as any).notes({ noteId })("put")({
-        content: editContent.trim(),
+      const response = await fetch(`/api/notes/${encodeURIComponent(noteId)}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${document.cookie.match(/(?:^|; )accessToken=([^;]+)/)?.[1] || ""}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: editContent.trim(),
+        }),
       });
-      const updatedNote = res?.data?.note ?? res?.data;
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const updatedNote = data?.note;
       if (!updatedNote?.note_id) throw new Error("Invalid note");
+
       setNotes((prev) =>
-        prev.map((note) => (note.note_id === noteId ? updatedNote : note)),
+        prev.map((note) =>
+          note.note_id === noteId
+            ? {
+                ...updatedNote,
+                book_name: bookName,
+                chapter_number: chapterNumber,
+              }
+            : note,
+        ),
       );
       setEditingNoteId(null);
       setEditContent("");
@@ -108,8 +168,20 @@ export const NotesModal: React.FC<NotesModalProps> = ({
 
   const handleDeleteNote = async (noteId: string) => {
     try {
-      const res = await (api as any).notes({ noteId })("delete")();
-      const success = res?.data?.success !== false;
+      const response = await fetch(`/api/notes/${encodeURIComponent(noteId)}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${document.cookie.match(/(?:^|; )accessToken=([^;]+)/)?.[1] || ""}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const success = data?.success !== false;
       if (success) {
         setNotes((prev) => prev.filter((note) => note.note_id !== noteId));
         onNotesChange?.();
