@@ -921,7 +921,7 @@ export class BatchOperationService {
       );
     }
 
-    const batchDir = path.join(process.cwd(), "batch_files");
+    const batchDir = "/tmp";
     if (!fs.existsSync(batchDir)) {
       fs.mkdirSync(batchDir, { recursive: true });
     }
