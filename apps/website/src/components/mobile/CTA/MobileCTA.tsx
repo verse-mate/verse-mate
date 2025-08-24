@@ -149,7 +149,7 @@ export default function MobileCTA() {
         style={{
           marginTop: mobileTokens.spacing.xl,
           paddingTop: mobileTokens.spacing.lg,
-          borderTop: `1px solid rgba(255, 255, 255, 0.2)`,
+          borderTop: "1px solid rgba(255, 255, 255, 0.2)",
         }}
       >
         <p

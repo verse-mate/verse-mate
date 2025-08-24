@@ -1,0 +1,39 @@
+{
+  "name": "automated-bug-fixer",
+  "version": "1.0.0",
+  "description": "Intelligent automated bug-fixing pipeline with Jira MCP and Playwright integration",
+  "main": "cli.ts",
+  "bin": {
+    "auto-bug-fix": "./cli.ts"
+  },
+  "scripts": {
+    "demo": "bun examples/demo.ts",
+    "fix": "bun cli.ts",
+    "test": "echo 'No tests yet'",
+    "build": "tsc --noEmit"
+  },
+  "keywords": [
+    "automation",
+    "bug-fixing",
+    "jira",
+    "playwright",
+    "testing",
+    "ci-cd",
+    "mcp",
+    "claude"
+  ],
+  "author": "VerseMate Team",
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "devDependencies": {
+    "bun-types": "^1.0.0",
+    "@biomejs/biome": "^1.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  }
+}
