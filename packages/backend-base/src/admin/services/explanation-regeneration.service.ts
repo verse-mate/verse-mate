@@ -58,6 +58,7 @@ export class ExplanationRegenerationService {
     model: string,
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
+    sendChapterContext = false,
   ) {
     try {
       const connection = this.db.getOrCreateConnection();
@@ -110,28 +111,37 @@ export class ExplanationRegenerationService {
         language,
       );
 
-      const verses = await connection
-        .selectFrom("verses")
-        .where("chapter_id", "=", chapter_id)
-        .where("version_id", "=", version.id)
-        .select(["verse_number", "text"])
-        .orderBy("verse_number", "asc")
-        .execute();
+      let userPrompt: string;
 
-      if (!verses || verses.length === 0) {
-        throw new Error(
-          `No verses found for chapter ${chapterNumber} in version ${bibleVersion}`,
-        );
+      if (sendChapterContext) {
+        const verses = await connection
+          .selectFrom("verses")
+          .where("chapter_id", "=", chapter_id)
+          .where("version_id", "=", version.id)
+          .select(["verse_number", "text"])
+          .orderBy("verse_number", "asc")
+          .execute();
+
+        if (!verses || verses.length === 0) {
+          throw new Error(
+            `No verses found for chapter ${chapterNumber} in version ${bibleVersion}`,
+          );
+        }
+
+        const versesText = verses
+          .map((v) => `${v.verse_number}. ${v.text}`)
+          .join("\n");
+
+        userPrompt = this.getUserPrompt({
+          explanationPrompt: `${explanationConfig.prompt}\n\nBiblical Text (${book.name} ${chapterNumber}):\n${versesText}`,
+          language,
+        });
+      } else {
+        userPrompt = this.getUserPrompt({
+          explanationPrompt: explanationConfig.prompt,
+          language,
+        });
       }
-
-      const versesText = verses
-        .map((v) => `${v.verse_number}. ${v.text}`)
-        .join("\n");
-
-      const userPrompt = this.getUserPrompt({
-        explanationPrompt: `${explanationConfig.prompt}\n\nBiblical Text (${book.name} ${chapterNumber}):\n${versesText}`,
-        language,
-      });
 
       console.log(
         `[REGENERATION] Generating new explanation for ${book.name} ${chapterNumber}, type: ${explanationType}, model: ${model}`,

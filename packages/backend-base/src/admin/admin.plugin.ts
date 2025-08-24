@@ -1,9 +1,11 @@
 import bearer from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
+import PromptStatusEnum from "../../../database/src/models/public/PromptStatusEnum";
 import { adminGuard } from "../auth/admin.utils";
 import { authDerive } from "../auth/auth.utils";
 import shared from "../shared/shared.plugin";
 import { AdminDatabaseService } from "./services/admin-database.service";
+import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
@@ -17,6 +19,7 @@ const plugin = new Elysia()
       getAdminDatabaseService: () => new AdminDatabaseService(state.db),
       getExplanationRegenerationService: () =>
         new ExplanationRegenerationService(state.db),
+      adminPromptService: new AdminPromptService(state.db),
     };
   })
   .guard((app) => {
@@ -283,109 +286,144 @@ const plugin = new Elysia()
             const adminDatabaseService = store.getAdminDatabaseService();
             return await adminDatabaseService.getExplanationStats();
           })
-
-          .get("/prompts/system", async ({ store: { db } }) => {
-            const prompt = await db
-              .getOrCreateConnection()
-              .selectFrom("prompts")
-              .where("status", "=", "active" as any)
-              .select(["prompt", "status"])
-              .executeTakeFirst();
-            return (
-              prompt || {
-                prompt: "No active system prompt found",
-                status: "inactive",
-              }
-            );
-          })
-          .get("/prompts/user", async ({ store: { db } }) => {
-            const prompts = await db
-              .getOrCreateConnection()
-              .selectFrom("user_prompt_templates")
-              .selectAll()
-              .execute();
-            return prompts;
-          })
-          .put(
-            "/prompts/system",
-            async ({ body, store: { db } }) => {
-              await db
-                .getOrCreateConnection()
-                .updateTable("prompts")
-                .set({ status: "inactive" as any })
-                .where("status", "=", "active" as any)
-                .execute();
-
-              await db
-                .getOrCreateConnection()
-                .insertInto("prompts")
-                .values({
-                  prompt: body.prompt,
-                  status: "active" as any,
-                })
-                .execute();
-
-              return { success: true, message: "System prompt updated" };
-            },
-            {
-              body: t.Object({
-                prompt: t.String(),
-              }),
-            },
-          )
-          .put(
-            "/prompts/user/:id",
-            async ({ params, body, store: { db } }) => {
-              const result = await db
-                .getOrCreateConnection()
-                .updateTable("user_prompt_templates")
-                .set({ prompt_template: body.prompt_template })
-                .where("id", "=", Number(params.id))
-                .executeTakeFirst();
-
-              if (result.numUpdatedRows === 0n) {
-                throw new Error(`User prompt template ${params.id} not found`);
-              }
-
-              return {
-                success: true,
-                message: `User prompt template ${params.id} updated`,
-              };
-            },
-            {
-              body: t.Object({
-                prompt_template: t.String(),
-              }),
-            },
-          )
-          .post(
-            "/prompts/user",
-            async ({ body, store: { db } }) => {
-              const result = await db
-                .getOrCreateConnection()
-                .insertInto("user_prompt_templates")
-                .values({
-                  template_name: body.template_name,
-                  explanation_type: body.explanation_type as any,
-                  prompt_template: body.prompt_template,
-                  status: "active" as any,
-                })
-                .returning("id")
-                .executeTakeFirst();
-
-              return {
-                success: true,
-                id: result?.id,
-                message: "User prompt template created",
-              };
-            },
-            {
-              body: t.Object({
-                template_name: t.String(),
-                explanation_type: t.String(),
-                prompt_template: t.String(),
-              }),
-            },
+          .group("/prompts", (app) =>
+            app
+              // GET all prompts
+              .get("/system", async ({ store: { adminPromptService } }) => {
+                return adminPromptService.getAllSystemPrompts();
+              })
+              .get("/user", async ({ store: { adminPromptService } }) => {
+                return adminPromptService.getAllUserPrompts();
+              })
+              // CREATE prompts
+              .post(
+                "/system",
+                async ({ body, store: { adminPromptService } }) => {
+                  return adminPromptService.createSystemPrompt(body.prompt);
+                },
+                { body: t.Object({ prompt: t.String() }) },
+              )
+              .post(
+                "/user",
+                async ({ body, store: { adminPromptService } }) => {
+                  return adminPromptService.createUserPrompt(
+                    body.template_name,
+                    body.explanation_type,
+                    body.prompt_template,
+                  );
+                },
+                {
+                  body: t.Object({
+                    template_name: t.String(),
+                    explanation_type: t.String(),
+                    prompt_template: t.String(),
+                  }),
+                },
+              )
+              // UPDATE prompts
+              .put(
+                "/system/:id",
+                async ({ params, body, store: { adminPromptService } }) => {
+                  return adminPromptService.updateSystemPrompt(
+                    Number(params.id),
+                    body.prompt,
+                  );
+                },
+                {
+                  body: t.Object({ prompt: t.String() }),
+                  params: t.Object({ id: t.String() }),
+                },
+              )
+              .put(
+                "/user/:id",
+                async ({ params, body, store: { adminPromptService } }) => {
+                  return adminPromptService.updateUserPrompt(
+                    Number(params.id),
+                    body.prompt_template,
+                  );
+                },
+                {
+                  body: t.Object({ prompt_template: t.String() }),
+                  params: t.Object({ id: t.String() }),
+                },
+              )
+              // DELETE prompts
+              .delete(
+                "/system/:id",
+                async ({ params, store: { adminPromptService } }) => {
+                  return adminPromptService.deleteSystemPrompt(
+                    Number(params.id),
+                  );
+                },
+              )
+              .delete(
+                "/user/:id",
+                async ({ params, store: { adminPromptService } }) => {
+                  return adminPromptService.deleteUserPrompt(Number(params.id));
+                },
+              )
+              // SET STATUS of prompts
+              .put(
+                "/system/:id/status",
+                async ({ params, body, store: { adminPromptService } }) => {
+                  return adminPromptService.setSystemPromptStatus(
+                    Number(params.id),
+                    body.status,
+                  );
+                },
+                {
+                  body: t.Object({ status: t.Enum(PromptStatusEnum) }),
+                  params: t.Object({ id: t.String() }),
+                },
+              )
+              .put(
+                "/user/:id/status",
+                async ({ params, body, store: { adminPromptService } }) => {
+                  return adminPromptService.setUserPromptStatus(
+                    Number(params.id),
+                    body.status,
+                  );
+                },
+                {
+                  body: t.Object({
+                    status: t.Union([
+                      t.Literal("active"),
+                      t.Literal("inactive"),
+                    ]),
+                  }),
+                  params: t.Object({ id: t.String() }),
+                },
+              )
+              // RESTORE defaults
+              .post(
+                "/restore-defaults",
+                async ({ store: { adminPromptService } }) => {
+                  return adminPromptService.restoreDefaults();
+                },
+              )
+              // PLAYGROUND
+              .post(
+                "/playground",
+                async ({ body, store: { adminPromptService } }) => {
+                  return adminPromptService.testPrompts(body);
+                },
+                {
+                  body: t.Object({
+                    system_prompt: t.String(),
+                    user_prompt: t.String(),
+                    book_name: t.String(),
+                    chapter_number: t.Number(),
+                    bible_version: t.String(),
+                    model: t.String(),
+                    effort: t.Union([
+                      t.Literal("low"),
+                      t.Literal("medium"),
+                      t.Literal("high"),
+                    ]),
+                    send_chapter_context: t.Boolean(),
+                  }),
+                },
+              ),
           )
 
           .get("/commentary/grades", async ({ store: { db } }) => {
