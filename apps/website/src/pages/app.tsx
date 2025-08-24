@@ -5,7 +5,11 @@ import { useEffect } from "react";
 export default function App() {
   useEffect(() => {
     // Redirect to app subdomain
-    window.location.href = "https://app.versemate.org";
+
+    if (typeof window !== 'undefined') {
+      window.location.href = "https://app.versemate.org";
+    }
+
   }, []);
 
   return (

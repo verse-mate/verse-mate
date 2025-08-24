@@ -30,6 +30,8 @@ export default interface UserTable {
     string | null,
     string | null
   >;
+
+  is_admin: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
 export type User = Selectable<UserTable>;

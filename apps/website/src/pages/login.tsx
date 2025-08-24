@@ -5,7 +5,9 @@ import { useEffect } from "react";
 
 export default function Login() {
   useEffect(() => {
-    navigateToLogin();
+    if (typeof window !== "undefined") {
+      navigateToLogin();
+    }
   }, []);
 
   return (

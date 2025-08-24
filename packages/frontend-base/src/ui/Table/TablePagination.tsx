@@ -148,8 +148,7 @@ export const Pagination = ({
 
               return (
                 <Button
-                  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-                  key={index}
+                  key={buttonNumber}
                   name={`page-${buttonNumber}`}
                   aria-label={`page-${buttonNumber}`}
                   aria-current={

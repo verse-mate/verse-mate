@@ -14,6 +14,7 @@ export type TableColumn<T> = {
   title: string | ReactNode;
   property: keyof T;
   render?: (item: T) => ReactNode;
+  className?: string;
 };
 
 export type TableProps<T> = {
@@ -36,8 +37,12 @@ export const Table = <T,>({
       <table className={styles.table} data-zebra={zebra}>
         <TableHead>
           <TableRow>
-            {columns.map((col) => (
-              <TableCell tag="th" key={String(col.property)}>
+            {columns.map((col, colIndex) => (
+              <TableCell
+                tag="th"
+                key={`${String(col.property)}-${colIndex}`}
+                className={col.className}
+              >
                 {col.title}
               </TableCell>
             ))}
@@ -48,9 +53,9 @@ export const Table = <T,>({
             skeletonRowsFake.map((_, index) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: this is created on demand
               <TableRow key={index}>
-                {new Array(columns.length).fill("").map((_, j) => (
+                {columns.map((col, j) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: this is created on demand
-                  <TableCell key={j}>
+                  <TableCell key={j} className={col.className}>
                     <Skeleton height={"1rem"} />
                   </TableCell>
                 ))}
@@ -60,8 +65,11 @@ export const Table = <T,>({
           {!isLoading &&
             data.map((item) => (
               <TableRow key={item.id} {...item.rowProps}>
-                {columns.map((col) => (
-                  <TableCell key={`${item.id}-${String(col.property)}`}>
+                {columns.map((col, colIndex) => (
+                  <TableCell
+                    key={`${item.id}-${String(col.property)}-${colIndex}`}
+                    className={col.className}
+                  >
                     {col.render
                       ? col.render(item)
                       : (item[col.property] as any)}
