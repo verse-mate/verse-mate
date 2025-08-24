@@ -45,20 +45,20 @@ export default function Footer() {
             flex: "none",
             order: 0,
             flexGrow: 0,
-            position: "relative",
           }}
         >
           <Link
             href="/"
             style={{
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 400,
-              fontSize: "14px",
-              lineHeight: "34px",
-              letterSpacing: "0.1em",
               color: "#FFFFFF",
               textDecoration: "none",
+              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
+              fontWeight: 300,
+              fontSize: "16px",
+              letterSpacing: "0.1em",
+              display: "flex",
+              alignItems: "center",
+              height: "100%",
             }}
           >
             VERSE|MATE
@@ -73,129 +73,13 @@ export default function Footer() {
             alignItems: "center",
             padding: "0px",
             gap: "64px",
-            width: "494px",
+            width: "96px",
             height: "24px",
             flex: "none",
             order: 1,
             flexGrow: 0,
           }}
         >
-          {/* Links */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              padding: "0px",
-              gap: "24px",
-              width: "334px",
-              height: "24px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-            }}
-          >
-            <Link
-              href="/about"
-              style={{
-                width: "45px",
-                height: "24px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#FFFFFF",
-                flex: "none",
-                order: 0,
-                flexGrow: 0,
-                textDecoration: "none",
-              }}
-            >
-              About
-            </Link>
-
-            <Link
-              href="/story"
-              style={{
-                width: "72px",
-                height: "24px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#FFFFFF",
-                flex: "none",
-                order: 1,
-                flexGrow: 0,
-                textDecoration: "none",
-              }}
-            >
-              Story
-            </Link>
-
-            <Link
-              href="/team"
-              style={{
-                width: "34px",
-                height: "24px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#FFFFFF",
-                flex: "none",
-                order: 2,
-                flexGrow: 0,
-                textDecoration: "none",
-              }}
-            >
-              Team
-            </Link>
-
-            <Link
-              href="/careers"
-              style={{
-                width: "45px",
-                height: "24px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#FFFFFF",
-                flex: "none",
-                order: 3,
-                flexGrow: 0,
-                textDecoration: "none",
-              }}
-            >
-              Careers
-            </Link>
-
-            <Link
-              href="/contact"
-              style={{
-                width: "42px",
-                height: "24px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#FFFFFF",
-                flex: "none",
-                order: 4,
-                flexGrow: 0,
-                textDecoration: "none",
-              }}
-            >
-              Contact
-            </Link>
-          </div>
-
           {/* Icons */}
           <div
             style={{
@@ -207,7 +91,7 @@ export default function Footer() {
               width: "96px",
               height: "24px",
               flex: "none",
-              order: 1,
+              order: 0,
               flexGrow: 0,
             }}
           >
@@ -265,7 +149,7 @@ export default function Footer() {
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path
-                  d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
+                  d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
                   fill="#FFFFFF"
                 />
               </svg>

@@ -1,13 +1,14 @@
+"use client";
+
 import { navigateToApp } from "@/lib/navigation";
 import Link from "next/link";
 
-export default function HeroSection() {
+export default function MobileHero() {
   return (
     <section
-      className="relative"
       style={{
-        width: "1440px",
-        height: "900px",
+        width: "440px",
+        height: "901px",
         background: "linear-gradient(111.34deg, #000000 0%, #936E2B 100%)",
         backgroundBlendMode: "multiply",
         borderRadius: "0px",
@@ -15,8 +16,9 @@ export default function HeroSection() {
         order: 0,
         alignSelf: "stretch",
         flexGrow: 0,
-        zIndex: 0,
+        position: "relative",
         margin: "0 auto",
+        maxWidth: "100vw",
       }}
     >
       {/* Tilted Image */}
@@ -38,13 +40,12 @@ export default function HeroSection() {
         style={{
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
           alignItems: "flex-start",
-          padding: "32px 120px",
+          padding: "80px 24px 0px",
           gap: "16px",
           isolation: "isolate",
           position: "absolute",
-          height: "752px",
+          height: "432px",
           left: "0px",
           right: "0px",
           top: "76px",
@@ -53,43 +54,50 @@ export default function HeroSection() {
         {/* Main Heading */}
         <h1
           style={{
-            width: "540px",
-            height: "192px",
-            fontFamily: "var(--font-merriweather)",
+            width: "392px",
+            height: "120px",
+            fontFamily: "var(--font-merriweather, Merriweather, serif)",
             fontStyle: "normal",
             fontWeight: 700,
-            fontSize: "48px",
-            lineHeight: "64px",
+            fontSize: "32px",
+            lineHeight: "40px",
             color: "#FFFFFF",
             flex: "none",
             order: 0,
+            alignSelf: "stretch",
             flexGrow: 0,
             zIndex: 0,
+            margin: "0",
           }}
         >
-          The Bible Was Meant to Be Understood - Not Just Read.
+          The Bible Was Meant to
+          <br />
+          Be Understood -<br />
+          Not Just Read.
         </h1>
 
         {/* Description Text */}
         <p
           style={{
-            width: "540px",
-            height: "128px",
-            fontFamily: "var(--font-inter)",
+            width: "392px",
+            height: "96px",
+            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
             fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "24px",
-            lineHeight: "32px",
+            fontWeight: 300,
+            fontSize: "16px",
+            lineHeight: "24px",
             color: "#FFFFFF",
             flex: "none",
             order: 1,
+            alignSelf: "stretch",
             flexGrow: 0,
             zIndex: 1,
+            margin: "0",
           }}
         >
           When people truly understand Scripture, lives change. Versemate helps
-          anyone, anywhere, connect with God&rsquo;s Word clearly - and grow
-          deeper in faith.
+          anyone, anywhere, connect with God's Word clearly - and grow deeper in
+          faith.
         </p>
 
         {/* Button Container */}
@@ -100,10 +108,11 @@ export default function HeroSection() {
             alignItems: "flex-start",
             padding: "24px 0px",
             gap: "24px",
-            width: "478px",
-            height: "128px",
+            width: "392px",
+            height: "104px",
             flex: "none",
             order: 2,
+            alignSelf: "stretch",
             flexGrow: 0,
             zIndex: 2,
           }}
@@ -116,29 +125,28 @@ export default function HeroSection() {
               flexDirection: "row",
               justifyContent: "center",
               alignItems: "center",
-              padding: "24px 32px",
+              padding: "16px 24px",
               gap: "8px",
-              width: "206px",
-              height: "80px",
+              width: "184px",
+              height: "56px",
               background: "#FFFFFF",
               borderRadius: "100px",
               flex: "none",
               order: 0,
-              flexGrow: 0,
-              textDecoration: "none",
+              flexGrow: 1,
               border: "none",
               cursor: "pointer",
             }}
           >
             <span
               style={{
-                width: "142px",
-                height: "32px",
-                fontFamily: "var(--font-inter)",
+                width: "114px",
+                height: "24px",
+                fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
                 fontStyle: "normal",
                 fontWeight: 600,
-                fontSize: "20px",
-                lineHeight: "32px",
+                fontSize: "16px",
+                lineHeight: "24px",
                 color: "#000000",
                 flex: "none",
                 order: 0,
@@ -158,36 +166,31 @@ export default function HeroSection() {
               flexDirection: "row",
               justifyContent: "center",
               alignItems: "center",
-              padding: "24px 32px",
+              padding: "16px 24px",
               gap: "8px",
-              width: "248px",
-              height: "80px",
+              width: "184px",
+              height: "56px",
               border: "2px solid #FFFFFF",
               borderRadius: "100px",
               flex: "none",
               order: 1,
-              flexGrow: 0,
+              flexGrow: 1,
               textDecoration: "none",
             }}
           >
             <span
               style={{
-                width: "184px",
-                height: "32px",
-                fontFamily: "var(--font-inter)",
+                width: "148px",
+                height: "24px",
+                fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
                 fontStyle: "normal",
                 fontWeight: 600,
-                fontSize: "20px",
-                lineHeight: "32px",
+                fontSize: "16px",
+                lineHeight: "24px",
                 color: "#FFFFFF",
                 flex: "none",
                 order: 0,
                 flexGrow: 0,
-                textAlign: "center",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                whiteSpace: "nowrap",
               }}
             >
               Join as a Volunteer
@@ -205,24 +208,20 @@ export default function HeroSection() {
           padding: "0px",
           isolation: "isolate",
           position: "absolute",
-          width: "776px",
-          height: "1033px",
-          right: "-38px",
-          top: "115px",
-          flex: "none",
-          order: 3,
-          flexGrow: 0,
-          zIndex: 3,
+          width: "392px",
+          height: "528px",
+          right: "24px",
+          top: "524px",
         }}
       >
         {/* Shadow */}
         <div
           style={{
             position: "absolute",
-            width: "776px",
-            height: "25px",
-            right: "-0.41px",
-            top: "510px",
+            width: "392px",
+            height: "11px",
+            left: "calc(50% - 392px/2)",
+            top: "264px",
             background: "rgba(0, 0, 0, 0.75)",
             filter: "blur(20px)",
             flex: "none",
@@ -240,10 +239,10 @@ export default function HeroSection() {
             alignItems: "flex-start",
             padding: "8px",
             gap: "8px",
-            width: "776px",
-            height: "516px",
+            width: "392px",
+            height: "264px",
             background: "rgba(0, 0, 0, 0.001)",
-            borderRadius: "32px",
+            borderRadius: "16px",
             flex: "none",
             order: 1,
             flexGrow: 0,
@@ -252,12 +251,12 @@ export default function HeroSection() {
         >
           <div
             style={{
-              width: "760px",
-              height: "500px",
+              width: "376px",
+              height: "248px",
               backgroundImage: "url(/ipad.png)",
               backgroundSize: "cover",
               backgroundPosition: "center",
-              borderRadius: "24px",
+              borderRadius: "8px",
               flex: "none",
               order: 0,
               flexGrow: 0,
@@ -273,11 +272,11 @@ export default function HeroSection() {
             alignItems: "flex-start",
             padding: "8px",
             gap: "8px",
-            width: "776px",
-            height: "517px",
+            width: "392px",
+            height: "264px",
             background: "rgba(0, 0, 0, 0.001)",
             opacity: 0.05,
-            borderRadius: "32px",
+            borderRadius: "16px",
             transform: "matrix(1, 0, 0, -1, 0, 0)",
             flex: "none",
             order: 2,
@@ -287,12 +286,12 @@ export default function HeroSection() {
         >
           <div
             style={{
-              width: "760px",
-              height: "501px",
+              width: "376px",
+              height: "248px",
               backgroundImage: "url(/ipad.png)",
               backgroundSize: "cover",
               backgroundPosition: "center",
-              borderRadius: "24px",
+              borderRadius: "8px",
               transform: "matrix(1, 0, 0, -1, 0, 0)",
               flex: "none",
               order: 0,
@@ -315,18 +314,18 @@ export default function HeroSection() {
           height: "32px",
           left: "0px",
           right: "0px",
-          top: "828px",
+          bottom: "40px",
         }}
       >
         <span
           style={{
-            width: "561px",
-            height: "32px",
-            fontFamily: "var(--font-inter)",
+            width: "374px",
+            height: "24px",
+            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
             fontStyle: "normal",
             fontWeight: 400,
-            fontSize: "24px",
-            lineHeight: "32px",
+            fontSize: "16px",
+            lineHeight: "24px",
             textAlign: "center",
             letterSpacing: "0.2em",
             color: "#FFFFFF",

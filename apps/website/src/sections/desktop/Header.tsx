@@ -34,7 +34,7 @@ export default function Header() {
         order: 8,
         flexGrow: 0,
         zIndex: 8,
-        background: isScrolled ? "rgba(0, 0, 0, 0.8)" : "#FFFFFF",
+        background: "transparent",
       }}
     >
       {/* Logo */}
@@ -51,17 +51,16 @@ export default function Header() {
         <Link
           href="/"
           style={{
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "14px",
-            letterSpacing: "0.1em",
-            color: isScrolled ? "#FFFFFF" : "#000000",
+            color: "#FFFFFF",
             textDecoration: "none",
+            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
+            fontWeight: 300,
+            fontSize: "18px",
+            letterSpacing: "0.1em",
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-start",
             height: "100%",
+            paddingLeft: "160px",
           }}
         >
           VERSE|MATE
@@ -71,7 +70,7 @@ export default function Header() {
       {/* Menu */}
       <nav
         style={{
-          display: "flex",
+          display: "none",
           flexDirection: "row",
           justifyContent: "flex-end",
           alignItems: "center",

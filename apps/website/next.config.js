@@ -1,7 +1,6 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  // Optimize for static landing page
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Re-enable static export for production
   output: "export",
   trailingSlash: true,
   images: {
@@ -15,4 +14,4 @@ const nextConfig: NextConfig = {
   // Use JavaScript navigation instead (see navigation.ts)
 };
 
-export default nextConfig;
+module.exports = nextConfig;

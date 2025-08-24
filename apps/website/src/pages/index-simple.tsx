@@ -1,7 +1,7 @@
 "use client";
 
-import Footer from "@/components/Footer";
-import Hero from "@/sections/Hero";
+import Footer from "@/sections/desktop/Footer";
+import Hero from "@/sections/desktop/Hero";
 
 export default function HomeSimple() {
   return (

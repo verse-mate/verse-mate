@@ -56,7 +56,7 @@ export default function HowItWorksSection() {
             flexGrow: 0,
           }}
         >
-          How it works?
+          HOW IT WORKS?
         </span>
       </div>
 
