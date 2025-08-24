@@ -1,0 +1,63 @@
+{
+  // Wrangler configuration for VerseMate static website deployment using Workers
+  "$schema": "https://raw.githubusercontent.com/cloudflare/wrangler/main/config-schema.json",
+  "name": "verse-mate-website",
+  "main": "worker.js",
+  "compatibility_date": "2025-08-06",
+  "account_id": "e8f0b566ba1c8227a25e3784def4300e",
+
+  /**
+   * Workers.dev route enabled for development/testing
+   */
+  "workers_dev": true,
+
+  // Static assets configuration for Workers
+  "assets": {
+    "directory": "./out", // Next.js static export directory
+    "binding": "ASSETS",
+    "run_worker_first": false // Serve static assets directly
+  },
+
+  // Custom domain routes - removed from base config to avoid conflicts
+  // "routes": [],
+
+  // Development settings
+  "dev": {
+    "ip": "localhost",
+    "port": 8788,
+    "local_protocol": "http"
+  },
+
+  // Environment configurations
+  "env": {
+    "preview": {
+      "name": "verse-mate-website-preview"
+    },
+    "staging": {
+      "name": "verse-mate-website-staging",
+      "routes": [
+        {
+          "pattern": "verse-mate.xyz",
+          "custom_domain": true
+        },
+        {
+          "pattern": "www.verse-mate.xyz",
+          "custom_domain": true
+        }
+      ]
+    },
+    "production": {
+      "name": "verse-mate-website-production",
+      "routes": [
+        {
+          "pattern": "versemate.org",
+          "custom_domain": true
+        },
+        {
+          "pattern": "www.versemate.org",
+          "custom_domain": true
+        }
+      ]
+    }
+  }
+}

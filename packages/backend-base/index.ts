@@ -1,3 +1,5 @@
+import adminPlugin from "./src/admin/admin.plugin";
+import type { AdminPlugin } from "./src/admin/admin.plugin";
 import authPlugin from "./src/auth/auth.plugin";
 import type { AuthPlugin } from "./src/auth/auth.plugin";
 import biblePlugin from "./src/bible/bible.plugin";
@@ -16,4 +18,6 @@ export {
   biblePlugin,
   type NotesPlugin,
   notesPlugin,
+  type AdminPlugin,
+  adminPlugin,
 };

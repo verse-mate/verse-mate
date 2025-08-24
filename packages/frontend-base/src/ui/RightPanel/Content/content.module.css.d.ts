@@ -13,5 +13,6 @@ declare const styles: {
   readonly menuHeader: string;
   readonly closeButton: string;
   readonly menuOptions: string;
+  readonly noPadding: string;
 };
 export = styles;

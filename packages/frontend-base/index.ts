@@ -32,6 +32,9 @@ export { safePromise } from "./src/utils/safe-promise";
  * VerseMate UI Components
  */
 export { Accordion } from "./src/ui/Accordion";
+export { AdminDashboard } from "./src/ui/admin/AdminDashboard/AdminDashboard";
+export { AdminGuard } from "./src/ui/AdminGuard/AdminGuard";
+export { BatchOperations } from "./src/ui/admin/BatchOperations/BatchOperations";
 export { Commentary } from "./src/ui/Commentary";
 export { TestamentControl } from "./src/ui/Control";
 export { Conversation } from "./src/ui/Conversation";
@@ -52,3 +55,5 @@ export { LoginCard } from "./src/ui/LoginCard";
 export { NotFound } from "./src/not-found";
 export { Chat } from "./src/ui/Chat";
 export { Explanation } from "./src/ui/Explanation";
+export { ExplanationRegeneration } from "./src/ui/admin/ExplanationRegeneration/ExplanationRegeneration";
+export { UserManagement } from "./src/ui/admin/UserManagement/UserManagement";

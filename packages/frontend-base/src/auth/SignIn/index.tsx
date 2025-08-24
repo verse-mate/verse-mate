@@ -6,7 +6,7 @@ import { Text } from "../../ui/Text/Text";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignInForm } from "./useSignInForm";
 
-export function SignIn() {
+export function SignIn({ onSwitch }: { onSwitch?: (mode: "signup") => void }) {
   const {
     hookForm: { register, formState },
     onSubmit,
@@ -58,7 +58,25 @@ export function SignIn() {
       </form>
       <Text align="center" color="var(--gray)">
         Don't have account?{" "}
-        <Link href="/create-account">Create New Account</Link>
+        {onSwitch ? (
+          <button
+            type="button"
+            onClick={() => onSwitch("signup")}
+            style={{
+              color: "var(--white)",
+              textDecoration: "underline",
+              background: "none",
+              border: "none",
+              padding: 0,
+              font: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            Create New Account
+          </button>
+        ) : (
+          <Link href="/create-account">Create New Account</Link>
+        )}
       </Text>
       <Text align="center" color="var(--gray)">
         <Link href="/">Continue without an account</Link>
