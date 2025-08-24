@@ -13,9 +13,9 @@
 
   // Static assets configuration for Workers
   "assets": {
-    "directory": "./out",  // Next.js static export directory
+    "directory": "./out", // Next.js static export directory
     "binding": "ASSETS",
-    "run_worker_first": false  // Serve static assets directly
+    "run_worker_first": false // Serve static assets directly
   },
 
   // Custom domain routes - removed from base config to avoid conflicts
