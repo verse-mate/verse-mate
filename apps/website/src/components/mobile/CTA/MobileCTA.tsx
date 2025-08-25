@@ -67,7 +67,7 @@ export default function MobileCTA() {
           style={{
             width: "100%",
             maxWidth: "280px",
-            minHeight: mobileTokens.components.button.minHeight,
+            minHeight: mobileTokens.components.button.height,
             padding: `${mobileTokens.spacing.md} ${mobileTokens.spacing.lg}`,
             backgroundColor: mobileTokens.colors.background.white,
             color: mobileTokens.colors.primary,
@@ -111,7 +111,7 @@ export default function MobileCTA() {
           style={{
             width: "100%",
             maxWidth: "280px",
-            minHeight: mobileTokens.components.button.minHeight,
+            minHeight: mobileTokens.components.button.height,
             padding: `${mobileTokens.spacing.md} ${mobileTokens.spacing.lg}`,
             backgroundColor: "transparent",
             color: mobileTokens.colors.text.white,

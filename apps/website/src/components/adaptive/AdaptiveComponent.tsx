@@ -8,7 +8,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { type DeviceType, useDevice } from "../../hooks/useDevice";
 
-interface AdaptiveComponentProps<T = Record<string, any>> {
+interface AdaptiveComponentProps<T extends Record<string, any> = Record<string, any>> {
   mobileComponent: React.ComponentType<T>;
   tabletComponent: React.ComponentType<T>;
   desktopComponent: React.ComponentType<T>;
@@ -17,7 +17,7 @@ interface AdaptiveComponentProps<T = Record<string, any>> {
   testId?: string;
 }
 
-export function AdaptiveComponent<T = Record<string, any>>({
+export function AdaptiveComponent<T extends Record<string, any> = Record<string, any>>({
   mobileComponent: MobileComponent,
   tabletComponent: TabletComponent,
   desktopComponent: DesktopComponent,
@@ -96,7 +96,7 @@ export function AdaptiveComponent<T = Record<string, any>>({
 }
 
 // Higher-order component version for easier usage
-export function withAdaptiveDesign<T = Record<string, any>>(
+export function withAdaptiveDesign<T extends Record<string, any> = Record<string, any>>(
   mobileComponent: React.ComponentType<T>,
   tabletComponent: React.ComponentType<T>,
   desktopComponent: React.ComponentType<T>,

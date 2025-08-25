@@ -309,7 +309,7 @@ export default function DesktopVolunteerPage() {
           gap: "64px",
           width: "100%",
           maxWidth: desktopTokens.layout.maxWidth,
-          background: desktopTokens.colors.background.light,
+          background: desktopTokens.colors.background.beige,
           flex: "none",
           alignSelf: "stretch",
           margin: "0 auto",

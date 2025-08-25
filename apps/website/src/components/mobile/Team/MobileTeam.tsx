@@ -47,7 +47,7 @@ export default function MobileTeam() {
     <section
       style={{
         padding: `${mobileTokens.spacing.xl} ${mobileTokens.layout.containerPadding}`,
-        backgroundColor: mobileTokens.colors.background.light,
+        backgroundColor: mobileTokens.colors.background.beige,
       }}
       data-testid="mobile-team"
     >
@@ -164,7 +164,7 @@ export default function MobileTeam() {
                     key={index}
                     style={{
                       padding: `4px ${mobileTokens.spacing.sm}`,
-                      backgroundColor: mobileTokens.colors.background.light,
+                      backgroundColor: mobileTokens.colors.background.beige,
                       borderRadius: "12px",
                       fontSize: "12px",
                       fontWeight: 500,
@@ -212,7 +212,7 @@ export default function MobileTeam() {
             <button
               style={{
                 width: "100%",
-                minHeight: mobileTokens.components.button.minHeight,
+                minHeight: mobileTokens.components.button.height,
                 padding: `${mobileTokens.spacing.sm} ${mobileTokens.spacing.md}`,
                 backgroundColor: mobileTokens.colors.primary,
                 color: mobileTokens.colors.text.white,
@@ -227,20 +227,16 @@ export default function MobileTeam() {
               }}
               data-testid={`mobile-apply-${opportunity.id}`}
               onTouchStart={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  mobileTokens.colors.primaryHover;
+                e.currentTarget.style.opacity = "0.9";
               }}
               onTouchEnd={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  mobileTokens.colors.primary;
+                e.currentTarget.style.opacity = "1";
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  mobileTokens.colors.primaryHover;
+                e.currentTarget.style.opacity = "0.9";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  mobileTokens.colors.primary;
+                e.currentTarget.style.opacity = "1";
               }}
             >
               Learn More
