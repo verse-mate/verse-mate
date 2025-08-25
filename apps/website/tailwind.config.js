@@ -8,6 +8,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        inter: ["Inter", "system-ui", "sans-serif"],
+        merriweather: ["Merriweather", "serif"],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
@@ -16,3 +20,4 @@ module.exports = {
   },
   plugins: [],
 };
+

@@ -1,5 +1,7 @@
+"use client";
+
+import { getAppUrl, navigateToLogin } from "@/lib/navigation";
 import { useEffect } from "react";
-import { navigateToLogin, getAppUrl } from "@/lib/navigation";
 
 export default function Login() {
   useEffect(() => {

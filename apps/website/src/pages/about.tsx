@@ -1,5 +1,8 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+"use client";
+
+import Footer from "@/sections/desktop/Footer";
+import Header from "@/sections/desktop/Header";
+
 
 export default function About() {
   return (
@@ -9,12 +12,12 @@ export default function About() {
       <main className="py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl font-bold mb-8 text-center">ABOUT</h1>
-          <div className="w-24 h-1 bg-yellow-600 mx-auto mb-16"></div>
+          <div className="w-24 h-1 bg-yellow-600 mx-auto mb-16" />
 
           <div className="space-y-12 text-lg text-gray-700">
             <section>
               <h2 className="text-4xl font-bold mb-8">ABOUT</h2>
-              <div className="w-16 h-1 bg-yellow-600 mb-8"></div>
+              <div className="w-16 h-1 bg-yellow-600 mb-8" />
 
               <div className="space-y-6">
                 <p>
@@ -36,7 +39,7 @@ export default function About() {
               </div>
             </section>
 
-            <div className="w-16 h-1 bg-yellow-600"></div>
+            <div className="w-16 h-1 bg-yellow-600" />
 
             <section>
               <h2 className="text-4xl font-bold mb-8">
@@ -44,7 +47,7 @@ export default function About() {
                 <br />
                 Guided by the Word.
               </h2>
-              <div className="w-16 h-1 bg-yellow-600 mb-8"></div>
+              <div className="w-16 h-1 bg-yellow-600 mb-8" />
 
               <div className="space-y-6">
                 <p>
@@ -66,7 +69,7 @@ export default function About() {
               </div>
             </section>
 
-            <div className="w-16 h-1 bg-yellow-600"></div>
+            <div className="w-16 h-1 bg-yellow-600" />
 
             <section>
               <h2 className="text-4xl font-bold mb-8">

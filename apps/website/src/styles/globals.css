@@ -2,9 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 :root {
   --background: #fff;
   --foreground: #171717;
+}
+
+:root {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-merriweather: "Merriweather", serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,4 +32,6 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  max-width: 100vw;
 }

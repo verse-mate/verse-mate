@@ -1,26 +1,18 @@
+"use client";
 
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-import About1 from "@/sections/About1";
-import About2 from "@/sections/About2";
-import GetInvolved from "@/sections/GetInvolved";
-import Global from "@/sections/Global";
-import Hero from "@/sections/Hero";
-import HowItWorks from "@/sections/HowItWorks";
-import WhyVersemate from "@/sections/WhyVersemate";
+import React from "react";
+import { AdaptiveComponent } from "../components/adaptive/AdaptiveComponent";
+import DesktopHomePage from "./desktop/home/DesktopHomePage";
+import MobileHomePage from "./mobile/home/MobileHomePage";
+import TabletHomePage from "./tablet/home/TabletHomePage";
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      <Header />
-      <Hero />
-      <HowItWorks />
-      <WhyVersemate />
-      <Global />
-      <GetInvolved />
-      <About1 />
-      <About2 />
-      <Footer />
-    </div>
+    <AdaptiveComponent
+      mobileComponent={MobileHomePage}
+      tabletComponent={TabletHomePage}
+      desktopComponent={DesktopHomePage}
+      testId="homepage"
+    />
   );
 }
