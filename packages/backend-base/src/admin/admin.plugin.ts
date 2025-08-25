@@ -19,7 +19,7 @@ const plugin = new Elysia()
       getAdminDatabaseService: () => new AdminDatabaseService(state.db),
       getExplanationRegenerationService: () =>
         new ExplanationRegenerationService(state.db),
-      adminPromptService: new AdminPromptService(state.db),
+      getAdminPromptService: () => new AdminPromptService(state.db),
     };
   })
   .guard((app) => {
@@ -289,23 +289,27 @@ const plugin = new Elysia()
           .group("/prompts", (app) =>
             app
               // GET all prompts
-              .get("/system", async ({ store: { adminPromptService } }) => {
+              .get("/system", async ({ store }) => {
+                const adminPromptService = store.getAdminPromptService();
                 return adminPromptService.getAllSystemPrompts();
               })
-              .get("/user", async ({ store: { adminPromptService } }) => {
+              .get("/user", async ({ store }) => {
+                const adminPromptService = store.getAdminPromptService();
                 return adminPromptService.getAllUserPrompts();
               })
               // CREATE prompts
               .post(
                 "/system",
-                async ({ body, store: { adminPromptService } }) => {
+                async ({ body, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.createSystemPrompt(body.prompt);
                 },
                 { body: t.Object({ prompt: t.String() }) },
               )
               .post(
                 "/user",
-                async ({ body, store: { adminPromptService } }) => {
+                async ({ body, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.createUserPrompt(
                     body.template_name,
                     body.explanation_type,
@@ -323,7 +327,8 @@ const plugin = new Elysia()
               // UPDATE prompts
               .put(
                 "/system/:id",
-                async ({ params, body, store: { adminPromptService } }) => {
+                async ({ params, body, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.updateSystemPrompt(
                     Number(params.id),
                     body.prompt,
@@ -336,7 +341,8 @@ const plugin = new Elysia()
               )
               .put(
                 "/user/:id",
-                async ({ params, body, store: { adminPromptService } }) => {
+                async ({ params, body, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.updateUserPrompt(
                     Number(params.id),
                     body.prompt_template,
@@ -348,24 +354,19 @@ const plugin = new Elysia()
                 },
               )
               // DELETE prompts
-              .delete(
-                "/system/:id",
-                async ({ params, store: { adminPromptService } }) => {
-                  return adminPromptService.deleteSystemPrompt(
-                    Number(params.id),
-                  );
-                },
-              )
-              .delete(
-                "/user/:id",
-                async ({ params, store: { adminPromptService } }) => {
-                  return adminPromptService.deleteUserPrompt(Number(params.id));
-                },
-              )
+              .delete("/system/:id", async ({ params, store }) => {
+                const adminPromptService = store.getAdminPromptService();
+                return adminPromptService.deleteSystemPrompt(Number(params.id));
+              })
+              .delete("/user/:id", async ({ params, store }) => {
+                const adminPromptService = store.getAdminPromptService();
+                return adminPromptService.deleteUserPrompt(Number(params.id));
+              })
               // SET STATUS of prompts
               .put(
                 "/system/:id/status",
-                async ({ params, body, store: { adminPromptService } }) => {
+                async ({ params, body, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.setSystemPromptStatus(
                     Number(params.id),
                     body.status,
@@ -378,7 +379,8 @@ const plugin = new Elysia()
               )
               .put(
                 "/user/:id/status",
-                async ({ params, body, store: { adminPromptService } }) => {
+                async ({ params, body, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.setUserPromptStatus(
                     Number(params.id),
                     body.status,
@@ -395,16 +397,15 @@ const plugin = new Elysia()
                 },
               )
               // RESTORE defaults
-              .post(
-                "/restore-defaults",
-                async ({ store: { adminPromptService } }) => {
-                  return adminPromptService.restoreDefaults();
-                },
-              )
+              .post("/restore-defaults", async ({ store }) => {
+                const adminPromptService = store.getAdminPromptService();
+                return adminPromptService.restoreDefaults();
+              })
               // PLAYGROUND
               .post(
                 "/playground",
-                async ({ body, store: { adminPromptService } }) => {
+                async ({ body, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.testPrompts(body);
                 },
                 {
