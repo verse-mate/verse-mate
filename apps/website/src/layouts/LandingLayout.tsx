@@ -1,5 +1,5 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+import Footer from "@/sections/desktop/Footer";
+import Header from "@/sections/desktop/Header";
 import type { ReactNode } from "react";
 
 interface LandingLayoutProps {

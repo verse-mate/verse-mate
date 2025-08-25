@@ -1,6 +1,7 @@
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { ReactNode } from "react";
+import Footer from "@/sections/desktop/Footer";
+import Header from "@/sections/desktop/Header";
+import type { ReactNode } from "react";
+
 
 interface PageLayoutProps {
   children: ReactNode;

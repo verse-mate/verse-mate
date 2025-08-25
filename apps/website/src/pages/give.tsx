@@ -1,5 +1,8 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+"use client";
+
+import Footer from "@/sections/desktop/Footer";
+import Header from "@/sections/desktop/Header";
+
 import Link from "next/link";
 
 export default function Give() {
