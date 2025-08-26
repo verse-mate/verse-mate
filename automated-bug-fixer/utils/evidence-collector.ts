@@ -22,14 +22,22 @@ export class EvidenceCollector {
   async collect(bug: JiraBug, testResults: TestResult[]): Promise<Evidence> {
     console.log(`📸 Collecting evidence for: ${bug.summary}`);
 
+    // Helper type predicates
+    const hasScreenshot = (
+      result: TestResult,
+    ): result is TestResult & { screenshot: string } => !!result.screenshot;
+
+    const hasVideo = (
+      result: TestResult,
+    ): result is TestResult & { video: string } => !!result.video;
+
     // Collect screenshots from test results
     const afterScreenshots = testResults
-      .filter((result) => result.screenshot)
+      .filter(hasScreenshot)
       .map((result) => result.screenshot);
 
-    // Collect videos from test results
     const testVideos = testResults
-      .filter((result) => result.video)
+      .filter(hasVideo)
       .map((result) => result.video);
 
     // For before screenshots, we'd typically have baseline screenshots
