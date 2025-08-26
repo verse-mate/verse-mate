@@ -25,12 +25,12 @@ export class EvidenceCollector {
     // Collect screenshots from test results
     const afterScreenshots = testResults
       .filter((result) => result.screenshot)
-      .map((result) => result.screenshot!);
+      .map((result) => result.screenshot);
 
     // Collect videos from test results
     const testVideos = testResults
       .filter((result) => result.video)
-      .map((result) => result.video!);
+      .map((result) => result.video);
 
     // For before screenshots, we'd typically have baseline screenshots
     const beforeScreenshots = await this.getBaselineScreenshots(bug);

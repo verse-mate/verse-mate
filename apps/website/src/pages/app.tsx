@@ -6,10 +6,9 @@ export default function App() {
   useEffect(() => {
     // Redirect to app subdomain
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.location.href = "https://app.versemate.org";
     }
-
   }, []);
 
   return (
