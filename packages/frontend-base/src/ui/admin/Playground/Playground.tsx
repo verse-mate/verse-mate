@@ -186,7 +186,7 @@ export const Playground = () => {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${styles.playground}`}>
       <h2 className={styles.title}>Playground</h2>
       <div className={styles.form}>
         <div className={`${styles.formGroup} ${styles.systemPrompt}`}>
