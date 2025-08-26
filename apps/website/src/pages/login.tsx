@@ -1,3 +1,5 @@
+"use client";
+
 import { getAppUrl, navigateToLogin } from "@/lib/navigation";
 import { useEffect } from "react";
 
