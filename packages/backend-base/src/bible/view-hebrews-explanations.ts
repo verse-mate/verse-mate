@@ -29,19 +29,19 @@ async function viewHebrewsExplanations() {
     }
 
     console.log(`📊 Found ${explanations.length} explanations for Hebrews\n`);
-    console.log("=" * 80);
+    console.log("=".repeat(80));
 
     // Display each explanation in full
     explanations.forEach((exp, index) => {
       console.log(
         `\n📖 HEBREWS ${exp.chapter_number} - ${exp.type.toUpperCase()} (ID: ${exp.explanation_id})`,
       );
-      console.log("=" * 80);
+      console.log("=".repeat(80));
       console.log(exp.explanation);
-      console.log("=" * 80);
+      console.log("=".repeat(80));
 
       if (index < explanations.length - 1) {
-        console.log(`\n${"-" * 80}\n`);
+        console.log(`\n${"-".repeat(80)}\n`);
       }
     });
   } catch (error) {
