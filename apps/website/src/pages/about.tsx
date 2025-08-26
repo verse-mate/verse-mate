@@ -3,7 +3,6 @@
 import Footer from "@/sections/desktop/Footer";
 import Header from "@/sections/desktop/Header";
 
-
 export default function About() {
   return (
     <div className="min-h-screen">

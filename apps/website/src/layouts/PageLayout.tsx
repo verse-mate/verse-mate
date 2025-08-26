@@ -2,7 +2,6 @@ import Footer from "@/sections/desktop/Footer";
 import Header from "@/sections/desktop/Header";
 import type { ReactNode } from "react";
 
-
 interface PageLayoutProps {
   children: ReactNode;
 }

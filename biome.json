@@ -1,4 +1,4 @@
-apps{
+{
   "$schema": "https://biomejs.dev/schemas/1.5.2/schema.json",
   "files": {
     "ignore": [
@@ -12,7 +12,8 @@ apps{
       "handlers.ts",
       "./packages/backend-base/src/bible/data/t_asv.json",
       "./packages/backend-base/src/bible/data/NASB1995.json",
-      "./apps/frontend-next/public/*"
+      "./apps/frontend-next/public/*",
+      "./apps/website/*"
     ],
     "maxSize": 6000000
   },

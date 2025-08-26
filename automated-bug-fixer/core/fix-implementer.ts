@@ -16,9 +16,16 @@ export class FixImplementer {
     console.log(`📋 Planning fix for: ${rootCause.issue}`);
 
     let approach = "";
-    let filesToModify: FixPlan["filesToModify"] = [];
-    let testingStrategy: FixPlan["testingStrategy"];
     let estimatedRisk = 30; // Base risk
+    let filesToModify: FixPlan["filesToModify"] = [];
+    const testingStrategy: FixPlan["testingStrategy"] = {
+      newTests: [
+        `${bug.id.toLowerCase()}.spec.ts`,
+        `${rootCause.category.toLowerCase()}-regression.spec.ts`,
+      ],
+      regressionTests: codeAnalysis.testFiles,
+      manualTestsRequired: estimatedRisk > 60,
+    };
 
     // Plan fix based on issue category
     switch (rootCause.category) {
@@ -47,16 +54,6 @@ export class FixImplementer {
           codeAnalysis,
         ));
     }
-
-    // Plan testing strategy
-    testingStrategy = {
-      newTests: [
-        `${bug.id.toLowerCase()}.spec.ts`,
-        `${rootCause.category.toLowerCase()}-regression.spec.ts`,
-      ],
-      regressionTests: codeAnalysis.testFiles,
-      manualTestsRequired: estimatedRisk > 60,
-    };
 
     return {
       approach,

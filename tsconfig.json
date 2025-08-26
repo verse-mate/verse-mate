@@ -27,5 +27,6 @@
     "composite": true,
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true
-  }
+  },
+  "exclude": ["./apps/website/*", "playwright.config.ts"]
 }
