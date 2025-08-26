@@ -297,6 +297,10 @@ const plugin = new Elysia()
                 const adminPromptService = store.getAdminPromptService();
                 return adminPromptService.getAllUserPrompts();
               })
+              .get("/explanation-types", async ({ store }) => {
+                const adminPromptService = store.getAdminPromptService();
+                return adminPromptService.getAllExplanationTypes();
+              })
               // CREATE prompts
               .post(
                 "/system",

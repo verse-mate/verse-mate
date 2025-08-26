@@ -74,6 +74,16 @@ export class AdminPromptService {
     return this.userPromptRepository.getAll();
   }
 
+  async getAllExplanationTypes() {
+    const types = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user_prompt_templates")
+      .select("explanation_type")
+      .distinct()
+      .execute();
+    return types.map((t) => t.explanation_type);
+  }
+
   async createUserPrompt(
     templateName: string,
     explanationType: string,
@@ -213,10 +223,7 @@ export class AdminPromptService {
           `No verses found for chapter ${chapter_number} in version ${bible_version}`,
         );
       }
-      contextText = `
-
-Biblical Text (${book_name} ${chapter_number}):
-${verses.map((v) => `${v.verse_number}. ${v.text}`).join("\n")}`;
+      contextText = `\r\n\r\nBiblical Text (${book_name} ${chapter_number}):\r\n${verses.map((v) => `${v.verse_number}. ${v.text}`).join("\n")}`;
     }
 
     const fullPrompt = `${finalUserPrompt}${contextText}`;

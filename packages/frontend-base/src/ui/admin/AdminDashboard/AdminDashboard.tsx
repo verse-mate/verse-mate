@@ -3,10 +3,17 @@ import { useState } from "react";
 import { Button } from "../../Button/Button";
 import { BatchOperations } from "../BatchOperations/BatchOperations";
 import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration.tsx";
+import { Playground } from "../Playground/Playground";
+import { PromptManagement } from "../PromptManagement/PromptManagement";
 import { UserManagement } from "../UserManagement/UserManagement";
 import styles from "./AdminDashboard.module.css";
 
-type AdminSection = "batch" | "explanations" | "users";
+type AdminSection =
+  | "batch"
+  | "explanations"
+  | "users"
+  | "prompts"
+  | "playground";
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("batch");
@@ -19,6 +26,10 @@ export const AdminDashboard = () => {
         return <ExplanationRegeneration />;
       case "users":
         return <UserManagement />;
+      case "prompts":
+        return <PromptManagement />;
+      case "playground":
+        return <Playground />;
       default:
         return <BatchOperations />;
     }
@@ -48,6 +59,18 @@ export const AdminDashboard = () => {
             onClick={() => setActiveSection("users")}
           >
             User Management
+          </Button>
+          <Button
+            variant={activeSection === "prompts" ? "contained" : "outlined"}
+            onClick={() => setActiveSection("prompts")}
+          >
+            Prompts
+          </Button>
+          <Button
+            variant={activeSection === "playground" ? "contained" : "outlined"}
+            onClick={() => setActiveSection("playground")}
+          >
+            Playground
           </Button>
         </nav>
       </header>
