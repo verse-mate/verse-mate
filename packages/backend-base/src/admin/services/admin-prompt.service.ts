@@ -1,3 +1,4 @@
+import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
@@ -271,5 +272,59 @@ export class AdminPromptService {
     language,
   }: { explanationPrompt: string; language: string }) {
     return `${explanationPrompt}\r\n\r\nThe response should be in ${language} using Markdown format only.`;
+  }
+
+  async getExistingExplanation(
+    bookName: string,
+    chapterNumber: number,
+    bibleVersion: string,
+    explanationType: string,
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    // Get bible version
+    const version = await connection
+      .selectFrom("bible_versions")
+      .select(["id"])
+      .where("version_key", "=", bibleVersion)
+      .executeTakeFirst();
+
+    if (!version) {
+      return null; // Bible version not found
+    }
+
+    // Get book
+    const book = await connection
+      .selectFrom("books")
+      .where("name", "=", bookName)
+      .select("book_id")
+      .executeTakeFirst();
+
+    if (!book) {
+      return null; // Book not found
+    }
+
+    // Get chapter_id for the specific book and chapter
+    const chapter = await connection
+      .selectFrom("chapters")
+      .where("book_id", "=", book.book_id)
+      .where("chapter_number", "=", chapterNumber)
+      .select("chapter_id")
+      .executeTakeFirst();
+
+    if (!chapter) {
+      return null; // Chapter not found
+    }
+
+    // Get explanation using chapter_id
+    const explanation = await connection
+      .selectFrom("explanations")
+      .where("chapter_id", "=", chapter.chapter_id)
+      .where("version_id", "=", version.id)
+      .where("type", "=", explanationType as ExplanationTypeEnum)
+      .select("explanation")
+      .executeTakeFirst();
+
+    return explanation?.explanation || null;
   }
 }

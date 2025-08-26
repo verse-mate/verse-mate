@@ -428,6 +428,26 @@ const plugin = new Elysia()
                     send_chapter_context: t.Boolean(),
                   }),
                 },
+              )
+              .get(
+                "/explanation/existing",
+                async ({ query, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.getExistingExplanation(
+                    query.book_name,
+                    Number(query.chapter_number),
+                    query.bible_version,
+                    query.explanation_type,
+                  );
+                },
+                {
+                  query: t.Object({
+                    book_name: t.String(),
+                    chapter_number: t.String(),
+                    bible_version: t.String(),
+                    explanation_type: t.String(),
+                  }),
+                },
               ),
           )
 
