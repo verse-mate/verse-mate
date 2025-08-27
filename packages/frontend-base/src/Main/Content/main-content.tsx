@@ -173,6 +173,7 @@ export const MainContent = () => {
   );
 
   const accordionRef = useRef<HTMLButtonElement>(null);
+  const accordionRefVersion = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isDropdownOpenBook && accordionRef.current) {
@@ -181,6 +182,18 @@ export const MainContent = () => {
       }
     }
   }, [isDropdownOpenBook]);
+
+  useEffect(() => {
+    if (isDropdownOpenVersion && accordionRefVersion.current) {
+      if (
+        !accordionRefVersion.current
+          .getAttribute("data-state")
+          ?.includes("open")
+      ) {
+        accordionRefVersion.current.click();
+      }
+    }
+  }, [isDropdownOpenVersion]);
 
   useEffect(() => {
     if (bookId && verseId && testament) {
@@ -1031,6 +1044,7 @@ export const MainContent = () => {
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="bibleVersion">
                       <Accordion.GroupedTrigger
+                        ref={accordionRefVersion}
                         selectedContent={
                           bibleVersions.find(
                             (version) => version.key === bibleVersionSelected,
