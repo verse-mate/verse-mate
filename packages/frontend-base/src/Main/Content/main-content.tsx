@@ -600,7 +600,10 @@ export const MainContent = () => {
                     selectedVerse={verseIdToString}
                     defaultPlaceholder="Select a Book"
                     isOpen={isDropdownOpenBook}
-                    toggleDropdown={toggleMobileDropdownBook}
+                    toggleDropdown={() => {
+                      toggleMobileDropdownBook();
+                      closeDropdownVersion();
+                    }}
                     onClose={closeDropdownBook}
                     resetFilter={leftPanelResetFilter}
                   />
@@ -617,7 +620,10 @@ export const MainContent = () => {
                   )?.key,
                 )}
                 isOpen={isDropdownOpenVersion}
-                toggleDropdown={toggleMobileDropdownVersion}
+                toggleDropdown={() => {
+                  toggleMobileDropdownVersion();
+                  closeDropdownBook();
+                }}
                 onClose={closeDropdownVersion}
                 resetFilter={() => {}}
               />
@@ -1037,7 +1043,14 @@ export const MainContent = () => {
             </div>
 
             <RadixTabs.List className={`${styles.buttonList}`}>
-              <RadixTabs.Trigger className={`${styles.trigger}`} value="book">
+              <RadixTabs.Trigger
+                className={`${styles.trigger}`}
+                value="book"
+                onClick={() => {
+                  closeDropdownVersion();
+                  closeDropdownBook();
+                }}
+              >
                 <Icon.BibleIcon
                   className={`${styles.active} ${styles.iconSize}`}
                 />
@@ -1046,6 +1059,10 @@ export const MainContent = () => {
               <RadixTabs.Trigger
                 className={`${styles.trigger}`}
                 value="explanation"
+                onClick={() => {
+                  closeDropdownVersion();
+                  closeDropdownBook();
+                }}
               >
                 <Icon.OpenedBook
                   className={` ${styles.active} ${styles.iconSize}`}
@@ -1070,6 +1087,8 @@ export const MainContent = () => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  closeDropdownVersion();
+                  closeDropdownBook();
                   if (activeTab === "menu") {
                     setActiveTab(previousTabRef.current);
                   } else {
