@@ -37,11 +37,12 @@ export const Text = ({ text, bookName, testament, bookId }: TextProps) => {
   const shareUrl = useMemo(
     () =>
       generateShareableUrl({
-        bookId: bookId?.toString(),
-        verseId: searchParams.verseId.toString(),
-        testament: testament,
-        explanationType: searchParams.explanationType,
-        bibleVersion: searchParams.bibleVersion,
+        bookId: bookId != null ? String(bookId) : null,
+        verseId:
+          searchParams.verseId != null ? String(searchParams.verseId) : null,
+        testament: testament ?? null,
+        explanationType: searchParams.explanationType ?? null,
+        bibleVersion: searchParams.bibleVersion ?? null,
       }),
     [
       bookId,

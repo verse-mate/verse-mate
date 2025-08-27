@@ -17,12 +17,15 @@
 
 @media (max-width: 768px) {
   .notifications {
+    position: fixed;
+    top: var(--notification-container-top, 1rem);
     left: 50%;
     right: auto;
     transform: translateX(-50%);
     align-items: center;
     width: calc(100% - 2rem);
     max-width: calc(100% - 2rem);
+    z-index: 10;
   }
 }
 

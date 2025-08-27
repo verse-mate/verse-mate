@@ -31,7 +31,12 @@ function validateOrigin(origin: string): string {
       throw new Error(`Origin ${hostname} not allowed`);
     }
 
-    return origin;
+    // Normalize to https for allowed public hosts; keep http only for localhost
+    const isLocalhost = hostname === "localhost";
+    const normalized = isLocalhost
+      ? `http://${hostname}:3000`
+      : `https://${hostname}`;
+    return normalized;
   } catch (error) {
     console.warn("Invalid origin detected, using fallback:", error);
     return "https://verse-mate.apegro.dev";
