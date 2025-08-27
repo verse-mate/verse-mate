@@ -173,6 +173,7 @@ export const MainContent = () => {
   );
 
   const accordionRef = useRef<HTMLButtonElement>(null);
+  const accordionRefVersion = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (isDropdownOpenBook && accordionRef.current) {
@@ -181,6 +182,18 @@ export const MainContent = () => {
       }
     }
   }, [isDropdownOpenBook]);
+
+  useEffect(() => {
+    if (isDropdownOpenVersion && accordionRefVersion.current) {
+      if (
+        !accordionRefVersion.current
+          .getAttribute("data-state")
+          ?.includes("open")
+      ) {
+        accordionRefVersion.current.click();
+      }
+    }
+  }, [isDropdownOpenVersion]);
 
   useEffect(() => {
     if (bookId && verseId && testament) {
@@ -535,26 +548,86 @@ export const MainContent = () => {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      resetInactivityTimer();
+    const scrollState = {
+      lastScrollTop: 0,
+      lastScrollTime: 0,
+      timeoutId: null as NodeJS.Timeout | null,
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    const handleScroll = (event: Event) => {
+      let scrollTop: number;
+      let clientHeight: number;
+      let scrollHeight: number;
+      const currentTime = performance.now();
 
+      const isWindow =
+        event.target === window ||
+        event.target === document ||
+        event.currentTarget === window;
+
+      if (isWindow) {
+        const docEl = document.documentElement;
+        scrollTop = window.scrollY || docEl.scrollTop || 0;
+        clientHeight = window.innerHeight;
+        scrollHeight = docEl.scrollHeight;
+      } else {
+        const target = event.target as HTMLElement;
+        scrollTop = target.scrollTop;
+        clientHeight = target.clientHeight;
+        scrollHeight = target.scrollHeight;
+      }
+
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
+      const isScrollingDown = scrollTop > scrollState.lastScrollTop;
+      const isScrollingUp = scrollTop < scrollState.lastScrollTop;
+
+      if (scrollState.lastScrollTime) {
+        const timeDiff = currentTime - scrollState.lastScrollTime;
+        const scrollDiff = Math.abs(scrollTop - scrollState.lastScrollTop);
+        const speed = (scrollDiff / timeDiff) * 1000;
+        if (speed > 1000) {
+          resetInactivityTimer();
+        }
+      }
+
+      if (window.innerWidth < 1024) {
+        if (isAtBottom && isScrollingDown) {
+          setButtonsVisible(true);
+          if (inactivityTimerRef.current)
+            clearTimeout(inactivityTimerRef.current);
+        } else if (isScrollingUp && !isAtBottom) {
+          resetInactivityTimer();
+        }
+      }
+
+      scrollState.lastScrollTop = scrollTop;
+      scrollState.lastScrollTime = currentTime;
+    };
+
+    const passiveOptions = { passive: true };
+    window.addEventListener("scroll", handleScroll, passiveOptions);
     scrollElements.forEach((element) => {
-      element.addEventListener("scroll", handleScroll, { passive: true });
+      element.addEventListener("scroll", handleScroll, passiveOptions);
     });
 
     resetInactivityTimer();
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      scrollElements.forEach((element) => {
-        element.removeEventListener("scroll", handleScroll);
-      });
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+        passiveOptions as AddEventListenerOptions,
+      );
+      scrollElements.forEach((element) => {
+        element.removeEventListener(
+          "scroll",
+          handleScroll,
+          passiveOptions as EventListenerOptions,
+        );
+      });
     };
   }, [resetInactivityTimer, scrollElements]);
 
@@ -600,7 +673,10 @@ export const MainContent = () => {
                     selectedVerse={verseIdToString}
                     defaultPlaceholder="Select a Book"
                     isOpen={isDropdownOpenBook}
-                    toggleDropdown={toggleMobileDropdownBook}
+                    toggleDropdown={() => {
+                      toggleMobileDropdownBook();
+                      closeDropdownVersion();
+                    }}
                     onClose={closeDropdownBook}
                     resetFilter={leftPanelResetFilter}
                   />
@@ -617,7 +693,10 @@ export const MainContent = () => {
                   )?.key,
                 )}
                 isOpen={isDropdownOpenVersion}
-                toggleDropdown={toggleMobileDropdownVersion}
+                toggleDropdown={() => {
+                  toggleMobileDropdownVersion();
+                  closeDropdownBook();
+                }}
                 onClose={closeDropdownVersion}
                 resetFilter={() => {}}
               />
@@ -1004,6 +1083,7 @@ export const MainContent = () => {
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="bibleVersion">
                       <Accordion.GroupedTrigger
+                        ref={accordionRefVersion}
                         selectedContent={
                           bibleVersions.find(
                             (version) => version.key === bibleVersionSelected,
@@ -1037,7 +1117,14 @@ export const MainContent = () => {
             </div>
 
             <RadixTabs.List className={`${styles.buttonList}`}>
-              <RadixTabs.Trigger className={`${styles.trigger}`} value="book">
+              <RadixTabs.Trigger
+                className={`${styles.trigger}`}
+                value="book"
+                onClick={() => {
+                  closeDropdownVersion();
+                  closeDropdownBook();
+                }}
+              >
                 <Icon.BibleIcon
                   className={`${styles.active} ${styles.iconSize}`}
                 />
@@ -1046,6 +1133,10 @@ export const MainContent = () => {
               <RadixTabs.Trigger
                 className={`${styles.trigger}`}
                 value="explanation"
+                onClick={() => {
+                  closeDropdownVersion();
+                  closeDropdownBook();
+                }}
               >
                 <Icon.OpenedBook
                   className={` ${styles.active} ${styles.iconSize}`}
@@ -1070,6 +1161,8 @@ export const MainContent = () => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  closeDropdownVersion();
+                  closeDropdownBook();
                   if (activeTab === "menu") {
                     setActiveTab(previousTabRef.current);
                   } else {

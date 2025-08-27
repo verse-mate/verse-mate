@@ -206,9 +206,12 @@ explanationQueue.on("completed", (job: any, result: any) => {
 });
 
 explanationQueue.on("failed", (job: any, err: any) => {
+  const message = err && typeof err === "object" && "message" in err ? (err as Error).message : String(err);
+  const stack = err && typeof err === "object" && "stack" in err ? (err as Error).stack : undefined;
   console.error(
     `💥 Explanation job failed: ${job.data.bookName} ${job.data.chapterNumber} - ${job.data.type}`,
-    (err as Error).message,
+    message,
+    stack ?? ""
   );
 });
 
