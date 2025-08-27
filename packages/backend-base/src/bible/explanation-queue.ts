@@ -118,7 +118,7 @@ const explanationQueue = new Queue("explanation generation", {
 });
 
 // Configure queue processing
-explanationQueue.process("generate-explanation", 1, async (job) => {
+explanationQueue.process("generate-explanation", 1, async (job: any) => {
   const { bookId, chapterNumber, type, reference, systemPrompt, bookName } =
     job.data;
 
@@ -151,24 +151,44 @@ The response should be in Markdown format only.`;
       user: userPrompt,
     });
 
-    // Save to database
-    await db
+    const connection = db.getOrCreateConnection();
+
+    const chapter = await connection
+      .selectFrom("chapters")
+      .select(["chapter_id"])
+      .where("book_id", "=", bookId)
+      .where("chapter_number", "=", chapterNumber)
+      .executeTakeFirst();
+
+    if (!chapter) {
+      throw new Error(
+        `Chapter not found for book ${bookId}, chapter ${chapterNumber}`,
+      );
+    }
+
+    const activeVersion = await connection
+      .selectFrom("bible_versions")
+      .select(["id"])
+      .where("is_active", "=", true)
+      .executeTakeFirst();
+
+    if (!activeVersion) {
+      throw new Error("No active bible version found");
+    }
+
+    await connection
       .insertInto("explanations")
       .values({
         type,
         explanation: text,
-        book_id: bookId,
-        chapter_number: chapterNumber,
-        created_at: new Date(),
-        updated_at: new Date(),
+        chapter_id: chapter.chapter_id,
+        version_id: activeVersion.id,
       })
       .execute();
 
     console.log(
       `✅ Generated and saved ${type} explanation for ${bookName} ${chapterNumber}`,
     );
-
-    return { success: true, bookId, chapterNumber, type };
   } catch (error) {
     console.error(
       `❌ Failed to generate ${type} explanation for ${bookName} ${chapterNumber}:`,
@@ -179,16 +199,16 @@ The response should be in Markdown format only.`;
 });
 
 // Job event listeners
-explanationQueue.on("completed", (job, result) => {
+explanationQueue.on("completed", (job: any, result: any) => {
   console.log(
     `🎉 Explanation job completed: ${job.data.bookName} ${job.data.chapterNumber} - ${job.data.type}`,
   );
 });
 
-explanationQueue.on("failed", (job, err) => {
+explanationQueue.on("failed", (job: any, err: any) => {
   console.error(
     `💥 Explanation job failed: ${job.data.bookName} ${job.data.chapterNumber} - ${job.data.type}`,
-    err.message,
+    (err as Error).message,
   );
 });
 
@@ -239,7 +259,7 @@ export async function checkExplanationStatus(
   const jobs = await explanationQueue.getJobs(["active", "waiting", "delayed"]);
 
   const relevantJob = jobs.find(
-    (job) =>
+    (job: any) =>
       job.data.bookId === bookId &&
       job.data.chapterNumber === chapterNumber &&
       job.data.type === type,
