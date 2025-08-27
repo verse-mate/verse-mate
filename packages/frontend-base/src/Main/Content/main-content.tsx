@@ -535,14 +535,35 @@ export const MainContent = () => {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      resetInactivityTimer();
+    const scrollState = {
+      lastScrollTop: 0,
+      lastScrollTime: 0,
+      timeoutId: null as NodeJS.Timeout | null,
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    const handleScroll = (event: Event) => {
+      const target = event.target as HTMLElement;
+      const scrollTop = target.scrollTop;
+      const currentTime = performance.now();
 
+      if (scrollState.lastScrollTime) {
+        const timeDiff = currentTime - scrollState.lastScrollTime;
+        const scrollDiff = Math.abs(scrollTop - scrollState.lastScrollTop);
+        const speed = (scrollDiff / timeDiff) * 1000; // pixels per second
+
+        if (speed > 1000) {
+          resetInactivityTimer();
+        }
+      }
+
+      scrollState.lastScrollTop = scrollTop;
+      scrollState.lastScrollTime = currentTime;
+    };
+
+    const passiveOptions = { passive: true };
+    window.addEventListener("scroll", handleScroll, passiveOptions);
     scrollElements.forEach((element) => {
-      element.addEventListener("scroll", handleScroll, { passive: true });
+      element.addEventListener("scroll", handleScroll, passiveOptions);
     });
 
     resetInactivityTimer();

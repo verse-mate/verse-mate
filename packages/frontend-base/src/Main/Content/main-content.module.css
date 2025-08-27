@@ -412,3 +412,10 @@
 }
 
 /* end desktop */
+@media screen and (max-width: 833px) {
+    .nextChapterBtn, .previousChapterBtn {
+        top: unset;
+        bottom: 40px;
+        transform: translateY(0);
+    }
+}
