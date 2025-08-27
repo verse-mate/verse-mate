@@ -1,4 +1,4 @@
-FROM oven/bun:1.1.36
+FROM oven/bun:1.2.18
 WORKDIR /app
 
 # Don't run production as root

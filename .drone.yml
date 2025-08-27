@@ -9,13 +9,13 @@ clone:
 
 steps:
   - name: compile
-    image: oven/bun:1.1.36
+    image: oven/bun:1.2.18
     commands:
       - bun install --ignore-scripts
 
   - name: tsc
     failure: ignore
-    image: oven/bun:1.1.36
+    image: oven/bun:1.2.18
     commands:
       - bun tsc
     depends_on:
@@ -23,7 +23,7 @@ steps:
 
   - name: lint
     failure: ignore
-    image: oven/bun:1.1.36
+    image: oven/bun:1.2.18
     commands:
       - bun lint
     depends_on:
@@ -31,7 +31,7 @@ steps:
 
   - name: stylelint
     failure: ignore
-    image: oven/bun:1.1.36
+    image: oven/bun:1.2.18
     commands:
       - bun stylelint
     depends_on:
@@ -39,7 +39,7 @@ steps:
 
   - name: test
     failure: ignore
-    image: oven/bun:1.1.36
+    image: oven/bun:1.2.18
     commands:
       - cp apps/backend/.env.example .env
       - cp apps/backend/.env.example packages/database/.env
@@ -68,7 +68,7 @@ steps:
       - stylelint
 
   - name: build-frontend-next
-    image: oven/bun:1.1.36
+    image: oven/bun:1.2.18
     commands:
       - cd apps/frontend-next && bun run build
     environment:
@@ -78,7 +78,7 @@ steps:
       - test
 
   - name: build-backend
-    image: oven/bun:1.1.36
+    image: oven/bun:1.2.18
     commands:
       - cd apps/backend && bun run build && cd ../../
       - cd packages/database && bun run build
