@@ -90,13 +90,16 @@ export const PromptManagement = () => {
     fetchPrompts();
   }, [fetchPrompts]);
 
-  const handleConfirm = () => {
-    if (confirmationAction) {
-      confirmationAction();
+  const handleConfirm = async () => {
+    try {
+      if (confirmationAction) {
+        await confirmationAction();
+      }
+    } finally {
+      setShowConfirmation(false);
+      setConfirmationAction(null);
+      setConfirmationMessage("");
     }
-    setShowConfirmation(false);
-    setConfirmationAction(null);
-    setConfirmationMessage("");
   };
 
   const handleCancelConfirmation = () => {

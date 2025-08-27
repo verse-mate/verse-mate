@@ -46,7 +46,7 @@ export class ExplanationRegenerationService {
     explanationPrompt,
     language,
   }: { explanationPrompt: string; language: string }) {
-    return `${explanationPrompt}\r\n\r\nThe response should be in ${language} using Markdown format only.`;
+    return `${explanationPrompt}\n\nThe response should be in ${language} using Markdown format only.`;
   }
 
   async generateNewExplanation(

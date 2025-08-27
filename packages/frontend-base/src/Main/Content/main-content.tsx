@@ -555,38 +555,47 @@ export const MainContent = () => {
     };
 
     const handleScroll = (event: Event) => {
-      const target = event.target as HTMLElement;
-      const scrollTop = target.scrollTop;
-      const clientHeight = target.clientHeight;
-      const scrollHeight = target.scrollHeight;
+      let scrollTop: number;
+      let clientHeight: number;
+      let scrollHeight: number;
       const currentTime = performance.now();
 
-      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // -1 for tolerance
+      const isWindow =
+        event.target === window ||
+        event.target === document ||
+        event.currentTarget === window;
+
+      if (isWindow) {
+        const docEl = document.documentElement;
+        scrollTop = window.scrollY || docEl.scrollTop || 0;
+        clientHeight = window.innerHeight;
+        scrollHeight = docEl.scrollHeight;
+      } else {
+        const target = event.target as HTMLElement;
+        scrollTop = target.scrollTop;
+        clientHeight = target.clientHeight;
+        scrollHeight = target.scrollHeight;
+      }
+
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
       const isScrollingDown = scrollTop > scrollState.lastScrollTop;
       const isScrollingUp = scrollTop < scrollState.lastScrollTop;
 
-      // Logic for fast scroll (existing)
       if (scrollState.lastScrollTime) {
         const timeDiff = currentTime - scrollState.lastScrollTime;
         const scrollDiff = Math.abs(scrollTop - scrollState.lastScrollTop);
-        const speed = (scrollDiff / timeDiff) * 1000; // pixels per second
-
+        const speed = (scrollDiff / timeDiff) * 1000;
         if (speed > 1000) {
-          resetInactivityTimer(); // This will show and start timer
+          resetInactivityTimer();
         }
       }
 
-      // New logic for bottom of page, mobile/tablet only
       if (window.innerWidth < 1024) {
         if (isAtBottom && isScrollingDown) {
-          setButtonsVisible(true); // Show buttons
-          // Clear any existing inactivity timer so they stay visible
-          if (inactivityTimerRef.current) {
-            clearTimeout(inactivityTimerRef.current);
-          }
+          setButtonsVisible(true);
+          if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
         } else if (isScrollingUp && !isAtBottom) {
-          // If scrolling up from bottom, or just scrolling up generally
-          resetInactivityTimer(); // Show and start timer
+          resetInactivityTimer();
         }
       }
 
