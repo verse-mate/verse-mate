@@ -207,7 +207,8 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: #000000b3;
+    background: var(--snow);
+    border: 1px solid var(--geyser-opacity);
     width: 44px;
     height: 44px;
     border-radius: 100%;
@@ -230,7 +231,7 @@
 }
 
 .chevronForward, .chevronBackward {
-    fill: var(--snow);
+    fill: var(--night);
     cursor: pointer;
     margin: 0;
     padding: 0;

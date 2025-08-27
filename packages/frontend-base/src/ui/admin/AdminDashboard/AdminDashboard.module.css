@@ -19,6 +19,14 @@
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .tabButtons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
   
   .content {
