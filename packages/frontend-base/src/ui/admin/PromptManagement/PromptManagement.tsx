@@ -24,6 +24,8 @@ type UserPrompt = {
 
 const EXPLANATION_TYPE_ORDER = ["summary", "byline", "detailed"];
 
+type ModalMode = "closed" | "createSystem" | "createUser" | "edit" | "view";
+
 export const PromptManagement = () => {
   const [systemPrompts, setSystemPrompts] = useState<SystemPrompt[]>([]);
   const [userPrompts, setUserPrompts] = useState<UserPrompt[]>([]);
@@ -32,16 +34,13 @@ export const PromptManagement = () => {
   const [selectedPrompt, setSelectedPrompt] = useState<
     SystemPrompt | UserPrompt | null
   >(null);
-  const [isEditingPromptFromList, setIsEditingPromptFromList] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>("closed");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState<
     (() => void) | null
   >(null);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [explanationTypes, setExplanationTypes] = useState<string[]>([]);
-  const [isCreatingSystemPrompt, setIsCreatingSystemPrompt] = useState(false);
-  const [isCreatingUserPrompt, setIsCreatingUserPrompt] = useState(false);
-  const [isViewingPrompt, setIsViewingPrompt] = useState(false);
 
   const fetchPrompts = useCallback(async () => {
     try {
@@ -207,12 +206,16 @@ export const PromptManagement = () => {
     try {
       if (id === null) {
         // Create new prompt
-        if (isCreatingSystemPrompt) {
+        if (modalMode === "createSystem") {
           await api.admin.prompts.system.post({ prompt: newPrompt });
-        } else if (isCreatingUserPrompt && templateName && explanationType) {
+        } else if (
+          modalMode === "createUser" &&
+          templateName &&
+          explanationType
+        ) {
           await api.admin.prompts.user.post({
             template_name: templateName,
-            explanation_type: explanationType,
+            explanation_type: explanationType as any,
             prompt_template: newPrompt,
           });
         }
@@ -230,10 +233,7 @@ export const PromptManagement = () => {
       }
       await fetchPrompts(); // Refetch to update the UI
       setSelectedPrompt(null);
-      setIsEditingPromptFromList(false);
-      setIsCreatingSystemPrompt(false);
-      setIsCreatingUserPrompt(false);
-      setIsViewingPrompt(false);
+      setModalMode("closed");
     } catch (err) {
       setError(`Failed to save prompt ${id}.`);
       console.error(err);
@@ -241,7 +241,7 @@ export const PromptManagement = () => {
   };
 
   const handleCreateSystemPromptClick = () => {
-    setIsCreatingSystemPrompt(true);
+    setModalMode("createSystem");
     const activeSystemPrompt = systemPrompts.find(
       (p) => p.status === PromptStatusEnum.active,
     );
@@ -253,7 +253,7 @@ export const PromptManagement = () => {
   };
 
   const handleCreateUserPromptClick = () => {
-    setIsCreatingUserPrompt(true);
+    setModalMode("createUser");
     const initialExplanationType =
       explanationTypes && explanationTypes.length > 0
         ? explanationTypes[0]
@@ -274,7 +274,7 @@ export const PromptManagement = () => {
 
   const handleEditPromptClick = (prompt: SystemPrompt | UserPrompt) => {
     setSelectedPrompt(prompt);
-    setIsEditingPromptFromList(true);
+    setModalMode("edit");
   };
 
   if (loading) {
@@ -287,24 +287,21 @@ export const PromptManagement = () => {
 
   return (
     <div className={styles.container}>
-      {(isCreatingSystemPrompt || isCreatingUserPrompt || selectedPrompt) && (
+      {modalMode !== "closed" && (
         <PromptDetailsModal
           mode={
-            isCreatingSystemPrompt || isCreatingUserPrompt
+            modalMode === "createSystem" || modalMode === "createUser"
               ? "create"
-              : isEditingPromptFromList
+              : modalMode === "edit"
                 ? "edit"
-                : isViewingPrompt
+                : modalMode === "view"
                   ? "view"
                   : "edit"
           }
           prompt={selectedPrompt || undefined}
           onClose={() => {
             setSelectedPrompt(null);
-            setIsEditingPromptFromList(false);
-            setIsCreatingSystemPrompt(false);
-            setIsCreatingUserPrompt(false);
-            setIsViewingPrompt(false);
+            setModalMode("closed");
           }}
           onSave={handleSavePrompt}
           explanationTypes={explanationTypes}
@@ -349,7 +346,7 @@ export const PromptManagement = () => {
                   type="button"
                   onClick={() => {
                     setSelectedPrompt(prompt);
-                    setIsViewingPrompt(true);
+                    setModalMode("view");
                   }}
                   className={`${styles.listItemButton} ${prompt.status === PromptStatusEnum.active ? styles.active : ""}`}
                 >
@@ -406,7 +403,7 @@ export const PromptManagement = () => {
                   type="button"
                   onClick={() => {
                     setSelectedPrompt(prompt);
-                    setIsViewingPrompt(true);
+                    setModalMode("view");
                   }}
                   className={`${styles.listItemButton} ${prompt.status === PromptStatusEnum.active ? styles.active : ""}`}
                 >

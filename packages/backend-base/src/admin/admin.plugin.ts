@@ -323,7 +323,11 @@ const plugin = new Elysia()
                 {
                   body: t.Object({
                     template_name: t.String(),
-                    explanation_type: t.String(),
+                    explanation_type: t.Union([
+                      t.Literal("summary"),
+                      t.Literal("byline"),
+                      t.Literal("detailed"),
+                    ]),
                     prompt_template: t.String(),
                   }),
                 },

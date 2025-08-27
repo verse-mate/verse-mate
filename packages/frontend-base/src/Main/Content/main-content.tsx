@@ -593,7 +593,8 @@ export const MainContent = () => {
       if (window.innerWidth < 1024) {
         if (isAtBottom && isScrollingDown) {
           setButtonsVisible(true);
-          if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+          if (inactivityTimerRef.current)
+            clearTimeout(inactivityTimerRef.current);
         } else if (isScrollingUp && !isAtBottom) {
           resetInactivityTimer();
         }
@@ -612,13 +613,21 @@ export const MainContent = () => {
     resetInactivityTimer();
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      scrollElements.forEach((element) => {
-        element.removeEventListener("scroll", handleScroll);
-      });
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
+      window.removeEventListener(
+        "scroll",
+        handleScroll,
+        passiveOptions as AddEventListenerOptions,
+      );
+      scrollElements.forEach((element) => {
+        element.removeEventListener(
+          "scroll",
+          handleScroll,
+          passiveOptions as EventListenerOptions,
+        );
+      });
     };
   }, [resetInactivityTimer, scrollElements]);
 
