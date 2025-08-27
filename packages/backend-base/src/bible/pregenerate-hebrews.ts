@@ -121,7 +121,7 @@ async function pregenerateHebrewsChapters() {
   const activePrompt = await connection
     .selectFrom("prompts")
     .selectAll()
-    .where("status", "=", "active")
+    .where("status", "=", "active" as any)
     .executeTakeFirst();
 
   if (!activePrompt) {
@@ -234,13 +234,24 @@ The response should be in Markdown format only.`;
           user: userPrompt,
         });
 
-        // Save to database using correct chapter_id
+        // Save to database using correct chapter_id and active version
+        const activeVersion = await connection
+          .selectFrom("bible_versions")
+          .select(["id"])
+          .where("is_active", "=", true)
+          .executeTakeFirst();
+
+        if (!activeVersion) {
+          throw new Error("No active bible version found");
+        }
+
         await connection
           .insertInto("explanations")
           .values({
             type,
             explanation: text,
-            chapter_id: chapterId, // Use the correct chapter_id from database
+            chapter_id: chapterId,
+            version_id: activeVersion.id,
           })
           .execute();
 

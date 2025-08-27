@@ -151,10 +151,11 @@ async function pregeneratePopularChapters() {
   const bible = await parseBibleData(bibleFile, metadataFile);
 
   // Get active prompt from database
-  const activePrompt = await db
+  const connection = db.getOrCreateConnection();
+  const activePrompt = await connection
     .selectFrom("prompts")
     .selectAll()
-    .where("is_active", "=", true)
+    .where("status", "=", "active" as any)
     .executeTakeFirst();
 
   if (!activePrompt) {
@@ -174,8 +175,8 @@ async function pregeneratePopularChapters() {
     }
 
     for (const chapterNumber of chapters) {
-      const chapter = book.chapters.find(
-        (c) => c.chapterNumber === chapterNumber,
+      const chapter = (book as any).chapters.find(
+        (c: any) => c.chapterNumber === chapterNumber,
       );
       if (!chapter) {
         console.log(`⚠️ Chapter ${chapterNumber} not found in ${book.name}`);
@@ -184,12 +185,25 @@ async function pregeneratePopularChapters() {
 
       console.log(`\n📖 Processing ${book.name} ${chapterNumber}...`);
 
-      // Check existing explanations in database
-      const existingExplanations = await db
-        .selectFrom("explanations")
-        .selectAll()
+      // Resolve chapter id and check existing explanations in database
+      const chapterRow = await connection
+        .selectFrom("chapters")
+        .select(["chapter_id"])
         .where("book_id", "=", bookId)
         .where("chapter_number", "=", chapterNumber)
+        .executeTakeFirst();
+
+      if (!chapterRow) {
+        console.log(
+          `⚠️ Chapter row not found for ${book.name} ${chapterNumber}`,
+        );
+        continue;
+      }
+
+      const existingExplanations = await connection
+        .selectFrom("explanations")
+        .selectAll()
+        .where("chapter_id", "=", chapterRow.chapter_id)
         .execute();
 
       const existingTypes = existingExplanations.map((e) => e.type);
@@ -237,16 +251,24 @@ The response should be in Markdown format only.`;
             user: userPrompt,
           });
 
-          // Save to database
-          await db
+          // Resolve active bible version and save to database
+          const activeVersion = await connection
+            .selectFrom("bible_versions")
+            .select(["id"])
+            .where("is_active", "=", true)
+            .executeTakeFirst();
+
+          if (!activeVersion) {
+            throw new Error("No active bible version found");
+          }
+
+          await connection
             .insertInto("explanations")
             .values({
               type,
               explanation: text,
-              book_id: bookId,
-              chapter_number: chapterNumber,
-              created_at: new Date(),
-              updated_at: new Date(),
+              chapter_id: chapterRow.chapter_id,
+              version_id: activeVersion.id,
             })
             .execute();
 

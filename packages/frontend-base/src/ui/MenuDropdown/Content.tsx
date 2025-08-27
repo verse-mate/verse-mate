@@ -1,13 +1,10 @@
-import {
-  Content,
-  type MenuContentProps,
-  Portal,
-} from "@radix-ui/react-dropdown-menu";
-import type { CSSProperties, ReactNode } from "react";
+import { Content, Portal } from "@radix-ui/react-dropdown-menu";
+import type { CSSProperties, ComponentPropsWithoutRef, ReactNode } from "react";
 
 import styles from "./MenuDropdown.module.css";
 
-interface MenuDropdownContentProps extends MenuContentProps {
+interface MenuDropdownContentProps
+  extends ComponentPropsWithoutRef<typeof Content> {
   children: ReactNode;
   orientation?: "vertical" | "horizontal";
   padding?: CSSProperties["padding"];
@@ -32,7 +29,7 @@ export function MenuDropdownContent({
         style={
           {
             "--content-padding": padding,
-            ...props.style,
+            ...(props.style ?? {}),
           } as CSSProperties
         }
       >

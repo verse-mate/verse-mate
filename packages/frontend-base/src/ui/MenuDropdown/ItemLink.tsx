@@ -1,4 +1,4 @@
-import { Item, type MenuItemProps } from "@radix-ui/react-dropdown-menu";
+import { Item } from "@radix-ui/react-dropdown-menu";
 import { type CSSProperties, type LinkHTMLAttributes, useMemo } from "react";
 
 import styles from "./MenuDropdown.module.css";
@@ -6,7 +6,6 @@ import { type Color, colorsMap } from "./lib";
 
 interface MenuDropdownLinkProps extends LinkHTMLAttributes<HTMLAnchorElement> {
   color?: Color;
-  asChild?: MenuItemProps["asChild"];
   style?: CSSProperties;
 }
 

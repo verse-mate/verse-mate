@@ -199,7 +199,12 @@ export class AutomatedBugFixer {
       };
     }
 
-    if (this.config.requireApprovalFor.includes(suitability.riskLevel)) {
+    if (
+      suitability.riskLevel !== "Low" &&
+      this.config.requireApprovalFor.includes(
+        suitability.riskLevel as "Medium" | "High" | "Critical",
+      )
+    ) {
       return {
         requiresHumanReview: true,
         reason: `${suitability.riskLevel} risk level requires human approval`,

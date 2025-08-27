@@ -1,23 +1,25 @@
-import { Item, type MenuItemProps } from "@radix-ui/react-dropdown-menu";
-import { type CSSProperties, type ReactNode, useMemo } from "react";
+import { Item } from "@radix-ui/react-dropdown-menu";
+import {
+  type CSSProperties,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+  useMemo,
+} from "react";
 
 import styles from "./MenuDropdown.module.css";
 import { type Color, colorsMap } from "./lib";
 
-interface MenuDropdownItemProps {
+interface MenuDropdownItemProps extends ComponentPropsWithoutRef<typeof Item> {
   children: ReactNode;
   color?: Color;
-  asChild?: MenuItemProps["asChild"];
-  onClick?: MenuItemProps["onClick"];
   style?: CSSProperties;
 }
 
 export function MenuDropdownItem({
   children,
   color = "brand",
-  onClick,
-  asChild,
   style,
+  ...rest
 }: MenuDropdownItemProps) {
   const itemStyles = useMemo(() => {
     return {
@@ -27,12 +29,7 @@ export function MenuDropdownItem({
   }, [color, style]);
 
   return (
-    <Item
-      className={styles.item}
-      style={itemStyles}
-      onClick={onClick}
-      asChild={asChild}
-    >
+    <Item className={styles.item} style={itemStyles} {...rest}>
       {children}
     </Item>
   );
