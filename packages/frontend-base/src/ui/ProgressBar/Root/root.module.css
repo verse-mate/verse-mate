@@ -13,3 +13,9 @@
     position: absolute;
     bottom: 0;
 }
+
+@media screen and (max-width: 833px) {
+    .container {
+        bottom: 8px;
+    }
+}

@@ -14,8 +14,9 @@ export const AuthSignupInput = t.Object({
     default: "",
   }),
   password: t.String({
-    minLength: 1,
+    minLength: 8,
     maxLength: 20,
+    pattern: "^(?=.*\\d)(?=.*[a-zA-Z]).{8,}$",
   }),
 });
 

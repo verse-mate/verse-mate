@@ -33,12 +33,6 @@ const PasswordValidations: PasswordValidation[] = [
     regExp: regex.PASSWORD_AT_LEAST_ONE_LETTER,
     text: "At least 1 letter",
   },
-
-  {
-    type: "specialCharacter",
-    regExp: regex.PASSWORD_AT_LEAST_ONE_SPECIAL,
-    text: "At least 1 symbol (@$!%*#?&)",
-  },
 ];
 
 export const PasswordRequirements = ({ password }: { password?: string }) => {

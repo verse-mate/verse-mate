@@ -13,7 +13,6 @@ export const ChevronBackward = (props: SVGProps<SVGSVGElement>) => {
     >
       <path
         d="M15.9846 2.34631L17.4038 3.76556L9.16931 12.0001L17.4038 20.2346L15.9846 21.6538L6.33081 12.0001L15.9846 2.34631Z"
-        fill="white"
         style={{ shapeRendering: "geometricPrecision" }}
       />
     </svg>

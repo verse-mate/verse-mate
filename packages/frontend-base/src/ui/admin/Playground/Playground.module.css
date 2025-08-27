@@ -1,0 +1,152 @@
+.container {
+  padding: 2rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.playground {
+  --light-grey: #d3d3d3;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.form {
+  display: grid;
+  grid-template-areas:
+    "system"
+    "user"
+    "book"
+    "chapter"
+    "version"
+    "model"
+    "effort"
+    "context";
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.systemPrompt { grid-area: system; }
+.userPromptsContainer { grid-area: user; }
+.bookName { grid-area: book; }
+.chapterNumber { grid-area: chapter; }
+.bibleVersion { grid-area: version; }
+.model { grid-area: model; }
+.effort { grid-area: effort; }
+.sendChapterContext { grid-area: context; }
+
+
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.label {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.input,
+.select {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  background-color: #9a865e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  justify-self: start;
+}
+
+.button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.button:hover:not(:disabled) {
+  background-color: #9a865e;
+}
+
+.resultContainer {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.resultBox {
+  padding: 1.5rem;
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.resultTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.resultPre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: #f4f4f4;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.error {
+  color: #d9534f;
+  margin-top: 1rem;
+}
+
+.chapterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 0.5rem;
+}
+
+.chapterButton {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.chapterButton.selected {
+  background-color: #9a865e;
+  color: white;
+  border-color: #9a865e;
+}
+
+.chapterButton:hover:not(.selected) {
+  background-color: #f0f0f0;
+}
+
+

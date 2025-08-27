@@ -41,6 +41,14 @@ export class UserPromptRepository {
     }
   }
 
+  async getAll() {
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("user_prompt_templates")
+      .selectAll()
+      .execute();
+  }
+
   async getAllActivePrompts() {
     console.log("[TEMPLATE] Getting all active prompts");
 
@@ -94,6 +102,7 @@ export class UserPromptRepository {
     templateName: string,
     explanationType: string,
     promptTemplate: string,
+    status: "active" | "inactive" = "active",
   ) {
     console.log(`[TEMPLATE] Creating prompt template: ${templateName}`);
 
@@ -105,7 +114,7 @@ export class UserPromptRepository {
           template_name: templateName,
           explanation_type: explanationType,
           prompt_template: promptTemplate,
-          status: "active",
+          status,
         })
         .returning([
           "id",
@@ -154,5 +163,42 @@ export class UserPromptRepository {
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  }
+
+  async delete(id: number) {
+    return this.db
+      .getOrCreateConnection()
+      .deleteFrom("user_prompt_templates")
+      .where("id", "=", id)
+      .execute();
+  }
+
+  async getTypeById(id: number) {
+    const prompt = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user_prompt_templates")
+      .where("id", "=", id)
+      .select("explanation_type")
+      .executeTakeFirst();
+    return prompt?.explanation_type;
+  }
+
+  async setInactiveByType(type: string) {
+    return this.db
+      .getOrCreateConnection()
+      .updateTable("user_prompt_templates")
+      .set({ status: "inactive" })
+      .where("explanation_type", "=", type)
+      .where("status", "=", "active")
+      .execute();
+  }
+
+  async setStatus(id: number, status: "active" | "inactive") {
+    return this.db
+      .getOrCreateConnection()
+      .updateTable("user_prompt_templates")
+      .set({ status })
+      .where("id", "=", id)
+      .execute();
   }
 }
