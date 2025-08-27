@@ -557,15 +557,36 @@ export const MainContent = () => {
     const handleScroll = (event: Event) => {
       const target = event.target as HTMLElement;
       const scrollTop = target.scrollTop;
+      const clientHeight = target.clientHeight;
+      const scrollHeight = target.scrollHeight;
       const currentTime = performance.now();
 
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // -1 for tolerance
+      const isScrollingDown = scrollTop > scrollState.lastScrollTop;
+      const isScrollingUp = scrollTop < scrollState.lastScrollTop;
+
+      // Logic for fast scroll (existing)
       if (scrollState.lastScrollTime) {
         const timeDiff = currentTime - scrollState.lastScrollTime;
         const scrollDiff = Math.abs(scrollTop - scrollState.lastScrollTop);
         const speed = (scrollDiff / timeDiff) * 1000; // pixels per second
 
         if (speed > 1000) {
-          resetInactivityTimer();
+          resetInactivityTimer(); // This will show and start timer
+        }
+      }
+
+      // New logic for bottom of page, mobile/tablet only
+      if (window.innerWidth < 1024) {
+        if (isAtBottom && isScrollingDown) {
+          setButtonsVisible(true); // Show buttons
+          // Clear any existing inactivity timer so they stay visible
+          if (inactivityTimerRef.current) {
+            clearTimeout(inactivityTimerRef.current);
+          }
+        } else if (isScrollingUp && !isAtBottom) {
+          // If scrolling up from bottom, or just scrolling up generally
+          resetInactivityTimer(); // Show and start timer
         }
       }
 
