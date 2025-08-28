@@ -1,5 +1,4 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
@@ -147,7 +146,7 @@ export class BatchOperationService {
       )}`,
     );
 
-    const { fileId, filePath, totalRequests } = await this.generateJSONLFile(
+    const { jsonlContent, totalRequests } = await this.generateJSONLContent(
       bookId,
       bibleVersion,
       explanationTypes,
@@ -156,12 +155,17 @@ export class BatchOperationService {
       effort,
     );
 
-    // Add small delay before creating batch to ensure file is fully processed
-    console.log(`[BATCH] Waiting before creating batch with file ${fileId}...`);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const file = await openai.files.create({
+      file: new File(
+        [blob],
+        `batch_${bookId}_${bibleVersion}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
 
     const batch = await openai.batches.create({
-      input_file_id: fileId,
+      input_file_id: file.id,
       endpoint: "/v1/responses",
       completion_window: "24h",
     });
@@ -193,7 +197,6 @@ export class BatchOperationService {
         total_requests: totalRequests,
         completed_requests: 0,
         failed_requests: 0,
-        input_file_path: filePath,
         created_by: adminUserId,
         created_at: new Date(),
       })
@@ -288,16 +291,12 @@ export class BatchOperationService {
         `[BATCH] Batch ${batchId} failed with errors:`,
         JSON.stringify(batchStatus.errors, null, 2),
       );
-      // Clean up JSONL file for failed batches
-      await this.cleanupBatchFiles(batchId);
     }
 
-    // Clean up JSONL files for expired or cancelled batches
     if (
       batchStatus.status === "expired" ||
       batchStatus.status === "cancelled"
     ) {
-      await this.cleanupBatchFiles(batchId);
     }
 
     // If batch completed but has failed requests, download error file
@@ -376,9 +375,9 @@ export class BatchOperationService {
           .where("openai_batch_id", "=", batchId)
           .execute();
 
-        // Clean up JSONL file for permanently failed batches
+        // Clean up for permanently failed batches
         if (correctStatus === "failed") {
-          await this.cleanupBatchFiles(batchId);
+          // No cleanup needed for in-memory files
         }
       }
 
@@ -457,14 +456,14 @@ export class BatchOperationService {
     return await query.execute();
   }
 
-  private async generateJSONLFile(
+  private async generateJSONLContent(
     bookId: number,
     bibleVersion: string,
     explanationTypes: ExplanationTypeEnum[],
     model: string,
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
-  ): Promise<{ filePath: string; fileId: string; totalRequests: number }> {
+  ): Promise<{ jsonlContent: string; totalRequests: number }> {
     const connection = this.db.getOrCreateConnection();
 
     const systemPrompt = await this.promptRepository.getActivePrompt();
@@ -591,138 +590,11 @@ export class BatchOperationService {
       );
     }
 
-    const batchDir = "/tmp";
-    if (!fs.existsSync(batchDir)) {
-      fs.mkdirSync(batchDir, { recursive: true });
-    }
-
-    const filename = `batch_${book.name
-      .toLowerCase()
-      .replace(/\s+/g, "-")}_${bibleVersion}_${Date.now()}.jsonl`;
-    const filePath = path.join(batchDir, filename);
-
     const jsonlContent = batchRequests
       .map((request) => JSON.stringify(request))
       .join("\n");
 
-    fs.writeFileSync(filePath, jsonlContent);
-
-    console.log(
-      `[BATCH] Generated JSONL file: ${filePath} with ${batchRequests.length} requests`,
-    );
-
-    // Log first request for debugging
-    if (batchRequests.length > 0) {
-      console.log(
-        "[BATCH] Sample JSONL request:",
-        JSON.stringify(batchRequests[0], null, 2),
-      );
-
-      // Check line length - this might be the issue!
-      const firstLine = JSON.stringify(batchRequests[0]);
-      console.log(`[BATCH] First line length: ${firstLine.length} characters`);
-      if (firstLine.length > 10000) {
-        console.warn(
-          `[BATCH] WARNING: Line length (${firstLine.length}) may be too long for OpenAI batch processing!`,
-        );
-      }
-    }
-
-    // Validate JSONL format by parsing each line
-    const lines = jsonlContent.split("\n");
-    let validLines = 0;
-    for (let i = 0; i < lines.length; i++) {
-      try {
-        const parsed = JSON.parse(lines[i]);
-        validLines++;
-
-        // Additional validation checks
-        if (
-          !parsed.custom_id ||
-          !parsed.method ||
-          !parsed.url ||
-          !parsed.body
-        ) {
-          console.error(
-            `[BATCH] Line ${i + 1} missing required fields:`,
-            Object.keys(parsed),
-          );
-        }
-        if (parsed.body && (!parsed.body.model || !parsed.body.input)) {
-          console.error(
-            `[BATCH] Line ${i + 1} body missing required fields:`,
-            Object.keys(parsed.body),
-          );
-        }
-      } catch (error) {
-        console.error(
-          `[BATCH] Invalid JSON at line ${i + 1}:`,
-          `${lines[i].substring(0, 200)}...`,
-        );
-        console.error("[BATCH] Parse error:", error);
-      }
-    }
-    console.log(
-      `[BATCH] JSONL validation: ${validLines}/${lines.length} lines valid`,
-    );
-
-    // Log file size and content info
-    const stats = fs.statSync(filePath);
-    console.log(
-      `[BATCH] File size: ${stats.size} bytes, ${lines.length} lines, avg line length: ${Math.round(jsonlContent.length / lines.length)} chars`,
-    );
-
-    const file = await openai.files.create({
-      file: fs.createReadStream(filePath),
-      purpose: "batch",
-    });
-
-    console.log(
-      `[BATCH] File uploaded successfully: ${file.id}, status: ${file.status}, bytes: ${file.bytes}`,
-    );
-
-    // Wait a moment and verify file is processed
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    const fileCheck = await openai.files.retrieve(file.id);
-    console.log(
-      `[BATCH] File verification: ${fileCheck.id}, status: ${fileCheck.status}, bytes: ${fileCheck.bytes}`,
-    );
-
-    if (fileCheck.status === "error") {
-      throw new Error(
-        `File upload failed with error status: ${JSON.stringify(fileCheck)}`,
-      );
-    }
-
-    return { filePath, fileId: file.id, totalRequests: batchRequests.length };
-  }
-
-  private async cleanupBatchFiles(batchId: string): Promise<void> {
-    try {
-      // Get the batch job to find the input file path
-      const batchJob = await this.db
-        .getOrCreateConnection()
-        .selectFrom("batch_jobs")
-        .where("openai_batch_id", "=", batchId)
-        .select("input_file_path")
-        .executeTakeFirst();
-
-      if (
-        batchJob?.input_file_path &&
-        fs.existsSync(batchJob.input_file_path)
-      ) {
-        fs.unlinkSync(batchJob.input_file_path);
-        console.log(
-          `[BATCH] Cleaned up JSONL file: ${batchJob.input_file_path}`,
-        );
-      }
-    } catch (error) {
-      console.error(
-        `[BATCH] Error cleaning up files for batch ${batchId}:`,
-        error,
-      );
-    }
+    return { jsonlContent, totalRequests: batchRequests.length };
   }
 
   private async processOutputFile(batchId: string, outputFileId: string) {
@@ -917,9 +789,6 @@ export class BatchOperationService {
       console.log(
         `[BATCH] Marked batch ${batchId} as explanations processed with cost $${actualCost.toFixed(4)}`,
       );
-
-      // Clean up JSONL file after successful processing
-      await this.cleanupBatchFiles(batchId);
     } catch (error) {
       console.error(
         `[BATCH] Error processing output file for batch ${batchId}:`,
