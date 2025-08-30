@@ -40,7 +40,17 @@ export const Renderer = ({
   }, [markdownContent]);
 
   return (
-    <ReactMarkdown className={`${styles.markdown} ${className}`}>
+    <ReactMarkdown
+      className={`${styles.markdown} ${className}`}
+      components={{
+        h2: ({ node, ...props }) => (
+          <h2 style={{ marginTop: "2em" }} {...props} />
+        ),
+        h3: ({ node, ...props }) => (
+          <h3 style={{ marginTop: "1em" }} {...props} />
+        ),
+      }}
+    >
       {content}
     </ReactMarkdown>
   );
