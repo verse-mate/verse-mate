@@ -18,21 +18,19 @@ export default function Header() {
 
   return (
     <header
+      data-header="desktop"
       style={{
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         padding: "0px 64px",
-        gap: "794px",
         position: "absolute",
         height: "76px",
-        left: "0px",
-        right: "0px",
+        width: "1440px",
+        left: "50%",
+        transform: "translateX(-50%)",
         top: "0px",
-        flex: "none",
-        order: 8,
-        flexGrow: 0,
         zIndex: 8,
         background: "transparent",
       }}
@@ -45,7 +43,6 @@ export default function Header() {
           flex: "none",
           order: 0,
           flexGrow: 0,
-          position: "relative",
         }}
       >
         <Link
@@ -53,17 +50,29 @@ export default function Header() {
           style={{
             color: "#FFFFFF",
             textDecoration: "none",
-            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-            fontWeight: 300,
+            fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+            fontWeight: 400,
             fontSize: "18px",
-            letterSpacing: "0.1em",
+            letterSpacing: "0.15em",
             display: "flex",
             alignItems: "center",
             height: "100%",
-            paddingLeft: "160px",
+            padding: "0",
+            margin: "0",
+            position: "relative",
           }}
         >
-          VERSE|MATE
+          <span style={{ paddingRight: "3px" }}>VERSE</span>
+          <div
+            style={{
+              width: "1px",
+              height: "32px",
+              backgroundColor: "#FFFFFF",
+              position: "relative",
+              top: "0px",
+            }}
+          />
+          <span style={{ paddingLeft: "6px" }}>MATE</span>
         </Link>
       </div>
 

@@ -30,7 +30,7 @@ export default function MobileHeader() {
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: mobileTokens.components.nav.padding,
+          padding: "0 16px",
           position: "absolute",
           height: mobileTokens.components.nav.height,
           left: "0px",
@@ -51,18 +51,29 @@ export default function MobileHeader() {
           <Link
             href="/"
             style={{
-              fontFamily: mobileTokens.typography.body.fontFamily,
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
               fontStyle: "normal",
-              fontWeight: 600,
+              fontWeight: 400,
               fontSize: "16px",
-              letterSpacing: "0.1em",
+              letterSpacing: "0.15em",
               color: "#FFFFFF",
               textDecoration: "none",
               display: "flex",
               alignItems: "center",
+              position: "relative",
             }}
           >
-            VERSE|MATE
+            <span style={{ paddingRight: "3px" }}>VERSE</span>
+            <div
+              style={{
+                width: "1px",
+                height: "28px",
+                backgroundColor: "#FFFFFF",
+                position: "relative",
+                top: "0px",
+              }}
+            />
+            <span style={{ paddingLeft: "6px" }}>MATE</span>
           </Link>
         </div>
 
