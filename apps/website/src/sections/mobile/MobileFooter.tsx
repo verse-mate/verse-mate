@@ -10,7 +10,7 @@ export default function MobileFooter() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "48px 64px",
+        padding: "48px 16px",
         width: "440px",
         height: "100px",
         background: "#1B1B1B",
@@ -56,19 +56,30 @@ export default function MobileFooter() {
             style={{
               color: "#FFFFFF",
               textDecoration: "none",
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontWeight: 300,
+              fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+              fontWeight: 400,
               fontSize: "18px",
-              letterSpacing: "0.1em",
+              letterSpacing: "0.15em",
               display: "flex",
               alignItems: "center",
+              position: "relative",
             }}
           >
-            VERSE|MATE
+            <span style={{ paddingRight: "3px" }}>VERSE</span>
+            <div
+              style={{
+                width: "1px",
+                height: "28px",
+                backgroundColor: "#FFFFFF",
+                position: "relative",
+                top: "0px",
+              }}
+            />
+            <span style={{ paddingLeft: "6px" }}>MATE</span>
           </Link>
         </div>
 
-        {/* Social Icons */}
+        {/* Social Icons - Commented out for future use
         <div
           style={{
             display: "flex",
@@ -83,7 +94,6 @@ export default function MobileFooter() {
             flexGrow: 0,
           }}
         >
-          {/* Facebook */}
           <a
             href="#"
             style={{
@@ -106,7 +116,6 @@ export default function MobileFooter() {
             </svg>
           </a>
 
-          {/* Instagram */}
           <a
             href="#"
             style={{
@@ -129,7 +138,6 @@ export default function MobileFooter() {
             </svg>
           </a>
 
-          {/* Twitter */}
           <a
             href="#"
             style={{
@@ -152,6 +160,7 @@ export default function MobileFooter() {
             </svg>
           </a>
         </div>
+        */}
       </div>
     </footer>
   );
