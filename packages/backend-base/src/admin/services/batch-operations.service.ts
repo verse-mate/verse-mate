@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import OpenAI from "openai";
+import OpenAI, { APIError } from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
@@ -139,6 +139,7 @@ export class BatchOperationService {
     adminUserId: string,
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
+    parentBatchId?: number,
   ) {
     console.log(
       `[BATCH] Starting book batch for book ${bookId}, version ${bibleVersion}, types: ${explanationTypes.join(
@@ -199,6 +200,7 @@ export class BatchOperationService {
         failed_requests: 0,
         created_by: adminUserId,
         created_at: new Date(),
+        parent_batch_id: parentBatchId === undefined ? null : parentBatchId,
       })
       .execute();
 
@@ -226,6 +228,23 @@ export class BatchOperationService {
 
     const connection = this.db.getOrCreateConnection();
 
+    // 1. Create the parent batch job
+    const parentBatch = await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "bible",
+        status: "in_progress", // Or 'pending'
+        bible_version: bibleVersion,
+        model,
+        explanation_types: explanationTypes,
+        created_by: adminUserId,
+        total_requests: 66, // Total number of books
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    const parentBatchId = parentBatch.id;
+
     const books = await connection
       .selectFrom("books")
       .select(["book_id", "name"])
@@ -236,7 +255,9 @@ export class BatchOperationService {
       throw new Error("No books found in database");
     }
 
-    console.log(`[BATCH] Processing ${books.length} books for Bible batch`);
+    console.log(
+      `[BATCH] Processing ${books.length} books for Bible batch (Parent ID: ${parentBatchId})`,
+    );
 
     const batchResults = [];
 
@@ -248,8 +269,9 @@ export class BatchOperationService {
           explanationTypes,
           model,
           adminUserId,
-          false,
+          false, // skipExisting is false for bible batches
           effort,
+          parentBatchId, // Pass the parent ID
         );
         batchResults.push({ success: true, ...bookBatch });
       } catch (error) {
@@ -265,8 +287,9 @@ export class BatchOperationService {
 
     return {
       success: true,
-      message: `Bible batch creation started for ${books.length} books.`,
+      message: `Bible batch creation started for ${books.length} books under parent batch ${parentBatchId}.`,
       results: batchResults,
+      parentBatchId: parentBatchId,
     };
   }
 
@@ -431,7 +454,101 @@ export class BatchOperationService {
 
   async cancelBatch(batchId: string) {
     console.log(`[BATCH] Cancelling batch: ${batchId}`);
-    return openai.batches.cancel(batchId);
+
+    // First, check if this is a parent "bible" batch
+    const batchJob = await this.db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("id", "=", Number(batchId)) // batchId from frontend is our DB ID
+      .select(["batch_type", "openai_batch_id", "status"])
+      .executeTakeFirst();
+
+    if (!batchJob) {
+      throw new Error(`Batch job ${batchId} not found.`);
+    }
+
+    if (batchJob.batch_type === "bible") {
+      // This is a parent Bible batch, cancel its children
+      console.log(
+        `[BATCH] Cancelling parent Bible batch ${batchId} and its children.`,
+      );
+      const children = await this.getBatchChildren(Number(batchId));
+      let cancelledCount = 0;
+      let failedToCancelCount = 0;
+
+      for (const child of children) {
+        // Only attempt to cancel if it has an OpenAI ID and is in a cancellable status
+        if (
+          child.openai_batch_id &&
+          (child.status === "validating" ||
+            child.status === "in_progress" ||
+            child.status === "finalizing")
+        ) {
+          try {
+            await openai.batches.cancel(child.openai_batch_id);
+            console.log(
+              `[BATCH] Successfully sent cancel request for child batch ${child.openai_batch_id}`,
+            );
+            cancelledCount++;
+          } catch (error) {
+            if (
+              error instanceof APIError &&
+              error.status === 409 &&
+              error.message.includes(
+                "Cannot cancel a batch with status 'completed'",
+              )
+            ) {
+              console.warn(
+                `[BATCH] Child batch ${child.openai_batch_id} was already completed and could not be cancelled.`,
+              );
+            } else {
+              console.error(
+                `[BATCH] Failed to cancel child batch ${child.openai_batch_id}:`,
+                error,
+              );
+            }
+            failedToCancelCount++;
+          }
+        }
+      }
+
+      // Update parent batch status
+      let newParentStatus = "cancelled";
+      if (cancelledCount === 0 && failedToCancelCount > 0) {
+        newParentStatus = "failed_to_cancel"; // Custom status if all children failed to cancel
+      } else if (failedToCancelCount > 0) {
+        newParentStatus = "partially_cancelled"; // Custom status if some children failed to cancel
+      } else if (cancelledCount > 0) {
+        newParentStatus = "cancelled";
+      } else {
+        // No children were cancellable, keep original status or set to a specific one
+        newParentStatus = batchJob.status; // Keep original status if nothing was cancelled
+      }
+
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({ status: newParentStatus })
+        .where("id", "=", Number(batchId))
+        .execute();
+
+      return {
+        success: true,
+        message: `Cancellation process initiated for ${cancelledCount} child batches.`,
+      };
+    }
+
+    // This is a single book batch, cancel it directly with OpenAI
+    if (!batchJob.openai_batch_id) {
+      throw new Error(
+        `Book batch ${batchId} does not have an OpenAI batch ID.`,
+      );
+    }
+    const openaiBatch = await openai.batches.cancel(batchJob.openai_batch_id);
+    console.log(
+      `[BATCH] Successfully cancelled single book batch ${batchJob.openai_batch_id}`,
+    );
+    return openaiBatch;
   }
 
   async getAllBatches(limit = 50, offset = 0, adminUserId?: string) {
@@ -442,6 +559,7 @@ export class BatchOperationService {
     let query = this.db
       .getOrCreateConnection()
       .selectFrom("batch_jobs")
+      .where("parent_batch_id", "is", null)
       .leftJoin("books", "batch_jobs.book_id", "books.book_id")
       .selectAll("batch_jobs")
       .select("books.name as book_name")
@@ -454,6 +572,121 @@ export class BatchOperationService {
     }
 
     return await query.execute();
+  }
+
+  async getBatchChildren(parentBatchId: number) {
+    console.log(`[BATCH] Getting children for parent batch: ${parentBatchId}`);
+    return await this.db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("parent_batch_id", "=", parentBatchId)
+      .leftJoin("books", "batch_jobs.book_id", "books.book_id")
+      .selectAll("batch_jobs")
+      .select("books.name as book_name")
+      .orderBy("batch_jobs.book_id", "asc")
+      .execute();
+  }
+
+  async monitorBibleBatch(parentBatchId: number) {
+    console.log(`[BATCH] Monitoring bible batch: ${parentBatchId}`);
+    const children = await this.getBatchChildren(parentBatchId);
+    for (const child of children) {
+      if (child.openai_batch_id) {
+        await this.getBatchStatus(child.openai_batch_id);
+      }
+    }
+    return { success: true, message: "Monitoring complete." };
+  }
+
+  async getBatchSummary(parentBatchId: number) {
+    console.log(`[BATCH] Getting summary for parent batch: ${parentBatchId}`);
+    const children = await this.getBatchChildren(parentBatchId);
+    const totalChildren = children.length;
+
+    if (totalChildren === 0) {
+      return {
+        aggregate_status: "empty",
+        status_progress_text: "No books found for this batch.",
+        total_cost: 0,
+      };
+    }
+
+    const statusCounts = children.reduce(
+      (acc, child) => {
+        acc[child.status] = (acc[child.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const totalCost = children.reduce(
+      (acc, child) => acc + (child.actual_cost || 0),
+      0,
+    );
+
+    const failedCount = statusCounts.failed || 0;
+    const cancelledCount = statusCounts.cancelled || 0;
+    const expiredCount = statusCounts.expired || 0;
+    const partialFailureCount = statusCounts.partial_failure || 0;
+
+    if (
+      failedCount > 0 ||
+      cancelledCount > 0 ||
+      expiredCount > 0 ||
+      partialFailureCount > 0
+    ) {
+      return {
+        aggregate_status: "partial_failure",
+        status_progress_text: `Failed (${failedCount + cancelledCount + expiredCount + partialFailureCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    const completedCount = statusCounts.completed || 0;
+
+    if (statusCounts.validating > 0) {
+      const validatedCount = totalChildren - (statusCounts.validating || 0);
+      return {
+        aggregate_status: "validating",
+        status_progress_text: `Validating (${validatedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (statusCounts.in_progress > 0) {
+      const inProgressCount =
+        totalChildren -
+        (statusCounts.in_progress || 0) -
+        (statusCounts.validating || 0);
+      return {
+        aggregate_status: "in_progress",
+        status_progress_text: `In Progress (${inProgressCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (statusCounts.finalizing > 0) {
+      return {
+        aggregate_status: "finalizing",
+        status_progress_text: `Finalizing (${completedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (completedCount === totalChildren) {
+      return {
+        aggregate_status: "completed",
+        status_progress_text: `Completed (${completedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    // Default fallback
+    return {
+      aggregate_status: "pending",
+      status_progress_text: "Pending...",
+      total_cost: totalCost,
+    };
   }
 
   private async generateJSONLContent(

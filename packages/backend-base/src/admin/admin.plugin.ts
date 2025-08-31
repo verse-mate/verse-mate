@@ -182,6 +182,48 @@ const plugin = new Elysia()
               }),
             },
           )
+          .get(
+            "/batch-children/:parentId",
+            async ({ params, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.getBatchChildren(
+                Number(params.parentId),
+              );
+            },
+            {
+              params: t.Object({
+                parentId: t.String(),
+              }),
+            },
+          )
+          .post(
+            "/monitor-bible-batch/:parentId",
+            async ({ params, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.monitorBibleBatch(
+                Number(params.parentId),
+              );
+            },
+            {
+              params: t.Object({
+                parentId: t.String(),
+              }),
+            },
+          )
+          .get(
+            "/batch-summary/:parentId",
+            async ({ params, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.getBatchSummary(
+                Number(params.parentId),
+              );
+            },
+            {
+              params: t.Object({
+                parentId: t.String(),
+              }),
+            },
+          )
 
           .delete("/explanation/:id", async ({ params, store }) => {
             const adminDatabaseService = store.getAdminDatabaseService();
