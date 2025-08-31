@@ -157,8 +157,8 @@ export default function Header() {
             flexGrow: 0,
           }}
         >
-          <Link
-            href="/volunteer"
+          <a
+            href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
             style={{
               width: "74px",
               height: "24px",
@@ -177,7 +177,7 @@ export default function Header() {
             }}
           >
             Volunteer
-          </Link>
+          </a>
           <div
             style={{
               width: "0px",

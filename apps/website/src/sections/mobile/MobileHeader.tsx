@@ -169,8 +169,8 @@ export default function MobileHeader() {
             >
               Home
             </Link>
-            <Link
-              href="/volunteer"
+            <a
+              href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
               onClick={() => setIsMenuOpen(false)}
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
@@ -183,7 +183,7 @@ export default function MobileHeader() {
               }}
             >
               Volunteer
-            </Link>
+            </a>
             <Link
               href="/give"
               onClick={() => setIsMenuOpen(false)}
