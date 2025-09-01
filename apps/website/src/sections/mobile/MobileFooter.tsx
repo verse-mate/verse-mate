@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export default function MobileFooter() {
   return (
@@ -54,28 +55,21 @@ export default function MobileFooter() {
           <Link
             href="/"
             style={{
-              color: "#FFFFFF",
-              textDecoration: "none",
-              fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-              fontWeight: 400,
-              fontSize: "18px",
-              letterSpacing: "0.15em",
               display: "flex",
               alignItems: "center",
               position: "relative",
             }}
           >
-            <span style={{ paddingRight: "3px" }}>VERSE</span>
-            <div
+            <Image
+              src="/versemate-logo.png"
+              alt="VerseMate"
+              width={124}
+              height={34}
               style={{
-                width: "1px",
-                height: "28px",
-                backgroundColor: "#FFFFFF",
-                position: "relative",
-                top: "0px",
+                objectFit: "contain",
+                filter: "brightness(0) invert(1)",
               }}
             />
-            <span style={{ paddingLeft: "6px" }}>MATE</span>
           </Link>
         </div>
 

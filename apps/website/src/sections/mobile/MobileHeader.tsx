@@ -2,6 +2,7 @@
 
 import { navigateToLogin } from "@/lib/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { mobileTokens } from "../../styles/tokens/mobile.tokens";
 
@@ -51,29 +52,21 @@ export default function MobileHeader() {
           <Link
             href="/"
             style={{
-              fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-              fontStyle: "normal",
-              fontWeight: 400,
-              fontSize: "16px",
-              letterSpacing: "0.15em",
-              color: "#FFFFFF",
-              textDecoration: "none",
               display: "flex",
               alignItems: "center",
               position: "relative",
             }}
           >
-            <span style={{ paddingRight: "3px" }}>VERSE</span>
-            <div
+            <Image
+              src="/versemate-logo.png"
+              alt="VerseMate"
+              width={120}
+              height={32}
               style={{
-                width: "1px",
-                height: "28px",
-                backgroundColor: "#FFFFFF",
-                position: "relative",
-                top: "0px",
+                objectFit: "contain",
+                filter: "brightness(0) invert(1)",
               }}
             />
-            <span style={{ paddingLeft: "6px" }}>MATE</span>
           </Link>
         </div>
 

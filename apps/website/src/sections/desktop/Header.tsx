@@ -2,6 +2,7 @@
 
 import { navigateToLogin } from "@/lib/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function Header() {
@@ -48,12 +49,6 @@ export default function Header() {
         <Link
           href="/"
           style={{
-            color: "#FFFFFF",
-            textDecoration: "none",
-            fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-            fontWeight: 400,
-            fontSize: "18px",
-            letterSpacing: "0.15em",
             display: "flex",
             alignItems: "center",
             height: "100%",
@@ -62,17 +57,16 @@ export default function Header() {
             position: "relative",
           }}
         >
-          <span style={{ paddingRight: "3px" }}>VERSE</span>
-          <div
+          <Image
+            src="/versemate-logo.png"
+            alt="VerseMate"
+            width={175}
+            height={48}
             style={{
-              width: "1px",
-              height: "32px",
-              backgroundColor: "#FFFFFF",
-              position: "relative",
-              top: "0px",
+              objectFit: "contain",
+              filter: "brightness(0) invert(1)",
             }}
           />
-          <span style={{ paddingLeft: "6px" }}>MATE</span>
         </Link>
       </div>
 

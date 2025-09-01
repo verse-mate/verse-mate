@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -50,29 +51,22 @@ export default function Footer() {
           <Link
             href="/"
             style={{
-              color: "#FFFFFF",
-              textDecoration: "none",
-              fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-              fontWeight: 400,
-              fontSize: "16px",
-              letterSpacing: "0.15em",
               display: "flex",
               alignItems: "center",
               height: "100%",
               position: "relative",
             }}
           >
-            <span style={{ paddingRight: "3px" }}>VERSE</span>
-            <div
+            <Image
+              src="/versemate-logo.png"
+              alt="VerseMate"
+              width={124}
+              height={34}
               style={{
-                width: "1px",
-                height: "28px",
-                backgroundColor: "#FFFFFF",
-                position: "relative",
-                top: "0px",
+                objectFit: "contain",
+                filter: "brightness(0) invert(1)",
               }}
             />
-            <span style={{ paddingLeft: "6px" }}>MATE</span>
           </Link>
         </div>
 
