@@ -89,6 +89,131 @@ const effortOptions: EffortOption[] = [
 
 const bookOptions = testaments;
 
+const ActionsMenu = ({
+  job,
+  monitoringId,
+  cancellingId,
+  onMonitorBibleBatch,
+  onViewBibleDetails,
+  onCancelBatch,
+  onMonitorBatch,
+  onViewBookDetails,
+}: {
+  job: BatchJob;
+  monitoringId: string | null;
+  cancellingId: string | null;
+  onMonitorBibleBatch: (id: string) => void;
+  onViewBibleDetails: (id: string) => void;
+  onCancelBatch: (id: string) => void;
+  onMonitorBatch: (id: string) => void;
+  onViewBookDetails: (id: string) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const canCancel =
+    job.status === "validating" ||
+    job.status === "in_progress" ||
+    job.status === "finalizing";
+
+  return (
+    <div style={{ position: "relative" }} ref={menuRef}>
+      <Button variant="outlined" onClick={() => setIsOpen(!isOpen)}>
+        Actions
+      </Button>
+      {isOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            background: "white",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            padding: "8px",
+          }}
+        >
+          {job.batch_type === "bible" ? (
+            <>
+              <Button
+                variant="outlined"
+                onClick={() => onMonitorBibleBatch(job.id)}
+                disabled={!!monitoringId && monitoringId === job.id}
+              >
+                Monitor
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => onViewBibleDetails(job.id)}
+              >
+                View Details
+              </Button>
+              {canCancel && (
+                <Button
+                  variant="outlined"
+                  onClick={() => onCancelBatch(job.id)}
+                  disabled={!!cancellingId && cancellingId === job.id}
+                >
+                  Cancel
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outlined"
+                onClick={() => onMonitorBatch(job.openai_batch_id || "")}
+                disabled={
+                  !!monitoringId && monitoringId === (job.openai_batch_id || "")
+                }
+              >
+                Monitor
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  if (job.openai_batch_id) {
+                    onViewBookDetails(job.openai_batch_id);
+                  }
+                }}
+                disabled={!job.openai_batch_id}
+              >
+                View Details
+              </Button>
+              {canCancel && (
+                <Button
+                  variant="outlined"
+                  onClick={() => onCancelBatch(job.id)}
+                  disabled={!!cancellingId && cancellingId === job.id}
+                >
+                  Cancel
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const BatchOperations = () => {
   const [batchJobs, setBatchJobs] = useState<BatchJob[]>([]);
   const [summaries, setSummaries] = useState<Record<string, BatchSummary>>({});
@@ -133,8 +258,18 @@ export const BatchOperations = () => {
       const response = await api.admin["batch-history"].get({ query: {} });
       if (response.data) {
         const jobs = Array.isArray(response.data)
-          ? response.data.map((job) => ({ ...job, id: String(job.id) }))
+          ? response.data.map((job) => ({
+              ...job,
+              id: String(job.id),
+              // Ensure created_at is a Date object
+              created_at: job.created_at
+                ? new Date(job.created_at)
+                : new Date(),
+            }))
           : [];
+
+        console.log("Fetched batch jobs:", jobs);
+        jobs.sort((a, b) => Number(b.id) - Number(a.id));
         setBatchJobs(jobs);
 
         const bibleBatches = jobs.filter((job) => job.batch_type === "bible");
@@ -229,7 +364,15 @@ export const BatchOperations = () => {
       setCancellingId(batchId);
       setError(null);
       await api.admin.batch({ batchJobId: batchId }).delete();
-      await fetchBatchJobs();
+
+      const job = batchJobs.find((j) => j.id === batchId);
+      if (job?.batch_type === "bible") {
+        await handleMonitorBibleBatch(batchId);
+      } else if (job?.openai_batch_id) {
+        await handleMonitorBatch(job.openai_batch_id);
+      } else {
+        await fetchBatchJobs();
+      }
     } catch (err) {
       setError("Failed to cancel batch job");
       console.error("Error cancelling batch job:", err);
@@ -247,9 +390,12 @@ export const BatchOperations = () => {
         parentId
       ].get();
       if (response.data) {
-        setChildJobs(
-          response.data.map((job: any) => ({ ...job, id: String(job.id) })),
-        );
+        const jobs = response.data.map((job: any) => ({
+          ...job,
+          id: String(job.id),
+        }));
+        jobs.sort((a: BatchJob, b: BatchJob) => Number(b.id) - Number(a.id));
+        setChildJobs(jobs);
       }
     } catch (err) {
       setError("Failed to fetch child batch jobs");
@@ -301,7 +447,32 @@ export const BatchOperations = () => {
   }, [fetchBatchJobs]);
 
   const columns: TableColumn<BatchJob>[] = [
-    { title: "ID", property: "id", className: styles.idColumn },
+    {
+      title: "ID",
+      property: "id",
+      className: styles.idColumn,
+      render: (job) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            handleViewBookDetails(job.id);
+          }}
+          className={styles.nowrapColumn}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            margin: 0,
+            cursor: "pointer",
+            textDecoration: "underline",
+            color: "blue",
+          }}
+        >
+          {job.id}
+        </button>
+      ),
+    },
     {
       title: "Book/Batch",
       property: "book_name",
@@ -310,16 +481,19 @@ export const BatchOperations = () => {
         <span className={styles.nowrapColumn}>
           {job.batch_type === "bible" ? "Entire Bible" : job.book_name || "N/A"}
           {job.bible_version && (
-            <span
-              style={{ fontSize: "12px", color: "#666", marginLeft: "4px" }}
-            >
-              ({job.bible_version})
-            </span>
+            <span className={styles.versionBadge}>({job.bible_version})</span>
           )}
         </span>
       ),
     },
-    { title: "Type", property: "batch_type", className: styles.typeColumn },
+    {
+      title: "Type",
+      property: "batch_type",
+      className: styles.typeColumn,
+      render: (job) => (
+        <span className={styles.nowrapColumn}>{job.batch_type}</span>
+      ),
+    },
     {
       title: "Status",
       property: "status",
@@ -337,7 +511,7 @@ export const BatchOperations = () => {
 
         return (
           <span
-            className={`${styles.status} ${styles.statusWithSpacing} ${
+            className={`${styles.status} ${styles.nowrapColumn} ${
               styles[
                 status === "in_progress"
                   ? "inProgress"
@@ -362,88 +536,39 @@ export const BatchOperations = () => {
           job.batch_type === "bible" && summary
             ? summary.total_cost
             : job.actual_cost;
-        return cost ? `$${cost.toFixed(4)}` : "N/A";
+        return (
+          <span className={styles.nowrapColumn}>
+            {cost ? `$${Number(cost).toFixed(4)}` : "N/A"}
+          </span>
+        );
       },
     },
     {
       title: "Created",
       property: "created_at",
       className: styles.createdColumn,
-      render: (job) => new Date(job.created_at).toLocaleDateString(),
+      render: (job) => (
+        <span className={styles.nowrapColumn}>
+          {new Date(job.created_at).toLocaleDateString()}
+        </span>
+      ),
     },
     {
       title: "Actions",
       property: "id",
       className: styles.actionsColumn,
-      render: (job) => {
-        const canCancel =
-          job.status === "validating" ||
-          job.status === "in_progress" ||
-          job.status === "finalizing";
-
-        return (
-          <div style={{ display: "flex", gap: "8px" }}>
-            {job.batch_type === "bible" ? (
-              <>
-                <Button
-                  variant="outlined"
-                  onClick={() => handleMonitorBibleBatch(job.id)}
-                  disabled={!!monitoringId && monitoringId === job.id}
-                >
-                  Monitor
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => handleViewBibleDetails(job.id)}
-                >
-                  View Details
-                </Button>
-                {canCancel && (
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleCancelBatch(job.id)}
-                    disabled={!!cancellingId && cancellingId === job.id}
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outlined"
-                  onClick={() => handleMonitorBatch(job.openai_batch_id || "")}
-                  disabled={
-                    !!monitoringId &&
-                    monitoringId === (job.openai_batch_id || "")
-                  }
-                >
-                  Monitor
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() =>
-                    handleViewBookDetails(job.openai_batch_id || "")
-                  }
-                >
-                  View Details
-                </Button>
-                {canCancel && (
-                  <Button
-                    variant="outlined"
-                    onClick={() => handleCancelBatch(job.openai_batch_id || "")}
-                    disabled={
-                      !!cancellingId && cancellingId === job.openai_batch_id
-                    }
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        );
-      },
+      render: (job) => (
+        <ActionsMenu
+          job={job}
+          monitoringId={monitoringId}
+          cancellingId={cancellingId}
+          onMonitorBibleBatch={handleMonitorBibleBatch}
+          onViewBibleDetails={handleViewBibleDetails}
+          onCancelBatch={handleCancelBatch}
+          onMonitorBatch={handleMonitorBatch}
+          onViewBookDetails={handleViewBookDetails}
+        />
+      ),
     },
   ];
 
@@ -757,6 +882,10 @@ export const BatchOperations = () => {
 
       {/* Main Table */}
       <div className={styles.tableContainer}>
+        {(() => {
+          console.log("Rendering Table with data:", batchJobs);
+          return null;
+        })()}
         <Table
           columns={columns}
           data={batchJobs}

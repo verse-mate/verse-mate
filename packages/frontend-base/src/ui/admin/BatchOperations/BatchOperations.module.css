@@ -65,42 +65,42 @@
   }
 
   .status.cancelled {
-    background-color: #e0e0e0; /* Light gray */
-    color: #424242; /* Dark gray */
+    background-color: #e0e0e0;
+    color: #424242;
   }
 
   /* Column width classes */
   .idColumn {
-    width: 20px;
-    min-width: 20px;
-    max-width: 30px;
+    width: 60px;
+    min-width: 60px;
+    text-align: center;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .bookColumn {
     width: 200px;
-    min-width: 120px;
+    min-width: 150px;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .typeColumn {
-    width: 80px;
-    min-width: 80px;
-  }
-
-  .openaiBatchIdColumn {
     width: 100px;
-    min-width: 180px;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-width: 80px;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .statusColumn {
-    width: 120px;
-    min-width: 120px;
+    width: 100px;
+    min-width: 100px;
+    text-align: center;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
-
-  
 
   .statusWithSpacing {
     margin-left: 50px;
@@ -109,25 +109,50 @@
   }
 
   .costColumn {
-    width: 80px;
+    width: 100px;
     min-width: 80px;
     text-align: right;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .createdColumn {
-    width: 60px;
-    min-width: 60px;
+    width: 120px;
+    min-width: 100px;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .actionsColumn {
-    width: auto;
-    min-width: fit-content;
+    width: 120px;
+    min-width: 100px;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .nowrapColumn {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
+  }
+
+  .versionBadge {
+    font-size: 12px;
+    color: #666;
+    margin-left: 4px;
+  }
+  
+  .tableContainer table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .tableContainer th,
+  .tableContainer td {
+    vertical-align: middle;
   }
   
   .actions {
