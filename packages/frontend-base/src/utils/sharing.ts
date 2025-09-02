@@ -40,7 +40,7 @@ function validateOrigin(origin: string): string {
     return normalized;
   } catch (error) {
     console.warn("Invalid origin detected, using fallback:", error);
-    return "https://app.versemate.org";
+    return "https://verse-mate.apegro.dev";
   }
 }
 
@@ -70,7 +70,7 @@ function getBaseUrl(): string {
     if (envUrl) {
       return validateOrigin(envUrl);
     }
-    return "https://app.versemate.org";
+    return "https://verse-mate.apegro.dev";
   }
 
   // In browser context, validate the current origin
