@@ -9,13 +9,20 @@ import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
+import { batchProcessingQueue } from "../queue/batch-processing.queue";
+
 const plugin = new Elysia()
   .use(shared)
+  .state("batchProcessingQueue", batchProcessingQueue)
   .state((state) => {
     return {
       ...state,
       getBatchOperationService: () =>
-        new BatchOperationService(state.db, state.batchMonitoringQueue as any),
+        new BatchOperationService(
+          state.db,
+          state.batchMonitoringQueue as any,
+          state.batchProcessingQueue as any,
+        ),
       getAdminDatabaseService: () => new AdminDatabaseService(state.db),
       getExplanationRegenerationService: () =>
         new ExplanationRegenerationService(state.db),
@@ -114,6 +121,7 @@ const plugin = new Elysia()
                   body.model,
                   currentUserId,
                   body.effort || "medium",
+                  body.skipExisting || false,
                 );
               }
 
@@ -179,6 +187,48 @@ const plugin = new Elysia()
                 limit: t.Optional(t.String()),
                 offset: t.Optional(t.String()),
                 adminOnly: t.Optional(t.String()),
+              }),
+            },
+          )
+          .get(
+            "/batch-children/:parentId",
+            async ({ params, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.getBatchChildren(
+                Number(params.parentId),
+              );
+            },
+            {
+              params: t.Object({
+                parentId: t.String(),
+              }),
+            },
+          )
+          .post(
+            "/monitor-bible-batch/:parentId",
+            async ({ params, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.monitorBibleBatch(
+                Number(params.parentId),
+              );
+            },
+            {
+              params: t.Object({
+                parentId: t.String(),
+              }),
+            },
+          )
+          .get(
+            "/batch-summary/:parentId",
+            async ({ params, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.getBatchSummary(
+                Number(params.parentId),
+              );
+            },
+            {
+              params: t.Object({
+                parentId: t.String(),
               }),
             },
           )

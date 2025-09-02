@@ -52,10 +52,10 @@ export const useSaveSearchParams = () => {
 
 export const useGetSearchParams = () => {
   const searchParams = useSearchParams();
-  const bookId = Number(searchParams.get("bookId")) || 40;
+  const bookId = Number(searchParams.get("bookId")) || 1;
   const verseId = Number(searchParams.get("verseId")) || 1;
   const testament =
-    (searchParams.get("testament") as TestamentEnum) || TestamentEnum.NT;
+    (searchParams.get("testament") as TestamentEnum) || TestamentEnum.OT;
   const bibleVersion = searchParams.get("bibleVersion") || "NASB1995";
   const conversationId = searchParams.get("conversationId") || "newChat";
   const explanationId = Number(searchParams.get("explanationId"));

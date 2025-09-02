@@ -4,21 +4,12 @@
 }
 
 @font-face {
-  font-family: MerriweatherRegular;
-  src: url("/assets/fonts/Merriweather-Regular.woff2");
+  font-family: Roboto;
+  src: url("/assets/fonts/Roboto-Regular.woff2");
 }
 
 @font-face {
-  font-family: MerriweatherBold;
-  src: url("/assets/fonts/Merriweather-Regular.woff2");
+  font-family: "Roboto Serif";
+  src: url("/assets/fonts/RobotoSerif-Regular.woff2");
 }
 
-@font-face {
-  font-family: MerriweatherItalic;
-  src: url("/assets/fonts/Merriweather-Italic.woff2");
-}
-
-@font-face {
-  font-family: MerriweatherBoldItalic;
-  src: url("/assets/fonts/Merriweather-Regular.woff2");
-}

@@ -30,10 +30,13 @@ const schema: z.ZodType<SignUpData> = z.object({
     .max(250, "Last name must have maximum of 250 characters."),
 });
 
+import { useGetSearchParams } from "../../hooks/useSearchParams";
+
 export function useSignUpForm() {
   const [backendError, setBackendError] = useState<string | undefined>(
     undefined,
   );
+  const { bookId, verseId } = useGetSearchParams();
 
   const { handleSubmit, register, formState, getValues, watch } =
     useForm<SignUpData>({
@@ -49,7 +52,9 @@ export function useSignUpForm() {
       }
 
       setCookie(ACCESS_TOKEN_COOKIE, data.accessToken, 7);
-      window.location.href = "/";
+      const redirectTo = localStorage.getItem("redirectTo");
+      localStorage.removeItem("redirectTo");
+      window.location.href = redirectTo || "/";
     },
     onError: (error) => {
       let errorMessage = "Something went wrong.";
@@ -66,6 +71,12 @@ export function useSignUpForm() {
 
   const onSubmit = handleSubmit(
     async ({ email, password, firstName, lastName }) => {
+      if (bookId && verseId) {
+        localStorage.setItem(
+          "redirectTo",
+          `/?bookId=${bookId}&verseId=${verseId}`,
+        );
+      }
       await signup({
         email,
         password,

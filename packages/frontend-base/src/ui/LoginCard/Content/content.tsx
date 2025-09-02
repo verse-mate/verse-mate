@@ -14,8 +14,18 @@ type ContentProps = {
   setRightPanelContent?: (value: string) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
+import { useGetSearchParams } from "../../../hooks/useSearchParams";
+
 export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
+  const { bookId, verseId } = useGetSearchParams();
+
   const handleSignInClick = (e: React.MouseEvent) => {
+    if (bookId && verseId) {
+      localStorage.setItem(
+        "redirectTo",
+        `/?bookId=${bookId}&verseId=${verseId}`,
+      );
+    }
     if (
       typeof window !== "undefined" &&
       window.innerWidth >= 1024 &&
@@ -27,6 +37,12 @@ export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
   };
 
   const handleSignUpClick = (e: React.MouseEvent) => {
+    if (bookId && verseId) {
+      localStorage.setItem(
+        "redirectTo",
+        `/?bookId=${bookId}&verseId=${verseId}`,
+      );
+    }
     if (
       typeof window !== "undefined" &&
       window.innerWidth >= 1024 &&
@@ -61,14 +77,17 @@ export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
       </div>
 
       <div className={styles.buttonsContainer}>
-        <Link href={"/login"} onClick={handleSignInClick}>
+        <Link
+          href={`/login?bookId=${bookId}&verseId=${verseId}`}
+          onClick={handleSignInClick}
+        >
           <Button className={styles.signInButton}>Sign In</Button>
         </Link>
 
         <Text className={styles.signUpContainer}>
           <span className={styles.simpleText}>Don't have account?</span>
           <Link
-            href="/create-account"
+            href={`/create-account?bookId=${bookId}&verseId=${verseId}`}
             className={styles.signUpLink}
             onClick={handleSignUpClick}
           >

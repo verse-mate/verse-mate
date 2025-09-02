@@ -64,38 +64,43 @@
     color: #856404;
   }
 
+  .status.cancelled {
+    background-color: #e0e0e0;
+    color: #424242;
+  }
+
   /* Column width classes */
   .idColumn {
-    width: 10px;
-    min-width: 10px;
-    max-width: 10px;
+    width: 60px;
+    min-width: 60px;
+    text-align: center;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .bookColumn {
-    width: 120px;
-    min-width: 120px;
+    width: 200px;
+    min-width: 150px;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .typeColumn {
-    width: 80px;
+    width: 100px;
     min-width: 80px;
-  }
-
-  .openaiBatchIdColumn {
-    width: 180px;
-    min-width: 180px;
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .statusColumn {
-    width: 120px;
-    min-width: 120px;
+    width: 100px;
+    min-width: 100px;
+    text-align: center;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
-
-  
 
   .statusWithSpacing {
     margin-left: 50px;
@@ -104,25 +109,50 @@
   }
 
   .costColumn {
-    width: 80px;
+    width: 100px;
     min-width: 80px;
     text-align: right;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .createdColumn {
-    width: 100px;
+    width: 120px;
     min-width: 100px;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .actionsColumn {
-    width: 100px;
+    width: 120px;
     min-width: 100px;
+    text-align: left;
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
   }
 
   .nowrapColumn {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
+  }
+
+  .versionBadge {
+    font-size: 12px;
+    color: #666;
+    margin-left: 4px;
+  }
+  
+  .tableContainer table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .tableContainer th,
+  .tableContainer td {
+    vertical-align: middle;
   }
   
   .actions {
