@@ -74,6 +74,8 @@ export default interface BatchJobsTable {
     BatchJobsId | null,
     BatchJobsId | null
   >;
+
+  error_file_content: ColumnType<string | null, string | null, string | null>;
 }
 
 export type BatchJobs = Selectable<BatchJobsTable>;

@@ -27,6 +27,7 @@ interface BatchJob {
   completed_requests?: number;
   failed_requests?: number;
   parent_batch_id?: number | null;
+  error_file_content?: string | null;
 }
 
 interface BatchSummary {
@@ -937,17 +938,36 @@ export const BatchOperations = () => {
           {bookDetailsLoading ? (
             <p>Loading...</p>
           ) : (
-            <pre
-              style={{
-                background: "#f4f4f4",
-                padding: "10px",
-                borderRadius: "4px",
-                maxHeight: "60vh",
-                overflow: "auto",
-              }}
-            >
-              <code>{JSON.stringify(selectedJobDetails, null, 2)}</code>
-            </pre>
+            <div>
+              <pre
+                style={{
+                  background: "#f4f4f4",
+                  padding: "10px",
+                  borderRadius: "4px",
+                  maxHeight: "40vh",
+                  overflow: "auto",
+                }}
+              >
+                <code>{JSON.stringify(selectedJobDetails, null, 2)}</code>
+              </pre>
+              {selectedJobDetails?.error_file_content && (
+                <div style={{ marginTop: "20px" }}>
+                  <h4>Error File Content</h4>
+                  <pre
+                    style={{
+                      background: "#f4f4f4",
+                      padding: "10px",
+                      borderRadius: "4px",
+                      maxHeight: "40vh",
+                      overflow: "auto",
+                      color: "red",
+                    }}
+                  >
+                    <code>{selectedJobDetails.error_file_content}</code>
+                  </pre>
+                </div>
+              )}
+            </div>
           )}
           <Dialog.Footer>
             <Button onClick={() => setBookDetailsModalOpen(false)}>

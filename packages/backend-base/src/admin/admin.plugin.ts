@@ -121,6 +121,7 @@ const plugin = new Elysia()
                   body.model,
                   currentUserId,
                   body.effort || "medium",
+                  body.skipExisting || false,
                 );
               }
 

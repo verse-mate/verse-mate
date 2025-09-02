@@ -218,6 +218,7 @@ export class BatchOperationService {
     model: string,
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
+    skipExisting = false,
   ) {
     console.log(
       `[BATCH] Starting Bible batch for version ${bibleVersion}, types: ${explanationTypes.join(
@@ -267,7 +268,7 @@ export class BatchOperationService {
           explanationTypes,
           model,
           adminUserId,
-          false,
+          skipExisting,
           effort,
           parentBatchId,
         );
@@ -292,12 +293,7 @@ export class BatchOperationService {
   }
 
   async getBatchStatus(batchId: string) {
-    console.log(`[BATCH] Getting batch status for: ${batchId}`);
     const batchStatus = await openai.batches.retrieve(batchId);
-    console.log(
-      `[BATCH] Status response for ${batchId}`,
-      JSON.stringify(batchStatus, null, 2),
-    );
 
     if (batchStatus.status === "failed" && batchStatus.errors) {
       console.error(
@@ -374,6 +370,33 @@ export class BatchOperationService {
 
   async processBatch(batchId: string, outputFileId: string) {
     console.log(`[BATCH] Processing batch ${batchId} from queue.`);
+
+    const batchStatus = await openai.batches.retrieve(batchId);
+
+    if (
+      batchStatus.request_counts &&
+      batchStatus.request_counts.failed > 0 &&
+      batchStatus.error_file_id
+    ) {
+      try {
+        const errorFileContent = await openai.files.content(
+          batchStatus.error_file_id,
+        );
+        const errorText = await errorFileContent.text();
+        await this.db
+          .getOrCreateConnection()
+          .updateTable("batch_jobs")
+          .set({ error_file_content: errorText })
+          .where("openai_batch_id", "=", batchId)
+          .execute();
+      } catch (error) {
+        console.error(
+          `[BATCH] Could not download error file ${batchStatus.error_file_id}:`,
+          error,
+        );
+      }
+    }
+
     await this.processOutputFile(batchId, outputFileId);
   }
 
