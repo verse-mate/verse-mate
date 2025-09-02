@@ -890,10 +890,6 @@ export const BatchOperations = () => {
 
       {/* Main Table */}
       <div className={styles.tableContainer}>
-        {(() => {
-          console.log("Rendering Table with data:", batchJobs);
-          return null;
-        })()}
         <Table
           columns={columns}
           data={batchJobs}

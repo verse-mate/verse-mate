@@ -48,7 +48,11 @@ export const Content = () => {
         <div className={styles.explanationContent}>
           <MarkdownRenderer.Root>
             <MarkdownRenderer.Renderer
-              markdownContent={explanation.explanation}
+              markdownContent={
+                typeof explanation.explanation === "string"
+                  ? explanation.explanation
+                  : ""
+              }
               className={styles.markdown}
             />
           </MarkdownRenderer.Root>
