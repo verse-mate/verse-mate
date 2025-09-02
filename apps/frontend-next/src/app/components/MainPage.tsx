@@ -1,5 +1,5 @@
 "use client";
-import { MainPage } from "frontend-base";
+import { MainPage, Notifications } from "frontend-base";
 import NextDynamic from "next/dynamic";
 import type { ReactNode } from "react";
 
@@ -11,7 +11,10 @@ const DynamicBrowserRouter = NextDynamic(
 const MyMainPage = ({ children }: { children: ReactNode }) => {
   return (
     <MainPage.QueryProvider>
-      <DynamicBrowserRouter>{children}</DynamicBrowserRouter>
+      <DynamicBrowserRouter>
+        <Notifications />
+        {children}
+      </DynamicBrowserRouter>
     </MainPage.QueryProvider>
   );
 };

@@ -22,6 +22,12 @@
     color: var(--night);
 }
 
+.actionButtons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .bookmarkButton {
     flex-shrink: 0;
 }
@@ -98,6 +104,16 @@
     font-size: 18px;
     line-height: 32px;
     color: var(--night);
+}
+
+.copyLinkButton {
+    display: flex;
+}
+
+@media (max-width: 768px) {
+    .copyLinkButton {
+        display: none;
+    }
 }
 
 @media (max-width: 390px) {

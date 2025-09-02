@@ -15,6 +15,20 @@
   white-space: pre-line;
 }
 
+@media (max-width: 768px) {
+  .notifications {
+    position: fixed;
+    top: var(--notification-container-top, 1rem);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    align-items: center;
+    width: calc(100% - 2rem);
+    max-width: calc(100% - 2rem);
+    z-index: 10;
+  }
+}
+
 .notificationContainer {
   display: flex;
   flex-direction: column;
@@ -61,9 +75,15 @@
   padding: var(--size-3) 70px var(--size-3) var(--size-3);
 }
 
+@media (max-width: 768px) {
+  .notificationContent {
+    padding: var(--size-3) 50px var(--size-3) var(--size-3);
+  }
+}
+
 .closeButton {
   position: absolute;
-  top: var(--size-2);
+  top: var(--size-3);
   right: var(--size-2);
   background-color: transparent;
   transition-duration: 300ms;
