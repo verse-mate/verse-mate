@@ -68,6 +68,14 @@ export default interface BatchJobsTable {
   error_message: ColumnType<string | null, string | null, string | null>;
 
   explanations_processed: ColumnType<boolean, boolean | undefined, boolean>;
+
+  parent_batch_id: ColumnType<
+    BatchJobsId | null,
+    BatchJobsId | null,
+    BatchJobsId | null
+  >;
+
+  error_file_content: ColumnType<string | null, string | null, string | null>;
 }
 
 export type BatchJobs = Selectable<BatchJobsTable>;

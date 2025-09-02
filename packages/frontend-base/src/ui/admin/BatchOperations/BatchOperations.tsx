@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { bibleVersions } from "../../../utils/bible-versions";
 import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
+import { Dialog } from "../../Dialog";
 import { CheckIcon, ChevronDownIcon } from "../../Icons";
 import { SelectDropdown } from "../../SelectDropdown";
 import { Table, type TableColumn } from "../../Table/Table";
@@ -25,6 +26,14 @@ interface BatchJob {
   total_requests?: number;
   completed_requests?: number;
   failed_requests?: number;
+  parent_batch_id?: number | null;
+  error_file_content?: string | null;
+}
+
+interface BatchSummary {
+  aggregate_status: string;
+  status_progress_text: string;
+  total_cost: number;
 }
 
 interface ModelOption {
@@ -79,13 +88,142 @@ const effortOptions: EffortOption[] = [
   },
 ];
 
+const bookOptions = testaments;
+
+const ActionsMenu = ({
+  job,
+  monitoringId,
+  cancellingId,
+  onMonitorBibleBatch,
+  onViewBibleDetails,
+  onCancelBatch,
+  onMonitorBatch,
+  onViewBookDetails,
+}: {
+  job: BatchJob;
+  monitoringId: string | null;
+  cancellingId: string | null;
+  onMonitorBibleBatch: (id: string) => void;
+  onViewBibleDetails: (id: string) => void;
+  onCancelBatch: (id: string) => void;
+  onMonitorBatch: (id: string) => void;
+  onViewBookDetails: (id: string) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const canCancel =
+    job.status === "validating" ||
+    job.status === "in_progress" ||
+    job.status === "finalizing";
+
+  return (
+    <div style={{ position: "relative" }} ref={menuRef}>
+      <Button variant="outlined" onClick={() => setIsOpen(!isOpen)}>
+        Actions
+      </Button>
+      {isOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            background: "white",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            padding: "8px",
+          }}
+        >
+          {job.batch_type === "bible" ? (
+            <>
+              <Button
+                variant="outlined"
+                onClick={() => onMonitorBibleBatch(job.id)}
+                disabled={!!monitoringId && monitoringId === job.id}
+              >
+                Monitor
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => onViewBibleDetails(job.id)}
+              >
+                View Details
+              </Button>
+              {canCancel && (
+                <Button
+                  variant="outlined"
+                  onClick={() => onCancelBatch(job.id)}
+                  disabled={!!cancellingId && cancellingId === job.id}
+                >
+                  Cancel
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outlined"
+                onClick={() => onMonitorBatch(job.openai_batch_id || "")}
+                disabled={
+                  !!monitoringId && monitoringId === (job.openai_batch_id || "")
+                }
+              >
+                Monitor
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  if (job.openai_batch_id) {
+                    onViewBookDetails(job.openai_batch_id);
+                  }
+                }}
+                disabled={!job.openai_batch_id}
+              >
+                View Details
+              </Button>
+              {canCancel && (
+                <Button
+                  variant="outlined"
+                  onClick={() => onCancelBatch(job.id)}
+                  disabled={!!cancellingId && cancellingId === job.id}
+                >
+                  Cancel
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const BatchOperations = () => {
   const [batchJobs, setBatchJobs] = useState<BatchJob[]>([]);
+  const [summaries, setSummaries] = useState<Record<string, BatchSummary>>({});
   const [listLoading, setListLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [monitoringId, setMonitoringId] = useState<string | null>(null);
 
+  // Form state
   const [selectedModel, setSelectedModel] = useState<string>("gpt-5");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedBibleVersion, setSelectedBibleVersion] =
@@ -97,10 +235,24 @@ export const BatchOperations = () => {
     useState(false);
   const [selectedEffort, setSelectedEffort] = useState<string>("medium");
 
+  // Dropdown states
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
   const [effortDropdownOpen, setEffortDropdownOpen] = useState(false);
+
+  // Modal 1 (Bible Details) state
+  const [bibleDetailsModalOpen, setBibleDetailsModalOpen] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [childJobs, setChildJobs] = useState<BatchJob[]>([]);
+  const [childJobsLoading, setChildJobsLoading] = useState(false);
+
+  // Modal 2 (Book Details) state
+  const [bookDetailsModalOpen, setBookDetailsModalOpen] = useState(false);
+  const [selectedJobDetails, setSelectedJobDetails] = useState<any | null>(
+    null,
+  );
+  const [bookDetailsLoading, setBookDetailsLoading] = useState(false);
 
   const fetchBatchJobsOnly = useCallback(async () => {
     try {
@@ -110,9 +262,31 @@ export const BatchOperations = () => {
           ? response.data.map((job) => ({
               ...job,
               id: String(job.id),
+              // Ensure created_at is a Date object
+              created_at: job.created_at
+                ? new Date(job.created_at)
+                : new Date(),
             }))
           : [];
+
+        console.log("Fetched batch jobs:", jobs);
+        jobs.sort((a, b) => Number(b.id) - Number(a.id));
         setBatchJobs(jobs);
+
+        const bibleBatches = jobs.filter((job) => job.batch_type === "bible");
+        const newSummaries: Record<string, any> = {};
+        for (const batch of bibleBatches) {
+          try {
+            const summaryRes = await (api.admin as any)["batch-summary"][
+              batch.id
+            ].get();
+            newSummaries[batch.id] = summaryRes.data;
+          } catch (e) {
+            console.error(`Failed to fetch summary for ${batch.id}`, e);
+          }
+        }
+        setSummaries(newSummaries);
+
         return jobs;
       }
       return [];
@@ -136,61 +310,12 @@ export const BatchOperations = () => {
     }
   }, [fetchBatchJobsOnly]);
 
-  const refreshAndMonitorAll = useCallback(async () => {
-    try {
-      setListLoading(true);
-      setError(null);
+  const [isBibleBatch, setIsBibleBatch] = useState(true);
 
-      // First fetch all jobs
-      const jobs = await fetchBatchJobsOnly();
-
-      // Monitor all active batches (not completed, failed, cancelled, or expired)
-      const activeBatches = jobs.filter(
-        (job) =>
-          job.openai_batch_id &&
-          ![
-            "completed",
-            "failed",
-            "cancelled",
-            "expired",
-            "partial_failure",
-          ].includes(job.status),
-      );
-
-      // Monitor each active batch in parallel
-      if (activeBatches.length > 0) {
-        console.log(
-          `[BATCH_UI] Monitoring ${activeBatches.length} active batches`,
-        );
-        const monitorPromises = activeBatches.map(async (job) => {
-          try {
-            if (job.openai_batch_id) {
-              await (api.admin.batch as any)[job.openai_batch_id].get();
-            }
-          } catch (err) {
-            console.error(
-              `Error monitoring batch ${job.openai_batch_id}:`,
-              err,
-            );
-          }
-        });
-
-        await Promise.all(monitorPromises);
-
-        // Fetch updated data after monitoring
-        await fetchBatchJobsOnly();
-      }
-    } catch (err) {
-      setError("Failed to refresh and monitor batch jobs");
-      console.error("Error refreshing and monitoring batch jobs:", err);
-    } finally {
-      setListLoading(false);
-    }
-  }, [fetchBatchJobsOnly]);
-  const hasFetchedRef = useRef(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const handleCreateBatch = async () => {
-    if (selectedBook === null) {
+    if (!isBibleBatch && selectedBook === null) {
       setError("Please select a book");
       return;
     }
@@ -204,8 +329,8 @@ export const BatchOperations = () => {
       setCreating(true);
       setError(null);
       await api.admin["batch-explanations"].post({
-        type: "book",
-        bookName: selectedBook,
+        type: isBibleBatch ? "bible" : "book",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
         bibleVersion: selectedBibleVersion,
         model: selectedModel,
         explanationTypes: selectedExplanationTypes,
@@ -235,9 +360,90 @@ export const BatchOperations = () => {
     }
   };
 
+  const handleCancelBatch = async (batchId: string) => {
+    try {
+      setCancellingId(batchId);
+      setError(null);
+      await api.admin.batch({ batchJobId: batchId }).delete();
+
+      const job = batchJobs.find((j) => j.id === batchId);
+      if (job?.batch_type === "bible") {
+        await handleMonitorBibleBatch(batchId);
+      } else if (job?.openai_batch_id) {
+        await handleMonitorBatch(job.openai_batch_id);
+      } else {
+        await fetchBatchJobs();
+      }
+    } catch (err) {
+      setError("Failed to cancel batch job");
+      console.error("Error cancelling batch job:", err);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleViewBibleDetails = async (parentId: string) => {
+    setSelectedParentId(parentId);
+    setBibleDetailsModalOpen(true);
+    setChildJobsLoading(true);
+    try {
+      const response = await (api.admin as any)["batch-children"][
+        parentId
+      ].get();
+      if (response.data) {
+        const jobs = response.data.map((job: any) => ({
+          ...job,
+          id: String(job.id),
+        }));
+        jobs.sort((a: BatchJob, b: BatchJob) => Number(b.id) - Number(a.id));
+        setChildJobs(jobs);
+      }
+    } catch (err) {
+      setError("Failed to fetch child batch jobs");
+      console.error("Error fetching child batch jobs:", err);
+    } finally {
+      setChildJobsLoading(false);
+    }
+  };
+
+  const handleViewBookDetails = async (batchId: string) => {
+    setSelectedJobDetails(null);
+    setBookDetailsModalOpen(true);
+    setBookDetailsLoading(true);
+    try {
+      const response = await (api.admin.batch as any)[batchId].get();
+      setSelectedJobDetails(response.data);
+    } catch (err) {
+      setError("Failed to fetch batch job details");
+      console.error("Error fetching batch job details:", err);
+    } finally {
+      setBookDetailsLoading(false);
+    }
+  };
+
+  const handleMonitorBibleBatch = async (parentId: string) => {
+    try {
+      setMonitoringId(parentId);
+      await (api.admin as any)["monitor-bible-batch"][parentId].post({});
+      if (bibleDetailsModalOpen && selectedParentId === parentId) {
+        await handleViewBibleDetails(parentId);
+      } else {
+        await fetchBatchJobs();
+      }
+    } catch (err) {
+      setError("Failed to monitor Bible batch");
+      console.error("Error monitoring Bible batch:", err);
+    } finally {
+      setMonitoringId(null);
+    }
+  };
+
+  const refreshAndMonitorAll = useCallback(async () => {
+    // Implementation for this will need to be updated to handle bible batches
+    await fetchBatchJobs();
+  }, [fetchBatchJobs]);
+
   useEffect(() => {
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
     fetchBatchJobs();
   }, [fetchBatchJobs]);
 
@@ -246,20 +452,44 @@ export const BatchOperations = () => {
       title: "ID",
       property: "id",
       className: styles.idColumn,
+      render: (job) => {
+        const handleClick = (e: React.MouseEvent) => {
+          e.preventDefault();
+          if (job.batch_type === "bible") {
+            handleViewBibleDetails(job.id);
+          } else if (job.openai_batch_id) {
+            handleViewBookDetails(job.openai_batch_id);
+          }
+        };
+        return (
+          <button
+            type="button"
+            onClick={handleClick}
+            className={styles.nowrapColumn}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              cursor: "pointer",
+              textDecoration: "underline",
+              color: "blue",
+            }}
+          >
+            {job.id}
+          </button>
+        );
+      },
     },
     {
-      title: "Book",
+      title: "Book/Batch",
       property: "book_name",
       className: styles.bookColumn,
       render: (job) => (
         <span className={styles.nowrapColumn}>
-          {job.book_name || "N/A"}
+          {job.batch_type === "bible" ? "Entire Bible" : job.book_name || "N/A"}
           {job.bible_version && (
-            <span
-              style={{ fontSize: "12px", color: "#666", marginLeft: "4px" }}
-            >
-              ({job.bible_version})
-            </span>
+            <span className={styles.versionBadge}>({job.bible_version})</span>
           )}
         </span>
       ),
@@ -268,64 +498,89 @@ export const BatchOperations = () => {
       title: "Type",
       property: "batch_type",
       className: styles.typeColumn,
+      render: (job) => (
+        <span className={styles.nowrapColumn}>{job.batch_type}</span>
+      ),
     },
     {
-      title: "OpenAI Batch ID",
-      property: "openai_batch_id",
-      className: styles.openaiBatchIdColumn,
-    },
-    {
-      title: <span style={{ marginLeft: "50px" }}>Status</span>,
+      title: "Status",
       property: "status",
       className: styles.statusColumn,
-      render: (job) => (
-        <span
-          className={`${styles.status} ${styles.statusWithSpacing} ${
-            styles[
-              job.status === "in_progress"
-                ? "inProgress"
-                : job.status === "partial_failure"
-                  ? "partialFailure"
-                  : job.status
-            ]
-          }`}
-        >
-          {job.status === "partial_failure" ? "Partial Failure" : job.status}
-        </span>
-      ),
+      render: (job) => {
+        const summary = summaries[job.id];
+        const status =
+          job.batch_type === "bible" && summary
+            ? summary.aggregate_status
+            : job.status;
+        const statusText =
+          job.batch_type === "bible" && summary
+            ? summary.status_progress_text
+            : status;
+
+        return (
+          <span
+            className={`${styles.status} ${styles.nowrapColumn} ${
+              styles[
+                status === "in_progress"
+                  ? "inProgress"
+                  : status === "partial_failure"
+                    ? "partialFailure"
+                    : status
+              ]
+            }`}
+          >
+            {statusText}
+          </span>
+        );
+      },
     },
     {
       title: "Cost",
       property: "actual_cost",
       className: styles.costColumn,
-      render: (job) =>
-        job.actual_cost ? `$${job.actual_cost.toFixed(4)}` : "N/A",
+      render: (job) => {
+        const summary = summaries[job.id];
+        const cost =
+          job.batch_type === "bible" && summary
+            ? summary.total_cost
+            : job.actual_cost;
+        return (
+          <span className={styles.nowrapColumn}>
+            {cost ? `$${Number(cost).toFixed(4)}` : "N/A"}
+          </span>
+        );
+      },
     },
     {
       title: "Created",
       property: "created_at",
       className: styles.createdColumn,
-      render: (job) => new Date(job.created_at).toLocaleDateString(),
+      render: (job) => (
+        <span className={styles.nowrapColumn}>
+          {new Date(job.created_at).toLocaleDateString()}
+        </span>
+      ),
     },
     {
       title: "Actions",
       property: "id",
       className: styles.actionsColumn,
       render: (job) => (
-        <Button
-          variant="outlined"
-          onClick={() => handleMonitorBatch(job.openai_batch_id || "")}
-          disabled={
-            !!monitoringId && monitoringId === (job.openai_batch_id || "")
-          }
-        >
-          Monitor
-        </Button>
+        <ActionsMenu
+          job={job}
+          monitoringId={monitoringId}
+          cancellingId={cancellingId}
+          onMonitorBibleBatch={handleMonitorBibleBatch}
+          onViewBibleDetails={handleViewBibleDetails}
+          onCancelBatch={handleCancelBatch}
+          onMonitorBatch={handleMonitorBatch}
+          onViewBookDetails={handleViewBookDetails}
+        />
       ),
     },
   ];
 
-  const selectedBookData = testaments.find((book) => book.n === selectedBook);
+  const selectedBookData = bookOptions.find((book) => book.n === selectedBook);
   const selectedVersionData = bibleVersions.find(
     (version) => version.key === selectedBibleVersion,
   );
@@ -344,6 +599,7 @@ export const BatchOperations = () => {
 
       {error && <div className={styles.error}>{error}</div>}
 
+      {/* Create Batch Form */}
       <div
         style={{
           marginBottom: "30px",
@@ -353,7 +609,23 @@ export const BatchOperations = () => {
         }}
       >
         <h3>Create New Batch</h3>
-
+        <div style={{ marginBottom: "20px" }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontWeight: "bold",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={isBibleBatch}
+              onChange={(e) => setIsBibleBatch(e.target.checked)}
+            />
+            Generate for whole Bible
+          </label>
+        </div>
         <div
           style={{
             display: "grid",
@@ -455,6 +727,7 @@ export const BatchOperations = () => {
               onValueChange={(val) => setSelectedBook(val)}
             >
               <SelectDropdown.Trigger
+                disabled={isBibleBatch}
                 selectedBook={null}
                 selectedVerse={null}
                 defaultPlaceholder={selectedBookData?.n || "Select Book"}
@@ -525,7 +798,6 @@ export const BatchOperations = () => {
             </SelectDropdown.Root>
           </div>
         </div>
-
         <div style={{ marginBottom: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
             <div>
@@ -601,40 +873,22 @@ export const BatchOperations = () => {
             already have explanations of the selected types.
           </p>
         </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: "16px",
-            marginBottom: "20px",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
+        {/* Other form elements... */}
+        <Button
+          onClick={handleCreateBatch}
+          disabled={
+            creating ||
+            (!isBibleBatch && selectedBook === null) ||
+            selectedExplanationTypes.length === 0
+          }
+          loading={creating}
+          style={{ minWidth: "180px", padding: "8px 16px" }}
         >
-          <Button
-            onClick={handleCreateBatch}
-            disabled={
-              creating ||
-              selectedBook === null ||
-              selectedExplanationTypes.length === 0
-            }
-            loading={creating}
-            style={{ minWidth: "180px", padding: "8px 16px" }}
-          >
-            {creating ? "Creating..." : "Create New Batch"}
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={refreshAndMonitorAll}
-            disabled={listLoading}
-            loading={listLoading}
-            style={{ minWidth: "180px", padding: "8px 16px" }}
-          >
-            {listLoading ? "Refreshing..." : "Refresh & Monitor All"}
-          </Button>
-        </div>
+          {creating ? "Creating..." : "Create New Batch"}
+        </Button>
       </div>
 
+      {/* Main Table */}
       <div className={styles.tableContainer}>
         <Table
           columns={columns}
@@ -643,6 +897,88 @@ export const BatchOperations = () => {
           zebra
         />
       </div>
+
+      {/* Modal 1: Bible Details */}
+      <Dialog
+        open={bibleDetailsModalOpen}
+        onOpenChange={setBibleDetailsModalOpen}
+        maxWidth="1200px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Bible Batch Details</Dialog.Head>
+          <Dialog.Description>
+            Showing all 66 book batches for parent ID: {selectedParentId}
+          </Dialog.Description>
+          <Button
+            onClick={() => handleMonitorBibleBatch(selectedParentId || "")}
+          >
+            Refresh Statuses
+          </Button>
+          <div style={{ marginTop: "20px" }}>
+            <Table
+              columns={columns} // Reuse the same columns definition
+              data={childJobs}
+              isLoading={childJobsLoading}
+              zebra
+            />
+          </div>
+          <Dialog.Footer>
+            <Button onClick={() => setBibleDetailsModalOpen(false)}>
+              Close
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Modal 2: Book Details (Raw JSON) */}
+      <Dialog
+        open={bookDetailsModalOpen}
+        onOpenChange={setBookDetailsModalOpen}
+        maxWidth="1200px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Raw Batch Details</Dialog.Head>
+          {bookDetailsLoading ? (
+            <p>Loading...</p>
+          ) : (
+            <div>
+              <pre
+                style={{
+                  background: "#f4f4f4",
+                  padding: "10px",
+                  borderRadius: "4px",
+                  maxHeight: "40vh",
+                  overflow: "auto",
+                }}
+              >
+                <code>{JSON.stringify(selectedJobDetails, null, 2)}</code>
+              </pre>
+              {selectedJobDetails?.error_file_content && (
+                <div style={{ marginTop: "20px" }}>
+                  <h4>Error File Content</h4>
+                  <pre
+                    style={{
+                      background: "#f4f4f4",
+                      padding: "10px",
+                      borderRadius: "4px",
+                      maxHeight: "40vh",
+                      overflow: "auto",
+                      color: "red",
+                    }}
+                  >
+                    <code>{selectedJobDetails.error_file_content}</code>
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+          <Dialog.Footer>
+            <Button onClick={() => setBookDetailsModalOpen(false)}>
+              Close
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
     </div>
   );
 };

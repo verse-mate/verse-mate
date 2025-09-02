@@ -48,8 +48,12 @@ export const Content = () => {
         <div className={styles.explanationContent}>
           <MarkdownRenderer.Root>
             <MarkdownRenderer.Renderer
-              markdownContent={explanation}
-              // className={styles.markdown}
+              markdownContent={
+                typeof explanation.explanation === "string"
+                  ? explanation.explanation
+                  : ""
+              }
+              className={styles.markdown}
             />
           </MarkdownRenderer.Root>
           {session?.id && (

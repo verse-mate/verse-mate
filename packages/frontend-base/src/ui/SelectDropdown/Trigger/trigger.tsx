@@ -7,6 +7,7 @@ type TriggerProps = {
   selectedVerse: string | null;
   icon: React.ReactNode;
   defaultPlaceholder: string;
+  disabled?: boolean;
 };
 
 export const Trigger = ({
@@ -14,13 +15,14 @@ export const Trigger = ({
   selectedVerse,
   icon,
   defaultPlaceholder,
+  disabled,
 }: TriggerProps) => {
   const placeholder = toCapitalize(
     `${selectedBook || defaultPlaceholder} ${selectedVerse || ""}`,
   );
 
   return (
-    <RadixSelect.Trigger className={styles.trigger}>
+    <RadixSelect.Trigger className={styles.trigger} disabled={disabled}>
       <span className={styles.truncate}>
         <RadixSelect.Value placeholder={placeholder} />
       </span>
