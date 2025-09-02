@@ -23,10 +23,13 @@ const schema = z.object({
     .max(64, "Password must have maximum of 64 characters."),
 });
 
+import { useGetSearchParams } from "../../hooks/useSearchParams";
+
 export function useSignInForm() {
   const [backendError, setBackendError] = useState<string | undefined>(
     undefined,
   );
+  const { bookId, verseId } = useGetSearchParams();
 
   const { handleSubmit, register, formState, getValues } = useForm<SignInData>({
     resolver: zodResolver(schema),
@@ -40,7 +43,9 @@ export function useSignInForm() {
         return console.error("Empty access token");
       }
       setCookie(ACCESS_TOKEN_COOKIE, data.accessToken, 7);
-      window.location.href = "/";
+      const redirectTo = localStorage.getItem("redirectTo");
+      localStorage.removeItem("redirectTo");
+      window.location.href = redirectTo || "/";
     },
     onError: (error) => {
       console.error({ error });
@@ -55,6 +60,12 @@ export function useSignInForm() {
   });
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
+    if (bookId && verseId) {
+      localStorage.setItem(
+        "redirectTo",
+        `/?bookId=${bookId}&verseId=${verseId}`,
+      );
+    }
     await login({
       email,
       password,

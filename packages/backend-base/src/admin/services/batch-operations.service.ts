@@ -1,11 +1,16 @@
 import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import OpenAI from "openai";
+import OpenAI, { APIError } from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
+import {
+  BATCH_PROCESSING_QUEUE,
+  batchProcessingQueue,
+} from "../../queue/batch-processing.queue";
+import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
 interface BatchJobRequest {
@@ -62,8 +67,6 @@ async function calculateActualCost(
   return totalCost * batchDiscount;
 }
 
-import { getExplanationTypePrompt } from "../../shared/prompt-utils";
-
 function getLanguageName(code: string, locale = "en"): string {
   const display = new Intl.DisplayNames([locale], { type: "language" });
   return display.of(code) ?? display.of("en") ?? "English";
@@ -73,9 +76,7 @@ const getUserPrompt = ({
   explanationPrompt,
   language,
 }: { explanationPrompt: string; language: string }) => {
-  return `${explanationPrompt}
-
-The response should be in ${language} using Markdown format only.`;
+  return `${explanationPrompt}\n\nThe response should be in ${language} using Markdown format only.`;
 };
 
 export class BatchOperationService {
@@ -84,6 +85,7 @@ export class BatchOperationService {
   constructor(
     private readonly db: db,
     private readonly batchMonitoringQueue: Queue,
+    private readonly batchProcessingQueue: Queue,
   ) {
     this.promptRepository = new PromptRepository(this.db);
   }
@@ -103,7 +105,6 @@ export class BatchOperationService {
       )}`,
     );
 
-    // Look up book ID by name
     const book = await this.db
       .getOrCreateConnection()
       .selectFrom("books")
@@ -119,7 +120,6 @@ export class BatchOperationService {
       `[BATCH] Found book "${bookName}" with book_id=${book.book_id}`,
     );
 
-    // Call the existing method with the looked-up book_id
     return this.generateBookBatch(
       book.book_id,
       bibleVersion,
@@ -139,6 +139,7 @@ export class BatchOperationService {
     adminUserId: string,
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
+    parentBatchId?: number,
   ) {
     console.log(
       `[BATCH] Starting book batch for book ${bookId}, version ${bibleVersion}, types: ${explanationTypes.join(
@@ -175,10 +176,9 @@ export class BatchOperationService {
       JSON.stringify(batch, null, 2),
     );
 
-    // Log any initial errors
     if (batch.errors?.data && batch.errors.data.length > 0) {
       console.error(
-        `[BATCH] Batch ${batch.id} created with errors:`,
+        `[BATCH] Batch ${batch.id} created with errors`,
         JSON.stringify(batch.errors, null, 2),
       );
     }
@@ -199,6 +199,7 @@ export class BatchOperationService {
         failed_requests: 0,
         created_by: adminUserId,
         created_at: new Date(),
+        parent_batch_id: parentBatchId === undefined ? null : parentBatchId,
       })
       .execute();
 
@@ -217,6 +218,7 @@ export class BatchOperationService {
     model: string,
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
+    skipExisting = false,
   ) {
     console.log(
       `[BATCH] Starting Bible batch for version ${bibleVersion}, types: ${explanationTypes.join(
@@ -225,6 +227,22 @@ export class BatchOperationService {
     );
 
     const connection = this.db.getOrCreateConnection();
+
+    const parentBatch = await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "bible",
+        status: "in_progress",
+        bible_version: bibleVersion,
+        model,
+        explanation_types: explanationTypes,
+        created_by: adminUserId,
+        total_requests: 66,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    const parentBatchId = parentBatch.id;
 
     const books = await connection
       .selectFrom("books")
@@ -236,7 +254,9 @@ export class BatchOperationService {
       throw new Error("No books found in database");
     }
 
-    console.log(`[BATCH] Processing ${books.length} books for Bible batch`);
+    console.log(
+      `[BATCH] Processing ${books.length} books for Bible batch (Parent ID: ${parentBatchId})`,
+    );
 
     const batchResults = [];
 
@@ -248,8 +268,9 @@ export class BatchOperationService {
           explanationTypes,
           model,
           adminUserId,
-          false,
+          skipExisting,
           effort,
+          parentBatchId,
         );
         batchResults.push({ success: true, ...bookBatch });
       } catch (error) {
@@ -265,66 +286,22 @@ export class BatchOperationService {
 
     return {
       success: true,
-      message: `Bible batch creation started for ${books.length} books.`,
+      message: `Bible batch creation started for ${books.length} books under parent batch ${parentBatchId}.`,
       results: batchResults,
+      parentBatchId: parentBatchId,
     };
   }
 
   async getBatchStatus(batchId: string) {
-    console.log(`[BATCH] Getting batch status for: ${batchId}`);
     const batchStatus = await openai.batches.retrieve(batchId);
-    console.log(
-      `[BATCH] Status response for ${batchId}:`,
-      JSON.stringify(batchStatus, null, 2),
-    );
-
-    // Log any validation issues
-    if (batchStatus.status === "validating") {
-      const timeSinceCreation = Date.now() - batchStatus.created_at * 1000;
-      console.log(
-        `[BATCH] Batch has been validating for ${Math.round(timeSinceCreation / 60000)} minutes`,
-      );
-    }
 
     if (batchStatus.status === "failed" && batchStatus.errors) {
       console.error(
-        `[BATCH] Batch ${batchId} failed with errors:`,
+        `[BATCH] Batch ${batchId} failed with errors`,
         JSON.stringify(batchStatus.errors, null, 2),
       );
     }
 
-    if (
-      batchStatus.status === "expired" ||
-      batchStatus.status === "cancelled"
-    ) {
-    }
-
-    // If batch completed but has failed requests, download error file
-    if (
-      batchStatus.status === "completed" &&
-      batchStatus.request_counts &&
-      batchStatus.request_counts.failed > 0 &&
-      batchStatus.error_file_id
-    ) {
-      console.error(
-        `[BATCH] Batch ${batchId} completed with ${batchStatus.request_counts.failed} failed requests. Downloading error file...`,
-      );
-      try {
-        const errorFileContent = await openai.files.content(
-          batchStatus.error_file_id,
-        );
-        const errorText = await errorFileContent.text();
-        console.error(`[BATCH] Error file content for ${batchId}:`);
-        console.error(errorText);
-      } catch (error) {
-        console.error(
-          `[BATCH] Could not download error file ${batchStatus.error_file_id}:`,
-          error,
-        );
-      }
-    }
-
-    // Get current batch job info from database
     const currentBatchJob = await this.db
       .getOrCreateConnection()
       .selectFrom("batch_jobs")
@@ -337,24 +314,19 @@ export class BatchOperationService {
       ])
       .executeTakeFirst();
 
-    // Use OpenAI's batch status and request counts as the authoritative source of truth
     if (currentBatchJob && batchStatus.request_counts) {
       const { total, completed, failed } = batchStatus.request_counts;
 
-      // Determine correct status based on OpenAI's batch status and request counts
-      let correctStatus: string = batchStatus.status; // Use OpenAI's status as primary
+      let correctStatus: string = batchStatus.status;
 
-      // Only override if batch is completed but has specific success/failure patterns
       if (batchStatus.status === "completed") {
         if (completed === 0 && failed > 0) {
           correctStatus = "failed";
         } else if (failed > 0) {
           correctStatus = "partial_failure";
         }
-        // If completed > 0 and failed === 0, keep as "completed"
       }
 
-      // Update if status or counts are different
       if (
         currentBatchJob.status !== correctStatus ||
         currentBatchJob.completed_requests !== completed ||
@@ -374,64 +346,192 @@ export class BatchOperationService {
           })
           .where("openai_batch_id", "=", batchId)
           .execute();
-
-        // Clean up for permanently failed batches
-        if (correctStatus === "failed") {
-          // No cleanup needed for in-memory files
-        }
       }
 
-      // Process explanations for completed batches that need processing
-      if (
+      const needsProcessing =
         (correctStatus === "completed" ||
           correctStatus === "partial_failure") &&
-        batchStatus.output_file_id
-      ) {
-        console.log(
-          `[BATCH] Checking if batch ${batchId} needs explanation processing:`,
-        );
-        console.log(`  - Status: ${correctStatus}`);
-        console.log(`  - OpenAI completed: ${completed}, failed: ${failed}`);
-        console.log(
-          `  - DB completed: ${currentBatchJob.completed_requests}, failed: ${currentBatchJob.failed_requests}`,
-        );
-        console.log(
-          `  - Explanations processed flag: ${currentBatchJob.explanations_processed}`,
-        );
-        console.log(`  - Output file: ${batchStatus.output_file_id}`);
+        completed > 0 &&
+        !currentBatchJob.explanations_processed;
 
-        // Simple logic: if batch is completed with successes and not marked as processed, process it
-        const needsProcessing =
-          (correctStatus === "completed" ||
-            correctStatus === "partial_failure") &&
-          completed > 0 &&
-          !currentBatchJob.explanations_processed;
-
-        console.log(`  - Needs processing: ${needsProcessing}`);
-
-        if (needsProcessing) {
-          console.log(
-            `[BATCH] Processing explanations for batch ${batchId} (${completed} successful responses)`,
-          );
-          await this.processOutputFile(batchId, batchStatus.output_file_id);
-        } else {
-          console.log(
-            `[BATCH] Batch ${batchId} explanations already processed, skipping`,
-          );
-        }
-      } else {
+      if (needsProcessing) {
         console.log(
-          `[BATCH] Batch ${batchId} not ready for explanation processing: status=${correctStatus}, output_file=${batchStatus.output_file_id}`,
+          `[BATCH] Batch ${batchId} is complete and needs processing. Adding to queue.`,
         );
+        await this.batchProcessingQueue.add("process-batch", {
+          batchId,
+          outputFileId: batchStatus.output_file_id,
+        });
       }
     }
 
     return batchStatus;
   }
 
+  async processBatch(batchId: string, outputFileId: string) {
+    console.log(`[BATCH] Processing batch ${batchId} from queue.`);
+
+    const batchStatus = await openai.batches.retrieve(batchId);
+
+    if (
+      batchStatus.request_counts &&
+      batchStatus.request_counts.failed > 0 &&
+      batchStatus.error_file_id
+    ) {
+      try {
+        const errorFileContent = await openai.files.content(
+          batchStatus.error_file_id,
+        );
+        const errorText = await errorFileContent.text();
+        await this.db
+          .getOrCreateConnection()
+          .updateTable("batch_jobs")
+          .set({ error_file_content: errorText })
+          .where("openai_batch_id", "=", batchId)
+          .execute();
+      } catch (error) {
+        console.error(
+          `[BATCH] Could not download error file ${batchStatus.error_file_id}:`,
+          error,
+        );
+      }
+    }
+
+    await this.processOutputFile(batchId, outputFileId);
+  }
+
   async cancelBatch(batchId: string) {
     console.log(`[BATCH] Cancelling batch: ${batchId}`);
-    return openai.batches.cancel(batchId);
+
+    const batchJob = await this.db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("id", "=", Number(batchId))
+      .select(["batch_type", "openai_batch_id", "status"])
+      .executeTakeFirst();
+
+    if (!batchJob) {
+      throw new Error(`Batch job ${batchId} not found.`);
+    }
+
+    if (batchJob.batch_type === "bible") {
+      console.log(
+        `[BATCH] Cancelling parent Bible batch ${batchId} and its children.`,
+      );
+      const children = await this.getBatchChildren(Number(batchId));
+      let cancelledCount = 0;
+      let failedToCancelCount = 0;
+
+      for (const child of children) {
+        if (
+          child.openai_batch_id &&
+          (child.status === "validating" ||
+            child.status === "in_progress" ||
+            child.status === "finalizing")
+        ) {
+          try {
+            const openaiBatch = await openai.batches.cancel(
+              child.openai_batch_id,
+            );
+            console.log(
+              `[BATCH] Successfully sent cancel request for child batch ${child.openai_batch_id}`,
+            );
+            // Update child status in DB based on OpenAI API response
+            await this.db
+              .getOrCreateConnection()
+              .updateTable("batch_jobs")
+              .set({ status: openaiBatch.status }) // Use the status from OpenAI API response
+              .where("id", "=", Number(child.id))
+              .execute();
+            cancelledCount++;
+          } catch (error) {
+            if (
+              error instanceof APIError &&
+              error.status === 409 &&
+              error.message.includes(
+                "Cannot cancel a batch with status 'completed'",
+              )
+            ) {
+              console.warn(
+                `[BATCH] Child batch ${child.openai_batch_id} was already completed and could not be cancelled.`,
+              );
+              // Mark child as failed_to_cancel if it was already completed and couldn't be cancelled
+              await this.db
+                .getOrCreateConnection()
+                .updateTable("batch_jobs")
+                .set({ status: "failed_to_cancel" })
+                .where("id", "=", Number(child.id))
+                .execute();
+            } else {
+              console.error(
+                `[BATCH] Failed to cancel child batch ${child.openai_batch_id}:`,
+                error,
+              );
+              // Mark child as failed_to_cancel to make UI accurate
+              await this.db
+                .getOrCreateConnection()
+                .updateTable("batch_jobs")
+                .set({ status: "failed_to_cancel" })
+                .where("id", "=", Number(child.id))
+                .execute();
+            }
+            failedToCancelCount++;
+          }
+        }
+      }
+
+      // Re-fetch children statuses to accurately determine parent status
+      const updatedChildren = await this.getBatchChildren(Number(batchId));
+      let newCancelledCount = 0;
+      let newFailedToCancelCount = 0;
+      let newCompletedCount = 0;
+
+      for (const child of updatedChildren) {
+        if (child.status === "cancelled") {
+          newCancelledCount++;
+        } else if (child.status === "failed_to_cancel") {
+          newFailedToCancelCount++;
+        } else if (child.status === "completed") {
+          newCompletedCount++;
+        }
+      }
+
+      let newParentStatus = "cancelled";
+      if (newCancelledCount === 0 && newFailedToCancelCount > 0) {
+        newParentStatus = "failed_to_cancel";
+      } else if (newFailedToCancelCount > 0) {
+        newParentStatus = "partially_cancelled";
+      } else if (newCancelledCount > 0) {
+        newParentStatus = "cancelled";
+      } else if (newCompletedCount === updatedChildren.length) {
+        newParentStatus = "completed"; // All children completed, parent is completed
+      } else {
+        newParentStatus = batchJob.status; // Fallback to original status if no change
+      }
+
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({ status: newParentStatus })
+        .where("id", "=", Number(batchId))
+        .execute();
+
+      return {
+        success: true,
+        message: `Cancellation process initiated for ${newCancelledCount} child batches.`,
+      };
+    }
+
+    if (!batchJob.openai_batch_id) {
+      throw new Error(
+        `Book batch ${batchId} does not have an OpenAI batch ID.`,
+      );
+    }
+    const openaiBatch = await openai.batches.cancel(batchJob.openai_batch_id);
+    console.log(
+      `[BATCH] Successfully cancelled single book batch ${batchJob.openai_batch_id}`,
+    );
+    return openaiBatch;
   }
 
   async getAllBatches(limit = 50, offset = 0, adminUserId?: string) {
@@ -442,6 +542,7 @@ export class BatchOperationService {
     let query = this.db
       .getOrCreateConnection()
       .selectFrom("batch_jobs")
+      .where("parent_batch_id", "is", null)
       .leftJoin("books", "batch_jobs.book_id", "books.book_id")
       .selectAll("batch_jobs")
       .select("books.name as book_name")
@@ -454,6 +555,128 @@ export class BatchOperationService {
     }
 
     return await query.execute();
+  }
+
+  async getBatchChildren(parentBatchId: number) {
+    console.log(`[BATCH] Getting children for parent batch: ${parentBatchId}`);
+    return await this.db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("parent_batch_id", "=", parentBatchId)
+      .leftJoin("books", "batch_jobs.book_id", "books.book_id")
+      .selectAll("batch_jobs")
+      .select("books.name as book_name")
+      .orderBy("batch_jobs.book_id", "asc")
+      .execute();
+  }
+
+  async monitorBibleBatch(parentBatchId: number) {
+    console.log(`[BATCH] Monitoring bible batch: ${parentBatchId}`);
+    const children = await this.getBatchChildren(parentBatchId);
+    const childBatchesToMonitor = children
+      .map((c) => c.openai_batch_id)
+      .filter((id): id is string => !!id);
+
+    const concurrencyLimit = 6;
+    const results = [];
+
+    for (let i = 0; i < childBatchesToMonitor.length; i += concurrencyLimit) {
+      const batch = childBatchesToMonitor.slice(i, i + concurrencyLimit);
+      const promises = batch.map((id) => this.getBatchStatus(id));
+      results.push(...(await Promise.all(promises)));
+    }
+
+    return { success: true, message: "Monitoring complete." };
+  }
+
+  async getBatchSummary(parentBatchId: number) {
+    console.log(`[BATCH] Getting summary for parent batch: ${parentBatchId}`);
+    const children = await this.getBatchChildren(parentBatchId);
+    const totalChildren = children.length;
+
+    if (totalChildren === 0) {
+      return {
+        aggregate_status: "empty",
+        status_progress_text: "No books found for this batch.",
+        total_cost: 0,
+      };
+    }
+
+    const statusCounts = children.reduce(
+      (acc, child) => {
+        acc[child.status] = (acc[child.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const totalCost = children.reduce(
+      (acc, child) => acc + (child.actual_cost || 0),
+      0,
+    );
+
+    const failedCount = statusCounts.failed || 0;
+    const cancelledCount = statusCounts.cancelled || 0;
+    const expiredCount = statusCounts.expired || 0;
+    const partialFailureCount = statusCounts.partial_failure || 0;
+
+    if (
+      failedCount > 0 ||
+      cancelledCount > 0 ||
+      expiredCount > 0 ||
+      partialFailureCount > 0
+    ) {
+      return {
+        aggregate_status: "partial_failure",
+        status_progress_text: `Failed (${failedCount + cancelledCount + expiredCount + partialFailureCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    const completedCount = statusCounts.completed || 0;
+
+    if (statusCounts.validating > 0) {
+      const validatedCount = totalChildren - (statusCounts.validating || 0);
+      return {
+        aggregate_status: "validating",
+        status_progress_text: `Validating (${validatedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (statusCounts.in_progress > 0) {
+      const inProgressCount =
+        totalChildren -
+        (statusCounts.in_progress || 0) -
+        (statusCounts.validating || 0);
+      return {
+        aggregate_status: "in_progress",
+        status_progress_text: `In Progress (${inProgressCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (statusCounts.finalizing > 0) {
+      return {
+        aggregate_status: "finalizing",
+        status_progress_text: `Finalizing (${completedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (completedCount === totalChildren) {
+      return {
+        aggregate_status: "completed",
+        status_progress_text: `Completed (${completedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    return {
+      aggregate_status: "pending",
+      status_progress_text: "Pending...",
+      total_cost: totalCost,
+    };
   }
 
   private async generateJSONLContent(
@@ -554,10 +777,9 @@ export class BatchOperationService {
           language,
         });
 
-        // Sanitize content to prevent JSONL parsing issues
         const sanitizedSystemPrompt = systemPrompt.prompt
-          .replace(/\r\n/g, "\n") // Convert Windows line endings
-          .replace(/\r/g, "\n"); // Convert old Mac line endings
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n");
 
         const sanitizedUserPrompt = userPrompt
           .replace(/\r\n/g, "\n")
@@ -583,7 +805,6 @@ export class BatchOperationService {
       }
     }
 
-    // Check if we have any requests to process
     if (batchRequests.length === 0) {
       throw new Error(
         `No requests to process for ${book.name}. All explanations may already exist.`,
@@ -599,7 +820,6 @@ export class BatchOperationService {
 
   private async processOutputFile(batchId: string, outputFileId: string) {
     try {
-      // Get batch job info
       const batchJob = await this.db
         .getOrCreateConnection()
         .selectFrom("batch_jobs")
@@ -612,7 +832,6 @@ export class BatchOperationService {
         return;
       }
 
-      // Get the actual version_id (UUID) for the bible version
       const version = await this.db
         .getOrCreateConnection()
         .selectFrom("bible_versions")
@@ -627,7 +846,6 @@ export class BatchOperationService {
         return;
       }
 
-      // Download and process output file
       const fileContent = await openai.files.content(outputFileId);
       const jsonl = await fileContent.text();
       const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
@@ -641,7 +859,6 @@ export class BatchOperationService {
         try {
           const parsedLine = JSON.parse(line);
 
-          // Track token usage for cost calculation
           if (parsedLine.response?.body?.usage) {
             totalPromptTokens +=
               parsedLine.response.body.usage.input_tokens || 0;
@@ -649,15 +866,12 @@ export class BatchOperationService {
               parsedLine.response.body.usage.output_tokens || 0;
           }
 
-          // Check if the response is successful and has content
           const responseBody = parsedLine.response?.body;
 
-          // Determine if response has content and extract it robustly
           const outputText: string | undefined = responseBody?.output_text;
           let extractedText: string | undefined = outputText;
 
           if (!extractedText && Array.isArray(responseBody?.output)) {
-            // Find the first text segment across all items
             for (const item of responseBody.output) {
               const textCandidate = item?.content?.find?.(
                 (c: any) => typeof c?.text === "string",
@@ -675,7 +889,6 @@ export class BatchOperationService {
             typeof extractedText === "string" &&
             extractedText.length > 0
           ) {
-            // Parse custom_id to extract chapter and explanation type
             const customIdParts = parsedLine.custom_id.split("-");
             const explanationType = customIdParts[customIdParts.length - 1];
             const chapterNumber = Number.parseInt(
@@ -684,7 +897,6 @@ export class BatchOperationService {
 
             const explanationContent = extractedText;
 
-            // Get chapter_id
             const chapter = await this.db
               .getOrCreateConnection()
               .selectFrom("chapters")
@@ -701,7 +913,6 @@ export class BatchOperationService {
               continue;
             }
 
-            // Insert/update explanation
             await this.db
               .getOrCreateConnection()
               .insertInto("explanations")
@@ -721,7 +932,6 @@ export class BatchOperationService {
             processedCount++;
             console.log(`[BATCH] Saved explanation: ${parsedLine.custom_id}`);
           } else {
-            // Log detailed reason for skipping
             const customId = parsedLine.custom_id || "UNKNOWN";
             const statusCode = parsedLine.response?.status_code || "NO_STATUS";
             const hasContent = !!(
@@ -757,7 +967,6 @@ export class BatchOperationService {
         }
       }
 
-      // Calculate total cost
       const actualCost = await calculateActualCost(
         totalPromptTokens,
         totalCompletionTokens,
@@ -772,7 +981,6 @@ export class BatchOperationService {
       );
       console.log(`[BATCH] Calculated cost: $${actualCost.toFixed(4)}`);
 
-      // Mark batch as having explanations processed and update cost
       await this.db
         .getOrCreateConnection()
         .updateTable("batch_jobs")
@@ -791,7 +999,7 @@ export class BatchOperationService {
       );
     } catch (error) {
       console.error(
-        `[BATCH] Error processing output file for batch ${batchId}:`,
+        `[BATCH] Error processing output file for batch ${batchId}`,
         error,
       );
     }

@@ -19,6 +19,7 @@
   white-space: nowrap;
   padding: 1rem;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .table thead th,
@@ -28,9 +29,7 @@
   font-weight: bold;
   text-transform: uppercase;
   border-radius: 0;
-  max-inline-size: 100%;
   display: flex;
-  justify-content: center;
 }
 
 .tableHead,
@@ -56,9 +55,7 @@
 
   > tbody > tr > td {
     border-radius: 0;
-    max-inline-size: 100%;
     display: flex;
-    justify-content: center;
     border-bottom: 1px solid var(--border);
   }
 

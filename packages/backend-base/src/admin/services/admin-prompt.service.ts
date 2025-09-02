@@ -28,7 +28,9 @@ export class AdminPromptService {
     this.userPromptRepository = new UserPromptRepository(this.db);
     const apiKey = process.env.OPEN_AI_KEY;
     if (!apiKey) {
-      console.error("ERROR: OPEN_AI_KEY is not set. OpenAI client will not be initialized.");
+      console.error(
+        "ERROR: OPEN_AI_KEY is not set. OpenAI client will not be initialized.",
+      );
     }
     this.openai = new OpenAI({ apiKey });
   }
