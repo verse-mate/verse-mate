@@ -430,10 +430,19 @@ export class BatchOperationService {
             child.status === "finalizing")
         ) {
           try {
-            await openai.batches.cancel(child.openai_batch_id);
+            const openaiBatch = await openai.batches.cancel(
+              child.openai_batch_id,
+            );
             console.log(
               `[BATCH] Successfully sent cancel request for child batch ${child.openai_batch_id}`,
             );
+            // Update child status in DB based on OpenAI API response
+            await this.db
+              .getOrCreateConnection()
+              .updateTable("batch_jobs")
+              .set({ status: openaiBatch.status }) // Use the status from OpenAI API response
+              .where("id", "=", Number(child.id))
+              .execute();
             cancelledCount++;
           } catch (error) {
             if (
@@ -446,26 +455,58 @@ export class BatchOperationService {
               console.warn(
                 `[BATCH] Child batch ${child.openai_batch_id} was already completed and could not be cancelled.`,
               );
+              // Mark child as failed_to_cancel if it was already completed and couldn't be cancelled
+              await this.db
+                .getOrCreateConnection()
+                .updateTable("batch_jobs")
+                .set({ status: "failed_to_cancel" })
+                .where("id", "=", Number(child.id))
+                .execute();
             } else {
               console.error(
                 `[BATCH] Failed to cancel child batch ${child.openai_batch_id}:`,
                 error,
               );
+              // Mark child as failed_to_cancel to make UI accurate
+              await this.db
+                .getOrCreateConnection()
+                .updateTable("batch_jobs")
+                .set({ status: "failed_to_cancel" })
+                .where("id", "=", Number(child.id))
+                .execute();
             }
             failedToCancelCount++;
           }
         }
       }
 
+      // Re-fetch children statuses to accurately determine parent status
+      const updatedChildren = await this.getBatchChildren(Number(batchId));
+      let newCancelledCount = 0;
+      let newFailedToCancelCount = 0;
+      let newCompletedCount = 0;
+
+      for (const child of updatedChildren) {
+        if (child.status === "cancelled") {
+          newCancelledCount++;
+        } else if (child.status === "failed_to_cancel") {
+          newFailedToCancelCount++;
+        } else if (child.status === "completed") {
+          newCompletedCount++;
+        }
+      }
+
       let newParentStatus = "cancelled";
-      if (cancelledCount === 0 && failedToCancelCount > 0) {
+      if (newCancelledCount === 0 && newFailedToCancelCount > 0) {
         newParentStatus = "failed_to_cancel";
-      } else if (failedToCancelCount > 0) {
+      } else if (newFailedToCancelCount > 0) {
         newParentStatus = "partially_cancelled";
-      } else if (cancelledCount > 0) {
+      } else if (newCancelledCount > 0) {
         newParentStatus = "cancelled";
+      } else if (newCompletedCount === updatedChildren.length) {
+        newParentStatus = "completed"; // All children completed, parent is completed
       } else {
-        newParentStatus = batchJob.status;
+        newParentStatus = batchJob.status; // Fallback to original status if no change
       }
 
       await this.db
@@ -477,7 +518,7 @@ export class BatchOperationService {
 
       return {
         success: true,
-        message: `Cancellation process initiated for ${cancelledCount} child batches.`,
+        message: `Cancellation process initiated for ${newCancelledCount} child batches.`,
       };
     }
 

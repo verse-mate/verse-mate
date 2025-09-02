@@ -452,27 +452,34 @@ export const BatchOperations = () => {
       title: "ID",
       property: "id",
       className: styles.idColumn,
-      render: (job) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            handleViewBookDetails(job.id);
-          }}
-          className={styles.nowrapColumn}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            margin: 0,
-            cursor: "pointer",
-            textDecoration: "underline",
-            color: "blue",
-          }}
-        >
-          {job.id}
-        </button>
-      ),
+      render: (job) => {
+        const handleClick = (e: React.MouseEvent) => {
+          e.preventDefault();
+          if (job.batch_type === "bible") {
+            handleViewBibleDetails(job.id);
+          } else if (job.openai_batch_id) {
+            handleViewBookDetails(job.openai_batch_id);
+          }
+        };
+        return (
+          <button
+            type="button"
+            onClick={handleClick}
+            className={styles.nowrapColumn}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              cursor: "pointer",
+              textDecoration: "underline",
+              color: "blue",
+            }}
+          >
+            {job.id}
+          </button>
+        );
+      },
     },
     {
       title: "Book/Batch",
@@ -871,7 +878,7 @@ export const BatchOperations = () => {
           onClick={handleCreateBatch}
           disabled={
             creating ||
-            selectedBook === null ||
+            (!isBibleBatch && selectedBook === null) ||
             selectedExplanationTypes.length === 0
           }
           loading={creating}
