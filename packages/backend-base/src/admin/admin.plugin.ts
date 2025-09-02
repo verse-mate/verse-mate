@@ -9,13 +9,20 @@ import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
+import { batchProcessingQueue } from "../queue/batch-processing.queue";
+
 const plugin = new Elysia()
   .use(shared)
+  .state("batchProcessingQueue", batchProcessingQueue)
   .state((state) => {
     return {
       ...state,
       getBatchOperationService: () =>
-        new BatchOperationService(state.db, state.batchMonitoringQueue as any),
+        new BatchOperationService(
+          state.db,
+          state.batchMonitoringQueue as any,
+          state.batchProcessingQueue as any,
+        ),
       getAdminDatabaseService: () => new AdminDatabaseService(state.db),
       getExplanationRegenerationService: () =>
         new ExplanationRegenerationService(state.db),

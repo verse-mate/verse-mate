@@ -60,14 +60,25 @@ const setup = new Elysia({ name: "shared" })
     };
   });
 
+import { batchProcessingQueue } from "../queue/batch-processing.queue";
+import { batchProcessingWorker } from "../workers/batch-processing.worker";
+
 setup.onStart(async () => {
-  console.log("[QUEUE] Starting BullMQ worker...");
+  console.log("[QUEUE] Starting BullMQ workers...");
   if (!batchMonitoringWorker.isRunning()) {
-    console.log("[QUEUE] Worker not running, starting it now...");
+    console.log("[QUEUE] Monitoring worker not running, starting it now...");
     batchMonitoringWorker.run();
-    console.log("[QUEUE] Worker started successfully");
+    console.log("[QUEUE] Monitoring worker started successfully");
   } else {
-    console.log("[QUEUE] Worker already running");
+    console.log("[QUEUE] Monitoring worker already running");
+  }
+
+  if (!batchProcessingWorker.isRunning()) {
+    console.log("[QUEUE] Processing worker not running, starting it now...");
+    batchProcessingWorker.run();
+    console.log("[QUEUE] Processing worker started successfully");
+  } else {
+    console.log("[QUEUE] Processing worker already running");
   }
 
   // Check for existing active batches and start monitoring them
@@ -99,8 +110,8 @@ setup.onStart(async () => {
             "batch-monitoring",
             { batchId: batch.openai_batch_id, model: batch.model },
             {
-              jobId: `${batch.openai_batch_id}-startup-${Date.now()}`, // Unique job ID to avoid conflicts
-              delay: 10000, // Start monitoring in 10 seconds
+              jobId: `${batch.openai_batch_id}-startup-${Date.now()}`,
+              delay: 10000,
               removeOnComplete: true,
               removeOnFail: 100,
             },
@@ -126,6 +137,8 @@ setup.onStop(() => {
   bullmqRedisConnection.disconnect();
   batchMonitoringQueue.close();
   batchMonitoringWorker.close();
+  batchProcessingQueue.close();
+  batchProcessingWorker.close();
 });
 
 export default setup;
