@@ -18,13 +18,13 @@ export default function Header() {
 
   return (
     <header
-      data-header="main"
       style={{
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "0px clamp(16px, 4vw, 64px)",
+        padding: "0px 64px",
+        gap: "794px",
         position: "absolute",
         height: "76px",
         left: "0px",
@@ -35,46 +35,36 @@ export default function Header() {
         flexGrow: 0,
         zIndex: 8,
         background: isScrolled ? "rgba(0, 0, 0, 0.8)" : "#FFFFFF",
-        minWidth: 0,
       }}
     >
       {/* Logo */}
       <div
         style={{
-          flex: "0 0 auto",
-          minWidth: "120px",
+          width: "175px",
           height: "48px",
+          flex: "none",
+          order: 0,
+          flexGrow: 0,
+          position: "relative",
         }}
       >
         <Link
           href="/"
           style={{
-            fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+            fontFamily: "var(--font-inter)",
             fontStyle: "normal",
             fontWeight: 400,
             fontSize: "14px",
-            letterSpacing: "0.15em",
+            letterSpacing: "0.1em",
             color: isScrolled ? "#FFFFFF" : "#000000",
             textDecoration: "none",
             display: "flex",
             alignItems: "center",
+            justifyContent: "flex-start",
             height: "100%",
-            padding: "0",
-            margin: "0",
-            position: "relative",
           }}
         >
-          <span style={{ paddingRight: "3px" }}>VERSE</span>
-          <div
-            style={{
-              width: "1px",
-              height: "28px",
-              backgroundColor: isScrolled ? "#FFFFFF" : "#000000",
-              position: "relative",
-              top: "0px",
-            }}
-          />
-          <span style={{ paddingLeft: "6px" }}>MATE</span>
+          VERSE|MATE
         </Link>
       </div>
 
@@ -86,9 +76,12 @@ export default function Header() {
           justifyContent: "flex-end",
           alignItems: "center",
           padding: "0px",
-          gap: "clamp(24px, 4vw, 48px)",
-          flex: "0 0 auto",
+          gap: "48px",
+          width: "437px",
           height: "76px",
+          flex: "none",
+          order: 1,
+          flexGrow: 0,
         }}
       >
         {/* Home Menu Item */}
@@ -157,8 +150,8 @@ export default function Header() {
             flexGrow: 0,
           }}
         >
-          <a
-            href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
+          <Link
+            href="/volunteer"
             style={{
               width: "74px",
               height: "24px",
@@ -177,7 +170,7 @@ export default function Header() {
             }}
           >
             Volunteer
-          </a>
+          </Link>
           <div
             style={{
               width: "0px",
