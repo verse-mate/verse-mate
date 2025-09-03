@@ -45,6 +45,7 @@ import { ProgressBar } from "../../ui/ProgressBar";
 import { RightPanel } from "../../ui/RightPanel";
 import { SelectDropdown } from "../../ui/SelectDropdown";
 import { FilterInput } from "../../ui/SelectDropdown/FilterInput/filter-input";
+import { Settings } from "../../ui/Settings/Settings";
 import { Tabs } from "../../ui/Tabs";
 import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
@@ -685,23 +686,6 @@ export const MainContent = () => {
                 </>
               )}
 
-              {/* Version trigger */}
-              <SelectDropdown.GroupedSelect.GroupedTrigger
-                selectedBook={null}
-                selectedVerse={null}
-                defaultPlaceholder={String(
-                  bibleVersions.find(
-                    (version) => version.key === bibleVersionSelected,
-                  )?.key,
-                )}
-                isOpen={isDropdownOpenVersion}
-                toggleDropdown={() => {
-                  toggleMobileDropdownVersion();
-                  closeDropdownBook();
-                }}
-                onClose={closeDropdownVersion}
-                resetFilter={() => {}}
-              />
               {/* Book content */}
               <SelectDropdown.GroupedSelect.GroupedRoot>
                 <SelectDropdown.GroupedSelect.GroupedContent
@@ -1275,8 +1259,17 @@ export const MainContent = () => {
 
             <RadixTabs.Content value="menu">
               <div className={styles.moreOptionsContainer}>
-                {session?.id ? (
-                  <ProfileButton link="/" />
+                {rightPanelContent === "settings" ? (
+                  <Settings
+                    selectedBibleVersion={bibleVersionSelected}
+                    setSelectedBibleVersion={handleBibleVersionSelected}
+                    setRightPanelContent={setRightPanelContent}
+                  />
+                ) : session?.id ? (
+                  <ProfileButton
+                    link="/"
+                    setRightPanelContent={setRightPanelContent}
+                  />
                 ) : (
                   <>
                     {rightPanelContent === "login" && (
@@ -1380,6 +1373,8 @@ export const MainContent = () => {
               askVerseMate={askVerseMate}
               rightPanelContent={rightPanelContent}
               setRightPanelContent={setRightPanelContent}
+              selectedBibleVersion={bibleVersionSelected}
+              handleBibleVersionSelected={handleBibleVersionSelected}
             />
           </RightPanel.Root>
         </main>

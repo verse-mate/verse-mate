@@ -52,15 +52,15 @@ export const useSaveSearchParams = () => {
 
 export const useGetSearchParams = () => {
   const searchParams = useSearchParams();
-  const bookId = Number(searchParams.get("bookId")) || 1;
-  const verseId = Number(searchParams.get("verseId")) || 1;
+  const bookId = Number(searchParams?.get("bookId")) || 1;
+  const verseId = Number(searchParams?.get("verseId")) || 1;
   const testament =
-    (searchParams.get("testament") as TestamentEnum) || TestamentEnum.OT;
-  const bibleVersion = searchParams.get("bibleVersion") || "NASB1995";
-  const conversationId = searchParams.get("conversationId") || "newChat";
-  const explanationId = Number(searchParams.get("explanationId"));
+    (searchParams?.get("testament") as TestamentEnum) || TestamentEnum.OT;
+  const bibleVersion = searchParams?.get("bibleVersion") || "NASB1995";
+  const conversationId = searchParams?.get("conversationId") || "newChat";
+  const explanationId = Number(searchParams?.get("explanationId"));
   const explanationType =
-    (searchParams.get("explanationType") as ExplanationTypeEnum) ||
+    (searchParams?.get("explanationType") as ExplanationTypeEnum) ||
     ExplanationTypeEnum.summary;
 
   return {
