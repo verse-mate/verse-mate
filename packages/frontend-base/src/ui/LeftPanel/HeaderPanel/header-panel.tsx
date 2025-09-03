@@ -434,21 +434,6 @@ export const Nav = ({
             </Tabs.Root>
           </SelectDropdown.Content>
         </SelectDropdown.Root>
-
-        <VersionDropdown.Root>
-          <VersionDropdown.Trigger
-            selectedVersion={String(
-              bibleVersions.find(
-                (version) => version.key === bibleVersionSelected,
-              )?.key,
-            )}
-          />
-          <VersionDropdown.Portal
-            bibleVersions={bibleVersions}
-            version={bibleVersionSelected}
-            onVersionSelected={handleBibleVersionSelected}
-          />
-        </VersionDropdown.Root>
       </div>
 
       {/* Tablet and Mobile size here */}

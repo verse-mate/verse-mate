@@ -13,6 +13,7 @@ declare const styles: {
   readonly bookmarkedIcon: string;
   readonly animating: string;
   readonly active: string;
+  readonly bookmarkCounter: string;
   readonly loginModal: string;
   readonly loginModalButtons: string;
   readonly loginButton: string;

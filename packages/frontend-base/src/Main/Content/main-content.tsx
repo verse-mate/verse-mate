@@ -45,6 +45,7 @@ import { ProgressBar } from "../../ui/ProgressBar";
 import { RightPanel } from "../../ui/RightPanel";
 import { SelectDropdown } from "../../ui/SelectDropdown";
 import { FilterInput } from "../../ui/SelectDropdown/FilterInput/filter-input";
+import { Settings } from "../../ui/Settings/Settings";
 import { Tabs } from "../../ui/Tabs";
 import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
@@ -261,11 +262,20 @@ export const MainContent = () => {
   const handleMobileSwipe = useSwipeable({
     onSwipedRight: () => handlePreviousChapter(),
     onSwipedLeft: () => handleNextChapter(),
+    delta: 30,
+    swipeDuration: 500,
+    preventScrollOnSwipe: false,
+    trackTouch: true,
+    trackMouse: false,
   });
 
   const handleDesktopSwipe = useSwipeable({
     onSwipedRight: () => handlePreviousChapter(),
     onSwipedLeft: () => handleNextChapter(),
+    delta: 50,
+    preventScrollOnSwipe: false,
+    trackTouch: true,
+    trackMouse: false,
   });
 
   const { activeTab, setActiveTab } = useHandleTab();
@@ -686,23 +696,6 @@ export const MainContent = () => {
                 </>
               )}
 
-              {/* Version trigger */}
-              <SelectDropdown.GroupedSelect.GroupedTrigger
-                selectedBook={null}
-                selectedVerse={null}
-                defaultPlaceholder={String(
-                  bibleVersions.find(
-                    (version) => version.key === bibleVersionSelected,
-                  )?.key,
-                )}
-                isOpen={isDropdownOpenVersion}
-                toggleDropdown={() => {
-                  toggleMobileDropdownVersion();
-                  closeDropdownBook();
-                }}
-                onClose={closeDropdownVersion}
-                resetFilter={() => {}}
-              />
               {/* Book content */}
               <SelectDropdown.GroupedSelect.GroupedRoot>
                 <SelectDropdown.GroupedSelect.GroupedContent
@@ -1183,11 +1176,10 @@ export const MainContent = () => {
           </div>
           <div>
             <RadixTabs.Content value="book">
-              <div className={`${styles.bookContainer}`}>
+              <div className={`${styles.bookContainer}`} {...handleMobileSwipe}>
                 {bookVerseData && (
                   <div
                     className={`${styles.bookContent}`}
-                    {...handleMobileSwipe}
                     ref={scrollableCallbackRef}
                   >
                     <MainText.Root>
@@ -1276,9 +1268,18 @@ export const MainContent = () => {
 
             <RadixTabs.Content value="menu">
               <div className={styles.moreOptionsContainer}>
-                {session?.id ? (
+                {rightPanelContent === "settings" ? (
+                  <Settings
+                    selectedBibleVersion={bibleVersionSelected}
+                    setSelectedBibleVersion={handleBibleVersionSelected}
+                    setRightPanelContent={setRightPanelContent}
+                  />
+                ) : session?.id ? (
                   <>
-                    <ProfileButton link="/" />
+                    <ProfileButton
+                      link="/"
+                      setRightPanelContent={setRightPanelContent}
+                    />
                     <div className={styles.menuOptions}>
                       <Accordion.Root type="multiple">
                         {homeOptions.map((option) => (
@@ -1398,6 +1399,8 @@ export const MainContent = () => {
               askVerseMate={askVerseMate}
               rightPanelContent={rightPanelContent}
               setRightPanelContent={setRightPanelContent}
+              selectedBibleVersion={bibleVersionSelected}
+              handleBibleVersionSelected={handleBibleVersionSelected}
             />
           </RightPanel.Root>
         </main>
