@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "bun --bun run next dev --turbo",
     "build": "bun --bun run next build",
+    "lint": "biome check --write --no-errors-on-unmatched",
+    "lint:ci": "biome check",
     "build:worker": "opennextjs-cloudflare build",
     "start": "bun --bun run .next/standalone/apps/frontend-next/server.js",
     "deploy": "opennextjs-cloudflare deploy",
