@@ -1,7 +1,9 @@
 .container{
     width: 100%;
-    height: 400px;
+    height: 80px;
     background-color: var(--fantasy);
     text-align: center;
-    align-content: center
+    align-content: center;
+    font-size: 14px;
+    color: var(--oslo-gray);
 }

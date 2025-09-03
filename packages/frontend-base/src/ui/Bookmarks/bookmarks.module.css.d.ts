@@ -11,13 +11,9 @@ declare const styles: {
   readonly bookmarkButton: string;
   readonly bookmarked: string;
   readonly bookmarkedIcon: string;
-  readonly loading: string;
-  readonly error: string;
-  readonly empty: string;
-  readonly bookmarkButton: string;
-  readonly bookmarked: string;
-  readonly bookmarkedIcon: string;
   readonly animating: string;
+  readonly active: string;
+  readonly bookmarkCounter: string;
   readonly loginModal: string;
   readonly loginModalButtons: string;
   readonly loginButton: string;
