@@ -6,6 +6,8 @@ import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum"
 import TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
+import { SignIn } from "../../auth/SignIn";
+import { SignUp } from "../../auth/SignUp";
 import {
   fetchAllChaptersByBook,
   fetchAllTestaments,
@@ -1276,9 +1278,21 @@ export const MainContent = () => {
                 {session?.id ? (
                   <ProfileButton link="/" />
                 ) : (
-                  <LoginCard.Root>
-                    <LoginCard.Content />
-                  </LoginCard.Root>
+                  <>
+                    {rightPanelContent === "login" && (
+                      <SignIn onSwitch={() => setRightPanelContent("signup")} />
+                    )}
+                    {rightPanelContent === "signup" && (
+                      <SignUp onSwitch={() => setRightPanelContent("login")} />
+                    )}
+                    {rightPanelContent === "default" && (
+                      <LoginCard.Root>
+                        <LoginCard.Content
+                          setRightPanelContent={setRightPanelContent}
+                        />
+                      </LoginCard.Root>
+                    )}
+                  </>
                 )}
               </div>
             </RadixTabs.Content>
