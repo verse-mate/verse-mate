@@ -137,6 +137,7 @@
     margin-top: 16px;
     overflow-y: auto;
     max-height: calc(100dvh - 200px);
+    padding: 16px;
 }
 
 .flexBetween {
@@ -206,7 +207,6 @@
     width: 100%;
     height: calc(100dvh - 56px);
     background-color: var(--snow);
-    padding: 16px;
 }
 
 .moreOptionsContainer > :last-child {
