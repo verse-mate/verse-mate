@@ -67,19 +67,11 @@ jobs:
 
       - name: Run frontend linting
         working-directory: ./apps/frontend-next
-        run: |
-          if ! bun run lint; then
-            echo "::warning::Frontend linting failed but continuing build"
-          fi
-        continue-on-error: true
+        run: bun run lint:ci
 
       - name: Run type checking
         working-directory: ./apps/frontend-next
-        run: |
-          if ! bun run tsc; then
-            echo "::warning::Type checking failed but continuing build"
-          fi
-        continue-on-error: true
+        run: bun run tsc
 
   build-website:
     name: Build Website

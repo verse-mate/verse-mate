@@ -11,7 +11,7 @@ export class AdminDatabaseService {
       .where("explanation_id", "=", Number(explanationId))
       .executeTakeFirst();
 
-    if (result.numDeletedRows === 0n) {
+    if (result.numDeletedRows === BigInt(0)) {
       throw new Error(`Explanation ${explanationId} not found`);
     }
 
