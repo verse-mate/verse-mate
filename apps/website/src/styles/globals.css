@@ -94,7 +94,7 @@ body {
 
 /* Ensure components always have proper positioning */
 .adaptive-component--mobile,
-.adaptive-component--tablet, 
+.adaptive-component--tablet,
 .adaptive-component--desktop {
   position: relative;
   width: 100%;
