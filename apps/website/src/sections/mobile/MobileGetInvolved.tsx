@@ -229,8 +229,8 @@ export default function MobileGetInvolved() {
                 flexGrow: 0,
               }}
             >
-              <Link
-                href="/volunteer"
+              <a
+                href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
                 style={{
                   display: "flex",
                   flexDirection: "row",
@@ -267,7 +267,7 @@ export default function MobileGetInvolved() {
                 >
                   Join the Volunteer Team
                 </span>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -421,8 +421,8 @@ export default function MobileGetInvolved() {
                 flexGrow: 0,
               }}
             >
-              <Link
-                href="/give"
+              <a
+                href="mailto:donations@versemate.org?subject=I want to make a donation&body=Hi, I'm interested in supporting VerseMate with a donation..."
                 style={{
                   display: "flex",
                   flexDirection: "row",
@@ -459,7 +459,7 @@ export default function MobileGetInvolved() {
                 >
                   Make a Donation
                 </span>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
