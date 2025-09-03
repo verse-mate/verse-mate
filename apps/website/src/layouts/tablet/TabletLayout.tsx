@@ -37,6 +37,10 @@ export default function TabletLayout({ children }: TabletLayoutProps) {
           position: "sticky",
           top: 0,
           zIndex: 1000,
+          width: "100%",
+          maxWidth: "100vw",
+          boxSizing: "border-box",
+          overflow: "hidden",
         }}
         data-testid="tablet-header"
       >
@@ -48,6 +52,8 @@ export default function TabletLayout({ children }: TabletLayoutProps) {
             fontWeight: 400,
             letterSpacing: "0.1em",
             color: tabletTokens.colors.text.primary,
+            flexShrink: 0,
+            minWidth: "fit-content",
           }}
         >
           VERSE|MATE
