@@ -59,27 +59,88 @@ body {
   position: relative;
 }
 
+/* Ensure all adaptive components are viewport-safe */
+.adaptive-component--tablet,
+.adaptive-component--desktop {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Make all layout headers responsive and viewport-safe */
+.adaptive-component header {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  padding-left: clamp(16px, 4vw, 48px);
+  padding-right: clamp(16px, 4vw, 48px);
+  overflow: hidden;
+}
+
+/* Ensure logo is always visible and never disappears */
+.adaptive-component header > div:first-child {
+  flex-shrink: 0 !important;
+  min-width: fit-content !important;
+  white-space: nowrap !important;
+  position: relative !important;
+  z-index: 999 !important;
+}
+
+/* Smooth transitions for adaptive components */
+.adaptive-component > div {
+  transition: opacity 0.15s ease-in-out;
+}
+
+/* Ensure components always have proper positioning */
+.adaptive-component--mobile,
+.adaptive-component--tablet, 
+.adaptive-component--desktop {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+}
+
 /* Prevent hydration flash by using CSS media queries to hide components until hydrated */
+/* Default: show mobile component, hide others */
+.adaptive-component:not(.hydrated) .adaptive-component--mobile {
+  display: block;
+}
+
+.adaptive-component:not(.hydrated) .adaptive-component--tablet {
+  display: none;
+}
+
 .adaptive-component:not(.hydrated) .adaptive-component--desktop {
   display: none;
 }
 
-@media (min-width: 1024px) {
-  .adaptive-component:not(.hydrated) .adaptive-component--mobile {
-    display: none;
-  }
-
-  .adaptive-component:not(.hydrated) .adaptive-component--desktop {
-    display: block;
-  }
-}
-
+/* Tablet breakpoint: show tablet, hide mobile and desktop */
 @media (min-width: 768px) and (max-width: 1023px) {
   .adaptive-component:not(.hydrated) .adaptive-component--mobile {
     display: none;
   }
 
   .adaptive-component:not(.hydrated) .adaptive-component--tablet {
+    display: block;
+  }
+
+  .adaptive-component:not(.hydrated) .adaptive-component--desktop {
+    display: none;
+  }
+}
+
+/* Desktop breakpoint: show desktop, hide mobile and tablet */
+@media (min-width: 1024px) {
+  .adaptive-component:not(.hydrated) .adaptive-component--mobile {
+    display: none;
+  }
+
+  .adaptive-component:not(.hydrated) .adaptive-component--tablet {
+    display: none;
+  }
+
+  .adaptive-component:not(.hydrated) .adaptive-component--desktop {
     display: block;
   }
 }

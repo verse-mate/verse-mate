@@ -37,6 +37,16 @@ export function AdaptiveComponent<
     setIsMounted(true);
   }, []);
 
+  // Add transition class for smooth switching
+  useEffect(() => {
+    if (isMounted) {
+      const timeout = setTimeout(() => {
+        // Add any post-mount logic here if needed
+      }, 50);
+      return () => clearTimeout(timeout);
+    }
+  }, [isMounted, device.type]);
+
   // During SSR and before mount, always render the fallback component
   if (!isMounted) {
     let FallbackComponent;

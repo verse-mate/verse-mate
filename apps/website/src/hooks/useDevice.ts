@@ -46,8 +46,18 @@ export function useDevice(): DeviceInfo {
   });
 
   useEffect(() => {
+    let timeoutId: number;
+    
     const updateDevice = () => {
-      setDeviceInfo(getDeviceInfo());
+      // Clear any pending update
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      // Debounce updates for smooth transitions
+      timeoutId = setTimeout(() => {
+        setDeviceInfo(getDeviceInfo());
+      }, 50) as unknown as number; // Reduced from default to make transitions faster
     };
 
     updateDevice();
@@ -55,6 +65,9 @@ export function useDevice(): DeviceInfo {
     window.addEventListener("orientationchange", updateDevice);
 
     return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       window.removeEventListener("resize", updateDevice);
       window.removeEventListener("orientationchange", updateDevice);
     };
