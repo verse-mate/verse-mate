@@ -33,6 +33,10 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          width: "100%",
+          maxWidth: "100vw",
+          boxSizing: "border-box",
+          overflow: "hidden",
         }}
         data-testid="desktop-header"
       >
@@ -44,6 +48,8 @@ export default function DesktopLayout({ children }: DesktopLayoutProps) {
             fontWeight: 400,
             letterSpacing: "0.1em",
             color: desktopTokens.colors.text.primary,
+            flexShrink: 0,
+            minWidth: "fit-content",
           }}
         >
           VERSE|MATE

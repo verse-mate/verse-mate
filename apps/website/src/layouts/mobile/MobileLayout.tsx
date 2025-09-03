@@ -46,6 +46,8 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
             fontWeight: 400,
             letterSpacing: "0.1em",
             color: mobileTokens.colors.text.primary,
+            flexShrink: 0,
+            minWidth: "fit-content",
           }}
         >
           VERSE|MATE
