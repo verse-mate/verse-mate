@@ -35,6 +35,8 @@ export const Container = ({ children }: Props) => {
     onSwipedRight: handleSwipeRight,
     trackMouse: false,
     preventScrollOnSwipe: false,
+    delta: 40,
+    swipeDuration: 500,
   });
 
   return <div {...swipeHandlers}>{children}</div>;

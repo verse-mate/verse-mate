@@ -55,6 +55,7 @@ export const Settings = ({
             selectedVerse={null}
             defaultPlaceholder={selectedVersionData?.value || "Select Version"}
             icon={<ChevronDownIcon />}
+            onClick={() => setIsOpen((prev) => !prev)}
           />
           <SelectDropdown.Content
             align="start"
