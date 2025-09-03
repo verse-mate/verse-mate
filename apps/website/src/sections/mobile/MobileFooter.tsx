@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 export default function MobileFooter() {
   return (
@@ -11,7 +10,7 @@ export default function MobileFooter() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "48px 16px",
+        padding: "48px 64px",
         width: "440px",
         height: "100px",
         background: "#1B1B1B",
@@ -55,25 +54,21 @@ export default function MobileFooter() {
           <Link
             href="/"
             style={{
+              color: "#FFFFFF",
+              textDecoration: "none",
+              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
+              fontWeight: 300,
+              fontSize: "18px",
+              letterSpacing: "0.1em",
               display: "flex",
               alignItems: "center",
-              position: "relative",
             }}
           >
-            <Image
-              src="/versemate-logo.png"
-              alt="VerseMate"
-              width={124}
-              height={34}
-              style={{
-                objectFit: "contain",
-                filter: "brightness(0) invert(1)",
-              }}
-            />
+            VERSE|MATE
           </Link>
         </div>
 
-        {/* Social Icons - Commented out for future use
+        {/* Social Icons */}
         <div
           style={{
             display: "flex",
@@ -88,6 +83,7 @@ export default function MobileFooter() {
             flexGrow: 0,
           }}
         >
+          {/* Facebook */}
           <a
             href="#"
             style={{
@@ -110,6 +106,7 @@ export default function MobileFooter() {
             </svg>
           </a>
 
+          {/* Instagram */}
           <a
             href="#"
             style={{
@@ -132,6 +129,7 @@ export default function MobileFooter() {
             </svg>
           </a>
 
+          {/* Twitter */}
           <a
             href="#"
             style={{
@@ -154,7 +152,6 @@ export default function MobileFooter() {
             </svg>
           </a>
         </div>
-        */}
       </div>
     </footer>
   );

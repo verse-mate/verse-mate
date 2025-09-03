@@ -51,30 +51,17 @@ export default function Footer() {
           <Link
             href="/"
             style={{
-              fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+              fontFamily: "var(--font-inter)",
               fontStyle: "normal",
               fontWeight: 400,
               fontSize: "14px",
-              letterSpacing: "0.15em",
+              lineHeight: "34px",
+              letterSpacing: "0.1em",
               color: "#FFFFFF",
               textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              height: "100%",
-              position: "relative",
             }}
           >
-            <span style={{ paddingRight: "3px" }}>VERSE</span>
-            <div
-              style={{
-                width: "1px",
-                height: "24px",
-                backgroundColor: "#FFFFFF",
-                position: "relative",
-                top: "0px",
-              }}
-            />
-            <span style={{ paddingLeft: "6px" }}>MATE</span>
+            VERSE|MATE
           </Link>
         </div>
 
@@ -85,8 +72,8 @@ export default function Footer() {
             flexDirection: "row",
             alignItems: "center",
             padding: "0px",
-            gap: "0px",
-            width: "334px",
+            gap: "64px",
+            width: "494px",
             height: "24px",
             flex: "none",
             order: 1,
@@ -209,7 +196,7 @@ export default function Footer() {
             </Link>
           </div>
 
-          {/* Icons - Commented out for future use
+          {/* Icons */}
           <div
             style={{
               display: "flex",
@@ -224,6 +211,7 @@ export default function Footer() {
               flexGrow: 0,
             }}
           >
+            {/* Facebook */}
             <a
               href="#"
               style={{
@@ -243,6 +231,7 @@ export default function Footer() {
               </svg>
             </a>
 
+            {/* Instagram */}
             <a
               href="#"
               style={{
@@ -262,6 +251,7 @@ export default function Footer() {
               </svg>
             </a>
 
+            {/* Twitter */}
             <a
               href="#"
               style={{
@@ -281,7 +271,6 @@ export default function Footer() {
               </svg>
             </a>
           </div>
-          */}
         </div>
       </div>
     </footer>
