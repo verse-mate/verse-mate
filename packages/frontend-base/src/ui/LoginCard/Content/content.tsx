@@ -26,11 +26,7 @@ export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
         `/?bookId=${bookId}&verseId=${verseId}`,
       );
     }
-    if (
-      typeof window !== "undefined" &&
-      window.innerWidth >= 1024 &&
-      setRightPanelContent
-    ) {
+    if (setRightPanelContent) {
       e.preventDefault();
       setRightPanelContent("login");
     }
@@ -43,11 +39,7 @@ export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
         `/?bookId=${bookId}&verseId=${verseId}`,
       );
     }
-    if (
-      typeof window !== "undefined" &&
-      window.innerWidth >= 1024 &&
-      setRightPanelContent
-    ) {
+    if (setRightPanelContent) {
       e.preventDefault();
       setRightPanelContent("signup");
     }

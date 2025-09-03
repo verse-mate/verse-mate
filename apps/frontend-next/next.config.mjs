@@ -68,6 +68,7 @@ const nextConfig = {
     NEXT_PUBLIC_ASK_VERSE_MATE:
       process.env.NEXT_PUBLIC_ASK_VERSE_MATE || "false",
   },
+  transpilePackages: ["@verse-mate/frontend-base"],
 };
 
 export default withPWA({

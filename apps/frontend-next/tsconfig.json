@@ -18,7 +18,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@verse-mate/frontend-base/*": ["../../packages/frontend-base/*"]
     },
     "target": "ES2017"
   },
