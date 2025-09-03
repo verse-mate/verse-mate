@@ -261,11 +261,20 @@ export const MainContent = () => {
   const handleMobileSwipe = useSwipeable({
     onSwipedRight: () => handlePreviousChapter(),
     onSwipedLeft: () => handleNextChapter(),
+    delta: 30,
+    swipeDuration: 500,
+    preventScrollOnSwipe: false,
+    trackTouch: true,
+    trackMouse: false,
   });
 
   const handleDesktopSwipe = useSwipeable({
     onSwipedRight: () => handlePreviousChapter(),
     onSwipedLeft: () => handleNextChapter(),
+    delta: 50,
+    preventScrollOnSwipe: false,
+    trackTouch: true,
+    trackMouse: false,
   });
 
   const { activeTab, setActiveTab } = useHandleTab();
@@ -1166,11 +1175,10 @@ export const MainContent = () => {
           </div>
           <div>
             <RadixTabs.Content value="book">
-              <div className={`${styles.bookContainer}`}>
+              <div className={`${styles.bookContainer}`} {...handleMobileSwipe}>
                 {bookVerseData && (
                   <div
                     className={`${styles.bookContent}`}
-                    {...handleMobileSwipe}
                     ref={scrollableCallbackRef}
                   >
                     <MainText.Root>
