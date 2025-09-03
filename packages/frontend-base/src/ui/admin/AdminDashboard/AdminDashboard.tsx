@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "../../Button/Button";
 import { HomeIcon } from "../../Icons";
 import { BatchOperations } from "../BatchOperations/BatchOperations";
-import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration.tsx";
+import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration";
 import { Playground } from "../Playground/Playground";
 import { PromptManagement } from "../PromptManagement/PromptManagement";
 import { UserManagement } from "../UserManagement/UserManagement";
