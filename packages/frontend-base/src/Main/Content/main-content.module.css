@@ -213,6 +213,10 @@
     margin-top: auto;
 }
 
+.moreOptionsContainer > div[class*="wrapper"] {
+    padding: 16px;
+}
+
 /* Previous and Next buttons */
 .nextChapterBtn, .previousChapterBtn {
     display: flex;
