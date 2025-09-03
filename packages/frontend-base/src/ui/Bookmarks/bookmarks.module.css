@@ -58,18 +58,34 @@
   margin-top: 2px;
 }
 
-.bookmarkItem:hover {
+@media (hover: hover) and (pointer: fine) {
+  .bookmarkItem:hover {
+    background-color: var(--dust);
+    color: var(--snow);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 5%);
+  }
+
+  .bookmarkItem:hover .bookmarkTitle {
+    color: var(--snow);
+  }
+
+  .bookmarkItem:hover .bookmarkMeta {
+    color: var(--geyser);
+  }
+}
+
+.bookmarkItem.active {
   background-color: var(--dust);
   color: var(--snow);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgb(0 0 0 / 5%);
+  border-color: var(--dust);
 }
 
-.bookmarkItem:hover .bookmarkTitle {
+.bookmarkItem.active .bookmarkTitle {
   color: var(--snow);
 }
 
-.bookmarkItem:hover .bookmarkMeta {
+.bookmarkItem.active .bookmarkMeta {
   color: var(--geyser);
 }
 

@@ -6,6 +6,8 @@ import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum"
 import TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
+import { SignIn } from "../../auth/SignIn";
+import { SignUp } from "../../auth/SignUp";
 import {
   fetchAllChaptersByBook,
   fetchAllTestaments,
@@ -46,6 +48,7 @@ import { FilterInput } from "../../ui/SelectDropdown/FilterInput/filter-input";
 import { Tabs } from "../../ui/Tabs";
 import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
+import { homeOptions } from "../../utils/home-options";
 import styles from "./main-content.module.css";
 
 export const MainContent = () => {
@@ -1274,11 +1277,40 @@ export const MainContent = () => {
             <RadixTabs.Content value="menu">
               <div className={styles.moreOptionsContainer}>
                 {session?.id ? (
-                  <ProfileButton link="/" />
+                  <>
+                    <ProfileButton link="/" />
+                    <div className={styles.menuOptions}>
+                      <Accordion.Root type="multiple">
+                        {homeOptions.map((option) => (
+                          <Accordion.Item key={option.name} value={option.name}>
+                            <Accordion.Trigger
+                              label={option.label}
+                              icon={option.icon}
+                            />
+                            <Accordion.Content>
+                              {option.content}
+                            </Accordion.Content>
+                          </Accordion.Item>
+                        ))}
+                      </Accordion.Root>
+                    </div>
+                  </>
                 ) : (
-                  <LoginCard.Root>
-                    <LoginCard.Content />
-                  </LoginCard.Root>
+                  <>
+                    {rightPanelContent === "login" && (
+                      <SignIn onSwitch={() => setRightPanelContent("signup")} />
+                    )}
+                    {rightPanelContent === "signup" && (
+                      <SignUp onSwitch={() => setRightPanelContent("login")} />
+                    )}
+                    {rightPanelContent === "default" && (
+                      <LoginCard.Root>
+                        <LoginCard.Content
+                          setRightPanelContent={setRightPanelContent}
+                        />
+                      </LoginCard.Root>
+                    )}
+                  </>
                 )}
               </div>
             </RadixTabs.Content>

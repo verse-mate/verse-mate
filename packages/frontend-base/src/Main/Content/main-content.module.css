@@ -126,6 +126,19 @@
     padding: 16px;
 }
 
+.ratingInfo {
+    font-family: Inter, sans-serif;
+    font-size: 12px;
+    color: var(--oil);
+}
+
+.menuOptions {
+    width: 100%;
+    margin-top: 16px;
+    overflow-y: auto;
+    max-height: calc(100dvh - 200px);
+}
+
 .flexBetween {
     display: flex;
     justify-content: space-between;
@@ -193,6 +206,7 @@
     width: 100%;
     height: calc(100dvh - 56px);
     background-color: var(--snow);
+    padding: 16px;
 }
 
 .moreOptionsContainer > :last-child {

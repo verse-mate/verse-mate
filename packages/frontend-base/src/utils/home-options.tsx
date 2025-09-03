@@ -13,18 +13,18 @@ export const homeOptions = [
     name: "favorites",
     icon: <Icon.HeartIcon />,
     label: "Favorites",
-    content: <DefaultContent value="N/A" />,
+    content: <DefaultContent value="Feature currently unavailable" />,
   },
   {
     name: "notes",
     icon: <Icon.NotesIcon />,
     label: "Notes",
-    content: <DefaultContent value="N/A" />,
+    content: <DefaultContent value="Feature currently unavailable" />,
   },
   {
     name: "highlights",
     icon: <Icon.PencilIcon />,
     label: "Highlights",
-    content: <DefaultContent value="N/A" />,
+    content: <DefaultContent value="Feature currently unavailable" />,
   },
 ];
