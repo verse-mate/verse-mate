@@ -10,7 +10,7 @@ export const Main: Story = () => {
     <>
       <MainPage.QueryProvider>
         <MainPage.BrowserRouter>
-          <MainPage.Header />
+          <MainPage.Header setRightPanelContent={() => {}} />
           <MainPage.MainContent />
           <MainPage.Footer />
         </MainPage.BrowserRouter>

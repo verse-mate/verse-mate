@@ -10,9 +10,13 @@ import styles from "./user-profile.module.css";
 
 type UserProfileProps = {
   link: string;
+  setRightPanelContent: (value: string) => void;
 };
 
-export const ProfileButton = ({ link }: UserProfileProps) => {
+export const ProfileButton = ({
+  link,
+  setRightPanelContent,
+}: UserProfileProps) => {
   const { session } = userSession();
   const [person, setPerson] = useState("");
 
@@ -72,14 +76,15 @@ export const ProfileButton = ({ link }: UserProfileProps) => {
                 <DropdownMenu.Separator className={styles.separator} />
               </>
             )}
-            {/* <Link href={link}>
-              <DropdownMenu.Item className={styles.item}>
-                Settings
-                <div className={styles.slot}>
-                  <SettingsIcon className={styles.settingsIcon} />
-                </div>
-              </DropdownMenu.Item>
-            </Link> */}
+            <DropdownMenu.Item
+              className={styles.item}
+              onClick={() => setRightPanelContent("settings")}
+            >
+              Settings
+              <div className={styles.slot}>
+                <SettingsIcon className={styles.settingsIcon} />
+              </div>
+            </DropdownMenu.Item>
             {/* <DropdownMenu.Separator className={styles.separator} /> */}
             <DropdownMenu.Item className={styles.item} onClick={handleLogout}>
               Logout{" "}
