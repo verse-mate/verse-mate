@@ -26,7 +26,7 @@ export function AdaptiveComponent<
   tabletComponent: TabletComponent,
   desktopComponent: DesktopComponent,
   props = {} as T,
-  fallback = "desktop",
+  fallback = "mobile",
   testId,
 }: AdaptiveComponentProps<T>) {
   const device = useDevice();
@@ -36,6 +36,16 @@ export function AdaptiveComponent<
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Add transition class for smooth switching
+  useEffect(() => {
+    if (isMounted) {
+      const timeout = setTimeout(() => {
+        // Add any post-mount logic here if needed
+      }, 50);
+      return () => clearTimeout(timeout);
+    }
+  }, [isMounted, device.type]);
 
   // During SSR and before mount, always render the fallback component
   if (!isMounted) {
@@ -48,7 +58,7 @@ export function AdaptiveComponent<
         FallbackComponent = TabletComponent;
         break;
       default:
-        FallbackComponent = DesktopComponent;
+        FallbackComponent = MobileComponent;
     }
 
     return (
@@ -84,7 +94,7 @@ export function AdaptiveComponent<
           Component = TabletComponent;
           break;
         default:
-          Component = DesktopComponent;
+          Component = MobileComponent;
       }
   }
 
@@ -92,7 +102,7 @@ export function AdaptiveComponent<
     <div
       data-testid={testId ? `${testId}-${device.type}` : undefined}
       data-device-type={device.type}
-      className={`adaptive-component adaptive-component--${device.type}`}
+      className={`adaptive-component adaptive-component--${device.type} hydrated`}
     >
       <Component {...props} />
     </div>
