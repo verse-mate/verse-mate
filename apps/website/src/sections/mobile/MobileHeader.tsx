@@ -2,7 +2,6 @@
 
 import { navigateToLogin } from "@/lib/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { mobileTokens } from "../../styles/tokens/mobile.tokens";
 
@@ -31,7 +30,7 @@ export default function MobileHeader() {
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "0 16px",
+          padding: mobileTokens.components.nav.padding,
           position: "absolute",
           height: mobileTokens.components.nav.height,
           left: "0px",
@@ -52,21 +51,18 @@ export default function MobileHeader() {
           <Link
             href="/"
             style={{
+              fontFamily: mobileTokens.typography.body.fontFamily,
+              fontStyle: "normal",
+              fontWeight: 600,
+              fontSize: "16px",
+              letterSpacing: "0.1em",
+              color: "#FFFFFF",
+              textDecoration: "none",
               display: "flex",
               alignItems: "center",
-              position: "relative",
             }}
           >
-            <Image
-              src="/versemate-logo.png"
-              alt="VerseMate"
-              width={120}
-              height={32}
-              style={{
-                objectFit: "contain",
-                filter: "brightness(0) invert(1)",
-              }}
-            />
+            VERSE|MATE
           </Link>
         </div>
 
@@ -162,8 +158,8 @@ export default function MobileHeader() {
             >
               Home
             </Link>
-            <a
-              href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
+            <Link
+              href="/volunteer"
               onClick={() => setIsMenuOpen(false)}
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
@@ -176,7 +172,7 @@ export default function MobileHeader() {
               }}
             >
               Volunteer
-            </a>
+            </Link>
             <Link
               href="/give"
               onClick={() => setIsMenuOpen(false)}

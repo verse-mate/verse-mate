@@ -2,7 +2,6 @@
 
 import { navigateToLogin } from "@/lib/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function Header() {
@@ -19,19 +18,21 @@ export default function Header() {
 
   return (
     <header
-      data-header="desktop"
       style={{
         display: "flex",
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         padding: "0px 64px",
+        gap: "794px",
         position: "absolute",
         height: "76px",
-        width: "1440px",
-        left: "50%",
-        transform: "translateX(-50%)",
+        left: "0px",
+        right: "0px",
         top: "0px",
+        flex: "none",
+        order: 8,
+        flexGrow: 0,
         zIndex: 8,
         background: "transparent",
       }}
@@ -44,29 +45,25 @@ export default function Header() {
           flex: "none",
           order: 0,
           flexGrow: 0,
+          position: "relative",
         }}
       >
         <Link
           href="/"
           style={{
+            color: "#FFFFFF",
+            textDecoration: "none",
+            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
+            fontWeight: 300,
+            fontSize: "18px",
+            letterSpacing: "0.1em",
             display: "flex",
             alignItems: "center",
             height: "100%",
-            padding: "0",
-            margin: "0",
-            position: "relative",
+            paddingLeft: "160px",
           }}
         >
-          <Image
-            src="/versemate-logo.png"
-            alt="VerseMate"
-            width={175}
-            height={48}
-            style={{
-              objectFit: "contain",
-              filter: "brightness(0) invert(1)",
-            }}
-          />
+          VERSE|MATE
         </Link>
       </div>
 
@@ -152,8 +149,8 @@ export default function Header() {
             flexGrow: 0,
           }}
         >
-          <a
-            href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
+          <Link
+            href="/volunteer"
             style={{
               width: "74px",
               height: "24px",
@@ -172,7 +169,7 @@ export default function Header() {
             }}
           >
             Volunteer
-          </a>
+          </Link>
           <div
             style={{
               width: "0px",
