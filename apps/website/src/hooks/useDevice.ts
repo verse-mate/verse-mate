@@ -29,16 +29,16 @@ export const BREAKPOINTS = {
 
 export function useDevice(): DeviceInfo {
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo>(() => {
-    // Server-side rendering fallback
+    // Server-side rendering fallback - use mobile-first approach
     if (typeof window === "undefined") {
       return {
-        type: "desktop",
-        isMobile: false,
+        type: "mobile",
+        isMobile: true,
         isTablet: false,
-        isDesktop: true,
-        isTouch: false,
-        viewport: { width: 1440, height: 900 },
-        orientation: "landscape",
+        isDesktop: false,
+        isTouch: true,
+        viewport: { width: 375, height: 667 },
+        orientation: "portrait",
       };
     }
 
