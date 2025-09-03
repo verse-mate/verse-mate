@@ -59,6 +59,31 @@ body {
   position: relative;
 }
 
+/* Prevent hydration flash by using CSS media queries to hide components until hydrated */
+.adaptive-component:not(.hydrated) .adaptive-component--desktop {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .adaptive-component:not(.hydrated) .adaptive-component--mobile {
+    display: none;
+  }
+
+  .adaptive-component:not(.hydrated) .adaptive-component--desktop {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .adaptive-component:not(.hydrated) .adaptive-component--mobile {
+    display: none;
+  }
+
+  .adaptive-component:not(.hydrated) .adaptive-component--tablet {
+    display: block;
+  }
+}
+
 /* Prevent horizontal scrolling on all devices */
 #__next {
   width: 100%;
