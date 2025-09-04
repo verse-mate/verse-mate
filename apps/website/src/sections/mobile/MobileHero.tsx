@@ -19,6 +19,7 @@ export default function MobileHero() {
         position: "relative",
         margin: "0 auto",
         maxWidth: "100vw",
+        overflow: "hidden",
       }}
     >
       {/* Text Pattern Overlay */}
