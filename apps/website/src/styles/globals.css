@@ -102,6 +102,7 @@ body {
 }
 
 /* Prevent hydration flash by using CSS media queries to hide components until hydrated */
+
 /* Default: show mobile component, hide others */
 .adaptive-component:not(.hydrated) .adaptive-component--mobile {
   display: block;
