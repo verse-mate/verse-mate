@@ -245,6 +245,7 @@ export default function MobileHero() {
             height: "264px",
             background: "rgba(0, 0, 0, 0.001)",
             borderRadius: "16px",
+            border: "0.5px solid #D4B896",
             flex: "none",
             order: 1,
             flexGrow: 0,
