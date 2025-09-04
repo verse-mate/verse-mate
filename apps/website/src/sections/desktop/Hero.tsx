@@ -20,17 +20,19 @@ export default function HeroSection() {
         overflow: "hidden",
       }}
     >
-      {/* Tilted Image */}
+      {/* Text Pattern Overlay */}
       <div
         style={{
           position: "absolute",
-          width: "2648.89px",
-          height: "1618.77px",
-          left: "-941.58px",
-          top: "-635.67px",
-          backgroundImage: "url(/hero-background.png)",
-          opacity: 0.05,
-          transform: "matrix(0.92, 0.39, -0.71, 0.71, 0, 0)",
+          width: "100%",
+          height: "100%",
+          left: "0",
+          top: "0",
+          backgroundImage: "url(/Tilted%20image%20text%20Desktop.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          opacity: 1,
         }}
       />
 
@@ -56,7 +58,7 @@ export default function HeroSection() {
           style={{
             width: "540px",
             height: "192px",
-            fontFamily: "var(--font-merriweather)",
+            fontFamily: "var(--font-merriweather, Merriweather, serif)",
             fontStyle: "normal",
             fontWeight: 700,
             fontSize: "48px",
@@ -151,8 +153,8 @@ export default function HeroSection() {
           </button>
 
           {/* Secondary Button */}
-          <Link
-            href="/volunteer"
+          <a
+            href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
             style={{
               boxSizing: "border-box",
               display: "flex",
@@ -193,7 +195,7 @@ export default function HeroSection() {
             >
               Join as a Volunteer
             </span>
-          </Link>
+          </a>
         </div>
       </div>
 
@@ -245,6 +247,7 @@ export default function HeroSection() {
             height: "516px",
             background: "rgba(0, 0, 0, 0.001)",
             borderRadius: "32px",
+            border: "0.5px solid #D4B896",
             flex: "none",
             order: 1,
             flexGrow: 0,
@@ -279,7 +282,8 @@ export default function HeroSection() {
             background: "rgba(0, 0, 0, 0.001)",
             opacity: 0.05,
             borderRadius: "32px",
-            transform: "matrix(1, 0, 0, -1, 0, 0)",
+            border: "0.5px solid rgba(212, 184, 150, 0.3)",
+            transform: "scaleY(-1)",
             flex: "none",
             order: 2,
             flexGrow: 0,
@@ -294,7 +298,6 @@ export default function HeroSection() {
               backgroundSize: "cover",
               backgroundPosition: "center",
               borderRadius: "24px",
-              transform: "matrix(1, 0, 0, -1, 0, 0)",
               flex: "none",
               order: 0,
               flexGrow: 0,
