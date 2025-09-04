@@ -78,11 +78,15 @@ export const BookmarkList = () => {
   return (
     <>
       <div className={styles.bookmarkCounter}>
-        You've got a total of{" "}
-        <strong>
-          <u>{bookmarks.length}</u>
-        </strong>{" "}
-        bookmark{bookmarks.length !== 1 ? "s" : ""}
+        {bookmarks.length === 1 ? (
+          <>
+            You have <u>1</u> bookmark
+          </>
+        ) : (
+          <>
+            You have <u>{bookmarks.length}</u> bookmarks in total
+          </>
+        )}
       </div>
       <div className={styles.bookmarkList}>
         {bookmarks
