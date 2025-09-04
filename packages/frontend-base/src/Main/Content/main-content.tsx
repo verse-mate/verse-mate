@@ -682,7 +682,7 @@ export const MainContent = () => {
                 <>
                   {/* Book trigger */}
                   <SelectDropdown.GroupedSelect.GroupedTrigger
-                    selectedBook={leftPanelSelectedBook || book}
+                    selectedBook={book}
                     selectedVerse={verseIdToString}
                     defaultPlaceholder="Select a Book"
                     isOpen={isDropdownOpenBook}
