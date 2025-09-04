@@ -14,6 +14,7 @@ import { Explanation } from "../../Explanation";
 import { ProfileButton } from "../../Header/UserProfile/user-profile";
 import * as Icon from "../../Icons";
 import { LoginCard } from "../../LoginCard";
+import { Settings } from "../../Settings/Settings";
 import styles from "./content.module.css";
 
 type Props = {
@@ -66,6 +67,8 @@ type Props = {
   askVerseMate: boolean;
   rightPanelContent: string;
   setRightPanelContent: (value: string) => void;
+  selectedBibleVersion: string;
+  handleBibleVersionSelected: (version: string) => void;
 };
 
 export const Content = ({
@@ -75,6 +78,8 @@ export const Content = ({
   askVerseMate,
   rightPanelContent,
   setRightPanelContent,
+  selectedBibleVersion,
+  handleBibleVersionSelected,
 }: Props) => {
   return (
     <>
@@ -175,7 +180,18 @@ export const Content = ({
         >
           {session?.id ? (
             <>
-              <ProfileButton link="/" />
+              {rightPanelContent === "settings" ? (
+                <Settings
+                  selectedBibleVersion={selectedBibleVersion}
+                  setSelectedBibleVersion={handleBibleVersionSelected}
+                  setRightPanelContent={setRightPanelContent}
+                />
+              ) : (
+                <ProfileButton
+                  link="/"
+                  setRightPanelContent={setRightPanelContent}
+                />
+              )}
               <div className={styles.menuOptions}>
                 <Accordion.Root type="multiple">
                   {homeOptions.map((option) => (
