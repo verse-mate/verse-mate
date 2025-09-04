@@ -74,7 +74,7 @@ export default function MobileHeader() {
         <button
           onClick={toggleMenu}
           style={{
-            display: "flex",
+            display: "none", // Hidden but keeping code intact
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",

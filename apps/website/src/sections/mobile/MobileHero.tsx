@@ -21,17 +21,19 @@ export default function MobileHero() {
         maxWidth: "100vw",
       }}
     >
-      {/* Tilted Image */}
+      {/* Text Pattern Overlay */}
       <div
         style={{
           position: "absolute",
-          width: "2648.89px",
-          height: "1618.77px",
-          left: "-941.58px",
-          top: "-635.67px",
-          backgroundImage: "url(/hero-background.png)",
-          opacity: 0.05,
-          transform: "matrix(0.92, 0.39, -0.71, 0.71, 0, 0)",
+          width: "100%",
+          height: "100%",
+          left: "0",
+          top: "0",
+          backgroundImage: "url(/Tilted%20Image%20text%20Mobile.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          opacity: 1,
         }}
       />
 
@@ -83,7 +85,7 @@ export default function MobileHero() {
             height: "96px",
             fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
             fontStyle: "normal",
-            fontWeight: 300,
+            fontWeight: 200,
             fontSize: "16px",
             lineHeight: "24px",
             color: "#FFFFFF",
@@ -243,6 +245,7 @@ export default function MobileHero() {
             height: "264px",
             background: "rgba(0, 0, 0, 0.001)",
             borderRadius: "16px",
+            border: "0.5px solid #D4B896",
             flex: "none",
             order: 1,
             flexGrow: 0,
@@ -277,7 +280,8 @@ export default function MobileHero() {
             background: "rgba(0, 0, 0, 0.001)",
             opacity: 0.05,
             borderRadius: "16px",
-            transform: "matrix(1, 0, 0, -1, 0, 0)",
+            border: "0.5px solid rgba(212, 184, 150, 0.3)",
+            transform: "scaleY(-1)",
             flex: "none",
             order: 2,
             flexGrow: 0,
@@ -292,7 +296,6 @@ export default function MobileHero() {
               backgroundSize: "cover",
               backgroundPosition: "center",
               borderRadius: "8px",
-              transform: "matrix(1, 0, 0, -1, 0, 0)",
               flex: "none",
               order: 0,
               flexGrow: 0,
