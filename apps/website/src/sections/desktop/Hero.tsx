@@ -20,17 +20,19 @@ export default function HeroSection() {
         overflow: "hidden",
       }}
     >
-      {/* Tilted Image */}
+      {/* Text Pattern Overlay */}
       <div
         style={{
           position: "absolute",
-          width: "2648.89px",
-          height: "1618.77px",
-          left: "-941.58px",
-          top: "-635.67px",
-          backgroundImage: "url(/hero-background.png)",
-          opacity: 0.05,
-          transform: "matrix(0.92, 0.39, -0.71, 0.71, 0, 0)",
+          width: "100%",
+          height: "100%",
+          left: "0",
+          top: "0",
+          backgroundImage: "url(/Tilted%20image%20text%20Desktop.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          opacity: 1,
         }}
       />
 
