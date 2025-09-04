@@ -246,6 +246,7 @@ export default function HeroSection() {
             height: "516px",
             background: "rgba(0, 0, 0, 0.001)",
             borderRadius: "32px",
+            border: "0.5px solid #ffffff",
             flex: "none",
             order: 1,
             flexGrow: 0,
