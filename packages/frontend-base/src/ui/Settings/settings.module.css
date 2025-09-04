@@ -1,0 +1,54 @@
+.settingsRoot {
+  margin-top: 0 !important;
+  padding: 20px;
+  align-self: flex-start;
+}
+
+.bibleVersionDropdown button[role="combobox"] {
+  display: flex !important;
+  color: black !important;
+  fill: black !important;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  background-color: white;
+  width: 100%;
+  max-width: 400px;
+  justify-content: space-between;
+}
+
+.bibleVersionDropdown button[role="combobox"]:hover {
+  background-color: #f5f5f5;
+}
+
+.bibleVersionDropdown button[role="combobox"] span {
+  color: black !important;
+}
+
+.bibleVersionDropdown button[role="combobox"] span:first-child {
+  max-width: 350px !important;
+}
+
+.bibleVersionDropdown button[role="combobox"] svg {
+  fill: black !important;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.backIcon {
+  width: 24px;
+  height: 24px;
+}

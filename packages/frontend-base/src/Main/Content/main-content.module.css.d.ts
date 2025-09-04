@@ -45,5 +45,6 @@ declare const styles: {
   readonly moreOptionButton: string;
   readonly content: string;
   readonly list: string;
+  readonly menuOptions: string;
 };
 export = styles;

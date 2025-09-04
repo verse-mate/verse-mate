@@ -63,6 +63,8 @@ export const Default: Story = () => {
         askVerseMate={askVerseMate}
         rightPanelContent={rightPanelContent}
         setRightPanelContent={setRightPanelContent}
+        selectedBibleVersion="NASB1995"
+        handleBibleVersionSelected={() => {}}
       />
     </RightPanel.Root>
   );

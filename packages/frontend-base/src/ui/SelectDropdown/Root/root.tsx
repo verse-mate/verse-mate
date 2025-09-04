@@ -11,6 +11,7 @@ type RootProps = {
   onOpenChange?: (isOpen: boolean) => void;
   onValueChange?: (value: ExplanationTypeEnum) => void;
   resetFilter?: () => void;
+  className?: string;
 };
 
 export const Root = ({
@@ -21,6 +22,7 @@ export const Root = ({
   onOpenChange,
   onValueChange,
   resetFilter,
+  className,
 }: RootProps) => {
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -39,7 +41,7 @@ export const Root = ({
       onOpenChange={handleOpenChange}
       onValueChange={onValueChange}
     >
-      <div className={styles.container}>
+      <div className={`${styles.container} ${className}`}>
         <label className={styles.label}>{label}</label>
         {children}
       </div>

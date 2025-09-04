@@ -60,7 +60,7 @@ const plugin = new Elysia()
                 .where("id", "=", params.id)
                 .executeTakeFirst();
 
-              if (result.numUpdatedRows === 0n) {
+              if (result.numUpdatedRows === BigInt(0)) {
                 throw new Error(`User ${params.id} not found`);
               }
 
