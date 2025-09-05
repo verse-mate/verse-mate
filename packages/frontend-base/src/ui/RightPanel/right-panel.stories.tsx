@@ -9,6 +9,8 @@ import { useGetSearchParams } from "../../hooks/useSearchParams";
 import { userSession } from "../../hooks/userSession";
 import { RightPanel } from "./index";
 
+import { useSwipeable } from "react-swipeable";
+
 export default {
   title: "ui/RightPanel",
   decorators: [
@@ -41,6 +43,11 @@ export const Default: Story = () => {
 
   const [rightPanelContent, setRightPanelContent] = React.useState<any>(null);
 
+  const handleDesktopSwipe = useSwipeable({
+    onSwipedRight: () => console.log("swiped right"),
+    onSwipedLeft: () => console.log("swiped left"),
+  });
+
   return (
     <RightPanel.Root
       activeTab={activeTab}
@@ -65,6 +72,7 @@ export const Default: Story = () => {
         setRightPanelContent={setRightPanelContent}
         selectedBibleVersion="NASB1995"
         handleBibleVersionSelected={() => {}}
+        handleDesktopSwipe={handleDesktopSwipe}
       />
     </RightPanel.Root>
   );
