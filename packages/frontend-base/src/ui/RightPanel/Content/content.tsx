@@ -17,6 +17,8 @@ import { LoginCard } from "../../LoginCard";
 import { Settings } from "../../Settings/Settings";
 import styles from "./content.module.css";
 
+import type { useSwipeable } from "react-swipeable";
+
 type Props = {
   session: UserSession | null;
   explanation:
@@ -69,6 +71,7 @@ type Props = {
   setRightPanelContent: (value: string) => void;
   selectedBibleVersion: string;
   handleBibleVersionSelected: (version: string) => void;
+  handleDesktopSwipe: ReturnType<typeof useSwipeable>;
 };
 
 export const Content = ({
@@ -80,13 +83,16 @@ export const Content = ({
   setRightPanelContent,
   selectedBibleVersion,
   handleBibleVersionSelected,
+  handleDesktopSwipe,
 }: Props) => {
   return (
     <>
       <RadixTabs.Content className={styles.content} value="explanation">
-        <Explanation.Container>
-          <Explanation.Content />
-        </Explanation.Container>
+        <div {...handleDesktopSwipe}>
+          <Explanation.Container>
+            <Explanation.Content />
+          </Explanation.Container>
+        </div>
       </RadixTabs.Content>
 
       {askVerseMate && (

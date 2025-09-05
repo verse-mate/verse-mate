@@ -117,7 +117,6 @@ export const Nav = ({
   handleBibleVersionSelected,
   setActiveTab,
   explanationType,
-  handleValueChange,
   explanation,
   averageRating,
   currentRating,
@@ -127,6 +126,7 @@ export const Nav = ({
   setRating,
   setHoverRating,
   saveSearchParams,
+  handleValueChange,
 }: Props) => {
   const selectedBook = selectedBookStore.get();
 

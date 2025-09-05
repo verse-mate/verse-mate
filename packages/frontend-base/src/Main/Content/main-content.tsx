@@ -14,7 +14,9 @@ import {
   fetchBookVerse,
   fetchExplanation,
 } from "../../hooks/useBible";
+import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
+import { useExplanation } from "../../hooks/useExplanation";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { useLastRead } from "../../hooks/useLastRead";
 import { useProgressBar } from "../../hooks/useProgressBar";
@@ -237,31 +239,11 @@ export const MainContent = () => {
     queryClient.invalidateQueries({ queryKey: ["explanation"] });
   };
 
-  const handleNextChapter = () => {
-    const totalChapters = chapters;
-    const currentChapter = Number(verseId);
-
-    if (totalChapters && currentChapter < totalChapters) {
-      saveSearchParams({
-        verseId: String(currentChapter + 1),
-      });
-    }
-  };
-
-  const handlePreviousChapter = () => {
-    const totalChapters = chapters;
-    const currentChapter = Number(verseId);
-
-    if (currentChapter > 1) {
-      saveSearchParams({
-        verseId: String(currentChapter - 1),
-      });
-    }
-  };
+  const { handleNextChapter, handlePreviousChapter } = useChapter();
 
   const handleMobileSwipe = useSwipeable({
     onSwipedRight: () => handlePreviousChapter(),
-    onSwipedLeft: () => handleNextChapter(),
+    onSwipedLeft: () => handleNextChapter(chapters),
     delta: 30,
     swipeDuration: 500,
     preventScrollOnSwipe: false,
@@ -287,14 +269,8 @@ export const MainContent = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024 && activeTabRef.current === "book") {
-        setActiveTab("explanation");
-      } else if (
-        window.innerWidth < 1024 &&
-        activeTabRef.current === "explanation"
-      ) {
-        setActiveTab("book");
-      }
+      // Removed automatic tab switching to allow tab persistence.
+      // Responsive layout should be handled by CSS media queries.
     };
 
     window.addEventListener("resize", handleResize);
@@ -303,7 +279,7 @@ export const MainContent = () => {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [setActiveTab]);
+  }, []);
 
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
@@ -1194,7 +1170,7 @@ export const MainContent = () => {
                         ref={nextChapterButtonRef}
                         type="button"
                         className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
-                        onClick={handleNextChapter}
+                        onClick={() => handleNextChapter(chapters)}
                       >
                         <Icon.ChevronForward
                           className={styles.chevronForward}
@@ -1227,7 +1203,7 @@ export const MainContent = () => {
             </RadixTabs.Content>
 
             <RadixTabs.Content value="explanation">
-              <Explanation.Container>
+              <Explanation.Container chapters={chapters}>
                 <Explanation.NavHeader />
                 <Explanation.Content />
               </Explanation.Container>
@@ -1364,8 +1340,6 @@ export const MainContent = () => {
               verseId={verseId}
               bookVerseData={bookVerseData}
               handleDesktopSwipe={handleDesktopSwipe}
-              handleNextChapter={handleNextChapter}
-              handlePreviousChapter={handlePreviousChapter}
               progress={progress}
               chapters={chapters}
               buttonsVisible={buttonsVisible}
@@ -1401,6 +1375,7 @@ export const MainContent = () => {
               setRightPanelContent={setRightPanelContent}
               selectedBibleVersion={bibleVersionSelected}
               handleBibleVersionSelected={handleBibleVersionSelected}
+              handleDesktopSwipe={handleDesktopSwipe}
             />
           </RightPanel.Root>
         </main>

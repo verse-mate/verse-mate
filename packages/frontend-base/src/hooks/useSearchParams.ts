@@ -71,5 +71,6 @@ export const useGetSearchParams = () => {
     conversationId,
     explanationId,
     explanationType,
+    // chapters is intentionally omitted here
   };
 };

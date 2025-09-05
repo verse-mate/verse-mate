@@ -1,38 +1,19 @@
-import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import { useSwipeable } from "react-swipeable";
-import { useExplanation } from "../../hooks/useExplanation";
-import { explanationTypes } from "../../utils/commentary-options";
+import { useChapter } from "../../hooks/useChapter";
 
 type Props = {
   children: React.ReactNode;
+  chapters?: number;
 };
 
-export const Container = ({ children }: Props) => {
-  const { explanationType, handleValueChange } = useExplanation();
-
-  const currentIndex = explanationTypes.findIndex(
-    (type) => type.value === explanationType,
-  );
-
-  const handleSwipeLeft = () => {
-    // Move to next explanation type
-    if (currentIndex < explanationTypes.length - 1) {
-      const nextType = explanationTypes[currentIndex + 1];
-      handleValueChange(nextType.value as ExplanationTypeEnum);
-    }
-  };
-
-  const handleSwipeRight = () => {
-    // Move to previous explanation type
-    if (currentIndex > 0) {
-      const prevType = explanationTypes[currentIndex - 1];
-      handleValueChange(prevType.value as ExplanationTypeEnum);
-    }
-  };
-
+export const Container = ({ children, chapters }: Props) => {
+  const { handleNextChapter, handlePreviousChapter } = useChapter();
+  const totalChapters = Number(chapters);
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: handleSwipeLeft,
-    onSwipedRight: handleSwipeRight,
+    onSwipedLeft: () => {
+      if (Number.isFinite(totalChapters)) handleNextChapter(totalChapters);
+    },
+    onSwipedRight: handlePreviousChapter,
     trackMouse: false,
     preventScrollOnSwipe: false,
     delta: 40,
