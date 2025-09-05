@@ -58,7 +58,6 @@ type Props = {
   handleBibleVersionSelected: (version: string) => void;
   setActiveTab: Dispatch<SetStateAction<string>>;
   explanationType: string;
-  handleValueChange: (value: ExplanationTypeEnum) => void;
   explanation:
     | {
         book_id?: number;
@@ -117,7 +116,6 @@ export const Nav = ({
   handleBibleVersionSelected,
   setActiveTab,
   explanationType,
-  handleValueChange,
   explanation,
   averageRating,
   currentRating,
@@ -480,7 +478,9 @@ export const Nav = ({
                     lineHeight: "24px",
                   }}
                   onClick={() =>
-                    handleValueChange(option.value as ExplanationTypeEnum)
+                    saveSearchParams({
+                      explanationType: option.value as ExplanationTypeEnum,
+                    })
                   }
                 >
                   {option.label}

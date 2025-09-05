@@ -6,6 +6,8 @@ import { MainText } from "../../MainText";
 import { ProgressBar } from "../../ProgressBar";
 import styles from "./content.module.css";
 
+import { useChapter } from "../../../hooks/useChapter";
+
 type Props = {
   bookVerseData:
     | {
@@ -34,8 +36,6 @@ type Props = {
   chapters?: number;
   bookId: number;
   verseId: number;
-  handleNextChapter: () => void;
-  handlePreviousChapter: () => void;
   progress: number;
   handleDesktopSwipe: SwipeableHandlers;
   buttonsVisible: boolean;
@@ -47,13 +47,12 @@ export const Content = ({
   chapters,
   bookId,
   verseId,
-  handleNextChapter,
-  handlePreviousChapter,
   progress,
   handleDesktopSwipe,
   buttonsVisible,
   scrollableCallbackRef,
 }: Props) => {
+  const { handleNextChapter, handlePreviousChapter } = useChapter();
   // Preserve proximity functionality from first version
   const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
   const prevChapterButtonRef = useRef<HTMLButtonElement>(null);

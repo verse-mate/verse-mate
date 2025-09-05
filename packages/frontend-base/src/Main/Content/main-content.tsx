@@ -14,6 +14,7 @@ import {
   fetchBookVerse,
   fetchExplanation,
 } from "../../hooks/useBible";
+import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { useLastRead } from "../../hooks/useLastRead";
@@ -232,32 +233,7 @@ export const MainContent = () => {
     setBibleVersionSelected(versionKey);
   };
 
-  const handleValueChange = (value: ExplanationTypeEnum) => {
-    saveSearchParams({ explanationType: value });
-    queryClient.invalidateQueries({ queryKey: ["explanation"] });
-  };
-
-  const handleNextChapter = () => {
-    const totalChapters = chapters;
-    const currentChapter = Number(verseId);
-
-    if (totalChapters && currentChapter < totalChapters) {
-      saveSearchParams({
-        verseId: String(currentChapter + 1),
-      });
-    }
-  };
-
-  const handlePreviousChapter = () => {
-    const totalChapters = chapters;
-    const currentChapter = Number(verseId);
-
-    if (currentChapter > 1) {
-      saveSearchParams({
-        verseId: String(currentChapter - 1),
-      });
-    }
-  };
+  const { handleNextChapter, handlePreviousChapter } = useChapter();
 
   const handleMobileSwipe = useSwipeable({
     onSwipedRight: () => handlePreviousChapter(),
@@ -1226,7 +1202,7 @@ export const MainContent = () => {
               </div>
             </RadixTabs.Content>
 
-            <RadixTabs.Content value="explanation">
+            <RadixTabs.Content value="explanation" {...handleMobileSwipe}>
               <Explanation.Container>
                 <Explanation.NavHeader />
                 <Explanation.Content />
@@ -1335,7 +1311,6 @@ export const MainContent = () => {
               currentRating={currentRating}
               explanationType={explanationType}
               handleBibleVersionSelected={handleBibleVersionSelected}
-              handleValueChange={handleValueChange}
               maxRating={maxRating}
               totalRatings={totalRatings}
               hoverRating={hoverRating}
@@ -1364,8 +1339,6 @@ export const MainContent = () => {
               verseId={verseId}
               bookVerseData={bookVerseData}
               handleDesktopSwipe={handleDesktopSwipe}
-              handleNextChapter={handleNextChapter}
-              handlePreviousChapter={handlePreviousChapter}
               progress={progress}
               chapters={chapters}
               buttonsVisible={buttonsVisible}
@@ -1401,6 +1374,7 @@ export const MainContent = () => {
               setRightPanelContent={setRightPanelContent}
               selectedBibleVersion={bibleVersionSelected}
               handleBibleVersionSelected={handleBibleVersionSelected}
+              handleDesktopSwipe={handleDesktopSwipe}
             />
           </RightPanel.Root>
         </main>
