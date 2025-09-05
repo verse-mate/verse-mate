@@ -8,9 +8,11 @@ type Props = {
 
 export const Container = ({ children, chapters }: Props) => {
   const { handleNextChapter, handlePreviousChapter } = useChapter();
-
+  const totalChapters = Number(chapters);
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => handleNextChapter(chapters),
+    onSwipedLeft: () => {
+      if (Number.isFinite(totalChapters)) handleNextChapter(totalChapters);
+    },
     onSwipedRight: handlePreviousChapter,
     trackMouse: false,
     preventScrollOnSwipe: false,

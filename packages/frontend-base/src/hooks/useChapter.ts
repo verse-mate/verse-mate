@@ -12,8 +12,10 @@ export const useChapter = () => {
 
   const handleNextChapter = useCallback(
     (totalChapters?: number) => {
-      if (!isValidChapter || !Number.isFinite(totalChapters)) return;
-      if (totalChapters && currentChapter < totalChapters) {
+      if (!isValidChapter) return;
+      const totalChaptersNum = Number(totalChapters);
+      if (!Number.isFinite(totalChaptersNum)) return;
+      if (currentChapter < totalChaptersNum) {
         saveSearchParams({ verseId: String(currentChapter + 1) });
       }
     },

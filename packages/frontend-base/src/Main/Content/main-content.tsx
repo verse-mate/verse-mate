@@ -243,7 +243,7 @@ export const MainContent = () => {
 
   const handleMobileSwipe = useSwipeable({
     onSwipedRight: () => handlePreviousChapter(),
-    onSwipedLeft: () => handleNextChapter(),
+    onSwipedLeft: () => handleNextChapter(chapters),
     delta: 30,
     swipeDuration: 500,
     preventScrollOnSwipe: false,

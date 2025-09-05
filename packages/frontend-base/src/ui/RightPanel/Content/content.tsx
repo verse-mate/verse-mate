@@ -87,14 +87,12 @@ export const Content = ({
 }: Props) => {
   return (
     <>
-      <RadixTabs.Content
-        className={styles.content}
-        value="explanation"
-        {...handleDesktopSwipe}
-      >
-        <Explanation.Container>
-          <Explanation.Content />
-        </Explanation.Container>
+      <RadixTabs.Content className={styles.content} value="explanation">
+        <div {...handleDesktopSwipe}>
+          <Explanation.Container>
+            <Explanation.Content />
+          </Explanation.Container>
+        </div>
       </RadixTabs.Content>
 
       {askVerseMate && (
