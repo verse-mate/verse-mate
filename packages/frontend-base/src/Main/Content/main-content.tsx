@@ -269,14 +269,8 @@ export const MainContent = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024 && activeTabRef.current === "book") {
-        setActiveTab("explanation");
-      } else if (
-        window.innerWidth < 1024 &&
-        activeTabRef.current === "explanation"
-      ) {
-        setActiveTab("book");
-      }
+      // Removed automatic tab switching to allow tab persistence.
+      // Responsive layout should be handled by CSS media queries.
     };
 
     window.addEventListener("resize", handleResize);
@@ -285,7 +279,7 @@ export const MainContent = () => {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [setActiveTab]);
+  }, []);
 
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
@@ -1208,7 +1202,7 @@ export const MainContent = () => {
               </div>
             </RadixTabs.Content>
 
-            <RadixTabs.Content value="explanation" {...handleMobileSwipe}>
+            <RadixTabs.Content value="explanation">
               <Explanation.Container>
                 <Explanation.NavHeader />
                 <Explanation.Content />

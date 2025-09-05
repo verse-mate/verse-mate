@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
 
 export const useChapter = () => {
@@ -6,7 +7,7 @@ export const useChapter = () => {
   const { verseId, chapters } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
 
-  const handleNextChapter = () => {
+  const handleNextChapter = useCallback(() => {
     const totalChapters = chapters;
     const currentChapter = Number(verseId);
 
@@ -15,9 +16,9 @@ export const useChapter = () => {
         verseId: String(currentChapter + 1),
       });
     }
-  };
+  }, [chapters, verseId, saveSearchParams]);
 
-  const handlePreviousChapter = () => {
+  const handlePreviousChapter = useCallback(() => {
     const currentChapter = Number(verseId);
 
     if (currentChapter > 1) {
@@ -25,7 +26,7 @@ export const useChapter = () => {
         verseId: String(currentChapter - 1),
       });
     }
-  };
+  }, [verseId, saveSearchParams]);
 
   return {
     handleNextChapter,

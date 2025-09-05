@@ -126,6 +126,7 @@ export const Nav = ({
   setRating,
   setHoverRating,
   saveSearchParams,
+  handleValueChange,
 }: Props) => {
   const selectedBook = selectedBookStore.get();
 
@@ -479,9 +480,7 @@ export const Nav = ({
                     lineHeight: "24px",
                   }}
                   onClick={() =>
-                    saveSearchParams({
-                      explanationType: option.value as ExplanationTypeEnum,
-                    })
+                    handleValueChange(option.value as ExplanationTypeEnum)
                   }
                 >
                   {option.label}
