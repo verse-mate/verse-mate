@@ -4,29 +4,28 @@ import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
 
 export const useChapter = () => {
   const queryClient = useQueryClient();
-  const { verseId, chapters } = useGetSearchParams();
+  const { verseId } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
 
-  const handleNextChapter = useCallback(() => {
-    const totalChapters = chapters;
-    const currentChapter = Number(verseId);
+  const currentChapter = Number(verseId);
+  const isValidChapter = Number.isFinite(currentChapter) && currentChapter >= 1;
 
-    if (totalChapters && currentChapter < totalChapters) {
-      saveSearchParams({
-        verseId: String(currentChapter + 1),
-      });
-    }
-  }, [chapters, verseId, saveSearchParams]);
+  const handleNextChapter = useCallback(
+    (totalChapters?: number) => {
+      if (!isValidChapter || !Number.isFinite(totalChapters)) return;
+      if (totalChapters && currentChapter < totalChapters) {
+        saveSearchParams({ verseId: String(currentChapter + 1) });
+      }
+    },
+    [currentChapter, isValidChapter, saveSearchParams],
+  );
 
   const handlePreviousChapter = useCallback(() => {
-    const currentChapter = Number(verseId);
-
+    if (!isValidChapter) return;
     if (currentChapter > 1) {
-      saveSearchParams({
-        verseId: String(currentChapter - 1),
-      });
+      saveSearchParams({ verseId: String(currentChapter - 1) });
     }
-  }, [verseId, saveSearchParams]);
+  }, [currentChapter, isValidChapter, saveSearchParams]);
 
   return {
     handleNextChapter,

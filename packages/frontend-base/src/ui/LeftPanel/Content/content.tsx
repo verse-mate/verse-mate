@@ -122,7 +122,7 @@ export const Content = ({
               ref={nextChapterButtonRef}
               type="button"
               className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
-              onClick={handleNextChapter}
+              onClick={() => handleNextChapter(chapters)}
             >
               <Icon.ChevronForward className={styles.chevronForward} />
             </button>

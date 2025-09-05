@@ -1170,7 +1170,7 @@ export const MainContent = () => {
                         ref={nextChapterButtonRef}
                         type="button"
                         className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
-                        onClick={handleNextChapter}
+                        onClick={() => handleNextChapter(chapters)}
                       >
                         <Icon.ChevronForward
                           className={styles.chevronForward}
@@ -1203,7 +1203,7 @@ export const MainContent = () => {
             </RadixTabs.Content>
 
             <RadixTabs.Content value="explanation">
-              <Explanation.Container>
+              <Explanation.Container chapters={chapters}>
                 <Explanation.NavHeader />
                 <Explanation.Content />
               </Explanation.Container>

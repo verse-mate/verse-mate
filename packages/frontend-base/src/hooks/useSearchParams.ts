@@ -50,8 +50,6 @@ export const useSaveSearchParams = () => {
   return { saveSearchParams, saveBibleVersionOnURL };
 };
 
-import { fetchAllChaptersByBook } from "./useBible";
-
 export const useGetSearchParams = () => {
   const searchParams = useSearchParams();
   const bookId = Number(searchParams?.get("bookId")) || 1;
@@ -65,8 +63,6 @@ export const useGetSearchParams = () => {
     (searchParams?.get("explanationType") as ExplanationTypeEnum) ||
     ExplanationTypeEnum.summary;
 
-  const { chapters } = fetchAllChaptersByBook(bookId);
-
   return {
     bookId,
     verseId,
@@ -75,6 +71,6 @@ export const useGetSearchParams = () => {
     conversationId,
     explanationId,
     explanationType,
-    chapters,
+    // chapters is intentionally omitted here
   };
 };
