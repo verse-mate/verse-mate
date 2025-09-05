@@ -16,6 +16,7 @@ import {
 } from "../../hooks/useBible";
 import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
+import { useExplanation } from "../../hooks/useExplanation";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { useLastRead } from "../../hooks/useLastRead";
 import { useProgressBar } from "../../hooks/useProgressBar";
@@ -231,6 +232,11 @@ export const MainContent = () => {
   const handleBibleVersionSelected = (versionKey: string) => {
     saveBibleVersionOnURL(versionKey);
     setBibleVersionSelected(versionKey);
+  };
+
+  const handleValueChange = (value: ExplanationTypeEnum) => {
+    saveSearchParams({ explanationType: value });
+    queryClient.invalidateQueries({ queryKey: ["explanation"] });
   };
 
   const { handleNextChapter, handlePreviousChapter } = useChapter();
@@ -1311,6 +1317,7 @@ export const MainContent = () => {
               currentRating={currentRating}
               explanationType={explanationType}
               handleBibleVersionSelected={handleBibleVersionSelected}
+              handleValueChange={handleValueChange}
               maxRating={maxRating}
               totalRatings={totalRatings}
               hoverRating={hoverRating}

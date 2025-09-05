@@ -58,6 +58,7 @@ type Props = {
   handleBibleVersionSelected: (version: string) => void;
   setActiveTab: Dispatch<SetStateAction<string>>;
   explanationType: string;
+  handleValueChange: (value: ExplanationTypeEnum) => void;
   explanation:
     | {
         book_id?: number;
