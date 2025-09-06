@@ -6,6 +6,7 @@ import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum"
 import TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
+import { getBookVerse, getExplanation } from "../../api/bible";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
 import {
@@ -639,6 +640,66 @@ export const MainContent = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (bookId && verseId && chapters) {
+      const nextChapterVerseId = Number(verseId) + 1;
+      const previousChapterVerseId = Number(verseId) - 1;
+
+      if (nextChapterVerseId <= chapters) {
+        // Prefetch next chapter's Bible text
+        queryClient.prefetchQuery({
+          queryKey: ["bookVerse", bookId, nextChapterVerseId, bibleVersion],
+          queryFn: () => getBookVerse(bookId, nextChapterVerseId, bibleVersion),
+        });
+
+        // Prefetch next chapter's explanation
+        queryClient.prefetchQuery({
+          queryKey: [
+            "explanation",
+            bookId,
+            nextChapterVerseId,
+            explanationType,
+            bibleVersion,
+          ],
+          queryFn: () =>
+            getExplanation(
+              bookId,
+              nextChapterVerseId,
+              explanationType,
+              bibleVersion,
+            ),
+        });
+      }
+
+      if (previousChapterVerseId > 0) {
+        // Prefetch previous chapter's Bible text
+        queryClient.prefetchQuery({
+          queryKey: ["bookVerse", bookId, previousChapterVerseId, bibleVersion],
+          queryFn: () =>
+            getBookVerse(bookId, previousChapterVerseId, bibleVersion),
+        });
+
+        // Prefetch previous chapter's explanation
+        queryClient.prefetchQuery({
+          queryKey: [
+            "explanation",
+            bookId,
+            previousChapterVerseId,
+            explanationType,
+            bibleVersion,
+          ],
+          queryFn: () =>
+            getExplanation(
+              bookId,
+              previousChapterVerseId,
+              explanationType,
+              bibleVersion,
+            ),
+        });
+      }
+    }
+  }, [bookId, verseId, chapters, bibleVersion, explanationType, queryClient]);
 
   return (
     <>
