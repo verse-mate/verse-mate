@@ -29,19 +29,19 @@ class CacheService {
     this.redis = store.client;
     this.keyv = new Keyv({ store });
 
-    this.keyv.on("error", (error) => {
+    this.redis.on("error", (error) => {
       console.error("Redis Client Error", error);
     });
 
-    this.keyv.on("connect", () => {
+    this.redis.on("connect", () => {
       console.log("Connected to Redis");
     });
 
-    this.keyv.on("reconnecting", () => {
+    this.redis.on("reconnecting", () => {
       console.log("Reconnecting to Redis");
     });
 
-    this.keyv.on("end", () => {
+    this.redis.on("end", () => {
       console.log("Disconnected from Redis");
     });
   }
