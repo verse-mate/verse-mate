@@ -42,6 +42,8 @@
     "sharp"
   ],
   "dependencies": {
+    "@keyv/redis": "^5.1.1",
+    "keyv": "^5.5.0",
     "typescript": "^5.5.4"
   },
   "packageManager": "bun@1.2.19"
