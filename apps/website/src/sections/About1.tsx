@@ -114,7 +114,7 @@ export default function About1Section() {
             style={{
               width: "656px",
               height: "128px",
-              fontFamily: "var(--font-merriweather)",
+              fontFamily: "var(--font-merriweather, Merriweather, serif)",
               fontStyle: "normal",
               fontWeight: 700,
               fontSize: "48px",
