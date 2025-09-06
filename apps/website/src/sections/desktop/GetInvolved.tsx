@@ -4,12 +4,7 @@ export default function GetInvolvedSection() {
   return (
     <section
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "96px 120px",
-        gap: "80px",
-        width: "1440px",
+        width: "100vw",
         height: "1234px",
         background: "linear-gradient(180deg, #1B1B1B 0%, #000000 100%)",
         flex: "none",
@@ -17,9 +12,21 @@ export default function GetInvolvedSection() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 4,
-        margin: "0 auto",
       }}
     >
+      {/* Content Container - maintains 1440px layout */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "96px 120px",
+          gap: "80px",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
+        }}
+      >
       {/* Title */}
       <div
         style={{
@@ -512,6 +519,7 @@ export default function GetInvolvedSection() {
           Donations are tax-deductible in the U.S. | Built by believers. Guided
           by the Word.
         </p>
+      </div>
       </div>
     </section>
   );

@@ -2,13 +2,7 @@ export default function About2Section() {
   return (
     <section
       style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "83px 120px",
-        gap: "69px",
-        width: "1440px",
+        width: "100vw",
         height: "740px",
         background: "#F6F3EC",
         flex: "none",
@@ -16,9 +10,22 @@ export default function About2Section() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 6,
-        margin: "0 auto",
       }}
     >
+      {/* Content Container - maintains 1440px layout */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "83px 120px",
+          gap: "69px",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
+        }}
+      >
       {/* Content */}
       <div
         style={{
@@ -110,6 +117,7 @@ export default function About2Section() {
             flexGrow: 0,
           }}
         />
+      </div>
       </div>
     </section>
   );

@@ -2,12 +2,7 @@ export default function About1Section() {
   return (
     <section
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "83px 120px",
-        gap: "69px",
-        width: "1440px",
+        width: "100vw",
         height: "779px",
         background: "#FFFFFF",
         flex: "none",
@@ -15,9 +10,21 @@ export default function About1Section() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 5,
-        margin: "0 auto",
       }}
     >
+      {/* Content Container - maintains 1440px layout */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "83px 120px",
+          gap: "69px",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
+        }}
+      >
       {/* Title */}
       <div
         style={{
@@ -161,6 +168,7 @@ export default function About1Section() {
             Scripture, grow in faith, and walk closer with Christ.
           </p>
         </div>
+      </div>
       </div>
     </section>
   );

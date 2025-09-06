@@ -2,12 +2,7 @@ export default function WhyVersemateSection() {
   return (
     <section
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        padding: "96px 120px",
-        gap: "64px",
-        width: "1440px",
+        width: "100vw",
         height: "896px",
         background:
           "linear-gradient(270deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.8) 100%), url(/why-versemate.jpg)",
@@ -18,9 +13,21 @@ export default function WhyVersemateSection() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 2,
-        margin: "0 auto",
       }}
     >
+      {/* Content Container - maintains 1440px layout */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          padding: "96px 120px",
+          gap: "64px",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
+        }}
+      >
       {/* Title */}
       <div
         style={{
@@ -137,6 +144,7 @@ export default function WhyVersemateSection() {
           <br />
           God&rsquo;s Word, made simple.
         </p>
+      </div>
       </div>
     </section>
   );
