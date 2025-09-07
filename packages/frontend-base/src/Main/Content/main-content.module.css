@@ -508,3 +508,28 @@
     transform: translateX(0);
   }
 }
+
+.slidingContent {
+    overflow: hidden;
+}
+
+.slidingContent .mainTextRoot {
+    height: 100%;
+    width: 100%;
+}
+
+.slideOutLeft,
+.slideInRight,
+.slideOutRight,
+.slideInLeft {
+    width: 100%;
+    height: 100%;
+}
+
+.slidingContent[style*="z-index: 1"] {
+    background-color: var(--fantasy);
+}
+
+.slidingContent[style*="z-index: 2"] {
+    background-color: var(--fantasy);
+}

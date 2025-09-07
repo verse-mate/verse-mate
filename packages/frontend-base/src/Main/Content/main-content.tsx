@@ -68,11 +68,8 @@ export const MainContent = () => {
     conversationId,
   } = useGetSearchParams();
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
-  const [slidingState, setSlidingState] = useState<{
-    direction: "left" | "right" | null;
-    outgoingChapterKey: string | null;
-    outgoingChapterData: any;
-  }>({ direction: null, outgoingChapterKey: null, outgoingChapterData: null });
+  const [visibleChapters, setVisibleChapters] = useState<any[]>([]);
+  const isAnimating = useRef(false);
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
   const { testaments } = fetchAllTestaments();
@@ -247,25 +244,82 @@ export const MainContent = () => {
 
   const { handleNextChapter, handlePreviousChapter } = useChapter();
 
-  const handleSwipe = (direction: "left" | "right") => {
-    if (slidingState.direction) return;
-
-    setSlidingState({
-      direction,
-      outgoingChapterKey: `${bookId}-${verseId}`,
-      outgoingChapterData: bookVerseData,
-    });
-
-    if (direction === "left") {
-      handleNextChapter(chapters);
-    } else {
-      handlePreviousChapter();
+  useEffect(() => {
+    if (bookVerseData && !isAnimating.current) {
+      setVisibleChapters([
+        { ...bookVerseData, key: `${bookId}-${verseId}`, className: "" },
+      ]);
     }
-  };
+  }, [bookVerseData, bookId, verseId]);
+
+  const handleAnimationEnd = useCallback(() => {
+    isAnimating.current = false;
+    setVisibleChapters((prev) => [prev[prev.length - 1]]);
+  }, []);
 
   const swipeHandlers = useSwipeable({
-    onSwipedRight: () => handleSwipe("right"),
-    onSwipedLeft: () => handleSwipe("left"),
+    onSwipedRight: () => {
+      if (isAnimating.current) return;
+      const prevVerseId = Number(verseId) - 1;
+      if (prevVerseId < 1) return;
+
+      const prevChapterData = queryClient.getQueryData([
+        "bookVerse",
+        bookId,
+        prevVerseId,
+        bibleVersion,
+      ]);
+      if (!prevChapterData) {
+        handlePreviousChapter();
+        return;
+      }
+
+      isAnimating.current = true;
+      setVisibleChapters((prev) => {
+        const outgoingChapter = {
+          ...prev[0],
+          className: (styles as any).slideOutRight,
+        };
+        const incomingChapter = {
+          ...(prevChapterData as object),
+          key: `${bookId}-${prevVerseId}`,
+          className: (styles as any).slideInLeft,
+        };
+        return [outgoingChapter, incomingChapter];
+      });
+      setTimeout(() => handlePreviousChapter(), 50);
+    },
+    onSwipedLeft: () => {
+      if (isAnimating.current) return;
+      const nextVerseId = Number(verseId) + 1;
+      if (!chapters || nextVerseId > chapters) return;
+
+      const nextChapterData = queryClient.getQueryData([
+        "bookVerse",
+        bookId,
+        nextVerseId,
+        bibleVersion,
+      ]);
+      if (!nextChapterData) {
+        handleNextChapter(chapters);
+        return;
+      }
+
+      isAnimating.current = true;
+      setVisibleChapters((prev) => {
+        const outgoingChapter = {
+          ...prev[0],
+          className: (styles as any).slideOutLeft,
+        };
+        const incomingChapter = {
+          ...(nextChapterData as object),
+          key: `${bookId}-${nextVerseId}`,
+          className: (styles as any).slideInRight,
+        };
+        return [outgoingChapter, incomingChapter];
+      });
+      setTimeout(() => handleNextChapter(chapters), 50);
+    },
     delta: 30,
     swipeDuration: 500,
     preventScrollOnSwipe: false,
@@ -1226,95 +1280,83 @@ export const MainContent = () => {
           <div>
             <RadixTabs.Content value="book">
               <div className={`${styles.bookContainer}`} {...swipeHandlers}>
-                {slidingState.outgoingChapterData && (
+                {/* 1. Map and render the chapter views */}
+                {visibleChapters.map((chapter, index) => {
+                  const isLastChapter = index === visibleChapters.length - 1;
+                  return (
+                    <div
+                      key={chapter.key}
+                      className={`${styles.bookContent} ${chapter.className}`}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        zIndex: index + 1,
+                      }}
+                      onAnimationEnd={
+                        index === 0 ? handleAnimationEnd : undefined
+                      }
+                      ref={isLastChapter ? scrollableCallbackRef : null}
+                    >
+                      <MainText.Root>
+                        <MainText.Content
+                          bookId={String(chapter.bookId)}
+                          verseId={String(chapter.chapters[0].chapterNumber)}
+                          book={chapter}
+                        />
+                        <div style={{ height: "25px" }} />
+                      </MainText.Root>
+                    </div>
+                  );
+                })}
+
+                {/* 2. Render the UI controls separately on top */}
+                {chapters && Number(verseId) < chapters && (
+                  <button
+                    ref={nextChapterButtonRef}
+                    type="button"
+                    className={`${styles.nextChapterBtn} ${
+                      !buttonsVisible && !isNearNext ? styles.hidden : ""
+                    }`}
+                    onClick={() => handleNextChapter(chapters)}
+                    style={{ zIndex: 10 }}
+                  >
+                    <Icon.ChevronForward className={styles.chevronForward} />
+                  </button>
+                )}
+                {chapters && Number(verseId) > 1 && (
+                  <button
+                    ref={prevChapterButtonRef}
+                    type="button"
+                    className={`${styles.previousChapterBtn} ${
+                      !buttonsVisible && !isNearPrev ? styles.hidden : ""
+                    }`}
+                    onClick={handlePreviousChapter}
+                    style={{ zIndex: 10 }}
+                  >
+                    <Icon.ChevronBackward className={styles.chevronBackward} />
+                  </button>
+                )}
+
+                {/* Progress bar */}
+                {bookVerseData && (
                   <div
-                    key={slidingState.outgoingChapterKey}
-                    className={styles.bookContent}
                     style={{
                       position: "absolute",
+                      bottom: 0,
                       width: "100%",
-                      height: "100%",
+                      zIndex: 10, // Ensure it's on top
                     }}
-                    onAnimationEnd={() =>
-                      setSlidingState({
-                        direction: null,
-                        outgoingChapterKey: null,
-                        outgoingChapterData: null,
-                      })
-                    }
                   >
-                    <MainText.Root>
-                      <div
-                        className={
-                          slidingState.direction === "left"
-                            ? (styles as any).slideOutLeft
-                            : (styles as any).slideOutRight
-                        }
-                      >
-                        <MainText.Content
-                          bookId={String(bookId)}
-                          verseId={String(verseId)}
-                          book={slidingState.outgoingChapterData}
-                        />
-                      </div>
-                    </MainText.Root>
+                    <ProgressBar.Root>
+                      <ProgressBar.IndicatorBackground>
+                        <ProgressBar.Indicator value={progress} />
+                      </ProgressBar.IndicatorBackground>
+                      <ProgressBar.Label value={progress} />
+                    </ProgressBar.Root>
                   </div>
-                )}
-                {bookVerseData && (
-                  <div
-                    className={`${styles.bookContent}`}
-                    ref={scrollableCallbackRef}
-                  >
-                    <MainText.Root>
-                      <div
-                        className={
-                          slidingState.direction === "left"
-                            ? (styles as any).slideInRight
-                            : slidingState.direction === "right"
-                              ? (styles as any).slideInLeft
-                              : ""
-                        }
-                      >
-                        <MainText.Content
-                          bookId={String(bookId)}
-                          verseId={String(verseId)}
-                          book={bookVerseData}
-                        />
-                      </div>
-                    </MainText.Root>
-                    {chapters && Number(verseId) < chapters && (
-                      <button
-                        ref={nextChapterButtonRef}
-                        type="button"
-                        className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
-                        onClick={() => handleNextChapter(chapters)}
-                      >
-                        <Icon.ChevronForward
-                          className={styles.chevronForward}
-                        />
-                      </button>
-                    )}
-                    {chapters && Number(verseId) > 1 && (
-                      <button
-                        ref={prevChapterButtonRef}
-                        type="button"
-                        className={`${styles.previousChapterBtn} ${!buttonsVisible && !isNearPrev ? styles.hidden : ""}`}
-                        onClick={handlePreviousChapter}
-                      >
-                        <Icon.ChevronBackward
-                          className={styles.chevronBackward}
-                        />
-                      </button>
-                    )}
-                  </div>
-                )}
-                {bookVerseData && (
-                  <ProgressBar.Root>
-                    <ProgressBar.IndicatorBackground>
-                      <ProgressBar.Indicator value={progress} />
-                    </ProgressBar.IndicatorBackground>
-                    <ProgressBar.Label value={progress} />
-                  </ProgressBar.Root>
                 )}
               </div>
             </RadixTabs.Content>
