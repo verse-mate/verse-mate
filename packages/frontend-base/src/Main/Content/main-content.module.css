@@ -449,20 +449,30 @@
     }
 }
 
+.slideOutLeft,
+.slideInRight,
+.slideOutRight,
+.slideInLeft {
+  animation-duration: 0.3s;
+  animation-fill-mode: forwards;
+  will-change: transform;
+  pointer-events: none;
+}
+
 .slideOutLeft {
-  animation: slide-out-left 0.3s forwards;
+  animation-name: slide-out-left;
 }
 
 .slideInRight {
-  animation: slide-in-right 0.3s forwards;
+  animation-name: slide-in-right;
 }
 
 .slideOutRight {
-  animation: slide-out-right 0.3s forwards;
+  animation-name: slide-out-right;
 }
 
 .slideInLeft {
-  animation: slide-in-left 0.3s forwards;
+  animation-name: slide-in-left;
 }
 
 
