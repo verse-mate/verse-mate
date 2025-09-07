@@ -81,7 +81,7 @@ export default function WhyVersemateSection() {
           style={{
             width: "520px",
             height: "128px",
-            fontFamily: "var(--font-merriweather)",
+            fontFamily: "var(--font-merriweather, Merriweather, serif)",
             fontStyle: "normal",
             fontWeight: 700,
             fontSize: "48px",

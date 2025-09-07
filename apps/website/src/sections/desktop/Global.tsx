@@ -2,12 +2,7 @@ export default function GlobalSection() {
   return (
     <section
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "96px 120px",
-        gap: "64px",
-        width: "1440px",
+        width: "100vw",
         height: "800px",
         background: "#FFFFFF",
         flex: "none",
@@ -15,9 +10,21 @@ export default function GlobalSection() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 3,
-        margin: "0 auto",
       }}
     >
+      {/* Content Container - maintains 1440px layout */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "96px 120px",
+          gap: "64px",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
+        }}
+      >
       {/* Title */}
       <div
         style={{
@@ -112,7 +119,7 @@ export default function GlobalSection() {
             style={{
               width: "736px",
               height: "128px",
-              fontFamily: "var(--font-merriweather)",
+              fontFamily: "var(--font-merriweather, Merriweather, serif)",
               fontStyle: "normal",
               fontWeight: 700,
               fontSize: "48px",
@@ -155,6 +162,7 @@ export default function GlobalSection() {
             clearly, every day, in every language.
           </p>
         </div>
+      </div>
       </div>
     </section>
   );

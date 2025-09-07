@@ -1,12 +1,11 @@
 import { navigateToApp } from "@/lib/navigation";
-import Link from "next/link";
 
 export default function HeroSection() {
   return (
     <section
       className="relative"
       style={{
-        width: "1440px",
+        width: "100vw",
         height: "900px",
         background: "linear-gradient(111.34deg, #000000 0%, #936E2B 100%)",
         backgroundBlendMode: "multiply",
@@ -16,11 +15,10 @@ export default function HeroSection() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 0,
-        margin: "0 auto",
         overflow: "hidden",
       }}
     >
-      {/* Text Pattern Overlay */}
+      {/* Text Pattern Overlay - full width */}
       <div
         style={{
           position: "absolute",
@@ -36,170 +34,218 @@ export default function HeroSection() {
         }}
       />
 
-      {/* Content */}
+      {/* Content Container - maintains 1440px layout */}
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          padding: "32px 120px",
-          gap: "16px",
-          isolation: "isolate",
-          position: "absolute",
-          height: "752px",
-          left: "0px",
-          right: "0px",
-          top: "76px",
+          position: "relative",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
         }}
       >
-        {/* Main Heading */}
-        <h1
+        {/* Content */}
+        <div
           style={{
-            width: "540px",
-            height: "192px",
-            fontFamily: "var(--font-merriweather, Merriweather, serif)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "48px",
-            lineHeight: "64px",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-            zIndex: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            padding: "32px 120px",
+            gap: "16px",
+            isolation: "isolate",
+            position: "absolute",
+            height: "752px",
+            left: "0px",
+            right: "0px",
+            top: "76px",
           }}
         >
-          The Bible Was Meant to Be Understood - Not Just Read.
-        </h1>
+          {/* Main Heading */}
+          <h1
+            style={{
+              width: "540px",
+              height: "192px",
+              fontFamily: "var(--font-merriweather, Merriweather, serif)",
+              fontStyle: "normal",
+              fontWeight: 700,
+              fontSize: "48px",
+              lineHeight: "64px",
+              color: "#FFFFFF",
+              flex: "none",
+              order: 0,
+              flexGrow: 0,
+              zIndex: 0,
+            }}
+          >
+            The Bible Was Meant to Be Understood - Not Just Read.
+          </h1>
 
-        {/* Description Text */}
-        <p
-          style={{
-            width: "540px",
-            height: "128px",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "24px",
-            lineHeight: "32px",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-            zIndex: 1,
-          }}
-        >
-          When people truly understand Scripture, lives change. Versemate helps
-          anyone, anywhere, connect with God&rsquo;s Word clearly - and grow
-          deeper in faith.
-        </p>
+          {/* Description Text */}
+          <p
+            style={{
+              width: "540px",
+              height: "128px",
+              fontFamily: "var(--font-inter)",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "24px",
+              lineHeight: "32px",
+              color: "#FFFFFF",
+              flex: "none",
+              order: 1,
+              flexGrow: 0,
+              zIndex: 1,
+            }}
+          >
+            When people truly understand Scripture, lives change. Versemate helps
+            anyone, anywhere, connect with God&rsquo;s Word clearly - and grow
+            deeper in faith.
+          </p>
 
-        {/* Button Container */}
+          {/* Button Container */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "flex-start",
+              padding: "24px 0px",
+              gap: "24px",
+              width: "478px",
+              height: "128px",
+              flex: "none",
+              order: 2,
+              flexGrow: 0,
+              zIndex: 2,
+            }}
+          >
+            {/* Primary Button */}
+            <button
+              onClick={() => navigateToApp()}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "24px 32px",
+                gap: "8px",
+                width: "206px",
+                height: "80px",
+                background: "#FFFFFF",
+                borderRadius: "100px",
+                flex: "none",
+                order: 0,
+                flexGrow: 0,
+                textDecoration: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <span
+                style={{
+                  width: "142px",
+                  height: "32px",
+                  fontFamily: "var(--font-inter)",
+                  fontStyle: "normal",
+                  fontWeight: 600,
+                  fontSize: "20px",
+                  lineHeight: "32px",
+                  color: "#000000",
+                  flex: "none",
+                  order: 0,
+                  flexGrow: 0,
+                }}
+              >
+                Try Versemate
+              </span>
+            </button>
+
+            {/* Secondary Button */}
+            <a
+              href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
+              style={{
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "24px 32px",
+                gap: "8px",
+                width: "248px",
+                height: "80px",
+                border: "2px solid #FFFFFF",
+                borderRadius: "100px",
+                flex: "none",
+                order: 1,
+                flexGrow: 0,
+                textDecoration: "none",
+              }}
+            >
+              <span
+                style={{
+                  width: "184px",
+                  height: "32px",
+                  fontFamily: "var(--font-inter)",
+                  fontStyle: "normal",
+                  fontWeight: 600,
+                  fontSize: "20px",
+                  lineHeight: "32px",
+                  color: "#FFFFFF",
+                  flex: "none",
+                  order: 0,
+                  flexGrow: 0,
+                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Join as a Volunteer
+              </span>
+            </a>
+          </div>
+        </div>
+
+        {/* Text Line */}
         <div
           style={{
             display: "flex",
             flexDirection: "row",
-            alignItems: "flex-start",
-            padding: "24px 0px",
-            gap: "24px",
-            width: "478px",
-            height: "128px",
-            flex: "none",
-            order: 2,
-            flexGrow: 0,
-            zIndex: 2,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "0px",
+            gap: "8px",
+            position: "absolute",
+            height: "32px",
+            left: "0px",
+            right: "0px",
+            top: "828px",
           }}
         >
-          {/* Primary Button */}
-          <button
-            onClick={() => navigateToApp()}
+          <span
             style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "24px 32px",
-              gap: "8px",
-              width: "206px",
-              height: "80px",
-              background: "#FFFFFF",
-              borderRadius: "100px",
+              width: "561px",
+              height: "32px",
+              fontFamily: "var(--font-inter)",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "24px",
+              lineHeight: "32px",
+              textAlign: "center",
+              letterSpacing: "0.2em",
+              color: "#FFFFFF",
               flex: "none",
               order: 0,
               flexGrow: 0,
-              textDecoration: "none",
-              border: "none",
-              cursor: "pointer",
+              whiteSpace: "nowrap",
             }}
           >
-            <span
-              style={{
-                width: "142px",
-                height: "32px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 600,
-                fontSize: "20px",
-                lineHeight: "32px",
-                color: "#000000",
-                flex: "none",
-                order: 0,
-                flexGrow: 0,
-              }}
-            >
-              Try Versemate
-            </span>
-          </button>
-
-          {/* Secondary Button */}
-          <a
-            href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
-            style={{
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "24px 32px",
-              gap: "8px",
-              width: "248px",
-              height: "80px",
-              border: "2px solid #FFFFFF",
-              borderRadius: "100px",
-              flex: "none",
-              order: 1,
-              flexGrow: 0,
-              textDecoration: "none",
-            }}
-          >
-            <span
-              style={{
-                width: "184px",
-                height: "32px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 600,
-                fontSize: "20px",
-                lineHeight: "32px",
-                color: "#FFFFFF",
-                flex: "none",
-                order: 0,
-                flexGrow: 0,
-                textAlign: "center",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Join as a Volunteer
-            </span>
-          </a>
+            Always free. For everyone. Forever.
+          </span>
         </div>
       </div>
 
-      {/* Hero Image */}
+      {/* Hero Image - positioned relative to full section to extend beyond viewport */}
       <div
         style={{
           display: "flex",
@@ -210,7 +256,7 @@ export default function HeroSection() {
           position: "absolute",
           width: "776px",
           height: "1033px",
-          right: "-38px",
+          right: "-37px",
           top: "115px",
           flex: "none",
           order: 3,
@@ -247,7 +293,7 @@ export default function HeroSection() {
             height: "516px",
             background: "rgba(0, 0, 0, 0.001)",
             borderRadius: "32px",
-            border: "0.5px solid #D4B896",
+            border: "0.5px solid #ffffff",
             flex: "none",
             order: 1,
             flexGrow: 0,
@@ -304,44 +350,6 @@ export default function HeroSection() {
             }}
           />
         </div>
-      </div>
-
-      {/* Text Line */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "0px",
-          gap: "8px",
-          position: "absolute",
-          height: "32px",
-          left: "0px",
-          right: "0px",
-          top: "828px",
-        }}
-      >
-        <span
-          style={{
-            width: "561px",
-            height: "32px",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "24px",
-            lineHeight: "32px",
-            textAlign: "center",
-            letterSpacing: "0.2em",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-            whiteSpace: "nowrap",
-          }}
-        >
-          Always free. For everyone. Forever.
-        </span>
       </div>
     </section>
   );
