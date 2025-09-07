@@ -40,6 +40,8 @@ type Props = {
   handleDesktopSwipe: SwipeableHandlers;
   buttonsVisible: boolean;
   scrollableCallbackRef: (node: HTMLElement | null) => void; // Made required from second version
+  onNextChapterClick: () => void;
+  onPrevChapterClick: () => void;
 };
 
 export const Content = ({
@@ -51,8 +53,9 @@ export const Content = ({
   handleDesktopSwipe,
   buttonsVisible,
   scrollableCallbackRef,
+  onNextChapterClick,
+  onPrevChapterClick,
 }: Props) => {
-  const { handleNextChapter, handlePreviousChapter } = useChapter();
   // Preserve proximity functionality from first version
   const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
   const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
@@ -111,7 +114,7 @@ export const Content = ({
               ref={prevChapterButtonRef}
               type="button"
               className={`${styles.previousChapterBtn} ${!buttonsVisible && !isNearPrev ? styles.hidden : ""}`}
-              onClick={handlePreviousChapter}
+              onClick={onPrevChapterClick}
             >
               <Icon.ChevronBackward className={styles.chevronBackward} />
             </button>
@@ -122,7 +125,7 @@ export const Content = ({
               ref={nextChapterButtonRef}
               type="button"
               className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
-              onClick={() => handleNextChapter(chapters)}
+              onClick={onNextChapterClick}
             >
               <Icon.ChevronForward className={styles.chevronForward} />
             </button>

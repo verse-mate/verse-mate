@@ -327,6 +327,70 @@ export const MainContent = () => {
     trackMouse: false,
   });
 
+  const handlePreviousButtonClick = () => {
+    if (isAnimating.current) return;
+    const prevVerseId = Number(verseId) - 1;
+    if (prevVerseId < 1) return;
+
+    const prevChapterData = queryClient.getQueryData([
+      "bookVerse",
+      bookId,
+      prevVerseId,
+      bibleVersion,
+    ]);
+    if (!prevChapterData) {
+      handlePreviousChapter();
+      return;
+    }
+
+    isAnimating.current = true;
+    setVisibleChapters((prev) => {
+      const outgoingChapter = {
+        ...prev[0],
+        className: (styles as any).slideOutRight,
+      };
+      const incomingChapter = {
+        ...(prevChapterData as object),
+        key: `${bookId}-${prevVerseId}`,
+        className: (styles as any).slideInLeft,
+      };
+      return [outgoingChapter, incomingChapter];
+    });
+    setTimeout(() => handlePreviousChapter(), 50);
+  };
+
+  const handleNextButtonClick = () => {
+    if (isAnimating.current) return;
+    const nextVerseId = Number(verseId) + 1;
+    if (!chapters || nextVerseId > chapters) return;
+
+    const nextChapterData = queryClient.getQueryData([
+      "bookVerse",
+      bookId,
+      nextVerseId,
+      bibleVersion,
+    ]);
+    if (!nextChapterData) {
+      handleNextChapter(chapters);
+      return;
+    }
+
+    isAnimating.current = true;
+    setVisibleChapters((prev) => {
+      const outgoingChapter = {
+        ...prev[0],
+        className: (styles as any).slideOutLeft,
+      };
+      const incomingChapter = {
+        ...(nextChapterData as object),
+        key: `${bookId}-${nextVerseId}`,
+        className: (styles as any).slideInRight,
+      };
+      return [outgoingChapter, incomingChapter];
+    });
+    setTimeout(() => handleNextChapter(chapters), 50);
+  };
+
   const { activeTab, setActiveTab } = useHandleTab();
   const previousTabRef = useRef<string>("explanation");
   const [rightPanelContent, setRightPanelContent] = useState("default");
@@ -1320,7 +1384,7 @@ export const MainContent = () => {
                     className={`${styles.nextChapterBtn} ${
                       !buttonsVisible && !isNearNext ? styles.hidden : ""
                     }`}
-                    onClick={() => handleNextChapter(chapters)}
+                    onClick={handleNextButtonClick}
                     style={{ zIndex: 10 }}
                   >
                     <Icon.ChevronForward className={styles.chevronForward} />
@@ -1333,7 +1397,7 @@ export const MainContent = () => {
                     className={`${styles.previousChapterBtn} ${
                       !buttonsVisible && !isNearPrev ? styles.hidden : ""
                     }`}
-                    onClick={handlePreviousChapter}
+                    onClick={handlePreviousButtonClick}
                     style={{ zIndex: 10 }}
                   >
                     <Icon.ChevronBackward className={styles.chevronBackward} />
@@ -1503,6 +1567,8 @@ export const MainContent = () => {
               chapters={chapters}
               buttonsVisible={buttonsVisible}
               scrollableCallbackRef={scrollableCallbackRef}
+              onNextChapterClick={handleNextButtonClick}
+              onPrevChapterClick={handlePreviousButtonClick}
             />
           </LeftPanel.Root>
 
