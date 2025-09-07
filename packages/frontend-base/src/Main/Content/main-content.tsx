@@ -408,8 +408,9 @@ export const MainContent = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      // Removed automatic tab switching to allow tab persistence.
-      // Responsive layout should be handled by CSS media queries.
+      if (window.innerWidth >= 1024 && activeTabRef.current === "book") {
+        setActiveTab("explanation");
+      }
     };
 
     window.addEventListener("resize", handleResize);
@@ -418,7 +419,7 @@ export const MainContent = () => {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [setActiveTab]);
 
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
