@@ -34,7 +34,11 @@ export const useSaveSearchParams = () => {
 
     const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
 
-    window.history.pushState({}, "", newUrl);
+    if (bookId || verseId) {
+      window.history.pushState({}, "", newUrl);
+    } else {
+      window.history.replaceState({}, "", newUrl);
+    }
   };
 
   const saveBibleVersionOnURL = (bibleVersion: string) => {
