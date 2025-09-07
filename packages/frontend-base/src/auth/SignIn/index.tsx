@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Button, Link } from "../../..";
 import { Input } from "../../ui/Input";
 import { Text } from "../../ui/Text/Text";
@@ -14,6 +15,12 @@ export function SignIn({ onSwitch }: { onSwitch?: (mode: "signup") => void }) {
     backendError,
     clearBackendError,
   } = useSignInForm();
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
+  const { ref: emailFormRef, ...emailRegisterProps } = register("email");
+
+  useEffect(() => {
+    emailInputRef.current?.focus();
+  }, []);
 
   return (
     <div className={sharedStyles.wrapper}>
@@ -38,7 +45,15 @@ export function SignIn({ onSwitch }: { onSwitch?: (mode: "signup") => void }) {
       >
         <Input.Root hasError={Boolean(formState.errors.email)}>
           <Input.Label label="Email" />
-          <Input type="email" autoComplete="off" {...register("email")} />
+          <Input
+            type="email"
+            autoComplete="off"
+            {...emailRegisterProps}
+            ref={(e) => {
+              emailFormRef(e);
+              emailInputRef.current = e;
+            }}
+          />
           <Input.Message message={formState.errors.email?.message} />
         </Input.Root>
 

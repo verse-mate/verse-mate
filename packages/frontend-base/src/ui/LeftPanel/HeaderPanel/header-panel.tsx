@@ -93,6 +93,7 @@ type Props = {
     explanationType?: ExplanationTypeEnum;
     bibleVersion?: string;
   }) => void;
+  recentlyViewedBooks: string[];
 };
 
 export const Nav = ({
@@ -127,6 +128,7 @@ export const Nav = ({
   setHoverRating,
   saveSearchParams,
   handleValueChange,
+  recentlyViewedBooks,
 }: Props) => {
   const selectedBook = selectedBookStore.get();
 
@@ -277,6 +279,82 @@ export const Nav = ({
     },
     [fixedItem],
   );
+
+  const renderRecentlyViewed = () => {
+    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
+    return recentlyViewedBooks
+      .filter((id) => Number(id) !== bookId)
+      .map((bookId) => {
+        const book = allBooks.find((b) => b.b === Number(bookId));
+        if (!book) return null;
+        return (
+          <Accordion.Item value={book.n} key={book.n}>
+            <div
+              data-accordion-trigger={book.n}
+              onClick={() => handleAccordionTriggerClick(book.n)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ")
+                  handleAccordionTriggerClick(book.n);
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <Accordion.Trigger label={book.n} highlightBook={false} />
+            </div>
+            <Accordion.Content>
+              <VerseGrid
+                testament={book.t}
+                bookId={String(book.b)}
+                bookName={book.n}
+                verses={Array.from({ length: book.c }, (_, i) =>
+                  (i + 1).toString(),
+                )}
+                onVerseSelect={leftPanelHandleVerseSelect}
+                selectedVerse={String(verseId)}
+                selectedBook={String(bookId)}
+              />
+            </Accordion.Content>
+          </Accordion.Item>
+        );
+      });
+  };
+
+  const renderSelectedBook = () => {
+    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
+    const selectedBook = allBooks.find((book) => book.b === bookId);
+    if (!selectedBook || leftPanelDebouncedFilter.trim()) return null;
+
+    return (
+      <Accordion.Item value={selectedBook.n} key={selectedBook.n}>
+        <div
+          data-accordion-trigger={selectedBook.n}
+          onClick={() => handleAccordionTriggerClick(selectedBook.n)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ")
+              handleAccordionTriggerClick(selectedBook.n);
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <Accordion.Trigger label={selectedBook.n} highlightBook={true} />
+        </div>
+        <Accordion.Content styles={fixedItem ? { position: "relative" } : {}}>
+          <VerseGrid
+            testament={selectedBook.t}
+            bookId={String(selectedBook.b)}
+            bookName={selectedBook.n}
+            verses={Array.from({ length: selectedBook.c }, (_, i) =>
+              (i + 1).toString(),
+            )}
+            onVerseSelect={leftPanelHandleVerseSelect}
+            selectedVerse={String(verseId)}
+            selectedBook={String(bookId)}
+          />
+        </Accordion.Content>
+      </Accordion.Item>
+    );
+  };
+
   const renderAccordionItems = (
     books: typeof oldTestamentBooks,
     testament: "OT" | "NT",
@@ -286,25 +364,14 @@ export const Nav = ({
       .map((bookName) => allBooks.find((t) => t.n === bookName))
       .filter((book): book is NonNullable<typeof book> => book !== undefined);
 
-    const selectedBook = allBooks.find((book) => book.b === bookId);
-    const booksToShow = [];
-
-    if (selectedBook && !leftPanelDebouncedFilter.trim()) {
-      booksToShow.push(selectedBook);
-    }
-
-    const otherBooks = filteredBooksWithData.filter((book) => {
+    const booksToShow = filteredBooksWithData.filter((book) => {
       if (leftPanelDebouncedFilter.trim()) {
         return true;
       }
       return book.t === testament && book.b !== bookId;
     });
 
-    booksToShow.push(...otherBooks);
-
     return booksToShow.map((book) => {
-      const isSelectedBook = book.b === bookId;
-
       return (
         <Accordion.Item value={book.n} key={book.n}>
           <div
@@ -317,11 +384,9 @@ export const Nav = ({
             role="button"
             tabIndex={0}
           >
-            <Accordion.Trigger label={book.n} highlightBook={isSelectedBook} />
+            <Accordion.Trigger label={book.n} highlightBook={false} />
           </div>
-          <Accordion.Content
-            styles={fixedItem && isSelectedBook ? { position: "relative" } : {}}
-          >
+          <Accordion.Content>
             <VerseGrid
               testament={book.t}
               bookId={String(book.b)}
@@ -404,29 +469,52 @@ export const Nav = ({
               <div
                 ref={scrollContainerRef}
                 style={{
-                  marginTop: "128px",
+                  marginTop: "127px",
                   maxHeight: "min(calc(100vh - 230px), 512px)",
                   overflowY: "auto",
                   scrollBehavior: "smooth",
                   paddingBottom: "16px",
                 }}
               >
+                <div
+                  className={styles.selectedBook}
+                  style={
+                    fixedItem ? { position: "relative", marginTop: 48 } : {}
+                  }
+                >
+                  <Accordion.Root type="multiple">
+                    {renderSelectedBook()}
+                  </Accordion.Root>
+                </div>
+                {!leftPanelDebouncedFilter.trim() && (
+                  <>
+                    <div className={styles.recentlyViewed}>
+                      <Accordion.Root type="multiple">
+                        {renderRecentlyViewed()}
+                      </Accordion.Root>
+                    </div>
+                    <div
+                      style={{
+                        padding: "10px 16px 10px 16px",
+                      }}
+                    >
+                      <h4
+                        className={styles.recentlyViewedTitle}
+                        style={{ marginBottom: "4px" }}
+                      >
+                        Recently Viewed ^
+                      </h4>
+                    </div>
+                  </>
+                )}
                 <Tabs.Content value="OT">
-                  <Accordion.Root
-                    style={
-                      fixedItem ? { position: "relative", marginTop: 48 } : {}
-                    }
-                  >
+                  <Accordion.Root>
                     {renderAccordionItems(oldTestamentBooks, "OT")}
                   </Accordion.Root>
                 </Tabs.Content>
 
                 <Tabs.Content value="NT">
-                  <Accordion.Root
-                    style={
-                      fixedItem ? { position: "relative", marginTop: 48 } : {}
-                    }
-                  >
+                  <Accordion.Root>
                     {renderAccordionItems(newTestamentBooks, "NT")}
                   </Accordion.Root>
                 </Tabs.Content>
@@ -435,8 +523,6 @@ export const Nav = ({
           </SelectDropdown.Content>
         </SelectDropdown.Root>
       </div>
-
-      {/* Tablet and Mobile size here */}
       <RadixTabs.Root
         className={styles.responsiveLayout}
         defaultValue="tab1"

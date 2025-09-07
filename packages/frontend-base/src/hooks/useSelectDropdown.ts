@@ -19,6 +19,15 @@ export const useSelectDropdown = (testaments?: Testaments) => {
   const { filter, handleChange, resetFilter } = useFilter();
   const debouncedFilter = useDebounce(filter, 0);
   const { isOpen, setIsOpen, toggleDropdown } = useDropdownToggle();
+  const [recentlyViewedBooks, setRecentlyViewedBooks] = useState<string[]>([]);
+
+  useEffect(() => {
+    const storedBooks = JSON.parse(
+      localStorage.getItem("recentlyViewedBooks") || "[]",
+    );
+    setRecentlyViewedBooks(storedBooks);
+  }, []);
+
   const {
     selectedTab,
     setSelectedTab,
@@ -28,7 +37,7 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     handleVerseSelect,
     handleBibleVersionSelect,
     selectedBibleVersion,
-  } = useSelectedState(setIsOpen, resetFilter);
+  } = useSelectedState(setIsOpen, resetFilter, setRecentlyViewedBooks);
 
   // Reset filter when navigation changes (book or chapter)
   useEffect(() => {
@@ -70,6 +79,7 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     selectedBibleVersion,
     toggleDropdown,
     resetFilter,
+    recentlyViewedBooks,
   };
 };
 
@@ -106,7 +116,8 @@ export const useFilter = (onReset?: () => void) => {
 
 export const useSelectedState = (
   setIsOpen: (open: boolean) => void,
-  resetFilter?: () => void,
+  resetFilter: () => void,
+  setRecentlyViewedBooks: (books: string[]) => void,
 ) => {
   const [selectedTab, setSelectedTab] = useState<"OT" | "NT">("NT");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
@@ -137,8 +148,22 @@ export const useSelectedState = (
       setSelectedVerse(verseId);
       setIsOpen(false);
       saveSearchParams({ bookId, verseId, testament });
+
+      // Save to recently viewed
+      const recentlyViewed = JSON.parse(
+        localStorage.getItem("recentlyViewedBooks") || "[]",
+      );
+      const newRecentlyViewed = [
+        bookId,
+        ...recentlyViewed.filter((id: string) => id !== bookId),
+      ].slice(0, 6);
+      localStorage.setItem(
+        "recentlyViewedBooks",
+        JSON.stringify(newRecentlyViewed),
+      );
+      setRecentlyViewedBooks(newRecentlyViewed);
     },
-    [setIsOpen, saveSearchParams],
+    [setIsOpen, saveSearchParams, setRecentlyViewedBooks],
   );
 
   const handleBibleVersionSelect = useCallback(

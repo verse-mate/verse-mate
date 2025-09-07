@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "backend-api";
+import { getBookVerse, getExplanation } from "../api/bible";
 
 export const fetchAllTestaments = () => {
   const {
@@ -46,26 +47,13 @@ export const fetchBookVerse = (
   chapterId: number,
   bibleVersion: string,
 ) => {
-  const parsedBookId = String(bookId).padStart(2, "0");
-  const parsedChapterId = String(chapterId).padStart(2, "0");
-
   const {
     data: bookVerseData,
     error,
     isLoading,
   } = useQuery({
     queryKey: ["bookVerse", bookId, chapterId, bibleVersion],
-    queryFn: async () => {
-      const versionKey = bibleVersion ?? "NASB1995";
-      return await api.bible
-        .book({ bookId: parsedBookId })({ chapterNumber: parsedChapterId })
-        .get({
-          query: {
-            versionKey,
-          },
-        })
-        .then((response) => response.data?.book);
-    },
+    queryFn: () => getBookVerse(bookId, chapterId, bibleVersion),
   });
 
   return { bookVerseData, error, isLoading };
@@ -77,9 +65,6 @@ export const fetchExplanation = (
   explanationType?: string,
   bibleVersion?: string,
 ) => {
-  const parsedBookId = String(bookId).padStart(2, "0");
-  const parsedChapterId = String(chapterId).padStart(2, "0");
-
   const {
     data: explanation,
     error,
@@ -88,41 +73,8 @@ export const fetchExplanation = (
     isLoading,
   } = useQuery({
     queryKey: ["explanation", bookId, chapterId, explanationType, bibleVersion],
-    queryFn: async () => {
-      const versionKey = bibleVersion ?? "NASB1995";
-
-      const response = await api.bible.book
-        .explanation({
-          bookId: parsedBookId,
-        })({ chapterNumber: parsedChapterId })
-        .get({
-          query: {
-            versionKey,
-          },
-        });
-
-      const foundExplanation = response.data?.explanation?.find(
-        (exp) => exp.type === explanationType,
-      );
-
-      try {
-        if (!response.data?.explanation) {
-          throw new Error("Explanation not found");
-        }
-
-        if (!foundExplanation) {
-          throw new Error("Explanation type not found");
-        }
-
-        return foundExplanation;
-      } catch (err) {
-        return {
-          ...foundExplanation,
-          explanation:
-            "Failed to generate explanation, maybe the you exceeded your current quota.",
-        };
-      }
-    },
+    queryFn: () =>
+      getExplanation(bookId, chapterId, explanationType, bibleVersion),
     retry: 2,
     retryDelay: 3000,
   });

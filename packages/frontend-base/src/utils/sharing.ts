@@ -10,6 +10,7 @@ interface ShareablePassageParams {
 const ALLOWED_HOSTS = [
   "localhost",
   "verse-mate.apegro.dev",
+  "app.versemate.org",
   "versemate.com", // Add production domain when available
 ];
 
@@ -39,7 +40,7 @@ function validateOrigin(origin: string): string {
     return normalized;
   } catch (error) {
     console.warn("Invalid origin detected, using fallback:", error);
-    return "https://verse-mate.apegro.dev";
+    return "https://app.versemate.org";
   }
 }
 
@@ -69,7 +70,7 @@ function getBaseUrl(): string {
     if (envUrl) {
       return validateOrigin(envUrl);
     }
-    return "https://verse-mate.apegro.dev";
+    return "https://app.versemate.org";
   }
 
   // In browser context, validate the current origin

@@ -20,5 +20,7 @@ declare const styles: {
   readonly item: string;
   readonly settingsIcon: string;
   readonly logoutIcon: string;
+  readonly desktopMenu: string;
+  readonly menuItem: string;
 };
-export = styles;
+export default styles;
