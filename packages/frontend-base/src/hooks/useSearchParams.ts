@@ -34,7 +34,7 @@ export const useSaveSearchParams = () => {
 
     const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
 
-    window.history.replaceState({}, "", newUrl);
+    window.history.pushState({}, "", newUrl);
   };
 
   const saveBibleVersionOnURL = (bibleVersion: string) => {
@@ -44,7 +44,7 @@ export const useSaveSearchParams = () => {
 
     const newURL = `${window.location.pathname}?${searchParams.toString()}`;
 
-    window.history.replaceState({}, "", newURL);
+    window.history.pushState({}, "", newURL);
   };
 
   return { saveSearchParams, saveBibleVersionOnURL };
