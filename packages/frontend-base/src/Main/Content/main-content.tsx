@@ -424,6 +424,11 @@ export const MainContent = () => {
   activeTabRef.current = activeTab;
 
   const prevActiveTabRef = useRef<string>();
+  const lastMobileTabRef = useRef<string | null>(null);
+  const prevWidthRef = useRef(
+    typeof window !== "undefined" ? window.innerWidth : 0,
+  );
+
   useEffect(() => {
     if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
       setRightPanelContent("default");
@@ -433,13 +438,30 @@ export const MainContent = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024 && activeTabRef.current === "book") {
-        setActiveTab("explanation");
+      const currentWidth = window.innerWidth;
+      const prevWidth = prevWidthRef.current;
+
+      // From mobile to desktop
+      if (prevWidth < 1024 && currentWidth >= 1024) {
+        lastMobileTabRef.current = activeTabRef.current;
+        if (activeTabRef.current === "book") {
+          setActiveTab("explanation");
+        }
       }
+
+      // From desktop to mobile
+      if (prevWidth >= 1024 && currentWidth < 1024) {
+        if (lastMobileTabRef.current) {
+          setActiveTab(lastMobileTabRef.current);
+        } else {
+          setActiveTab("book");
+        }
+      }
+
+      prevWidthRef.current = currentWidth;
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize();
 
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -1475,7 +1497,7 @@ export const MainContent = () => {
                   closeDropdownBook();
                   if (activeTab === "menu") {
                     setActiveTab(previousTabRef.current);
-                    setRightPanelContent("default");
+                    setRightPanelContent("default"); // Reset content
                   } else {
                     previousTabRef.current = activeTab;
                     setActiveTab("menu");
