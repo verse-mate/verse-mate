@@ -112,7 +112,7 @@ export default function GlobalSection() {
             style={{
               width: "736px",
               height: "128px",
-              fontFamily: "var(--font-merriweather)",
+              fontFamily: "var(--font-merriweather, Merriweather, serif)",
               fontStyle: "normal",
               fontWeight: 700,
               fontSize: "48px",

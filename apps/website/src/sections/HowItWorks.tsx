@@ -94,7 +94,7 @@ export default function HowItWorksSection() {
             style={{
               width: "676px",
               height: "64px",
-              fontFamily: "var(--font-merriweather)",
+              fontFamily: "var(--font-merriweather, Merriweather, serif)",
               fontStyle: "normal",
               fontWeight: 700,
               fontSize: "48px",
