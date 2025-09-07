@@ -1502,6 +1502,25 @@ export const MainContent = () => {
                           </Accordion.Item>
                         ))}
                       </Accordion.Root>
+                      <Accordion.Root type="multiple">
+                        <Accordion.Item value="settings">
+                          <div
+                            onClick={() => setRightPanelContent("settings")}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                setRightPanelContent("settings");
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <Accordion.Trigger
+                              label="Settings"
+                              icon={<Icon.SettingsIcon />}
+                            />
+                          </div>
+                        </Accordion.Item>
+                      </Accordion.Root>
                     </div>
                   </>
                 ) : (
