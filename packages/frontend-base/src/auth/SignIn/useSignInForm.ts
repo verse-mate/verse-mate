@@ -29,7 +29,7 @@ export function useSignInForm() {
   const [backendError, setBackendError] = useState<string | undefined>(
     undefined,
   );
-  const { bookId, verseId } = useGetSearchParams();
+  const { bookId, verseId, explanationType } = useGetSearchParams();
 
   const { handleSubmit, register, formState, getValues } = useForm<SignInData>({
     resolver: zodResolver(schema),
@@ -65,6 +65,7 @@ export function useSignInForm() {
         "redirectTo",
         `/?bookId=${bookId}&verseId=${verseId}`,
       );
+      localStorage.setItem("postLoginExplanationType", explanationType);
     }
     await login({
       email,

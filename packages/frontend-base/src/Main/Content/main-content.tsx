@@ -92,6 +92,18 @@ export const MainContent = () => {
   );
 
   useEffect(() => {
+    const savedExplanationType = localStorage.getItem(
+      "postLoginExplanationType",
+    );
+    if (savedExplanationType) {
+      saveSearchParams({
+        explanationType: savedExplanationType as ExplanationTypeEnum,
+      });
+      localStorage.removeItem("postLoginExplanationType");
+    }
+  }, [saveSearchParams]);
+
+  useEffect(() => {
     if (lastRead?.result && !bookId && !verseId && !testament) {
       saveSearchParams({
         bookId: String(lastRead.result.book_id),
@@ -405,6 +417,14 @@ export const MainContent = () => {
 
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
+
+  const prevActiveTabRef = useRef<string>();
+  useEffect(() => {
+    if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
+      setRightPanelContent("default");
+    }
+    prevActiveTabRef.current = activeTab;
+  }, [activeTab]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1337,6 +1357,7 @@ export const MainContent = () => {
                   closeDropdownBook();
                   if (activeTab === "menu") {
                     setActiveTab(previousTabRef.current);
+                    setRightPanelContent("default");
                   } else {
                     previousTabRef.current = activeTab;
                     setActiveTab("menu");
