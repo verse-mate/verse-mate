@@ -67,7 +67,7 @@ export default function MobileHowItWorks() {
         style={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "flex-start",
+          alignItems: "center",
           padding: "0px",
           gap: "40px",
           width: "392px",
@@ -118,7 +118,7 @@ export default function MobileHowItWorks() {
           </h2>
           <p
             style={{
-              width: "392px",
+              width: "396px",
               height: "96px",
               fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
               fontStyle: "normal",
@@ -134,9 +134,13 @@ export default function MobileHowItWorks() {
               margin: "0",
             }}
           >
-            Whether you're new to the Word or someone looking to dive deeper,
-            Versemate gives you the clarity and depth you need - to grow in
-            faith and understanding.
+            Whether you're new to the Word or someone looking
+            <br />
+            to dive deeper, Versemate gives you the clarity and
+            <br />
+            depth you need - to grow in faith and
+            <br />
+            understanding.
           </p>
         </div>
 
@@ -146,7 +150,7 @@ export default function MobileHowItWorks() {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            alignItems: "flex-start",
+            alignItems: "center",
             padding: "0px",
             gap: "40px",
             width: "392px",
@@ -270,7 +274,7 @@ export default function MobileHowItWorks() {
             style={{
               display: "flex",
               flexDirection: "column",
-              alignItems: "flex-start",
+              alignItems: "center",
               padding: "0px",
               gap: "24px",
               width: "392px",
