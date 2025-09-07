@@ -156,7 +156,7 @@ export const useSelectedState = (
       const newRecentlyViewed = [
         bookId,
         ...recentlyViewed.filter((id: string) => id !== bookId),
-      ].slice(0, 5);
+      ].slice(0, 6);
       localStorage.setItem(
         "recentlyViewedBooks",
         JSON.stringify(newRecentlyViewed),
