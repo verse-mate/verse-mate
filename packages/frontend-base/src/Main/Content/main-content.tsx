@@ -68,6 +68,11 @@ export const MainContent = () => {
     conversationId,
   } = useGetSearchParams();
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
+  const [slidingState, setSlidingState] = useState<{
+    direction: "left" | "right" | null;
+    outgoingChapterKey: string | null;
+    outgoingChapterData: any;
+  }>({ direction: null, outgoingChapterKey: null, outgoingChapterData: null });
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
   const { testaments } = fetchAllTestaments();
@@ -242,20 +247,27 @@ export const MainContent = () => {
 
   const { handleNextChapter, handlePreviousChapter } = useChapter();
 
-  const handleMobileSwipe = useSwipeable({
-    onSwipedRight: () => handlePreviousChapter(),
-    onSwipedLeft: () => handleNextChapter(chapters),
+  const handleSwipe = (direction: "left" | "right") => {
+    if (slidingState.direction) return;
+
+    setSlidingState({
+      direction,
+      outgoingChapterKey: `${bookId}-${verseId}`,
+      outgoingChapterData: bookVerseData,
+    });
+
+    if (direction === "left") {
+      handleNextChapter(chapters);
+    } else {
+      handlePreviousChapter();
+    }
+  };
+
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: () => handleSwipe("right"),
+    onSwipedLeft: () => handleSwipe("left"),
     delta: 30,
     swipeDuration: 500,
-    preventScrollOnSwipe: false,
-    trackTouch: true,
-    trackMouse: false,
-  });
-
-  const handleDesktopSwipe = useSwipeable({
-    onSwipedRight: () => handlePreviousChapter(),
-    onSwipedLeft: () => handleNextChapter(),
-    delta: 50,
     preventScrollOnSwipe: false,
     trackTouch: true,
     trackMouse: false,
@@ -1213,18 +1225,62 @@ export const MainContent = () => {
           </div>
           <div>
             <RadixTabs.Content value="book">
-              <div className={`${styles.bookContainer}`} {...handleMobileSwipe}>
+              <div className={`${styles.bookContainer}`} {...swipeHandlers}>
+                {slidingState.outgoingChapterData && (
+                  <div
+                    key={slidingState.outgoingChapterKey}
+                    className={styles.bookContent}
+                    style={{
+                      position: "absolute",
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    onAnimationEnd={() =>
+                      setSlidingState({
+                        direction: null,
+                        outgoingChapterKey: null,
+                        outgoingChapterData: null,
+                      })
+                    }
+                  >
+                    <MainText.Root>
+                      <div
+                        className={
+                          slidingState.direction === "left"
+                            ? (styles as any).slideOutLeft
+                            : (styles as any).slideOutRight
+                        }
+                      >
+                        <MainText.Content
+                          bookId={String(bookId)}
+                          verseId={String(verseId)}
+                          book={slidingState.outgoingChapterData}
+                        />
+                      </div>
+                    </MainText.Root>
+                  </div>
+                )}
                 {bookVerseData && (
                   <div
                     className={`${styles.bookContent}`}
                     ref={scrollableCallbackRef}
                   >
                     <MainText.Root>
-                      <MainText.Content
-                        bookId={String(bookId)}
-                        verseId={String(verseId)}
-                        book={bookVerseData}
-                      />
+                      <div
+                        className={
+                          slidingState.direction === "left"
+                            ? (styles as any).slideInRight
+                            : slidingState.direction === "right"
+                              ? (styles as any).slideInLeft
+                              : ""
+                        }
+                      >
+                        <MainText.Content
+                          bookId={String(bookId)}
+                          verseId={String(verseId)}
+                          book={bookVerseData}
+                        />
+                      </div>
                     </MainText.Root>
                     {chapters && Number(verseId) < chapters && (
                       <button
@@ -1400,7 +1456,7 @@ export const MainContent = () => {
               bookId={bookId}
               verseId={verseId}
               bookVerseData={bookVerseData}
-              handleDesktopSwipe={handleDesktopSwipe}
+              handleDesktopSwipe={swipeHandlers}
               progress={progress}
               chapters={chapters}
               buttonsVisible={buttonsVisible}
@@ -1436,7 +1492,7 @@ export const MainContent = () => {
               setRightPanelContent={setRightPanelContent}
               selectedBibleVersion={bibleVersionSelected}
               handleBibleVersionSelected={handleBibleVersionSelected}
-              handleDesktopSwipe={handleDesktopSwipe}
+              handleDesktopSwipe={swipeHandlers}
             />
           </RightPanel.Root>
         </main>
