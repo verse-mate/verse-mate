@@ -430,6 +430,17 @@ export const MainContent = () => {
   );
 
   useEffect(() => {
+    if (activeTab !== "book") {
+      isAnimating.current = false;
+      if (bookVerseData) {
+        setVisibleChapters([
+          { ...bookVerseData, key: `${bookId}-${verseId}`, className: "" },
+        ]);
+      }
+    }
+  }, [activeTab, bookVerseData, bookId, verseId]);
+
+  useEffect(() => {
     if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
       setRightPanelContent("default");
     }
