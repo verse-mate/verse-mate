@@ -134,6 +134,7 @@ export const MainContent = () => {
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
     resetFilter: leftPanelResetFilter,
+    recentlyViewedBooks,
   } = useSelectDropdown(testaments);
 
   const {
@@ -1606,6 +1607,7 @@ export const MainContent = () => {
               setRating={setRating}
               verseIdToString={verseIdToString}
               book={book}
+              recentlyViewedBooks={recentlyViewedBooks}
             />
             <LeftPanel.Content
               bookId={bookId}
