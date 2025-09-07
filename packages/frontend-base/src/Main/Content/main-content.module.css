@@ -458,7 +458,6 @@
   animation-duration: 0.3s;
   animation-fill-mode: forwards;
   will-change: transform;
-  pointer-events: none;
 }
 
 .slideOutLeft {
