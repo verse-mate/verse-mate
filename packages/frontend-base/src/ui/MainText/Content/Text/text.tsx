@@ -31,6 +31,12 @@ type TextProps = {
   bookId?: number;
 };
 
+const formatSubtitle = (subtitle: string) => {
+  if (!subtitle) return "";
+  // Add a space before capital letters, but not at the beginning of the string.
+  return subtitle.replace(/([A-Z])/g, " $1").trim();
+};
+
 export const Text = ({ text, bookName, testament, bookId }: TextProps) => {
   const searchParams = useGetSearchParams();
 
@@ -86,7 +92,9 @@ export const Text = ({ text, bookName, testament, bookId }: TextProps) => {
       {text.subtitles.map((subtitle) => (
         <div key={subtitle.subtitle} className={styles.textBox}>
           <div className={styles.subtitleBox}>
-            <h2 className={styles.subtitle}>{subtitle.subtitle}</h2>
+            <h2 className={styles.subtitle}>
+              {formatSubtitle(subtitle.subtitle)}
+            </h2>
             <p className={styles.description}>
               ({bookName} {text.chapterNumber}:{subtitle.start_verse} -{" "}
               {subtitle.end_verse})
