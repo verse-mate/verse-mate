@@ -627,6 +627,81 @@ export const MainContent = () => {
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
 
+  const renderRecentlyViewed = () => {
+    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
+    return recentlyViewedBooks
+      .filter((id) => Number(id) !== bookId)
+      .map((bookId) => {
+        const book = allBooks.find((b) => b.b === Number(bookId));
+        if (!book) return null;
+        return (
+          <Accordion.Item value={book.n} key={book.n}>
+            <div
+              data-accordion-trigger={book.n}
+              onClick={() => handleMobileAccordionTriggerClick(book.n)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ")
+                  handleMobileAccordionTriggerClick(book.n);
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <Accordion.Trigger label={book.n} highlightBook={false} />
+            </div>
+            <Accordion.Content>
+              <VerseGrid
+                testament={book.t}
+                bookId={String(book.b)}
+                bookName={book.n}
+                verses={Array.from({ length: book.c }, (_, i) =>
+                  (i + 1).toString(),
+                )}
+                onVerseSelect={leftPanelHandleVerseSelect}
+                selectedVerse={String(verseId)}
+                selectedBook={String(bookId)}
+              />
+            </Accordion.Content>
+          </Accordion.Item>
+        );
+      });
+  };
+
+  const renderSelectedBook = () => {
+    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
+    const selectedBook = allBooks.find((book) => book.b === bookId);
+    if (!selectedBook || leftPanelDebouncedFilter.trim()) return null;
+
+    return (
+      <Accordion.Item value={selectedBook.n} key={selectedBook.n}>
+        <div
+          data-accordion-trigger={selectedBook.n}
+          onClick={() => handleMobileAccordionTriggerClick(selectedBook.n)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ")
+              handleMobileAccordionTriggerClick(selectedBook.n);
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <Accordion.Trigger label={selectedBook.n} highlightBook={true} />
+        </div>
+        <Accordion.Content styles={fixedItem ? { position: "relative" } : {}}>
+          <VerseGrid
+            testament={selectedBook.t}
+            bookId={String(selectedBook.b)}
+            bookName={selectedBook.n}
+            verses={Array.from({ length: selectedBook.c }, (_, i) =>
+              (i + 1).toString(),
+            )}
+            onVerseSelect={leftPanelHandleVerseSelect}
+            selectedVerse={String(verseId)}
+            selectedBook={String(bookId)}
+          />
+        </Accordion.Content>
+      </Accordion.Item>
+    );
+  };
+
   const selectedBookDetails = [...oldTestamentBooks, ...newTestamentBooks].find(
     (book) => book.b === bookId,
   );
@@ -946,6 +1021,32 @@ export const MainContent = () => {
                             className={`${styles.contentGroupedTrigger}`}
                             style={{ paddingBottom: "16px" }}
                           >
+                            {!leftPanelDebouncedFilter.trim() && (
+                              <>
+                                <div className={styles.selectedBook}>
+                                  <Accordion.Root type="multiple">
+                                    {renderSelectedBook()}
+                                  </Accordion.Root>
+                                </div>
+                                <div className={styles.recentlyViewed}>
+                                  <Accordion.Root type="multiple">
+                                    {renderRecentlyViewed()}
+                                  </Accordion.Root>
+                                </div>
+                                <div
+                                  style={{
+                                    padding: "20px 16px 10px 16px",
+                                  }}
+                                >
+                                  <h4
+                                    className={styles.recentlyViewedTitle}
+                                    style={{ marginBottom: "-25px" }}
+                                  >
+                                    Recently Viewed ^
+                                  </h4>
+                                </div>
+                              </>
+                            )}
                             <Tabs.Content value="OT">
                               <Accordion.Root
                                 style={
@@ -1032,6 +1133,12 @@ export const MainContent = () => {
                                     ): book is NonNullable<typeof book> => {
                                       if (!book) return false;
                                       if (book.b === bookId) return false;
+                                      if (
+                                        recentlyViewedBooks.includes(
+                                          String(book.b),
+                                        )
+                                      )
+                                        return false;
                                       return leftPanelDebouncedFilter.trim()
                                         ? true
                                         : book.t === "OT";
@@ -1192,6 +1299,12 @@ export const MainContent = () => {
                                     ): book is NonNullable<typeof book> => {
                                       if (!book) return false;
                                       if (book.b === bookId) return false;
+                                      if (
+                                        recentlyViewedBooks.includes(
+                                          String(book.b),
+                                        )
+                                      )
+                                        return false;
                                       return leftPanelDebouncedFilter.trim()
                                         ? true
                                         : book.t === "NT";
