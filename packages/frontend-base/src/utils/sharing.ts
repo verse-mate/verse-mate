@@ -69,7 +69,7 @@ function getBaseUrl(): string {
     if (envUrl) {
       return validateOrigin(envUrl);
     }
-    return "https://verse-mate.apegro.dev";
+    return "https://app.versemate.org";
   }
 
   // In browser context, validate the current origin
