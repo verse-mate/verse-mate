@@ -267,7 +267,11 @@ export const MainContent = () => {
 
   const handleAnimationEnd = useCallback(() => {
     isAnimating.current = false;
-    setVisibleChapters((prev) => [prev[prev.length - 1]]);
+    setVisibleChapters((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      if (prev.length >= 2) return [prev[prev.length - 1]];
+      return prev;
+    });
   }, []);
 
   const swipeHandlers = useSwipeable({
