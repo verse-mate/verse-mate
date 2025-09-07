@@ -2,12 +2,7 @@ export default function HowItWorksSection() {
   return (
     <section
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "96px 120px",
-        gap: "64px",
-        width: "1440px",
+        width: "100vw",
         height: "1298.3px",
         background:
           "radial-gradient(50% 50% at 50% 50%, #FFFFFF 0%, #F1EDE3 100%)",
@@ -17,9 +12,21 @@ export default function HowItWorksSection() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 1,
-        margin: "0 auto",
       }}
     >
+      {/* Content Container - maintains 1440px layout */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "96px 120px",
+          gap: "64px",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
+        }}
+      >
       {/* Title */}
       <div
         style={{
@@ -94,7 +101,7 @@ export default function HowItWorksSection() {
             style={{
               width: "676px",
               height: "64px",
-              fontFamily: "var(--font-merriweather)",
+              fontFamily: "var(--font-merriweather, Merriweather, serif)",
               fontStyle: "normal",
               fontWeight: 700,
               fontSize: "48px",
@@ -469,6 +476,7 @@ export default function HowItWorksSection() {
           Available in multiple Bible versions and languages - so anyone,
           anywhere, can understand the truth.
         </p>
+      </div>
       </div>
     </section>
   );
