@@ -45,6 +45,10 @@ declare const styles: {
   readonly moreOptionButton: string;
   readonly content: string;
   readonly list: string;
+  readonly menuItem: string;
+  readonly selectedBook: string;
+  readonly recentlyViewed: string;
+  readonly recentlyViewedTitle: string;
   readonly menuOptions: string;
 };
-export = styles;
+export default styles;
