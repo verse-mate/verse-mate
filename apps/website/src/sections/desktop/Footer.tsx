@@ -5,12 +5,7 @@ export default function Footer() {
   return (
     <footer
       style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "48px 64px",
-        width: "1440px",
+        width: "100vw",
         height: "180px",
         background: "#1B1B1B",
         flex: "none",
@@ -18,9 +13,21 @@ export default function Footer() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 7,
-        margin: "0 auto",
       }}
     >
+      {/* Content Container - maintains 1440px layout */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "48px 64px",
+          width: "1440px",
+          height: "100%",
+          margin: "0 auto",
+        }}
+      >
       {/* Page Links */}
       <div
         style={{
@@ -118,6 +125,7 @@ export default function Footer() {
           </div>
           */}
         </div>
+      </div>
       </div>
     </footer>
   );
