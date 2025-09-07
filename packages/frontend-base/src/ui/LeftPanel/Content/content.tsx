@@ -39,7 +39,6 @@ type Props = {
   progress: number;
   handleDesktopSwipe: SwipeableHandlers;
   buttonsVisible: boolean;
-  scrollableCallbackRef: (node: HTMLElement | null) => void; // Made required from second version
   onNextChapterClick: () => void;
   onPrevChapterClick: () => void;
 };
@@ -52,7 +51,6 @@ export const Content = ({
   progress,
   handleDesktopSwipe,
   buttonsVisible,
-  scrollableCallbackRef,
   onNextChapterClick,
   onPrevChapterClick,
 }: Props) => {
@@ -97,11 +95,7 @@ export const Content = ({
   return (
     <>
       {bookVerseData && (
-        <div
-          className={`${styles.bookContent}`}
-          {...handleDesktopSwipe}
-          ref={scrollableCallbackRef}
-        >
+        <div className={`${styles.bookContent}`} {...handleDesktopSwipe}>
           <MainText.Root>
             <MainText.Content
               bookId={String(bookId)}
