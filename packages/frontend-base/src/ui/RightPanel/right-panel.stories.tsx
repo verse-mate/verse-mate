@@ -2,7 +2,7 @@ import type { Story, StoryDefault } from "@ladle/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
-import { fetchExplanation } from "../../hooks/useBible";
+import { fetchAllChaptersByBook, fetchExplanation } from "../../hooks/useBible";
 import { useConversationManager } from "../../hooks/useConversationManager";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
@@ -29,6 +29,7 @@ export const Default: Story = () => {
 
   const { bookId, verseId, explanationType } = useGetSearchParams();
 
+  const { chapters } = fetchAllChaptersByBook(bookId);
   const { explanation } = fetchExplanation(
     bookId,
     Number(verseId),
@@ -65,6 +66,7 @@ export const Default: Story = () => {
       <RightPanel.Content
         conversationsHistory={conversationsHistory}
         explanation={explanation}
+        chapters={chapters}
         session={session}
         selectConversation={selectConversation}
         askVerseMate={askVerseMate}

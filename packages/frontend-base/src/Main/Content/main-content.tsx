@@ -1475,10 +1475,10 @@ export const MainContent = () => {
             </RadixTabs.Content>
 
             <RadixTabs.Content value="explanation">
-              <Explanation.Container chapters={chapters}>
-                <Explanation.NavHeader />
-                <Explanation.Content />
-              </Explanation.Container>
+              <Explanation.Container
+                chapters={chapters}
+                explanation={explanation}
+              />
             </RadixTabs.Content>
 
             {askVerseMate && (
@@ -1662,6 +1662,7 @@ export const MainContent = () => {
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
               explanation={explanation}
+              chapters={chapters}
               session={session}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}
