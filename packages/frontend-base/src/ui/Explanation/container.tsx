@@ -24,6 +24,7 @@ export const Container = ({ chapters, explanation }: Props) => {
 
   const [visibleExplanations, setVisibleExplanations] = useState<any[]>([]);
   const isAnimating = useRef(false);
+  const pendingNav = useRef<"next" | "prev" | null>(null);
 
   useEffect(() => {
     if (explanation && !isAnimating.current) {
@@ -41,12 +42,17 @@ export const Container = ({ chapters, explanation }: Props) => {
       }
       return prev;
     });
-  }, []);
+    if (pendingNav.current === "next") handleNextChapter(totalChapters);
+    if (pendingNav.current === "prev") handlePreviousChapter();
+    pendingNav.current = null;
+  }, [handleNextChapter, handlePreviousChapter, totalChapters]);
 
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
       if (isAnimating.current) return;
-      const nextVerseId = Number(verseId) + 1;
+      const currentId = Number(verseId);
+      if (!Number.isFinite(currentId)) return;
+      const nextVerseId = currentId + 1;
       if (!chapters || nextVerseId > chapters) return;
 
       const nextExplanationData = queryClient.getQueryData([
@@ -62,6 +68,7 @@ export const Container = ({ chapters, explanation }: Props) => {
         return;
       }
 
+      pendingNav.current = "next";
       isAnimating.current = true;
       setVisibleExplanations((prev) => [
         { ...prev[0], className: (animationStyles as any).slideOutLeft },
@@ -71,11 +78,12 @@ export const Container = ({ chapters, explanation }: Props) => {
           className: (animationStyles as any).slideInRight,
         },
       ]);
-      setTimeout(() => handleNextChapter(totalChapters), 50);
     },
     onSwipedRight: () => {
       if (isAnimating.current) return;
-      const prevVerseId = Number(verseId) - 1;
+      const currentId = Number(verseId);
+      if (!Number.isFinite(currentId)) return;
+      const prevVerseId = currentId - 1;
       if (prevVerseId < 1) return;
 
       const prevExplanationData = queryClient.getQueryData([
@@ -91,6 +99,7 @@ export const Container = ({ chapters, explanation }: Props) => {
         return;
       }
 
+      pendingNav.current = "prev";
       isAnimating.current = true;
       setVisibleExplanations((prev) => [
         { ...prev[0], className: (animationStyles as any).slideOutRight },
@@ -100,7 +109,6 @@ export const Container = ({ chapters, explanation }: Props) => {
           className: (animationStyles as any).slideInLeft,
         },
       ]);
-      setTimeout(() => handlePreviousChapter(), 50);
     },
     trackMouse: false,
     preventScrollOnSwipe: false,

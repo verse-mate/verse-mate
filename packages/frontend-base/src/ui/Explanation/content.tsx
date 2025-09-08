@@ -33,7 +33,14 @@ export const Content = ({
 
   return (
     <>
-      {error && <div>Error: {error.message}</div>}
+      {error && (
+        <div>
+          Error:{" "}
+          {typeof error === "object" && error && "message" in error
+            ? (error as any).message
+            : "An unexpected error occurred"}
+        </div>
+      )}
 
       {isLoading && !explanation && (
         <div className={styles.loadingCard}>
