@@ -7,16 +7,20 @@ import { MarkdownRenderer } from "../MarkdownRenderer";
 import { Rating } from "../Rating";
 import styles from "./explanation.module.css";
 
-export const Content = () => {
+export const Content = ({
+  explanation: explanationFromProp,
+}: { explanation?: any }) => {
   const { session } = userSession();
   const { bookId, verseId, explanationType, bibleVersion } =
     useGetSearchParams();
-  const { explanation, error, isLoading } = fetchExplanation(
-    bookId,
-    Number(verseId),
-    explanationType,
-    bibleVersion,
-  );
+  const {
+    explanation: explanationFromFetch,
+    error,
+    isLoading,
+  } = fetchExplanation(bookId, Number(verseId), explanationType, bibleVersion);
+
+  const explanation = explanationFromProp || explanationFromFetch;
+
   const {
     maxRating,
     currentRating,
@@ -29,23 +33,19 @@ export const Content = () => {
 
   return (
     <>
-      {error && (
-        <div className={styles.explanationContent}>Error: {error.message}</div>
-      )}
+      {error && <div>Error: {error.message}</div>}
 
       {isLoading && !explanation && (
-        <div className={styles.explanationContent}>
-          <div className={styles.loadingCard}>
-            <Icons.ProgressActivity className={styles.animateSpin} />
-            <span className={styles.textFade}>
-              A new explanation is being generated, please wait...
-            </span>
-          </div>
+        <div className={styles.loadingCard}>
+          <Icons.ProgressActivity className={styles.animateSpin} />
+          <span className={styles.textFade}>
+            A new explanation is being generated, please wait...
+          </span>
         </div>
       )}
 
       {explanation?.explanation && (
-        <div className={styles.explanationContent}>
+        <>
           <MarkdownRenderer.Root>
             <MarkdownRenderer.Renderer
               markdownContent={
@@ -81,7 +81,7 @@ export const Content = () => {
               </Rating.Content>
             </Rating.Root>
           )}
-        </div>
+        </>
       )}
     </>
   );
