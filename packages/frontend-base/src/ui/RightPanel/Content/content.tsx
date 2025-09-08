@@ -31,6 +31,7 @@ type Props = {
       }
     | null
     | undefined;
+  chapters: number | undefined;
   conversationsHistory:
     | never[]
     | {
@@ -76,6 +77,8 @@ type Props = {
 
 export const Content = ({
   session,
+  explanation,
+  chapters,
   conversationsHistory,
   selectConversation,
   askVerseMate,
@@ -89,9 +92,10 @@ export const Content = ({
     <>
       <RadixTabs.Content className={styles.content} value="explanation">
         <div {...handleDesktopSwipe}>
-          <Explanation.Container>
-            <Explanation.Content />
-          </Explanation.Container>
+          <Explanation.Container
+            chapters={chapters}
+            explanation={explanation}
+          />
         </div>
       </RadixTabs.Content>
 
