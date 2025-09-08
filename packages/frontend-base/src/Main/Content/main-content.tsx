@@ -70,8 +70,6 @@ export const MainContent = () => {
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
   const [visibleChapters, setVisibleChapters] = useState<any[]>([]);
   const isAnimating = useRef(false);
-  const scrollPositions = useRef(new Map<string, number>());
-  const prevChapterKey = useRef<string | null>(null);
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
   const { testaments } = fetchAllTestaments();
@@ -805,9 +803,20 @@ export const MainContent = () => {
     }, 3000);
   }, [isNearNext, isNearPrev]);
 
-  const [scrollableNode, setScrollableNode] = useState<HTMLElement | null>(
-    null,
+  const [scrollElements, setScrollElements] = useState<Set<HTMLElement>>(
+    new Set(),
   );
+
+  const scrollableCallbackRef = useCallback((node: HTMLElement | null) => {
+    //console.log("📋 Ref callback called with:", node);
+    setScrollElements((prev) => {
+      const newSet = new Set(prev);
+      if (node) {
+        newSet.add(node);
+      }
+      return newSet;
+    });
+  }, []);
 
   useEffect(() => {
     const scrollState = {
@@ -868,9 +877,9 @@ export const MainContent = () => {
 
     const passiveOptions = { passive: true };
     window.addEventListener("scroll", handleScroll, passiveOptions);
-    if (scrollableNode) {
-      scrollableNode.addEventListener("scroll", handleScroll, passiveOptions);
-    }
+    scrollElements.forEach((element) => {
+      element.addEventListener("scroll", handleScroll, passiveOptions);
+    });
 
     resetInactivityTimer();
 
@@ -883,15 +892,15 @@ export const MainContent = () => {
         handleScroll,
         passiveOptions as AddEventListenerOptions,
       );
-      if (scrollableNode) {
-        scrollableNode.removeEventListener(
+      scrollElements.forEach((element) => {
+        element.removeEventListener(
           "scroll",
           handleScroll,
           passiveOptions as EventListenerOptions,
         );
-      }
+      });
     };
-  }, [resetInactivityTimer, scrollableNode]);
+  }, [resetInactivityTimer, scrollElements]);
 
   useEffect(() => {
     const handleDocumentClick = () => {
@@ -1402,25 +1411,7 @@ export const MainContent = () => {
                       onAnimationEnd={
                         index === 0 ? handleAnimationEnd : undefined
                       }
-                      ref={(el) => {
-                        if (isLastChapter) {
-                          setScrollableNode(el);
-                          if (el) {
-                            const savedPosition = scrollPositions.current.get(
-                              chapter.key,
-                            );
-                            if (savedPosition) {
-                              el.scrollTop = savedPosition;
-                            }
-                            el.onscroll = () => {
-                              scrollPositions.current.set(
-                                chapter.key,
-                                el.scrollTop,
-                              );
-                            };
-                          }
-                        }
-                      }}
+                      ref={isLastChapter ? scrollableCallbackRef : null}
                     >
                       <MainText.Root>
                         <MainText.Content
@@ -1644,6 +1635,7 @@ export const MainContent = () => {
               progress={progress}
               chapters={chapters}
               buttonsVisible={buttonsVisible}
+              scrollableCallbackRef={scrollableCallbackRef}
               onNextChapterClick={handleNextButtonClick}
               onPrevChapterClick={handlePreviousButtonClick}
             />
