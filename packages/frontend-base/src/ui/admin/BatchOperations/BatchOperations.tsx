@@ -351,12 +351,20 @@ export const BatchOperations = () => {
   };
 
   const handleRephraseBatch = async () => {
+    if (!isBibleBatch && selectedBook === null) {
+      setError("Please select a book to rephrase");
+      return;
+    }
+
     try {
       setRephrasing(true);
       setError(null);
       await api.admin["batch-rephrase"].post({
+        type: isBibleBatch ? "bible" : "book",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
         model: selectedModel,
         effort: selectedEffort as "low" | "medium" | "high",
+        bibleVersion: selectedBibleVersion,
       });
       await fetchBatchJobs();
       setRephraseModalOpen(false);
@@ -896,25 +904,26 @@ export const BatchOperations = () => {
           </p>
         </div>
         {/* Other form elements... */}
-        <Button
-          onClick={handleCreateBatch}
-          disabled={
-            creating ||
-            (!isBibleBatch && selectedBook === null) ||
-            selectedExplanationTypes.length === 0
-          }
-          loading={creating}
-          style={{ minWidth: "180px", padding: "8px 16px" }}
-        >
-          {creating ? "Creating..." : "Create New Batch"}
-        </Button>
-        <Button
-          onClick={() => setRephraseModalOpen(true)}
-          variant="outlined"
-          style={{ minWidth: "180px", padding: "8px 16px", marginLeft: "10px" }}
-        >
-          Rephrase All Explanations
-        </Button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Button
+            onClick={handleCreateBatch}
+            disabled={
+              creating ||
+              (!isBibleBatch && selectedBook === null) ||
+              selectedExplanationTypes.length === 0
+            }
+            loading={creating}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            {creating ? "Creating..." : "Create New Batch"}
+          </Button>
+          <Button
+            onClick={() => setRephraseModalOpen(true)}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Rephrase All Explanations
+          </Button>
+        </div>
       </div>
 
       {/* Main Table */}

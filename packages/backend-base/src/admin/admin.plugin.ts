@@ -153,11 +153,16 @@ const plugin = new Elysia()
               return await batchOperationService.generateRephraseBatch(
                 body.model,
                 currentUserId,
+                body.type,
+                body.bibleVersion,
                 body.effort || "medium",
+                body.bookName,
               );
             },
             {
               body: t.Object({
+                type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                bookName: t.Optional(t.String()),
                 model: t.String(),
                 effort: t.Optional(
                   t.Union([
@@ -166,6 +171,7 @@ const plugin = new Elysia()
                     t.Literal("high"),
                   ]),
                 ),
+                bibleVersion: t.String(),
               }),
             },
           )

@@ -296,11 +296,110 @@ export class BatchOperationService {
   async generateRephraseBatch(
     model: string,
     adminUserId: string,
+    type: "bible" | "book",
+    bibleVersion: string,
     effort: "low" | "medium" | "high" = "medium",
+    bookName?: string,
   ) {
-    console.log(`[BATCH] Starting rephrase batch with model ${model}`);
+    if (type === "book" && !bookName) {
+      throw new Error(
+        "Book name is required for a book-specific rephrase batch.",
+      );
+    }
+
+    console.log(
+      `[BATCH] Starting rephrase batch for type: ${type} with model ${model}`,
+    );
 
     const connection = this.db.getOrCreateConnection();
+
+    if (type === "bible") {
+      const parentBatch = await connection
+        .insertInto("batch_jobs")
+        .values({
+          batch_type: "rephrase-bible",
+          status: "in_progress",
+          model,
+          created_by: adminUserId,
+          total_requests: 66,
+          bible_version: bibleVersion,
+          explanation_types: [],
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      const parentBatchId = parentBatch.id;
+
+      const books = await connection
+        .selectFrom("books")
+        .select(["book_id", "name"])
+        .orderBy("book_id", "asc")
+        .execute();
+
+      if (!books || books.length === 0) {
+        throw new Error("No books found in database");
+      }
+
+      for (const book of books) {
+        await this.createBookRephraseBatch(
+          model,
+          adminUserId,
+          effort,
+          book.name,
+          bibleVersion,
+          parentBatchId,
+        );
+      }
+
+      return {
+        success: true,
+        message: `Rephrase batch started for all books under parent ID ${parentBatchId}.`,
+        parentBatchId,
+      };
+    }
+
+    if (type === "book" && bookName) {
+      return this.createBookRephraseBatch(
+        model,
+        adminUserId,
+        effort,
+        bookName,
+        bibleVersion,
+      );
+    }
+
+    throw new Error("Invalid rephrase batch type or missing book name.");
+  }
+
+  private async createBookRephraseBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high",
+    bookName: string,
+    bibleVersion: string,
+    parentBatchId?: number,
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    const book = await connection
+      .selectFrom("books")
+      .where("name", "=", bookName)
+      .select("book_id")
+      .executeTakeFirst();
+
+    if (!book) {
+      throw new Error(`Book "${bookName}" not found.`);
+    }
+
+    const version = await connection
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version "${bibleVersion}" not found.`);
+    }
 
     const rephrasePrompt = await connection
       .selectFrom("prompts")
@@ -315,12 +414,18 @@ export class BatchOperationService {
 
     const activeExplanations = await connection
       .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .where("chapters.book_id", "=", book.book_id)
+      .where("explanations.version_id", "=", version.id)
       .where("is_active", "=", true)
-      .selectAll()
+      .selectAll("explanations")
       .execute();
 
     if (activeExplanations.length === 0) {
-      throw new Error("No active explanations found to rephrase.");
+      console.log(
+        `[BATCH] No active explanations found for ${bookName} (${bibleVersion}) to rephrase. Skipping.`,
+      );
+      return;
     }
 
     const batchRequests: BatchJobRequest[] = activeExplanations.map(
@@ -344,7 +449,10 @@ export class BatchOperationService {
 
     const blob = new Blob([jsonlContent], { type: "application/jsonl" });
     const file = await openai.files.create({
-      file: new File([blob], `rephrase_batch_${Date.now()}.jsonl`),
+      file: new File(
+        [blob],
+        `rephrase_batch_${book.book_id}_${Date.now()}.jsonl`,
+      ),
       purpose: "batch",
     });
 
@@ -363,6 +471,8 @@ export class BatchOperationService {
         model,
         total_requests: batchRequests.length,
         created_by: adminUserId,
+        book_id: book.book_id,
+        parent_batch_id: parentBatchId,
         bible_version: "N/A",
         explanation_types: [],
       })
