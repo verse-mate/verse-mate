@@ -662,8 +662,11 @@ export class BibleService {
     bibleVersion: string;
     bookName?: string;
     chapter?: number | "all";
+    limit: number;
+    offset: number;
   }) {
-    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
+    const { isBibleBatch, bibleVersion, bookName, chapter, limit, offset } =
+      options;
 
     const version = await this.db
       .getOrCreateConnection()
@@ -685,7 +688,7 @@ export class BibleService {
       if (!bookName) {
         // If not searching the whole bible, a book must be selected.
         // Return empty array as there's nothing to show.
-        return [];
+        return { explanations: [], total: 0 };
       }
       const book = await this.db
         .getOrCreateConnection()
@@ -711,6 +714,8 @@ export class BibleService {
     return this.bibleRepository.getExplanationsByFilter({
       versionId: version.id,
       chapterIds,
+      limit,
+      offset,
     });
   }
 }

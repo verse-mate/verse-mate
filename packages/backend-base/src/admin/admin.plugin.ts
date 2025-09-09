@@ -418,6 +418,8 @@ const plugin = new Elysia()
                 bibleVersion: query.bibleVersion,
                 bookName: query.bookName,
                 chapter: query.chapter ? Number(query.chapter) : "all",
+                limit: query.limit ? Number(query.limit) : 50,
+                offset: query.offset ? Number(query.offset) : 0,
               });
             },
             {
@@ -426,6 +428,8 @@ const plugin = new Elysia()
                 bibleVersion: t.String(),
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.String()),
+                limit: t.Optional(t.String()),
+                offset: t.Optional(t.String()),
               }),
             },
           )

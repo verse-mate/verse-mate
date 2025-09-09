@@ -1,6 +1,6 @@
 "use client";
 import { api } from "backend-api";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { bibleVersions } from "../../../utils/bible-versions";
 import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
@@ -19,7 +19,6 @@ interface Explanation {
   explanation: string;
   is_active: boolean;
   created_by_admin: boolean;
-  version: number;
   created_at: Date;
 }
 
@@ -37,7 +36,7 @@ export const Explanations = () => {
   const [chapterDropdownOpen, setChapterDropdownOpen] = useState(false);
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
 
-  const [isBibleBatch, setIsBibleBatch] = useState(true);
+  const [isBibleBatch, setIsBibleBatch] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [promptsModalOpen, setPromptsModalOpen] = useState(false);
@@ -48,52 +47,66 @@ export const Explanations = () => {
   // Table state
   const [explanations, setExplanations] = useState<Explanation[]>([]);
   const [loadingExplanations, setLoadingExplanations] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [totalItems, setTotalItems] = useState(0);
 
   const selectedBookData = bookOptions.find((book) => book.n === selectedBook);
   const selectedVersionData = bibleVersions.find(
     (version) => version.key === selectedBibleVersion,
   );
 
+  const fetchExplanations = useCallback(async () => {
+    if (!isBibleBatch && !selectedBook) {
+      setExplanations([]);
+      return;
+    }
+
+    setLoadingExplanations(true);
+    setError(null);
+    try {
+      const response = await api.admin.explanations.get({
+        query: {
+          isBibleBatch: String(isBibleBatch),
+          bibleVersion: selectedBibleVersion,
+          bookName: isBibleBatch ? undefined : selectedBook || undefined,
+          chapter: String(isBibleBatch ? "all" : selectedChapter),
+          limit: String(itemsPerPage),
+          offset: String((currentPage - 1) * itemsPerPage),
+        },
+      });
+      if (response.data) {
+        const formattedData = response.data.explanations.map((exp) => ({
+          ...exp,
+          id: String(exp.explanation_id),
+        }));
+        setExplanations(formattedData);
+        setTotalItems(response.data.total);
+      }
+    } catch (err) {
+      setError("Failed to fetch explanations.");
+      console.error(err);
+    } finally {
+      setLoadingExplanations(false);
+    }
+  }, [
+    isBibleBatch,
+    selectedBook,
+    selectedChapter,
+    selectedBibleVersion,
+    currentPage,
+    itemsPerPage,
+  ]);
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reset chapter when book changes
   useEffect(() => {
     setSelectedChapter("all");
+    setCurrentPage(1);
   }, [selectedBook]);
 
   useEffect(() => {
-    const fetchExplanations = async () => {
-      if (!isBibleBatch && !selectedBook) {
-        setExplanations([]);
-        return;
-      }
-
-      setLoadingExplanations(true);
-      setError(null);
-      try {
-        const response = await api.admin.explanations.get({
-          query: {
-            isBibleBatch: String(isBibleBatch),
-            bibleVersion: selectedBibleVersion,
-            bookName: isBibleBatch ? undefined : selectedBook || undefined,
-            chapter: String(isBibleBatch ? "all" : selectedChapter),
-          },
-        });
-        if (response.data) {
-          const formattedData = (response.data as Explanation[]).map((exp) => ({
-            ...exp,
-            id: String(exp.explanation_id),
-          }));
-          setExplanations(formattedData);
-        }
-      } catch (err) {
-        setError("Failed to fetch explanations.");
-        console.error(err);
-      } finally {
-        setLoadingExplanations(false);
-      }
-    };
-
     fetchExplanations();
-  }, [isBibleBatch, selectedBibleVersion, selectedBook, selectedChapter]);
+  }, [fetchExplanations]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -107,6 +120,7 @@ export const Explanations = () => {
       });
       if (response.data) {
         alert(response.data.message);
+        fetchExplanations();
       }
     } catch (err) {
       setError("Failed to delete inactive explanations.");
@@ -155,6 +169,7 @@ export const Explanations = () => {
       });
       if (response.data) {
         alert(response.data.message);
+        fetchExplanations();
       }
     } catch (err) {
       setError("Failed to set active explanations as default.");
@@ -195,7 +210,6 @@ export const Explanations = () => {
         </div>
       ),
     },
-    { title: "Version", property: "version", className: styles.versionColumn },
     {
       title: "Created",
       property: "created_at",
@@ -418,6 +432,27 @@ export const Explanations = () => {
           isLoading={loadingExplanations}
           zebra
         />
+        <div className={styles.paginationControls}>
+          <Button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <span>
+            Page {currentPage} of {Math.ceil(totalItems / itemsPerPage)}
+          </span>
+          <Button
+            onClick={() =>
+              setCurrentPage((prev) =>
+                Math.min(prev + 1, Math.ceil(totalItems / itemsPerPage)),
+              )
+            }
+            disabled={currentPage === Math.ceil(totalItems / itemsPerPage)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
       <Dialog

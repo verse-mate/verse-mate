@@ -788,27 +788,31 @@ export class BibleRepository {
   async getExplanationsByFilter(options: {
     versionId: string;
     chapterIds: number[];
+    limit: number;
+    offset: number;
   }) {
-    const { versionId, chapterIds } = options;
+    const { versionId, chapterIds, limit, offset } = options;
     if (chapterIds.length === 0) {
-      return [];
+      return { explanations: [], total: 0 };
     }
 
-    return this.db
+    const query = this.db
       .getOrCreateConnection()
       .selectFrom("explanations")
       .where("chapter_id", "in", chapterIds)
-      .where("version_id", "=", versionId)
-      .select([
-        "explanation_id",
-        "type",
-        "explanation",
-        "is_active",
-        "created_by_admin",
-        "version",
-        "created_at",
-      ])
+      .where("version_id", "=", versionId);
+
+    const explanations = await query
+      .selectAll()
       .orderBy("explanation_id", "desc")
+      .limit(limit)
+      .offset(offset)
       .execute();
+
+    const totalResult = await query
+      .select((eb) => eb.fn.countAll().as("count"))
+      .executeTakeFirst();
+
+    return { explanations, total: Number(totalResult?.count) || 0 };
   }
 }
