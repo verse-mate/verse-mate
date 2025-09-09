@@ -6,7 +6,7 @@ type Props = {
   chapters?: number;
 };
 
-export const Container = ({ children, chapters }: Props) => {
+export const DesktopContainer = ({ children, chapters }: Props) => {
   const { handleNextChapter, handlePreviousChapter } = useChapter();
   const totalChapters = Number(chapters);
   const swipeHandlers = useSwipeable({
