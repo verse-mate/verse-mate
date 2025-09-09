@@ -65,19 +65,26 @@ export const Explanations = () => {
 
   const handleSetDefaultPrompts = async () => {
     setSettingPrompts(true);
-    console.log(
-      "Setting default prompts to active with the following options:",
-    );
-    console.log("Whole Bible:", isBibleBatch);
-    console.log("Bible Version:", selectedBibleVersion);
-    if (!isBibleBatch) {
-      console.log("Book:", selectedBook);
-      console.log("Chapter:", selectedChapter);
+    setError(null);
+    try {
+      const response = await api.admin.explanations["set-defaults-active"].post(
+        {
+          isBibleBatch,
+          bibleVersion: selectedBibleVersion,
+          bookName: isBibleBatch ? undefined : selectedBook || undefined,
+          chapter: isBibleBatch ? "all" : selectedChapter,
+        },
+      );
+      if (response.data) {
+        alert(response.data.message);
+      }
+    } catch (err) {
+      setError("Failed to set default prompts.");
+      console.error(err);
+    } finally {
+      setSettingPrompts(false);
+      setPromptsModalOpen(false);
     }
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setSettingPrompts(false);
-    setPromptsModalOpen(false);
   };
 
   return (

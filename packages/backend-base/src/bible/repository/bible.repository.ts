@@ -695,4 +695,58 @@ export class BibleRepository {
     const result = await query.executeTakeFirst();
     return { deletedCount: Number(result.numDeletedRows) };
   }
+
+  async setDefaultExplanationsAsActive(options: {
+    versionId: string;
+    chapterIds: number[];
+  }) {
+    const { versionId, chapterIds } = options;
+    if (chapterIds.length === 0) {
+      return { activatedCount: 0 };
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        // 1. Deactivate all current explanations for the scope
+        await trx
+          .updateTable("explanations")
+          .set({ is_active: false })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("is_active", "=", true)
+          .execute();
+
+        // 2. Find the most recent admin-created explanation for each type
+        const explanationsToActivate = await trx
+          .selectFrom("explanations")
+          .select("explanation_id")
+          .distinctOn(["chapter_id", "type"])
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("created_by_admin", "=", true)
+          .orderBy("chapter_id")
+          .orderBy("type")
+          .orderBy("created_at", "desc")
+          .execute();
+
+        if (explanationsToActivate.length === 0) {
+          return { activatedCount: 0 };
+        }
+
+        const idsToActivate = explanationsToActivate.map(
+          (e) => e.explanation_id,
+        );
+
+        // 3. Activate the selected default explanations
+        const result = await trx
+          .updateTable("explanations")
+          .set({ is_active: true })
+          .where("explanation_id", "in", idsToActivate)
+          .executeTakeFirst();
+
+        return { activatedCount: Number(result.numUpdatedRows) };
+      });
+  }
 }

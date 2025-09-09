@@ -360,6 +360,21 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/explanations/set-defaults-active",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setDefaultExplanationsAsActive(body);
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
           .delete(
             "/explanations/inactive",
             async ({ body, store }) => {

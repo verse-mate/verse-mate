@@ -518,4 +518,73 @@ export class BibleService {
       deletedCount: result.deletedCount,
     };
   }
+
+  async setDefaultExplanationsAsActive(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
+
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version ${bibleVersion} not found.`);
+    }
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        activatedCount: 0,
+      };
+    }
+
+    const result = await this.bibleRepository.setDefaultExplanationsAsActive({
+      versionId: version.id,
+      chapterIds,
+    });
+
+    return {
+      message: `Successfully activated ${result.activatedCount} default explanations.`,
+      activatedCount: result.activatedCount,
+    };
+  }
 }
