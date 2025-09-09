@@ -1,6 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { db } from "../../shared/shared.plugin";
+import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
 import type { LastChapterReadDto } from "../dto/book/last-chapter-read.dto";
@@ -123,7 +124,34 @@ export class BibleService {
       return [];
     }
 
-    return explanation;
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("id", "=", version_id)
+      .select("version_key")
+      .executeTakeFirst();
+
+    if (!version) {
+      return explanation;
+    }
+
+    const processedExplanations = await Promise.all(
+      explanation.map(async (exp) => {
+        if (exp.explanation) {
+          return {
+            ...exp,
+            explanation: await parseAndInjectVerses(
+              exp.explanation,
+              version.version_key,
+              this.db,
+            ),
+          };
+        }
+        return exp;
+      }),
+    );
+
+    return processedExplanations;
   }
 
   async saveRating({

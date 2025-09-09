@@ -102,6 +102,38 @@ export class BibleRepository {
     return { verses: verses ?? null };
   }
 
+  async getSpecificVersesByBookNameAndChapter(
+    bookName: string,
+    chapterNumber: number,
+    versionKey: string,
+    verseNumbers: number[],
+  ) {
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", versionKey)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      return [];
+    }
+
+    const verses = await this.db
+      .getOrCreateConnection()
+      .selectFrom("verses")
+      .innerJoin("chapters", "verses.chapter_id", "chapters.chapter_id")
+      .innerJoin("books", "chapters.book_id", "books.book_id")
+      .where("books.name", "=", bookName)
+      .where("chapters.chapter_number", "=", chapterNumber)
+      .where("verses.version_id", "=", version.id)
+      .where("verses.verse_number", "in", verseNumbers)
+      .select(["verses.text", "verses.verse_number as verseNumber"])
+      .execute();
+
+    return verses;
+  }
+
   async saveExplanation({
     type,
     explanation,
