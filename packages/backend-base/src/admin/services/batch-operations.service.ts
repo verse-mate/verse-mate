@@ -1,6 +1,7 @@
 import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI, { APIError } from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
@@ -300,6 +301,18 @@ export class BatchOperationService {
     console.log(`[BATCH] Starting rephrase batch with model ${model}`);
 
     const connection = this.db.getOrCreateConnection();
+
+    const rephrasePrompt = await connection
+      .selectFrom("prompts")
+      .where("prompt_type", "=", "rephrase")
+      .where("status", "=", PromptStatusEnum.active)
+      .select("prompt")
+      .executeTakeFirst();
+
+    if (!rephrasePrompt) {
+      throw new Error("No active rephrase prompt found in the database.");
+    }
+
     const activeExplanations = await connection
       .selectFrom("explanations")
       .where("is_active", "=", true)
@@ -318,7 +331,7 @@ export class BatchOperationService {
         body: {
           model,
           reasoning: { effort },
-          instructions: "Rephrase the following text:", // Placeholder
+          instructions: rephrasePrompt.prompt,
           input: explanation.explanation,
           max_output_tokens: 25000,
         },
