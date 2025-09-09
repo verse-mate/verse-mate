@@ -292,6 +292,78 @@ export class BatchOperationService {
     };
   }
 
+  async generateRephraseBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high" = "medium",
+  ) {
+    console.log(`[BATCH] Starting rephrase batch with model ${model}`);
+
+    const connection = this.db.getOrCreateConnection();
+    const activeExplanations = await connection
+      .selectFrom("explanations")
+      .where("is_active", "=", true)
+      .selectAll()
+      .execute();
+
+    if (activeExplanations.length === 0) {
+      throw new Error("No active explanations found to rephrase.");
+    }
+
+    const batchRequests: BatchJobRequest[] = activeExplanations.map(
+      (explanation) => ({
+        custom_id: `rephrase-${explanation.explanation_id}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: "Rephrase the following text:", // Placeholder
+          input: explanation.explanation,
+          max_output_tokens: 25000,
+        },
+      }),
+    );
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const file = await openai.files.create({
+      file: new File([blob], `rephrase_batch_${Date.now()}.jsonl`),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "rephrase",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        bible_version: "N/A",
+        explanation_types: [],
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
+  }
+
   async getBatchStatus(batchId: string) {
     const batchStatus = await openai.batches.retrieve(batchId);
 
@@ -824,12 +896,16 @@ export class BatchOperationService {
         .getOrCreateConnection()
         .selectFrom("batch_jobs")
         .where("openai_batch_id", "=", batchId)
-        .select(["bible_version", "book_id", "model"])
+        .select(["batch_type", "bible_version", "book_id", "model"])
         .executeTakeFirst();
 
       if (!batchJob) {
         console.error(`[BATCH] Batch job not found for ${batchId}`);
         return;
+      }
+
+      if (batchJob.batch_type === "rephrase") {
+        return this.processRephraseOutputFile(batchId, outputFileId, batchJob);
       }
 
       const version = await this.db
@@ -1003,5 +1079,108 @@ export class BatchOperationService {
         error,
       );
     }
+  }
+
+  private async processRephraseOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonl = await fileContent.text();
+    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+    let processedCount = 0;
+    let errorCount = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+
+    for (const line of lines) {
+      try {
+        const parsedLine = JSON.parse(line);
+
+        if (parsedLine.response?.body?.usage) {
+          totalPromptTokens += parsedLine.response.body.usage.input_tokens || 0;
+          totalCompletionTokens +=
+            parsedLine.response.body.usage.output_tokens || 0;
+        }
+
+        const responseBody = parsedLine.response?.body;
+        const extractedText: string | undefined =
+          responseBody?.output_text ||
+          responseBody?.output?.[1]?.content?.[0]?.text;
+
+        if (
+          parsedLine.custom_id?.startsWith("rephrase-") &&
+          parsedLine.response?.status_code === 200 &&
+          typeof extractedText === "string" &&
+          extractedText.length > 0
+        ) {
+          const originalExplanationId = Number.parseInt(
+            parsedLine.custom_id.replace("rephrase-", ""),
+          );
+          const originalExplanation = await this.db
+            .getOrCreateConnection()
+            .selectFrom("explanations")
+            .where("explanation_id", "=", originalExplanationId)
+            .selectAll()
+            .executeTakeFirst();
+
+          if (originalExplanation) {
+            await this.db
+              .getOrCreateConnection()
+              .transaction()
+              .execute(async (trx) => {
+                await trx
+                  .updateTable("explanations")
+                  .set({ is_active: false })
+                  .where("explanation_id", "=", originalExplanationId)
+                  .execute();
+
+                await trx
+                  .insertInto("explanations")
+                  .values({
+                    ...originalExplanation,
+                    explanation: extractedText,
+                    is_active: true,
+                    version: originalExplanation.version + 1,
+                    parent_explanation_id: originalExplanationId,
+                    created_at: new Date(),
+                  })
+                  .execute();
+              });
+            processedCount++;
+          }
+        } else {
+          errorCount++;
+        }
+      } catch (error) {
+        errorCount++;
+        console.error("[BATCH] Error processing rephrase line:", error);
+      }
+    }
+
+    const actualCost = await calculateActualCost(
+      totalPromptTokens,
+      totalCompletionTokens,
+      batchJob.model,
+    );
+
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("batch_jobs")
+      .set({
+        explanations_processed: true,
+        actual_cost: actualCost,
+        prompt_tokens: totalPromptTokens,
+        completion_tokens: totalCompletionTokens,
+        total_tokens: totalPromptTokens + totalCompletionTokens,
+      })
+      .where("openai_batch_id", "=", batchId)
+      .execute();
+
+    console.log(
+      `[BATCH] Rephrase batch ${batchId} processed: ${processedCount} saved, ${errorCount} errors. Cost: ${actualCost.toFixed(4)}`,
+    );
   }
 }

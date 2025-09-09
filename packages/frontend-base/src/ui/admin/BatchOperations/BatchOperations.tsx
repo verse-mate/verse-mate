@@ -254,6 +254,10 @@ export const BatchOperations = () => {
   );
   const [bookDetailsLoading, setBookDetailsLoading] = useState(false);
 
+  // Modal 3 (Rephrase) state
+  const [rephraseModalOpen, setRephraseModalOpen] = useState(false);
+  const [rephrasing, setRephrasing] = useState(false);
+
   const fetchBatchJobsOnly = useCallback(async () => {
     try {
       const response = await api.admin["batch-history"].get({ query: {} });
@@ -343,6 +347,24 @@ export const BatchOperations = () => {
       console.error("Error creating batch job:", err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleRephraseBatch = async () => {
+    try {
+      setRephrasing(true);
+      setError(null);
+      await api.admin["batch-rephrase"].post({
+        model: selectedModel,
+        effort: selectedEffort as "low" | "medium" | "high",
+      });
+      await fetchBatchJobs();
+      setRephraseModalOpen(false);
+    } catch (err) {
+      setError("Failed to create rephrase batch job");
+      console.error("Error creating rephrase batch job:", err);
+    } finally {
+      setRephrasing(false);
     }
   };
 
@@ -886,6 +908,13 @@ export const BatchOperations = () => {
         >
           {creating ? "Creating..." : "Create New Batch"}
         </Button>
+        <Button
+          onClick={() => setRephraseModalOpen(true)}
+          variant="outlined"
+          style={{ minWidth: "180px", padding: "8px 16px", marginLeft: "10px" }}
+        >
+          Rephrase All Explanations
+        </Button>
       </div>
 
       {/* Main Table */}
@@ -975,6 +1004,32 @@ export const BatchOperations = () => {
           <Dialog.Footer>
             <Button onClick={() => setBookDetailsModalOpen(false)}>
               Close
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Modal 3: Rephrase Confirmation */}
+      <Dialog
+        open={rephraseModalOpen}
+        onOpenChange={setRephraseModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Rephrase</Dialog.Head>
+          <Dialog.Description>
+            Are you sure you want to rephrase all active explanations? This will
+            create a new batch job and may incur costs.
+          </Dialog.Description>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setRephraseModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleRephraseBatch} loading={rephrasing}>
+              {rephrasing ? "Starting..." : "Confirm"}
             </Button>
           </Dialog.Footer>
         </Dialog.Content>

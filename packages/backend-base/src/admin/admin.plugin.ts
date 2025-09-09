@@ -146,6 +146,29 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/batch-rephrase",
+            async ({ body, currentUserId, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateRephraseBatch(
+                body.model,
+                currentUserId,
+                body.effort || "medium",
+              );
+            },
+            {
+              body: t.Object({
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+              }),
+            },
+          )
           .get(
             "/batch/:batchJobId",
             async ({ params, store }) => {
