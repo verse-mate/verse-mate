@@ -494,4 +494,28 @@ export class BibleService {
       (bookExplanation) => bookExplanation.explanation_id === null,
     );
   }
+
+  async deleteInactiveExplanations(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
+
+    if (!isBibleBatch && !bookName) {
+      throw new Error("Book name is required for non-bible batch deletions.");
+    }
+
+    const result = await this.bibleRepository.deleteInactiveExplanations({
+      bibleVersion,
+      bookName: isBibleBatch ? undefined : bookName,
+      chapter: isBibleBatch ? undefined : chapter,
+    });
+
+    return {
+      message: `Successfully deleted ${result.deletedCount} inactive explanations.`,
+      deletedCount: result.deletedCount,
+    };
+  }
 }

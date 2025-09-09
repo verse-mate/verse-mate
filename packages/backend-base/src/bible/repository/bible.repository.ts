@@ -634,4 +634,65 @@ export class BibleRepository {
       return { success: false };
     }
   }
+
+  async deleteInactiveExplanations(options: {
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { bibleVersion, bookName, chapter } = options;
+
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version ${bibleVersion} not found.`);
+    }
+
+    let query = this.db
+      .getOrCreateConnection()
+      .deleteFrom("explanations")
+      .where("is_active", "=", false)
+      .where("version_id", "=", version.id);
+
+    if (bookName) {
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      const chapterIdsQuery = this.db
+        .getOrCreateConnection()
+        .selectFrom("chapters")
+        .where("book_id", "=", book.book_id)
+        .select("chapter_id");
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+
+      const chapterIds = await chapterIdsQuery.execute();
+      const ids = chapterIds.map((c) => c.chapter_id);
+
+      if (ids.length === 0) {
+        // No chapters match, so nothing to delete
+        return { deletedCount: 0 };
+      }
+
+      query = query.where("chapter_id", "in", ids);
+    }
+
+    const result = await query.executeTakeFirst();
+    return { deletedCount: Number(result.numDeletedRows) };
+  }
 }
