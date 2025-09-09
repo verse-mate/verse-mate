@@ -657,6 +657,7 @@ export class BibleRepository {
       .getOrCreateConnection()
       .deleteFrom("explanations")
       .where("is_active", "=", false)
+      .where("created_by_admin", "=", false)
       .where("version_id", "=", version.id);
 
     if (bookName) {
