@@ -7,9 +7,21 @@ import { Button } from "../../Button/Button";
 import { Dialog } from "../../Dialog";
 import { CheckIcon, ChevronDownIcon } from "../../Icons";
 import { SelectDropdown } from "../../SelectDropdown";
+import { Table, type TableColumn } from "../../Table/Table";
 import styles from "./Explanations.module.css";
 
 const bookOptions = testaments;
+
+interface Explanation {
+  id: string;
+  explanation_id: number;
+  type: string;
+  explanation: string;
+  is_active: boolean;
+  created_by_admin: boolean;
+  version: number;
+  created_at: Date;
+}
 
 export const Explanations = () => {
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +45,10 @@ export const Explanations = () => {
   const [activeModalOpen, setActiveModalOpen] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
 
+  // Table state
+  const [explanations, setExplanations] = useState<Explanation[]>([]);
+  const [loadingExplanations, setLoadingExplanations] = useState(false);
+
   const selectedBookData = bookOptions.find((book) => book.n === selectedBook);
   const selectedVersionData = bibleVersions.find(
     (version) => version.key === selectedBibleVersion,
@@ -42,6 +58,42 @@ export const Explanations = () => {
   useEffect(() => {
     setSelectedChapter("all");
   }, [selectedBook]);
+
+  useEffect(() => {
+    const fetchExplanations = async () => {
+      if (!isBibleBatch && !selectedBook) {
+        setExplanations([]);
+        return;
+      }
+
+      setLoadingExplanations(true);
+      setError(null);
+      try {
+        const response = await api.admin.explanations.get({
+          query: {
+            isBibleBatch: String(isBibleBatch),
+            bibleVersion: selectedBibleVersion,
+            bookName: isBibleBatch ? undefined : selectedBook || undefined,
+            chapter: String(isBibleBatch ? "all" : selectedChapter),
+          },
+        });
+        if (response.data) {
+          const formattedData = (response.data as Explanation[]).map((exp) => ({
+            ...exp,
+            id: String(exp.explanation_id),
+          }));
+          setExplanations(formattedData);
+        }
+      } catch (err) {
+        setError("Failed to fetch explanations.");
+        console.error(err);
+      } finally {
+        setLoadingExplanations(false);
+      }
+    };
+
+    fetchExplanations();
+  }, [isBibleBatch, selectedBibleVersion, selectedBook, selectedChapter]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -112,6 +164,45 @@ export const Explanations = () => {
       setActiveModalOpen(false);
     }
   };
+
+  const columns: TableColumn<Explanation>[] = [
+    {
+      title: "ID",
+      property: "explanation_id",
+      className: styles.idColumn,
+    },
+    { title: "Type", property: "type", className: styles.typeColumn },
+    {
+      title: "Explanation",
+      property: "explanation",
+      className: styles.explanationColumn,
+      render: (exp) => (
+        <span title={exp.explanation}>
+          {exp.explanation.substring(0, 100)}...
+        </span>
+      ),
+    },
+    {
+      title: "Status",
+      property: "is_active",
+      className: styles.statusColumn,
+      render: (exp) => (
+        <div style={{ display: "flex", gap: "5px" }}>
+          {exp.is_active && <span className={styles.badgeActive}>Active</span>}
+          {exp.created_by_admin && (
+            <span className={styles.badgeDefault}>Default</span>
+          )}
+        </div>
+      ),
+    },
+    { title: "Version", property: "version", className: styles.versionColumn },
+    {
+      title: "Created",
+      property: "created_at",
+      className: styles.createdColumn,
+      render: (exp) => new Date(exp.created_at).toLocaleDateString(),
+    },
+  ];
 
   return (
     <div className={styles.container}>
@@ -319,6 +410,16 @@ export const Explanations = () => {
           </Button>
         </div>
       </div>
+
+      <div className={styles.tableContainer}>
+        <Table
+          columns={columns}
+          data={explanations}
+          isLoading={loadingExplanations}
+          zebra
+        />
+      </div>
+
       <Dialog
         open={deleteModalOpen}
         onOpenChange={setDeleteModalOpen}

@@ -784,4 +784,31 @@ export class BibleRepository {
         return { promotedCount: Number(result.numUpdatedRows) };
       });
   }
+
+  async getExplanationsByFilter(options: {
+    versionId: string;
+    chapterIds: number[];
+  }) {
+    const { versionId, chapterIds } = options;
+    if (chapterIds.length === 0) {
+      return [];
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("explanations")
+      .where("chapter_id", "in", chapterIds)
+      .where("version_id", "=", versionId)
+      .select([
+        "explanation_id",
+        "type",
+        "explanation",
+        "is_active",
+        "created_by_admin",
+        "version",
+        "created_at",
+      ])
+      .orderBy("explanation_id", "desc")
+      .execute();
+  }
 }

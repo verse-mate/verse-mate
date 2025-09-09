@@ -14,3 +14,48 @@
   border-radius: 4px;
   margin-bottom: 20px;
 }
+
+.badgeActive {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.badgeDefault {
+  background-color: #cce5ff;
+  color: #004085;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.idColumn {
+  width: 80px;
+}
+
+.typeColumn {
+  width: 100px;
+}
+
+.explanationColumn {
+  width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusColumn {
+  width: 150px;
+}
+
+.versionColumn {
+  width: 80px;
+}
+
+.createdColumn {
+  width: 120px;
+}

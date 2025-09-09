@@ -409,6 +409,26 @@ const plugin = new Elysia()
             const adminDatabaseService = store.getAdminDatabaseService();
             return await adminDatabaseService.getExplanationHistory(params.id);
           })
+          .get(
+            "/explanations",
+            async ({ query, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.getExplanationsByFilter({
+                isBibleBatch: query.isBibleBatch === "true",
+                bibleVersion: query.bibleVersion,
+                bookName: query.bookName,
+                chapter: query.chapter ? Number(query.chapter) : "all",
+              });
+            },
+            {
+              query: t.Object({
+                isBibleBatch: t.String(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.String()),
+              }),
+            },
+          )
           .get("/stats", async ({ store }) => {
             const adminDatabaseService = store.getAdminDatabaseService();
             return await adminDatabaseService.getExplanationStats();
