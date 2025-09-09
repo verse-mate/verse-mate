@@ -30,6 +30,8 @@ export const Explanations = () => {
   const [deleting, setDeleting] = useState(false);
   const [promptsModalOpen, setPromptsModalOpen] = useState(false);
   const [settingPrompts, setSettingPrompts] = useState(false);
+  const [activeModalOpen, setActiveModalOpen] = useState(false);
+  const [settingActive, setSettingActive] = useState(false);
 
   const selectedBookData = bookOptions.find((book) => book.n === selectedBook);
   const selectedVersionData = bibleVersions.find(
@@ -84,6 +86,30 @@ export const Explanations = () => {
     } finally {
       setSettingPrompts(false);
       setPromptsModalOpen(false);
+    }
+  };
+
+  const handleSetActiveAsDefault = async () => {
+    setSettingActive(true);
+    setError(null);
+    try {
+      const response = await api.admin.explanations[
+        "set-active-as-default"
+      ].post({
+        isBibleBatch,
+        bibleVersion: selectedBibleVersion,
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        chapter: isBibleBatch ? "all" : selectedChapter,
+      });
+      if (response.data) {
+        alert(response.data.message);
+      }
+    } catch (err) {
+      setError("Failed to set active explanations as default.");
+      console.error(err);
+    } finally {
+      setSettingActive(false);
+      setActiveModalOpen(false);
     }
   };
 
@@ -285,6 +311,12 @@ export const Explanations = () => {
           >
             Set Default Prompts to Active
           </Button>
+          <Button
+            onClick={() => setActiveModalOpen(true)}
+            disabled={!isBibleBatch && !selectedBook}
+          >
+            Set Active as Default
+          </Button>
         </div>
       </div>
       <Dialog
@@ -337,6 +369,32 @@ export const Explanations = () => {
             </Button>
             <Button onClick={handleSetDefaultPrompts} loading={settingPrompts}>
               {settingPrompts ? "Setting..." : "Confirm"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      <Dialog
+        open={activeModalOpen}
+        onOpenChange={setActiveModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Action</Dialog.Head>
+          <Dialog.Description>
+            Are you sure you want to set the currently active explanations as
+            the new default for the selected criteria? This will replace the old
+            default.
+          </Dialog.Description>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setActiveModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSetActiveAsDefault} loading={settingActive}>
+              {settingActive ? "Setting..." : "Confirm"}
             </Button>
           </Dialog.Footer>
         </Dialog.Content>

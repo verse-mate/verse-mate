@@ -361,6 +361,21 @@ const plugin = new Elysia()
             },
           )
           .post(
+            "/explanations/set-active-as-default",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setActiveExplanationsAsDefault(body);
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
+          .post(
             "/explanations/set-defaults-active",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();

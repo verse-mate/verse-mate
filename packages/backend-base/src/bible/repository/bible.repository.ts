@@ -749,4 +749,39 @@ export class BibleRepository {
         return { activatedCount: Number(result.numUpdatedRows) };
       });
   }
+
+  async setActiveExplanationsAsDefault(options: {
+    versionId: string;
+    chapterIds: number[];
+  }) {
+    const { versionId, chapterIds } = options;
+    if (chapterIds.length === 0) {
+      return { promotedCount: 0 };
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        // 1. Demote all current defaults for the scope
+        await trx
+          .updateTable("explanations")
+          .set({ created_by_admin: false })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("created_by_admin", "=", true)
+          .execute();
+
+        // 2. Promote all active explanations to be the new defaults
+        const result = await trx
+          .updateTable("explanations")
+          .set({ created_by_admin: true })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("is_active", "=", true)
+          .executeTakeFirst();
+
+        return { promotedCount: Number(result.numUpdatedRows) };
+      });
+  }
 }
