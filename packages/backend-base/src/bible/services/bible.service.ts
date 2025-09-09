@@ -657,6 +657,97 @@ export class BibleService {
     };
   }
 
+  async setSpecificExplanationVersionAsActive(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+    version: number;
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter, version } = options;
+
+    const bibleVersionRecord = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!bibleVersionRecord) {
+      throw new Error(`Bible version ${bibleVersion} not found.`);
+    }
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        updatedCount: 0,
+      };
+    }
+
+    // Safety Check
+    const explanationsWithVersion = await this.db
+      .getOrCreateConnection()
+      .selectFrom("explanations")
+      .where("chapter_id", "in", chapterIds)
+      .where("version_id", "=", bibleVersionRecord.id)
+      .where("version", "=", version)
+      .select((eb) => eb.fn.count("chapter_id").as("count"))
+      .executeTakeFirst();
+
+    if (
+      !explanationsWithVersion ||
+      Number(explanationsWithVersion.count) !== chapterIds.length
+    ) {
+      throw new Error(
+        "VERSION_MISMATCH: Not all chapters in the selected scope have an explanation with the specified version.",
+      );
+    }
+
+    const result =
+      await this.bibleRepository.setSpecificExplanationVersionAsActive({
+        versionId: bibleVersionRecord.id,
+        chapterIds,
+        version,
+      });
+
+    return {
+      message: `Successfully set version ${version} as active for ${result.updatedCount} explanations.`,
+      updatedCount: result.updatedCount,
+    };
+  }
+
   async getExplanationsByFilter(options: {
     isBibleBatch: boolean;
     bibleVersion: string;

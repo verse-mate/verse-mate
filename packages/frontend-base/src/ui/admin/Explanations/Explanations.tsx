@@ -6,6 +6,7 @@ import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
 import { Dialog } from "../../Dialog";
 import { CheckIcon, ChevronDownIcon } from "../../Icons";
+import { Input } from "../../Input/Input";
 import { SelectDropdown } from "../../SelectDropdown";
 import { Table, type TableColumn } from "../../Table/Table";
 import styles from "./Explanations.module.css";
@@ -19,6 +20,7 @@ interface Explanation {
   explanation: string;
   is_active: boolean;
   created_by_admin: boolean;
+  version: number;
   created_at: Date;
 }
 
@@ -30,6 +32,7 @@ export const Explanations = () => {
   const [selectedChapter, setSelectedChapter] = useState<number | "all">("all");
   const [selectedBibleVersion, setSelectedBibleVersion] =
     useState<string>("NASB1995");
+  const [versionToSetActive, setVersionToSetActive] = useState("");
 
   // Dropdown states
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
@@ -43,6 +46,7 @@ export const Explanations = () => {
   const [settingPrompts, setSettingPrompts] = useState(false);
   const [activeModalOpen, setActiveModalOpen] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
+  const [settingVersionActive, setSettingVersionActive] = useState(false);
 
   // Table state
   const [explanations, setExplanations] = useState<Explanation[]>([]);
@@ -180,6 +184,41 @@ export const Explanations = () => {
     }
   };
 
+  const handleSetActiveVersion = async () => {
+    if (!versionToSetActive) {
+      setError("Please enter a version number.");
+      return;
+    }
+    setSettingVersionActive(true);
+    setError(null);
+    try {
+      const response = await api.admin.explanations[
+        "set-specific-version-active"
+      ].post({
+        isBibleBatch,
+        bibleVersion: selectedBibleVersion,
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        chapter: isBibleBatch ? "all" : selectedChapter,
+        version: Number(versionToSetActive),
+      });
+      if (response.data) {
+        alert(response.data.message);
+        fetchExplanations();
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("VERSION_MISMATCH")) {
+        setError(
+          "Error: Not all chapters in the selected scope have this version. No changes were made.",
+        );
+      } else {
+        setError("Failed to set active version.");
+      }
+      console.error(err);
+    } finally {
+      setSettingVersionActive(false);
+    }
+  };
+
   const columns: TableColumn<Explanation>[] = [
     {
       title: "ID",
@@ -210,6 +249,7 @@ export const Explanations = () => {
         </div>
       ),
     },
+    { title: "Version", property: "version", className: styles.versionColumn },
     {
       title: "Created",
       property: "created_at",
@@ -421,6 +461,29 @@ export const Explanations = () => {
             disabled={!isBibleBatch && !selectedBook}
           >
             Set Active as Default
+          </Button>
+        </div>
+        <div
+          style={{
+            marginTop: "20px",
+            display: "flex",
+            gap: "10px",
+            alignItems: "flex-end",
+          }}
+        >
+          <div style={{ width: "238px" }}>
+            <Input
+              placeholder="Enter version to set active"
+              value={versionToSetActive}
+              onChange={(e) => setVersionToSetActive(e.target.value)}
+            />
+          </div>
+          <Button
+            onClick={handleSetActiveVersion}
+            disabled={!versionToSetActive || settingVersionActive}
+            loading={settingVersionActive}
+          >
+            {settingVersionActive ? "Setting..." : "Set Active Version"}
           </Button>
         </div>
       </div>

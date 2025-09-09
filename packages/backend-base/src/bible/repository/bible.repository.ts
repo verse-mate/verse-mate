@@ -816,4 +816,40 @@ export class BibleRepository {
 
     return { explanations, total: Number(totalResult?.count) || 0 };
   }
+
+  async setSpecificExplanationVersionAsActive(options: {
+    versionId: string;
+    chapterIds: number[];
+    version: number;
+  }) {
+    const { versionId, chapterIds, version } = options;
+    if (chapterIds.length === 0) {
+      return { updatedCount: 0 };
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        // 1. Deactivate all current explanations for the scope
+        await trx
+          .updateTable("explanations")
+          .set({ is_active: false })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("is_active", "=", true)
+          .execute();
+
+        // 2. Activate the explanations with the specific version
+        const result = await trx
+          .updateTable("explanations")
+          .set({ is_active: true })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("version", "=", version)
+          .executeTakeFirst();
+
+        return { updatedCount: Number(result.numUpdatedRows) };
+      });
+  }
 }

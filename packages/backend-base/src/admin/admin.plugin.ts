@@ -390,6 +390,24 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/explanations/set-specific-version-active",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setSpecificExplanationVersionAsActive(
+                body,
+              );
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+                version: t.Number(),
+              }),
+            },
+          )
           .delete(
             "/explanations/inactive",
             async ({ body, store }) => {
