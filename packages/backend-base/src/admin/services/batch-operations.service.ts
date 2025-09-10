@@ -587,7 +587,7 @@ export class BatchOperationService {
         created_by: adminUserId,
         book_id: book.book_id,
         parent_batch_id: parentBatchId,
-        bible_version: "N/A",
+        bible_version: bibleVersion, // preserve actual version
         explanation_types: [],
       })
       .execute();

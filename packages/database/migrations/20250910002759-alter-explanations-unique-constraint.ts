@@ -11,7 +11,7 @@ export async function up(db: Kysely<any>): Promise<void> {
   // Add the new unique constraint that includes the "version" column
   await db.schema
     .alterTable("explanations")
-    .addUniqueConstraint("idx_explanations_chap_type_version_version_active", [
+    .addUniqueConstraint("uq_explanations_chap_type_version_version", [
       "chapter_id",
       "type",
       "version_id",
@@ -24,7 +24,7 @@ export async function down(db: Kysely<any>): Promise<void> {
   // Drop the new unique constraint
   await db.schema
     .alterTable("explanations")
-    .dropConstraint("idx_explanations_chap_type_version_version_active")
+    .dropConstraint("uq_explanations_chap_type_version_version")
     .execute();
 
   // Recreate the previous unique index

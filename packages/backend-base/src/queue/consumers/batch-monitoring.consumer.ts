@@ -185,17 +185,13 @@ export const batchMonitoringConsumer = async (job: Job) => {
           batchJob.batch_type === "rephrase-bible"
         ) {
           console.log(
-            `[BATCH_MONITORING] Batch ${batchId} is a rephrase batch. The batch-processing queue will handle the output file.`,
+            `[BATCH_MONITORING] Batch ${batchId} is a rephrase batch. Queueing output processing before completion.`,
           );
-          await db
-            .getOrCreateConnection()
-            .updateTable("batch_jobs")
-            .set({ status: "completed" })
-            .where("openai_batch_id", "=", batchId)
-            .execute();
-          console.log(
-            `[BATCH_MONITORING] Marked rephrase batch ${batchId} as completed.`,
-          );
+          await batchProcessingQueue.add("process-batch-output", {
+            batchId,
+            type: batchJob.batch_type,
+          });
+          // Do not mark completed here; processing worker will update status upon success.
           return;
         }
 
