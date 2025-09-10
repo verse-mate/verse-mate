@@ -102,6 +102,38 @@ export class BibleRepository {
     return { verses: verses ?? null };
   }
 
+  async getSpecificVersesByBookNameAndChapter(
+    bookName: string,
+    chapterNumber: number,
+    versionKey: string,
+    verseNumbers: number[],
+  ) {
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", versionKey)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      return [];
+    }
+
+    const verses = await this.db
+      .getOrCreateConnection()
+      .selectFrom("verses")
+      .innerJoin("chapters", "verses.chapter_id", "chapters.chapter_id")
+      .innerJoin("books", "chapters.book_id", "books.book_id")
+      .where("books.name", "=", bookName)
+      .where("chapters.chapter_number", "=", chapterNumber)
+      .where("verses.version_id", "=", version.id)
+      .where("verses.verse_number", "in", verseNumbers)
+      .select(["verses.text", "verses.verse_number as verseNumber"])
+      .execute();
+
+    return verses;
+  }
+
   async saveExplanation({
     type,
     explanation,
@@ -601,5 +633,265 @@ export class BibleRepository {
       }
       return { success: false };
     }
+  }
+
+  async deleteInactiveExplanations(options: {
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    try {
+      console.log(
+        "[Admin Deletion] Starting deletion of inactive explanations with options:",
+        options,
+      );
+      const { bibleVersion, bookName, chapter } = options;
+
+      const version = await this.db
+        .getOrCreateConnection()
+        .selectFrom("bible_versions")
+        .where("version_key", "=", bibleVersion)
+        .select("id")
+        .executeTakeFirst();
+
+      if (!version) {
+        console.error(
+          `[Admin Deletion] Bible version ${bibleVersion} not found.`,
+        );
+        throw new Error(`Bible version ${bibleVersion} not found.`);
+      }
+      console.log(`[Admin Deletion] Found version_id: ${version.id}`);
+
+      let query = this.db
+        .getOrCreateConnection()
+        .deleteFrom("explanations")
+        .where("is_active", "=", false)
+        .where("created_by_admin", "=", false)
+        .where("version_id", "=", version.id);
+
+      if (bookName) {
+        const book = await this.db
+          .getOrCreateConnection()
+          .selectFrom("books")
+          .where("name", "=", bookName)
+          .select("book_id")
+          .executeTakeFirst();
+
+        if (!book) {
+          console.error(`[Admin Deletion] Book ${bookName} not found.`);
+          throw new Error(`Book ${bookName} not found.`);
+        }
+        console.log(`[Admin Deletion] Found book_id: ${book.book_id}`);
+
+        let chapterIdsQuery = this.db
+          .getOrCreateConnection()
+          .selectFrom("chapters")
+          .where("book_id", "=", book.book_id)
+          .select("chapter_id");
+
+        if (chapter && chapter !== "all") {
+          console.log(`[Admin Deletion] Filtering by chapter: ${chapter}`);
+          chapterIdsQuery = chapterIdsQuery.where(
+            "chapter_number",
+            "=",
+            chapter,
+          );
+        }
+
+        const chapterIds = await chapterIdsQuery.execute();
+        const ids = chapterIds.map((c) => c.chapter_id);
+        console.log(
+          `[Admin Deletion] Found ${ids.length} chapter_ids to target.`,
+        );
+
+        if (ids.length === 0) {
+          console.log(
+            "[Admin Deletion] No chapters matched the criteria. Nothing to delete.",
+          );
+          return { deletedCount: 0 };
+        }
+
+        query = query.where("chapter_id", "in", ids);
+      } else {
+        console.log(
+          "[Admin Deletion] Deleting across all books (bible-batch).",
+        );
+      }
+
+      console.log("[Admin Deletion] Executing final delete query.");
+      const result = await query.executeTakeFirst();
+      const deleted =
+        typeof result?.numDeletedRows === "bigint" ||
+        typeof result?.numDeletedRows === "number"
+          ? Number(result.numDeletedRows)
+          : 0;
+      console.log(
+        `[Admin Deletion] Successfully deleted ${deleted} explanations.`,
+      );
+      return { deletedCount: deleted };
+    } catch (error) {
+      console.error(
+        "[Admin Deletion] A critical error occurred during the deletion process:",
+        error,
+      );
+      // Re-throw the error so the service layer can handle it, but now it's logged.
+      throw error;
+    }
+  }
+
+  async setDefaultExplanationsAsActive(options: {
+    versionId: string;
+    chapterIds: number[];
+  }) {
+    const { versionId, chapterIds } = options;
+    if (chapterIds.length === 0) {
+      return { activatedCount: 0 };
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        // 1. Deactivate all current explanations for the scope
+        await trx
+          .updateTable("explanations")
+          .set({ is_active: false })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("is_active", "=", true)
+          .execute();
+
+        // 2. Find the most recent admin-created explanation for each type
+        const explanationsToActivate = await trx
+          .selectFrom("explanations")
+          .select("explanation_id")
+          .distinctOn(["chapter_id", "type"])
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("created_by_admin", "=", true)
+          .orderBy("chapter_id")
+          .orderBy("type")
+          .orderBy("created_at", "desc")
+          .execute();
+
+        if (explanationsToActivate.length === 0) {
+          return { activatedCount: 0 };
+        }
+
+        const idsToActivate = explanationsToActivate.map(
+          (e) => e.explanation_id,
+        );
+
+        // 3. Activate the selected default explanations
+        const result = await trx
+          .updateTable("explanations")
+          .set({ is_active: true })
+          .where("explanation_id", "in", idsToActivate)
+          .executeTakeFirst();
+
+        return { activatedCount: Number(result.numUpdatedRows) };
+      });
+  }
+
+  async setActiveExplanationsAsDefault(options: {
+    versionId: string;
+    chapterIds: number[];
+  }) {
+    const { versionId, chapterIds } = options;
+    if (chapterIds.length === 0) {
+      return { promotedCount: 0 };
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        // 1. Demote all current defaults for the scope
+        await trx
+          .updateTable("explanations")
+          .set({ created_by_admin: false })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("created_by_admin", "=", true)
+          .execute();
+
+        // 2. Promote all active explanations to be the new defaults
+        const result = await trx
+          .updateTable("explanations")
+          .set({ created_by_admin: true })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("is_active", "=", true)
+          .executeTakeFirst();
+
+        return { promotedCount: Number(result.numUpdatedRows) };
+      });
+  }
+
+  async getExplanationsByFilter(options: {
+    versionId: string;
+    chapterIds: number[];
+    limit: number;
+    offset: number;
+  }) {
+    const { versionId, chapterIds, limit, offset } = options;
+    if (chapterIds.length === 0) {
+      return { explanations: [], total: 0 };
+    }
+
+    const query = this.db
+      .getOrCreateConnection()
+      .selectFrom("explanations")
+      .where("chapter_id", "in", chapterIds)
+      .where("version_id", "=", versionId);
+
+    const explanations = await query
+      .selectAll()
+      .orderBy("explanation_id", "desc")
+      .limit(limit)
+      .offset(offset)
+      .execute();
+
+    const totalResult = await query
+      .select((eb) => eb.fn.countAll().as("count"))
+      .executeTakeFirst();
+
+    return { explanations, total: Number(totalResult?.count) || 0 };
+  }
+
+  async setSpecificExplanationVersionAsActive(options: {
+    versionId: string;
+    chapterIds: number[];
+    version: number;
+  }) {
+    const { versionId, chapterIds, version } = options;
+    if (chapterIds.length === 0) {
+      return { updatedCount: 0 };
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        // 1. Deactivate all current explanations for the scope
+        await trx
+          .updateTable("explanations")
+          .set({ is_active: false })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("is_active", "=", true)
+          .execute();
+
+        // 2. Activate the explanations with the specific version
+        const result = await trx
+          .updateTable("explanations")
+          .set({ is_active: true })
+          .where("chapter_id", "in", chapterIds)
+          .where("version_id", "=", versionId)
+          .where("version", "=", version)
+          .executeTakeFirst();
+
+        return { updatedCount: Number(result.numUpdatedRows) };
+      });
   }
 }

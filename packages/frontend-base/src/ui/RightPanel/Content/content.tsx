@@ -11,6 +11,7 @@ import { homeOptions } from "../../../utils/home-options";
 import { Accordion } from "../../Accordion";
 import { Chat } from "../../Chat";
 import { Explanation } from "../../Explanation";
+import explanationStyles from "../../Explanation/explanation.module.css";
 import { ProfileButton } from "../../Header/UserProfile/user-profile";
 import * as Icon from "../../Icons";
 import { LoginCard } from "../../LoginCard";
@@ -91,11 +92,13 @@ export const Content = ({
   return (
     <>
       <RadixTabs.Content className={styles.content} value="explanation">
-        <div {...handleDesktopSwipe}>
-          <Explanation.Container
-            chapters={chapters}
-            explanation={explanation}
-          />
+        <div
+          {...handleDesktopSwipe}
+          className={explanationStyles.explanationContent}
+        >
+          <Explanation.DesktopContainer>
+            <Explanation.Content />
+          </Explanation.DesktopContainer>
         </div>
       </RadixTabs.Content>
 
