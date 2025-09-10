@@ -151,7 +151,9 @@ const ActionsMenu = ({
             padding: "8px",
           }}
         >
-          {job.batch_type === "bible" || job.batch_type === "rephrase-bible" ? (
+          {job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible" ? (
             <>
               <Button
                 variant="outlined"
@@ -289,7 +291,9 @@ export const BatchOperations = () => {
 
         const bibleBatches = jobs.filter(
           (job) =>
-            job.batch_type === "bible" || job.batch_type === "rephrase-bible",
+            job.batch_type === "bible" ||
+            job.batch_type === "rephrase-bible" ||
+            job.batch_type === "translate-bible",
         );
         const newSummaries: Record<string, any> = {};
         for (const batch of bibleBatches) {
@@ -575,7 +579,9 @@ export const BatchOperations = () => {
       className: styles.bookColumn,
       render: (job) => (
         <span className={styles.nowrapColumn}>
-          {job.batch_type === "bible" || job.batch_type === "rephrase-bible"
+          {job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible"
             ? "Entire Bible"
             : job.book_name || "N/A"}
           {job.bible_version && (
@@ -599,7 +605,9 @@ export const BatchOperations = () => {
       render: (job) => {
         const summary = summaries[job.id];
         const isParentBatch =
-          job.batch_type === "bible" || job.batch_type === "rephrase-bible";
+          job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible";
         const status =
           isParentBatch && summary ? summary.aggregate_status : job.status;
         const statusText =
@@ -629,7 +637,9 @@ export const BatchOperations = () => {
       render: (job) => {
         const summary = summaries[job.id];
         const isParentBatch =
-          job.batch_type === "bible" || job.batch_type === "rephrase-bible";
+          job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible";
         const cost =
           isParentBatch && summary ? summary.total_cost : job.actual_cost;
         return (
