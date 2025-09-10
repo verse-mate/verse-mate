@@ -1,8 +1,12 @@
 import type { Kysely } from "kysely";
 import { sql } from "kysely";
-import PromptStatusEnum from "../src/models/public/PromptStatusEnum";
 
 import type Database from "../src/models/Database";
+
+enum PromptStatusEnum {
+  active = "active",
+  inactive = "inactive",
+}
 
 export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
