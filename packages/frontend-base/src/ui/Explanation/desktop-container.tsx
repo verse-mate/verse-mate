@@ -6,13 +6,12 @@ type Props = {
   chapters?: number;
 };
 
-export const Container = ({ children, chapters }: Props) => {
+export const DesktopContainer = ({ children, chapters }: Props) => {
   const { handleNextChapter, handlePreviousChapter } = useChapter();
   const totalChapters = Number(chapters);
-  const hasValidChapters = Number.isFinite(totalChapters) && totalChapters > 0;
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
-      if (hasValidChapters) handleNextChapter(totalChapters);
+      if (Number.isFinite(totalChapters)) handleNextChapter(totalChapters);
     },
     onSwipedRight: handlePreviousChapter,
     trackMouse: false,

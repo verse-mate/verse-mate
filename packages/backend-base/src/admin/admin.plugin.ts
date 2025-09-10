@@ -3,18 +3,20 @@ import { Elysia, t } from "elysia";
 import PromptStatusEnum from "../../../database/src/models/public/PromptStatusEnum";
 import { adminGuard } from "../auth/admin.utils";
 import { authDerive } from "../auth/auth.utils";
+import { BibleRepository } from "../bible/repository/bible.repository";
+import { BibleService } from "../bible/services/bible.service";
+import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { AdminDatabaseService } from "./services/admin-database.service";
 import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
-import { batchProcessingQueue } from "../queue/batch-processing.queue";
-
 const plugin = new Elysia()
   .use(shared)
   .state("batchProcessingQueue", batchProcessingQueue)
   .state((state) => {
+    const bibleRepository = new BibleRepository(state.db);
     return {
       ...state,
       getBatchOperationService: () =>
@@ -27,6 +29,7 @@ const plugin = new Elysia()
       getExplanationRegenerationService: () =>
         new ExplanationRegenerationService(state.db),
       getAdminPromptService: () => new AdminPromptService(state.db),
+      getBibleService: () => new BibleService(state.db, bibleRepository),
     };
   })
   .guard((app) => {
@@ -146,6 +149,70 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/batch-rephrase",
+            async ({ body, currentUserId, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateRephraseBatch(
+                body.model,
+                currentUserId,
+                body.type,
+                body.bibleVersion,
+                body.effort || "medium",
+                body.bookName,
+              );
+            },
+            {
+              body: t.Object({
+                type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                bookName: t.Optional(t.String()),
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+                bibleVersion: t.String(),
+              }),
+            },
+          )
+          .post(
+            "/batch-translate",
+            async ({ body, currentUserId, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTranslateBatch(
+                body.model,
+                currentUserId,
+                body.type,
+                body.sourceBibleVersion,
+                body.targetBibleVersion,
+                body.explanationTypes,
+                body.skipExisting || false,
+                body.effort || "medium",
+                body.bookName,
+              );
+            },
+            {
+              body: t.Object({
+                type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                bookName: t.Optional(t.String()),
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+                sourceBibleVersion: t.String(),
+                targetBibleVersion: t.String(),
+                explanationTypes: t.Array(t.String()),
+                skipExisting: t.Optional(t.Boolean()),
+              }),
+            },
+          )
           .get(
             "/batch/:batchJobId",
             async ({ params, store }) => {
@@ -218,6 +285,10 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post("/batches/monitor-all", async ({ store }) => {
+            const batchOperationService = store.getBatchOperationService();
+            return await batchOperationService.monitorAllActiveBatches();
+          })
           .get(
             "/batch-summary/:parentId",
             async ({ params, store }) => {
@@ -328,10 +399,97 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/explanations/set-active-as-default",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setActiveExplanationsAsDefault(body);
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
+          .post(
+            "/explanations/set-defaults-active",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setDefaultExplanationsAsActive(body);
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
+          .post(
+            "/explanations/set-specific-version-active",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setSpecificExplanationVersionAsActive(
+                body,
+              );
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+                version: t.Number(),
+              }),
+            },
+          )
+          .delete(
+            "/explanations/inactive",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.deleteInactiveExplanations(body);
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
           .get("/explanation/:id/history", async ({ params, store }) => {
             const adminDatabaseService = store.getAdminDatabaseService();
             return await adminDatabaseService.getExplanationHistory(params.id);
           })
+          .get(
+            "/explanations",
+            async ({ query, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.getExplanationsByFilter({
+                isBibleBatch: query.isBibleBatch === "true",
+                bibleVersion: query.bibleVersion,
+                bookName: query.bookName,
+                chapter: query.chapter ? Number(query.chapter) : "all",
+                limit: query.limit ? Number(query.limit) : 50,
+                offset: query.offset ? Number(query.offset) : 0,
+              });
+            },
+            {
+              query: t.Object({
+                isBibleBatch: t.String(),
+                bibleVersion: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.String()),
+                limit: t.Optional(t.String()),
+                offset: t.Optional(t.String()),
+              }),
+            },
+          )
           .get("/stats", async ({ store }) => {
             const adminDatabaseService = store.getAdminDatabaseService();
             return await adminDatabaseService.getExplanationStats();
