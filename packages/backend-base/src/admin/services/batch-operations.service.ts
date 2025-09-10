@@ -1113,7 +1113,9 @@ export class BatchOperationService {
 
     for (const batch of activeBatches) {
       const isParent =
-        batch.batch_type === "bible" || batch.batch_type === "rephrase-bible";
+        batch.batch_type === "bible" ||
+        batch.batch_type === "rephrase-bible" ||
+        batch.batch_type === "translate-bible";
       const batchId = isParent ? `parent-${batch.id}` : batch.openai_batch_id;
 
       if (batchId) {
