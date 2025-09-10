@@ -7,7 +7,7 @@ export async function parseAndInjectVerses(
   database: db,
 ) {
   const bibleRepository = new BibleRepository(database);
-  const verseRegex = /{verse:([\w\s]+)\s(\d+):(\d+)}/g;
+  const verseRegex = /{verse:([\w\d .'-]+)\s+(\d+):(\d+)}/g;
   const placeholders = [...text.matchAll(verseRegex)];
 
   if (placeholders.length === 0) {

@@ -720,11 +720,15 @@ export class BibleRepository {
 
       console.log("[Admin Deletion] Executing final delete query.");
       const result = await query.executeTakeFirst();
-      const deletedCount = Number(result.numDeletedRows);
+      const deleted =
+        typeof result?.numDeletedRows === "bigint" ||
+        typeof result?.numDeletedRows === "number"
+          ? Number(result.numDeletedRows)
+          : 0;
       console.log(
-        `[Admin Deletion] Successfully deleted ${deletedCount} explanations.`,
+        `[Admin Deletion] Successfully deleted ${deleted} explanations.`,
       );
-      return { deletedCount };
+      return { deletedCount: deleted };
     } catch (error) {
       console.error(
         "[Admin Deletion] A critical error occurred during the deletion process:",
