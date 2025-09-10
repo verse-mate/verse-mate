@@ -151,7 +151,7 @@ const ActionsMenu = ({
             padding: "8px",
           }}
         >
-          {job.batch_type === "bible" ? (
+          {job.batch_type === "bible" || job.batch_type === "rephrase-bible" ? (
             <>
               <Button
                 variant="outlined"
@@ -277,7 +277,10 @@ export const BatchOperations = () => {
         jobs.sort((a, b) => Number(b.id) - Number(a.id));
         setBatchJobs(jobs);
 
-        const bibleBatches = jobs.filter((job) => job.batch_type === "bible");
+        const bibleBatches = jobs.filter(
+          (job) =>
+            job.batch_type === "bible" || job.batch_type === "rephrase-bible",
+        );
         const newSummaries: Record<string, any> = {};
         for (const batch of bibleBatches) {
           try {
@@ -397,7 +400,7 @@ export const BatchOperations = () => {
       await api.admin.batch({ batchJobId: batchId }).delete();
 
       const job = batchJobs.find((j) => j.id === batchId);
-      if (job?.batch_type === "bible") {
+      if (job?.batch_type === "bible" || job?.batch_type === "rephrase-bible") {
         await handleMonitorBibleBatch(batchId);
       } else if (job?.openai_batch_id) {
         await handleMonitorBatch(job.openai_batch_id);
@@ -485,7 +488,10 @@ export const BatchOperations = () => {
       render: (job) => {
         const handleClick = (e: React.MouseEvent) => {
           e.preventDefault();
-          if (job.batch_type === "bible") {
+          if (
+            job.batch_type === "bible" ||
+            job.batch_type === "rephrase-bible"
+          ) {
             handleViewBibleDetails(job.id);
           } else if (job.openai_batch_id) {
             handleViewBookDetails(job.openai_batch_id);
@@ -517,7 +523,9 @@ export const BatchOperations = () => {
       className: styles.bookColumn,
       render: (job) => (
         <span className={styles.nowrapColumn}>
-          {job.batch_type === "bible" ? "Entire Bible" : job.book_name || "N/A"}
+          {job.batch_type === "bible" || job.batch_type === "rephrase-bible"
+            ? "Entire Bible"
+            : job.book_name || "N/A"}
           {job.bible_version && (
             <span className={styles.versionBadge}>({job.bible_version})</span>
           )}
@@ -538,14 +546,12 @@ export const BatchOperations = () => {
       className: styles.statusColumn,
       render: (job) => {
         const summary = summaries[job.id];
+        const isParentBatch =
+          job.batch_type === "bible" || job.batch_type === "rephrase-bible";
         const status =
-          job.batch_type === "bible" && summary
-            ? summary.aggregate_status
-            : job.status;
+          isParentBatch && summary ? summary.aggregate_status : job.status;
         const statusText =
-          job.batch_type === "bible" && summary
-            ? summary.status_progress_text
-            : status;
+          isParentBatch && summary ? summary.status_progress_text : status;
 
         return (
           <span
@@ -571,12 +577,13 @@ export const BatchOperations = () => {
       render: (job) => {
         const summary = summaries[job.id];
         const cost =
-          job.batch_type === "bible" && summary
+          job.batch_type === "bible" ||
+          (job.batch_type === "rephrase-bible" && summary)
             ? summary.total_cost
             : job.actual_cost;
         return (
           <span className={styles.nowrapColumn}>
-            {cost ? `$${Number(cost).toFixed(4)}` : "N/A"}
+            {cost ? `${Number(cost).toFixed(4)}` : "N/A"}
           </span>
         );
       },

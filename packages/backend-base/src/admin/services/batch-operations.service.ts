@@ -318,7 +318,7 @@ export class BatchOperationService {
         .insertInto("batch_jobs")
         .values({
           batch_type: "rephrase-bible",
-          status: "in_progress",
+          status: "validating",
           model,
           created_by: adminUserId,
           total_requests: 66,
@@ -329,6 +329,17 @@ export class BatchOperationService {
         .executeTakeFirstOrThrow();
 
       const parentBatchId = parentBatch.id;
+
+      // Add parent batch to monitoring queue
+      await this.batchMonitoringQueue.add(
+        BATCH_MONITORING_QUEUE,
+        { batchId: `parent-${parentBatchId}`, model, isParent: true },
+        {
+          jobId: `parent-${parentBatchId}`,
+          removeOnComplete: true,
+          removeOnFail: 100,
+        },
+      );
 
       const books = await connection
         .selectFrom("books")
@@ -418,7 +429,12 @@ export class BatchOperationService {
       .where("chapters.book_id", "=", book.book_id)
       .where("explanations.version_id", "=", version.id)
       .where("is_active", "=", true)
-      .selectAll("explanations")
+      .select([
+        "explanations.explanation_id",
+        "explanations.explanation",
+        "explanations.type",
+        "chapters.chapter_number",
+      ])
       .execute();
 
     if (activeExplanations.length === 0) {
@@ -430,7 +446,7 @@ export class BatchOperationService {
 
     const batchRequests: BatchJobRequest[] = activeExplanations.map(
       (explanation) => ({
-        custom_id: `rephrase-${explanation.explanation_id}`,
+        custom_id: `rephrase|${bookName}|${explanation.chapter_number}|${explanation.type}|${bibleVersion}`,
         method: "POST",
         url: "/v1/responses",
         body: {
@@ -1253,25 +1269,126 @@ export class BatchOperationService {
         }
 
         if (
-          parsedLine.custom_id?.startsWith("rephrase-") &&
+          parsedLine.custom_id?.startsWith("rephrase|") &&
           parsedLine.response?.status_code === 200 &&
           typeof extractedText === "string" &&
           extractedText.length > 0
         ) {
+          const parts = parsedLine.custom_id.split("|");
+          if (parts.length !== 5) {
+            errorCount++;
+            console.error(
+              `[BATCH] Invalid custom_id format: ${parsedLine.custom_id}`,
+            );
+            continue;
+          }
+          const [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+            parts;
+          const chapterNumber = Number(chapterNumberStr);
+
+          const version = await this.db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .where("version_key", "=", bibleVersion)
+            .select("id")
+            .executeTakeFirst();
+
+          if (!version) {
+            errorCount++;
+            console.error(
+              `[BATCH] Bible version not found for rephrase: ${bibleVersion}`,
+            );
+            continue;
+          }
+
+          const book = await this.db
+            .getOrCreateConnection()
+            .selectFrom("books")
+            .where("name", "=", bookName)
+            .select("book_id")
+            .executeTakeFirst();
+
+          if (!book) {
+            errorCount++;
+            console.error(`[BATCH] Book not found for rephrase: ${bookName}`);
+            continue;
+          }
+
+          const chapter = await this.db
+            .getOrCreateConnection()
+            .selectFrom("chapters")
+            .where("book_id", "=", book.book_id)
+            .where("chapter_number", "=", chapterNumber)
+            .select("chapter_id")
+            .executeTakeFirst();
+
+          if (!chapter) {
+            errorCount++;
+            console.error(
+              `[BATCH] Chapter not found for rephrase: ${bookName} ${chapterNumber}`,
+            );
+            continue;
+          }
+
+          // Find the most recent version of the explanation to rephrase
+          const originalExplanation = await this.db
+            .getOrCreateConnection()
+            .selectFrom("explanations")
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("type", "=", explanationType as any)
+            .where("version_id", "=", version.id)
+            .orderBy("version", "desc")
+            .selectAll()
+            .executeTakeFirst();
+
+          if (originalExplanation) {
+            const originalExplanationId = originalExplanation.explanation_id;
+            await this.db
+              .getOrCreateConnection()
+              .transaction()
+              .execute(async (trx) => {
+                // Deactivate all existing versions of this explanation
+                await trx
+                  .updateTable("explanations")
+                  .set({ is_active: false })
+                  .where("chapter_id", "=", chapter.chapter_id)
+                  .where("type", "=", explanationType as any)
+                  .where("version_id", "=", version.id)
+                  .execute();
+
+                // Insert the new, active version
+                await trx
+                  .insertInto("explanations")
+                  .values({
+                    type: originalExplanation.type,
+                    explanation: extractedText,
+                    chapter_id: originalExplanation.chapter_id,
+                    version_id: originalExplanation.version_id,
+                    version: originalExplanation.version + 1,
+                    is_active: true,
+                    created_by_admin: originalExplanation.created_by_admin,
+                    parent_explanation_id: originalExplanationId,
+                    created_at: new Date(),
+                  })
+                  .execute();
+              });
+            processedCount++;
+          } else {
+            errorCount++;
+            console.error(
+              `[BATCH] Original explanation not found for rephrase: ${bookName} ${chapterNumber} ${explanationType}`,
+            );
+          }
+        } else if (parsedLine.custom_id?.startsWith("rephrase-")) {
+          // Legacy support for old rephrase batches
           const originalExplanationId = Number.parseInt(
             parsedLine.custom_id.replace("rephrase-", ""),
           );
 
-          // First, try to find the most recent version of the explanation
           const originalExplanation = await this.db
             .getOrCreateConnection()
             .selectFrom("explanations")
-            .where((eb) =>
-              eb.or([
-                eb("parent_explanation_id", "=", originalExplanationId),
-                eb("explanation_id", "=", originalExplanationId),
-              ]),
-            )
+            .where("explanation_id", "=", originalExplanationId)
             .orderBy("version", "desc")
             .selectAll()
             .executeTakeFirst();
@@ -1281,27 +1398,22 @@ export class BatchOperationService {
               .getOrCreateConnection()
               .transaction()
               .execute(async (trx) => {
-                // Deactivate all existing versions of this explanation
                 await trx
                   .updateTable("explanations")
                   .set({ is_active: false })
-                  .where((eb) =>
-                    eb.or([
-                      eb("parent_explanation_id", "=", originalExplanationId),
-                      eb("explanation_id", "=", originalExplanationId),
-                    ]),
-                  )
+                  .where("explanation_id", "=", originalExplanationId)
                   .execute();
 
-                const { explanation_id, ...restOfExplanation } =
-                  originalExplanation;
                 await trx
                   .insertInto("explanations")
                   .values({
-                    ...restOfExplanation,
-                    explanation: extractedText,
-                    is_active: true,
+                    type: originalExplanation.type,
+                    explanation: extractedText ?? "",
+                    chapter_id: originalExplanation.chapter_id,
+                    version_id: originalExplanation.version_id,
                     version: originalExplanation.version + 1,
+                    is_active: true,
+                    created_by_admin: originalExplanation.created_by_admin,
                     parent_explanation_id: originalExplanationId,
                     created_at: new Date(),
                   })

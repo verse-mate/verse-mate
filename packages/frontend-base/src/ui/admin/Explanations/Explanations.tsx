@@ -10,6 +10,7 @@ import { CheckIcon, ChevronDownIcon } from "../../Icons";
 import { Input } from "../../Input/Input";
 import { SelectDropdown } from "../../SelectDropdown";
 import { Table, type TableColumn } from "../../Table/Table";
+import { ExplanationDetailModal } from "./ExplanationDetailModal";
 import styles from "./Explanations.module.css";
 
 const bookOptions = testaments;
@@ -34,6 +35,10 @@ export const Explanations = () => {
   const [selectedBibleVersion, setSelectedBibleVersion] =
     useState<string>("NASB1995");
   const [versionToSetActive, setVersionToSetActive] = useState("");
+
+  // Modal state
+  const [selectedExplanation, setSelectedExplanation] =
+    useState<Explanation | null>(null);
 
   // Dropdown states
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
@@ -225,15 +230,29 @@ export const Explanations = () => {
       title: "ID",
       property: "explanation_id",
       className: styles.idColumn,
+      render: (exp) => (
+        <button
+          type="button"
+          onClick={() => setSelectedExplanation(exp)}
+          className={styles.clickableId}
+        >
+          {exp.explanation_id}
+        </button>
+      ),
     },
-    { title: "Type", property: "type", className: styles.typeColumn },
+    {
+      title: "Type",
+      property: "type",
+      className: styles.typeColumn,
+      render: (exp) => <span className={styles.nowrapColumn}>{exp.type}</span>,
+    },
     {
       title: "Explanation",
       property: "explanation",
       className: styles.explanationColumn,
       render: (exp) => (
-        <span title={exp.explanation}>
-          {exp.explanation.substring(0, 100)}...
+        <span className={styles.nowrapColumn} title={exp.explanation}>
+          {exp.explanation}
         </span>
       ),
     },
@@ -242,7 +261,7 @@ export const Explanations = () => {
       property: "is_active",
       className: styles.statusColumn,
       render: (exp) => (
-        <div style={{ display: "flex", gap: "5px" }}>
+        <div className={styles.statusContainer}>
           {exp.is_active && <span className={styles.badgeActive}>Active</span>}
           {exp.created_by_admin && (
             <span className={styles.badgeDefault}>Default</span>
@@ -250,12 +269,23 @@ export const Explanations = () => {
         </div>
       ),
     },
-    { title: "Version", property: "version", className: styles.versionColumn },
+    {
+      title: "Version",
+      property: "version",
+      className: styles.versionColumn,
+      render: (exp) => (
+        <span className={styles.nowrapColumn}>{exp.version}</span>
+      ),
+    },
     {
       title: "Created",
       property: "created_at",
       className: styles.createdColumn,
-      render: (exp) => new Date(exp.created_at).toLocaleDateString(),
+      render: (exp) => (
+        <span className={styles.nowrapColumn}>
+          {new Date(exp.created_at).toLocaleDateString()}
+        </span>
+      ),
     },
   ];
 
@@ -518,6 +548,11 @@ export const Explanations = () => {
           </Button>
         </div>
       </div>
+
+      <ExplanationDetailModal
+        explanation={selectedExplanation}
+        onClose={() => setSelectedExplanation(null)}
+      />
 
       <Dialog
         open={deleteModalOpen}
