@@ -17,6 +17,8 @@ export default interface PromptsTable {
   prompt: ColumnType<string, string, string>;
 
   status: ColumnType<PromptStatusEnum, PromptStatusEnum, PromptStatusEnum>;
+
+  prompt_type: ColumnType<string, string | undefined, string>;
 }
 
 export type Prompts = Selectable<PromptsTable>;

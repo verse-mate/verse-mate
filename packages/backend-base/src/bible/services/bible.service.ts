@@ -1,6 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { db } from "../../shared/shared.plugin";
+import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
 import type { LastChapterReadDto } from "../dto/book/last-chapter-read.dto";
@@ -123,7 +124,34 @@ export class BibleService {
       return [];
     }
 
-    return explanation;
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("id", "=", version_id)
+      .select("version_key")
+      .executeTakeFirst();
+
+    if (!version) {
+      return explanation;
+    }
+
+    const processedExplanations = await Promise.all(
+      explanation.map(async (exp) => {
+        if (exp.explanation) {
+          return {
+            ...exp,
+            explanation: await parseAndInjectVerses(
+              exp.explanation,
+              version.version_key,
+              this.db,
+            ),
+          };
+        }
+        return exp;
+      }),
+    );
+
+    return processedExplanations;
   }
 
   async saveRating({
@@ -465,5 +493,301 @@ export class BibleService {
     return explanation.some(
       (bookExplanation) => bookExplanation.explanation_id === null,
     );
+  }
+
+  async deleteInactiveExplanations(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
+
+    if (!isBibleBatch && !bookName) {
+      throw new Error("Book name is required for non-bible batch deletions.");
+    }
+
+    const result = await this.bibleRepository.deleteInactiveExplanations({
+      bibleVersion,
+      bookName: isBibleBatch ? undefined : bookName,
+      chapter: isBibleBatch ? undefined : chapter,
+    });
+
+    return {
+      message: `Successfully deleted ${result.deletedCount} inactive explanations.`,
+      deletedCount: result.deletedCount,
+    };
+  }
+
+  async setDefaultExplanationsAsActive(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
+
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version ${bibleVersion} not found.`);
+    }
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        activatedCount: 0,
+      };
+    }
+
+    const result = await this.bibleRepository.setDefaultExplanationsAsActive({
+      versionId: version.id,
+      chapterIds,
+    });
+
+    return {
+      message: `Successfully activated ${result.activatedCount} default explanations.`,
+      activatedCount: result.activatedCount,
+    };
+  }
+
+  async setActiveExplanationsAsDefault(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
+
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version ${bibleVersion} not found.`);
+    }
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        promotedCount: 0,
+      };
+    }
+
+    const result = await this.bibleRepository.setActiveExplanationsAsDefault({
+      versionId: version.id,
+      chapterIds,
+    });
+
+    return {
+      message: `Successfully promoted ${result.promotedCount} active explanations to default.`,
+      promotedCount: result.promotedCount,
+    };
+  }
+
+  async setSpecificExplanationVersionAsActive(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+    version: number;
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter, version } = options;
+
+    const bibleVersionRecord = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!bibleVersionRecord) {
+      throw new Error(`Bible version ${bibleVersion} not found.`);
+    }
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        updatedCount: 0,
+      };
+    }
+
+    const result =
+      await this.bibleRepository.setSpecificExplanationVersionAsActive({
+        versionId: bibleVersionRecord.id,
+        chapterIds,
+        version,
+      });
+
+    return {
+      message: `Successfully set version ${version} as active for ${result.updatedCount} explanations.`,
+      updatedCount: result.updatedCount,
+    };
+  }
+
+  async getExplanationsByFilter(options: {
+    isBibleBatch: boolean;
+    bibleVersion: string;
+    bookName?: string;
+    chapter?: number | "all";
+    limit: number;
+    offset: number;
+  }) {
+    const { isBibleBatch, bibleVersion, bookName, chapter, limit, offset } =
+      options;
+
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version ${bibleVersion} not found.`);
+    }
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        // If not searching the whole bible, a book must be selected.
+        // Return empty array as there's nothing to show.
+        return { explanations: [], total: 0 };
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    return this.bibleRepository.getExplanationsByFilter({
+      versionId: version.id,
+      chapterIds,
+      limit,
+      offset,
+    });
   }
 }

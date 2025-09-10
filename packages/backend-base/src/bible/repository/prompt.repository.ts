@@ -14,10 +14,11 @@ export class PromptRepository {
       .selectFrom("prompts")
       .select(["prompts.prompt_id", "prompts.prompt", "prompts.status"])
       .where("prompts.status", "=", PromptStatusEnum.active)
+      .where("prompts.prompt_type", "=", "system")
       .executeTakeFirst();
 
     if (!prompt) {
-      throw new Error("Active Prompt not found");
+      throw new Error("Active System Prompt not found");
     }
 
     return prompt;

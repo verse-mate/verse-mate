@@ -3,12 +3,12 @@ import * as fs from "node:fs";
 import type { Job } from "bullmq";
 import { db } from "database";
 import OpenAI from "openai";
-import { BibleRepository } from "../../bible/repository/bible.repository";
-import { BibleService } from "../../bible/services/bible.service";
+import { BatchOperationService } from "../../admin/services/batch-operations.service";
 import {
   BATCH_MONITORING_QUEUE,
   batchMonitoringQueue,
 } from "../batch-monitoring.queue";
+import { batchProcessingQueue } from "../batch-processing.queue";
 
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,
@@ -76,25 +76,66 @@ async function cleanupBatchFiles(batchId: string): Promise<void> {
 }
 
 export const batchMonitoringConsumer = async (job: Job) => {
-  const { batchId, model, monitoringAttempt = 1 } = job.data;
+  const { batchId, model, monitoringAttempt = 1, isParent } = job.data;
 
   console.log(
-    `[BATCH_MONITORING] Processing batch ${batchId} (monitoring attempt ${monitoringAttempt})`,
+    `[BATCH_MONITORING] Processing job for ${batchId} (attempt ${monitoringAttempt})`,
   );
+
+  if (
+    isParent ||
+    (typeof batchId === "string" && batchId.startsWith("parent-"))
+  ) {
+    const parentId = Number(batchId.replace("parent-", ""));
+    console.log(`[BATCH_MONITORING] Monitoring parent batch ID: ${parentId}`);
+
+    try {
+      const batchOperationService = new BatchOperationService(
+        db,
+        batchMonitoringQueue,
+        batchProcessingQueue,
+      );
+      await batchOperationService.monitorBibleBatch(parentId);
+
+      // Re-queue for next check, but only if the batch is not in a final state
+      const summary = await batchOperationService.getBatchSummary(parentId);
+      if (
+        !["completed", "failed", "cancelled"].includes(summary.aggregate_status)
+      ) {
+        await batchMonitoringQueue.add(
+          BATCH_MONITORING_QUEUE,
+          {
+            batchId,
+            model,
+            monitoringAttempt: monitoringAttempt + 1,
+            isParent: true,
+          },
+          {
+            jobId: `${batchId}-${Date.now()}`,
+            delay: 5 * 60 * 1000, // 5 minutes
+            removeOnComplete: true,
+            removeOnFail: 100,
+          },
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[BATCH_MONITORING] Error monitoring parent batch ${parentId}:`,
+        error,
+      );
+    }
+    return;
+  }
 
   try {
     const batch = await openai.batches.retrieve(batchId);
 
     console.log(`[BATCH_MONITORING] Batch ${batchId} status: ${batch.status}`);
-    console.log(
-      "[BATCH_MONITORING] Batch details:",
-      JSON.stringify(batch, null, 2),
-    );
 
     // Log any errors if present
     if (batch.errors?.data && batch.errors.data.length > 0) {
       console.error(
-        `[BATCH_MONITORING] Batch ${batchId} has errors:`,
+        `[BATCH_MONITORING] Batch ${batchId} has errors`,
         JSON.stringify(batch.errors, null, 2),
       );
     }
@@ -116,7 +157,12 @@ export const batchMonitoringConsumer = async (job: Job) => {
           .getOrCreateConnection()
           .selectFrom("batch_jobs")
           .where("openai_batch_id", "=", batchId)
-          .select(["bible_version", "book_id", "explanations_processed"])
+          .select([
+            "bible_version",
+            "book_id",
+            "explanations_processed",
+            "batch_type",
+          ])
           .executeTakeFirst();
 
         if (!batchJob) {
@@ -131,6 +177,21 @@ export const batchMonitoringConsumer = async (job: Job) => {
           console.log(
             `[BATCH_MONITORING] Batch ${batchId} explanations already processed, skipping duplicate processing`,
           );
+          return;
+        }
+
+        if (
+          batchJob.batch_type === "rephrase" ||
+          batchJob.batch_type === "rephrase-bible"
+        ) {
+          console.log(
+            `[BATCH_MONITORING] Batch ${batchId} is a rephrase batch. Queueing output processing before completion.`,
+          );
+          await batchProcessingQueue.add("process-batch-output", {
+            batchId,
+            type: batchJob.batch_type,
+          });
+          // Do not mark completed here; processing worker will update status upon success.
           return;
         }
 
@@ -204,19 +265,26 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 continue;
               }
 
+              const newExplanation = {
+                type: explanationType as any,
+                explanation: explanationContent,
+                chapter_id: chapter.chapter_id,
+                version_id: version.id,
+                version: 1, // Start with version 1
+                is_active: true,
+              };
+
               await db
                 .getOrCreateConnection()
                 .insertInto("explanations")
-                .values({
-                  type: explanationType as any,
-                  explanation: explanationContent,
-                  chapter_id: chapter.chapter_id,
-                  version_id: version.id,
-                })
+                .values(newExplanation)
                 .onConflict((oc) =>
-                  oc.columns(["chapter_id", "type", "version_id"]).doUpdateSet({
-                    explanation: explanationContent,
-                  }),
+                  oc
+                    .columns(["chapter_id", "type", "version_id", "version"])
+                    .doUpdateSet({
+                      explanation: explanationContent,
+                      is_active: true, // Ensure it's active on update
+                    }),
                 )
                 .execute();
 
@@ -341,7 +409,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
         BATCH_MONITORING_QUEUE,
         { batchId, model, monitoringAttempt: monitoringAttempt + 1 },
         {
-          jobId: `${batchId}-${Date.now()}`, // Unique job ID to avoid conflicts
+          jobId: `${batchId}-${Date.now()}`,
           delay: 5 * 60 * 1000,
           removeOnComplete: true,
           removeOnFail: 100,
@@ -373,7 +441,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
         BATCH_MONITORING_QUEUE,
         { batchId, model, monitoringAttempt: monitoringAttempt + 1 },
         {
-          jobId: `${batchId}-${Date.now()}`, // Unique job ID to avoid conflicts
+          jobId: `${batchId}-${Date.now()}`,
           delay,
           removeOnComplete: true,
           removeOnFail: 100,

@@ -21,11 +21,16 @@ yargs(hideBin(process.argv))
     },
   )
   .command(
-    "migrate-dev",
+    "migrate-dev [name]",
     "Create a migration empty migration.",
-    () => {},
-    () => {
-      migrateDev();
+    (yargs) => {
+      return yargs.positional("name", {
+        describe: "Name for the migration file",
+        type: "string",
+      });
+    },
+    (argv) => {
+      migrateDev(argv.name);
     },
   )
   .command(

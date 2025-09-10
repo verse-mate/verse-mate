@@ -4,6 +4,7 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
+import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import { getBookVerse, getExplanation } from "../../api/bible";
@@ -1475,7 +1476,7 @@ export const MainContent = () => {
             </RadixTabs.Content>
 
             <RadixTabs.Content value="explanation">
-              <Explanation.Container
+              <Explanation.MobileContainer
                 chapters={chapters}
                 explanation={explanation}
               />
