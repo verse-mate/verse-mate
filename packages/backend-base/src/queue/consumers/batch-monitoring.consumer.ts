@@ -116,7 +116,12 @@ export const batchMonitoringConsumer = async (job: Job) => {
           .getOrCreateConnection()
           .selectFrom("batch_jobs")
           .where("openai_batch_id", "=", batchId)
-          .select(["bible_version", "book_id", "explanations_processed"])
+          .select([
+            "bible_version",
+            "book_id",
+            "explanations_processed",
+            "batch_type",
+          ])
           .executeTakeFirst();
 
         if (!batchJob) {
@@ -130,6 +135,25 @@ export const batchMonitoringConsumer = async (job: Job) => {
         if (batchJob.explanations_processed) {
           console.log(
             `[BATCH_MONITORING] Batch ${batchId} explanations already processed, skipping duplicate processing`,
+          );
+          return;
+        }
+
+        if (
+          batchJob.batch_type === "rephrase" ||
+          batchJob.batch_type === "rephrase-bible"
+        ) {
+          console.log(
+            `[BATCH_MONITORING] Batch ${batchId} is a rephrase batch. The batch-processing queue will handle the output file.`,
+          );
+          await db
+            .getOrCreateConnection()
+            .updateTable("batch_jobs")
+            .set({ status: "completed" })
+            .where("openai_batch_id", "=", batchId)
+            .execute();
+          console.log(
+            `[BATCH_MONITORING] Marked rephrase batch ${batchId} as completed.`,
           );
           return;
         }

@@ -1219,8 +1219,11 @@ export class BatchOperationService {
     let totalCompletionTokens = 0;
 
     for (const line of lines) {
+      let customId = "unknown";
       try {
         const parsedLine = JSON.parse(line);
+        customId = parsedLine.custom_id || "unknown";
+        console.log(`[BATCH] Processing line with custom_id: ${customId}`);
 
         if (parsedLine.response?.body?.usage) {
           totalPromptTokens += parsedLine.response.body.usage.input_tokens || 0;
@@ -1229,9 +1232,25 @@ export class BatchOperationService {
         }
 
         const responseBody = parsedLine.response?.body;
-        const extractedText: string | undefined =
-          responseBody?.output_text ||
-          responseBody?.output?.[1]?.content?.[0]?.text;
+
+        let extractedText: string | undefined;
+        if (responseBody?.output && Array.isArray(responseBody.output)) {
+          for (const item of responseBody.output) {
+            if (
+              item.content &&
+              Array.isArray(item.content) &&
+              typeof item.content[0]?.text === "string"
+            ) {
+              extractedText = item.content[0].text;
+              break; // Stop searching once we find the first valid text
+            }
+          }
+        }
+
+        // Fallback for the old format, just in case
+        if (!extractedText) {
+          extractedText = responseBody?.output_text;
+        }
 
         if (
           parsedLine.custom_id?.startsWith("rephrase-") &&
@@ -1242,10 +1261,18 @@ export class BatchOperationService {
           const originalExplanationId = Number.parseInt(
             parsedLine.custom_id.replace("rephrase-", ""),
           );
+
+          // First, try to find the most recent version of the explanation
           const originalExplanation = await this.db
             .getOrCreateConnection()
             .selectFrom("explanations")
-            .where("explanation_id", "=", originalExplanationId)
+            .where((eb) =>
+              eb.or([
+                eb("parent_explanation_id", "=", originalExplanationId),
+                eb("explanation_id", "=", originalExplanationId),
+              ]),
+            )
+            .orderBy("version", "desc")
             .selectAll()
             .executeTakeFirst();
 
@@ -1254,16 +1281,24 @@ export class BatchOperationService {
               .getOrCreateConnection()
               .transaction()
               .execute(async (trx) => {
+                // Deactivate all existing versions of this explanation
                 await trx
                   .updateTable("explanations")
                   .set({ is_active: false })
-                  .where("explanation_id", "=", originalExplanationId)
+                  .where((eb) =>
+                    eb.or([
+                      eb("parent_explanation_id", "=", originalExplanationId),
+                      eb("explanation_id", "=", originalExplanationId),
+                    ]),
+                  )
                   .execute();
 
+                const { explanation_id, ...restOfExplanation } =
+                  originalExplanation;
                 await trx
                   .insertInto("explanations")
                   .values({
-                    ...originalExplanation,
+                    ...restOfExplanation,
                     explanation: extractedText,
                     is_active: true,
                     version: originalExplanation.version + 1,
@@ -1273,13 +1308,27 @@ export class BatchOperationService {
                   .execute();
               });
             processedCount++;
+          } else {
+            errorCount++;
+            console.error(
+              `[BATCH] SILENT FAILURE: Original explanation not found for ID: ${originalExplanationId}. This is likely the cause of the error.`,
+            );
           }
         } else {
           errorCount++;
+          console.error(
+            `[BATCH] Failed to process rephrase line for custom_id: ${
+              parsedLine.custom_id
+            }. Response:`,
+            JSON.stringify(parsedLine.response, null, 2),
+          );
         }
       } catch (error) {
         errorCount++;
-        console.error("[BATCH] Error processing rephrase line:", error);
+        console.error(
+          `[BATCH] Error processing rephrase line for custom_id: ${customId}:`,
+          error,
+        );
       }
     }
 
