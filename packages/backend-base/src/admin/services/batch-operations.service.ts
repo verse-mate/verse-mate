@@ -1206,19 +1206,26 @@ export class BatchOperationService {
               continue;
             }
 
+            const newExplanation = {
+              type: explanationType as any,
+              explanation: explanationContent,
+              chapter_id: chapter.chapter_id,
+              version_id: version.id,
+              version: 1, // Start with version 1
+              is_active: true,
+            };
+
             await this.db
               .getOrCreateConnection()
               .insertInto("explanations")
-              .values({
-                type: explanationType as any,
-                explanation: explanationContent,
-                chapter_id: chapter.chapter_id,
-                version_id: version.id,
-              })
+              .values(newExplanation)
               .onConflict((oc) =>
-                oc.columns(["chapter_id", "type", "version_id"]).doUpdateSet({
-                  explanation: explanationContent,
-                }),
+                oc
+                  .columns(["chapter_id", "type", "version_id", "version"])
+                  .doUpdateSet({
+                    explanation: explanationContent,
+                    is_active: true, // Ensure it's active on update
+                  }),
               )
               .execute();
 
