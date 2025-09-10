@@ -178,6 +178,41 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/batch-translate",
+            async ({ body, currentUserId, store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTranslateBatch(
+                body.model,
+                currentUserId,
+                body.type,
+                body.sourceBibleVersion,
+                body.targetBibleVersion,
+                body.explanationTypes,
+                body.skipExisting || false,
+                body.effort || "medium",
+                body.bookName,
+              );
+            },
+            {
+              body: t.Object({
+                type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                bookName: t.Optional(t.String()),
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+                sourceBibleVersion: t.String(),
+                targetBibleVersion: t.String(),
+                explanationTypes: t.Array(t.String()),
+                skipExisting: t.Optional(t.Boolean()),
+              }),
+            },
+          )
           .get(
             "/batch/:batchJobId",
             async ({ params, store }) => {

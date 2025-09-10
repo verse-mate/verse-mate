@@ -258,6 +258,16 @@ export const BatchOperations = () => {
   const [rephraseModalOpen, setRephraseModalOpen] = useState(false);
   const [rephrasing, setRephrasing] = useState(false);
 
+  // Modal 4 (Translate) state
+  const [translateModalOpen, setTranslateModalOpen] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [sourceBibleVersion, setSourceBibleVersion] = useState("NASB1995");
+  const [targetBibleVersion, setTargetBibleVersion] = useState("ESV");
+  const [sourceVersionDropdownOpen, setSourceVersionDropdownOpen] =
+    useState(false);
+  const [targetVersionDropdownOpen, setTargetVersionDropdownOpen] =
+    useState(false);
+
   const fetchBatchJobsOnly = useCallback(async () => {
     try {
       const response = await api.admin["batch-history"].get({ query: {} });
@@ -376,6 +386,35 @@ export const BatchOperations = () => {
       console.error("Error creating rephrase batch job:", err);
     } finally {
       setRephrasing(false);
+    }
+  };
+
+  const handleTranslateBatch = async () => {
+    if (!isBibleBatch && selectedBook === null) {
+      setError("Please select a book to translate");
+      return;
+    }
+
+    try {
+      setTranslating(true);
+      setError(null);
+      await api.admin["batch-translate"].post({
+        type: isBibleBatch ? "bible" : "book",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        model: selectedModel,
+        effort: selectedEffort as "low" | "medium" | "high",
+        sourceBibleVersion: sourceBibleVersion,
+        targetBibleVersion: targetBibleVersion,
+        explanationTypes: selectedExplanationTypes,
+        skipExisting: skipExistingExplanations,
+      });
+      await fetchBatchJobs();
+      setTranslateModalOpen(false);
+    } catch (err) {
+      setError("Failed to create translate batch job");
+      console.error("Error creating translate batch job:", err);
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -942,6 +981,12 @@ export const BatchOperations = () => {
           >
             Rephrase All Explanations
           </Button>
+          <Button
+            onClick={() => setTranslateModalOpen(true)}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Translate All Explanations
+          </Button>
         </div>
       </div>
 
@@ -1067,6 +1112,121 @@ export const BatchOperations = () => {
             </Button>
             <Button onClick={handleRephraseBatch} loading={rephrasing}>
               {rephrasing ? "Starting..." : "Confirm"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Modal 4: Translate Confirmation */}
+      <Dialog
+        open={translateModalOpen}
+        onOpenChange={setTranslateModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Translate</Dialog.Head>
+          <Dialog.Description>
+            Select the source and target Bible versions for the translation.
+          </Dialog.Description>
+          <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Source Version:
+              </label>
+              <SelectDropdown.Root
+                open={sourceVersionDropdownOpen}
+                onOpenChange={setSourceVersionDropdownOpen}
+                onValueChange={(val) => setSourceBibleVersion(val)}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={
+                    bibleVersions.find((v) => v.key === sourceBibleVersion)
+                      ?.value || "Select Version"
+                  }
+                  icon={<ChevronDownIcon />}
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{
+                    width: "300px",
+                    maxHeight: "400px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {bibleVersions.map((version) => (
+                    <SelectDropdown.Item
+                      key={version.key}
+                      value={version.key}
+                      icon={<CheckIcon />}
+                    >
+                      {version.value}
+                    </SelectDropdown.Item>
+                  ))}
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Target Version:
+              </label>
+              <SelectDropdown.Root
+                open={targetVersionDropdownOpen}
+                onOpenChange={setTargetVersionDropdownOpen}
+                onValueChange={(val) => setTargetBibleVersion(val)}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={
+                    bibleVersions.find((v) => v.key === targetBibleVersion)
+                      ?.value || "Select Version"
+                  }
+                  icon={<ChevronDownIcon />}
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{
+                    width: "300px",
+                    maxHeight: "400px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {bibleVersions.map((version) => (
+                    <SelectDropdown.Item
+                      key={version.key}
+                      value={version.key}
+                      icon={<CheckIcon />}
+                    >
+                      {version.value}
+                    </SelectDropdown.Item>
+                  ))}
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
+            </div>
+          </div>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setTranslateModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleTranslateBatch} loading={translating}>
+              {translating ? "Starting..." : "Confirm"}
             </Button>
           </Dialog.Footer>
         </Dialog.Content>
