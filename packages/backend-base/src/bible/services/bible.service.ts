@@ -716,25 +716,6 @@ export class BibleService {
       };
     }
 
-    // Safety Check
-    const explanationsWithVersion = await this.db
-      .getOrCreateConnection()
-      .selectFrom("explanations")
-      .where("chapter_id", "in", chapterIds)
-      .where("version_id", "=", bibleVersionRecord.id)
-      .where("version", "=", version)
-      .select((eb) => eb.fn.count("chapter_id").as("count"))
-      .executeTakeFirst();
-
-    if (
-      !explanationsWithVersion ||
-      Number(explanationsWithVersion.count) !== chapterIds.length
-    ) {
-      throw new Error(
-        "VERSION_MISMATCH: Not all chapters in the selected scope have an explanation with the specified version.",
-      );
-    }
-
     const result =
       await this.bibleRepository.setSpecificExplanationVersionAsActive({
         versionId: bibleVersionRecord.id,

@@ -625,9 +625,12 @@ export class BatchOperationService {
       throw new Error(`Batch job ${batchId} not found.`);
     }
 
-    if (batchJob.batch_type === "bible") {
+    if (
+      batchJob.batch_type === "bible" ||
+      batchJob.batch_type === "rephrase-bible"
+    ) {
       console.log(
-        `[BATCH] Cancelling parent Bible batch ${batchId} and its children.`,
+        `[BATCH] Cancelling parent batch ${batchId} and its children.`,
       );
       const children = await this.getBatchChildren(Number(batchId));
       let cancelledCount = 0;
@@ -797,7 +800,60 @@ export class BatchOperationService {
       results.push(...(await Promise.all(promises)));
     }
 
+    // After monitoring, update the parent batch status
+    const summary = await this.getBatchSummary(parentBatchId);
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("batch_jobs")
+      .set({
+        status: summary.aggregate_status,
+        actual_cost: summary.total_cost,
+      })
+      .where("id", "=", parentBatchId)
+      .execute();
+
+    console.log(
+      `[BATCH] Parent batch ${parentBatchId} status updated to ${summary.aggregate_status}`,
+    );
+
     return { success: true, message: "Monitoring complete." };
+  }
+
+  async monitorAllActiveBatches() {
+    console.log("[BATCH] Starting to monitor all active batches.");
+    const activeBatches = await this.db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("status", "not in", ["completed", "failed", "cancelled"])
+      .selectAll()
+      .execute();
+
+    console.log(
+      `[BATCH] Found ${activeBatches.length} active batches to monitor.`,
+    );
+
+    for (const batch of activeBatches) {
+      const isParent =
+        batch.batch_type === "bible" || batch.batch_type === "rephrase-bible";
+      const batchId = isParent ? `parent-${batch.id}` : batch.openai_batch_id;
+
+      if (batchId) {
+        await this.batchMonitoringQueue.add(
+          BATCH_MONITORING_QUEUE,
+          { batchId, model: batch.model, isParent },
+          {
+            jobId: `${batchId}-${Date.now()}`,
+            removeOnComplete: true,
+            removeOnFail: 100,
+          },
+        );
+      }
+    }
+
+    return {
+      success: true,
+      message: `Successfully queued monitoring for ${activeBatches.length} active batches.`,
+    };
   }
 
   async getBatchSummary(parentBatchId: number) {
@@ -806,16 +862,24 @@ export class BatchOperationService {
     const totalChildren = children.length;
 
     if (totalChildren === 0) {
+      const parentJob = await this.db
+        .getOrCreateConnection()
+        .selectFrom("batch_jobs")
+        .where("id", "=", parentBatchId)
+        .select("status")
+        .executeTakeFirst();
+
       return {
-        aggregate_status: "empty",
-        status_progress_text: "No books found for this batch.",
+        aggregate_status: parentJob?.status || "pending",
+        status_progress_text: "Initializing...",
         total_cost: 0,
       };
     }
 
     const statusCounts = children.reduce(
       (acc, child) => {
-        acc[child.status] = (acc[child.status] || 0) + 1;
+        const status = child.status || "pending";
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>,
@@ -826,51 +890,50 @@ export class BatchOperationService {
       0,
     );
 
-    const failedCount = statusCounts.failed || 0;
+    const completedCount = statusCounts.completed || 0;
+    const failedCount =
+      (statusCounts.failed || 0) + (statusCounts.expired || 0);
+    const cancellingCount = statusCounts.cancelling || 0;
     const cancelledCount = statusCounts.cancelled || 0;
-    const expiredCount = statusCounts.expired || 0;
-    const partialFailureCount = statusCounts.partial_failure || 0;
+    const inProgressCount = statusCounts.in_progress || 0;
+    const finalizingCount = statusCounts.finalizing || 0;
+    const validatingCount = statusCounts.validating || 0;
 
-    if (
-      failedCount > 0 ||
-      cancelledCount > 0 ||
-      expiredCount > 0 ||
-      partialFailureCount > 0
-    ) {
+    if (cancellingCount > 0) {
+      return {
+        aggregate_status: "cancelling",
+        status_progress_text: `Cancelling (${cancelledCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (cancelledCount > 0) {
+      if (cancelledCount + failedCount === totalChildren) {
+        return {
+          aggregate_status: "cancelled",
+          status_progress_text: `Cancelled (${cancelledCount}/${totalChildren})`,
+          total_cost: totalCost,
+        };
+      }
       return {
         aggregate_status: "partial_failure",
-        status_progress_text: `Failed (${failedCount + cancelledCount + expiredCount + partialFailureCount}/${totalChildren})`,
+        status_progress_text: `Partially Cancelled (${cancelledCount}/${totalChildren})`,
         total_cost: totalCost,
       };
     }
 
-    const completedCount = statusCounts.completed || 0;
-
-    if (statusCounts.validating > 0) {
-      const validatedCount = totalChildren - (statusCounts.validating || 0);
+    if (validatingCount > 0) {
       return {
         aggregate_status: "validating",
-        status_progress_text: `Validating (${validatedCount}/${totalChildren})`,
+        status_progress_text: `Validating (${totalChildren - validatingCount}/${totalChildren})`,
         total_cost: totalCost,
       };
     }
 
-    if (statusCounts.in_progress > 0) {
-      const inProgressCount =
-        totalChildren -
-        (statusCounts.in_progress || 0) -
-        (statusCounts.validating || 0);
+    if (inProgressCount > 0 || finalizingCount > 0) {
       return {
         aggregate_status: "in_progress",
-        status_progress_text: `In Progress (${inProgressCount}/${totalChildren})`,
-        total_cost: totalCost,
-      };
-    }
-
-    if (statusCounts.finalizing > 0) {
-      return {
-        aggregate_status: "finalizing",
-        status_progress_text: `Finalizing (${completedCount}/${totalChildren})`,
+        status_progress_text: `In Progress (${completedCount}/${totalChildren})`,
         total_cost: totalCost,
       };
     }
@@ -879,6 +942,21 @@ export class BatchOperationService {
       return {
         aggregate_status: "completed",
         status_progress_text: `Completed (${completedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (failedCount > 0) {
+      if (failedCount === totalChildren) {
+        return {
+          aggregate_status: "failed",
+          status_progress_text: `Failed (${failedCount}/${totalChildren})`,
+          total_cost: totalCost,
+        };
+      }
+      return {
+        aggregate_status: "partial_failure",
+        status_progress_text: `Partial Failure (${failedCount}/${totalChildren})`,
         total_cost: totalCost,
       };
     }
@@ -1366,7 +1444,7 @@ export class BatchOperationService {
                     version_id: originalExplanation.version_id,
                     version: originalExplanation.version + 1,
                     is_active: true,
-                    created_by_admin: originalExplanation.created_by_admin,
+                    created_by_admin: false,
                     parent_explanation_id: originalExplanationId,
                     created_at: new Date(),
                   })
@@ -1413,7 +1491,7 @@ export class BatchOperationService {
                     version_id: originalExplanation.version_id,
                     version: originalExplanation.version + 1,
                     is_active: true,
-                    created_by_admin: originalExplanation.created_by_admin,
+                    created_by_admin: false,
                     parent_explanation_id: originalExplanationId,
                     created_at: new Date(),
                   })

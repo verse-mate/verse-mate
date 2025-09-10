@@ -471,6 +471,19 @@ export const BatchOperations = () => {
     }
   };
 
+  const handleMonitorAllActive = async () => {
+    try {
+      setMonitoringId("all");
+      await api.admin.batches["monitor-all"].post();
+      await fetchBatchJobs();
+    } catch (err) {
+      setError("Failed to start monitoring all active batches.");
+      console.error("Error monitoring all active batches:", err);
+    } finally {
+      setMonitoringId(null);
+    }
+  };
+
   const refreshAndMonitorAll = useCallback(async () => {
     // Implementation for this will need to be updated to handle bible batches
     await fetchBatchJobs();
@@ -576,14 +589,13 @@ export const BatchOperations = () => {
       className: styles.costColumn,
       render: (job) => {
         const summary = summaries[job.id];
+        const isParentBatch =
+          job.batch_type === "bible" || job.batch_type === "rephrase-bible";
         const cost =
-          job.batch_type === "bible" ||
-          (job.batch_type === "rephrase-bible" && summary)
-            ? summary.total_cost
-            : job.actual_cost;
+          isParentBatch && summary ? summary.total_cost : job.actual_cost;
         return (
           <span className={styles.nowrapColumn}>
-            {cost ? `${Number(cost).toFixed(4)}` : "N/A"}
+            {typeof cost === "number" ? `$${Number(cost).toFixed(4)}` : "N/A"}
           </span>
         );
       },
@@ -935,6 +947,15 @@ export const BatchOperations = () => {
 
       {/* Main Table */}
       <div className={styles.tableContainer}>
+        <div style={{ marginBottom: "1rem" }}>
+          <Button
+            onClick={handleMonitorAllActive}
+            disabled={monitoringId === "all"}
+            loading={monitoringId === "all"}
+          >
+            Monitor All Active Batches
+          </Button>
+        </div>
         <Table
           columns={columns}
           data={batchJobs}

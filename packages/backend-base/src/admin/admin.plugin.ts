@@ -250,6 +250,10 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post("/batches/monitor-all", async ({ store }) => {
+            const batchOperationService = store.getBatchOperationService();
+            return await batchOperationService.monitorAllActiveBatches();
+          })
           .get(
             "/batch-summary/:parentId",
             async ({ params, store }) => {

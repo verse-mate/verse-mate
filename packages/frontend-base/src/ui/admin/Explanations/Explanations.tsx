@@ -155,6 +155,7 @@ export const Explanations = () => {
       );
       if (response.data) {
         addNotification({ content: response.data.message });
+        fetchExplanations();
       }
     } catch (err) {
       setError("Failed to set default prompts.");
