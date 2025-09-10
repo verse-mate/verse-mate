@@ -1,5 +1,6 @@
 "use client";
 import { api } from "backend-api";
+import { addNotification } from "frontend-base/src/notification/store";
 import { useCallback, useEffect, useState } from "react";
 import { bibleVersions } from "../../../utils/bible-versions";
 import { testaments } from "../../../utils/testaments";
@@ -123,7 +124,7 @@ export const Explanations = () => {
         chapter: isBibleBatch ? "all" : selectedChapter,
       });
       if (response.data) {
-        alert(response.data.message);
+        addNotification({ content: response.data.message });
         fetchExplanations();
       }
     } catch (err) {
@@ -148,7 +149,7 @@ export const Explanations = () => {
         },
       );
       if (response.data) {
-        alert(response.data.message);
+        addNotification({ content: response.data.message });
       }
     } catch (err) {
       setError("Failed to set default prompts.");
@@ -172,7 +173,7 @@ export const Explanations = () => {
         chapter: isBibleBatch ? "all" : selectedChapter,
       });
       if (response.data) {
-        alert(response.data.message);
+        addNotification({ content: response.data.message });
         fetchExplanations();
       }
     } catch (err) {
@@ -202,7 +203,7 @@ export const Explanations = () => {
         version: Number(versionToSetActive),
       });
       if (response.data) {
-        alert(response.data.message);
+        addNotification({ content: response.data.message });
         fetchExplanations();
       }
     } catch (err) {

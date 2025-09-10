@@ -640,61 +640,99 @@ export class BibleRepository {
     bookName?: string;
     chapter?: number | "all";
   }) {
-    const { bibleVersion, bookName, chapter } = options;
+    try {
+      console.log(
+        "[Admin Deletion] Starting deletion of inactive explanations with options:",
+        options,
+      );
+      const { bibleVersion, bookName, chapter } = options;
 
-    const version = await this.db
-      .getOrCreateConnection()
-      .selectFrom("bible_versions")
-      .where("version_key", "=", bibleVersion)
-      .select("id")
-      .executeTakeFirst();
-
-    if (!version) {
-      throw new Error(`Bible version ${bibleVersion} not found.`);
-    }
-
-    let query = this.db
-      .getOrCreateConnection()
-      .deleteFrom("explanations")
-      .where("is_active", "=", false)
-      .where("created_by_admin", "=", false)
-      .where("version_id", "=", version.id);
-
-    if (bookName) {
-      const book = await this.db
+      const version = await this.db
         .getOrCreateConnection()
-        .selectFrom("books")
-        .where("name", "=", bookName)
-        .select("book_id")
+        .selectFrom("bible_versions")
+        .where("version_key", "=", bibleVersion)
+        .select("id")
         .executeTakeFirst();
 
-      if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+      if (!version) {
+        console.error(
+          `[Admin Deletion] Bible version ${bibleVersion} not found.`,
+        );
+        throw new Error(`Bible version ${bibleVersion} not found.`);
       }
+      console.log(`[Admin Deletion] Found version_id: ${version.id}`);
 
-      const chapterIdsQuery = this.db
+      let query = this.db
         .getOrCreateConnection()
-        .selectFrom("chapters")
-        .where("book_id", "=", book.book_id)
-        .select("chapter_id");
+        .deleteFrom("explanations")
+        .where("is_active", "=", false)
+        .where("created_by_admin", "=", false)
+        .where("version_id", "=", version.id);
 
-      if (chapter && chapter !== "all") {
-        chapterIdsQuery.where("chapter_number", "=", chapter);
+      if (bookName) {
+        const book = await this.db
+          .getOrCreateConnection()
+          .selectFrom("books")
+          .where("name", "=", bookName)
+          .select("book_id")
+          .executeTakeFirst();
+
+        if (!book) {
+          console.error(`[Admin Deletion] Book ${bookName} not found.`);
+          throw new Error(`Book ${bookName} not found.`);
+        }
+        console.log(`[Admin Deletion] Found book_id: ${book.book_id}`);
+
+        let chapterIdsQuery = this.db
+          .getOrCreateConnection()
+          .selectFrom("chapters")
+          .where("book_id", "=", book.book_id)
+          .select("chapter_id");
+
+        if (chapter && chapter !== "all") {
+          console.log(`[Admin Deletion] Filtering by chapter: ${chapter}`);
+          chapterIdsQuery = chapterIdsQuery.where(
+            "chapter_number",
+            "=",
+            chapter,
+          );
+        }
+
+        const chapterIds = await chapterIdsQuery.execute();
+        const ids = chapterIds.map((c) => c.chapter_id);
+        console.log(
+          `[Admin Deletion] Found ${ids.length} chapter_ids to target.`,
+        );
+
+        if (ids.length === 0) {
+          console.log(
+            "[Admin Deletion] No chapters matched the criteria. Nothing to delete.",
+          );
+          return { deletedCount: 0 };
+        }
+
+        query = query.where("chapter_id", "in", ids);
+      } else {
+        console.log(
+          "[Admin Deletion] Deleting across all books (bible-batch).",
+        );
       }
 
-      const chapterIds = await chapterIdsQuery.execute();
-      const ids = chapterIds.map((c) => c.chapter_id);
-
-      if (ids.length === 0) {
-        // No chapters match, so nothing to delete
-        return { deletedCount: 0 };
-      }
-
-      query = query.where("chapter_id", "in", ids);
+      console.log("[Admin Deletion] Executing final delete query.");
+      const result = await query.executeTakeFirst();
+      const deletedCount = Number(result.numDeletedRows);
+      console.log(
+        `[Admin Deletion] Successfully deleted ${deletedCount} explanations.`,
+      );
+      return { deletedCount };
+    } catch (error) {
+      console.error(
+        "[Admin Deletion] A critical error occurred during the deletion process:",
+        error,
+      );
+      // Re-throw the error so the service layer can handle it, but now it's logged.
+      throw error;
     }
-
-    const result = await query.executeTakeFirst();
-    return { deletedCount: Number(result.numDeletedRows) };
   }
 
   async setDefaultExplanationsAsActive(options: {
