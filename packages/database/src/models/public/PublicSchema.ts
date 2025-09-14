@@ -19,6 +19,7 @@ import type { default as SubtitlesTable } from "./Subtitles";
 import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
 import type { default as UserPromptTemplatesTable } from "./UserPromptTemplates";
+import type { default as VerseHighlightsTable } from "./VerseHighlights";
 import type { default as VersesTable } from "./Verses";
 
 export default interface PublicSchema {
@@ -59,4 +60,6 @@ export default interface PublicSchema {
   user_prompt_templates: UserPromptTemplatesTable;
 
   batch_jobs: BatchJobsTable;
+
+  verse_highlights: VerseHighlightsTable;
 }
