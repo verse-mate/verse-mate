@@ -41,13 +41,6 @@ export async function up(db: Kysely<Database>): Promise<void> {
     FOR EACH ROW
     EXECUTE FUNCTION cleanup_user_data();
   `.execute(db);
-
-  // Create an index on created_at for efficient cleanup queries
-  await db.schema
-    .createIndex("idx_verse_highlights_user_created")
-    .on("verse_highlights")
-    .columns(["user_id", "created_at"])
-    .execute();
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
@@ -58,7 +51,4 @@ export async function down(db: Kysely<Database>): Promise<void> {
 
   // Drop the function
   await sql`DROP FUNCTION IF EXISTS cleanup_user_data();`.execute(db);
-
-  // Drop the index
-  await db.schema.dropIndex("idx_verse_highlights_user_created").execute();
 }
