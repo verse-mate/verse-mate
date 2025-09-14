@@ -122,3 +122,93 @@
         line-height: 24px;
     }
 }
+
+.highlightedVerse {
+    position: relative;
+    padding: 2px 0;
+    border-radius: 2px;
+}
+
+.highlightedText {
+    position: relative;
+    padding: 1px 2px;
+    border-radius: 3px;
+    box-decoration-break: clone;
+    /* stylelint-disable-next-line property-no-vendor-prefix */
+    -webkit-box-decoration-break: clone; /* Required for Safari support */
+}
+
+.highlightedText.clickable {
+    cursor: pointer;
+    transition: filter 0.2s ease;
+}
+
+.highlightedText.clickable:hover {
+    filter: brightness(0.9);
+}
+
+.highlightedText.clickable:active {
+    filter: brightness(0.85);
+}
+
+.highlightYellow {
+    background-color: rgb(255 235 59 / 30%);
+}
+
+.highlightGreen {
+    background-color: rgb(76 175 80 / 30%);
+}
+
+.highlightBlue {
+    background-color: rgb(33 150 243 / 30%);
+}
+
+.highlightPink {
+    background-color: rgb(233 30 99 / 30%);
+}
+
+.highlightPurple {
+    background-color: rgb(156 39 176 / 30%);
+}
+
+.highlightOrange {
+    background-color: rgb(255 152 0 / 30%);
+}
+
+/* Text selection styles */
+.versesContainer::selection,
+.verseText::selection {
+    background-color: rgb(100 149 237 / 30%);
+}
+
+/* stylelint-disable-next-line selector-no-vendor-prefix */
+.versesContainer::-moz-selection,
+/* stylelint-disable-next-line selector-no-vendor-prefix */
+.verseText::-moz-selection {
+    background-color: rgb(100 149 237 / 30%);
+}
+
+/* Selection toolbar */
+.selectionToolbar {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+    padding: 8px;
+    display: flex;
+    gap: 4px;
+}
+
+.selectionButton {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.selectionButton:hover {
+    background-color: rgb(0 0 0 / 5%);
+}

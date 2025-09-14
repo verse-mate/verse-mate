@@ -1,0 +1,153 @@
+.container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%), 0 2px 4px rgb(0 0 0 / 10%);
+  padding: 12px;
+  z-index: 1000;
+  min-width: 200px;
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 4px;
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 4px;
+}
+
+.colorButton {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.colorButton:hover:not(.disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
+}
+
+.colorButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.colorButton.selected {
+  border-color: #333;
+  box-shadow: 0 0 0 1px white, 0 0 0 3px #333;
+}
+
+.checkmark {
+  width: 16px;
+  height: 16px;
+  color: white;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 50%));
+}
+
+.divider {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 8px 0;
+}
+
+.deleteButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #d32f2f;
+  transition: background-color 0.2s ease;
+}
+
+.deleteButton:hover:not(.disabled) {
+  background-color: rgb(211 47 47 / 10%);
+}
+
+.deleteButton:active:not(.disabled) {
+  background-color: rgb(211 47 47 / 20%);
+}
+
+.deleteButton.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deleteIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background: #2a2a2a;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 40%), 0 2px 4px rgb(0 0 0 / 30%);
+  }
+
+  .sectionTitle {
+    color: #aaa;
+  }
+
+  .colorButton.selected {
+    box-shadow: 0 0 0 1px #2a2a2a, 0 0 0 3px white;
+    border-color: white;
+  }
+
+  .divider {
+    background-color: #444;
+  }
+
+  .deleteButton {
+    background: #2a2a2a;
+    color: #ff6b6b;
+  }
+
+  .deleteButton:hover {
+    background-color: rgb(255 107 107 / 15%);
+  }
+
+  .deleteButton:active {
+    background-color: rgb(255 107 107 / 25%);
+  }
+}

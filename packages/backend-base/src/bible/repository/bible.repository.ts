@@ -1,10 +1,19 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import FavoriteTypeEnum from "database/src/models/public/FavoriteTypeEnum";
+import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
+import type {
+  NewVerseHighlights,
+  VerseHighlights,
+} from "database/src/models/public/VerseHighlights";
 import type { db } from "../../shared/shared.plugin";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
 import type { LastChapterReadDto } from "../dto/book/last-chapter-read.dto";
 import type { RatingDto } from "../dto/book/rating.dto";
+import type { CreateHighlightDto } from "../dto/highlight/create-highlight.dto";
+import type { DeleteHighlightDto } from "../dto/highlight/delete-highlight.dto";
+import type { UpdateHighlightDto } from "../dto/highlight/update-highlight.dto";
+import type { UserChapterDto } from "../dto/highlight/user-chapter.dto";
 import type { UserDto } from "../dto/user/user.dto";
 import { currentDate } from "../utils/custom-date";
 
@@ -520,13 +529,7 @@ export class BibleRepository {
     }
   }
 
-  async checkFavoriteExists({
-    user_id,
-    chapter_id,
-  }: {
-    user_id: string;
-    chapter_id: number;
-  }) {
+  async checkFavoriteExists({ user_id, chapter_id }: UserChapterDto) {
     const favorite = await this.db
       .getOrCreateConnection()
       .selectFrom("favorites")
@@ -539,10 +542,7 @@ export class BibleRepository {
     return { favorite: favorite ?? null };
   }
 
-  async addFavorite({
-    user_id,
-    chapter_id,
-  }: { user_id: string; chapter_id: number }) {
+  async addFavorite({ user_id, chapter_id }: UserChapterDto) {
     try {
       console.log(
         "Repository: Adding favorite for user:",
@@ -593,10 +593,7 @@ export class BibleRepository {
     }
   }
 
-  async removeFavorite({
-    user_id,
-    chapter_id,
-  }: { user_id: string; chapter_id: number }) {
+  async removeFavorite({ user_id, chapter_id }: UserChapterDto) {
     try {
       console.log(
         "Repository: Removing favorite for user:",
@@ -893,5 +890,153 @@ export class BibleRepository {
 
         return { updatedCount: Number(result.numUpdatedRows) };
       });
+  }
+
+  /**
+   * Verse Highlight Methods
+   */
+  async getHighlights({
+    user_id,
+    chapter_id,
+  }: {
+    user_id: string;
+    chapter_id?: number;
+  }) {
+    try {
+      let query = this.db
+        .getOrCreateConnection()
+        .selectFrom("verse_highlights")
+        .where("user_id", "=", user_id);
+
+      if (chapter_id) {
+        query = query.where("chapter_id", "=", chapter_id);
+      }
+
+      const highlights = await query
+        .selectAll()
+        .orderBy("start_verse", "asc")
+        .execute();
+
+      return { highlights };
+    } catch (error) {
+      console.error("Error fetching highlights:", error);
+      return { highlights: [] };
+    }
+  }
+
+  async addHighlight({
+    user_id,
+    chapter_id,
+    start_verse,
+    end_verse,
+    color = "yellow" as HighlightColorEnum,
+    start_char,
+    end_char,
+    selected_text,
+  }: CreateHighlightDto) {
+    try {
+      const newHighlight: NewVerseHighlights = {
+        user_id,
+        chapter_id,
+        start_verse,
+        end_verse,
+        color,
+        start_char,
+        end_char,
+        selected_text,
+      };
+
+      const result = await this.db
+        .getOrCreateConnection()
+        .insertInto("verse_highlights")
+        .values(newHighlight)
+        .returningAll()
+        .executeTakeFirst();
+
+      return { highlight: result, success: true };
+    } catch (error) {
+      console.error("Error adding highlight:", error);
+      return { highlight: null, success: false };
+    }
+  }
+
+  async updateHighlight({ highlight_id, user_id, color }: UpdateHighlightDto) {
+    try {
+      const result = await this.db
+        .getOrCreateConnection()
+        .updateTable("verse_highlights")
+        .set({ color, updated_at: new Date() })
+        .where("highlight_id", "=", highlight_id)
+        .where("user_id", "=", user_id)
+        .returningAll()
+        .executeTakeFirst();
+
+      return { highlight: result, success: !!result };
+    } catch (error) {
+      console.error("Error updating highlight:", error);
+      return { highlight: null, success: false };
+    }
+  }
+
+  async removeHighlight({ highlight_id, user_id }: DeleteHighlightDto) {
+    try {
+      const result = await this.db
+        .getOrCreateConnection()
+        .deleteFrom("verse_highlights")
+        .where("highlight_id", "=", highlight_id)
+        .where("user_id", "=", user_id)
+        .execute();
+
+      return { success: result.length > 0 };
+    } catch (error) {
+      console.error("Error removing highlight:", error);
+      return { success: false };
+    }
+  }
+
+  async checkHighlightOverlap({
+    user_id,
+    chapter_id,
+    start_verse,
+    end_verse,
+  }: {
+    user_id: string;
+    chapter_id: number;
+    start_verse: number;
+    end_verse: number;
+  }) {
+    try {
+      const overlaps = await this.db
+        .getOrCreateConnection()
+        .selectFrom("verse_highlights")
+        .where("user_id", "=", user_id)
+        .where("chapter_id", "=", chapter_id)
+        .where((eb) =>
+          eb.or([
+            // New highlight starts within existing highlight
+            eb.and([
+              eb("start_verse", "<=", start_verse),
+              eb("end_verse", ">=", start_verse),
+            ]),
+            // New highlight ends within existing highlight
+            eb.and([
+              eb("start_verse", "<=", end_verse),
+              eb("end_verse", ">=", end_verse),
+            ]),
+            // New highlight completely contains existing highlight
+            eb.and([
+              eb("start_verse", ">=", start_verse),
+              eb("end_verse", "<=", end_verse),
+            ]),
+          ]),
+        )
+        .selectAll()
+        .execute();
+
+      return { overlaps, hasOverlap: overlaps.length > 0 };
+    } catch (error) {
+      console.error("Error checking highlight overlap:", error);
+      return { overlaps: [], hasOverlap: false };
+    }
   }
 }
