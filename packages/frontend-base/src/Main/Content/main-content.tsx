@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import { getBookVerse, getExplanation } from "../../api/bible";
 import { SignIn } from "../../auth/SignIn";
@@ -169,10 +169,16 @@ export const MainContent = () => {
     setHoverRating,
   } = useRating(5, session, bookId, verseId, explanation?.explanation_id);
 
-  const oldTestamentBooks =
-    testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [];
-  const newTestamentBooks =
-    testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [];
+  const oldTestamentBooks = useMemo(
+    () =>
+      testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [],
+    [testaments],
+  );
+  const newTestamentBooks = useMemo(
+    () =>
+      testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [],
+    [testaments],
+  );
 
   const {
     isOpen: isDropdownOpenVersion,
