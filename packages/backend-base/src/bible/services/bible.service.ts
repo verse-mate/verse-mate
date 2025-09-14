@@ -1,4 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
@@ -9,6 +10,11 @@ import type { RatingDto } from "../dto/book/rating.dto";
 import type { SubtitlesDto } from "../dto/book/subtitles.dto";
 import type { TestamentDto } from "../dto/book/testament.dto";
 import type { VersesDto } from "../dto/book/verses.dto";
+import type { CreateHighlightServiceDto } from "../dto/highlight/create-highlight-service.dto";
+import type { DeleteHighlightDto } from "../dto/highlight/delete-highlight.dto";
+import type { GetChapterHighlightsServiceDto } from "../dto/highlight/get-chapter-highlights-service.dto";
+import type { GetHighlightsServiceDto } from "../dto/highlight/get-highlights-service.dto";
+import type { UpdateHighlightDto } from "../dto/highlight/update-highlight.dto";
 import type { UserDto } from "../dto/user/user.dto";
 import type { BibleRepository } from "../repository/bible.repository";
 
@@ -433,6 +439,172 @@ export class BibleService {
     });
 
     return { success };
+  }
+
+  /**
+   * Verse Highlight Methods
+   */
+  async getUserHighlights({ user_id, chapter_id }: GetHighlightsServiceDto) {
+    console.log("Service: Getting highlights for user:", user_id);
+    if (chapter_id) {
+      console.log("Service: Filtering by chapter:", chapter_id);
+    }
+
+    try {
+      const { highlights } = await this.bibleRepository.getHighlights({
+        user_id,
+        chapter_id,
+      });
+
+      console.log("Service: Retrieved highlights count:", highlights.length);
+      return { highlights };
+    } catch (error) {
+      console.error("Error in getUserHighlights:", error);
+      return { highlights: [] };
+    }
+  }
+
+  async createHighlight({
+    user_id,
+    book_id,
+    chapter_number,
+    start_verse,
+    end_verse,
+    color = "yellow" as HighlightColorEnum,
+    start_char,
+    end_char,
+    selected_text,
+  }: CreateHighlightServiceDto) {
+    console.log(
+      "Service: Creating highlight for user:",
+      user_id,
+      "book:",
+      book_id,
+      "chapter:",
+      chapter_number,
+      "verses:",
+      start_verse,
+      "-",
+      end_verse,
+    );
+
+    // Validate verse range
+    if (start_verse > end_verse) {
+      return { success: false, error: "Invalid verse range" };
+    }
+
+    // Get chapter_id
+    const { chapter_id } = await this.bibleRepository.getChapterId({
+      book_id,
+      chapter_number,
+    });
+
+    if (!chapter_id) {
+      return { success: false, error: "Chapter not found" };
+    }
+
+    // Check for overlaps
+    const { hasOverlap, overlaps } =
+      await this.bibleRepository.checkHighlightOverlap({
+        user_id,
+        chapter_id,
+        start_verse,
+        end_verse,
+      });
+
+    if (hasOverlap) {
+      console.log("Service: Highlight overlap detected");
+      return {
+        success: false,
+        error: "Highlight overlaps with existing highlights",
+        overlaps,
+      };
+    }
+
+    // Add the highlight
+    const { highlight, success } = await this.bibleRepository.addHighlight({
+      user_id,
+      chapter_id,
+      start_verse,
+      end_verse,
+      color,
+      start_char,
+      end_char,
+      selected_text,
+    });
+
+    return { highlight, success };
+  }
+
+  async updateHighlightColor({
+    highlight_id,
+    user_id,
+    color,
+  }: UpdateHighlightDto) {
+    console.log(
+      "Service: Updating highlight color:",
+      highlight_id,
+      "for user:",
+      user_id,
+      "to color:",
+      color,
+    );
+
+    const { highlight, success } = await this.bibleRepository.updateHighlight({
+      highlight_id,
+      user_id,
+      color,
+    });
+
+    return { highlight, success };
+  }
+
+  async deleteHighlight({ highlight_id, user_id }: DeleteHighlightDto) {
+    console.log(
+      "Service: Deleting highlight:",
+      highlight_id,
+      "for user:",
+      user_id,
+    );
+
+    const { success } = await this.bibleRepository.removeHighlight({
+      highlight_id,
+      user_id,
+    });
+
+    return { success };
+  }
+
+  async getChapterHighlights({
+    user_id,
+    book_id,
+    chapter_number,
+  }: GetChapterHighlightsServiceDto) {
+    console.log(
+      "Service: Getting chapter highlights for user:",
+      user_id,
+      "book:",
+      book_id,
+      "chapter:",
+      chapter_number,
+    );
+
+    // Get chapter_id
+    const { chapter_id } = await this.bibleRepository.getChapterId({
+      book_id,
+      chapter_number,
+    });
+
+    if (!chapter_id) {
+      return { highlights: [] };
+    }
+
+    const { highlights } = await this.bibleRepository.getHighlights({
+      user_id,
+      chapter_id,
+    });
+
+    return { highlights };
   }
 
   private formattedBook({
