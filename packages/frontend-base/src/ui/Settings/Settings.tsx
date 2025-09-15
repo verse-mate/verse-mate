@@ -1,6 +1,8 @@
+import { api } from "backend-api";
 import Link from "next/link";
 import { destroyCookie } from "nookies";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import useMutation from "../../hooks/useMutation";
 import { userSession } from "../../hooks/userSession";
 import { bibleVersions } from "../../utils/bible-versions";
 import { Button } from "../Button/Button";
@@ -28,7 +30,7 @@ export const Settings = ({
   setSelectedBibleVersion,
   setRightPanelContent,
 }: SettingsProps) => {
-  const { session } = userSession();
+  const { session, fetchSession } = userSession();
   const selectedVersionData = bibleVersions.find(
     (version) => version.key === selectedBibleVersion,
   );
@@ -39,18 +41,83 @@ export const Settings = ({
   const [firstName, setFirstName] = useState(session?.firstName || "");
   const [lastName, setLastName] = useState(session?.lastName || "");
   const [email, setEmail] = useState(session?.email || "");
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  // Update form fields when session data changes
+  useEffect(() => {
+    if (session) {
+      setFirstName(session.firstName || "");
+      setLastName(session.lastName || "");
+      setEmail(session.email || "");
+    }
+  }, [session]);
+
+  const { mutateAsync: updateProfile, isLoading: isUpdatingProfile } =
+    useMutation({
+      mutationFn: api.auth.profile.put,
+      onSuccess: async () => {
+        setUpdateSuccess(true);
+        setUpdateError(null);
+        setIsEditingProfile(false);
+        // Refresh session to get updated user data
+        await fetchSession(true);
+        // Clear success message after 3 seconds
+        setTimeout(() => setUpdateSuccess(false), 3000);
+      },
+      onError: (error: any) => {
+        let errorMessage = "An error occurred while updating your profile.";
+
+        // Handle different error structures from the API
+        if (error?.value?.message === "EMAIL_ALREADY_EXISTS") {
+          errorMessage =
+            "This email address is already in use by another account.";
+        } else if (error?.value && typeof error.value === "string") {
+          errorMessage = error.value;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+
+        setUpdateError(errorMessage);
+        setUpdateSuccess(false);
+      },
+    });
 
   const handleLogout = async () => {
     destroyCookie(null, "accessToken");
     window.location.reload();
   };
 
-  const handleSaveProfile = () => {
-    // TODO: Implement backend integration for profile updates
-    console.log("Profile update:", { firstName, lastName, email });
-    setIsEditingProfile(false);
-    // For now, just show an alert as a mock response
-    alert("Profile updated successfully! (Mock implementation)");
+  const handleSaveProfile = async () => {
+    // Clear previous messages
+    setUpdateError(null);
+    setUpdateSuccess(false);
+
+    // Validate inputs
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      setUpdateError("All fields are required.");
+      return;
+    }
+
+    if (
+      email.trim() === session?.email &&
+      firstName.trim() === session?.firstName &&
+      lastName.trim() === session?.lastName
+    ) {
+      setUpdateError("No changes detected.");
+      return;
+    }
+
+    try {
+      await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+      });
+    } catch (error) {
+      // Error handling is done in the onError callback
+      console.error("Profile update failed:", error);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -59,6 +126,9 @@ export const Settings = ({
     setLastName(session?.lastName || "");
     setEmail(session?.email || "");
     setIsEditingProfile(false);
+    // Clear any error messages
+    setUpdateError(null);
+    setUpdateSuccess(false);
   };
 
   return (
@@ -167,12 +237,23 @@ export const Settings = ({
 
             {isEditingProfile && (
               <div className={styles.editForm}>
+                {updateError && (
+                  <div className={styles.errorMessage}>{updateError}</div>
+                )}
+
+                {updateSuccess && (
+                  <div className={styles.successMessage}>
+                    Profile updated successfully!
+                  </div>
+                )}
+
                 <Input.Root>
                   <Input.Label label="First Name" />
                   <Input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="Enter your first name"
+                    disabled={isUpdatingProfile}
                   />
                 </Input.Root>
 
@@ -182,6 +263,7 @@ export const Settings = ({
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Enter your last name"
+                    disabled={isUpdatingProfile}
                   />
                 </Input.Root>
 
@@ -192,6 +274,7 @@ export const Settings = ({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
+                    disabled={isUpdatingProfile}
                   />
                 </Input.Root>
 
@@ -200,12 +283,15 @@ export const Settings = ({
                     variant="outlined"
                     onClick={handleCancelEdit}
                     className={styles.cancelButton}
+                    disabled={isUpdatingProfile}
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleSaveProfile}
                     className={styles.saveButton}
+                    loading={isUpdatingProfile}
+                    disabled={isUpdatingProfile}
                   >
                     Save Changes
                   </Button>

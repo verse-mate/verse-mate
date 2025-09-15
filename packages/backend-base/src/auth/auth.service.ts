@@ -12,6 +12,7 @@ import type { AuthForgotPasswordInput } from "./dto/auth-forgot-password.input";
 import type { AuthLoginInput } from "./dto/auth-login.input";
 import type { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import type { AuthSignupInput } from "./dto/auth-signup.input";
+import type { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 
 function resetPasswordURL(key: string): string {
@@ -416,6 +417,46 @@ export class AuthService {
       .execute();
 
     return this.loginUser(user, jwt);
+  }
+
+  public async updateProfile(
+    userId: string,
+    authUpdateProfileInput: AuthUpdateProfileInput,
+  ): Promise<Pick<
+    User,
+    "id" | "email" | "firstName" | "lastName" | "is_admin"
+  > | null> {
+    const { firstName, lastName, email } = authUpdateProfileInput;
+
+    // Check if the new email is already taken by another user
+    if (email) {
+      const existingUser = await this.db
+        .getOrCreateConnection()
+        .selectFrom("user")
+        .where("email", "=", email)
+        .where("id", "!=", userId)
+        .select("id")
+        .executeTakeFirst();
+
+      if (existingUser) {
+        throw new Error("EMAIL_ALREADY_EXISTS");
+      }
+    }
+
+    // Update the user profile
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("user")
+      .set({
+        firstName,
+        lastName,
+        email,
+      })
+      .where("id", "=", userId)
+      .execute();
+
+    // Return the updated user information
+    return this.getUserById(userId);
   }
 
   // TODO: Implement refresh accessToken (keep alive)

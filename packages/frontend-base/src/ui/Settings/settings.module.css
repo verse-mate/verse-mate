@@ -197,3 +197,28 @@
 .saveButton:hover {
   background-color: var(--rodeo-dust) !important;
 }
+
+/* Message Styles */
+.errorMessage {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.successMessage {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #16a34a;
+  font-size: 14px;
+  margin-bottom: 16px;
+}

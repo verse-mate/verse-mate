@@ -9,6 +9,7 @@ import { AuthForgotPasswordInput } from "./dto/auth-forgot-password.input";
 import { AuthLoginInput } from "./dto/auth-login.input";
 import { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import { AuthSignupInput } from "./dto/auth-signup.input";
+import { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 
 const plugin = new Elysia()
@@ -96,6 +97,15 @@ const plugin = new Elysia()
             "/session",
             async ({ currentUserId, store: { authService } }) => {
               return await authService.getUserById(currentUserId);
+            },
+          )
+          .put(
+            "/profile",
+            async ({ currentUserId, body, store: { authService } }) => {
+              return await authService.updateProfile(currentUserId, body);
+            },
+            {
+              body: AuthUpdateProfileInput,
             },
           ),
       )
