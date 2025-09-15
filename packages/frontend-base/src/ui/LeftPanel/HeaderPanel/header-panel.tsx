@@ -288,7 +288,7 @@ export const Nav = ({
         const book = allBooks.find((b) => b.b === Number(bookId));
         if (!book) return null;
         return (
-          <Accordion.Item value={book.n} key={book.n}>
+          <Accordion.Item value={book.n} key={`recently-${book.n}`}>
             <div
               data-accordion-trigger={book.n}
               onClick={() => handleAccordionTriggerClick(book.n)}
@@ -299,7 +299,21 @@ export const Nav = ({
               role="button"
               tabIndex={0}
             >
-              <Accordion.Trigger label={book.n} highlightBook={false} />
+              <Accordion.Trigger
+                label={book.n}
+                highlightBook={false}
+                icon={
+                  <Icon.HistoryIcon
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      marginRight: "8px",
+                      fill: "var(--charcoal-grey)",
+                    }}
+                  />
+                }
+                iconPosition="right"
+              />
             </div>
             <Accordion.Content>
               <VerseGrid
@@ -316,7 +330,8 @@ export const Nav = ({
             </Accordion.Content>
           </Accordion.Item>
         );
-      });
+      })
+      .filter(Boolean);
   };
 
   const renderSelectedBook = () => {
@@ -371,7 +386,66 @@ export const Nav = ({
       return book.t === testament && book.b !== bookId;
     });
 
-    return booksToShow.map((book) => {
+    // Get recently viewed books (all testaments) when no filter is applied
+    const recentlyViewedForTestament = !leftPanelDebouncedFilter.trim()
+      ? recentlyViewedBooks
+          .filter((id) => Number(id) !== bookId)
+          .map((bookId) => {
+            const book = allBooks.find((b) => b.b === Number(bookId));
+            if (!book) return null;
+            return (
+              <Accordion.Item value={book.n} key={`recently-${book.n}`}>
+                <div
+                  data-accordion-trigger={book.n}
+                  onClick={() => handleAccordionTriggerClick(book.n)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ")
+                      handleAccordionTriggerClick(book.n);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <Accordion.Trigger
+                    label={book.n}
+                    highlightBook={false}
+                    icon={
+                      <Icon.HistoryIcon
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          marginRight: "8px",
+                          fill: "var(--charcoal-grey)",
+                        }}
+                      />
+                    }
+                    iconPosition="right"
+                  />
+                </div>
+                <Accordion.Content>
+                  <VerseGrid
+                    testament={book.t}
+                    bookId={String(book.b)}
+                    bookName={book.n}
+                    verses={Array.from({ length: book.c }, (_, i) =>
+                      (i + 1).toString(),
+                    )}
+                    onVerseSelect={leftPanelHandleVerseSelect}
+                    selectedVerse={String(verseId)}
+                    selectedBook={String(bookId)}
+                  />
+                </Accordion.Content>
+              </Accordion.Item>
+            );
+          })
+          .filter(Boolean)
+      : [];
+
+    // Filter out recently viewed books from the main list to avoid duplicates
+    const regularBooks = booksToShow.filter((book) => {
+      return !recentlyViewedBooks.includes(String(book.b));
+    });
+
+    const allItemsToRender = regularBooks.map((book) => {
       return (
         <Accordion.Item value={book.n} key={book.n}>
           <div
@@ -402,6 +476,9 @@ export const Nav = ({
         </Accordion.Item>
       );
     });
+
+    // Return recently viewed books first, then regular books
+    return [...recentlyViewedForTestament, ...allItemsToRender];
   };
 
   return (
@@ -486,27 +563,6 @@ export const Nav = ({
                     {renderSelectedBook()}
                   </Accordion.Root>
                 </div>
-                {!leftPanelDebouncedFilter.trim() && (
-                  <>
-                    <div className={styles.recentlyViewed}>
-                      <Accordion.Root type="multiple">
-                        {renderRecentlyViewed()}
-                      </Accordion.Root>
-                    </div>
-                    <div
-                      style={{
-                        padding: "10px 16px 10px 16px",
-                      }}
-                    >
-                      <h4
-                        className={styles.recentlyViewedTitle}
-                        style={{ marginBottom: "4px" }}
-                      >
-                        Recently Viewed ^
-                      </h4>
-                    </div>
-                  </>
-                )}
                 <Tabs.Content value="OT">
                   <Accordion.Root>
                     {renderAccordionItems(oldTestamentBooks, "OT")}
