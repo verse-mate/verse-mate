@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { sql } from "database";
 import type { User } from "database/src/models/public/User";
 
 import { VerifyEmail, render } from "../../../emails";
@@ -428,13 +429,18 @@ export class AuthService {
   > | null> {
     const { firstName, lastName, email } = authUpdateProfileInput;
 
-    // Check if the new email is already taken by another user
+    // Check if the new email is already taken by another user (case-insensitive)
     if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
       const existingUser = await this.db
         .getOrCreateConnection()
         .selectFrom("user")
-        .where("email", "=", email)
-        .where("id", "!=", userId)
+        .where((eb) =>
+          eb.and([
+            eb(sql`LOWER(email)`, "=", normalizedEmail),
+            eb("id", "!=", userId),
+          ]),
+        )
         .select("id")
         .executeTakeFirst();
 
@@ -443,17 +449,24 @@ export class AuthService {
       }
     }
 
-    // Update the user profile
-    await this.db
-      .getOrCreateConnection()
-      .updateTable("user")
-      .set({
-        firstName,
-        lastName,
-        email,
-      })
-      .where("id", "=", userId)
-      .execute();
+    // Build partial update payload to avoid nulling unspecified fields
+    const updatePayload: Partial<
+      Pick<User, "firstName" | "lastName" | "email">
+    > = {};
+    if (typeof firstName === "string")
+      updatePayload.firstName = firstName.trim();
+    if (typeof lastName === "string") updatePayload.lastName = lastName.trim();
+    if (typeof email === "string")
+      updatePayload.email = email.toLowerCase().trim();
+
+    if (Object.keys(updatePayload).length > 0) {
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("user")
+        .set(updatePayload)
+        .where("id", "=", userId)
+        .execute();
+    }
 
     // Return the updated user information
     return this.getUserById(userId);

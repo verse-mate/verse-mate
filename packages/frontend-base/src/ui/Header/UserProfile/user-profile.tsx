@@ -12,29 +12,30 @@ export const ProfileButton = ({
   link,
   setRightPanelContent,
 }: UserProfileProps) => {
-  const { session } = userSession();
+  const { session, loading } = userSession();
 
+  // Don't render anything to avoid flash during loading or for authenticated users
+  if (loading || session?.id) {
+    return null;
+  }
+
+  // Only show login/signup for unauthenticated users after loading is complete
   return (
-    <>
-      {session?.id ? // Hide user profile card for authenticated users
-      null : (
-        <div className={styles.desktopMenu}>
-          <button
-            type="button"
-            className={styles.menuItem}
-            onClick={() => setRightPanelContent("login")}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            className={styles.menuItem}
-            onClick={() => setRightPanelContent("signup")}
-          >
-            Sign Up
-          </button>
-        </div>
-      )}
-    </>
+    <div className={styles.desktopMenu}>
+      <button
+        type="button"
+        className={styles.menuItem}
+        onClick={() => setRightPanelContent("login")}
+      >
+        Login
+      </button>
+      <button
+        type="button"
+        className={styles.menuItem}
+        onClick={() => setRightPanelContent("signup")}
+      >
+        Sign Up
+      </button>
+    </div>
   );
 };

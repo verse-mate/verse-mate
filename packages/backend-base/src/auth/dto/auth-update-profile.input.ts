@@ -1,9 +1,9 @@
 import { t } from "elysia";
 
 export const AuthUpdateProfileInput = t.Object({
-  firstName: t.String({ minLength: 1, maxLength: 100 }),
-  lastName: t.String({ minLength: 1, maxLength: 100 }),
-  email: t.String({ format: "email" }),
+  firstName: t.Optional(t.String({ minLength: 1, maxLength: 100 })),
+  lastName: t.Optional(t.String({ minLength: 1, maxLength: 100 })),
+  email: t.Optional(t.String({ format: "email" })),
 });
 
 export type AuthUpdateProfileInput = typeof AuthUpdateProfileInput.static;
