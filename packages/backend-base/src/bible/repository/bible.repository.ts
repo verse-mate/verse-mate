@@ -247,6 +247,7 @@ export class BibleRepository {
           eb("chapters.book_id", "=", book_id),
           eb("chapters.chapter_number", "=", chapter_number),
           eb("explanations.version_id", "=", version_id),
+          eb("explanations.is_active", "=", true),
         ]),
       )
       .execute();
