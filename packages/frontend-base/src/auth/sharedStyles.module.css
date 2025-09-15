@@ -6,6 +6,21 @@
   width: 100%;
   max-width: 480px;
   margin: auto;
+  padding: 0 var(--size-2);
+}
+
+/* Ensure proper spacing on very small screens */
+@media only screen and (max-width: 360px) {
+  .wrapper {
+    padding: 0 var(--size-1);
+  }
+}
+
+/* Add more padding on larger screens within the wrapper */
+@media only screen and (min-width: 640px) {
+  .wrapper {
+    padding: 0 var(--size-4);
+  }
 }
 
 .form {
@@ -25,7 +40,21 @@
   width: 100%;
   justify-content: center;
   align-items: center;
-  padding: var(--size-5) var(--size-3) var(--size-6);
+  padding: var(--size-5) var(--size-4) var(--size-6);
+}
+
+/* Mobile specific padding */
+@media only screen and (max-width: 480px) {
+  .centerContentWrapper {
+    padding: var(--size-5) var(--size-3) var(--size-6);
+  }
+}
+
+/* Very small mobile padding */
+@media only screen and (max-width: 360px) {
+  .centerContentWrapper {
+    padding: var(--size-4) var(--size-2) var(--size-5);
+  }
 }
 
 .responsiveRow {

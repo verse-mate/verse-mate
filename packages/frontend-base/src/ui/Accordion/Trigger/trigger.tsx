@@ -6,6 +6,7 @@ type TriggerProps = {
   label: string;
   icon?: React.ReactNode;
   highlightBook?: boolean;
+  iconPosition?: "left" | "right";
 };
 
 const getTriggerStyles = (hightlightBook?: boolean) => {
@@ -18,7 +19,10 @@ const getTriggerStyles = (hightlightBook?: boolean) => {
   return {};
 };
 
-const getSpanStyles = (hightlightBook?: boolean) => {
+const getSpanStyles = (
+  hightlightBook?: boolean,
+  iconPosition?: "left" | "right",
+) => {
   if (hightlightBook) {
     return {
       backgroundColor: "var(--dust)",
@@ -27,6 +31,14 @@ const getSpanStyles = (hightlightBook?: boolean) => {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
+    };
+  }
+  // Only use flex layout when we have an icon positioned on the right
+  if (iconPosition === "right") {
+    return {
+      width: "100%",
+      display: "flex",
+      alignItems: "center",
     };
   }
   return {};
@@ -41,16 +53,24 @@ const getSvgStyles = (hightlightBook?: boolean) => {
   return {};
 };
 
-export const Trigger = ({ highlightBook, label, icon }: TriggerProps) => {
+export const Trigger = ({
+  highlightBook,
+  label,
+  icon,
+  iconPosition = "left",
+}: TriggerProps) => {
   return (
     <RadixAccordion.Trigger
       className={`${styles.trigger} ${highlightBook ? styles.fixedItem : ""}`}
       style={getTriggerStyles(highlightBook)}
     >
-      {icon && icon}
-      <span style={getSpanStyles(highlightBook)}>
+      {icon && iconPosition === "left" && icon}
+      <span style={getSpanStyles(highlightBook, iconPosition)}>
         {label}
         {highlightBook && <CheckIcon style={getSvgStyles(highlightBook)} />}
+        {icon && iconPosition === "right" && (
+          <span style={{ marginLeft: "auto" }}>{icon}</span>
+        )}
       </span>
     </RadixAccordion.Trigger>
   );
