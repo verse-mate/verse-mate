@@ -5,6 +5,7 @@ import type {
   NewVerseHighlights,
   VerseHighlights,
 } from "database/src/models/public/VerseHighlights";
+import { sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
@@ -227,6 +228,8 @@ export class BibleRepository {
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     language_code: string;
   }) {
+    const base_language_code = language_code.split("-")[0];
+
     const explanation = await this.db
       .getOrCreateConnection()
       .selectFrom("chapters")
@@ -246,9 +249,15 @@ export class BibleRepository {
         eb.and([
           eb("chapters.book_id", "=", book_id),
           eb("chapters.chapter_number", "=", chapter_number),
-          eb("explanations.language_code", "=", language_code),
+          eb("explanations.language_code", "in", [
+            language_code,
+            base_language_code,
+          ]),
           eb("explanations.is_active", "=", true),
         ]),
+      )
+      .orderBy(
+        sql`CASE WHEN explanations.language_code = ${language_code} THEN 0 ELSE 1 END`,
       )
       .execute();
 
