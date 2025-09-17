@@ -155,7 +155,7 @@ export class BibleRepository {
     chapter_id: number;
     language_code: string;
   }) {
-    const savedExplanation = await this.db
+    await this.db
       .getOrCreateConnection()
       .insertInto("explanations")
       .values({
@@ -163,7 +163,14 @@ export class BibleRepository {
         explanation,
         chapter_id,
         language_code,
+        version: 1,
+        is_active: true,
       })
+      .onConflict((oc) =>
+        oc
+          .columns(["chapter_id", "type", "language_code", "version"])
+          .doUpdateSet({ explanation, is_active: true }),
+      )
       .execute();
 
     return { success: true };
@@ -232,13 +239,9 @@ export class BibleRepository {
 
     const explanation = await this.db
       .getOrCreateConnection()
-      .selectFrom("chapters")
-      .leftJoin(
-        "explanations",
-        "explanations.chapter_id",
-        "chapters.chapter_id",
-      )
-      .leftJoin(
+      .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .innerJoin(
         "explanation_languages",
         "explanation_languages.language_code",
         "explanations.language_code",

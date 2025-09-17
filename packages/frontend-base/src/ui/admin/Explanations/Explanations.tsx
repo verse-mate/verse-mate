@@ -53,6 +53,7 @@ export const Explanations = () => {
   const [activeModalOpen, setActiveModalOpen] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
   const [settingVersionActive, setSettingVersionActive] = useState(false);
+  const [refreshingLanguages, setRefreshingLanguages] = useState(false);
 
   // Table state
   const [explanations, setExplanations] = useState<Explanation[]>([]);
@@ -223,6 +224,24 @@ export const Explanations = () => {
       console.error(err);
     } finally {
       setSettingVersionActive(false);
+    }
+  };
+
+  const handleRefreshLanguages = async () => {
+    setRefreshingLanguages(true);
+    setError(null);
+    try {
+      const response = await api.admin.explanations[
+        "refresh-language-stats"
+      ].post({});
+      if (response.data?.success) {
+        addNotification({ content: "Language stats refreshed successfully." });
+      }
+    } catch (err) {
+      setError("Failed to refresh language stats.");
+      console.error(err);
+    } finally {
+      setRefreshingLanguages(false);
     }
   };
 
@@ -493,6 +512,12 @@ export const Explanations = () => {
             disabled={!isBibleBatch && !selectedBook}
           >
             Set Active as Default
+          </Button>
+          <Button
+            onClick={handleRefreshLanguages}
+            loading={refreshingLanguages}
+          >
+            {refreshingLanguages ? "Refreshing..." : "Refresh Language Stats"}
           </Button>
         </div>
         <div
