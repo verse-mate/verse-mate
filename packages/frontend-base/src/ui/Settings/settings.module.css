@@ -4,6 +4,19 @@
   align-self: flex-start;
 }
 
+/* stylelint-disable no-descending-specificity */
+
+/* Dropdown base styles - lowest specificity */
+.languageDropdown {
+  width: 100%;
+}
+
+/* Button base styles - medium specificity */
+.languageDropdown button[role="combobox"] {
+  width: 100%;
+  justify-content: space-between;
+}
+
 .bibleVersionDropdown button[role="combobox"] {
   display: flex !important;
   color: black !important;
@@ -16,21 +29,38 @@
   justify-content: space-between;
 }
 
-.bibleVersionDropdown button[role="combobox"]:hover {
-  background-color: #f5f5f5;
+/* Button child element styles - higher specificity */
+.languageDropdown button[role="combobox"] span {
+  color: black !important;
+}
+
+.languageDropdown button[role="combobox"] svg {
+  fill: black !important;
 }
 
 .bibleVersionDropdown button[role="combobox"] span {
   color: black !important;
 }
 
+.bibleVersionDropdown button[role="combobox"] svg {
+  fill: black !important;
+}
+
+/* More specific child element styles - highest specificity */
 .bibleVersionDropdown button[role="combobox"] span:first-child {
   max-width: 350px !important;
 }
 
-.bibleVersionDropdown button[role="combobox"] svg {
-  fill: black !important;
+/* Pseudo-class styles - highest specificity */
+.languageDropdown button[role="combobox"]:hover {
+  background-color: #f5f5f5;
 }
+
+.bibleVersionDropdown button[role="combobox"]:hover {
+  background-color: #f5f5f5;
+}
+
+/* stylelint-enable no-descending-specificity */
 
 .header {
   display: flex;
@@ -221,4 +251,50 @@
   color: #16a34a;
   font-size: 14px;
   margin-bottom: 16px;
+}
+
+/* Language Preferences Styles */
+.languageContainer {
+  background-color: #f8f9fa;
+  border: 1px solid var(--geyser-opacity);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+}
+
+.languageHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.languageInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.languageLabel {
+  font-size: 14px;
+  color: var(--oslo-gray);
+  font-weight: 500;
+}
+
+.languageValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--oil);
+}
+
+.languageDropdownContainer {
+  margin-bottom: 20px;
+}
+
+.dropdownLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--oil);
 }

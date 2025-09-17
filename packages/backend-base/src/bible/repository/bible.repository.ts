@@ -238,6 +238,11 @@ export class BibleRepository {
         "explanations.chapter_id",
         "chapters.chapter_id",
       )
+      .leftJoin(
+        "explanation_languages",
+        "explanation_languages.language_code",
+        "explanations.language_code",
+      )
       .select([
         "chapters.book_id",
         "chapters.chapter_number",
@@ -249,15 +254,23 @@ export class BibleRepository {
         eb.and([
           eb("chapters.book_id", "=", book_id),
           eb("chapters.chapter_number", "=", chapter_number),
-          eb("explanations.language_code", "in", [
-            language_code,
-            base_language_code,
+          eb.or([
+            eb("explanations.language_code", "in", [
+              language_code,
+              base_language_code,
+            ]),
+            eb("explanation_languages.is_default", "=", true),
           ]),
           eb("explanations.is_active", "=", true),
+          eb("explanation_languages.is_enabled", "=", true),
         ]),
       )
       .orderBy(
-        sql`CASE WHEN explanations.language_code = ${language_code} THEN 0 ELSE 1 END`,
+        sql`CASE 
+          WHEN explanations.language_code = ${language_code} THEN 0 
+          WHEN explanations.language_code = ${base_language_code} THEN 1
+          ELSE 2 
+        END`,
       )
       .execute();
 

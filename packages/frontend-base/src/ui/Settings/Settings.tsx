@@ -44,12 +44,43 @@ export const Settings = ({
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
+  // Language preferences state
+  const [isEditingLanguage, setIsEditingLanguage] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    session?.preferred_language || "en",
+  );
+  const [languageUpdateSuccess, setLanguageUpdateSuccess] = useState(false);
+  const [languageUpdateError, setLanguageUpdateError] = useState<string | null>(
+    null,
+  );
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+  const [availableLanguages, setAvailableLanguages] = useState<
+    { code: string; name: string; nativeName: string }[]
+  >([]);
+
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      try {
+        const response = await api.explanations.languages.get();
+        if (response.data) {
+          setAvailableLanguages(response.data as any);
+        }
+      } catch (error) {
+        console.error("Failed to fetch available languages:", error);
+        // Fallback to a default list or show an error
+      }
+    };
+
+    fetchLanguages();
+  }, []);
+
   // Update form fields when session data changes
   useEffect(() => {
     if (session) {
       setFirstName(session.firstName || "");
       setLastName(session.lastName || "");
       setEmail(session.email || "");
+      setSelectedLanguage(session.preferred_language || "en");
     }
   }, [session]);
 
@@ -82,6 +113,26 @@ export const Settings = ({
         setUpdateSuccess(false);
       },
     });
+
+  // Language preferences API integration
+  const {
+    mutateAsync: updateLanguagePreference,
+    isLoading: isUpdatingLanguage,
+  } = useMutation({
+    mutationFn: (language: string | null) =>
+      api.user.preferences.patch({ preferred_language: language }),
+    onSuccess: async () => {
+      setLanguageUpdateSuccess(true);
+      setLanguageUpdateError(null);
+      setIsEditingLanguage(false);
+      await fetchSession(true); // Refresh session data
+      setTimeout(() => setLanguageUpdateSuccess(false), 3000);
+    },
+    onError: (error: any) => {
+      setLanguageUpdateError("Failed to update language preference.");
+      setLanguageUpdateSuccess(false);
+    },
+  });
 
   const handleLogout = async () => {
     destroyCookie(null, "accessToken");
@@ -129,6 +180,36 @@ export const Settings = ({
     // Clear any error messages
     setUpdateError(null);
     setUpdateSuccess(false);
+  };
+
+  const handleLanguageChange = (val: any) => {
+    setSelectedLanguage(val as string);
+  };
+
+  const handleSaveLanguage = async () => {
+    setLanguageUpdateError(null);
+    setLanguageUpdateSuccess(false);
+
+    const languageToSave =
+      selectedLanguage === "automatic" ? null : selectedLanguage;
+
+    if (languageToSave === session?.preferred_language) {
+      setLanguageUpdateError("No changes detected.");
+      return;
+    }
+
+    try {
+      await updateLanguagePreference(languageToSave);
+    } catch (error) {
+      console.error("Language preference update failed:", error);
+    }
+  };
+
+  const handleCancelLanguage = () => {
+    setSelectedLanguage(session?.preferred_language || "en");
+    setIsEditingLanguage(false);
+    setLanguageUpdateError(null);
+    setLanguageUpdateSuccess(false);
   };
 
   return (
@@ -188,6 +269,139 @@ export const Settings = ({
           </SelectDropdown.Content>
         </SelectDropdown.Root>
       </div>
+
+      {/* Language Preferences Section */}
+      {session?.id && (
+        <div style={{ marginTop: "40px" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "16px",
+              fontWeight: "bold",
+              fontSize: "20px",
+            }}
+          >
+            Language Preferences:
+          </label>
+
+          <div className={styles.languageContainer}>
+            <div className={styles.languageHeader}>
+              <div className={styles.languageInfo}>
+                {!isEditingLanguage ? (
+                  <>
+                    <div className={styles.languageLabel}>
+                      Preferred Language:
+                    </div>
+                    <div className={styles.languageValue}>
+                      {availableLanguages.find(
+                        (lang) => lang.code === selectedLanguage,
+                      )?.nativeName || "English"}
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.editingInfo}>
+                    <span className={styles.editingText}>
+                      Editing language preference...
+                    </span>
+                  </div>
+                )}
+              </div>
+              {!isEditingLanguage && (
+                <Button
+                  variant="outlined"
+                  onClick={() => setIsEditingLanguage(true)}
+                  className={styles.editButton}
+                >
+                  <PencilIcon className={styles.editIcon} />
+                </Button>
+              )}
+            </div>
+
+            {isEditingLanguage && (
+              <div className={styles.editForm}>
+                {languageUpdateError && (
+                  <div className={styles.errorMessage}>
+                    {languageUpdateError}
+                  </div>
+                )}
+
+                {languageUpdateSuccess && (
+                  <div className={styles.successMessage}>
+                    Language preference updated successfully!
+                  </div>
+                )}
+
+                <div className={styles.languageDropdownContainer}>
+                  <label className={styles.dropdownLabel}>
+                    Select Language:
+                  </label>
+                  <SelectDropdown.Root
+                    onValueChange={handleLanguageChange}
+                    open={isLanguageDropdownOpen}
+                    onOpenChange={setIsLanguageDropdownOpen}
+                    className={styles.languageDropdown}
+                  >
+                    <SelectDropdown.Trigger
+                      selectedBook={null}
+                      selectedVerse={null}
+                      defaultPlaceholder={
+                        availableLanguages.find(
+                          (lang) => lang.code === selectedLanguage,
+                        )?.nativeName || "Select Language"
+                      }
+                      icon={<ChevronDownIcon />}
+                    />
+                    <SelectDropdown.Content
+                      align="start"
+                      style={{
+                        width: "300px",
+                        maxHeight: "300px",
+                        overflowY: "auto",
+                      }}
+                    >
+                      <SelectDropdown.Item
+                        key="automatic"
+                        value="automatic"
+                        icon={<CheckIcon />}
+                      >
+                        Automatic (Based on Bible Version)
+                      </SelectDropdown.Item>
+                      {availableLanguages.map((language) => (
+                        <SelectDropdown.Item
+                          key={language.code}
+                          value={language.code}
+                          icon={<CheckIcon />}
+                        >
+                          {language.nativeName} ({language.name})
+                        </SelectDropdown.Item>
+                      ))}
+                    </SelectDropdown.Content>
+                  </SelectDropdown.Root>
+                </div>
+
+                <div className={styles.editActions}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleCancelLanguage}
+                    className={styles.cancelButton}
+                    disabled={isUpdatingLanguage}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveLanguage}
+                    className={styles.saveButton}
+                    loading={isUpdatingLanguage}
+                    disabled={isUpdatingLanguage}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* User Profile Section */}
       {session?.id && (
