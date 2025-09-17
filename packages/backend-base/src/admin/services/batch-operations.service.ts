@@ -386,8 +386,8 @@ export class BatchOperationService {
     model: string,
     adminUserId: string,
     type: "bible" | "book",
-    sourceBibleVersion: string,
-    targetBibleVersion: string,
+    source_language_code: string,
+    target_language_code: string,
     explanationTypes: string[],
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
@@ -414,7 +414,7 @@ export class BatchOperationService {
           model,
           created_by: adminUserId,
           total_requests: 66,
-          bible_version: sourceBibleVersion,
+          bible_version: source_language_code,
           explanation_types: [],
         })
         .returning("id")
@@ -449,8 +449,8 @@ export class BatchOperationService {
           adminUserId,
           effort,
           book.name,
-          sourceBibleVersion,
-          targetBibleVersion,
+          source_language_code,
+          target_language_code,
           explanationTypes,
           skipExisting,
           parentBatchId,
@@ -470,8 +470,8 @@ export class BatchOperationService {
         adminUserId,
         effort,
         bookName,
-        sourceBibleVersion,
-        targetBibleVersion,
+        source_language_code,
+        target_language_code,
         explanationTypes,
         skipExisting,
       );
@@ -606,8 +606,8 @@ export class BatchOperationService {
     adminUserId: string,
     effort: "low" | "medium" | "high",
     bookName: string,
-    sourceBibleVersion: string,
-    targetBibleVersion: string,
+    source_language_code: string,
+    target_language_code: string,
     explanationTypes: string[],
     skipExisting: boolean,
     parentBatchId?: number,
@@ -626,25 +626,25 @@ export class BatchOperationService {
 
     const sourceVersion = await connection
       .selectFrom("bible_versions")
-      .where("version_key", "=", sourceBibleVersion)
-      .select("language_code")
+      .where("language_code", "=", source_language_code)
+      .select(["language_code", "version_key"])
       .executeTakeFirst();
 
     if (!sourceVersion) {
       throw new Error(
-        `Source Bible version "${sourceBibleVersion}" not found.`,
+        `Source Bible version with language "${source_language_code}" not found.`,
       );
     }
 
     const targetVersion = await connection
       .selectFrom("bible_versions")
-      .where("version_key", "=", targetBibleVersion)
-      .select(["id", "language_code"])
+      .where("language_code", "=", target_language_code)
+      .select(["id", "language_code", "version_key"])
       .executeTakeFirst();
 
     if (!targetVersion) {
       throw new Error(
-        `Target Bible version "${targetBibleVersion}" not found.`,
+        `Target Bible version with language "${target_language_code}" not found.`,
       );
     }
 
@@ -659,14 +659,14 @@ export class BatchOperationService {
       throw new Error("No active translate prompt found in the database.");
     }
 
-    const language = getLanguageName(targetVersion.language_code);
+    const language = getLanguageName(target_language_code);
     const finalPrompt = translatePrompt.prompt.replace("{language}", language);
 
     let query = connection
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .where("chapters.book_id", "=", book.book_id)
-      .where("explanations.language_code", "=", sourceVersion.language_code)
+      .where("explanations.language_code", "=", source_language_code)
       .where("is_active", "=", true);
 
     if (explanationTypes.length > 0) {
@@ -689,7 +689,7 @@ export class BatchOperationService {
         .selectFrom("explanations")
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", book.book_id)
-        .where("explanations.language_code", "=", targetVersion.language_code)
+        .where("explanations.language_code", "=", target_language_code)
         .where("explanations.type", "in", explanationTypes as any)
         .select(["chapters.chapter_number", "explanations.type"])
         .execute();
@@ -702,7 +702,7 @@ export class BatchOperationService {
         const key = `${explanation.chapter_number}-${explanation.type}`;
         if (!existingSet.has(key)) {
           batchRequests.push({
-            custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${targetBibleVersion}`,
+            custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}`,
             method: "POST",
             url: "/v1/responses",
             body: {
@@ -717,7 +717,7 @@ export class BatchOperationService {
       }
     } else {
       batchRequests = activeExplanations.map((explanation) => ({
-        custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${targetBibleVersion}`,
+        custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}`,
         method: "POST",
         url: "/v1/responses",
         body: {
@@ -732,7 +732,7 @@ export class BatchOperationService {
 
     if (batchRequests.length === 0) {
       console.log(
-        `[BATCH] No new explanations to translate for ${bookName} (${sourceBibleVersion} to ${targetBibleVersion}). Skipping.`,
+        `[BATCH] No new explanations to translate for ${bookName} (${source_language_code} to ${target_language_code}). Skipping.`,
       );
       return;
     }
@@ -767,7 +767,7 @@ export class BatchOperationService {
         created_by: adminUserId,
         book_id: book.book_id,
         parent_batch_id: parentBatchId,
-        bible_version: targetBibleVersion,
+        bible_version: target_language_code,
         explanation_types: [],
       })
       .execute();

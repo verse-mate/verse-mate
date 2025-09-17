@@ -86,6 +86,9 @@ const plugin = new Elysia()
 
         return { books: bible.books };
       })
+      .get("/languages", async ({ store: { bibleService } }) => {
+        return await bibleService.getAvailableBibleVersionLanguages();
+      })
       .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {

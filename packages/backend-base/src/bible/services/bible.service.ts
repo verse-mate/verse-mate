@@ -959,6 +959,34 @@ export class BibleService {
     return languages;
   }
 
+  async getAvailableBibleVersionLanguages() {
+    const languages = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .select("language_code")
+      .distinct()
+      .execute();
+
+    const validLanguageCodes = languages
+      .map((lang) => lang.language_code)
+      .filter((code): code is string => code !== null && code !== "");
+
+    // Use browser's Intl.DisplayNames to get language names
+    const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+
+    return validLanguageCodes.map((code) => {
+      const name = displayNames.of(code) || code;
+      const nativeName =
+        new Intl.DisplayNames([code], { type: "language" }).of(code) || code;
+
+      return {
+        code,
+        name,
+        nativeName,
+      };
+    });
+  }
+
   async refreshLanguageStats() {
     const connection = this.db.getOrCreateConnection();
 
