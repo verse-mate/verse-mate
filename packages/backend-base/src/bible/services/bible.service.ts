@@ -90,11 +90,21 @@ export class BibleService {
 
     if (!chapter_id) return { success: false };
 
+    // Get language_code from version_id
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("id", "=", version_id)
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!version) return { success: false };
+
     const { explanation: explanations } =
       await this.bibleRepository.getExplanation({
         book_id,
         chapter_number,
-        version_id,
+        language_code: version.language_code,
       });
     const explanationTypeExists = explanations.some(
       (explanation) => explanation.type === type,
@@ -105,7 +115,7 @@ export class BibleService {
       type,
       explanation,
       chapter_id: chapter_id,
-      version_id,
+      language_code: version.language_code,
     });
 
     return { success };
@@ -118,27 +128,28 @@ export class BibleService {
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     version_id: string;
   }) {
+    // Get language_code from version_id
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("id", "=", version_id)
+      .select(["language_code", "version_key"])
+      .executeTakeFirst();
+
+    if (!version) {
+      return [];
+    }
+
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
-      version_id,
+      language_code: version.language_code,
     });
 
     const explanationExists = this.explanationExists({ explanation });
 
     if (explanationExists) {
       return [];
-    }
-
-    const version = await this.db
-      .getOrCreateConnection()
-      .selectFrom("bible_versions")
-      .where("id", "=", version_id)
-      .select("version_key")
-      .executeTakeFirst();
-
-    if (!version) {
-      return explanation;
     }
 
     const processedExplanations = await Promise.all(
@@ -669,18 +680,18 @@ export class BibleService {
 
   async deleteInactiveExplanations(options: {
     isBibleBatch: boolean;
-    bibleVersion: string;
+    language_code: string;
     bookName?: string;
     chapter?: number | "all";
   }) {
-    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
+    const { isBibleBatch, language_code, bookName, chapter } = options;
 
     if (!isBibleBatch && !bookName) {
       throw new Error("Book name is required for non-bible batch deletions.");
     }
 
     const result = await this.bibleRepository.deleteInactiveExplanations({
-      bibleVersion,
+      language_code,
       bookName: isBibleBatch ? undefined : bookName,
       chapter: isBibleBatch ? undefined : chapter,
     });
@@ -693,22 +704,11 @@ export class BibleService {
 
   async setDefaultExplanationsAsActive(options: {
     isBibleBatch: boolean;
-    bibleVersion: string;
+    language_code: string;
     bookName?: string;
     chapter?: number | "all";
   }) {
-    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
-
-    const version = await this.db
-      .getOrCreateConnection()
-      .selectFrom("bible_versions")
-      .where("version_key", "=", bibleVersion)
-      .select("id")
-      .executeTakeFirst();
-
-    if (!version) {
-      throw new Error(`Bible version ${bibleVersion} not found.`);
-    }
+    const { isBibleBatch, language_code, bookName, chapter } = options;
 
     let chapterIdsQuery = this.db
       .getOrCreateConnection()
@@ -750,7 +750,7 @@ export class BibleService {
     }
 
     const result = await this.bibleRepository.setDefaultExplanationsAsActive({
-      versionId: version.id,
+      language_code,
       chapterIds,
     });
 
@@ -762,22 +762,11 @@ export class BibleService {
 
   async setActiveExplanationsAsDefault(options: {
     isBibleBatch: boolean;
-    bibleVersion: string;
+    language_code: string;
     bookName?: string;
     chapter?: number | "all";
   }) {
-    const { isBibleBatch, bibleVersion, bookName, chapter } = options;
-
-    const version = await this.db
-      .getOrCreateConnection()
-      .selectFrom("bible_versions")
-      .where("version_key", "=", bibleVersion)
-      .select("id")
-      .executeTakeFirst();
-
-    if (!version) {
-      throw new Error(`Bible version ${bibleVersion} not found.`);
-    }
+    const { isBibleBatch, language_code, bookName, chapter } = options;
 
     let chapterIdsQuery = this.db
       .getOrCreateConnection()
@@ -819,7 +808,7 @@ export class BibleService {
     }
 
     const result = await this.bibleRepository.setActiveExplanationsAsDefault({
-      versionId: version.id,
+      language_code,
       chapterIds,
     });
 
@@ -831,23 +820,12 @@ export class BibleService {
 
   async setSpecificExplanationVersionAsActive(options: {
     isBibleBatch: boolean;
-    bibleVersion: string;
+    language_code: string;
     bookName?: string;
     chapter?: number | "all";
     version: number;
   }) {
-    const { isBibleBatch, bibleVersion, bookName, chapter, version } = options;
-
-    const bibleVersionRecord = await this.db
-      .getOrCreateConnection()
-      .selectFrom("bible_versions")
-      .where("version_key", "=", bibleVersion)
-      .select("id")
-      .executeTakeFirst();
-
-    if (!bibleVersionRecord) {
-      throw new Error(`Bible version ${bibleVersion} not found.`);
-    }
+    const { isBibleBatch, language_code, bookName, chapter, version } = options;
 
     let chapterIdsQuery = this.db
       .getOrCreateConnection()
@@ -890,7 +868,7 @@ export class BibleService {
 
     const result =
       await this.bibleRepository.setSpecificExplanationVersionAsActive({
-        versionId: bibleVersionRecord.id,
+        language_code,
         chapterIds,
         version,
       });
@@ -903,25 +881,14 @@ export class BibleService {
 
   async getExplanationsByFilter(options: {
     isBibleBatch: boolean;
-    bibleVersion: string;
+    language_code: string;
     bookName?: string;
     chapter?: number | "all";
     limit: number;
     offset: number;
   }) {
-    const { isBibleBatch, bibleVersion, bookName, chapter, limit, offset } =
+    const { isBibleBatch, language_code, bookName, chapter, limit, offset } =
       options;
-
-    const version = await this.db
-      .getOrCreateConnection()
-      .selectFrom("bible_versions")
-      .where("version_key", "=", bibleVersion)
-      .select("id")
-      .executeTakeFirst();
-
-    if (!version) {
-      throw new Error(`Bible version ${bibleVersion} not found.`);
-    }
 
     let chapterIdsQuery = this.db
       .getOrCreateConnection()
@@ -956,7 +923,7 @@ export class BibleService {
     const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
 
     return this.bibleRepository.getExplanationsByFilter({
-      versionId: version.id,
+      language_code,
       chapterIds,
       limit,
       offset,

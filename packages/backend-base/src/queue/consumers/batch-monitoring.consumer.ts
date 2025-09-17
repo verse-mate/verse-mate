@@ -241,9 +241,17 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 responseBody.output_text ||
                 responseBody.output[1].content[0].text;
 
-              if (!batchJob.book_id || !batchJob.bible_version) {
+              // Get language_code from bible_version
+              const version = await db
+                .getOrCreateConnection()
+                .selectFrom("bible_versions")
+                .where("version_key", "=", batchJob.bible_version)
+                .select(["id", "language_code"])
+                .executeTakeFirst();
+
+              if (!version) {
                 console.error(
-                  `[BATCH_MONITORING] Missing batch job data for ${batchId}`,
+                  `[BATCH_MONITORING] Bible version ${batchJob.bible_version} not found`,
                 );
                 failedExplanations++;
                 continue;
@@ -269,7 +277,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 type: explanationType as any,
                 explanation: explanationContent,
                 chapter_id: chapter.chapter_id,
-                version_id: version.id,
+                language_code: version.language_code,
                 version: 1, // Start with version 1
                 is_active: true,
               };
@@ -280,7 +288,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 .values(newExplanation)
                 .onConflict((oc) =>
                   oc
-                    .columns(["chapter_id", "type", "version_id", "version"])
+                    .columns(["chapter_id", "type", "language_code", "version"])
                     .doUpdateSet({
                       explanation: explanationContent,
                       is_active: true, // Ensure it's active on update

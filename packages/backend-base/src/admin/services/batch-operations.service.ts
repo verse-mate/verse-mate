@@ -503,7 +503,7 @@ export class BatchOperationService {
     const version = await connection
       .selectFrom("bible_versions")
       .where("version_key", "=", bibleVersion)
-      .select("id")
+      .select("language_code")
       .executeTakeFirst();
 
     if (!version) {
@@ -525,7 +525,7 @@ export class BatchOperationService {
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .where("chapters.book_id", "=", book.book_id)
-      .where("explanations.version_id", "=", version.id)
+      .where("explanations.language_code", "=", version.language_code)
       .where("is_active", "=", true)
       .select([
         "explanations.explanation_id",
@@ -627,7 +627,7 @@ export class BatchOperationService {
     const sourceVersion = await connection
       .selectFrom("bible_versions")
       .where("version_key", "=", sourceBibleVersion)
-      .select("id")
+      .select("language_code")
       .executeTakeFirst();
 
     if (!sourceVersion) {
@@ -666,7 +666,7 @@ export class BatchOperationService {
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .where("chapters.book_id", "=", book.book_id)
-      .where("explanations.version_id", "=", sourceVersion.id)
+      .where("explanations.language_code", "=", sourceVersion.language_code)
       .where("is_active", "=", true);
 
     if (explanationTypes.length > 0) {
@@ -689,7 +689,7 @@ export class BatchOperationService {
         .selectFrom("explanations")
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", book.book_id)
-        .where("explanations.version_id", "=", targetVersion.id)
+        .where("explanations.language_code", "=", targetVersion.language_code)
         .where("explanations.type", "in", explanationTypes as any)
         .select(["chapters.chapter_number", "explanations.type"])
         .execute();
@@ -1309,7 +1309,7 @@ export class BatchOperationService {
         .selectFrom("explanations")
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", bookId)
-        .where("explanations.version_id", "=", version.id)
+        .where("explanations.language_code", "=", version.language_code)
         .where("explanations.type", "in", explanationTypes)
         .select(["chapters.chapter_number", "explanations.type"])
         .execute();
@@ -1413,7 +1413,7 @@ export class BatchOperationService {
         .getOrCreateConnection()
         .selectFrom("bible_versions")
         .where("version_key", "=", batchJob.bible_version)
-        .select("id")
+        .select("language_code")
         .executeTakeFirst();
 
       if (!version) {
@@ -1494,7 +1494,7 @@ export class BatchOperationService {
               type: explanationType as any,
               explanation: explanationContent,
               chapter_id: chapter.chapter_id,
-              version_id: version.id,
+              language_code: version.language_code,
               version: 1, // Start with version 1
               is_active: true,
             };
@@ -1505,7 +1505,7 @@ export class BatchOperationService {
               .values(newExplanation)
               .onConflict((oc) =>
                 oc
-                  .columns(["chapter_id", "type", "version_id", "version"])
+                  .columns(["chapter_id", "type", "language_code", "version"])
                   .doUpdateSet({
                     explanation: explanationContent,
                     is_active: true, // Ensure it's active on update
@@ -1659,7 +1659,7 @@ export class BatchOperationService {
             .getOrCreateConnection()
             .selectFrom("bible_versions")
             .where("version_key", "=", bibleVersion)
-            .select("id")
+            .select("language_code")
             .executeTakeFirst();
 
           if (!version) {
@@ -1705,7 +1705,7 @@ export class BatchOperationService {
             .selectFrom("explanations")
             .where("chapter_id", "=", chapter.chapter_id)
             .where("type", "=", explanationType as any)
-            .where("version_id", "=", version.id)
+            .where("language_code", "=", version.language_code)
             .orderBy("version", "desc")
             .selectAll()
             .executeTakeFirst();
@@ -1722,7 +1722,7 @@ export class BatchOperationService {
                   .set({ is_active: false })
                   .where("chapter_id", "=", chapter.chapter_id)
                   .where("type", "=", explanationType as any)
-                  .where("version_id", "=", version.id)
+                  .where("language_code", "=", version.language_code)
                   .execute();
 
                 // Insert the new, active version
@@ -1732,7 +1732,7 @@ export class BatchOperationService {
                     type: originalExplanation.type,
                     explanation: extractedText,
                     chapter_id: originalExplanation.chapter_id,
-                    version_id: originalExplanation.version_id,
+                    language_code: originalExplanation.language_code,
                     version: originalExplanation.version + 1,
                     is_active: true,
                     created_by_admin: false,
@@ -1779,7 +1779,7 @@ export class BatchOperationService {
                     type: originalExplanation.type,
                     explanation: extractedText ?? "",
                     chapter_id: originalExplanation.chapter_id,
-                    version_id: originalExplanation.version_id,
+                    language_code: originalExplanation.language_code,
                     version: originalExplanation.version + 1,
                     is_active: true,
                     created_by_admin: false,
@@ -1863,8 +1863,8 @@ export class BatchOperationService {
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .innerJoin(
         "bible_versions",
-        "explanations.version_id",
-        "bible_versions.id",
+        "explanations.language_code",
+        "bible_versions.language_code",
       )
       .where("bible_versions.version_key", "=", batchJob.bible_version as any);
 
@@ -1888,8 +1888,8 @@ export class BatchOperationService {
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .innerJoin(
         "bible_versions",
-        "explanations.version_id",
-        "bible_versions.id",
+        "explanations.language_code",
+        "bible_versions.language_code",
       )
       .where("bible_versions.version_key", "=", batchJob.bible_version as any)
       .where("explanations.created_by_admin", "=", true);
@@ -1953,7 +1953,7 @@ export class BatchOperationService {
           const version = await connection
             .selectFrom("bible_versions")
             .where("version_key", "=", bibleVersion)
-            .select("id")
+            .select("language_code")
             .executeTakeFirst();
 
           if (!version) {
@@ -1991,7 +1991,7 @@ export class BatchOperationService {
               .set({ is_active: false })
               .where("chapter_id", "=", chapter.chapter_id)
               .where("type", "=", explanationType as any)
-              .where("version_id", "=", version.id)
+              .where("language_code", "=", version.language_code)
               .execute();
 
             // Insert the new, active, and conditionally default version
@@ -2001,7 +2001,7 @@ export class BatchOperationService {
                 type: explanationType as any,
                 explanation: extractedText,
                 chapter_id: chapter.chapter_id,
-                version_id: version.id,
+                language_code: version.language_code,
                 version: nextVersion,
                 is_active: true,
                 created_by_admin: shouldBeDefault,

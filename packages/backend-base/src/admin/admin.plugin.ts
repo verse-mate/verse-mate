@@ -403,7 +403,10 @@ const plugin = new Elysia()
             "/explanations/set-active-as-default",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.setActiveExplanationsAsDefault(body);
+              return await bibleService.setActiveExplanationsAsDefault({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -418,7 +421,10 @@ const plugin = new Elysia()
             "/explanations/set-defaults-active",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.setDefaultExplanationsAsActive(body);
+              return await bibleService.setDefaultExplanationsAsActive({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -433,9 +439,10 @@ const plugin = new Elysia()
             "/explanations/set-specific-version-active",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.setSpecificExplanationVersionAsActive(
-                body,
-              );
+              return await bibleService.setSpecificExplanationVersionAsActive({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -451,7 +458,10 @@ const plugin = new Elysia()
             "/explanations/inactive",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.deleteInactiveExplanations(body);
+              return await bibleService.deleteInactiveExplanations({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -472,7 +482,7 @@ const plugin = new Elysia()
               const bibleService = store.getBibleService();
               return await bibleService.getExplanationsByFilter({
                 isBibleBatch: query.isBibleBatch === "true",
-                bibleVersion: query.bibleVersion,
+                language_code: query.bibleVersion,
                 bookName: query.bookName,
                 chapter: query.chapter ? Number(query.chapter) : "all",
                 limit: query.limit ? Number(query.limit) : 50,
