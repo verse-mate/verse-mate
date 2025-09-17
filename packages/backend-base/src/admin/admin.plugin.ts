@@ -2,7 +2,7 @@ import bearer from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
 import PromptStatusEnum from "../../../database/src/models/public/PromptStatusEnum";
 import { adminGuard } from "../auth/admin.utils";
-import { authDerive } from "../auth/auth.utils";
+import { authDerive, authGuard } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
@@ -32,6 +32,54 @@ const plugin = new Elysia()
       getBibleService: () => new BibleService(state.db, bibleRepository),
     };
   })
+  .guard((app) =>
+    app
+      .use(bearer())
+      .resolve({ as: "scoped" }, authDerive)
+      .group("/user", (app) =>
+        app.guard(authGuard).patch(
+          "/preferences",
+          async ({ body, currentUserId, store: { db } }) => {
+            const result = await db
+              .getOrCreateConnection()
+              .updateTable("user")
+              .set({ preferred_language: body.preferred_language })
+              .where("id", "=", currentUserId)
+              .executeTakeFirst();
+
+            if (result.numUpdatedRows === BigInt(0)) {
+              throw new Error(`User ${currentUserId} not found`);
+            }
+
+            return {
+              success: true,
+              message: `User ${currentUserId} preferences updated`,
+            };
+          },
+          {
+            body: t.Object({
+              preferred_language: t.String(),
+            }),
+          },
+        ),
+      )
+      .group("/admin", (app) =>
+        app.guard(adminGuard).get("/users", async ({ store: { db } }) => {
+          return await db
+            .getOrCreateConnection()
+            .selectFrom("user")
+            .select([
+              "id",
+              "email",
+              "firstName",
+              "lastName",
+              "is_admin",
+              "createdAt",
+            ])
+            .execute();
+        }),
+      ),
+  )
   .guard((app) => {
     return app
       .use(bearer())

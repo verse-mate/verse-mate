@@ -125,8 +125,10 @@ export class BibleService {
     book_id,
     chapter_number,
     version_id,
+    user_id,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     version_id: string;
+    user_id?: string;
   }) {
     // Get language_code from version_id
     const version = await this.db
@@ -140,10 +142,25 @@ export class BibleService {
       return [];
     }
 
+    let language_code = version.language_code;
+
+    if (user_id) {
+      const user = await this.db
+        .getOrCreateConnection()
+        .selectFrom("user")
+        .where("id", "=", user_id)
+        .select("preferred_language")
+        .executeTakeFirst();
+
+      if (user?.preferred_language) {
+        language_code = user.preferred_language;
+      }
+    }
+
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
-      language_code: version.language_code,
+      language_code,
     });
 
     const explanationExists = this.explanationExists({ explanation });
