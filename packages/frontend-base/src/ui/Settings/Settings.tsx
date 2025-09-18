@@ -36,23 +36,18 @@ export const Settings = ({
   );
   const [isOpen, setIsOpen] = useState(false);
 
-  // User profile editing state
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  // Form state for always-editable fields
   const [firstName, setFirstName] = useState(session?.firstName || "");
   const [lastName, setLastName] = useState(session?.lastName || "");
   const [email, setEmail] = useState(session?.email || "");
-  const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [updateError, setUpdateError] = useState<string | null>(null);
-
-  // Language preferences state
-  const [isEditingLanguage, setIsEditingLanguage] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(
     session?.preferred_language || "en",
   );
-  const [languageUpdateSuccess, setLanguageUpdateSuccess] = useState(false);
-  const [languageUpdateError, setLanguageUpdateError] = useState<string | null>(
-    null,
-  );
+
+  // Global form state
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalSuccess, setGlobalSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [availableLanguages, setAvailableLanguages] = useState<
     { code: string; name: string; nativeName: string }[]
@@ -88,29 +83,10 @@ export const Settings = ({
     useMutation({
       mutationFn: api.auth.profile.put,
       onSuccess: async () => {
-        setUpdateSuccess(true);
-        setUpdateError(null);
-        setIsEditingProfile(false);
-        // Refresh session to get updated user data
-        await fetchSession(true);
-        // Clear success message after 3 seconds
-        setTimeout(() => setUpdateSuccess(false), 3000);
+        // Don't handle success here - will be handled by global save
       },
       onError: (error: any) => {
-        let errorMessage = "An error occurred while updating your profile.";
-
-        // Handle different error structures from the API
-        if (error?.value?.message === "EMAIL_ALREADY_EXISTS") {
-          errorMessage =
-            "This email address is already in use by another account.";
-        } else if (error?.value && typeof error.value === "string") {
-          errorMessage = error.value;
-        } else if (typeof error === "string") {
-          errorMessage = error;
-        }
-
-        setUpdateError(errorMessage);
-        setUpdateSuccess(false);
+        // Don't handle error here - will be handled by global save
       },
     });
 
@@ -122,15 +98,10 @@ export const Settings = ({
     mutationFn: (language: string | null) =>
       api.user.preferences.patch({ preferred_language: language }),
     onSuccess: async () => {
-      setLanguageUpdateSuccess(true);
-      setLanguageUpdateError(null);
-      setIsEditingLanguage(false);
-      await fetchSession(true); // Refresh session data
-      setTimeout(() => setLanguageUpdateSuccess(false), 3000);
+      // Don't handle success here - will be handled by global save
     },
     onError: (error: any) => {
-      setLanguageUpdateError("Failed to update language preference.");
-      setLanguageUpdateSuccess(false);
+      // Don't handle error here - will be handled by global save
     },
   });
 
@@ -139,77 +110,104 @@ export const Settings = ({
     window.location.reload();
   };
 
-  const handleSaveProfile = async () => {
-    // Clear previous messages
-    setUpdateError(null);
-    setUpdateSuccess(false);
-
-    // Validate inputs
-    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      setUpdateError("All fields are required.");
-      return;
-    }
-
-    if (
-      email.trim() === session?.email &&
-      firstName.trim() === session?.firstName &&
-      lastName.trim() === session?.lastName
-    ) {
-      setUpdateError("No changes detected.");
-      return;
-    }
-
-    try {
-      await updateProfile({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-      });
-    } catch (error) {
-      // Error handling is done in the onError callback
-      console.error("Profile update failed:", error);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    // Reset to original values
-    setFirstName(session?.firstName || "");
-    setLastName(session?.lastName || "");
-    setEmail(session?.email || "");
-    setIsEditingProfile(false);
-    // Clear any error messages
-    setUpdateError(null);
-    setUpdateSuccess(false);
-  };
-
   const handleLanguageChange = (val: any) => {
     setSelectedLanguage(val as string);
   };
 
-  const handleSaveLanguage = async () => {
-    setLanguageUpdateError(null);
-    setLanguageUpdateSuccess(false);
+  // Global change detection
+  const hasChanges = () => {
+    return (
+      firstName !== (session?.firstName || "") ||
+      lastName !== (session?.lastName || "") ||
+      email !== (session?.email || "") ||
+      selectedLanguage !== (session?.preferred_language || "en")
+    );
+  };
 
+  const hasProfileChanges = () => {
+    return (
+      firstName !== (session?.firstName || "") ||
+      lastName !== (session?.lastName || "") ||
+      email !== (session?.email || "")
+    );
+  };
+
+  const hasLanguageChanges = () => {
+    const currentLanguage = session?.preferred_language || "en";
     const languageToSave =
       selectedLanguage === "automatic" ? null : selectedLanguage;
+    const currentStoredLanguage =
+      currentLanguage === "en" ? null : currentLanguage;
+    return languageToSave !== currentStoredLanguage;
+  };
 
-    if (languageToSave === session?.preferred_language) {
-      setLanguageUpdateError("No changes detected.");
+  // Global save handler
+  const handleGlobalSave = async () => {
+    setGlobalError(null);
+    setGlobalSuccess(false);
+    setIsSaving(true);
+
+    // Validate inputs
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      setGlobalError("All fields are required.");
+      setIsSaving(false);
       return;
     }
 
     try {
-      await updateLanguagePreference(languageToSave);
-    } catch (error) {
-      console.error("Language preference update failed:", error);
-    }
-  };
+      const updates: Array<Promise<any>> = [];
 
-  const handleCancelLanguage = () => {
-    setSelectedLanguage(session?.preferred_language || "en");
-    setIsEditingLanguage(false);
-    setLanguageUpdateError(null);
-    setLanguageUpdateSuccess(false);
+      // Profile updates if changed
+      if (hasProfileChanges()) {
+        updates.push(
+          updateProfile({
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+          }),
+        );
+      }
+
+      // Language preference updates if changed
+      if (hasLanguageChanges()) {
+        const languageToSave =
+          selectedLanguage === "automatic" ? null : selectedLanguage;
+        updates.push(updateLanguagePreference(languageToSave));
+      }
+
+      if (updates.length === 0) {
+        setGlobalError("No changes detected.");
+        setIsSaving(false);
+        return;
+      }
+
+      // Execute all updates concurrently
+      await Promise.all(updates);
+
+      // Refresh session data
+      await fetchSession(true);
+      setGlobalSuccess(true);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setGlobalSuccess(false), 3000);
+    } catch (error: any) {
+      let errorMessage = "An error occurred while saving your changes.";
+
+      // Handle different error structures from the API
+      if (error?.value?.message === "EMAIL_ALREADY_EXISTS") {
+        errorMessage =
+          "This email address is already in use by another account.";
+      } else if (error?.value && typeof error.value === "string") {
+        errorMessage = error.value;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+
+      setGlobalError(errorMessage);
+      setGlobalSuccess(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -225,44 +223,54 @@ export const Settings = ({
         <h3>Settings</h3>
       </div>
       <div className={styles.heightSpacer} />
+
+      {/* Bible Version Section */}
       <div>
-        <label className={styles.subsectionLabel}>Bible Version:</label>
-        <div className={styles.dropdownWrapper}>
-          <SelectDropdown.Root
-            onValueChange={(val) => setSelectedBibleVersion(val)}
-            open={isOpen}
-            onOpenChange={setIsOpen}
-          >
-            <SelectDropdown.Trigger
-              selectedBook={null}
-              selectedVerse={null}
-              defaultPlaceholder={
-                selectedVersionData?.value || "Select Version"
-              }
-              icon={<ChevronDownIcon />}
-              onClick={() => setIsOpen((prev) => !prev)}
-              theme="light" // Explicitly set light theme for settings context
-              context="settings" // Add settings context for mobile visibility
-              expandText={true} // Enable text expansion for better readability
-            />
-            <SelectDropdown.Content
-              align="start"
-              style={{
-                maxHeight: "400px",
-                overflowY: "auto",
-              }}
-            >
-              {bibleVersions.map((version) => (
-                <SelectDropdown.Item
-                  key={version.key}
-                  value={version.key}
-                  icon={<CheckIcon />}
+        <label className={styles.sectionLabel}>Bible Version:</label>
+
+        <div className={styles.bibleVersionContainer}>
+          <div className={styles.bibleVersionDropdownContainer}>
+            <label className={styles.dropdownLabel}>
+              Select Bible Version:
+            </label>
+            <div className={styles.dropdownWrapper}>
+              <SelectDropdown.Root
+                onValueChange={(val) => setSelectedBibleVersion(val)}
+                open={isOpen}
+                onOpenChange={setIsOpen}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={
+                    selectedVersionData?.value || "Select Version"
+                  }
+                  icon={<ChevronDownIcon />}
+                  onClick={() => setIsOpen((prev) => !prev)}
+                  theme="light" // Explicitly set light theme for settings context
+                  context="settings" // Add settings context for mobile visibility
+                  expandText={true} // Enable text expansion for better readability
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{
+                    maxHeight: "400px",
+                    overflowY: "auto",
+                  }}
                 >
-                  {version.value}
-                </SelectDropdown.Item>
-              ))}
-            </SelectDropdown.Content>
-          </SelectDropdown.Root>
+                  {bibleVersions.map((version) => (
+                    <SelectDropdown.Item
+                      key={version.key}
+                      value={version.key}
+                      icon={<CheckIcon />}
+                    >
+                      {version.value}
+                    </SelectDropdown.Item>
+                  ))}
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -272,123 +280,56 @@ export const Settings = ({
           <label className={styles.sectionLabel}>Language Preferences:</label>
 
           <div className={styles.languageContainer}>
-            <div className={styles.languageHeader}>
-              <div className={styles.languageInfo}>
-                {!isEditingLanguage ? (
-                  <>
-                    <div className={styles.languageLabel}>
-                      Preferred Language:
-                    </div>
-                    <div className={styles.languageValue}>
-                      {availableLanguages.find(
-                        (lang) => lang.code === selectedLanguage,
-                      )?.nativeName || "English"}
-                    </div>
-                  </>
-                ) : (
-                  <div className={styles.editingInfo}>
-                    <span className={styles.editingText}>
-                      Editing language preference...
-                    </span>
-                  </div>
-                )}
-              </div>
-              {!isEditingLanguage && (
-                <Button
-                  variant="outlined"
-                  onClick={() => setIsEditingLanguage(true)}
-                  className={styles.editButton}
+            <div className={styles.languageDropdownContainer}>
+              <label className={styles.dropdownLabel}>
+                Preferred Language:
+              </label>
+              <div className={styles.languageDropdownWrapper}>
+                <SelectDropdown.Root
+                  onValueChange={handleLanguageChange}
+                  open={isLanguageDropdownOpen}
+                  onOpenChange={setIsLanguageDropdownOpen}
                 >
-                  <PencilIcon className={styles.editIcon} />
-                </Button>
-              )}
-            </div>
-
-            {isEditingLanguage && (
-              <div className={styles.editForm}>
-                {languageUpdateError && (
-                  <div className={styles.errorMessage}>
-                    {languageUpdateError}
-                  </div>
-                )}
-
-                {languageUpdateSuccess && (
-                  <div className={styles.successMessage}>
-                    Language preference updated successfully!
-                  </div>
-                )}
-
-                <div className={styles.languageDropdownContainer}>
-                  <label className={styles.dropdownLabel}>
-                    Select Language:
-                  </label>
-                  <div className={styles.languageDropdownWrapper}>
-                    <SelectDropdown.Root
-                      onValueChange={handleLanguageChange}
-                      open={isLanguageDropdownOpen}
-                      onOpenChange={setIsLanguageDropdownOpen}
+                  <SelectDropdown.Trigger
+                    selectedBook={null}
+                    selectedVerse={null}
+                    defaultPlaceholder={
+                      availableLanguages.find(
+                        (lang) => lang.code === selectedLanguage,
+                      )?.nativeName || "Select Language"
+                    }
+                    icon={<ChevronDownIcon />}
+                    theme="light" // Explicitly set light theme for settings context
+                    context="settings" // Add settings context for mobile visibility
+                    expandText={true} // Enable text expansion for better readability
+                  />
+                  <SelectDropdown.Content
+                    align="start"
+                    style={{
+                      maxHeight: "300px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    <SelectDropdown.Item
+                      key="automatic"
+                      value="automatic"
+                      icon={<CheckIcon />}
                     >
-                      <SelectDropdown.Trigger
-                        selectedBook={null}
-                        selectedVerse={null}
-                        defaultPlaceholder={
-                          availableLanguages.find(
-                            (lang) => lang.code === selectedLanguage,
-                          )?.nativeName || "Select Language"
-                        }
-                        icon={<ChevronDownIcon />}
-                        theme="light" // Explicitly set light theme for settings context
-                        context="settings" // Add settings context for mobile visibility
-                        expandText={true} // Enable text expansion for better readability
-                      />
-                      <SelectDropdown.Content
-                        align="start"
-                        style={{
-                          maxHeight: "300px",
-                          overflowY: "auto",
-                        }}
+                      Automatic (Based on Bible Version)
+                    </SelectDropdown.Item>
+                    {availableLanguages.map((language) => (
+                      <SelectDropdown.Item
+                        key={`lang-${language.code}`}
+                        value={language.code}
+                        icon={<CheckIcon />}
                       >
-                        <SelectDropdown.Item
-                          key="automatic"
-                          value="automatic"
-                          icon={<CheckIcon />}
-                        >
-                          Automatic (Based on Bible Version)
-                        </SelectDropdown.Item>
-                        {availableLanguages.map((language) => (
-                          <SelectDropdown.Item
-                            key={`lang-${language.code}`}
-                            value={language.code}
-                            icon={<CheckIcon />}
-                          >
-                            {language.nativeName} ({language.name})
-                          </SelectDropdown.Item>
-                        ))}
-                      </SelectDropdown.Content>
-                    </SelectDropdown.Root>
-                  </div>
-                </div>
-
-                <div className={styles.editActions}>
-                  <Button
-                    variant="outlined"
-                    onClick={handleCancelLanguage}
-                    className={styles.cancelButton}
-                    disabled={isUpdatingLanguage}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveLanguage}
-                    className={styles.saveButton}
-                    loading={isUpdatingLanguage}
-                    disabled={isUpdatingLanguage}
-                  >
-                    Save Changes
-                  </Button>
-                </div>
+                        {language.nativeName} ({language.name})
+                      </SelectDropdown.Item>
+                    ))}
+                  </SelectDropdown.Content>
+                </SelectDropdown.Root>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
@@ -404,96 +345,76 @@ export const Settings = ({
                 <UserIcon className={styles.profileUserIcon} />
               </div>
               <div className={styles.profileInfo}>
-                {!isEditingProfile ? (
-                  <>
-                    <div className={styles.profileName}>
-                      {session?.firstName} {session?.lastName}
-                    </div>
-                    <div className={styles.profileEmail}>{session?.email}</div>
-                  </>
-                ) : (
-                  <div className={styles.editingInfo}>
-                    <span className={styles.editingText}>
-                      Editing profile...
-                    </span>
-                  </div>
-                )}
-              </div>
-              {!isEditingProfile && (
-                <Button
-                  variant="outlined"
-                  onClick={() => setIsEditingProfile(true)}
-                  className={styles.editButton}
-                >
-                  <PencilIcon className={styles.editIcon} />
-                </Button>
-              )}
-            </div>
-
-            {isEditingProfile && (
-              <div className={styles.editForm}>
-                {updateError && (
-                  <div className={styles.errorMessage}>{updateError}</div>
-                )}
-
-                {updateSuccess && (
-                  <div className={styles.successMessage}>
-                    Profile updated successfully!
-                  </div>
-                )}
-
-                <Input.Root>
-                  <Input.Label label="First Name" />
-                  <Input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Enter your first name"
-                    disabled={isUpdatingProfile}
-                  />
-                </Input.Root>
-
-                <Input.Root>
-                  <Input.Label label="Last Name" />
-                  <Input
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Enter your last name"
-                    disabled={isUpdatingProfile}
-                  />
-                </Input.Root>
-
-                <Input.Root>
-                  <Input.Label label="Email" />
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    disabled={isUpdatingProfile}
-                  />
-                </Input.Root>
-
-                <div className={styles.editActions}>
-                  <Button
-                    variant="outlined"
-                    onClick={handleCancelEdit}
-                    className={styles.cancelButton}
-                    disabled={isUpdatingProfile}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSaveProfile}
-                    className={styles.saveButton}
-                    loading={isUpdatingProfile}
-                    disabled={isUpdatingProfile}
-                  >
-                    Save Changes
-                  </Button>
+                <div className={styles.profileName}>Profile Details</div>
+                <div className={styles.profileEmail}>
+                  Update your personal information
                 </div>
               </div>
-            )}
+            </div>
+
+            <div className={styles.profileForm}>
+              <Input.Root>
+                <Input.Label label="First Name" />
+                <Input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Enter your first name"
+                  disabled={isSaving}
+                />
+              </Input.Root>
+
+              <Input.Root>
+                <Input.Label label="Last Name" />
+                <Input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Enter your last name"
+                  disabled={isSaving}
+                />
+              </Input.Root>
+
+              <Input.Root>
+                <Input.Label label="Email" />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  disabled={isSaving}
+                />
+              </Input.Root>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Global Save Section */}
+      {session?.id && (
+        <div className={styles.globalSaveSection}>
+          {globalError && (
+            <div className={styles.errorMessage}>{globalError}</div>
+          )}
+
+          {globalSuccess && (
+            <div className={styles.successMessage}>
+              Settings updated successfully!
+            </div>
+          )}
+
+          <Button
+            onClick={handleGlobalSave}
+            className={styles.globalSaveButton}
+            loading={isSaving}
+            disabled={isSaving || !hasChanges()}
+          >
+            {hasChanges() ? "Save Changes" : "No changes to save"}
+          </Button>
+
+          {hasChanges() && (
+            <div className={styles.changeIndicator}>
+              You have unsaved changes
+            </div>
+          )}
         </div>
       )}
 
