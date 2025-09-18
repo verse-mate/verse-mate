@@ -357,7 +357,7 @@ export const Settings = ({
                         </SelectDropdown.Item>
                         {availableLanguages.map((language) => (
                           <SelectDropdown.Item
-                            key={language.code}
+                            key={`lang-${language.code}`}
                             value={language.code}
                             icon={<CheckIcon />}
                           >
