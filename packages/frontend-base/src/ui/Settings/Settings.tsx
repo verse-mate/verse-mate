@@ -241,6 +241,9 @@ export const Settings = ({
               }
               icon={<ChevronDownIcon />}
               onClick={() => setIsOpen((prev) => !prev)}
+              theme="light" // Explicitly set light theme for settings context
+              context="settings" // Add settings context for mobile visibility
+              expandText={true} // Enable text expansion for better readability
             />
             <SelectDropdown.Content
               align="start"
@@ -334,6 +337,9 @@ export const Settings = ({
                           )?.nativeName || "Select Language"
                         }
                         icon={<ChevronDownIcon />}
+                        theme="light" // Explicitly set light theme for settings context
+                        context="settings" // Add settings context for mobile visibility
+                        expandText={true} // Enable text expansion for better readability
                       />
                       <SelectDropdown.Content
                         align="start"

@@ -37,63 +37,22 @@
   height: 30px;
 }
 
-/* Dropdown Container System - Standardized Wrappers */
+/* Dropdown Container System - Standardized with Unified Design Tokens */
 .dropdownWrapper {
   width: 100%;
-  max-width: 300px;
+  max-width: var(--dropdown-max-width, 600px);
   box-sizing: border-box;
 }
 
 .languageDropdownWrapper {
   width: 100%;
-  max-width: 300px;
+  max-width: var(--dropdown-max-width, 600px);
   box-sizing: border-box;
 }
 
-/* Dropdown Trigger Styling - Aligned with Bible Book Dropdown */
-.dropdownWrapper button[role="combobox"],
-.languageDropdownWrapper button[role="combobox"] {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  padding: 12px 16px !important;
-  background-color: var(--snow) !important;
-  border: 1px solid var(--geyser-opacity) !important;
-  border-radius: 8px !important;
-  color: var(--oil) !important;
-  font-family: Inter, sans-serif !important;
-  font-size: 16px !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  transition: background-color 0.2s ease !important;
-}
+/* Remove legacy dropdown overrides - now handled by theme system */
 
-/* Dropdown Hover States */
-.dropdownWrapper button[role="combobox"]:hover,
-.languageDropdownWrapper button[role="combobox"]:hover {
-  background-color: #f5f5f5 !important;
-}
-
-/* Dropdown Focus States - Accessibility */
-.dropdownWrapper button[role="combobox"]:focus,
-.languageDropdownWrapper button[role="combobox"]:focus {
-  outline: 2px solid var(--dust) !important;
-  outline-offset: 2px !important;
-}
-
-/* Dropdown Text & Icon Styling */
-.dropdownWrapper button[role="combobox"] span,
-.languageDropdownWrapper button[role="combobox"] span {
-  color: var(--oil) !important;
-  font-weight: 500 !important;
-}
-
-.dropdownWrapper button[role="combobox"] svg,
-.languageDropdownWrapper button[role="combobox"] svg {
-  fill: var(--oil) !important;
-  transition: fill 0.2s ease !important;
-}
+/* The .dropdownTriggerBase.lightTheme handles all light theme styling */
 
 /* Header Section */
 .header {
@@ -423,7 +382,6 @@
   .dropdownWrapper,
   .languageDropdownWrapper {
     max-width: 100%;
-    padding: 0 8px;
   }
   
   .sectionSpacing {
@@ -467,7 +425,4 @@
   }
 }
 
-/* Legacy Compatibility */
-.mobileSelectDropdown {
-  /* Legacy class for backward compatibility - functionality now handled by wrapper classes */
-}
+
