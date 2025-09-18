@@ -421,6 +421,8 @@ export class BatchOperationService {
           created_by: adminUserId,
           total_requests: 66,
           bible_version: source_language_code,
+          source_language_code,
+          target_language_code,
           explanation_types: [],
         })
         .returning("id")
@@ -861,6 +863,8 @@ export class BatchOperationService {
         book_id: book.book_id,
         parent_batch_id: parentBatchId,
         bible_version: target_language_code,
+        source_language_code,
+        target_language_code,
         explanation_types: [],
       })
       .execute();

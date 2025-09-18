@@ -29,6 +29,8 @@ interface BatchJob {
   failed_requests?: number;
   parent_batch_id?: number | null;
   error_file_content?: string | null;
+  source_language_code?: string | null;
+  target_language_code?: string | null;
 }
 
 interface BatchSummary {
@@ -561,7 +563,11 @@ export const BatchOperations = () => {
       await api.admin.batch({ batchJobId: batchId }).delete();
 
       const job = batchJobs.find((j) => j.id === batchId);
-      if (job?.batch_type === "bible" || job?.batch_type === "rephrase-bible") {
+      if (
+        job?.batch_type === "bible" ||
+        job?.batch_type === "rephrase-bible" ||
+        job?.batch_type === "translate-bible"
+      ) {
         await handleMonitorBibleBatch(batchId);
       } else if (job?.openai_batch_id) {
         await handleMonitorBatch(job.openai_batch_id);
@@ -664,7 +670,8 @@ export const BatchOperations = () => {
           e.preventDefault();
           if (
             job.batch_type === "bible" ||
-            job.batch_type === "rephrase-bible"
+            job.batch_type === "rephrase-bible" ||
+            job.batch_type === "translate-bible"
           ) {
             handleViewBibleDetails(job.id);
           } else if (job.openai_batch_id) {
@@ -695,18 +702,31 @@ export const BatchOperations = () => {
       title: "Book/Batch",
       property: "book_name",
       className: styles.bookColumn,
-      render: (job) => (
-        <span className={styles.nowrapColumn}>
-          {job.batch_type === "bible" ||
+      render: (job) => {
+        const isTranslateBibleParent = job.batch_type === "translate-bible";
+        const displayText =
+          job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
           job.batch_type === "translate-bible"
             ? "Entire Bible"
-            : job.book_name || "N/A"}
-          {job.bible_version && (
-            <span className={styles.versionBadge}>({job.bible_version})</span>
-          )}
-        </span>
-      ),
+            : job.book_name || "N/A";
+
+        let versionCode = job.bible_version;
+
+        // For translate-bible parent batches, show target language instead of source
+        if (isTranslateBibleParent && job.target_language_code) {
+          versionCode = job.target_language_code;
+        }
+
+        return (
+          <span className={styles.nowrapColumn}>
+            {displayText}
+            {versionCode && (
+              <span className={styles.versionBadge}>({versionCode})</span>
+            )}
+          </span>
+        );
+      },
     },
     {
       title: "Type",
