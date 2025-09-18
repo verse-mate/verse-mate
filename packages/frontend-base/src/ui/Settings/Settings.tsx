@@ -224,65 +224,49 @@ export const Settings = ({
         </button>
         <h3>Settings</h3>
       </div>
-      <div style={{ height: "30px" }} />
+      <div className={styles.heightSpacer} />
       <div>
-        <label
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontWeight: "bold",
-            fontSize: "20px",
-          }}
-        >
-          Bible Version:
-        </label>
-        <SelectDropdown.Root
-          onValueChange={(val) => setSelectedBibleVersion(val)}
-          open={isOpen}
-          onOpenChange={setIsOpen}
-          className={styles.bibleVersionDropdown}
-        >
-          <SelectDropdown.Trigger
-            selectedBook={null}
-            selectedVerse={null}
-            defaultPlaceholder={selectedVersionData?.value || "Select Version"}
-            icon={<ChevronDownIcon />}
-            onClick={() => setIsOpen((prev) => !prev)}
-          />
-          <SelectDropdown.Content
-            align="start"
-            style={{
-              width: "300px",
-              maxHeight: "400px",
-              overflowY: "auto",
-            }}
+        <label className={styles.subsectionLabel}>Bible Version:</label>
+        <div className={styles.dropdownWrapper}>
+          <SelectDropdown.Root
+            onValueChange={(val) => setSelectedBibleVersion(val)}
+            open={isOpen}
+            onOpenChange={setIsOpen}
           >
-            {bibleVersions.map((version) => (
-              <SelectDropdown.Item
-                key={version.key}
-                value={version.key}
-                icon={<CheckIcon />}
-              >
-                {version.value}
-              </SelectDropdown.Item>
-            ))}
-          </SelectDropdown.Content>
-        </SelectDropdown.Root>
+            <SelectDropdown.Trigger
+              selectedBook={null}
+              selectedVerse={null}
+              defaultPlaceholder={
+                selectedVersionData?.value || "Select Version"
+              }
+              icon={<ChevronDownIcon />}
+              onClick={() => setIsOpen((prev) => !prev)}
+            />
+            <SelectDropdown.Content
+              align="start"
+              style={{
+                maxHeight: "400px",
+                overflowY: "auto",
+              }}
+            >
+              {bibleVersions.map((version) => (
+                <SelectDropdown.Item
+                  key={version.key}
+                  value={version.key}
+                  icon={<CheckIcon />}
+                >
+                  {version.value}
+                </SelectDropdown.Item>
+              ))}
+            </SelectDropdown.Content>
+          </SelectDropdown.Root>
+        </div>
       </div>
 
       {/* Language Preferences Section */}
       {session?.id && (
-        <div style={{ marginTop: "40px" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "16px",
-              fontWeight: "bold",
-              fontSize: "20px",
-            }}
-          >
-            Language Preferences:
-          </label>
+        <div className={styles.sectionSpacing}>
+          <label className={styles.sectionLabel}>Language Preferences:</label>
 
           <div className={styles.languageContainer}>
             <div className={styles.languageHeader}>
@@ -335,48 +319,48 @@ export const Settings = ({
                   <label className={styles.dropdownLabel}>
                     Select Language:
                   </label>
-                  <SelectDropdown.Root
-                    onValueChange={handleLanguageChange}
-                    open={isLanguageDropdownOpen}
-                    onOpenChange={setIsLanguageDropdownOpen}
-                    className={styles.languageDropdown}
-                  >
-                    <SelectDropdown.Trigger
-                      selectedBook={null}
-                      selectedVerse={null}
-                      defaultPlaceholder={
-                        availableLanguages.find(
-                          (lang) => lang.code === selectedLanguage,
-                        )?.nativeName || "Select Language"
-                      }
-                      icon={<ChevronDownIcon />}
-                    />
-                    <SelectDropdown.Content
-                      align="start"
-                      style={{
-                        width: "300px",
-                        maxHeight: "300px",
-                        overflowY: "auto",
-                      }}
+                  <div className={styles.languageDropdownWrapper}>
+                    <SelectDropdown.Root
+                      onValueChange={handleLanguageChange}
+                      open={isLanguageDropdownOpen}
+                      onOpenChange={setIsLanguageDropdownOpen}
                     >
-                      <SelectDropdown.Item
-                        key="automatic"
-                        value="automatic"
-                        icon={<CheckIcon />}
+                      <SelectDropdown.Trigger
+                        selectedBook={null}
+                        selectedVerse={null}
+                        defaultPlaceholder={
+                          availableLanguages.find(
+                            (lang) => lang.code === selectedLanguage,
+                          )?.nativeName || "Select Language"
+                        }
+                        icon={<ChevronDownIcon />}
+                      />
+                      <SelectDropdown.Content
+                        align="start"
+                        style={{
+                          maxHeight: "300px",
+                          overflowY: "auto",
+                        }}
                       >
-                        Automatic (Based on Bible Version)
-                      </SelectDropdown.Item>
-                      {availableLanguages.map((language) => (
                         <SelectDropdown.Item
-                          key={language.code}
-                          value={language.code}
+                          key="automatic"
+                          value="automatic"
                           icon={<CheckIcon />}
                         >
-                          {language.nativeName} ({language.name})
+                          Automatic (Based on Bible Version)
                         </SelectDropdown.Item>
-                      ))}
-                    </SelectDropdown.Content>
-                  </SelectDropdown.Root>
+                        {availableLanguages.map((language) => (
+                          <SelectDropdown.Item
+                            key={language.code}
+                            value={language.code}
+                            icon={<CheckIcon />}
+                          >
+                            {language.nativeName} ({language.name})
+                          </SelectDropdown.Item>
+                        ))}
+                      </SelectDropdown.Content>
+                    </SelectDropdown.Root>
+                  </div>
                 </div>
 
                 <div className={styles.editActions}>
@@ -405,17 +389,8 @@ export const Settings = ({
 
       {/* User Profile Section */}
       {session?.id && (
-        <div style={{ marginTop: "40px" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "16px",
-              fontWeight: "bold",
-              fontSize: "20px",
-            }}
-          >
-            Profile Information:
-          </label>
+        <div className={styles.sectionSpacing}>
+          <label className={styles.sectionLabel}>Profile Information:</label>
 
           <div className={styles.profileContainer}>
             <div className={styles.profileHeader}>
@@ -518,17 +493,8 @@ export const Settings = ({
 
       {/* Account Actions Section */}
       {session?.id && (
-        <div style={{ marginTop: "40px" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "16px",
-              fontWeight: "bold",
-              fontSize: "20px",
-            }}
-          >
-            Account Actions:
-          </label>
+        <div className={styles.sectionSpacing}>
+          <label className={styles.sectionLabel}>Account Actions:</label>
 
           <div className={styles.actionsContainer}>
             {session?.is_admin && (
