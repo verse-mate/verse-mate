@@ -58,8 +58,23 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     .execute();
 
-  // Step 4: Set NOT NULL constraint on language_code
-  console.log("Step 4: Setting NOT NULL constraint on language_code");
+  // Step 4: Validate language_code population before applying NOT NULL constraint
+  console.log("Step 4: Validating language_code population");
+  const nullLanguageCodeCount = await db
+    .selectFrom("explanations")
+    .select((eb) => eb.fn.count("explanation_id").as("count"))
+    .where("language_code", "is", null)
+    .executeTakeFirst();
+
+  if (nullLanguageCodeCount && Number(nullLanguageCodeCount.count) > 0) {
+    throw new Error(
+      `Migration failed: ${nullLanguageCodeCount.count} explanations still have NULL language_code. Cannot apply NOT NULL constraint safely.`,
+    );
+  }
+
+  console.log(
+    "Step 4b: All explanations have valid language_code, applying NOT NULL constraint",
+  );
   await db.schema
     .alterTable("explanations")
     .alterColumn("language_code", (col) => col.setNotNull())
@@ -151,8 +166,23 @@ export async function down(db: Kysely<Database>): Promise<void> {
     })
     .execute();
 
-  // Step 3: Set NOT NULL constraint on version_id
-  console.log("Step 3: Setting NOT NULL constraint on version_id");
+  // Step 3: Validate version_id population before applying NOT NULL constraint
+  console.log("Step 3: Validating version_id population");
+  const nullVersionIdCount = await db
+    .selectFrom("explanations")
+    .select((eb) => eb.fn.count("explanation_id").as("count"))
+    .where(sql`explanations.version_id`, "is", null)
+    .executeTakeFirst();
+
+  if (nullVersionIdCount && Number(nullVersionIdCount.count) > 0) {
+    throw new Error(
+      `Rollback failed: ${nullVersionIdCount.count} explanations still have NULL version_id. Cannot apply NOT NULL constraint safely.`,
+    );
+  }
+
+  console.log(
+    "Step 3b: All explanations have valid version_id, applying NOT NULL constraint",
+  );
   await (db.schema.alterTable("explanations") as any)
     .alterColumn("version_id", (col: any) => col.setNotNull())
     .execute();

@@ -113,6 +113,16 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageConfig> = {
  * Based on project memory specifications for Eden API client error handling
  */
 export function extractErrorMessage(error: any): string | null {
+  // Safety check for null or undefined error
+  if (!error || (typeof error !== "object" && typeof error !== "string")) {
+    return null;
+  }
+
+  // If error is already a string, return it
+  if (typeof error === "string" && error.trim()) {
+    return error.trim();
+  }
+
   // Check various error structure patterns as specified in project memory
   const errorChecks = [
     // Handle nested object values FIRST (most specific)
@@ -306,4 +316,28 @@ export function getErrorActionSuggestion(errorState: ErrorState): string {
     default:
       return "Please try again or contact support if the issue persists.";
   }
+}
+
+/**
+ * Safe helper to get error message from any error object
+ * Provides fallback for unknown error structures
+ */
+export function getErrorMessage(error: any): string {
+  if (!error) {
+    return "An unexpected error occurred.";
+  }
+
+  // If it's already an ErrorState, use it directly
+  if (error.message && typeof error.message === "string") {
+    return error.message;
+  }
+
+  // Try to extract message using our enhanced extraction
+  const extractedMessage = extractErrorMessage(error);
+  if (extractedMessage) {
+    return extractedMessage;
+  }
+
+  // Fallback for completely unknown structures
+  return String(error) || "An unexpected error occurred.";
 }

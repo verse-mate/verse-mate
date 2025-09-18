@@ -56,7 +56,7 @@ export const Settings = ({
   useEffect(() => {
     const fetchLanguages = async () => {
       try {
-        const response = await api.explanations.languages.get();
+        const response = await api.bible.languages.get();
         if (response.data) {
           setAvailableLanguages(response.data as any);
         }

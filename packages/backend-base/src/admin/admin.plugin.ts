@@ -32,10 +32,6 @@ const plugin = new Elysia()
       getBibleService: () => new BibleService(state.db, bibleRepository),
     };
   })
-  .get("/explanations/languages", async ({ store }) => {
-    const bibleService = store.getBibleService();
-    return await bibleService.getAvailableExplanationLanguages();
-  })
   .guard((app) =>
     app
       .use(bearer())
@@ -70,6 +66,10 @@ const plugin = new Elysia()
       .group("/admin", (app) =>
         app
           .guard(adminGuard)
+          .get("/explanations/languages", async ({ store }) => {
+            const bibleService = store.getBibleService();
+            return await bibleService.getAvailableExplanationLanguages();
+          })
           .post("/explanations/refresh-language-stats", async ({ store }) => {
             const bibleService = store.getBibleService();
             return await bibleService.refreshLanguageStats();

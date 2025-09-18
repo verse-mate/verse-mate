@@ -19,22 +19,38 @@ app.listen(process.env.PORT || 3000, async () => {
     `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
   );
 
-  // Automatically refresh language stats on startup
-  try {
-    console.log("🚀 Triggering initial language stats refresh on startup...");
-    const bibleService = new BibleService(db, new BibleRepository(db));
-    const result = await bibleService.refreshLanguageStats();
-    if (result.success) {
-      console.log("✅ Language stats refreshed successfully.");
-    } else {
-      console.error("❌ Failed to refresh language stats on startup.");
+  // Asynchronously refresh language stats on startup (fire-and-forget with timeout)
+  console.log("🚀 Triggering initial language stats refresh on startup...");
+  const refreshLanguageStats = async () => {
+    try {
+      const bibleService = new BibleService(db, new BibleRepository(db));
+      const result = await bibleService.refreshLanguageStats();
+      if (result.success) {
+        console.log("✅ Language stats refreshed successfully.");
+      } else {
+        console.error("❌ Failed to refresh language stats on startup.");
+      }
+    } catch (error) {
+      console.error(
+        "❌ An error occurred during startup language stats refresh:",
+        error,
+      );
     }
-  } catch (error) {
-    console.error(
-      "❌ An error occurred during startup language stats refresh:",
-      error,
-    );
-  }
+  };
+
+  // Execute with timeout protection to avoid blocking startup
+  Promise.race([
+    refreshLanguageStats(),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), 15000),
+    ),
+  ]).catch((error) => {
+    if (error.message === "Timeout") {
+      console.warn("⚠️ Language stats refresh timed out after 15 seconds");
+    } else {
+      console.error("❌ Language stats refresh failed:", error);
+    }
+  });
 });
 
 export type App = typeof app;

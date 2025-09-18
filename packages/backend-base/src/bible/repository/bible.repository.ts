@@ -235,7 +235,11 @@ export class BibleRepository {
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     language_code: string;
   }) {
-    const base_language_code = language_code.split("-")[0];
+    // Safely process language_code with null/undefined protection
+    const normalizedLanguageCode = language_code?.toLowerCase() || "";
+    const base_language_code = normalizedLanguageCode.includes("-")
+      ? normalizedLanguageCode.split("-")[0]
+      : normalizedLanguageCode;
 
     const explanation = await this.db
       .getOrCreateConnection()
@@ -258,10 +262,11 @@ export class BibleRepository {
           eb("chapters.book_id", "=", book_id),
           eb("chapters.chapter_number", "=", chapter_number),
           eb.or([
-            eb("explanations.language_code", "in", [
-              language_code,
-              base_language_code,
-            ]),
+            eb(
+              "explanations.language_code",
+              "in",
+              [normalizedLanguageCode, base_language_code].filter(Boolean),
+            ), // Filter out empty strings
             eb("explanation_languages.is_default", "=", true),
           ]),
           eb("explanations.is_active", "=", true),
@@ -270,7 +275,7 @@ export class BibleRepository {
       )
       .orderBy(
         sql`CASE 
-          WHEN explanations.language_code = ${language_code} THEN 0 
+          WHEN explanations.language_code = ${normalizedLanguageCode} THEN 0 
           WHEN explanations.language_code = ${base_language_code} THEN 1
           ELSE 2 
         END`,
