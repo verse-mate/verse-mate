@@ -2173,56 +2173,6 @@ export class BatchOperationService {
 
     const connection = this.db.getOrCreateConnection();
 
-    // Determine the next version number for the whole batch
-    let maxVersionQuery = connection
-      .selectFrom("explanations")
-      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
-      .innerJoin(
-        "bible_versions",
-        "explanations.language_code",
-        "bible_versions.language_code",
-      )
-      .where("bible_versions.version_key", "=", batchJob.bible_version as any);
-
-    if (batchJob.book_id) {
-      maxVersionQuery = maxVersionQuery.where(
-        "chapters.book_id",
-        "=",
-        batchJob.book_id,
-      );
-    }
-
-    const maxVersionResult = await maxVersionQuery
-      .select((eb) => eb.fn.max("explanations.version").as("max_version"))
-      .executeTakeFirst();
-
-    const nextVersion = (maxVersionResult?.max_version || 0) + 1;
-
-    // Determine if the new batch should be the default
-    let defaultCountQuery = connection
-      .selectFrom("explanations")
-      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
-      .innerJoin(
-        "bible_versions",
-        "explanations.language_code",
-        "bible_versions.language_code",
-      )
-      .where("bible_versions.version_key", "=", batchJob.bible_version as any)
-      .where("explanations.created_by_admin", "=", true);
-
-    if (batchJob.book_id) {
-      defaultCountQuery = defaultCountQuery.where(
-        "chapters.book_id",
-        "=",
-        batchJob.book_id,
-      );
-    }
-    const defaultCountResult = await defaultCountQuery
-      .select((eb) => eb.fn.count("explanations.explanation_id").as("count"))
-      .executeTakeFirst();
-
-    const shouldBeDefault = Number(defaultCountResult?.count || 0) === 0;
-
     for (const line of lines) {
       let customId = "unknown";
       try {
@@ -2308,6 +2258,9 @@ export class BatchOperationService {
 
           if (!version) {
             errorCount++;
+            console.error(
+              `[BATCH] Bible version not found for translate: ${bibleVersion}`,
+            );
             continue;
           }
 
@@ -2319,6 +2272,7 @@ export class BatchOperationService {
 
           if (!book) {
             errorCount++;
+            console.error(`[BATCH] Book not found for translate: ${bookName}`);
             continue;
           }
 
@@ -2331,11 +2285,34 @@ export class BatchOperationService {
 
           if (!chapter) {
             errorCount++;
+            console.error(
+              `[BATCH] Chapter not found for translate: ${bookName} ${chapterNumber}`,
+            );
             continue;
           }
 
+          // Find the most recent version of this specific explanation
+          const existingExplanation = await connection
+            .selectFrom("explanations")
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("type", "=", explanationType as any)
+            .where("language_code", "=", version.language_code)
+            .orderBy("version", "desc")
+            .selectAll()
+            .executeTakeFirst();
+
+          const nextVersion = existingExplanation
+            ? existingExplanation.version + 1
+            : 1;
+          const parentExplanationId =
+            existingExplanation?.explanation_id || null;
+
+          console.log(
+            `[BATCH] Processing translation for ${bookName} ${chapterNumber} ${explanationType}, version: ${nextVersion}`,
+          );
+
           await connection.transaction().execute(async (trx) => {
-            // Deactivate all older versions for this specific explanation
+            // Deactivate all existing versions of this specific explanation
             await trx
               .updateTable("explanations")
               .set({ is_active: false })
@@ -2344,7 +2321,7 @@ export class BatchOperationService {
               .where("language_code", "=", version.language_code)
               .execute();
 
-            // Insert the new, active, and conditionally default version
+            // Insert the new, active version with proper parent tracking
             await trx
               .insertInto("explanations")
               .values({
@@ -2354,7 +2331,8 @@ export class BatchOperationService {
                 language_code: version.language_code,
                 version: nextVersion,
                 is_active: true,
-                created_by_admin: shouldBeDefault,
+                created_by_admin: false,
+                parent_explanation_id: parentExplanationId,
                 created_at: new Date(),
               })
               .execute();
@@ -2362,6 +2340,12 @@ export class BatchOperationService {
           processedCount++;
         } else {
           errorCount++;
+          console.error(
+            `[BATCH] Failed to process translate line for custom_id: ${
+              parsedLine.custom_id
+            }. Response:`,
+            JSON.stringify(parsedLine.response, null, 2),
+          );
         }
       } catch (error) {
         errorCount++;
