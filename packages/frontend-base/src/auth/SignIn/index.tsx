@@ -4,6 +4,10 @@ import { useEffect, useRef } from "react";
 import { Button, Link } from "../../..";
 import { Input } from "../../ui/Input";
 import { Text } from "../../ui/Text/Text";
+import {
+  getErrorActionSuggestion,
+  isRetryableError,
+} from "../../utils/error-handling";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignInForm } from "./useSignInForm";
 
@@ -64,9 +68,41 @@ export function SignIn({ onSwitch }: { onSwitch?: (mode: "signup") => void }) {
         </Input.Root>
         {/* <Link href="/forgot-password">Forgot password?</Link> */}
 
-        <Text hidden={Boolean(!backendError)} color="var(--error)">
-          {backendError}
-        </Text>
+        {/* Enhanced error display with better UX */}
+        {backendError && (
+          <div
+            role="alert"
+            aria-live="polite"
+            style={{
+              padding: "12px 16px",
+              borderRadius: "8px",
+              backgroundColor: "var(--spring-wood, #fef2f2)",
+              border: "1px solid var(--salmon, #f87171)",
+              marginBottom: "16px",
+            }}
+          >
+            <Text
+              color="var(--vivid-burgundy, #9f1b2f)"
+              size="14px"
+              weight="500"
+              style={{ display: "block", marginBottom: "4px" }}
+            >
+              {typeof backendError === "string"
+                ? backendError
+                : backendError.message}
+            </Text>
+            {typeof backendError !== "string" &&
+              isRetryableError(backendError) && (
+                <Text
+                  color="var(--vivid-burgundy, #9f1b2f)"
+                  size="12px"
+                  style={{ display: "block", opacity: 0.8 }}
+                >
+                  {getErrorActionSuggestion(backendError)}
+                </Text>
+              )}
+          </div>
+        )}
         <Button type="submit" loading={isLoading}>
           Login
         </Button>

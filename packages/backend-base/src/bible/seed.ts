@@ -146,17 +146,17 @@ async function saveExplanation({
   type,
   explanation,
   chapter_id,
-  version_id,
+  language_code,
 }: {
   type: ExplanationTypeEnum;
   explanation: string;
   chapter_id: number;
-  version_id: string;
+  language_code: string;
 }) {
   await db
     .getOrCreateConnection()
     .insertInto("explanations")
-    .values({ type, explanation, chapter_id, version_id })
+    .values({ type, explanation, chapter_id, language_code })
     .execute();
 }
 
@@ -480,7 +480,7 @@ export async function main() {
             type: ExplanationTypeEnum.summary,
             explanation,
             chapter_id: savedChapter.chapter_id,
-            version_id: version.id,
+            language_code: version.language_code,
           });
           // console.log(`Explanation saved for book ${book.name} ch ${chapter.chapterId}`);
         } else {

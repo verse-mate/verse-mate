@@ -13,12 +13,8 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await db
     .updateTable("explanations")
     .set({
-      version_id: db
-        .selectFrom("bible_versions")
-        .select("id")
-        .where("version_key", "=", "NASB1995")
-        .limit(1),
-    })
+      version_id: sql`(SELECT id FROM bible_versions WHERE version_key = 'NASB1995' LIMIT 1)`,
+    } as any)
     .execute();
   // 3. Now, alter the column to be NOT NULL
   await db.schema

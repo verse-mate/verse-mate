@@ -42,11 +42,21 @@ export class AdminDatabaseService {
       throw new Error(`Chapter ${chapterNumber} not found for book ${bookId}`);
     }
 
+    const version = await connection
+      .selectFrom("bible_versions")
+      .where("id", "=", bibleVersion)
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version ${bibleVersion} not found`);
+    }
+
     const currentExplanation = await connection
       .selectFrom("explanations")
       .where("chapter_id", "=", chapter_id)
       .where("type", "=", explanationType)
-      .where("version_id", "=", bibleVersion)
+      .where("language_code", "=", version.language_code)
       .select(["explanation_id", "explanation"])
       .executeTakeFirst();
 
@@ -124,11 +134,21 @@ export class AdminDatabaseService {
       throw new Error("Chapter not found");
     }
 
+    const version = await connection
+      .selectFrom("bible_versions")
+      .where("id", "=", parts[4] || "ESV")
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version ${parts[4]} not found`);
+    }
+
     const currentExplanation = await connection
       .selectFrom("explanations")
       .where("chapter_id", "=", chapter_id)
       .where("type", "=", explanationType)
-      .where("version_id", "=", parts[4] || "ESV")
+      .where("language_code", "=", version.language_code)
       .select(["explanation_id", "explanation"])
       .executeTakeFirst();
 
@@ -260,7 +280,16 @@ export class AdminDatabaseService {
     }
 
     if (criteria.bibleVersion) {
-      query = query.where("version_id", "=", criteria.bibleVersion);
+      const version = await this.db
+        .getOrCreateConnection()
+        .selectFrom("bible_versions")
+        .where("id", "=", criteria.bibleVersion)
+        .select("language_code")
+        .executeTakeFirst();
+
+      if (version) {
+        query = query.where("language_code", "=", version.language_code);
+      }
     }
 
     if (criteria.dateRange) {

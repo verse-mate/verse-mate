@@ -8,6 +8,7 @@ import { z } from "zod";
 import { api } from "backend-api";
 import useMutation from "../../hooks/useMutation";
 import { setCookie } from "../../utils/auth-utils";
+import { type ErrorState, processError } from "../../utils/error-handling";
 import { ACCESS_TOKEN_COOKIE, zodEmail, zodPassword } from "../lib";
 
 export interface SignUpData {
@@ -33,7 +34,7 @@ const schema: z.ZodType<SignUpData> = z.object({
 import { useGetSearchParams } from "../../hooks/useSearchParams";
 
 export function useSignUpForm() {
-  const [backendError, setBackendError] = useState<string | undefined>(
+  const [backendError, setBackendError] = useState<ErrorState | undefined>(
     undefined,
   );
   const { bookId, verseId } = useGetSearchParams();
@@ -57,15 +58,11 @@ export function useSignUpForm() {
       window.location.href = redirectTo || "/";
     },
     onError: (error) => {
-      let errorMessage = "Something went wrong.";
-
-      if (error.value === "ALREADY_EXISTS") {
-        errorMessage =
-          "This email is already registered, please try to create an account with a different one.";
-      }
-
-      setBackendError(errorMessage);
       console.error({ error });
+
+      // Use enhanced error processing with debugging
+      const errorState = processError(error, "SignUp");
+      setBackendError(errorState);
     },
   });
 

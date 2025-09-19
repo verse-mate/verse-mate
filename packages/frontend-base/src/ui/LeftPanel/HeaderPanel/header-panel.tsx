@@ -508,6 +508,9 @@ export const Nav = ({
                 selectedVerse={verseIdToString || leftPanelSelectedVerse}
                 icon={<Icon.ChevronDownIcon />}
                 defaultPlaceholder="Book"
+                theme="dark" // Explicitly set dark theme for header context
+                context="bible-selection" // Add bible-selection context for mobile visibility
+                expandText={true} // Enable text expansion for better readability
               />
             </>
           )}

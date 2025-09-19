@@ -5,6 +5,7 @@ import type {
   NewVerseHighlights,
   VerseHighlights,
 } from "database/src/models/public/VerseHighlights";
+import { sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
@@ -147,22 +148,29 @@ export class BibleRepository {
     type,
     explanation,
     chapter_id,
-    version_id,
+    language_code,
   }: {
     type: ExplanationTypeEnum;
     explanation: string;
     chapter_id: number;
-    version_id: string;
+    language_code: string;
   }) {
-    const savedExplanation = await this.db
+    await this.db
       .getOrCreateConnection()
       .insertInto("explanations")
       .values({
         type,
         explanation,
         chapter_id,
-        version_id,
+        language_code,
+        version: 1,
+        is_active: true,
       })
+      .onConflict((oc) =>
+        oc
+          .columns(["chapter_id", "type", "language_code", "version"])
+          .doUpdateSet({ explanation, is_active: true }),
+      )
       .execute();
 
     return { success: true };
@@ -223,17 +231,24 @@ export class BibleRepository {
   async getExplanation({
     book_id,
     chapter_number,
-    version_id,
+    language_code,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
-    version_id: string;
+    language_code: string;
   }) {
+    // Safely process language_code with null/undefined protection
+    const normalizedLanguageCode = language_code?.toLowerCase() || "";
+    const base_language_code = normalizedLanguageCode.includes("-")
+      ? normalizedLanguageCode.split("-")[0]
+      : normalizedLanguageCode;
+
     const explanation = await this.db
       .getOrCreateConnection()
-      .selectFrom("chapters")
-      .leftJoin(
-        "explanations",
-        "explanations.chapter_id",
-        "chapters.chapter_id",
+      .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .innerJoin(
+        "explanation_languages",
+        "explanation_languages.language_code",
+        "explanations.language_code",
       )
       .select([
         "chapters.book_id",
@@ -246,11 +261,28 @@ export class BibleRepository {
         eb.and([
           eb("chapters.book_id", "=", book_id),
           eb("chapters.chapter_number", "=", chapter_number),
-          eb("explanations.version_id", "=", version_id),
+          eb.or([
+            eb(
+              "explanations.language_code",
+              "in",
+              [normalizedLanguageCode, base_language_code].filter(Boolean),
+            ), // Filter out empty strings
+            eb("explanation_languages.is_default", "=", true),
+          ]),
           eb("explanations.is_active", "=", true),
+          eb("explanation_languages.is_enabled", "=", true),
         ]),
       )
-      .execute();
+      .orderBy(
+        sql`CASE 
+          WHEN explanations.language_code = ${normalizedLanguageCode} THEN 0 
+          WHEN explanations.language_code = ${base_language_code} THEN 1
+          ELSE 2 
+        END`,
+      )
+      .orderBy("explanations.version", "desc")
+      .limit(1)
+      .executeTakeFirst();
 
     return { explanation: explanation };
   }
@@ -634,7 +666,7 @@ export class BibleRepository {
   }
 
   async deleteInactiveExplanations(options: {
-    bibleVersion: string;
+    language_code: string;
     bookName?: string;
     chapter?: number | "all";
   }) {
@@ -643,29 +675,16 @@ export class BibleRepository {
         "[Admin Deletion] Starting deletion of inactive explanations with options:",
         options,
       );
-      const { bibleVersion, bookName, chapter } = options;
+      const { language_code, bookName, chapter } = options;
 
-      const version = await this.db
-        .getOrCreateConnection()
-        .selectFrom("bible_versions")
-        .where("version_key", "=", bibleVersion)
-        .select("id")
-        .executeTakeFirst();
-
-      if (!version) {
-        console.error(
-          `[Admin Deletion] Bible version ${bibleVersion} not found.`,
-        );
-        throw new Error(`Bible version ${bibleVersion} not found.`);
-      }
-      console.log(`[Admin Deletion] Found version_id: ${version.id}`);
+      console.log(`[Admin Deletion] Using language_code: ${language_code}`);
 
       let query = this.db
         .getOrCreateConnection()
         .deleteFrom("explanations")
         .where("is_active", "=", false)
         .where("created_by_admin", "=", false)
-        .where("version_id", "=", version.id);
+        .where("language_code", "=", language_code);
 
       if (bookName) {
         const book = await this.db
@@ -712,7 +731,7 @@ export class BibleRepository {
         query = query.where("chapter_id", "in", ids);
       } else {
         console.log(
-          "[Admin Deletion] Deleting across all books (bible-batch).",
+          "[Admin Deletion] Deleting across all books (language-batch).",
         );
       }
 
@@ -738,10 +757,10 @@ export class BibleRepository {
   }
 
   async setDefaultExplanationsAsActive(options: {
-    versionId: string;
+    language_code: string;
     chapterIds: number[];
   }) {
-    const { versionId, chapterIds } = options;
+    const { language_code, chapterIds } = options;
     if (chapterIds.length === 0) {
       return { activatedCount: 0 };
     }
@@ -755,7 +774,7 @@ export class BibleRepository {
           .updateTable("explanations")
           .set({ is_active: false })
           .where("chapter_id", "in", chapterIds)
-          .where("version_id", "=", versionId)
+          .where("language_code", "=", language_code)
           .where("is_active", "=", true)
           .execute();
 
@@ -765,7 +784,7 @@ export class BibleRepository {
           .select("explanation_id")
           .distinctOn(["chapter_id", "type"])
           .where("chapter_id", "in", chapterIds)
-          .where("version_id", "=", versionId)
+          .where("language_code", "=", language_code)
           .where("created_by_admin", "=", true)
           .orderBy("chapter_id")
           .orderBy("type")
@@ -792,10 +811,10 @@ export class BibleRepository {
   }
 
   async setActiveExplanationsAsDefault(options: {
-    versionId: string;
+    language_code: string;
     chapterIds: number[];
   }) {
-    const { versionId, chapterIds } = options;
+    const { language_code, chapterIds } = options;
     if (chapterIds.length === 0) {
       return { promotedCount: 0 };
     }
@@ -809,7 +828,7 @@ export class BibleRepository {
           .updateTable("explanations")
           .set({ created_by_admin: false })
           .where("chapter_id", "in", chapterIds)
-          .where("version_id", "=", versionId)
+          .where("language_code", "=", language_code)
           .where("created_by_admin", "=", true)
           .execute();
 
@@ -818,7 +837,7 @@ export class BibleRepository {
           .updateTable("explanations")
           .set({ created_by_admin: true })
           .where("chapter_id", "in", chapterIds)
-          .where("version_id", "=", versionId)
+          .where("language_code", "=", language_code)
           .where("is_active", "=", true)
           .executeTakeFirst();
 
@@ -827,12 +846,12 @@ export class BibleRepository {
   }
 
   async getExplanationsByFilter(options: {
-    versionId: string;
+    language_code: string;
     chapterIds: number[];
     limit: number;
     offset: number;
   }) {
-    const { versionId, chapterIds, limit, offset } = options;
+    const { language_code, chapterIds, limit, offset } = options;
     if (chapterIds.length === 0) {
       return { explanations: [], total: 0 };
     }
@@ -841,7 +860,7 @@ export class BibleRepository {
       .getOrCreateConnection()
       .selectFrom("explanations")
       .where("chapter_id", "in", chapterIds)
-      .where("version_id", "=", versionId);
+      .where("language_code", "=", language_code);
 
     const explanations = await query
       .selectAll()
@@ -858,11 +877,11 @@ export class BibleRepository {
   }
 
   async setSpecificExplanationVersionAsActive(options: {
-    versionId: string;
+    language_code: string;
     chapterIds: number[];
     version: number;
   }) {
-    const { versionId, chapterIds, version } = options;
+    const { language_code, chapterIds, version } = options;
     if (chapterIds.length === 0) {
       return { updatedCount: 0 };
     }
@@ -876,7 +895,7 @@ export class BibleRepository {
           .updateTable("explanations")
           .set({ is_active: false })
           .where("chapter_id", "in", chapterIds)
-          .where("version_id", "=", versionId)
+          .where("language_code", "=", language_code)
           .where("is_active", "=", true)
           .execute();
 
@@ -885,7 +904,7 @@ export class BibleRepository {
           .updateTable("explanations")
           .set({ is_active: true })
           .where("chapter_id", "in", chapterIds)
-          .where("version_id", "=", versionId)
+          .where("language_code", "=", language_code)
           .where("version", "=", version)
           .executeTakeFirst();
 

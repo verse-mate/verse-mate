@@ -1,4 +1,5 @@
 import { api } from "backend-api";
+import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 
 export const getBookVerse = async (
   bookId: number,
@@ -38,25 +39,29 @@ export const getExplanation = async (
       },
     });
 
-  const foundExplanation = response.data?.explanation?.find(
-    (exp) => exp.type === explanationType,
-  );
+  const explanation = response.data?.explanation;
 
   try {
-    if (!response.data?.explanation) {
+    if (!explanation) {
       throw new Error("Explanation not found");
     }
 
-    if (!foundExplanation) {
-      throw new Error("Explanation type not found");
+    if (explanation.type !== explanationType) {
+      return {
+        ...explanation,
+        explanation: "Explanation type not found for this chapter.",
+      };
     }
 
-    return foundExplanation;
+    return explanation;
   } catch (err) {
     return {
-      ...foundExplanation,
+      book_id: bookId,
+      chapter_number: chapterId,
+      explanation_id: null,
+      type: explanationType as ExplanationTypeEnum,
       explanation:
-        "Failed to generate explanation, maybe the you exceeded your current quota.",
+        "Failed to generate explanation, maybe you exceeded your current quota.",
     };
   }
 };

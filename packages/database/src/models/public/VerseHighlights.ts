@@ -28,29 +28,29 @@ export default interface VerseHighlightsTable {
 
   end_verse: ColumnType<number, number, number>;
 
-  start_char: ColumnType<
-    number | null,
-    number | null | undefined,
-    number | null
-  >;
-
-  end_char: ColumnType<number | null, number | null | undefined, number | null>;
-
-  selected_text: ColumnType<
-    string | null,
-    string | null | undefined,
-    string | null
-  >;
-
   color: ColumnType<
     HighlightColorEnum,
     HighlightColorEnum | undefined,
     HighlightColorEnum
   >;
 
-  created_at: ColumnType<Date, Date | undefined, Date>;
+  start_char: ColumnType<number | null, number | null, number | null>;
 
-  updated_at: ColumnType<Date, Date | undefined, Date>;
+  end_char: ColumnType<number | null, number | null, number | null>;
+
+  selected_text: ColumnType<string | null, string | null, string | null>;
+
+  created_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
+
+  updated_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
 }
 
 export type VerseHighlights = Selectable<VerseHighlightsTable>;

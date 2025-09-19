@@ -76,6 +76,10 @@ export default interface BatchJobsTable {
   >;
 
   error_file_content: ColumnType<string | null, string | null, string | null>;
+
+  source_language_code: ColumnType<string | null, string | null, string | null>;
+
+  target_language_code: ColumnType<string | null, string | null, string | null>;
 }
 
 export type BatchJobs = Selectable<BatchJobsTable>;

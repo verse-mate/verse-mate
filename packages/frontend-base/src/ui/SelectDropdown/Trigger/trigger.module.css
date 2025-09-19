@@ -31,6 +31,10 @@
     max-width: 180px;
 }
 
+.trigger[data-expand-text="true"] .truncate {
+    max-width: 300px;
+}
+
 .trigger[data-state="open"], .trigger[data-state="open"] svg {
     color: var(--dust);
     fill: var(--dust); 
@@ -50,10 +54,19 @@
     .trigger {
         display: none;
     }
-    
+
+    .trigger[data-context="bible-selection"],
+    .trigger[data-context="settings"] {
+      display: flex !important;
+    }
 }
 
 .trigger[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.iconWrapper {
+    display: flex;
+    align-items: center;
 }
