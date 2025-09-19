@@ -22,7 +22,7 @@ import { PromptService } from "./services/prompt.service";
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY, // This is the default and can be omitted
 });
-const model = "gpt-5";
+const model = "gpt-5-nano";
 
 async function gpt5Text({
   system,
@@ -86,6 +86,9 @@ const plugin = new Elysia()
 
         return { books: bible.books };
       })
+      .get("/languages", async ({ store: { bibleService } }) => {
+        return await bibleService.getAvailableBibleVersionLanguages();
+      })
       .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {
@@ -144,60 +147,64 @@ const plugin = new Elysia()
             version_id: version.id,
           });
 
-          const missingTypes = Object.keys(ExplanationTypeEnum).filter(
-            (type) => !explanation?.some((exp) => exp.type === type),
-          ) as ExplanationTypeEnum[];
+          // const missingTypes = Object.keys(ExplanationTypeEnum).filter(
+          //   (type) => !explanation?.some((exp) => exp.type === type),
+          // ) as ExplanationTypeEnum[];
 
-          if (missingTypes.length > 0) {
-            await Promise.all(
-              missingTypes.map(async (type) => {
-                const prompt = await promptService.getActivePrompt();
+          // if (missingTypes.length > 0) {
+          //   await Promise.all(
+          //     missingTypes.map(async (type) => {
+          //       const prompt = await promptService.getActivePrompt();
 
-                if (!prompt) {
-                  return { explanation };
-                }
+          //       if (!prompt) {
+          //         return;
+          //       }
 
-                try {
-                  const { book } = await bibleService.getBook({
-                    book_id: Number(bookId),
-                    chapter_number: Number(chapterNumber),
-                    version_id: version.id,
-                  });
+          //       try {
+          //         const { book } = await bibleService.getBook({
+          //           book_id: Number(bookId),
+          //           chapter_number: Number(chapterNumber),
+          //           version_id: version.id,
+          //         });
 
-                  const language = getLanguageName(version.language_code);
+          //         const language = getLanguageName(version.language_code);
 
-                  const explanationConfig = await getExplanationTypePrompt(
-                    type,
-                    book?.name || "",
-                    Number(chapterNumber),
-                    db,
-                    language,
-                  );
+          //         const explanationConfig = await getExplanationTypePrompt(
+          //           type,
+          //           book?.name || "",
+          //           Number(chapterNumber),
+          //           db,
+          //           language,
+          //         );
 
-                  const text = await gpt5Text({
-                    system: prompt.prompt,
-                    user: getUserPrompt({
-                      explanationPrompt: explanationConfig.prompt,
-                      language,
-                    }),
-                  });
+          //         const text = await gpt5Text({
+          //           system: prompt.prompt,
+          //           user: getUserPrompt({
+          //             explanationPrompt: explanationConfig.prompt,
+          //             language,
+          //           }),
+          //         });
 
-                  const { success } = await bibleService.saveExplanation({
-                    type,
-                    explanation: text || "",
-                    book_id: Number(bookId),
-                    chapter_number: Number(chapterNumber),
-                    version_id: version.id,
-                  });
+          //         await bibleService.saveExplanation({
+          //           type,
+          //           explanation: text || "",
+          //           book_id: Number(bookId),
+          //           chapter_number: Number(chapterNumber),
+          //           version_id: version.id,
+          //         });
+          //       } catch (e) {
+          //         console.error("[bible.plugin.ts][error]: ", e);
+          //       }
+          //     }),
+          //   );
 
-                  if (success) return { explanation };
-                } catch (e) {
-                  console.error("[bible.plugin.ts][error]: ", e);
-                  return { explanation };
-                }
-              }),
-            );
-          }
+          //   // Refetch the explanations after generation
+          //   explanation = await bibleService.getExplanation({
+          //     book_id: Number(bookId),
+          //     chapter_number: Number(chapterNumber),
+          //     version_id: version.id,
+          //   });
+          // }
 
           return { explanation };
         },

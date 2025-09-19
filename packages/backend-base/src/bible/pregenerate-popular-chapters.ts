@@ -86,13 +86,7 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
-async function gpt5Text({
-  system,
-  user,
-}: {
-  system?: string;
-  user: string;
-}) {
+async function gpt5Text({ system, user }: { system?: string; user: string }) {
   const messages: OpenAI.ChatCompletionMessageParam[] = [];
   if (system) {
     messages.push({ role: "system", content: system });
@@ -183,7 +177,8 @@ async function pregeneratePopularChapters() {
         continue;
       }
 
-      console.log(`\n📖 Processing ${book.name} ${chapterNumber}...`);
+      console.log(`
+📖 Processing ${book.name} ${chapterNumber}...`);
 
       // Resolve chapter id and check existing explanations in database
       const chapterRow = await connection
@@ -254,7 +249,7 @@ The response should be in Markdown format only.`;
           // Resolve active bible version and save to database
           const activeVersion = await connection
             .selectFrom("bible_versions")
-            .select(["id"])
+            .select(["language_code"])
             .where("is_active", "=", true)
             .executeTakeFirst();
 
@@ -268,7 +263,7 @@ The response should be in Markdown format only.`;
               type,
               explanation: text,
               chapter_id: chapterRow.chapter_id,
-              version_id: activeVersion.id,
+              language_code: activeVersion.language_code,
             })
             .execute();
 

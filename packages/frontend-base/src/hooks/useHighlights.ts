@@ -126,8 +126,12 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
               start_char: response.data.highlight.start_char ?? undefined,
               end_char: response.data.highlight.end_char ?? undefined,
               selected_text: response.data.highlight.selected_text ?? undefined,
-              created_at: response.data.highlight.created_at.toString(),
-              updated_at: response.data.highlight.updated_at.toString(),
+              created_at:
+                response.data.highlight.created_at?.toString() ||
+                new Date().toISOString(),
+              updated_at:
+                response.data.highlight.updated_at?.toString() ||
+                new Date().toISOString(),
             };
             globalHighlights = [...globalHighlights, newHighlight];
             notifyListeners();
@@ -189,8 +193,12 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
               start_char: response.data.highlight.start_char ?? undefined,
               end_char: response.data.highlight.end_char ?? undefined,
               selected_text: response.data.highlight.selected_text ?? undefined,
-              created_at: response.data.highlight.created_at.toString(),
-              updated_at: response.data.highlight.updated_at.toString(),
+              created_at:
+                response.data.highlight.created_at?.toString() ||
+                new Date().toISOString(),
+              updated_at:
+                response.data.highlight.updated_at?.toString() ||
+                new Date().toISOString(),
             };
             globalHighlights = globalHighlights.map((h) =>
               h.highlight_id === highlightId ? updatedHighlight : h,

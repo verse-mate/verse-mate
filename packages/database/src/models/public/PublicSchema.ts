@@ -6,6 +6,7 @@ import type { default as BibleVersionsTable } from "./BibleVersions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
 import type { default as ConversationsTable } from "./Conversations";
+import type { default as ExplanationLanguagesTable } from "./ExplanationLanguages";
 import type { default as ExplanationRatingsTable } from "./ExplanationRatings";
 import type { default as ExplanationsTable } from "./Explanations";
 import type { default as FavoritesTable } from "./Favorites";
@@ -62,4 +63,6 @@ export default interface PublicSchema {
   batch_jobs: BatchJobsTable;
 
   verse_highlights: VerseHighlightsTable;
+
+  explanation_languages: ExplanationLanguagesTable;
 }
