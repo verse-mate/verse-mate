@@ -168,7 +168,7 @@ The response should be in Markdown format only.`;
 
     const activeVersion = await connection
       .selectFrom("bible_versions")
-      .select(["id"])
+      .select(["language_code"])
       .where("is_active", "=", true)
       .executeTakeFirst();
 
@@ -182,7 +182,7 @@ The response should be in Markdown format only.`;
         type,
         explanation: text,
         chapter_id: chapter.chapter_id,
-        version_id: activeVersion.id,
+        language_code: activeVersion.language_code,
       })
       .execute();
 

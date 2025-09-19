@@ -2,7 +2,7 @@ import bearer from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
 import PromptStatusEnum from "../../../database/src/models/public/PromptStatusEnum";
 import { adminGuard } from "../auth/admin.utils";
-import { authDerive } from "../auth/auth.utils";
+import { authDerive, authGuard } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
@@ -32,6 +32,64 @@ const plugin = new Elysia()
       getBibleService: () => new BibleService(state.db, bibleRepository),
     };
   })
+  .guard((app) =>
+    app
+      .use(bearer())
+      .resolve({ as: "scoped" }, authDerive)
+      .group("/user", (app) =>
+        app.guard(authGuard).patch(
+          "/preferences",
+          async ({ body, currentUserId, store: { db } }) => {
+            const result = await db
+              .getOrCreateConnection()
+              .updateTable("user")
+              .set({ preferred_language: body.preferred_language })
+              .where("id", "=", currentUserId)
+              .executeTakeFirst();
+
+            if (result.numUpdatedRows === BigInt(0)) {
+              throw new Error(`User ${currentUserId} not found`);
+            }
+
+            return {
+              success: true,
+              message: `User ${currentUserId} preferences updated`,
+            };
+          },
+          {
+            body: t.Object({
+              preferred_language: t.Union([t.String(), t.Null()]),
+            }),
+          },
+        ),
+      )
+      .group("/admin", (app) =>
+        app
+          .guard(adminGuard)
+          .get("/explanations/languages", async ({ store }) => {
+            const bibleService = store.getBibleService();
+            return await bibleService.getAvailableExplanationLanguages();
+          })
+          .post("/explanations/refresh-language-stats", async ({ store }) => {
+            const bibleService = store.getBibleService();
+            return await bibleService.refreshLanguageStats();
+          })
+          .get("/users", async ({ store: { db } }) => {
+            return await db
+              .getOrCreateConnection()
+              .selectFrom("user")
+              .select([
+                "id",
+                "email",
+                "firstName",
+                "lastName",
+                "is_admin",
+                "createdAt",
+              ])
+              .execute();
+          }),
+      ),
+  )
   .guard((app) => {
     return app
       .use(bearer())
@@ -186,8 +244,8 @@ const plugin = new Elysia()
                 body.model,
                 currentUserId,
                 body.type,
-                body.sourceBibleVersion,
-                body.targetBibleVersion,
+                body.source_language_code,
+                body.target_language_code,
                 body.explanationTypes,
                 body.skipExisting || false,
                 body.effort || "medium",
@@ -206,8 +264,8 @@ const plugin = new Elysia()
                     t.Literal("high"),
                   ]),
                 ),
-                sourceBibleVersion: t.String(),
-                targetBibleVersion: t.String(),
+                source_language_code: t.String(),
+                target_language_code: t.String(),
                 explanationTypes: t.Array(t.String()),
                 skipExisting: t.Optional(t.Boolean()),
               }),
@@ -403,7 +461,10 @@ const plugin = new Elysia()
             "/explanations/set-active-as-default",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.setActiveExplanationsAsDefault(body);
+              return await bibleService.setActiveExplanationsAsDefault({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -418,7 +479,10 @@ const plugin = new Elysia()
             "/explanations/set-defaults-active",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.setDefaultExplanationsAsActive(body);
+              return await bibleService.setDefaultExplanationsAsActive({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -433,9 +497,10 @@ const plugin = new Elysia()
             "/explanations/set-specific-version-active",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.setSpecificExplanationVersionAsActive(
-                body,
-              );
+              return await bibleService.setSpecificExplanationVersionAsActive({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -451,7 +516,10 @@ const plugin = new Elysia()
             "/explanations/inactive",
             async ({ body, store }) => {
               const bibleService = store.getBibleService();
-              return await bibleService.deleteInactiveExplanations(body);
+              return await bibleService.deleteInactiveExplanations({
+                ...body,
+                language_code: body.bibleVersion,
+              });
             },
             {
               body: t.Object({
@@ -472,7 +540,7 @@ const plugin = new Elysia()
               const bibleService = store.getBibleService();
               return await bibleService.getExplanationsByFilter({
                 isBibleBatch: query.isBibleBatch === "true",
-                bibleVersion: query.bibleVersion,
+                language_code: query.bibleVersion,
                 bookName: query.bookName,
                 chapter: query.chapter ? Number(query.chapter) : "all",
                 limit: query.limit ? Number(query.limit) : 50,

@@ -289,7 +289,7 @@ export class AdminPromptService {
     // Get bible version
     const version = await connection
       .selectFrom("bible_versions")
-      .select(["id"])
+      .select(["id", "language_code"])
       .where("version_key", "=", bibleVersion)
       .executeTakeFirst();
 
@@ -324,7 +324,7 @@ export class AdminPromptService {
     const explanation = await connection
       .selectFrom("explanations")
       .where("chapter_id", "=", chapter.chapter_id)
-      .where("version_id", "=", version.id)
+      .where("language_code", "=", version.language_code)
       .where("type", "=", explanationType as ExplanationTypeEnum)
       .select("explanation")
       .executeTakeFirst();
