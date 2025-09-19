@@ -93,7 +93,8 @@ export async function up(db: Kysely<Database>): Promise<void> {
   // Step 6: Drop old unique constraint
   console.log("Step 6: Dropping old unique constraint");
   await db.schema
-    .dropIndex("uq_explanations_chap_type_version_version")
+    .alterTable("explanations")
+    .dropConstraint("uq_explanations_chap_type_version_version")
     .ifExists()
     .execute();
 
