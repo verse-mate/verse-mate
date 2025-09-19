@@ -280,7 +280,9 @@ export class BibleRepository {
           ELSE 2 
         END`,
       )
-      .execute();
+      .orderBy("explanations.version", "desc")
+      .limit(1)
+      .executeTakeFirst();
 
     return { explanation: explanation };
   }

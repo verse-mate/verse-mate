@@ -570,19 +570,30 @@ export class BatchOperationService {
       return;
     }
 
+    const toSlug = (s: string) =>
+      s
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+
     const batchRequests: BatchJobRequest[] = activeExplanations.map(
-      (explanation) => ({
-        custom_id: `rephrase|${bookName}|${explanation.chapter_number}|${explanation.type}|${bibleVersion}|${explanation.explanation_id}`,
-        method: "POST",
-        url: "/v1/responses",
-        body: {
-          model,
-          reasoning: { effort },
-          instructions: rephrasePrompt.prompt,
-          input: explanation.explanation,
-          max_output_tokens: 25000,
-        },
-      }),
+      (explanation) => {
+        const safeBook = toSlug(bookName);
+        const safeType = toSlug(explanation.type);
+        return {
+          custom_id: `rephrase|${safeBook}|${explanation.chapter_number}|${safeType}|${bibleVersion}|${explanation.explanation_id}`,
+          method: "POST",
+          url: "/v1/responses",
+          body: {
+            model,
+            reasoning: { effort },
+            instructions: rephrasePrompt.prompt,
+            input: explanation.explanation,
+            max_output_tokens: 25000,
+          },
+        };
+      },
     );
 
     // Validate custom ID uniqueness before proceeding

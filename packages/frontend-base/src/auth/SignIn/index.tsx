@@ -87,17 +87,20 @@ export function SignIn({ onSwitch }: { onSwitch?: (mode: "signup") => void }) {
               weight="500"
               style={{ display: "block", marginBottom: "4px" }}
             >
-              {backendError.message}
+              {typeof backendError === "string"
+                ? backendError
+                : backendError.message}
             </Text>
-            {isRetryableError(backendError) && (
-              <Text
-                color="var(--vivid-burgundy, #9f1b2f)"
-                size="12px"
-                style={{ display: "block", opacity: 0.8 }}
-              >
-                {getErrorActionSuggestion(backendError)}
-              </Text>
-            )}
+            {typeof backendError !== "string" &&
+              isRetryableError(backendError) && (
+                <Text
+                  color="var(--vivid-burgundy, #9f1b2f)"
+                  size="12px"
+                  style={{ display: "block", opacity: 0.8 }}
+                >
+                  {getErrorActionSuggestion(backendError)}
+                </Text>
+              )}
           </div>
         )}
         <Button type="submit" loading={isLoading}>

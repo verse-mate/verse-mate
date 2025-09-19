@@ -100,16 +100,13 @@ export class BibleService {
 
     if (!version) return { success: false };
 
-    const { explanation: explanations } =
+    const { explanation: existingExplanation } =
       await this.bibleRepository.getExplanation({
         book_id,
         chapter_number,
         language_code: version.language_code,
       });
-    const explanationTypeExists = explanations.some(
-      (explanation) => explanation.type === type,
-    );
-    if (explanationTypeExists) return { success: true };
+    if (existingExplanation?.type === type) return { success: true };
 
     const { success } = await this.bibleRepository.saveExplanation({
       type,
@@ -139,7 +136,7 @@ export class BibleService {
       .executeTakeFirst();
 
     if (!version) {
-      return [];
+      return null;
     }
 
     let language_code = version.language_code;
@@ -163,29 +160,19 @@ export class BibleService {
       language_code,
     });
 
-    const explanationExists = this.explanationExists({ explanation });
-
-    if (explanationExists) {
-      return [];
+    if (!explanation?.explanation_id) {
+      return null;
     }
 
-    const processedExplanations = await Promise.all(
-      explanation.map(async (exp) => {
-        if (exp.explanation) {
-          return {
-            ...exp,
-            explanation: await parseAndInjectVerses(
-              exp.explanation,
-              version.version_key,
-              this.db,
-            ),
-          };
-        }
-        return exp;
-      }),
-    );
+    if (explanation.explanation) {
+      explanation.explanation = await parseAndInjectVerses(
+        explanation.explanation,
+        version.version_key,
+        this.db,
+      );
+    }
 
-    return processedExplanations;
+    return explanation;
   }
 
   async saveRating({

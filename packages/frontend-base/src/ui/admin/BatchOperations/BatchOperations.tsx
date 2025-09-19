@@ -289,10 +289,18 @@ export const BatchOperations = () => {
 
   // Language validation function
   const validateLanguageCode = (code: string): boolean => {
+    if (!code || typeof code !== "string") return false;
+    const normalized = code.trim();
+    const full = normalized.toLowerCase();
+    const base = full.split("-")[0];
     try {
-      const displayName = new Intl.DisplayNames(["en"], { type: "language" });
-      const languageName = displayName.of(code);
-      return languageName !== undefined && languageName !== code;
+      const dnEn = new Intl.DisplayNames(["en"], { type: "language" });
+      const nameFull = dnEn.of(full);
+      const nameBase = dnEn.of(base);
+      return (
+        Boolean(nameFull && nameFull !== full) ||
+        Boolean(nameBase && nameBase !== base)
+      );
     } catch {
       return false;
     }

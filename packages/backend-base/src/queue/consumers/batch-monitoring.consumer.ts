@@ -109,13 +109,26 @@ export const batchMonitoringConsumer = async (job: Job) => {
       // Re-queue for next check, but only if the batch is not in a final state
       const summary = await batchOperationService.getBatchSummary(parentId);
 
+      const status = summary?.aggregate_status;
       console.log(
-        `[BATCH_MONITORING] Parent batch ${parentId} current status: ${summary.aggregate_status}`,
+        `[BATCH_MONITORING] Parent batch ${parentId} current status: ${
+          status ?? "unknown"
+        }`,
       );
 
-      if (
-        !["completed", "failed", "cancelled"].includes(summary.aggregate_status)
-      ) {
+      if (!status) {
+        console.warn(
+          `[BATCH_MONITORING] Missing batch summary for ${parentId}, re-queueing with backoff`,
+        );
+        await batchMonitoringQueue.add(
+          BATCH_MONITORING_QUEUE,
+          { batchId: parentId, isParent: true },
+          { delay: 15_000, removeOnComplete: 100, removeOnFail: 100 },
+        );
+        return;
+      }
+
+      if (!["completed", "failed", "cancelled"].includes(status)) {
         console.log(
           `[BATCH_MONITORING] Re-queueing parent batch ${parentId} for next monitoring cycle`,
         );
@@ -136,7 +149,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
         );
       } else {
         console.log(
-          `[BATCH_MONITORING] Parent batch ${parentId} reached final status: ${summary.aggregate_status}. Monitoring complete.`,
+          `[BATCH_MONITORING] Parent batch ${parentId} reached final status: ${status}. Monitoring complete.`,
         );
       }
     } catch (error) {
