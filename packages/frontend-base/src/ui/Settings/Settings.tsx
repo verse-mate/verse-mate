@@ -41,7 +41,7 @@ export const Settings = ({
   const [lastName, setLastName] = useState(session?.lastName || "");
   const [email, setEmail] = useState(session?.email || "");
   const [selectedLanguage, setSelectedLanguage] = useState(
-    session?.preferred_language || "en",
+    session?.preferred_language || "automatic",
   );
 
   // Global form state
@@ -58,7 +58,13 @@ export const Settings = ({
       try {
         const response = await api.bible.languages.get();
         if (response.data) {
-          setAvailableLanguages(response.data as any);
+          // Properly map the API response to the expected structure
+          const mappedLanguages = (response.data as any[]).map((lang) => ({
+            code: lang.language_code,
+            name: lang.name,
+            nativeName: lang.native_name,
+          }));
+          setAvailableLanguages(mappedLanguages);
         }
       } catch (error) {
         console.error("Failed to fetch available languages:", error);
@@ -75,7 +81,7 @@ export const Settings = ({
       setFirstName(session.firstName || "");
       setLastName(session.lastName || "");
       setEmail(session.email || "");
-      setSelectedLanguage(session.preferred_language || "en");
+      setSelectedLanguage(session.preferred_language || "automatic");
     }
   }, [session]);
 
@@ -120,7 +126,7 @@ export const Settings = ({
       firstName !== (session?.firstName || "") ||
       lastName !== (session?.lastName || "") ||
       email !== (session?.email || "") ||
-      selectedLanguage !== (session?.preferred_language || "en")
+      selectedLanguage !== (session?.preferred_language || "automatic")
     );
   };
 
@@ -133,11 +139,9 @@ export const Settings = ({
   };
 
   const hasLanguageChanges = () => {
-    const currentLanguage = session?.preferred_language || "en";
+    const currentStoredLanguage = session?.preferred_language || null;
     const languageToSave =
       selectedLanguage === "automatic" ? null : selectedLanguage;
-    const currentStoredLanguage =
-      currentLanguage === "en" ? null : currentLanguage;
     return languageToSave !== currentStoredLanguage;
   };
 
@@ -286,6 +290,8 @@ export const Settings = ({
               </label>
               <div className={styles.languageDropdownWrapper}>
                 <SelectDropdown.Root
+                  key={selectedLanguage} // Force re-render when language changes
+                  defaultValue={selectedLanguage}
                   onValueChange={handleLanguageChange}
                   open={isLanguageDropdownOpen}
                   onOpenChange={setIsLanguageDropdownOpen}
@@ -294,9 +300,15 @@ export const Settings = ({
                     selectedBook={null}
                     selectedVerse={null}
                     defaultPlaceholder={
-                      availableLanguages.find(
-                        (lang) => lang.code === selectedLanguage,
-                      )?.nativeName || "Select Language"
+                      selectedLanguage === "automatic"
+                        ? "Automatic (Based on Bible Version)"
+                        : availableLanguages.find(
+                            (lang) => lang.code === selectedLanguage,
+                          )?.nativeName ||
+                          availableLanguages.find(
+                            (lang) => lang.code === selectedLanguage,
+                          )?.name ||
+                          "Select Language"
                     }
                     icon={<ChevronDownIcon />}
                     theme="light" // Explicitly set light theme for settings context

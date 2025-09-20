@@ -1,7 +1,9 @@
-import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import bearer from "@elysiajs/bearer";
+import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import OpenAI from "openai";
+import { authDerive } from "../auth/auth.utils";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
@@ -87,7 +89,7 @@ const plugin = new Elysia()
         return { books: bible.books };
       })
       .get("/languages", async ({ store: { bibleService } }) => {
-        return await bibleService.getAvailableBibleVersionLanguages();
+        return await bibleService.getAvailableExplanationLanguages();
       })
       .get(
         "/book/:bookId/:chapterNumber",
@@ -120,15 +122,18 @@ const plugin = new Elysia()
           }),
         },
       )
+      .use(bearer())
+      .resolve({ as: "scoped" }, authDerive)
       .get(
         "/book/explanation/:bookId/:chapterNumber",
         async ({
           params,
           store: { bibleService, promptService, db },
           query,
+          currentUserId,
         }) => {
           const { bookId, chapterNumber } = params;
-          const { versionKey = "NASB1995" } = query;
+          const { versionKey = "NASB1995", explanationType } = query;
 
           const version = await db
             .getOrCreateConnection()
@@ -145,6 +150,8 @@ const plugin = new Elysia()
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
             version_id: version.id,
+            type: explanationType as ExplanationTypeEnum | undefined,
+            user_id: currentUserId || undefined,
           });
 
           // const missingTypes = Object.keys(ExplanationTypeEnum).filter(
@@ -211,6 +218,7 @@ const plugin = new Elysia()
         {
           query: t.Object({
             versionKey: t.Optional(t.String()),
+            explanationType: t.Optional(t.String()),
           }),
         },
       )
