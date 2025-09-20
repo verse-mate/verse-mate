@@ -58,7 +58,13 @@ export const Settings = ({
       try {
         const response = await api.bible.languages.get();
         if (response.data) {
-          setAvailableLanguages(response.data as any);
+          // Properly map the API response to the expected structure
+          const mappedLanguages = (response.data as any[]).map((lang) => ({
+            code: lang.language_code,
+            name: lang.name,
+            nativeName: lang.native_name,
+          }));
+          setAvailableLanguages(mappedLanguages);
         }
       } catch (error) {
         console.error("Failed to fetch available languages:", error);
