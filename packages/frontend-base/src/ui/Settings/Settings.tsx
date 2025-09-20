@@ -286,6 +286,7 @@ export const Settings = ({
               </label>
               <div className={styles.languageDropdownWrapper}>
                 <SelectDropdown.Root
+                  defaultValue={selectedLanguage}
                   onValueChange={handleLanguageChange}
                   open={isLanguageDropdownOpen}
                   onOpenChange={setIsLanguageDropdownOpen}
