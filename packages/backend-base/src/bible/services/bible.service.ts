@@ -123,9 +123,11 @@ export class BibleService {
     chapter_number,
     version_id,
     user_id,
+    type,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     version_id: string;
     user_id?: string;
+    type?: ExplanationTypeEnum;
   }) {
     // Get language_code from version_id
     const version = await this.db
@@ -158,6 +160,7 @@ export class BibleService {
       book_id,
       chapter_number,
       language_code,
+      type,
     });
 
     if (!explanation?.explanation_id) {

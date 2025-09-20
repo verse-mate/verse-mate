@@ -21,6 +21,9 @@ const plugin = new Elysia()
             return await userService.findAll();
           })
           .get("/me", async ({ currentUserId, store: { userService } }) => {
+            if (!currentUserId) {
+              throw new Error("Unauthorized");
+            }
             return await userService.findOne(currentUserId);
           })
           .post(
