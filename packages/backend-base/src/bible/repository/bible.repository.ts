@@ -232,8 +232,10 @@ export class BibleRepository {
     book_id,
     chapter_number,
     language_code,
+    type,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     language_code: string;
+    type?: ExplanationTypeEnum;
   }) {
     // Safely process language_code with null/undefined protection
     const normalizedLanguageCode = language_code?.toLowerCase() || "";
@@ -271,6 +273,7 @@ export class BibleRepository {
           ]),
           eb("explanations.is_active", "=", true),
           eb("explanation_languages.is_enabled", "=", true),
+          ...(type ? [eb("explanations.type", "=", type)] : []),
         ]),
       )
       .orderBy(

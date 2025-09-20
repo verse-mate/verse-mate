@@ -1,4 +1,4 @@
-import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import OpenAI from "openai";
@@ -128,7 +128,7 @@ const plugin = new Elysia()
           query,
         }) => {
           const { bookId, chapterNumber } = params;
-          const { versionKey = "NASB1995" } = query;
+          const { versionKey = "NASB1995", explanationType } = query;
 
           const version = await db
             .getOrCreateConnection()
@@ -145,6 +145,7 @@ const plugin = new Elysia()
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
             version_id: version.id,
+            type: explanationType as ExplanationTypeEnum | undefined,
           });
 
           // const missingTypes = Object.keys(ExplanationTypeEnum).filter(
@@ -211,6 +212,7 @@ const plugin = new Elysia()
         {
           query: t.Object({
             versionKey: t.Optional(t.String()),
+            explanationType: t.Optional(t.String()),
           }),
         },
       )
