@@ -2261,16 +2261,10 @@ export class BatchOperationService {
 
           const chapterNumber = Number(chapterNumberStr);
 
-          const version = await connection
-            .selectFrom("bible_versions")
-            .where("version_key", "=", bibleVersion)
-            .select("language_code")
-            .executeTakeFirst();
-
-          if (!version) {
+          if (!bibleVersion) {
             errorCount++;
             console.error(
-              `[BATCH] Bible version not found for translate: ${bibleVersion}`,
+              `[BATCH] Bible version (language code) is missing in custom_id: ${parsedLine.custom_id}`,
             );
             continue;
           }
@@ -2307,7 +2301,7 @@ export class BatchOperationService {
             .selectFrom("explanations")
             .where("chapter_id", "=", chapter.chapter_id)
             .where("type", "=", explanationType as any)
-            .where("language_code", "=", version.language_code)
+            .where("language_code", "=", bibleVersion)
             .orderBy("version", "desc")
             .selectAll()
             .executeTakeFirst();
@@ -2329,7 +2323,7 @@ export class BatchOperationService {
               .set({ is_active: false })
               .where("chapter_id", "=", chapter.chapter_id)
               .where("type", "=", explanationType as any)
-              .where("language_code", "=", version.language_code)
+              .where("language_code", "=", bibleVersion)
               .execute();
 
             // Insert the new, active version with proper parent tracking
@@ -2339,7 +2333,7 @@ export class BatchOperationService {
                 type: explanationType as any,
                 explanation: extractedText,
                 chapter_id: chapter.chapter_id,
-                language_code: version.language_code,
+                language_code: bibleVersion,
                 version: nextVersion,
                 is_active: true,
                 created_by_admin: false,

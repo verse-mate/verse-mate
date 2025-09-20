@@ -232,8 +232,10 @@ export class BibleRepository {
     book_id,
     chapter_number,
     language_code,
+    type,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     language_code: string;
+    type?: ExplanationTypeEnum;
   }) {
     // Safely process language_code with null/undefined protection
     const normalizedLanguageCode = language_code?.toLowerCase() || "";
@@ -245,7 +247,7 @@ export class BibleRepository {
       .getOrCreateConnection()
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
-      .innerJoin(
+      .leftJoin(
         "explanation_languages",
         "explanation_languages.language_code",
         "explanations.language_code",
@@ -263,20 +265,24 @@ export class BibleRepository {
           eb("chapters.chapter_number", "=", chapter_number),
           eb.or([
             eb(
-              "explanations.language_code",
+              eb.fn("lower", ["explanations.language_code"]),
               "in",
               [normalizedLanguageCode, base_language_code].filter(Boolean),
             ), // Filter out empty strings
             eb("explanation_languages.is_default", "=", true),
           ]),
           eb("explanations.is_active", "=", true),
-          eb("explanation_languages.is_enabled", "=", true),
+          eb.or([
+            eb("explanation_languages.is_enabled", "=", true),
+            eb("explanation_languages.is_enabled", "is", null), // Allow if no language entry exists
+          ]),
+          ...(type ? [eb("explanations.type", "=", type)] : []),
         ]),
       )
       .orderBy(
         sql`CASE 
-          WHEN explanations.language_code = ${normalizedLanguageCode} THEN 0 
-          WHEN explanations.language_code = ${base_language_code} THEN 1
+          WHEN LOWER(explanations.language_code) = ${normalizedLanguageCode} THEN 0 
+          WHEN LOWER(explanations.language_code) = ${base_language_code} THEN 1
           ELSE 2 
         END`,
       )

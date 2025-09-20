@@ -26,11 +26,14 @@ const plugin = new Elysia()
         app
           .use(bearer())
           .resolve({ as: "scoped" }, authDerive)
-          .get("/user", async ({ currentUserId }): Promise<{ id: string }> => {
-            return {
-              id: currentUserId,
-            };
-          })
+          .get(
+            "/user",
+            async ({ currentUserId }): Promise<{ id: string | null }> => {
+              return {
+                id: currentUserId,
+              };
+            },
+          )
           .post(
             "/change-password",
             async ({
@@ -38,6 +41,9 @@ const plugin = new Elysia()
               currentUserId,
               store: { authService },
             }): Promise<boolean> => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               return authService.changePassword(currentUserId, body);
             },
             {
@@ -64,12 +70,18 @@ const plugin = new Elysia()
               currentUserId,
               store: { authService },
             }): Promise<boolean> => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               return authService.logoutAll(currentUserId);
             },
           )
           .post(
             "/send-email-verification",
             async ({ currentUserId, store: { authService } }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               await authService.sendVerifyEmail(currentUserId);
             },
           )
@@ -81,6 +93,9 @@ const plugin = new Elysia()
               store: { authService },
               jwt,
             }): Promise<AuthPayload> => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               return authService.verifyEmail({
                 currentUserId,
                 token: body.token,
@@ -96,12 +111,18 @@ const plugin = new Elysia()
           .get(
             "/session",
             async ({ currentUserId, store: { authService } }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               return await authService.getUserById(currentUserId);
             },
           )
           .put(
             "/profile",
             async ({ currentUserId, body, store: { authService } }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               return await authService.updateProfile(currentUserId, body);
             },
             {

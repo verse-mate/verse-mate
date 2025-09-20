@@ -316,11 +316,17 @@ export const BatchOperations = () => {
           throw new Error("Invalid response format from languages API");
         }
 
-        const languages = response.data as {
-          code: string;
-          name: string;
-          nativeName: string;
-        }[];
+        const languages = (
+          response.data as {
+            language_code: string;
+            name: string;
+            native_name: string;
+          }[]
+        ).map((lang) => ({
+          code: lang.language_code,
+          name: lang.name,
+          nativeName: lang.native_name,
+        }));
 
         // Validate that we received proper language objects
         const validLanguages = languages.filter(

@@ -140,6 +140,9 @@ const plugin = new Elysia()
           .post(
             "/batch-explanations",
             async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const batchOperationService = store.getBatchOperationService();
 
               if (body.type === "book") {
@@ -210,6 +213,9 @@ const plugin = new Elysia()
           .post(
             "/batch-rephrase",
             async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const batchOperationService = store.getBatchOperationService();
               return await batchOperationService.generateRephraseBatch(
                 body.model,
@@ -239,6 +245,9 @@ const plugin = new Elysia()
           .post(
             "/batch-translate",
             async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const batchOperationService = store.getBatchOperationService();
               return await batchOperationService.generateTranslateBatch(
                 body.model,
@@ -304,7 +313,9 @@ const plugin = new Elysia()
               return await batchOperationService.getAllBatches(
                 query.limit ? Number(query.limit) : 50,
                 query.offset ? Number(query.offset) : 0,
-                query.adminOnly === "true" ? currentUserId : undefined,
+                query.adminOnly === "true"
+                  ? currentUserId || undefined
+                  : undefined,
               );
             },
             {
@@ -369,6 +380,9 @@ const plugin = new Elysia()
           .post(
             "/explanation/regenerate",
             async ({ body, store, currentUserId }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const adminDatabaseService = store.getAdminDatabaseService();
               return await adminDatabaseService.regenerateExplanation(
                 body.bookId,
@@ -390,6 +404,9 @@ const plugin = new Elysia()
           .post(
             "/explanation/regenerate/:regenerationId/generate",
             async ({ params, body, store, currentUserId }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const explanationRegenerationService =
                 store.getExplanationRegenerationService();
               return await explanationRegenerationService.generateNewExplanation(
@@ -424,6 +441,9 @@ const plugin = new Elysia()
           .post(
             "/explanation/regenerate/:regenerationId/choose",
             async ({ params, body, store, currentUserId }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const adminDatabaseService = store.getAdminDatabaseService();
               return await adminDatabaseService.chooseExplanationVersion(
                 params.regenerationId,

@@ -121,13 +121,25 @@ export class AuthService {
     userId: string,
   ): Promise<Pick<
     User,
-    "id" | "email" | "firstName" | "lastName" | "is_admin"
+    | "id"
+    | "email"
+    | "firstName"
+    | "lastName"
+    | "is_admin"
+    | "preferred_language"
   > | null> {
     const user = await this.db
       .getOrCreateConnection()
       .selectFrom("user")
       .where("id", "=", userId)
-      .select(["id", "email", "firstName", "lastName", "is_admin"])
+      .select([
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "is_admin",
+        "preferred_language",
+      ])
       .executeTakeFirst();
     if (!user) return null;
     return user;

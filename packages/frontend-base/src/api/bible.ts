@@ -36,6 +36,7 @@ export const getExplanation = async (
     .get({
       query: {
         versionKey,
+        ...(explanationType && { explanationType }),
       },
     });
 
@@ -44,13 +45,6 @@ export const getExplanation = async (
   try {
     if (!explanation) {
       throw new Error("Explanation not found");
-    }
-
-    if (explanation.type !== explanationType) {
-      return {
-        ...explanation,
-        explanation: "Explanation type not found for this chapter.",
-      };
     }
 
     return explanation;
