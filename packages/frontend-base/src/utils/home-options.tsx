@@ -1,6 +1,7 @@
 import { DefaultContent } from "../ui/Accordion/Content/default-content";
 import { BookmarkList } from "../ui/Bookmarks";
 import * as Icon from "../ui/Icons";
+import { NotesList } from "../ui/Notes";
 
 export const homeOptions = [
   {
@@ -19,7 +20,7 @@ export const homeOptions = [
     name: "notes",
     icon: <Icon.NotesIcon />,
     label: "Notes",
-    content: <DefaultContent value="Feature currently unavailable" />,
+    content: <NotesList />,
   },
   {
     name: "highlights",

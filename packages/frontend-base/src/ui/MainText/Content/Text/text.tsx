@@ -6,6 +6,7 @@ import { CopyLinkButton } from "../../../CopyLinkButton";
 import { HighlightColorPicker } from "../../../HighlightColorPicker";
 import type { HighlightColor } from "../../../HighlightColorPicker/types";
 import { HighlightMenu } from "../../../HighlightMenu";
+import { NotesButton } from "../../../Notes";
 import { ShareButton } from "../../../ShareButton";
 import styles from "./text.module.css";
 import type { Chapter, Highlight, TextProps } from "./types";
@@ -487,6 +488,15 @@ export const Text = ({
               bookName={bookName}
               testament={testament}
               className={styles.bookmarkButton}
+            />
+          )}
+          {bookId && testament && (
+            <NotesButton
+              bookId={bookId}
+              chapterNumber={text.chapterNumber}
+              bookName={bookName}
+              testament={testament}
+              className={styles.notesButton}
             />
           )}
           <CopyLinkButton

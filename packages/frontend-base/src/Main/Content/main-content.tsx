@@ -448,11 +448,54 @@ export const MainContent = () => {
   }, [activeTab, bookVerseData, bookId, verseId]);
 
   useEffect(() => {
-    if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
+    if (activeTab === "menu") {
+      // When switching into the menu tab, apply any pending right panel content
+      try {
+        const pending = localStorage.getItem("postRightPanelContent");
+        if (pending && typeof pending === "string") {
+          setRightPanelContent(pending);
+          localStorage.removeItem("postRightPanelContent");
+        }
+      } catch {}
+    } else if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
+      // When leaving the menu tab, reset content to default
       setRightPanelContent("default");
     }
     prevActiveTabRef.current = activeTab;
   }, [activeTab]);
+
+  // Also listen to a custom event so components can request right panel content immediately
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      const requested = custom.detail;
+      if (requested) {
+        setRightPanelContent(requested);
+      }
+    };
+    window.addEventListener("openRightPanelContent", handler as EventListener);
+    return () => {
+      window.removeEventListener(
+        "openRightPanelContent",
+        handler as EventListener,
+      );
+    };
+  }, []);
+
+  // Listen for external requests to change active tab (e.g., open 'menu')
+  useEffect(() => {
+    const tabHandler = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      const tab = custom.detail;
+      if (tab) {
+        setActiveTab(tab);
+      }
+    };
+    window.addEventListener("setActiveTab", tabHandler as EventListener);
+    return () => {
+      window.removeEventListener("setActiveTab", tabHandler as EventListener);
+    };
+  }, [setActiveTab]);
 
   useEffect(() => {
     const handleResize = () => {

@@ -2,11 +2,53 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
+Table batch_jobs {
+  id Int [pk, increment]
+  batch_type String [not null]
+  openai_batch_id String
+  status String [not null, default: 'pending']
+  book_id Int
+  bible_version String [not null]
+  model String [not null]
+  explanation_types String[] [not null]
+  total_requests Int [not null, default: 0]
+  completed_requests Int [not null, default: 0]
+  failed_requests Int [not null, default: 0]
+  input_file_path String
+  output_file_path String
+  total_tokens Int
+  prompt_tokens Int
+  completion_tokens Int
+  estimated_cost Float
+  actual_cost Float
+  created_by String [not null]
+  created_at DateTime [default: `now()`, not null]
+  started_at DateTime
+  completed_at DateTime
+  error_message String
+  explanations_processed Boolean [not null, default: false]
+  books books
+  user user [not null]
+}
+
+Table bible_versions {
+  id String [pk]
+  version_key String [unique, not null]
+  version_name String [not null]
+  language_code String [not null]
+  is_active Boolean [default: true]
+  created_at DateTime [default: `now()`]
+  explanations explanations [not null]
+  user user [not null]
+  verses verses [not null]
+}
+
 Table books {
   book_id Int [pk, increment]
   name String [unique, not null]
   testament testament_enum [not null]
   genre_id Int [not null]
+  batch_jobs batch_jobs [not null]
   genres genres [not null]
   chapters chapters [not null]
   user_progress user_progress [not null]
@@ -20,6 +62,7 @@ Table chapters {
   conversations conversations [not null]
   explanations explanations [not null]
   favorites favorites [not null]
+  notes notes [not null]
   subtitles subtitles [not null]
   user_progress user_progress [not null]
   verses verses [not null]
@@ -61,8 +104,15 @@ Table explanations {
   explanation String [not null]
   chapter_id Int [not null]
   version_id String [not null]
+  version Int [not null, default: 1]
+  is_active Boolean [not null, default: true]
+  created_by_admin Boolean [not null, default: false]
+  parent_explanation_id Int
+  created_at DateTime [default: `now()`, not null]
   explanation_ratings explanation_ratings [not null]
   chapters chapters [not null]
+  explanations explanations
+  other_explanations explanations [not null]
   bible_versions bible_versions [not null]
 
   indexes {
@@ -134,9 +184,12 @@ Table user {
   createdAt DateTime [default: `now()`, not null]
   preferred_language String [default: 'en']
   preferred_bible_version String [default: 'NASB1995']
+  is_admin Boolean [not null, default: false]
+  batch_jobs batch_jobs [not null]
   conversations conversations [not null]
   explanation_ratings explanation_ratings [not null]
   favorites favorites [not null]
+  notes notes [not null]
   bible_versions bible_versions
   user_progress user_progress [not null]
 }
@@ -156,6 +209,16 @@ Table user_progress {
   }
 }
 
+Table user_prompt_templates {
+  id Int [pk, increment]
+  template_name String [not null]
+  explanation_type String [not null]
+  prompt_template String [not null]
+  status String [not null, default: 'active']
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [default: `now()`, not null]
+}
+
 Table verses {
   verse_id Int [pk, increment]
   chapter_id Int [not null]
@@ -164,22 +227,24 @@ Table verses {
   version_id String [not null]
   chapters chapters [not null]
   bible_versions bible_versions [not null]
+  notes notes [not null]
 
   indexes {
     (chapter_id, verse_number, version_id) [unique]
   }
 }
 
-Table bible_versions {
-  id String [pk]
-  version_key String [unique, not null]
-  version_name String [not null]
-  language_code String [not null]
-  is_active Boolean [default: true]
-  created_at DateTime [default: `now()`]
-  explanations explanations [not null]
+Table notes {
+  note_id String [pk]
+  user_id String [not null]
+  chapter_id Int [not null]
+  verse_id Int
+  content String [not null]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [default: `now()`, not null]
+  chapters chapters [not null]
+  verses verses
   user user [not null]
-  verses verses [not null]
 }
 
 Enum explanation_type_enum {
@@ -214,6 +279,10 @@ Enum testament_enum {
   NT
 }
 
+Ref: batch_jobs.book_id > books.book_id [delete: No Action]
+
+Ref: batch_jobs.created_by > user.id [delete: No Action]
+
 Ref: books.genre_id > genres.genre_id [delete: Cascade]
 
 Ref: chapters.book_id > books.book_id [delete: Cascade]
@@ -227,6 +296,8 @@ Ref: explanation_ratings.explanation_id > explanations.explanation_id [delete: C
 Ref: explanation_ratings.user_id > user.id [delete: Cascade]
 
 Ref: explanations.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: explanations.parent_explanation_id - explanations.explanation_id [delete: No Action]
 
 Ref: explanations.version_id > bible_versions.id [delete: Cascade]
 
@@ -249,3 +320,9 @@ Ref: user_progress.user_id > user.id [delete: Cascade]
 Ref: verses.chapter_id > chapters.chapter_id [delete: Cascade]
 
 Ref: verses.version_id > bible_versions.id [delete: Cascade]
+
+Ref: notes.chapter_id > chapters.chapter_id [delete: Cascade]
+
+Ref: notes.verse_id > verses.verse_id [delete: Cascade]
+
+Ref: notes.user_id > user.id [delete: Cascade]

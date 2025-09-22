@@ -12,6 +12,7 @@ model books {
   name          String          @unique @db.VarChar(50)
   testament     testament_enum
   genre_id      Int
+  batch_jobs    batch_jobs[]
   genres        genres          @relation(fields: [genre_id], references: [genre_id], onDelete: Cascade, onUpdate: NoAction)
   chapters      chapters[]
   user_progress user_progress[]
@@ -25,6 +26,7 @@ model chapters {
   conversations  conversations[]
   explanations   explanations[]
   favorites      favorites[]
+  notes          notes[]
   subtitles      subtitles[]
   user_progress  user_progress[]
   verses         verses[]
@@ -57,14 +59,21 @@ model explanation_ratings {
 }
 
 model explanations {
-  explanation_id      Int                   @id @default(autoincrement())
-  type                explanation_type_enum
-  explanation         String
-  chapter_id          Int
-  version_id          String                @db.Uuid
-  explanation_ratings explanation_ratings[]
-  chapters            chapters              @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
-  bible_versions      bible_versions        @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  explanation_id        Int                   @id @default(autoincrement())
+  type                  explanation_type_enum
+  explanation           String
+  chapter_id            Int
+  version_id            String                @db.Uuid
+  version               Int                   @default(1)
+  is_active             Boolean               @default(true)
+  created_by_admin      Boolean               @default(false)
+  parent_explanation_id Int?
+  created_at            DateTime              @default(now()) @db.Timestamp(6)
+  explanation_ratings   explanation_ratings[]
+  chapters              chapters              @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  explanations          explanations?         @relation("explanationsToexplanations", fields: [parent_explanation_id], references: [explanation_id], onDelete: NoAction, onUpdate: NoAction)
+  other_explanations    explanations[]        @relation("explanationsToexplanations")
+  bible_versions        bible_versions        @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([chapter_id, type, version_id], map: "idx_explanations_chap_type_version")
 }
@@ -131,9 +140,12 @@ model user {
   createdAt               DateTime              @default(now()) @db.Timestamp(6)
   preferred_language      String?               @default("en") @db.VarChar(5)
   preferred_bible_version String?               @default("NASB1995") @db.VarChar(20)
+  is_admin                Boolean               @default(false)
+  batch_jobs              batch_jobs[]
   conversations           conversations[]
   explanation_ratings     explanation_ratings[]
   favorites               favorites[]
+  notes                   notes[]
   bible_versions          bible_versions?       @relation(fields: [preferred_bible_version], references: [version_key], onDelete: NoAction, onUpdate: NoAction)
   user_progress           user_progress[]
 
@@ -159,6 +171,7 @@ model verses {
   verse_number   Int
   text           String
   version_id     String         @db.Uuid
+  notes          notes[]
   chapters       chapters       @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
   bible_versions bible_versions @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -176,6 +189,66 @@ model bible_versions {
   explanations  explanations[]
   user          user[]
   verses        verses[]
+}
+
+model notes {
+  note_id    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  chapter_id Int
+  verse_id   Int?
+  content    String
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+  chapters   chapters @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  verses     verses?  @relation(fields: [verse_id], references: [verse_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_notes_user")
+  @@index([chapter_id], map: "idx_notes_chapter")
+  @@index([user_id, chapter_id], map: "idx_notes_user_chapter")
+}
+
+model batch_jobs {
+  id                     Int       @id @default(autoincrement())
+  batch_type             String    @db.VarChar(20)
+  openai_batch_id        String?   @db.VarChar(100)
+  status                 String    @default("pending") @db.VarChar(20)
+  book_id                Int?
+  bible_version          String    @db.VarChar(10)
+  model                  String    @db.VarChar(50)
+  explanation_types      String[]
+  total_requests         Int       @default(0)
+  completed_requests     Int       @default(0)
+  failed_requests        Int       @default(0)
+  input_file_path        String?   @db.VarChar(500)
+  output_file_path       String?   @db.VarChar(500)
+  total_tokens           Int?
+  prompt_tokens          Int?
+  completion_tokens      Int?
+  estimated_cost         Float?    @db.Real
+  actual_cost            Float?    @db.Real
+  created_by             String    @db.Uuid
+  created_at             DateTime  @default(now()) @db.Timestamp(6)
+  started_at             DateTime? @db.Timestamp(6)
+  completed_at           DateTime? @db.Timestamp(6)
+  error_message          String?
+  explanations_processed Boolean   @default(false)
+  books                  books?    @relation(fields: [book_id], references: [book_id], onDelete: NoAction, onUpdate: NoAction)
+  user                   user      @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "idx_batch_jobs_created_by")
+  @@index([openai_batch_id], map: "idx_batch_jobs_openai_batch_id")
+  @@index([status], map: "idx_batch_jobs_status")
+}
+
+model user_prompt_templates {
+  id               Int      @id @default(autoincrement())
+  template_name    String   @db.VarChar(100)
+  explanation_type String   @db.VarChar(50)
+  prompt_template  String
+  status           String   @default("active") @db.VarChar(20)
+  created_at       DateTime @default(now()) @db.Timestamp(6)
+  updated_at       DateTime @default(now()) @db.Timestamp(6)
 }
 
 enum explanation_type_enum {

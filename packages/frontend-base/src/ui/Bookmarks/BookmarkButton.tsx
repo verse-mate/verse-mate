@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useBookmarks } from "../../hooks/useBookmarks";
+import { useHandleTab } from "../../hooks/useHandleTab";
 import { userSession } from "../../hooks/userSession";
 import { addModal } from "../../modal/store";
+import { removeAllModals } from "../../modal/store";
 import * as Icon from "../Icons";
 import styles from "./bookmarks.module.css";
 
@@ -24,6 +26,7 @@ export const BookmarkButton = ({
     useBookmarks();
   const [isLoading, setIsLoading] = useState(false);
   const { session } = userSession();
+  const { setActiveTab } = useHandleTab();
 
   // Check if this chapter is bookmarked
   const bookmarked = isBookmarked(bookId, chapterNumber);
@@ -48,9 +51,32 @@ export const BookmarkButton = ({
               you log in.
             </p>
             <div className={styles.loginModalButtons}>
-              <a href="/login" className={styles.loginButton}>
+              <button
+                type="button"
+                className={styles.loginButton}
+                onClick={() => {
+                  // Request right panel login in the Menu tab
+                  try {
+                    localStorage.setItem("postRightPanelContent", "login");
+                  } catch {}
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("openRightPanelContent", {
+                        detail: "login",
+                      }),
+                    );
+                    window.dispatchEvent(
+                      new CustomEvent("setActiveTab", { detail: "menu" }),
+                    );
+                  } catch {}
+                  try {
+                    setActiveTab("menu");
+                  } catch {}
+                  removeAllModals();
+                }}
+              >
                 Sign In
-              </a>
+              </button>
             </div>
           </div>
         ),

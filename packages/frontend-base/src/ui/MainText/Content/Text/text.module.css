@@ -32,6 +32,10 @@
     flex-shrink: 0;
 }
 
+.notesButton {
+    flex-shrink: 0;
+}
+
 .textBox {
     display: flex;
     flex-direction: column;

@@ -1039,4 +1039,137 @@ export class BibleRepository {
       return { overlaps: [], hasOverlap: false };
     }
   }
+
+  /**
+   * Notes
+   */
+  async getNotes({ user_id }: { user_id: string }) {
+    try {
+      console.log("=== BibleRepository.getNotes ===");
+      console.log("DATABASE DEBUG: getNotes for user_id:", user_id);
+
+      const connection = this.db.getOrCreateConnection();
+      console.log(
+        "DATABASE DEBUG: Executing getNotes query for user:",
+        user_id,
+      );
+
+      const notes = await (connection as any)
+        .selectFrom("notes as n")
+        .innerJoin("chapters as c", "n.chapter_id", "c.chapter_id")
+        .innerJoin("books as b", "c.book_id", "b.book_id")
+        .leftJoin("verses as v", "n.verse_id", "v.verse_id")
+        .where("n.user_id", "=", user_id)
+        .select([
+          "n.note_id",
+          "n.content",
+          "n.created_at",
+          "n.updated_at",
+          "c.chapter_number",
+          "c.book_id",
+          "b.name as book_name",
+          "v.verse_number",
+        ])
+        .orderBy("n.created_at", "desc")
+        .execute();
+
+      console.log("DATABASE DEBUG: Query returned", notes.length, "notes");
+      return { notes };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.getNotes:", error);
+      throw error;
+    }
+  }
+
+  async addNote(noteData: {
+    user_id: string;
+    chapter_id: number;
+    verse_id?: number;
+    content: string;
+  }) {
+    try {
+      console.log("=== BibleRepository.addNote ===");
+      console.log("DATABASE DEBUG: Adding note:", noteData);
+
+      const connection = this.db.getOrCreateConnection();
+      const now = new Date().toISOString();
+
+      const result = await (connection as any)
+        .insertInto("notes")
+        .values({
+          user_id: noteData.user_id,
+          chapter_id: noteData.chapter_id,
+          verse_id: noteData.verse_id || null,
+          content: noteData.content,
+          created_at: now,
+          updated_at: now,
+        })
+        .returning([
+          "note_id",
+          "user_id",
+          "chapter_id",
+          "verse_id",
+          "content",
+          "created_at",
+          "updated_at",
+        ])
+        .executeTakeFirstOrThrow();
+
+      console.log(
+        "DATABASE DEBUG: Successfully added note with ID:",
+        result.note_id,
+      );
+      return { note: result };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.addNote:", error);
+      throw error;
+    }
+  }
+
+  async updateNote(noteId: string, content: string) {
+    try {
+      console.log("=== BibleRepository.updateNote ===");
+      console.log("DATABASE DEBUG: Updating note ID:", noteId);
+
+      const connection = this.db.getOrCreateConnection();
+      const now = new Date().toISOString();
+
+      const result = await (connection as any)
+        .updateTable("notes")
+        .set({
+          content: content,
+          updated_at: now,
+        })
+        .where("note_id", "=", noteId)
+        .executeTakeFirst();
+
+      const success = Number(result.numUpdatedRows) > 0;
+      console.log("DATABASE DEBUG: Note update success:", success);
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.updateNote:", error);
+      throw error;
+    }
+  }
+
+  async deleteNote(noteId: string) {
+    try {
+      console.log("=== BibleRepository.deleteNote ===");
+      console.log("DATABASE DEBUG: Deleting note ID:", noteId);
+
+      const connection = this.db.getOrCreateConnection();
+
+      const result = await (connection as any)
+        .deleteFrom("notes")
+        .where("note_id", "=", noteId)
+        .executeTakeFirst();
+
+      const success = Number(result.numDeletedRows) > 0;
+      console.log("DATABASE DEBUG: Note deletion success:", success);
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.deleteNote:", error);
+      throw error;
+    }
+  }
 }
