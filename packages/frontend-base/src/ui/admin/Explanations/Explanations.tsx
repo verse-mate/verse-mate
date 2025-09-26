@@ -151,7 +151,7 @@ export const Explanations = () => {
     try {
       const response = await api.admin.explanations.inactive.delete({
         isBibleBatch,
-        bibleVersion: selectedBibleVersion,
+        languageCode: selectedLanguage,
         bookName: isBibleBatch ? undefined : selectedBook || undefined,
         chapter: isBibleBatch ? "all" : selectedChapter,
       });
@@ -175,7 +175,7 @@ export const Explanations = () => {
       const response = await api.admin.explanations["set-defaults-active"].post(
         {
           isBibleBatch,
-          bibleVersion: selectedBibleVersion,
+          languageCode: selectedLanguage,
           bookName: isBibleBatch ? undefined : selectedBook || undefined,
           chapter: isBibleBatch ? "all" : selectedChapter,
         },
@@ -201,7 +201,7 @@ export const Explanations = () => {
         "set-active-as-default"
       ].post({
         isBibleBatch,
-        bibleVersion: selectedBibleVersion,
+        languageCode: selectedLanguage,
         bookName: isBibleBatch ? undefined : selectedBook || undefined,
         chapter: isBibleBatch ? "all" : selectedChapter,
       });
@@ -230,7 +230,7 @@ export const Explanations = () => {
         "set-specific-version-active"
       ].post({
         isBibleBatch,
-        bibleVersion: selectedBibleVersion,
+        languageCode: selectedLanguage,
         bookName: isBibleBatch ? undefined : selectedBook || undefined,
         chapter: isBibleBatch ? "all" : selectedChapter,
         version: Number(versionToSetActive),
