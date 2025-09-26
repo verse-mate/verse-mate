@@ -9,7 +9,7 @@
     font-size: 32px;
     font-weight: 700;
     line-height: 44px;
-    text-align: left;
+    text-align: start;
     max-width: 440px;
     color: var(--night);
 }
@@ -19,7 +19,7 @@
     font-size: 22px;
     font-weight: 700;
     line-height: 28px;
-    text-align: left;
+    text-align: start;
     max-width: 440px;
     color: var(--night);
 }
@@ -29,7 +29,7 @@
     font-size: 18px;
     font-weight: 700;
     line-height: 24px;
-    text-align: left;
+    text-align: start;
     max-width: 440px;
     color: var(--night);
 }
@@ -39,7 +39,7 @@
     font-size: 16px;
     font-weight: 700;
     line-height: 22px;
-    text-align: left;
+    text-align: start;
     max-width: 440px;
     color: var(--night);
 }
@@ -50,7 +50,7 @@
     font-size: 18px;
     font-weight: 300;
     line-height: 32px;
-    text-align: left;
+    text-align: start;
     color: var(--charcoal-grey);
 }
 
@@ -67,7 +67,7 @@
 }
 
 .markdown ul, .markdown ol {
-    padding: 0 0 0 20px;
+    padding-inline-start: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -75,7 +75,7 @@
     font-size: 18px;
     font-weight: 400;
     line-height: 24px;
-    text-align: left;
+    text-align: start;
     list-style: disc;
 }
 

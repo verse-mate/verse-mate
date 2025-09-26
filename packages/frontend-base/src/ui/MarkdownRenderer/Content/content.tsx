@@ -10,11 +10,19 @@ type MarkdownRendererProps = {
       }
     | string;
   className?: string;
+  language?: string;
+};
+
+const isRtlLang = (lang?: string) => {
+  if (!lang) return false;
+  const rtlLangs = ["ar", "he", "fa", "ur", "ps", "dv", "ku", "sd", "ug", "yi"];
+  return rtlLangs.includes(lang.split("-")[0].toLowerCase());
 };
 
 export const Renderer = ({
   markdownContent,
   className,
+  language,
 }: MarkdownRendererProps) => {
   const [content, setContent] = useState<string>("");
 
@@ -39,19 +47,23 @@ export const Renderer = ({
     loadContent();
   }, [markdownContent]);
 
+  const direction = isRtlLang(language) ? "rtl" : "ltr";
+
   return (
-    <ReactMarkdown
-      className={`${styles.markdown} ${className}`}
-      components={{
-        h2: ({ node, ...props }) => (
-          <h2 style={{ marginTop: "2em" }} {...props} />
-        ),
-        h3: ({ node, ...props }) => (
-          <h3 style={{ marginTop: "1em" }} {...props} />
-        ),
-      }}
-    >
-      {content}
-    </ReactMarkdown>
+    <div dir={direction} lang={language}>
+      <ReactMarkdown
+        className={`${styles.markdown} ${className}`}
+        components={{
+          h2: ({ node, ...props }) => (
+            <h2 style={{ marginTop: "2em" }} {...props} />
+          ),
+          h3: ({ node, ...props }) => (
+            <h3 style={{ marginTop: "1em" }} {...props} />
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 };

@@ -258,6 +258,7 @@ export class BibleRepository {
         "explanations.type",
         "explanations.explanation",
         "explanations.explanation_id",
+        "explanations.language_code",
       ])
       .where((eb) =>
         eb.and([
