@@ -15,8 +15,8 @@ type MarkdownRendererProps = {
 
 const isRtlLang = (lang?: string) => {
   if (!lang) return false;
-  const rtlLangs = ["ar", "he"];
-  return rtlLangs.includes(lang.split("-")[0]);
+  const rtlLangs = ["ar", "he", "fa", "ur", "ps", "dv", "ku", "sd", "ug", "yi"];
+  return rtlLangs.includes(lang.split("-")[0].toLowerCase());
 };
 
 export const Renderer = ({

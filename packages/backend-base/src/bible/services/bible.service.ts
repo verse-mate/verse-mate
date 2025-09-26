@@ -1053,20 +1053,36 @@ export class BibleService {
       // Iterate through new stats to update or insert
       for (const [code, stats] of newStatsMap.entries()) {
         const existingLang = existingLanguagesMap.get(code);
-        const enDisplayNames = new Intl.DisplayNames(["en"], {
-          type: "language",
-        });
-        const nativeDisplayNames = new Intl.DisplayNames([code], {
-          type: "language",
-        });
+
+        let enNameGetter: (c: string) => string | undefined;
+        let nativeNameGetter: (c: string) => string | undefined;
+        try {
+          const enDisplayNames = new Intl.DisplayNames(["en"], {
+            type: "language",
+          });
+          enNameGetter = (c) => enDisplayNames.of(c) || undefined;
+        } catch {
+          enNameGetter = () => undefined;
+        }
+        try {
+          const nativeDisplayNames = new Intl.DisplayNames([code], {
+            type: "language",
+          });
+          nativeNameGetter = (c) => nativeDisplayNames.of(c) || undefined;
+        } catch {
+          nativeNameGetter = () => undefined;
+        }
+
+        const name = enNameGetter(code) || code;
+        const native_name = nativeNameGetter(code) || code;
 
         if (existingLang) {
           // UPDATE existing language
           await trx
             .updateTable("explanation_languages")
             .set({
-              name: enDisplayNames.of(code) || code,
-              native_name: nativeDisplayNames.of(code) || code,
+              name,
+              native_name,
               explanation_count: stats.explanationCount,
               user_preference_count: stats.userCount,
               updated_at: new Date(),
@@ -1080,8 +1096,8 @@ export class BibleService {
             .insertInto("explanation_languages")
             .values({
               language_code: code,
-              name: enDisplayNames.of(code) || code,
-              native_name: nativeDisplayNames.of(code) || code,
+              name,
+              native_name,
               explanation_count: stats.explanationCount,
               user_preference_count: stats.userCount,
               updated_at: new Date(),

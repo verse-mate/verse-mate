@@ -27,7 +27,12 @@ export class PromptRepository {
       throw new Error("Active System Prompt not found");
     }
 
-    return prompt as any;
+    return {
+      prompt_id: prompt.prompt_id,
+      status: prompt.status,
+      prompt: prompt.prompt,
+      prompt_type: prompt.prompt_type,
+    };
   }
 
   async getAll() {
