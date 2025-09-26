@@ -1073,7 +1073,7 @@ export class BibleService {
   async refreshLanguageStats() {
     const connection = this.db.getOrCreateConnection();
 
-    // Step 1: Get explanation counts grouped by language
+    // Step 1: Get current explanation counts grouped by language
     const explanationCounts = await connection
       .selectFrom("explanations")
       .select([
@@ -1084,7 +1084,7 @@ export class BibleService {
       .groupBy("language_code")
       .execute();
 
-    // Step 2: Get user preference counts grouped by language
+    // Step 2: Get current user preference counts grouped by language
     const userPreferenceCounts = await connection
       .selectFrom("user")
       .select(["preferred_language", (eb) => eb.fn.count("id").as("count")])
@@ -1092,15 +1092,15 @@ export class BibleService {
       .groupBy("preferred_language")
       .execute();
 
-    // Step 3: Combine the data
-    const statsMap = new Map<
+    // Step 3: Combine the new stats into a single map
+    const newStatsMap = new Map<
       string,
       { explanationCount: number; userCount: number }
     >();
 
     for (const row of explanationCounts) {
       if (row.language_code) {
-        statsMap.set(row.language_code, {
+        newStatsMap.set(row.language_code, {
           explanationCount: Number(row.count),
           userCount: 0,
         });
@@ -1109,39 +1109,95 @@ export class BibleService {
 
     for (const row of userPreferenceCounts) {
       if (row.preferred_language) {
-        const stats = statsMap.get(row.preferred_language) || {
+        const stats = newStatsMap.get(row.preferred_language) || {
           explanationCount: 0,
           userCount: 0,
         };
         stats.userCount = Number(row.count);
-        statsMap.set(row.preferred_language, stats);
+        newStatsMap.set(row.preferred_language, stats);
       }
     }
 
-    // Step 4: Upsert into the new table
+    // Step 4: Get existing languages from the database to preserve flags
+    const existingLanguages = await connection
+      .selectFrom("explanation_languages")
+      .selectAll()
+      .execute();
+    const existingLanguagesMap = new Map(
+      existingLanguages.map((lang) => [lang.language_code, lang]),
+    );
+
+    // Step 5: Reconcile the new stats with the existing languages in a transaction
     await connection.transaction().execute(async (trx) => {
-      // Clear the table first to remove languages that no longer exist
-      await trx.deleteFrom("explanation_languages").execute();
+      const newLangCodes = new Set(newStatsMap.keys());
+      const existingLangCodes = new Set(existingLanguagesMap.keys());
 
-      for (const [code, stats] of statsMap.entries()) {
-        const enDisplayNames = new Intl.DisplayNames(["en"], {
-          type: "language",
-        });
-        const nativeDisplayNames = new Intl.DisplayNames([code], {
-          type: "language",
-        });
-
+      // Identify languages to delete
+      const languagesToDelete = [...existingLangCodes].filter(
+        (code) => !newLangCodes.has(code),
+      );
+      if (languagesToDelete.length > 0) {
         await trx
-          .insertInto("explanation_languages")
-          .values({
-            language_code: code,
-            name: enDisplayNames.of(code) || code,
-            native_name: nativeDisplayNames.of(code) || code,
-            explanation_count: stats.explanationCount,
-            user_preference_count: stats.userCount,
-            updated_at: new Date(),
-          })
+          .deleteFrom("explanation_languages")
+          .where("language_code", "in", languagesToDelete)
           .execute();
+      }
+
+      // Iterate through new stats to update or insert
+      for (const [code, stats] of newStatsMap.entries()) {
+        const existingLang = existingLanguagesMap.get(code);
+
+        let enNameGetter: (c: string) => string | undefined;
+        let nativeNameGetter: (c: string) => string | undefined;
+        try {
+          const enDisplayNames = new Intl.DisplayNames(["en"], {
+            type: "language",
+          });
+          enNameGetter = (c) => enDisplayNames.of(c) || undefined;
+        } catch {
+          enNameGetter = () => undefined;
+        }
+        try {
+          const nativeDisplayNames = new Intl.DisplayNames([code], {
+            type: "language",
+          });
+          nativeNameGetter = (c) => nativeDisplayNames.of(c) || undefined;
+        } catch {
+          nativeNameGetter = () => undefined;
+        }
+
+        const name = enNameGetter(code) || code;
+        const native_name = nativeNameGetter(code) || code;
+
+        if (existingLang) {
+          // UPDATE existing language
+          await trx
+            .updateTable("explanation_languages")
+            .set({
+              name,
+              native_name,
+              explanation_count: stats.explanationCount,
+              user_preference_count: stats.userCount,
+              updated_at: new Date(),
+              // `is_default` and `is_enabled` are preserved
+            })
+            .where("language_code", "=", code)
+            .execute();
+        } else {
+          // INSERT new language
+          await trx
+            .insertInto("explanation_languages")
+            .values({
+              language_code: code,
+              name,
+              native_name,
+              explanation_count: stats.explanationCount,
+              user_preference_count: stats.userCount,
+              updated_at: new Date(),
+              // `is_default` and `is_enabled` will use their DB default values
+            })
+            .execute();
+        }
       }
     });
 
