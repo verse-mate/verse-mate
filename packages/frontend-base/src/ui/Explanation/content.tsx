@@ -60,6 +60,7 @@ export const Content = ({
                   ? explanation.explanation
                   : ""
               }
+              language={explanation.language_code}
               className={styles.markdown}
             />
           </MarkdownRenderer.Root>
