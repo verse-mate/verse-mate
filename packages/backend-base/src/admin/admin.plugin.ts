@@ -483,13 +483,13 @@ const plugin = new Elysia()
               const bibleService = store.getBibleService();
               return await bibleService.setActiveExplanationsAsDefault({
                 ...body,
-                language_code: body.bibleVersion,
+                language_code: body.languageCode,
               });
             },
             {
               body: t.Object({
                 isBibleBatch: t.Boolean(),
-                bibleVersion: t.String(),
+                languageCode: t.String(),
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
@@ -501,13 +501,13 @@ const plugin = new Elysia()
               const bibleService = store.getBibleService();
               return await bibleService.setDefaultExplanationsAsActive({
                 ...body,
-                language_code: body.bibleVersion,
+                language_code: body.languageCode,
               });
             },
             {
               body: t.Object({
                 isBibleBatch: t.Boolean(),
-                bibleVersion: t.String(),
+                languageCode: t.String(),
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
@@ -519,13 +519,13 @@ const plugin = new Elysia()
               const bibleService = store.getBibleService();
               return await bibleService.setSpecificExplanationVersionAsActive({
                 ...body,
-                language_code: body.bibleVersion,
+                language_code: body.languageCode,
               });
             },
             {
               body: t.Object({
                 isBibleBatch: t.Boolean(),
-                bibleVersion: t.String(),
+                languageCode: t.String(),
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
                 version: t.Number(),
@@ -538,13 +538,13 @@ const plugin = new Elysia()
               const bibleService = store.getBibleService();
               return await bibleService.deleteInactiveExplanations({
                 ...body,
-                language_code: body.bibleVersion,
+                language_code: body.languageCode,
               });
             },
             {
               body: t.Object({
                 isBibleBatch: t.Boolean(),
-                bibleVersion: t.String(),
+                languageCode: t.String(),
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
@@ -560,7 +560,7 @@ const plugin = new Elysia()
               const bibleService = store.getBibleService();
               return await bibleService.getExplanationsByFilter({
                 isBibleBatch: query.isBibleBatch === "true",
-                language_code: query.bibleVersion,
+                language_code: query.languageCode,
                 bookName: query.bookName,
                 chapter: query.chapter ? Number(query.chapter) : "all",
                 limit: query.limit ? Number(query.limit) : 50,
@@ -570,7 +570,7 @@ const plugin = new Elysia()
             {
               query: t.Object({
                 isBibleBatch: t.String(),
-                bibleVersion: t.String(),
+                languageCode: t.String(),
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.String()),
                 limit: t.Optional(t.String()),

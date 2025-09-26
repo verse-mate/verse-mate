@@ -12,6 +12,7 @@ type SystemPrompt = {
   prompt_id: number;
   prompt: string;
   status: string;
+  prompt_type: string;
 };
 
 type UserPrompt = {
@@ -249,6 +250,7 @@ export const PromptManagement = () => {
       prompt_id: 0,
       prompt: activeSystemPrompt ? activeSystemPrompt.prompt : "",
       status: "inactive",
+      prompt_type: "explanation",
     }); // Dummy prompt for modal
   };
 
@@ -350,7 +352,7 @@ export const PromptManagement = () => {
                   }}
                   className={`${styles.listItemButton} ${prompt.status === PromptStatusEnum.active ? styles.active : ""}`}
                 >
-                  System Prompt {prompt.prompt_id} - {prompt.status}
+                  {prompt.prompt_id} - {prompt.prompt_type} - {prompt.status}
                 </button>
                 <button
                   type="button"

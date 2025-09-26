@@ -24,6 +24,7 @@ interface Explanation {
   created_by_admin: boolean;
   version: number;
   created_at: Date;
+  language_code: string;
 }
 
 export const Explanations = () => {
@@ -35,6 +36,10 @@ export const Explanations = () => {
   const [selectedBibleVersion, setSelectedBibleVersion] =
     useState<string>("NASB1995");
   const [versionToSetActive, setVersionToSetActive] = useState("");
+  const [availableLanguages, setAvailableLanguages] = useState<
+    { code: string; name: string; nativeName: string }[]
+  >([]);
+  const [selectedLanguage, setSelectedLanguage] = useState("en-US");
 
   // Modal state
   const [selectedExplanation, setSelectedExplanation] =
@@ -44,6 +49,7 @@ export const Explanations = () => {
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
   const [chapterDropdownOpen, setChapterDropdownOpen] = useState(false);
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
 
   const [isBibleBatch, setIsBibleBatch] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -67,6 +73,26 @@ export const Explanations = () => {
     (version) => version.key === selectedBibleVersion,
   );
 
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      try {
+        const response = await api.admin.explanations.languages.get();
+        if (response.data) {
+          const mappedLanguages = (response.data as any[]).map((lang) => ({
+            code: lang.language_code,
+            name: lang.name,
+            nativeName: lang.native_name,
+          }));
+          setAvailableLanguages(mappedLanguages);
+        }
+      } catch (error) {
+        console.error("Failed to fetch available languages:", error);
+      }
+    };
+
+    fetchLanguages();
+  }, []);
+
   const fetchExplanations = useCallback(async () => {
     if (!isBibleBatch && !selectedBook) {
       setExplanations([]);
@@ -79,7 +105,7 @@ export const Explanations = () => {
       const response = await api.admin.explanations.get({
         query: {
           isBibleBatch: String(isBibleBatch),
-          bibleVersion: selectedBibleVersion,
+          languageCode: selectedLanguage,
           bookName: isBibleBatch ? undefined : selectedBook || undefined,
           chapter: String(isBibleBatch ? "all" : selectedChapter),
           limit: String(itemsPerPage),
@@ -104,7 +130,7 @@ export const Explanations = () => {
     isBibleBatch,
     selectedBook,
     selectedChapter,
-    selectedBibleVersion,
+    selectedLanguage,
     currentPage,
     itemsPerPage,
   ]);
@@ -125,7 +151,7 @@ export const Explanations = () => {
     try {
       const response = await api.admin.explanations.inactive.delete({
         isBibleBatch,
-        bibleVersion: selectedBibleVersion,
+        languageCode: selectedLanguage,
         bookName: isBibleBatch ? undefined : selectedBook || undefined,
         chapter: isBibleBatch ? "all" : selectedChapter,
       });
@@ -149,7 +175,7 @@ export const Explanations = () => {
       const response = await api.admin.explanations["set-defaults-active"].post(
         {
           isBibleBatch,
-          bibleVersion: selectedBibleVersion,
+          languageCode: selectedLanguage,
           bookName: isBibleBatch ? undefined : selectedBook || undefined,
           chapter: isBibleBatch ? "all" : selectedChapter,
         },
@@ -175,7 +201,7 @@ export const Explanations = () => {
         "set-active-as-default"
       ].post({
         isBibleBatch,
-        bibleVersion: selectedBibleVersion,
+        languageCode: selectedLanguage,
         bookName: isBibleBatch ? undefined : selectedBook || undefined,
         chapter: isBibleBatch ? "all" : selectedChapter,
       });
@@ -204,7 +230,7 @@ export const Explanations = () => {
         "set-specific-version-active"
       ].post({
         isBibleBatch,
-        bibleVersion: selectedBibleVersion,
+        languageCode: selectedLanguage,
         bookName: isBibleBatch ? undefined : selectedBook || undefined,
         chapter: isBibleBatch ? "all" : selectedChapter,
         version: Number(versionToSetActive),
@@ -265,6 +291,14 @@ export const Explanations = () => {
       property: "type",
       className: styles.typeColumn,
       render: (exp) => <span className={styles.nowrapColumn}>{exp.type}</span>,
+    },
+    {
+      title: "Language",
+      property: "language_code",
+      className: styles.languageColumn,
+      render: (exp) => (
+        <span className={styles.nowrapColumn}>{exp.language_code}</span>
+      ),
     },
     {
       title: "Explanation",
@@ -346,7 +380,7 @@ export const Explanations = () => {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr",
             gap: "20px",
             marginBottom: "20px",
           }}
@@ -456,7 +490,53 @@ export const Explanations = () => {
                 fontWeight: "bold",
               }}
             >
-              Bible Version:
+              Language:
+            </label>
+            <SelectDropdown.Root
+              open={languageDropdownOpen}
+              onOpenChange={setLanguageDropdownOpen}
+              onValueChange={(val) => setSelectedLanguage(val)}
+            >
+              <SelectDropdown.Trigger
+                selectedBook={null}
+                selectedVerse={null}
+                defaultPlaceholder={
+                  availableLanguages.find(
+                    (lang) => lang.code === selectedLanguage,
+                  )?.name || "Select Language"
+                }
+                icon={<ChevronDownIcon />}
+              />
+              <SelectDropdown.Content
+                align="start"
+                style={{
+                  width: "300px",
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                }}
+              >
+                {availableLanguages.map((language) => (
+                  <SelectDropdown.Item
+                    key={language.code}
+                    value={language.code}
+                    icon={<CheckIcon />}
+                  >
+                    {language.name} ({language.nativeName})
+                  </SelectDropdown.Item>
+                ))}
+              </SelectDropdown.Content>
+            </SelectDropdown.Root>
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              Bible Version (for Actions):
             </label>
             <SelectDropdown.Root
               open={versionDropdownOpen}
