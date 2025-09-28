@@ -1,6 +1,8 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { db } from "../../shared/shared.plugin";
+import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
 import type { LastChapterReadDto } from "../dto/book/last-chapter-read.dto";
@@ -8,6 +10,11 @@ import type { RatingDto } from "../dto/book/rating.dto";
 import type { SubtitlesDto } from "../dto/book/subtitles.dto";
 import type { TestamentDto } from "../dto/book/testament.dto";
 import type { VersesDto } from "../dto/book/verses.dto";
+import type { CreateHighlightServiceDto } from "../dto/highlight/create-highlight-service.dto";
+import type { DeleteHighlightDto } from "../dto/highlight/delete-highlight.dto";
+import type { GetChapterHighlightsServiceDto } from "../dto/highlight/get-chapter-highlights-service.dto";
+import type { GetHighlightsServiceDto } from "../dto/highlight/get-highlights-service.dto";
+import type { UpdateHighlightDto } from "../dto/highlight/update-highlight.dto";
 import type { UserDto } from "../dto/user/user.dto";
 import type { BibleRepository } from "../repository/bible.repository";
 
@@ -83,22 +90,29 @@ export class BibleService {
 
     if (!chapter_id) return { success: false };
 
-    const { explanation: explanations } =
+    // Get language_code from version_id
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("id", "=", version_id)
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!version) return { success: false };
+
+    const { explanation: existingExplanation } =
       await this.bibleRepository.getExplanation({
         book_id,
         chapter_number,
-        version_id,
+        language_code: version.language_code,
       });
-    const explanationTypeExists = explanations.some(
-      (explanation) => explanation.type === type,
-    );
-    if (explanationTypeExists) return { success: true };
+    if (existingExplanation?.type === type) return { success: true };
 
     const { success } = await this.bibleRepository.saveExplanation({
       type,
       explanation,
       chapter_id: chapter_id,
-      version_id,
+      language_code: version.language_code,
     });
 
     return { success };
@@ -108,19 +122,57 @@ export class BibleService {
     book_id,
     chapter_number,
     version_id,
+    user_id,
+    type,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     version_id: string;
+    user_id?: string;
+    type?: ExplanationTypeEnum;
   }) {
+    // Get language_code from version_id
+    const version = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("id", "=", version_id)
+      .select(["language_code", "version_key"])
+      .executeTakeFirst();
+
+    if (!version) {
+      return null;
+    }
+
+    let language_code = version.language_code;
+
+    if (user_id) {
+      const user = await this.db
+        .getOrCreateConnection()
+        .selectFrom("user")
+        .where("id", "=", user_id)
+        .select("preferred_language")
+        .executeTakeFirst();
+
+      if (user?.preferred_language) {
+        language_code = user.preferred_language;
+      }
+    }
+
     const { explanation } = await this.bibleRepository.getExplanation({
       book_id,
       chapter_number,
-      version_id,
+      language_code,
+      type,
     });
 
-    const explanationExists = this.explanationExists({ explanation });
+    if (!explanation?.explanation_id) {
+      return null;
+    }
 
-    if (explanationExists) {
-      return [];
+    if (explanation.explanation) {
+      explanation.explanation = await parseAndInjectVerses(
+        explanation.explanation,
+        version.version_key,
+        this.db,
+      );
     }
 
     return explanation;
@@ -407,6 +459,172 @@ export class BibleService {
     return { success };
   }
 
+  /**
+   * Verse Highlight Methods
+   */
+  async getUserHighlights({ user_id, chapter_id }: GetHighlightsServiceDto) {
+    console.log("Service: Getting highlights for user:", user_id);
+    if (chapter_id) {
+      console.log("Service: Filtering by chapter:", chapter_id);
+    }
+
+    try {
+      const { highlights } = await this.bibleRepository.getHighlights({
+        user_id,
+        chapter_id,
+      });
+
+      console.log("Service: Retrieved highlights count:", highlights.length);
+      return { highlights };
+    } catch (error) {
+      console.error("Error in getUserHighlights:", error);
+      return { highlights: [] };
+    }
+  }
+
+  async createHighlight({
+    user_id,
+    book_id,
+    chapter_number,
+    start_verse,
+    end_verse,
+    color = "yellow" as HighlightColorEnum,
+    start_char,
+    end_char,
+    selected_text,
+  }: CreateHighlightServiceDto) {
+    console.log(
+      "Service: Creating highlight for user:",
+      user_id,
+      "book:",
+      book_id,
+      "chapter:",
+      chapter_number,
+      "verses:",
+      start_verse,
+      "-",
+      end_verse,
+    );
+
+    // Validate verse range
+    if (start_verse > end_verse) {
+      return { success: false, error: "Invalid verse range" };
+    }
+
+    // Get chapter_id
+    const { chapter_id } = await this.bibleRepository.getChapterId({
+      book_id,
+      chapter_number,
+    });
+
+    if (!chapter_id) {
+      return { success: false, error: "Chapter not found" };
+    }
+
+    // Check for overlaps
+    const { hasOverlap, overlaps } =
+      await this.bibleRepository.checkHighlightOverlap({
+        user_id,
+        chapter_id,
+        start_verse,
+        end_verse,
+      });
+
+    if (hasOverlap) {
+      console.log("Service: Highlight overlap detected");
+      return {
+        success: false,
+        error: "Highlight overlaps with existing highlights",
+        overlaps,
+      };
+    }
+
+    // Add the highlight
+    const { highlight, success } = await this.bibleRepository.addHighlight({
+      user_id,
+      chapter_id,
+      start_verse,
+      end_verse,
+      color,
+      start_char,
+      end_char,
+      selected_text,
+    });
+
+    return { highlight, success };
+  }
+
+  async updateHighlightColor({
+    highlight_id,
+    user_id,
+    color,
+  }: UpdateHighlightDto) {
+    console.log(
+      "Service: Updating highlight color:",
+      highlight_id,
+      "for user:",
+      user_id,
+      "to color:",
+      color,
+    );
+
+    const { highlight, success } = await this.bibleRepository.updateHighlight({
+      highlight_id,
+      user_id,
+      color,
+    });
+
+    return { highlight, success };
+  }
+
+  async deleteHighlight({ highlight_id, user_id }: DeleteHighlightDto) {
+    console.log(
+      "Service: Deleting highlight:",
+      highlight_id,
+      "for user:",
+      user_id,
+    );
+
+    const { success } = await this.bibleRepository.removeHighlight({
+      highlight_id,
+      user_id,
+    });
+
+    return { success };
+  }
+
+  async getChapterHighlights({
+    user_id,
+    book_id,
+    chapter_number,
+  }: GetChapterHighlightsServiceDto) {
+    console.log(
+      "Service: Getting chapter highlights for user:",
+      user_id,
+      "book:",
+      book_id,
+      "chapter:",
+      chapter_number,
+    );
+
+    // Get chapter_id
+    const { chapter_id } = await this.bibleRepository.getChapterId({
+      book_id,
+      chapter_number,
+    });
+
+    if (!chapter_id) {
+      return { highlights: [] };
+    }
+
+    const { highlights } = await this.bibleRepository.getHighlights({
+      user_id,
+      chapter_id,
+    });
+
+    return { highlights };
+  }
+
   private formattedBook({
     book,
     chapter,
@@ -465,5 +683,431 @@ export class BibleService {
     return explanation.some(
       (bookExplanation) => bookExplanation.explanation_id === null,
     );
+  }
+
+  async deleteInactiveExplanations(options: {
+    isBibleBatch: boolean;
+    language_code: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, language_code, bookName, chapter } = options;
+
+    if (!isBibleBatch && !bookName) {
+      throw new Error("Book name is required for non-bible batch deletions.");
+    }
+
+    const result = await this.bibleRepository.deleteInactiveExplanations({
+      language_code,
+      bookName: isBibleBatch ? undefined : bookName,
+      chapter: isBibleBatch ? undefined : chapter,
+    });
+
+    return {
+      message: `Successfully deleted ${result.deletedCount} inactive explanations.`,
+      deletedCount: result.deletedCount,
+    };
+  }
+
+  async setDefaultExplanationsAsActive(options: {
+    isBibleBatch: boolean;
+    language_code: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, language_code, bookName, chapter } = options;
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        activatedCount: 0,
+      };
+    }
+
+    const result = await this.bibleRepository.setDefaultExplanationsAsActive({
+      language_code,
+      chapterIds,
+    });
+
+    return {
+      message: `Successfully activated ${result.activatedCount} default explanations.`,
+      activatedCount: result.activatedCount,
+    };
+  }
+
+  async setActiveExplanationsAsDefault(options: {
+    isBibleBatch: boolean;
+    language_code: string;
+    bookName?: string;
+    chapter?: number | "all";
+  }) {
+    const { isBibleBatch, language_code, bookName, chapter } = options;
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        promotedCount: 0,
+      };
+    }
+
+    const result = await this.bibleRepository.setActiveExplanationsAsDefault({
+      language_code,
+      chapterIds,
+    });
+
+    return {
+      message: `Successfully promoted ${result.promotedCount} active explanations to default.`,
+      promotedCount: result.promotedCount,
+    };
+  }
+
+  async setSpecificExplanationVersionAsActive(options: {
+    isBibleBatch: boolean;
+    language_code: string;
+    bookName?: string;
+    chapter?: number | "all";
+    version: number;
+  }) {
+    const { isBibleBatch, language_code, bookName, chapter, version } = options;
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        throw new Error(
+          "Book name is required for non-bible batch operations.",
+        );
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    if (chapterIds.length === 0) {
+      return {
+        message: "No chapters found for the selected criteria.",
+        updatedCount: 0,
+      };
+    }
+
+    const result =
+      await this.bibleRepository.setSpecificExplanationVersionAsActive({
+        language_code,
+        chapterIds,
+        version,
+      });
+
+    return {
+      message: `Successfully set version ${version} as active for ${result.updatedCount} explanations.`,
+      updatedCount: result.updatedCount,
+    };
+  }
+
+  async getExplanationsByFilter(options: {
+    isBibleBatch: boolean;
+    language_code: string;
+    bookName?: string;
+    chapter?: number | "all";
+    limit: number;
+    offset: number;
+  }) {
+    const { isBibleBatch, language_code, bookName, chapter, limit, offset } =
+      options;
+
+    let chapterIdsQuery = this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .select("chapter_id");
+
+    if (!isBibleBatch) {
+      if (!bookName) {
+        // If not searching the whole bible, a book must be selected.
+        // Return empty array as there's nothing to show.
+        return { explanations: [], total: 0 };
+      }
+      const book = await this.db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        throw new Error(`Book ${bookName} not found.`);
+      }
+
+      chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
+
+      if (chapter && chapter !== "all") {
+        chapterIdsQuery = chapterIdsQuery.where("chapter_number", "=", chapter);
+      }
+    }
+
+    const chapterIdsResult = await chapterIdsQuery.execute();
+    const chapterIds = chapterIdsResult.map((c) => c.chapter_id);
+
+    return this.bibleRepository.getExplanationsByFilter({
+      language_code,
+      chapterIds,
+      limit,
+      offset,
+    });
+  }
+
+  async getAvailableExplanationLanguages() {
+    const languages = await this.db
+      .getOrCreateConnection()
+      .selectFrom("explanation_languages")
+      .select(["language_code", "name", "native_name", "explanation_count"])
+      .where("is_enabled", "=", true)
+      .orderBy("explanation_count", "desc")
+      .execute();
+
+    return languages;
+  }
+
+  async getAvailableBibleVersionLanguages() {
+    const languages = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .select("language_code")
+      .distinct()
+      .execute();
+
+    const validLanguageCodes = languages
+      .map((lang) => lang.language_code)
+      .filter((code): code is string => code !== null && code !== "");
+
+    // Use browser's Intl.DisplayNames to get language names
+    const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+
+    return validLanguageCodes.map((code) => {
+      const name = displayNames.of(code) || code;
+      const nativeName =
+        new Intl.DisplayNames([code], { type: "language" }).of(code) || code;
+
+      return {
+        code,
+        name,
+        nativeName,
+      };
+    });
+  }
+
+  async refreshLanguageStats() {
+    const connection = this.db.getOrCreateConnection();
+
+    // Step 1: Get current explanation counts grouped by language
+    const explanationCounts = await connection
+      .selectFrom("explanations")
+      .select([
+        "language_code",
+        (eb) => eb.fn.count("explanation_id").as("count"),
+      ])
+      .where("language_code", "is not", null)
+      .groupBy("language_code")
+      .execute();
+
+    // Step 2: Get current user preference counts grouped by language
+    const userPreferenceCounts = await connection
+      .selectFrom("user")
+      .select(["preferred_language", (eb) => eb.fn.count("id").as("count")])
+      .where("preferred_language", "is not", null)
+      .groupBy("preferred_language")
+      .execute();
+
+    // Step 3: Combine the new stats into a single map
+    const newStatsMap = new Map<
+      string,
+      { explanationCount: number; userCount: number }
+    >();
+
+    for (const row of explanationCounts) {
+      if (row.language_code) {
+        newStatsMap.set(row.language_code, {
+          explanationCount: Number(row.count),
+          userCount: 0,
+        });
+      }
+    }
+
+    for (const row of userPreferenceCounts) {
+      if (row.preferred_language) {
+        const stats = newStatsMap.get(row.preferred_language) || {
+          explanationCount: 0,
+          userCount: 0,
+        };
+        stats.userCount = Number(row.count);
+        newStatsMap.set(row.preferred_language, stats);
+      }
+    }
+
+    // Step 4: Get existing languages from the database to preserve flags
+    const existingLanguages = await connection
+      .selectFrom("explanation_languages")
+      .selectAll()
+      .execute();
+    const existingLanguagesMap = new Map(
+      existingLanguages.map((lang) => [lang.language_code, lang]),
+    );
+
+    // Step 5: Reconcile the new stats with the existing languages in a transaction
+    await connection.transaction().execute(async (trx) => {
+      const newLangCodes = new Set(newStatsMap.keys());
+      const existingLangCodes = new Set(existingLanguagesMap.keys());
+
+      // Identify languages to delete
+      const languagesToDelete = [...existingLangCodes].filter(
+        (code) => !newLangCodes.has(code),
+      );
+      if (languagesToDelete.length > 0) {
+        await trx
+          .deleteFrom("explanation_languages")
+          .where("language_code", "in", languagesToDelete)
+          .execute();
+      }
+
+      // Iterate through new stats to update or insert
+      for (const [code, stats] of newStatsMap.entries()) {
+        const existingLang = existingLanguagesMap.get(code);
+
+        let enNameGetter: (c: string) => string | undefined;
+        let nativeNameGetter: (c: string) => string | undefined;
+        try {
+          const enDisplayNames = new Intl.DisplayNames(["en"], {
+            type: "language",
+          });
+          enNameGetter = (c) => enDisplayNames.of(c) || undefined;
+        } catch {
+          enNameGetter = () => undefined;
+        }
+        try {
+          const nativeDisplayNames = new Intl.DisplayNames([code], {
+            type: "language",
+          });
+          nativeNameGetter = (c) => nativeDisplayNames.of(c) || undefined;
+        } catch {
+          nativeNameGetter = () => undefined;
+        }
+
+        const name = enNameGetter(code) || code;
+        const native_name = nativeNameGetter(code) || code;
+
+        if (existingLang) {
+          // UPDATE existing language
+          await trx
+            .updateTable("explanation_languages")
+            .set({
+              name,
+              native_name,
+              explanation_count: stats.explanationCount,
+              user_preference_count: stats.userCount,
+              updated_at: new Date(),
+              // `is_default` and `is_enabled` are preserved
+            })
+            .where("language_code", "=", code)
+            .execute();
+        } else {
+          // INSERT new language
+          await trx
+            .insertInto("explanation_languages")
+            .values({
+              language_code: code,
+              name,
+              native_name,
+              explanation_count: stats.explanationCount,
+              user_preference_count: stats.userCount,
+              updated_at: new Date(),
+              // `is_default` and `is_enabled` will use their DB default values
+            })
+            .execute();
+        }
+      }
+    });
+
+    return { success: true, message: "Language stats refreshed successfully." };
   }
 }

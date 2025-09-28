@@ -4,6 +4,7 @@ import { Button } from "../../Button/Button";
 import { HomeIcon } from "../../Icons";
 import { BatchOperations } from "../BatchOperations/BatchOperations";
 import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration";
+import { Explanations } from "../Explanations/Explanations";
 import { Playground } from "../Playground/Playground";
 import { PromptManagement } from "../PromptManagement/PromptManagement";
 import { UserManagement } from "../UserManagement/UserManagement";
@@ -11,10 +12,11 @@ import styles from "./AdminDashboard.module.css";
 
 type AdminSection =
   | "batch"
-  | "explanations"
+  | "explanation-regeneration"
   | "users"
   | "prompts"
-  | "playground";
+  | "playground"
+  | "explanations";
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("batch");
@@ -23,7 +25,7 @@ export const AdminDashboard = () => {
     switch (activeSection) {
       case "batch":
         return <BatchOperations />;
-      case "explanations":
+      case "explanation-regeneration":
         return <ExplanationRegeneration />;
       case "users":
         return <UserManagement />;
@@ -31,6 +33,8 @@ export const AdminDashboard = () => {
         return <PromptManagement />;
       case "playground":
         return <Playground />;
+      case "explanations":
+        return <Explanations />;
       default:
         return <BatchOperations />;
     }
@@ -50,11 +54,21 @@ export const AdminDashboard = () => {
             </Button>
             <Button
               variant={
+                activeSection === "explanation-regeneration"
+                  ? "contained"
+                  : "outlined"
+              }
+              onClick={() => setActiveSection("explanation-regeneration")}
+            >
+              Explanation Regeneration
+            </Button>
+            <Button
+              variant={
                 activeSection === "explanations" ? "contained" : "outlined"
               }
               onClick={() => setActiveSection("explanations")}
             >
-              Explanation Regeneration
+              Explanations
             </Button>
             <Button
               variant={activeSection === "users" ? "contained" : "outlined"}

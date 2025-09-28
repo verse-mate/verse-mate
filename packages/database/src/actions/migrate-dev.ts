@@ -1,8 +1,13 @@
-const migrateDev = () => {
+const migrateDev = (name?: string) => {
+  const migrationName = name
+    ? name.replace(/\s+/g, "-").toLowerCase()
+    : "new-migration";
+  const fileName = `${String(new Date().toISOString())
+    .replace(/[^0-9]/g, "")
+    .slice(0, 14)}-${migrationName}.ts`;
+
   Bun.write(
-    `./migrations/${String(new Date().toISOString())
-      .replace(/[^0-9]/g, "")
-      .slice(0, 14)}-new-migration.ts`,
+    `./migrations/${fileName}`,
     `import { Kysely } from "kysely";
   
   import Database from "../src/models/Database";

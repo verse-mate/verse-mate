@@ -158,7 +158,7 @@ export class ExplanationRegenerationService {
         .selectFrom("explanations")
         .where("chapter_id", "=", chapter_id)
         .where("type", "=", explanationType)
-        .where("version_id", "=", version.id)
+        .where("language_code", "=", version.language_code)
         .select("explanation_id")
         .executeTakeFirst();
 

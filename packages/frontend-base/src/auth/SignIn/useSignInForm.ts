@@ -8,6 +8,7 @@ import { z } from "zod";
 import { api } from "backend-api";
 import useMutation from "../../hooks/useMutation";
 import { setCookie } from "../../utils/auth-utils";
+import { type ErrorState, processError } from "../../utils/error-handling";
 import { ACCESS_TOKEN_COOKIE, zodEmail } from "../lib";
 
 export interface SignInData {
@@ -26,10 +27,10 @@ const schema = z.object({
 import { useGetSearchParams } from "../../hooks/useSearchParams";
 
 export function useSignInForm() {
-  const [backendError, setBackendError] = useState<string | undefined>(
+  const [backendError, setBackendError] = useState<ErrorState | undefined>(
     undefined,
   );
-  const { bookId, verseId } = useGetSearchParams();
+  const { bookId, verseId, explanationType } = useGetSearchParams();
 
   const { handleSubmit, register, formState, getValues } = useForm<SignInData>({
     resolver: zodResolver(schema),
@@ -50,12 +51,9 @@ export function useSignInForm() {
     onError: (error) => {
       console.error({ error });
 
-      let errorMessage = "Something went wrong.";
-
-      if (error.value === "INVALID_USER") {
-        errorMessage = "Email and password combination do not match.";
-      }
-      setBackendError(errorMessage);
+      // Use enhanced error processing with debugging
+      const errorState = processError(error, "SignIn");
+      setBackendError(errorState);
     },
   });
 
@@ -65,6 +63,7 @@ export function useSignInForm() {
         "redirectTo",
         `/?bookId=${bookId}&verseId=${verseId}`,
       );
+      localStorage.setItem("postLoginExplanationType", explanationType);
     }
     await login({
       email,

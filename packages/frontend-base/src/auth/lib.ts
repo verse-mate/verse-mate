@@ -9,7 +9,7 @@ export const regex = {
   locale: /[\w]+/gm,
   url: /[\w]+/gm,
 
-  PASSWORD_REGEX: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$/,
+  PASSWORD_REGEX: /^(?=.*[A-Za-z])(?=.*\d).{8,}$/,
 
   PASSWORD_MIN_LENGTH_REGEX: /^.{8,}$/,
   PASSWORD_AT_LEAST_ONE_SPECIAL: /[@$!%*#?&]/,
