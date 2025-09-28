@@ -1,12 +1,12 @@
 /**
- * Desktop Volunteer Landing Page with Form
+ * Desktop Donate Landing Page with Form
  */
 
 import React, { useState } from "react";
 import Header from "@/sections/desktop/Header";
 import Footer from "@/sections/desktop/Footer";
 
-export default function DesktopVolunteerPage() {
+export default function DesktopDonatePage() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -28,7 +28,7 @@ export default function DesktopVolunteerPage() {
     // Create email body with form data
     const emailBody = `Hi VerseMate Team,
 
-I'm interested in volunteering with VerseMate! Here are my details:
+I'm interested in making a donation to support VerseMate! Here are my details:
 
 First Name: ${formData.firstName}
 Last Name: ${formData.lastName}
@@ -37,13 +37,13 @@ Email: ${formData.email}
 Additional Information:
 ${formData.message || 'No additional information provided.'}
 
-Thank you for considering my application to volunteer!
+Thank you for the opportunity to support your mission!
 
 Best regards,
 ${formData.firstName} ${formData.lastName}`;
 
     // Create mailto URL with subject and body
-    const subject = encodeURIComponent('Volunteer Application - ' + formData.firstName + ' ' + formData.lastName);
+    const subject = encodeURIComponent('Donation Inquiry - ' + formData.firstName + ' ' + formData.lastName);
     const body = encodeURIComponent(emailBody);
     const mailtoUrl = `mailto:info@versemate.org?subject=${subject}&body=${body}`;
 
@@ -55,7 +55,7 @@ ${formData.firstName} ${formData.lastName}`;
     <div className="min-h-screen">
       <Header />
 
-      {/* Why Versemate Section */}
+      {/* Support VerseMate Section */}
       <div
         style={{
           display: "flex",
@@ -64,8 +64,8 @@ ${formData.firstName} ${formData.lastName}`;
           padding: "96px 120px",
           gap: "64px",
           width: "100vw",
-          height: "672px",
-          background: "linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 100%), url('/ServeWithVersemate.png')",
+          height: "736px",
+          background: "linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 100%), url('/give.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           borderRadius: "0px",
@@ -85,7 +85,7 @@ ${formData.firstName} ${formData.lastName}`;
             alignItems: "center",
             padding: "8px 0px",
             gap: "8px",
-            width: "348px",
+            width: "307px",
             height: "48px",
             borderBottom: "6px solid #C2B291",
             flex: "none",
@@ -95,7 +95,7 @@ ${formData.firstName} ${formData.lastName}`;
         >
           <div
             style={{
-              width: "368px",
+              width: "327px",
               height: "32px",
               fontFamily: "Inter",
               fontStyle: "normal",
@@ -111,7 +111,7 @@ ${formData.firstName} ${formData.lastName}`;
               flexGrow: 0
             }}
           >
-            SERVE WITH VERSEMATE
+            SUPPORT VERSEMATE
           </div>
         </div>
 
@@ -124,7 +124,7 @@ ${formData.firstName} ${formData.lastName}`;
             padding: "0px",
             gap: "16px",
             width: "1200px",
-            height: "368px",
+            height: "432px",
             flex: "none",
             order: 1,
             alignSelf: "stretch",
@@ -135,7 +135,7 @@ ${formData.firstName} ${formData.lastName}`;
           <div
             style={{
               width: "1200px",
-              height: "128px",
+              height: "64px",
               fontFamily: "Merriweather",
               fontStyle: "normal",
               fontWeight: 700,
@@ -148,14 +148,14 @@ ${formData.firstName} ${formData.lastName}`;
               flexGrow: 0
             }}
           >
-            Versemate exists to help people everywhere truly understand God's Word - not just read it.
+            Help People Everywhere Engage with God's Word
           </div>
 
           {/* Description text */}
           <div
             style={{
               width: "1200px",
-              height: "224px",
+              height: "352px",
               fontFamily: "Inter",
               fontStyle: "normal",
               fontWeight: 300,
@@ -172,13 +172,13 @@ ${formData.firstName} ${formData.lastName}`;
             }}
           >
             <p style={{ margin: 0 }}>
-              Every day, volunteers play a vital role in making this mission possible.
+              Your generosity helps us create resources and tools that make Scripture clear and accessible to people worldwide. Every gift you give makes a direct impact—whether it's supporting the translation of content, improving our technology, or helping us reach new communities with the truth of God's Word.
             </p>
             <p style={{ margin: 0 }}>
-              God created you with unique gifts, passions, and talents. When you serve with Versemate, you'll use them to help others encounter Scripture clearly and grow deeper in faith.
+              Through your partnership, VerseMate can continue developing simple, powerful tools that guide people not only to read the Bible, but to truly understand and apply it in their daily lives. We believe that when people engage Scripture with clarity, transformation follows—families are encouraged, faith grows stronger, and entire communities can be renewed.
             </p>
             <p style={{ margin: 0 }}>
-              Whether you love languages, prayer, or problem-solving, there's a place for you here. And don't worry - we'll provide training and support so you can serve with confidence.
+              Thank you for prayerfully considering a gift to VerseMate. Together, we can equip more people across languages and cultures to connect with God's Word in a deeper way.
             </p>
           </div>
         </div>
@@ -193,7 +193,7 @@ ${formData.firstName} ${formData.lastName}`;
           padding: "96px 120px",
           gap: "64px",
           width: "100vw",
-          minHeight: "936px",
+          minHeight: "912px",
           background: "#FFFFFF",
           flex: "none",
           order: 2,
@@ -209,7 +209,7 @@ ${formData.firstName} ${formData.lastName}`;
             padding: "0px",
             gap: "40px",
             width: "600px",
-            height: "744px",
+            height: "720px",
             flex: "none",
             order: 0,
             flexGrow: 0
@@ -224,7 +224,7 @@ ${formData.firstName} ${formData.lastName}`;
               padding: "0px",
               gap: "16px",
               width: "600px",
-              height: "144px",
+              height: "120px",
               flex: "none",
               order: 0,
               alignSelf: "stretch",
@@ -233,7 +233,7 @@ ${formData.firstName} ${formData.lastName}`;
           >
             <h2
               style={{
-                width: "419px",
+                width: "402px",
                 height: "32px",
                 fontFamily: "Inter",
                 fontStyle: "normal",
@@ -247,12 +247,12 @@ ${formData.firstName} ${formData.lastName}`;
                 margin: 0
               }}
             >
-              Join the VerseMate Volunteer Team
+              Connect With Us About Donations
             </h2>
             <p
               style={{
-                width: "600px",
-                height: "96px",
+                width: "640px",
+                height: "72px",
                 fontFamily: "Inter",
                 fontStyle: "normal",
                 fontWeight: 300,
@@ -266,13 +266,11 @@ ${formData.firstName} ${formData.lastName}`;
                 margin: 0
               }}
             >
-              We'd love to hear from you! If you're interested in getting involved with{" "}
+              We'd love to hear from you! If you're interested in supporting VerseMate with a{" "}
               <br />
-              VerseMate, please fill out the form below. Tell us a bit about yourself, your{" "}
+              donation, please fill out the form below. One of our team members will connect{" "}
               <br />
-              skills, and what excites you about getting involved. Our team will connect with{" "}
-              <br />
-              you soon to help you find the best fit.
+              with you soon to guide you through the next steps.
             </p>
           </div>
 

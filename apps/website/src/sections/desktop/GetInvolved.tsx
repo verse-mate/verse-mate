@@ -232,8 +232,8 @@ export default function GetInvolvedSection() {
                 flexGrow: 0,
               }}
             >
-              <a
-                href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
+              <Link
+                href="/volunteer"
                 style={{
                   display: "flex",
                   flexDirection: "row",
@@ -269,7 +269,7 @@ export default function GetInvolvedSection() {
                 >
                   Join the Volunteer Team
                 </span>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -419,8 +419,8 @@ export default function GetInvolvedSection() {
                 flexGrow: 0,
               }}
             >
-              <a
-                href="mailto:donations@versemate.org?subject=I want to make a donation&body=Hi, I'm interested in supporting VerseMate with a donation..."
+              <Link
+                href="/give"
                 style={{
                   display: "flex",
                   flexDirection: "row",
@@ -456,7 +456,7 @@ export default function GetInvolvedSection() {
                 >
                   Make a Donation
                 </span>
-              </a>
+              </Link>
             </div>
           </div>
         </div>

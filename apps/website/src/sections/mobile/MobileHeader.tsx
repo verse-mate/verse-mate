@@ -38,8 +38,7 @@ export default function MobileHeader() {
           right: "0px",
           top: "0px",
           zIndex: 1000,
-          background: "transparent",
-          boxShadow: isScrolled ? mobileTokens.effects.shadow.nav : "none",
+          background: "#FFFFFF",
           transition: "all 0.3s ease",
         }}
       >
@@ -64,7 +63,7 @@ export default function MobileHeader() {
               height={32}
               style={{
                 objectFit: "contain",
-                filter: "brightness(0) invert(1)",
+                filter: "brightness(0)",
               }}
             />
           </Link>
@@ -162,8 +161,8 @@ export default function MobileHeader() {
             >
               Home
             </Link>
-            <a
-              href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
+            <Link
+              href="/volunteer"
               onClick={() => setIsMenuOpen(false)}
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
@@ -176,7 +175,7 @@ export default function MobileHeader() {
               }}
             >
               Volunteer
-            </a>
+            </Link>
             <Link
               href="/give"
               onClick={() => setIsMenuOpen(false)}
