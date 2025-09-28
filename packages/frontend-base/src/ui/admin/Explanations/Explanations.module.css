@@ -1,0 +1,154 @@
+.container {
+  padding: 20px;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+/* Table Layout */
+.explanationsTableWrapper table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.explanationsTableWrapper th,
+.explanationsTableWrapper td {
+  vertical-align: middle;
+  padding: 0.75rem 0.5rem;
+}
+
+/* Badges */
+.badgeActive {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.badgeDefault {
+  background-color: #cce5ff;
+  color: #004085;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Column Styles */
+.idColumn {
+  width: 80px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.clickableId {
+  cursor: pointer;
+  color: blue;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+
+.typeColumn {
+  width: 120px;
+  min-width: 100px;
+  text-align: left;
+}
+
+.languageColumn {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+}
+
+.explanationColumn {
+  width: 50%;
+  min-width: 300px;
+  text-align: left;
+}
+
+.statusColumn {
+  width: 150px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.statusContainer {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.versionColumn {
+  width: 80px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.createdColumn {
+  width: 120px;
+  min-width: 120px;
+  text-align: left;
+}
+
+.nowrapColumn {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.paginationControls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Modal Styles */
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.modalDetail {
+  font-size: 14px;
+}
+
+.modalSeparator {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 8px 0;
+}
+
+.modalExplanationText {
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background-color: #f9f9f9;
+  padding: 12px;
+  border-radius: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.wrapText {
+  white-space: normal;
+}

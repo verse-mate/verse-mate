@@ -2,19 +2,21 @@ import bearer from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
 import PromptStatusEnum from "../../../database/src/models/public/PromptStatusEnum";
 import { adminGuard } from "../auth/admin.utils";
-import { authDerive } from "../auth/auth.utils";
+import { authDerive, authGuard } from "../auth/auth.utils";
+import { BibleRepository } from "../bible/repository/bible.repository";
+import { BibleService } from "../bible/services/bible.service";
+import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { AdminDatabaseService } from "./services/admin-database.service";
 import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
-import { batchProcessingQueue } from "../queue/batch-processing.queue";
-
 const plugin = new Elysia()
   .use(shared)
   .state("batchProcessingQueue", batchProcessingQueue)
   .state((state) => {
+    const bibleRepository = new BibleRepository(state.db);
     return {
       ...state,
       getBatchOperationService: () =>
@@ -27,8 +29,67 @@ const plugin = new Elysia()
       getExplanationRegenerationService: () =>
         new ExplanationRegenerationService(state.db),
       getAdminPromptService: () => new AdminPromptService(state.db),
+      getBibleService: () => new BibleService(state.db, bibleRepository),
     };
   })
+  .guard((app) =>
+    app
+      .use(bearer())
+      .resolve({ as: "scoped" }, authDerive)
+      .group("/user", (app) =>
+        app.guard(authGuard).patch(
+          "/preferences",
+          async ({ body, currentUserId, store: { db } }) => {
+            const result = await db
+              .getOrCreateConnection()
+              .updateTable("user")
+              .set({ preferred_language: body.preferred_language })
+              .where("id", "=", currentUserId)
+              .executeTakeFirst();
+
+            if (result.numUpdatedRows === BigInt(0)) {
+              throw new Error(`User ${currentUserId} not found`);
+            }
+
+            return {
+              success: true,
+              message: `User ${currentUserId} preferences updated`,
+            };
+          },
+          {
+            body: t.Object({
+              preferred_language: t.Union([t.String(), t.Null()]),
+            }),
+          },
+        ),
+      )
+      .group("/admin", (app) =>
+        app
+          .guard(adminGuard)
+          .get("/explanations/languages", async ({ store }) => {
+            const bibleService = store.getBibleService();
+            return await bibleService.getAvailableExplanationLanguages();
+          })
+          .post("/explanations/refresh-language-stats", async ({ store }) => {
+            const bibleService = store.getBibleService();
+            return await bibleService.refreshLanguageStats();
+          })
+          .get("/users", async ({ store: { db } }) => {
+            return await db
+              .getOrCreateConnection()
+              .selectFrom("user")
+              .select([
+                "id",
+                "email",
+                "firstName",
+                "lastName",
+                "is_admin",
+                "createdAt",
+              ])
+              .execute();
+          }),
+      ),
+  )
   .guard((app) => {
     return app
       .use(bearer())
@@ -79,6 +140,9 @@ const plugin = new Elysia()
           .post(
             "/batch-explanations",
             async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const batchOperationService = store.getBatchOperationService();
 
               if (body.type === "book") {
@@ -146,6 +210,76 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/batch-rephrase",
+            async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateRephraseBatch(
+                body.model,
+                currentUserId,
+                body.type,
+                body.bibleVersion,
+                body.effort || "medium",
+                body.bookName,
+              );
+            },
+            {
+              body: t.Object({
+                type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                bookName: t.Optional(t.String()),
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+                bibleVersion: t.String(),
+              }),
+            },
+          )
+          .post(
+            "/batch-translate",
+            async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTranslateBatch(
+                body.model,
+                currentUserId,
+                body.type,
+                body.source_language_code,
+                body.target_language_code,
+                body.explanationTypes,
+                body.skipExisting || false,
+                body.effort || "medium",
+                body.bookName,
+              );
+            },
+            {
+              body: t.Object({
+                type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                bookName: t.Optional(t.String()),
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+                source_language_code: t.String(),
+                target_language_code: t.String(),
+                explanationTypes: t.Array(t.String()),
+                skipExisting: t.Optional(t.Boolean()),
+              }),
+            },
+          )
           .get(
             "/batch/:batchJobId",
             async ({ params, store }) => {
@@ -179,7 +313,9 @@ const plugin = new Elysia()
               return await batchOperationService.getAllBatches(
                 query.limit ? Number(query.limit) : 50,
                 query.offset ? Number(query.offset) : 0,
-                query.adminOnly === "true" ? currentUserId : undefined,
+                query.adminOnly === "true"
+                  ? currentUserId || undefined
+                  : undefined,
               );
             },
             {
@@ -218,6 +354,10 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post("/batches/monitor-all", async ({ store }) => {
+            const batchOperationService = store.getBatchOperationService();
+            return await batchOperationService.monitorAllActiveBatches();
+          })
           .get(
             "/batch-summary/:parentId",
             async ({ params, store }) => {
@@ -240,6 +380,9 @@ const plugin = new Elysia()
           .post(
             "/explanation/regenerate",
             async ({ body, store, currentUserId }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const adminDatabaseService = store.getAdminDatabaseService();
               return await adminDatabaseService.regenerateExplanation(
                 body.bookId,
@@ -261,6 +404,9 @@ const plugin = new Elysia()
           .post(
             "/explanation/regenerate/:regenerationId/generate",
             async ({ params, body, store, currentUserId }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const explanationRegenerationService =
                 store.getExplanationRegenerationService();
               return await explanationRegenerationService.generateNewExplanation(
@@ -295,6 +441,9 @@ const plugin = new Elysia()
           .post(
             "/explanation/regenerate/:regenerationId/choose",
             async ({ params, body, store, currentUserId }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
               const adminDatabaseService = store.getAdminDatabaseService();
               return await adminDatabaseService.chooseExplanationVersion(
                 params.regenerationId,
@@ -328,10 +477,107 @@ const plugin = new Elysia()
               }),
             },
           )
+          .post(
+            "/explanations/set-active-as-default",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setActiveExplanationsAsDefault({
+                ...body,
+                language_code: body.languageCode,
+              });
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                languageCode: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
+          .post(
+            "/explanations/set-defaults-active",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setDefaultExplanationsAsActive({
+                ...body,
+                language_code: body.languageCode,
+              });
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                languageCode: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
+          .post(
+            "/explanations/set-specific-version-active",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.setSpecificExplanationVersionAsActive({
+                ...body,
+                language_code: body.languageCode,
+              });
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                languageCode: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+                version: t.Number(),
+              }),
+            },
+          )
+          .delete(
+            "/explanations/inactive",
+            async ({ body, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.deleteInactiveExplanations({
+                ...body,
+                language_code: body.languageCode,
+              });
+            },
+            {
+              body: t.Object({
+                isBibleBatch: t.Boolean(),
+                languageCode: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
+              }),
+            },
+          )
           .get("/explanation/:id/history", async ({ params, store }) => {
             const adminDatabaseService = store.getAdminDatabaseService();
             return await adminDatabaseService.getExplanationHistory(params.id);
           })
+          .get(
+            "/explanations",
+            async ({ query, store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.getExplanationsByFilter({
+                isBibleBatch: query.isBibleBatch === "true",
+                language_code: query.languageCode,
+                bookName: query.bookName,
+                chapter: query.chapter ? Number(query.chapter) : "all",
+                limit: query.limit ? Number(query.limit) : 50,
+                offset: query.offset ? Number(query.offset) : 0,
+              });
+            },
+            {
+              query: t.Object({
+                isBibleBatch: t.String(),
+                languageCode: t.String(),
+                bookName: t.Optional(t.String()),
+                chapter: t.Optional(t.String()),
+                limit: t.Optional(t.String()),
+                offset: t.Optional(t.String()),
+              }),
+            },
+          )
           .get("/stats", async ({ store }) => {
             const adminDatabaseService = store.getAdminDatabaseService();
             return await adminDatabaseService.getExplanationStats();

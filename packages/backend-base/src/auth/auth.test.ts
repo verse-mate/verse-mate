@@ -151,7 +151,7 @@ describe("Auth", () => {
       },
     });
     expect(data?.id).toBeTruthy();
-    if (!data) {
+    if (!data?.id) {
       return;
     }
 
@@ -205,7 +205,7 @@ describe("Auth", () => {
       },
     });
     expect(data?.id).toBeTruthy();
-    if (!data) {
+    if (!data?.id) {
       return;
     }
 

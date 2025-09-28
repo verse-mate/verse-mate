@@ -2,36 +2,63 @@
   margin-top: 0 !important;
   padding: 20px;
   align-self: flex-start;
+  font-family: Inter, sans-serif;
 }
 
-.bibleVersionDropdown button[role="combobox"] {
-  display: flex !important;
-  color: black !important;
-  fill: black !important;
-  border: 1px solid #ccc;
-  padding: 8px 12px;
-  background-color: white;
+.heightSpacer {
+  height: 30px;
+}
+
+/* Typography Hierarchy - Design System Tokens */
+.sectionLabel {
+  display: block;
+  margin-bottom: 16px;
+  font-weight: 600;
+  font-size: 20px; /* --font-title2 equivalent */
+  color: var(--oil);
+  font-family: Inter, sans-serif;
+}
+
+.subsectionLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 20px; /* --font-title2 equivalent */
+  color: var(--oil);
+  font-family: Inter, sans-serif;
+}
+
+/* Spacing System - Systematic Classes */
+.sectionSpacing {
+  margin-top: 40px;
+}
+
+.elementSpacing {
+  margin-bottom: 16px;
+}
+
+.heightSpacer {
+  height: 30px;
+}
+
+/* Dropdown Container System - Standardized with Unified Design Tokens */
+.dropdownWrapper {
   width: 100%;
-  max-width: 400px;
-  justify-content: space-between;
+  max-width: var(--dropdown-max-width, 600px);
+  box-sizing: border-box;
 }
 
-.bibleVersionDropdown button[role="combobox"]:hover {
-  background-color: #f5f5f5;
+.languageDropdownWrapper {
+  width: 100%;
+  max-width: var(--dropdown-max-width, 600px);
+  box-sizing: border-box;
 }
 
-.bibleVersionDropdown button[role="combobox"] span {
-  color: black !important;
-}
+/* Remove legacy dropdown overrides - now handled by theme system */
 
-.bibleVersionDropdown button[role="combobox"] span:first-child {
-  max-width: 350px !important;
-}
+/* The .dropdownTriggerBase.lightTheme handles all light theme styling */
 
-.bibleVersionDropdown button[role="combobox"] svg {
-  fill: black !important;
-}
-
+/* Header Section */
 .header {
   display: flex;
   align-items: center;
@@ -42,13 +69,281 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
-  margin-right: 10px;
+  padding: 8px;
+  margin-right: 12px;
   display: flex;
   align-items: center;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: #f5f5f5;
+}
+
+.backButton:focus {
+  outline: 2px solid var(--dust);
+  outline-offset: 2px;
 }
 
 .backIcon {
   width: 24px;
   height: 24px;
+  fill: var(--oil);
 }
+
+/* Account Actions Section */
+.actionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.actionButton {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  width: 100% !important;
+  text-align: left !important;
+  font-family: Inter, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.actionButton:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.actionIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: currentcolor;
+}
+
+/* Profile Information Section */
+.profileContainer {
+  background-color: #f8f9fa;
+  border: 1px solid var(--geyser-opacity);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  box-sizing: border-box;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.profileIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background-color: var(--snow);
+  border-radius: 50%;
+  border: 2px solid var(--geyser-opacity);
+  flex-shrink: 0;
+}
+
+.profileUserIcon {
+  width: 32px;
+  height: 32px;
+  fill: var(--oil);
+}
+
+.profileInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0; /* Allows text truncation if needed */
+}
+
+.profileName {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--oil);
+  line-height: 1.4;
+}
+
+.profileEmail {
+  font-size: 14px;
+  color: var(--oslo-gray);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Notification Messages */
+.errorMessage {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.successMessage {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  color: #16a34a;
+  font-size: 14px;
+  font-family: Inter, sans-serif;
+  font-weight: 500;
+  line-height: 1.4;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+/* Global Save Section */
+.globalSaveSection {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--geyser-opacity);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 500px;
+}
+
+.globalSaveButton {
+  padding: 12px 32px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+  min-width: 180px !important;
+}
+
+.globalSaveButton:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background-color: var(--geyser-opacity) !important;
+  color: var(--oslo-gray) !important;
+  border: 1px solid var(--geyser-opacity) !important;
+}
+
+.changeIndicator {
+  font-size: 14px;
+  color: var(--oslo-gray);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Profile Form - Always Editable */
+.profileForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--geyser-opacity);
+}
+
+/* Language Preferences Section */
+.languageContainer {
+  background-color: #f8f9fa;
+  border: 1px solid var(--geyser-opacity);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  box-sizing: border-box;
+}
+
+/* Bible Version Section */
+.bibleVersionContainer {
+  background-color: #f8f9fa;
+  border: 1px solid var(--geyser-opacity);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  box-sizing: border-box;
+}
+
+.bibleVersionDropdownContainer {
+  margin-bottom: 0;
+}
+
+.languageDropdownContainer {
+  margin-bottom: 0;
+}
+
+.dropdownLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--oil);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Responsive Design System - Mobile/Tablet/Desktop */
+@media screen and (max-width: 834px) {
+  .dropdownWrapper,
+  .languageDropdownWrapper {
+    max-width: 100%;
+  }
+  
+  .sectionSpacing {
+    margin-top: 32px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .dropdownWrapper,
+  .languageDropdownWrapper {
+    padding: 0;
+  }
+  
+  .settingsRoot {
+    padding: 16px;
+  }
+  
+  .sectionSpacing {
+    margin-top: 24px;
+  }
+}
+
+/* Dropdown Content Responsive Sizing */
+.settingsRoot [data-radix-select-content] {
+  width: 100% !important;
+  max-width: 300px !important;
+  min-width: 200px !important;
+  box-sizing: border-box !important;
+}
+
+@media screen and (max-width: 834px) {
+  .settingsRoot [data-radix-select-content] {
+    max-width: 100% !important;
+    margin: 0 8px !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .settingsRoot [data-radix-select-content] {
+    margin: 0 !important;
+  }
+}
+
+

@@ -48,17 +48,17 @@ export const authDerive = async ({
   query: {
     accessToken?: string;
   };
-}): Promise<{ currentUserId: string }> => {
-  if (!bearer && !query?.accessToken) {
-    console.error("No bearer token or accessToken");
-    throw new Error("No bearer token or accessToken");
+}): Promise<{ currentUserId: string | null }> => {
+  const token = bearer ?? query.accessToken;
+
+  if (!token) {
+    return { currentUserId: null };
   }
 
-  const validBearer = await jwt.verify(bearer ?? query.accessToken);
+  const validBearer = await jwt.verify(token);
 
   if (!validBearer || !validBearer.sub) {
-    console.error("Invalid bearer token");
-    throw new Error("Invalid bearer token");
+    return { currentUserId: null };
   }
 
   return {

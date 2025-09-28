@@ -8,26 +8,43 @@ export class PromptRepository {
     prompt_id: number;
     status: PromptStatusEnum;
     prompt: string;
+    prompt_type: string;
   }> {
     const prompt = await this.db
       .getOrCreateConnection()
       .selectFrom("prompts")
-      .select(["prompts.prompt_id", "prompts.prompt", "prompts.status"])
+      .select([
+        "prompts.prompt_id",
+        "prompts.prompt",
+        "prompts.status",
+        "prompts.prompt_type",
+      ])
       .where("prompts.status", "=", PromptStatusEnum.active)
+      .where("prompts.prompt_type", "=", "system")
       .executeTakeFirst();
 
     if (!prompt) {
-      throw new Error("Active Prompt not found");
+      throw new Error("Active System Prompt not found");
     }
 
-    return prompt;
+    return {
+      prompt_id: prompt.prompt_id,
+      status: prompt.status,
+      prompt: prompt.prompt,
+      prompt_type: prompt.prompt_type,
+    };
   }
 
   async getAll() {
     return this.db
       .getOrCreateConnection()
       .selectFrom("prompts")
-      .select(["prompts.prompt_id", "prompts.prompt", "prompts.status"])
+      .select([
+        "prompts.prompt_id",
+        "prompts.prompt",
+        "prompts.status",
+        "prompts.prompt_type",
+      ])
       .execute();
   }
 

@@ -1,7 +1,9 @@
-import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import bearer from "@elysiajs/bearer";
+import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import OpenAI from "openai";
+import { authDerive } from "../auth/auth.utils";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
@@ -22,7 +24,7 @@ import { PromptService } from "./services/prompt.service";
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY, // This is the default and can be omitted
 });
-const model = "gpt-5";
+const model = "gpt-5-nano";
 
 async function gpt5Text({
   system,
@@ -86,6 +88,9 @@ const plugin = new Elysia()
 
         return { books: bible.books };
       })
+      .get("/languages", async ({ store: { bibleService } }) => {
+        return await bibleService.getAvailableExplanationLanguages();
+      })
       .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {
@@ -117,15 +122,18 @@ const plugin = new Elysia()
           }),
         },
       )
+      .use(bearer())
+      .resolve({ as: "scoped" }, authDerive)
       .get(
         "/book/explanation/:bookId/:chapterNumber",
         async ({
           params,
           store: { bibleService, promptService, db },
           query,
+          currentUserId,
         }) => {
           const { bookId, chapterNumber } = params;
-          const { versionKey = "NASB1995" } = query;
+          const { versionKey = "NASB1995", explanationType } = query;
 
           const version = await db
             .getOrCreateConnection()
@@ -142,68 +150,75 @@ const plugin = new Elysia()
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
             version_id: version.id,
+            type: explanationType as ExplanationTypeEnum | undefined,
+            user_id: currentUserId || undefined,
           });
 
-          const missingTypes = Object.keys(ExplanationTypeEnum).filter(
-            (type) => !explanation?.some((exp) => exp.type === type),
-          ) as ExplanationTypeEnum[];
+          // const missingTypes = Object.keys(ExplanationTypeEnum).filter(
+          //   (type) => !explanation?.some((exp) => exp.type === type),
+          // ) as ExplanationTypeEnum[];
 
-          if (missingTypes.length > 0) {
-            await Promise.all(
-              missingTypes.map(async (type) => {
-                const prompt = await promptService.getActivePrompt();
+          // if (missingTypes.length > 0) {
+          //   await Promise.all(
+          //     missingTypes.map(async (type) => {
+          //       const prompt = await promptService.getActivePrompt();
 
-                if (!prompt) {
-                  return { explanation };
-                }
+          //       if (!prompt) {
+          //         return;
+          //       }
 
-                try {
-                  const { book } = await bibleService.getBook({
-                    book_id: Number(bookId),
-                    chapter_number: Number(chapterNumber),
-                    version_id: version.id,
-                  });
+          //       try {
+          //         const { book } = await bibleService.getBook({
+          //           book_id: Number(bookId),
+          //           chapter_number: Number(chapterNumber),
+          //           version_id: version.id,
+          //         });
 
-                  const language = getLanguageName(version.language_code);
+          //         const language = getLanguageName(version.language_code);
 
-                  const explanationConfig = await getExplanationTypePrompt(
-                    type,
-                    book?.name || "",
-                    Number(chapterNumber),
-                    db,
-                    language,
-                  );
+          //         const explanationConfig = await getExplanationTypePrompt(
+          //           type,
+          //           book?.name || "",
+          //           Number(chapterNumber),
+          //           db,
+          //           language,
+          //         );
 
-                  const text = await gpt5Text({
-                    system: prompt.prompt,
-                    user: getUserPrompt({
-                      explanationPrompt: explanationConfig.prompt,
-                      language,
-                    }),
-                  });
+          //         const text = await gpt5Text({
+          //           system: prompt.prompt,
+          //           user: getUserPrompt({
+          //             explanationPrompt: explanationConfig.prompt,
+          //             language,
+          //           }),
+          //         });
 
-                  const { success } = await bibleService.saveExplanation({
-                    type,
-                    explanation: text || "",
-                    book_id: Number(bookId),
-                    chapter_number: Number(chapterNumber),
-                    version_id: version.id,
-                  });
+          //         await bibleService.saveExplanation({
+          //           type,
+          //           explanation: text || "",
+          //           book_id: Number(bookId),
+          //           chapter_number: Number(chapterNumber),
+          //           version_id: version.id,
+          //         });
+          //       } catch (e) {
+          //         console.error("[bible.plugin.ts][error]: ", e);
+          //       }
+          //     }),
+          //   );
 
-                  if (success) return { explanation };
-                } catch (e) {
-                  console.error("[bible.plugin.ts][error]: ", e);
-                  return { explanation };
-                }
-              }),
-            );
-          }
+          //   // Refetch the explanations after generation
+          //   explanation = await bibleService.getExplanation({
+          //     book_id: Number(bookId),
+          //     chapter_number: Number(chapterNumber),
+          //     version_id: version.id,
+          //   });
+          // }
 
           return { explanation };
         },
         {
           query: t.Object({
             versionKey: t.Optional(t.String()),
+            explanationType: t.Optional(t.String()),
           }),
         },
       )
@@ -211,6 +226,33 @@ const plugin = new Elysia()
         const { testaments } = await bibleService.getTestaments();
         return { testaments: testaments };
       })
+      .get(
+        "/chapter-id/:bookId/:chapterNumber",
+        async ({ params, store: { db } }) => {
+          const { bookId, chapterNumber } = params;
+
+          // Create repository instance to get chapter ID
+          const bibleRepository = new BibleRepository(db);
+
+          try {
+            const { chapter_id } = await bibleRepository.getChapterId({
+              book_id: Number(bookId),
+              chapter_number: Number(chapterNumber),
+            });
+
+            return { chapter_id };
+          } catch (error) {
+            console.error("Error getting chapter ID:", error);
+            return { chapter_id: null, error: "Failed to get chapter ID" };
+          }
+        },
+        {
+          params: t.Object({
+            bookId: t.String(),
+            chapterNumber: t.String(),
+          }),
+        },
+      )
       .post(
         "/book/conversations-history",
         async ({ body, store: { chatService } }) => {
@@ -716,6 +758,202 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
             book_id: t.Number(),
             chapter_number: t.Number(),
+          }),
+        },
+      )
+      // Highlight endpoints
+      .get(
+        "/highlights/:user_id",
+        async ({ params, store: { bibleService } }) => {
+          console.log("=== GET /highlights/:user_id ENDPOINT ===");
+          console.log("Getting all highlights for user:", params.user_id);
+
+          try {
+            const { highlights } = await bibleService.getUserHighlights({
+              user_id: params.user_id,
+            });
+
+            console.log(
+              "Successfully retrieved highlights, count:",
+              highlights.length,
+            );
+            return { highlights };
+          } catch (error) {
+            console.error("ERROR in GET /highlights/:user_id:", error);
+            return {
+              highlights: [],
+              error: "Failed to retrieve highlights",
+            };
+          }
+        },
+        {
+          params: t.Object({
+            user_id: t.String({ format: "uuid" }),
+          }),
+        },
+      )
+      .get(
+        "/highlights/:user_id/:book_id/:chapter_number",
+        async ({ params, store: { bibleService } }) => {
+          console.log(
+            "=== GET /highlights/:user_id/:book_id/:chapter_number ENDPOINT ===",
+          );
+          console.log(
+            "Getting chapter highlights for user:",
+            params.user_id,
+            "book:",
+            params.book_id,
+            "chapter:",
+            params.chapter_number,
+          );
+
+          try {
+            const { highlights } = await bibleService.getChapterHighlights({
+              user_id: params.user_id,
+              book_id: params.book_id,
+              chapter_number: params.chapter_number,
+            });
+
+            console.log(
+              "Successfully retrieved chapter highlights, count:",
+              highlights.length,
+            );
+            return { highlights };
+          } catch (error) {
+            console.error("ERROR in GET chapter highlights:", error);
+            return {
+              highlights: [],
+              error: "Failed to retrieve chapter highlights",
+            };
+          }
+        },
+        {
+          params: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+          }),
+        },
+      )
+      .post(
+        "/highlight/add",
+        async ({ body, store: { bibleService } }) => {
+          console.log("Adding highlight:", body);
+
+          if (
+            !body.user_id ||
+            !body.book_id ||
+            !body.chapter_number ||
+            !body.start_verse ||
+            !body.end_verse
+          ) {
+            console.error("Missing required fields for adding highlight");
+            return { success: false, error: "Missing required fields" };
+          }
+
+          try {
+            const result = await bibleService.createHighlight({
+              user_id: body.user_id,
+              book_id: body.book_id,
+              chapter_number: body.chapter_number,
+              start_verse: body.start_verse,
+              end_verse: body.end_verse,
+              color: body.color as any,
+              start_char: body.start_char,
+              end_char: body.end_char,
+              selected_text: body.selected_text,
+            });
+
+            return result;
+          } catch (error) {
+            console.error("Error adding highlight:", error);
+            return {
+              success: false,
+              error: "Failed to add highlight",
+            };
+          }
+        },
+        {
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+            start_verse: t.Number(),
+            end_verse: t.Number(),
+            color: t.Optional(t.String()),
+            start_char: t.Optional(t.Number()),
+            end_char: t.Optional(t.Number()),
+            selected_text: t.Optional(t.String()),
+          }),
+        },
+      )
+      .put(
+        "/highlight/:highlight_id",
+        async ({ params, body, store: { bibleService } }) => {
+          console.log(
+            "Updating highlight:",
+            params.highlight_id,
+            "with color:",
+            body.color,
+          );
+
+          try {
+            const { highlight, success } =
+              await bibleService.updateHighlightColor({
+                highlight_id: params.highlight_id,
+                user_id: body.user_id,
+                color: body.color as any,
+              });
+
+            return { highlight, success };
+          } catch (error) {
+            console.error("Error updating highlight:", error);
+            return {
+              success: false,
+              error: "Failed to update highlight",
+            };
+          }
+        },
+        {
+          params: t.Object({
+            highlight_id: t.Number(),
+          }),
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            color: t.String(),
+          }),
+        },
+      )
+      .delete(
+        "/highlight/:highlight_id",
+        async ({ params, query, store: { bibleService } }) => {
+          console.log("Deleting highlight:", params.highlight_id);
+
+          if (!query.user_id) {
+            return { success: false, error: "Missing user_id" };
+          }
+
+          try {
+            const { success } = await bibleService.deleteHighlight({
+              highlight_id: params.highlight_id,
+              user_id: query.user_id,
+            });
+
+            return { success };
+          } catch (error) {
+            console.error("Error deleting highlight:", error);
+            return {
+              success: false,
+              error: "Failed to delete highlight",
+            };
+          }
+        },
+        {
+          params: t.Object({
+            highlight_id: t.Number(),
+          }),
+          query: t.Object({
+            user_id: t.String({ format: "uuid" }),
           }),
         },
       ),

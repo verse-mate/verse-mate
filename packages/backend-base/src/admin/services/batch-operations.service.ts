@@ -1,6 +1,7 @@
 import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI, { APIError } from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
@@ -292,6 +293,608 @@ export class BatchOperationService {
     };
   }
 
+  async generateRephraseBatch(
+    model: string,
+    adminUserId: string,
+    type: "bible" | "book",
+    bibleVersion: string,
+    effort: "low" | "medium" | "high" = "medium",
+    bookName?: string,
+  ) {
+    if (type === "book" && !bookName) {
+      throw new Error(
+        "Book name is required for a book-specific rephrase batch.",
+      );
+    }
+
+    console.log(
+      `[BATCH] Starting rephrase batch for type: ${type} with model ${model}`,
+    );
+
+    const connection = this.db.getOrCreateConnection();
+
+    if (type === "bible") {
+      const parentBatch = await connection
+        .insertInto("batch_jobs")
+        .values({
+          batch_type: "rephrase-bible",
+          status: "validating",
+          model,
+          created_by: adminUserId,
+          total_requests: 66,
+          bible_version: bibleVersion,
+          explanation_types: [],
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      const parentBatchId = parentBatch.id;
+
+      // Add parent batch to monitoring queue
+      await this.batchMonitoringQueue.add(
+        BATCH_MONITORING_QUEUE,
+        { batchId: `parent-${parentBatchId}`, model, isParent: true },
+        {
+          jobId: `parent-${parentBatchId}`,
+          removeOnComplete: true,
+          removeOnFail: 100,
+        },
+      );
+
+      const books = await connection
+        .selectFrom("books")
+        .select(["book_id", "name"])
+        .orderBy("book_id", "asc")
+        .execute();
+
+      if (!books || books.length === 0) {
+        throw new Error("No books found in database");
+      }
+
+      for (const book of books) {
+        await this.createBookRephraseBatch(
+          model,
+          adminUserId,
+          effort,
+          book.name,
+          bibleVersion,
+          parentBatchId,
+        );
+      }
+
+      return {
+        success: true,
+        message: `Rephrase batch started for all books under parent ID ${parentBatchId}.`,
+        parentBatchId,
+      };
+    }
+
+    if (type === "book" && bookName) {
+      return this.createBookRephraseBatch(
+        model,
+        adminUserId,
+        effort,
+        bookName,
+        bibleVersion,
+      );
+    }
+
+    throw new Error("Invalid rephrase batch type or missing book name.");
+  }
+
+  async generateTranslateBatch(
+    model: string,
+    adminUserId: string,
+    type: "bible" | "book",
+    source_language_code: string,
+    target_language_code: string,
+    explanationTypes: string[],
+    skipExisting = false,
+    effort: "low" | "medium" | "high" = "medium",
+    bookName?: string,
+  ) {
+    if (type === "book" && !bookName) {
+      throw new Error(
+        "Book name is required for a book-specific translate batch.",
+      );
+    }
+
+    console.log(
+      `[BATCH] Starting translate batch for type: ${type} with model ${model}`,
+    );
+    console.log(
+      `[BATCH] Source language: ${source_language_code}, Target language: ${target_language_code}`,
+    );
+
+    const connection = this.db.getOrCreateConnection();
+
+    if (type === "bible") {
+      console.log(
+        `[BATCH] Creating parent batch for bible translation (${source_language_code} to ${target_language_code})`,
+      );
+      const parentBatch = await connection
+        .insertInto("batch_jobs")
+        .values({
+          batch_type: "translate-bible",
+          status: "validating",
+          model,
+          created_by: adminUserId,
+          total_requests: 66,
+          bible_version: source_language_code,
+          source_language_code,
+          target_language_code,
+          explanation_types: [],
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      const parentBatchId = parentBatch.id;
+
+      console.log(`[BATCH] Created parent batch with ID: ${parentBatchId}`);
+
+      // Add parent batch to monitoring queue
+      await this.batchMonitoringQueue.add(
+        BATCH_MONITORING_QUEUE,
+        { batchId: `parent-${parentBatchId}`, model, isParent: true },
+        {
+          jobId: `parent-${parentBatchId}`,
+          removeOnComplete: true,
+          removeOnFail: 100,
+        },
+      );
+
+      const books = await connection
+        .selectFrom("books")
+        .select(["book_id", "name"])
+        .orderBy("book_id", "asc")
+        .execute();
+
+      if (!books || books.length === 0) {
+        const error = "No books found in database";
+        console.error(`[BATCH] ${error}`);
+        throw new Error(error);
+      }
+
+      console.log(`[BATCH] Found ${books.length} books to process`);
+
+      for (const book of books) {
+        console.log(
+          `[BATCH] Processing book: ${book.name} (ID: ${book.book_id})`,
+        );
+        try {
+          await this.createBookTranslateBatch(
+            model,
+            adminUserId,
+            effort,
+            book.name,
+            source_language_code,
+            target_language_code,
+            explanationTypes,
+            skipExisting,
+            parentBatchId,
+          );
+        } catch (error) {
+          console.error(
+            `[BATCH] Error creating translate batch for book ${book.name}:`,
+            error,
+          );
+          // Continue with other books instead of failing the entire operation
+        }
+      }
+
+      return {
+        success: true,
+        message: `Translate batch started for all books under parent ID ${parentBatchId}.`,
+        parentBatchId,
+      };
+    }
+
+    if (type === "book" && bookName) {
+      console.log(
+        `[BATCH] Creating single book translate batch for: ${bookName}`,
+      );
+      return this.createBookTranslateBatch(
+        model,
+        adminUserId,
+        effort,
+        bookName,
+        source_language_code,
+        target_language_code,
+        explanationTypes,
+        skipExisting,
+      );
+    }
+
+    throw new Error("Invalid translate batch type or missing book name.");
+  }
+
+  private async createBookRephraseBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high",
+    bookName: string,
+    bibleVersion: string,
+    parentBatchId?: number,
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    const book = await connection
+      .selectFrom("books")
+      .where("name", "=", bookName)
+      .select("book_id")
+      .executeTakeFirst();
+
+    if (!book) {
+      throw new Error(`Book "${bookName}" not found.`);
+    }
+
+    const version = await connection
+      .selectFrom("bible_versions")
+      .where("version_key", "=", bibleVersion)
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!version) {
+      throw new Error(`Bible version "${bibleVersion}" not found.`);
+    }
+
+    const rephrasePrompt = await connection
+      .selectFrom("prompts")
+      .where("prompt_type", "=", "rephrase")
+      .where("status", "=", PromptStatusEnum.active)
+      .select("prompt")
+      .executeTakeFirst();
+
+    if (!rephrasePrompt) {
+      throw new Error("No active rephrase prompt found in the database.");
+    }
+
+    const activeExplanations = await connection
+      .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .where("chapters.book_id", "=", book.book_id)
+      .where("explanations.language_code", "=", version.language_code)
+      .where("is_active", "=", true)
+      .select([
+        "explanations.explanation_id",
+        "explanations.explanation",
+        "explanations.type",
+        "chapters.chapter_number",
+      ])
+      .execute();
+
+    if (activeExplanations.length === 0) {
+      console.log(
+        `[BATCH] No active explanations found for ${bookName} (${bibleVersion}) to rephrase. Skipping.`,
+      );
+      return;
+    }
+
+    const toSlug = (s: string) =>
+      s
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+
+    const batchRequests: BatchJobRequest[] = activeExplanations.map(
+      (explanation) => {
+        const safeBook = toSlug(bookName);
+        const safeType = toSlug(explanation.type);
+        return {
+          custom_id: `rephrase|${safeBook}|${explanation.chapter_number}|${safeType}|${bibleVersion}|${explanation.explanation_id}`,
+          method: "POST",
+          url: "/v1/responses",
+          body: {
+            model,
+            reasoning: { effort },
+            instructions: rephrasePrompt.prompt,
+            input: explanation.explanation,
+            max_output_tokens: 25000,
+          },
+        };
+      },
+    );
+
+    // Validate custom ID uniqueness before proceeding
+    const validation = this.validateCustomIdUniqueness(batchRequests);
+    if (!validation.isValid) {
+      const error = `Custom ID validation failed for rephrase batch: ${validation.summary}. Duplicate IDs: ${validation.duplicates.join(", ")}`;
+      console.error(`[BATCH] ${error}`);
+      throw new Error(error);
+    }
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const file = await openai.files.create({
+      file: new File(
+        [blob],
+        `rephrase_batch_${book.book_id}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "rephrase",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        book_id: book.book_id,
+        parent_batch_id: parentBatchId,
+        bible_version: bibleVersion, // preserve actual version
+        explanation_types: [],
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
+  }
+
+  private async createBookTranslateBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high",
+    bookName: string,
+    source_language_code: string,
+    target_language_code: string,
+    explanationTypes: string[],
+    skipExisting: boolean,
+    parentBatchId?: number,
+  ) {
+    console.log(
+      `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}`,
+    );
+    const connection = this.db.getOrCreateConnection();
+
+    const book = await connection
+      .selectFrom("books")
+      .where("name", "=", bookName)
+      .select("book_id")
+      .executeTakeFirst();
+
+    if (!book) {
+      const error = `Book "${bookName}" not found.`;
+      console.error(`[BATCH] ${error}`);
+      throw new Error(error);
+    }
+
+    console.log(`[BATCH] Found book: ${bookName} with ID: ${book.book_id}`);
+
+    const sourceVersion = await connection
+      .selectFrom("bible_versions")
+      .where("language_code", "=", source_language_code)
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!sourceVersion) {
+      const error = `Source Bible version with language "${source_language_code}" not found.`;
+      console.error(`[BATCH] ${error}`);
+      throw new Error(error);
+    }
+
+    console.log(
+      `[BATCH] Found source version with language: ${sourceVersion.language_code}`,
+    );
+
+    const targetVersion = await connection
+      .selectFrom("bible_versions")
+      .where("language_code", "=", target_language_code)
+      .select(["id", "language_code"])
+      .executeTakeFirst();
+
+    // For translation, target version doesn't need to exist in database
+    // We can create explanations for any valid language code
+    if (!targetVersion) {
+      console.log(
+        `[BATCH] Target Bible version with language "${target_language_code}" not found in database, but continuing with translation to custom language.`,
+      );
+    } else {
+      console.log(
+        `[BATCH] Found target version with language: ${targetVersion.language_code}, ID: ${targetVersion.id}`,
+      );
+    }
+
+    const translatePrompt = await connection
+      .selectFrom("prompts")
+      .where("prompt_type", "=", "translate")
+      .where("status", "=", PromptStatusEnum.active)
+      .select("prompt")
+      .executeTakeFirst();
+
+    if (!translatePrompt) {
+      const error = "No active translate prompt found in the database.";
+      console.error(`[BATCH] ${error}`);
+      throw new Error(error);
+    }
+
+    console.log("[BATCH] Found active translate prompt");
+
+    const language = getLanguageName(target_language_code);
+    const finalPrompt = translatePrompt.prompt.replace("{language}", language);
+
+    console.log(`[BATCH] Target language name: ${language}`);
+
+    let query = connection
+      .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .where("chapters.book_id", "=", book.book_id)
+      .where("explanations.language_code", "=", source_language_code)
+      .where("is_active", "=", true);
+
+    if (explanationTypes.length > 0) {
+      query = query.where("explanations.type", "in", explanationTypes as any);
+      console.log(
+        `[BATCH] Filtering by explanation types: ${explanationTypes.join(", ")}`,
+      );
+    }
+
+    const activeExplanations = await query
+      .select([
+        "explanations.explanation_id",
+        "explanations.explanation",
+        "explanations.type",
+        "chapters.chapter_number",
+      ])
+      .execute();
+
+    console.log(
+      `[BATCH] Found ${activeExplanations.length} active explanations for ${bookName} in ${source_language_code}`,
+    );
+
+    let batchRequests: BatchJobRequest[] = [];
+
+    if (skipExisting) {
+      console.log("[BATCH] Checking for existing translations to skip...");
+      const existingTargetExplanations = await connection
+        .selectFrom("explanations")
+        .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+        .where("chapters.book_id", "=", book.book_id)
+        .where("explanations.language_code", "=", target_language_code)
+        .where("explanations.type", "in", explanationTypes as any)
+        .select(["chapters.chapter_number", "explanations.type"])
+        .execute();
+
+      console.log(
+        `[BATCH] Found ${existingTargetExplanations.length} existing explanations in target language`,
+      );
+
+      const existingSet = new Set(
+        existingTargetExplanations.map((e) => `${e.chapter_number}-${e.type}`),
+      );
+
+      for (const explanation of activeExplanations) {
+        const key = `${explanation.chapter_number}-${explanation.type}`;
+        if (!existingSet.has(key)) {
+          batchRequests.push({
+            custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
+            method: "POST",
+            url: "/v1/responses",
+            body: {
+              model,
+              reasoning: { effort },
+              instructions: finalPrompt,
+              input: explanation.explanation,
+              max_output_tokens: 25000,
+            },
+          });
+        }
+      }
+      console.log(
+        `[BATCH] After skipping existing, ${batchRequests.length} translations needed`,
+      );
+    } else {
+      console.log("[BATCH] Not skipping existing translations");
+      batchRequests = activeExplanations.map((explanation) => ({
+        custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: finalPrompt,
+          input: explanation.explanation,
+          max_output_tokens: 25000,
+        },
+      }));
+    }
+
+    if (batchRequests.length === 0) {
+      console.log(
+        `[BATCH] No new explanations to translate for ${bookName} (${source_language_code} to ${target_language_code}). Skipping.`,
+      );
+      return;
+    }
+
+    // Validate custom ID uniqueness before proceeding
+    const validation = this.validateCustomIdUniqueness(batchRequests);
+    if (!validation.isValid) {
+      const error = `Custom ID validation failed: ${validation.summary}. Duplicate IDs: ${validation.duplicates.join(", ")}`;
+      console.error(`[BATCH] ${error}`);
+      throw new Error(error);
+    }
+
+    console.log(
+      `[BATCH] Preparing to create ${batchRequests.length} translation requests for ${bookName}`,
+    );
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    console.log(
+      `[BATCH] Generated JSONL content with ${batchRequests.length} requests`,
+    );
+
+    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const file = await openai.files.create({
+      file: new File(
+        [blob],
+        `translate_batch_${book.book_id}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    console.log(`[BATCH] Created OpenAI file: ${file.id}`);
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    console.log(`[BATCH] Created OpenAI batch: ${batch.id}`);
+
+    await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "translate",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        book_id: book.book_id,
+        parent_batch_id: parentBatchId,
+        bible_version: target_language_code,
+        source_language_code,
+        target_language_code,
+        explanation_types: [],
+      })
+      .execute();
+
+    console.log(
+      `[BATCH] Saved batch job to database with parent_batch_id: ${parentBatchId}`,
+    );
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    console.log(`[BATCH] Added batch ${batch.id} to monitoring queue`);
+
+    return batch;
+  }
+
   async getBatchStatus(batchId: string) {
     const batchStatus = await openai.batches.retrieve(batchId);
 
@@ -300,6 +903,18 @@ export class BatchOperationService {
         `[BATCH] Batch ${batchId} failed with errors`,
         JSON.stringify(batchStatus.errors, null, 2),
       );
+
+      // Enhanced error detection for duplicate custom_id issues
+      const errorAnalysis = await this.enhancedBatchErrorDetection(
+        batchStatus,
+        batchId,
+      );
+
+      if (errorAnalysis.hasDuplicateErrors) {
+        console.error(
+          `[BATCH] CRITICAL: Batch ${batchId} failed due to duplicate custom_id errors. This indicates the custom_id generation logic needs immediate attention. Affected custom_ids: ${errorAnalysis.duplicateCustomIds.join(", ")}`,
+        );
+      }
     }
 
     const currentBatchJob = await this.db
@@ -414,9 +1029,13 @@ export class BatchOperationService {
       throw new Error(`Batch job ${batchId} not found.`);
     }
 
-    if (batchJob.batch_type === "bible") {
+    if (
+      batchJob.batch_type === "bible" ||
+      batchJob.batch_type === "rephrase-bible" ||
+      batchJob.batch_type === "translate-bible"
+    ) {
       console.log(
-        `[BATCH] Cancelling parent Bible batch ${batchId} and its children.`,
+        `[BATCH] Cancelling parent batch ${batchId} and its children.`,
       );
       const children = await this.getBatchChildren(Number(batchId));
       let cancelledCount = 0;
@@ -572,21 +1191,168 @@ export class BatchOperationService {
 
   async monitorBibleBatch(parentBatchId: number) {
     console.log(`[BATCH] Monitoring bible batch: ${parentBatchId}`);
-    const children = await this.getBatchChildren(parentBatchId);
-    const childBatchesToMonitor = children
-      .map((c) => c.openai_batch_id)
-      .filter((id): id is string => !!id);
 
-    const concurrencyLimit = 6;
-    const results = [];
+    try {
+      const children = await this.getBatchChildren(parentBatchId);
 
-    for (let i = 0; i < childBatchesToMonitor.length; i += concurrencyLimit) {
-      const batch = childBatchesToMonitor.slice(i, i + concurrencyLimit);
-      const promises = batch.map((id) => this.getBatchStatus(id));
-      results.push(...(await Promise.all(promises)));
+      if (children.length === 0) {
+        console.warn(
+          `[BATCH] No child batches found for parent ${parentBatchId}. Checking for creation errors.`,
+        );
+
+        // Check if parent batch creation failed
+        const parentBatch = await this.db
+          .getOrCreateConnection()
+          .selectFrom("batch_jobs")
+          .where("id", "=", parentBatchId)
+          .select(["status", "created_at", "batch_type"])
+          .executeTakeFirst();
+
+        if (parentBatch) {
+          const timeSinceCreation =
+            Date.now() - new Date(parentBatch.created_at).getTime();
+
+          // If more than 5 minutes and no children, mark as failed
+          if (timeSinceCreation > 5 * 60 * 1000) {
+            console.error(
+              `[BATCH] Parent batch ${parentBatchId} has no children after 5 minutes. Marking as failed.`,
+            );
+            console.error(
+              `[BATCH] Batch type: ${parentBatch.batch_type}, Current status: ${parentBatch.status}`,
+            );
+
+            await this.db
+              .getOrCreateConnection()
+              .updateTable("batch_jobs")
+              .set({ status: "failed" })
+              .where("id", "=", parentBatchId)
+              .execute();
+
+            return {
+              success: false,
+              message: "Parent batch failed - no child batches created.",
+            };
+          }
+          console.log(
+            `[BATCH] Parent batch ${parentBatchId} created ${Math.round(timeSinceCreation / 1000)} seconds ago. Waiting for child batch creation...`,
+          );
+          return {
+            success: true,
+            message: "Waiting for child batch creation.",
+          };
+        }
+        console.error(
+          `[BATCH] Parent batch ${parentBatchId} not found in database`,
+        );
+        return { success: false, message: "Parent batch not found." };
+      }
+
+      console.log(
+        `[BATCH] Found ${children.length} child batches for parent ${parentBatchId}`,
+      );
+
+      const childBatchesToMonitor = children
+        .map((c) => c.openai_batch_id)
+        .filter((id): id is string => !!id);
+
+      console.log(
+        `[BATCH] Monitoring ${childBatchesToMonitor.length} OpenAI batches`,
+      );
+
+      const concurrencyLimit = 6;
+      const results = [];
+
+      for (let i = 0; i < childBatchesToMonitor.length; i += concurrencyLimit) {
+        const batch = childBatchesToMonitor.slice(i, i + concurrencyLimit);
+        const promises = batch.map((id) => this.getBatchStatus(id));
+        results.push(...(await Promise.all(promises)));
+      }
+
+      // After monitoring, update the parent batch status
+      const summary = await this.getBatchSummary(parentBatchId);
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({
+          status: summary.aggregate_status,
+          actual_cost: summary.total_cost,
+        })
+        .where("id", "=", parentBatchId)
+        .execute();
+
+      console.log(
+        `[BATCH] Parent batch ${parentBatchId} status updated to ${summary.aggregate_status}`,
+      );
+      console.log(
+        `[BATCH] Summary: ${summary.status_progress_text}, Total cost: ${summary.total_cost.toFixed(4)}`,
+      );
+
+      return { success: true, message: "Monitoring complete.", summary };
+    } catch (error) {
+      console.error(
+        `[BATCH] Error monitoring bible batch ${parentBatchId}:`,
+        error,
+      );
+
+      // Mark parent as failed if monitoring fails
+      try {
+        await this.db
+          .getOrCreateConnection()
+          .updateTable("batch_jobs")
+          .set({ status: "failed" })
+          .where("id", "=", parentBatchId)
+          .execute();
+      } catch (updateError) {
+        console.error(
+          "[BATCH] Failed to update parent batch status:",
+          updateError,
+        );
+      }
+
+      return {
+        success: false,
+        message: `Monitoring failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  async monitorAllActiveBatches() {
+    console.log("[BATCH] Starting to monitor all active batches.");
+    const activeBatches = await this.db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("status", "not in", ["completed", "failed", "cancelled"])
+      .selectAll()
+      .execute();
+
+    console.log(
+      `[BATCH] Found ${activeBatches.length} active batches to monitor.`,
+    );
+
+    for (const batch of activeBatches) {
+      const isParent =
+        batch.batch_type === "bible" ||
+        batch.batch_type === "rephrase-bible" ||
+        batch.batch_type === "translate-bible";
+      const batchId = isParent ? `parent-${batch.id}` : batch.openai_batch_id;
+
+      if (batchId) {
+        await this.batchMonitoringQueue.add(
+          BATCH_MONITORING_QUEUE,
+          { batchId, model: batch.model, isParent },
+          {
+            jobId: `${batchId}-${Date.now()}`,
+            removeOnComplete: true,
+            removeOnFail: 100,
+          },
+        );
+      }
     }
 
-    return { success: true, message: "Monitoring complete." };
+    return {
+      success: true,
+      message: `Successfully queued monitoring for ${activeBatches.length} active batches.`,
+    };
   }
 
   async getBatchSummary(parentBatchId: number) {
@@ -595,16 +1361,51 @@ export class BatchOperationService {
     const totalChildren = children.length;
 
     if (totalChildren === 0) {
+      const parentJob = await this.db
+        .getOrCreateConnection()
+        .selectFrom("batch_jobs")
+        .where("id", "=", parentBatchId)
+        .select(["status", "created_at", "batch_type"])
+        .executeTakeFirst();
+
+      if (parentJob) {
+        const timeSinceCreation =
+          Date.now() - new Date(parentJob.created_at).getTime();
+        const minutesSinceCreation = Math.round(timeSinceCreation / 60000);
+
+        // If it's been more than 5 minutes without children, consider it failed
+        if (timeSinceCreation > 5 * 60 * 1000) {
+          console.warn(
+            `[BATCH] Parent batch ${parentBatchId} has no children after ${minutesSinceCreation} minutes`,
+          );
+          return {
+            aggregate_status: "failed",
+            status_progress_text: `Failed - No child batches created after ${minutesSinceCreation} minutes`,
+            total_cost: 0,
+          };
+        }
+        return {
+          aggregate_status: parentJob.status || "pending",
+          status_progress_text: `Initializing... (${minutesSinceCreation}m since creation)`,
+          total_cost: 0,
+        };
+      }
+
       return {
-        aggregate_status: "empty",
-        status_progress_text: "No books found for this batch.",
+        aggregate_status: "failed",
+        status_progress_text: "Failed - Parent batch not found",
         total_cost: 0,
       };
     }
 
+    console.log(
+      `[BATCH] Processing summary for ${totalChildren} child batches`,
+    );
+
     const statusCounts = children.reduce(
       (acc, child) => {
-        acc[child.status] = (acc[child.status] || 0) + 1;
+        const status = child.status || "pending";
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>,
@@ -615,51 +1416,54 @@ export class BatchOperationService {
       0,
     );
 
-    const failedCount = statusCounts.failed || 0;
+    const completedCount = statusCounts.completed || 0;
+    const failedCount =
+      (statusCounts.failed || 0) + (statusCounts.expired || 0);
+    const cancellingCount = statusCounts.cancelling || 0;
     const cancelledCount = statusCounts.cancelled || 0;
-    const expiredCount = statusCounts.expired || 0;
-    const partialFailureCount = statusCounts.partial_failure || 0;
+    const inProgressCount = statusCounts.in_progress || 0;
+    const finalizingCount = statusCounts.finalizing || 0;
+    const validatingCount = statusCounts.validating || 0;
 
-    if (
-      failedCount > 0 ||
-      cancelledCount > 0 ||
-      expiredCount > 0 ||
-      partialFailureCount > 0
-    ) {
+    console.log(
+      `[BATCH] Status breakdown - Completed: ${completedCount}, Failed: ${failedCount}, In Progress: ${inProgressCount}, Validating: ${validatingCount}`,
+    );
+
+    if (cancellingCount > 0) {
+      return {
+        aggregate_status: "cancelling",
+        status_progress_text: `Cancelling (${cancelledCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (cancelledCount > 0) {
+      if (cancelledCount + failedCount === totalChildren) {
+        return {
+          aggregate_status: "cancelled",
+          status_progress_text: `Cancelled (${cancelledCount}/${totalChildren})`,
+          total_cost: totalCost,
+        };
+      }
       return {
         aggregate_status: "partial_failure",
-        status_progress_text: `Failed (${failedCount + cancelledCount + expiredCount + partialFailureCount}/${totalChildren})`,
+        status_progress_text: `Partially Cancelled (${cancelledCount}/${totalChildren})`,
         total_cost: totalCost,
       };
     }
 
-    const completedCount = statusCounts.completed || 0;
-
-    if (statusCounts.validating > 0) {
-      const validatedCount = totalChildren - (statusCounts.validating || 0);
+    if (validatingCount > 0) {
       return {
         aggregate_status: "validating",
-        status_progress_text: `Validating (${validatedCount}/${totalChildren})`,
+        status_progress_text: `Validating (${totalChildren - validatingCount}/${totalChildren} processed)`,
         total_cost: totalCost,
       };
     }
 
-    if (statusCounts.in_progress > 0) {
-      const inProgressCount =
-        totalChildren -
-        (statusCounts.in_progress || 0) -
-        (statusCounts.validating || 0);
+    if (inProgressCount > 0 || finalizingCount > 0) {
       return {
         aggregate_status: "in_progress",
-        status_progress_text: `In Progress (${inProgressCount}/${totalChildren})`,
-        total_cost: totalCost,
-      };
-    }
-
-    if (statusCounts.finalizing > 0) {
-      return {
-        aggregate_status: "finalizing",
-        status_progress_text: `Finalizing (${completedCount}/${totalChildren})`,
+        status_progress_text: `In Progress (${completedCount}/${totalChildren} completed)`,
         total_cost: totalCost,
       };
     }
@@ -668,6 +1472,21 @@ export class BatchOperationService {
       return {
         aggregate_status: "completed",
         status_progress_text: `Completed (${completedCount}/${totalChildren})`,
+        total_cost: totalCost,
+      };
+    }
+
+    if (failedCount > 0) {
+      if (failedCount === totalChildren) {
+        return {
+          aggregate_status: "failed",
+          status_progress_text: `Failed (${failedCount}/${totalChildren})`,
+          total_cost: totalCost,
+        };
+      }
+      return {
+        aggregate_status: "partial_failure",
+        status_progress_text: `Partial Failure (${completedCount} completed, ${failedCount} failed)`,
         total_cost: totalCost,
       };
     }
@@ -739,7 +1558,7 @@ export class BatchOperationService {
         .selectFrom("explanations")
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", bookId)
-        .where("explanations.version_id", "=", version.id)
+        .where("explanations.language_code", "=", version.language_code)
         .where("explanations.type", "in", explanationTypes)
         .select(["chapters.chapter_number", "explanations.type"])
         .execute();
@@ -791,7 +1610,7 @@ export class BatchOperationService {
             .replace(
               /\s+/g,
               "-",
-            )}-${chapter.chapter_number}-${explanationType}`,
+            )}-${chapter.chapter_number}-${explanationType}-${chapter.chapter_id}`,
           method: "POST",
           url: "/v1/responses",
           body: {
@@ -811,6 +1630,14 @@ export class BatchOperationService {
       );
     }
 
+    // Validate custom ID uniqueness before proceeding
+    const validation = this.validateCustomIdUniqueness(batchRequests);
+    if (!validation.isValid) {
+      const error = `Custom ID validation failed for generate batch: ${validation.summary}. Duplicate IDs: ${validation.duplicates.join(", ")}`;
+      console.error(`[BATCH] ${error}`);
+      throw new Error(error);
+    }
+
     const jsonlContent = batchRequests
       .map((request) => JSON.stringify(request))
       .join("\n");
@@ -824,7 +1651,7 @@ export class BatchOperationService {
         .getOrCreateConnection()
         .selectFrom("batch_jobs")
         .where("openai_batch_id", "=", batchId)
-        .select(["bible_version", "book_id", "model"])
+        .select(["batch_type", "bible_version", "book_id", "model"])
         .executeTakeFirst();
 
       if (!batchJob) {
@@ -832,11 +1659,18 @@ export class BatchOperationService {
         return;
       }
 
+      if (batchJob.batch_type === "rephrase") {
+        return this.processRephraseOutputFile(batchId, outputFileId, batchJob);
+      }
+      if (batchJob.batch_type === "translate") {
+        return this.processTranslateOutputFile(batchId, outputFileId, batchJob);
+      }
+
       const version = await this.db
         .getOrCreateConnection()
         .selectFrom("bible_versions")
         .where("version_key", "=", batchJob.bible_version)
-        .select("id")
+        .select("language_code")
         .executeTakeFirst();
 
       if (!version) {
@@ -890,20 +1724,63 @@ export class BatchOperationService {
             extractedText.length > 0
           ) {
             const customIdParts = parsedLine.custom_id.split("-");
-            const explanationType = customIdParts[customIdParts.length - 1];
-            const chapterNumber = Number.parseInt(
-              customIdParts[customIdParts.length - 2],
-            );
+
+            // Handle both new format (4 parts) and legacy format (3 parts) for backward compatibility
+            let explanationType: string;
+            let chapterNumber: number;
+            let chapterId: number | undefined;
+
+            if (customIdParts.length === 4) {
+              // New format: book-chapter-type-chapter_id
+              explanationType = customIdParts[customIdParts.length - 2];
+              chapterNumber = Number.parseInt(
+                customIdParts[customIdParts.length - 3],
+              );
+              chapterId = Number.parseInt(
+                customIdParts[customIdParts.length - 1],
+              );
+              console.log(
+                `[BATCH] Processing new format generate custom_id: ${parsedLine.custom_id}`,
+              );
+            } else if (customIdParts.length === 3) {
+              // Legacy format: book-chapter-type
+              explanationType = customIdParts[customIdParts.length - 1];
+              chapterNumber = Number.parseInt(
+                customIdParts[customIdParts.length - 2],
+              );
+              console.log(
+                `[BATCH] Processing legacy format generate custom_id: ${parsedLine.custom_id}`,
+              );
+            } else {
+              console.error(
+                `[BATCH] Invalid generate custom_id format: ${parsedLine.custom_id}`,
+              );
+              errorCount++;
+              continue;
+            }
 
             const explanationContent = extractedText;
 
-            const chapter = await this.db
-              .getOrCreateConnection()
-              .selectFrom("chapters")
-              .where("book_id", "=", batchJob.book_id)
-              .where("chapter_number", "=", chapterNumber)
-              .select("chapter_id")
-              .executeTakeFirst();
+            let chapter: { chapter_id: number } | undefined;
+
+            if (chapterId) {
+              // Use direct chapter_id lookup for new format
+              chapter = await this.db
+                .getOrCreateConnection()
+                .selectFrom("chapters")
+                .where("chapter_id", "=", chapterId)
+                .select("chapter_id")
+                .executeTakeFirst();
+            } else {
+              // Fallback to book_id + chapter_number lookup for legacy format
+              chapter = await this.db
+                .getOrCreateConnection()
+                .selectFrom("chapters")
+                .where("book_id", "=", batchJob.book_id)
+                .where("chapter_number", "=", chapterNumber)
+                .select("chapter_id")
+                .executeTakeFirst();
+            }
 
             if (!chapter) {
               console.error(
@@ -913,19 +1790,26 @@ export class BatchOperationService {
               continue;
             }
 
+            const newExplanation = {
+              type: explanationType as any,
+              explanation: explanationContent,
+              chapter_id: chapter.chapter_id,
+              language_code: version.language_code,
+              version: 1, // Start with version 1
+              is_active: true,
+            };
+
             await this.db
               .getOrCreateConnection()
               .insertInto("explanations")
-              .values({
-                type: explanationType as any,
-                explanation: explanationContent,
-                chapter_id: chapter.chapter_id,
-                version_id: version.id,
-              })
+              .values(newExplanation)
               .onConflict((oc) =>
-                oc.columns(["chapter_id", "type", "version_id"]).doUpdateSet({
-                  explanation: explanationContent,
-                }),
+                oc
+                  .columns(["chapter_id", "type", "language_code", "version"])
+                  .doUpdateSet({
+                    explanation: explanationContent,
+                    is_active: true, // Ensure it's active on update
+                  }),
               )
               .execute();
 
@@ -979,7 +1863,7 @@ export class BatchOperationService {
       console.log(
         `[BATCH] Token usage: ${totalPromptTokens} prompt + ${totalCompletionTokens} completion = ${totalPromptTokens + totalCompletionTokens} total`,
       );
-      console.log(`[BATCH] Calculated cost: $${actualCost.toFixed(4)}`);
+      console.log(`[BATCH] Calculated cost: ${actualCost.toFixed(4)}`);
 
       await this.db
         .getOrCreateConnection()
@@ -1003,5 +1887,624 @@ export class BatchOperationService {
         error,
       );
     }
+  }
+
+  private async processRephraseOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonl = await fileContent.text();
+    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+    let processedCount = 0;
+    let errorCount = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+
+    for (const line of lines) {
+      let customId = "unknown";
+      try {
+        const parsedLine = JSON.parse(line);
+        customId = parsedLine.custom_id || "unknown";
+        console.log(`[BATCH] Processing line with custom_id: ${customId}`);
+
+        if (parsedLine.response?.body?.usage) {
+          totalPromptTokens += parsedLine.response.body.usage.input_tokens || 0;
+          totalCompletionTokens +=
+            parsedLine.response.body.usage.output_tokens || 0;
+        }
+
+        const responseBody = parsedLine.response?.body;
+
+        let extractedText: string | undefined;
+        if (responseBody?.output && Array.isArray(responseBody.output)) {
+          for (const item of responseBody.output) {
+            if (
+              item.content &&
+              Array.isArray(item.content) &&
+              typeof item.content[0]?.text === "string"
+            ) {
+              extractedText = item.content[0].text;
+              break; // Stop searching once we find the first valid text
+            }
+          }
+        }
+
+        // Fallback for the old format, just in case
+        if (!extractedText) {
+          extractedText = responseBody?.output_text;
+        }
+
+        if (
+          parsedLine.custom_id?.startsWith("rephrase|") &&
+          parsedLine.response?.status_code === 200 &&
+          typeof extractedText === "string" &&
+          extractedText.length > 0
+        ) {
+          const parts = parsedLine.custom_id.split("|");
+
+          // Handle both new format (6 parts) and legacy format (5 parts) for backward compatibility
+          let bookName: string;
+          let chapterNumberStr: string;
+          let explanationType: string;
+          let bibleVersion: string;
+          let explanationId: string;
+
+          if (parts.length === 6) {
+            // New format: rephrase|book|chapter|type|version|explanation_id
+            [
+              ,
+              bookName,
+              chapterNumberStr,
+              explanationType,
+              bibleVersion,
+              explanationId,
+            ] = parts;
+            console.log(
+              `[BATCH] Processing new format rephrase custom_id: ${parsedLine.custom_id}`,
+            );
+          } else if (parts.length === 5) {
+            // Legacy format: rephrase|book|chapter|type|version
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
+            console.log(
+              `[BATCH] Processing legacy format rephrase custom_id: ${parsedLine.custom_id}`,
+            );
+          } else {
+            console.error(
+              `[BATCH] Invalid rephrase custom_id format: ${parsedLine.custom_id}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          const chapterNumber = Number(chapterNumberStr);
+
+          const version = await this.db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .where("version_key", "=", bibleVersion)
+            .select("language_code")
+            .executeTakeFirst();
+
+          if (!version) {
+            errorCount++;
+            console.error(
+              `[BATCH] Bible version not found for rephrase: ${bibleVersion}`,
+            );
+            continue;
+          }
+
+          const book = await this.db
+            .getOrCreateConnection()
+            .selectFrom("books")
+            .where("name", "=", bookName)
+            .select("book_id")
+            .executeTakeFirst();
+
+          if (!book) {
+            errorCount++;
+            console.error(`[BATCH] Book not found for rephrase: ${bookName}`);
+            continue;
+          }
+
+          const chapter = await this.db
+            .getOrCreateConnection()
+            .selectFrom("chapters")
+            .where("book_id", "=", book.book_id)
+            .where("chapter_number", "=", chapterNumber)
+            .select("chapter_id")
+            .executeTakeFirst();
+
+          if (!chapter) {
+            errorCount++;
+            console.error(
+              `[BATCH] Chapter not found for rephrase: ${bookName} ${chapterNumber}`,
+            );
+            continue;
+          }
+
+          // Find the most recent version of the explanation to rephrase
+          const originalExplanation = await this.db
+            .getOrCreateConnection()
+            .selectFrom("explanations")
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("type", "=", explanationType as any)
+            .where("language_code", "=", version.language_code)
+            .orderBy("version", "desc")
+            .selectAll()
+            .executeTakeFirst();
+
+          if (originalExplanation) {
+            const originalExplanationId = originalExplanation.explanation_id;
+            await this.db
+              .getOrCreateConnection()
+              .transaction()
+              .execute(async (trx) => {
+                // Deactivate all existing versions of this explanation
+                await trx
+                  .updateTable("explanations")
+                  .set({ is_active: false })
+                  .where("chapter_id", "=", chapter.chapter_id)
+                  .where("type", "=", explanationType as any)
+                  .where("language_code", "=", version.language_code)
+                  .execute();
+
+                // Insert the new, active version
+                await trx
+                  .insertInto("explanations")
+                  .values({
+                    type: originalExplanation.type,
+                    explanation: extractedText,
+                    chapter_id: originalExplanation.chapter_id,
+                    language_code: originalExplanation.language_code,
+                    version: originalExplanation.version + 1,
+                    is_active: true,
+                    created_by_admin: false,
+                    parent_explanation_id: originalExplanationId,
+                    created_at: new Date(),
+                  })
+                  .execute();
+              });
+            processedCount++;
+          } else {
+            errorCount++;
+            console.error(
+              `[BATCH] Original explanation not found for rephrase: ${bookName} ${chapterNumber} ${explanationType}`,
+            );
+          }
+        } else if (parsedLine.custom_id?.startsWith("rephrase-")) {
+          // Legacy support for old rephrase batches
+          const originalExplanationId = Number.parseInt(
+            parsedLine.custom_id.replace("rephrase-", ""),
+          );
+
+          const originalExplanation = await this.db
+            .getOrCreateConnection()
+            .selectFrom("explanations")
+            .where("explanation_id", "=", originalExplanationId)
+            .orderBy("version", "desc")
+            .selectAll()
+            .executeTakeFirst();
+
+          if (originalExplanation) {
+            await this.db
+              .getOrCreateConnection()
+              .transaction()
+              .execute(async (trx) => {
+                await trx
+                  .updateTable("explanations")
+                  .set({ is_active: false })
+                  .where("explanation_id", "=", originalExplanationId)
+                  .execute();
+
+                await trx
+                  .insertInto("explanations")
+                  .values({
+                    type: originalExplanation.type,
+                    explanation: extractedText ?? "",
+                    chapter_id: originalExplanation.chapter_id,
+                    language_code: originalExplanation.language_code,
+                    version: originalExplanation.version + 1,
+                    is_active: true,
+                    created_by_admin: false,
+                    parent_explanation_id: originalExplanationId,
+                    created_at: new Date(),
+                  })
+                  .execute();
+              });
+            processedCount++;
+          } else {
+            errorCount++;
+            console.error(
+              `[BATCH] SILENT FAILURE: Original explanation not found for ID: ${originalExplanationId}. This is likely the cause of the error.`,
+            );
+          }
+        } else {
+          errorCount++;
+          console.error(
+            `[BATCH] Failed to process rephrase line for custom_id: ${
+              parsedLine.custom_id
+            }. Response:`,
+            JSON.stringify(parsedLine.response, null, 2),
+          );
+        }
+      } catch (error) {
+        errorCount++;
+        console.error(
+          `[BATCH] Error processing rephrase line for custom_id: ${customId}:`,
+          error,
+        );
+      }
+    }
+
+    const actualCost = await calculateActualCost(
+      totalPromptTokens,
+      totalCompletionTokens,
+      batchJob.model,
+    );
+
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("batch_jobs")
+      .set({
+        explanations_processed: true,
+        actual_cost: actualCost,
+        prompt_tokens: totalPromptTokens,
+        completion_tokens: totalCompletionTokens,
+        total_tokens: totalPromptTokens + totalCompletionTokens,
+      })
+      .where("openai_batch_id", "=", batchId)
+      .execute();
+
+    console.log(
+      `[BATCH] Rephrase batch ${batchId} processed: ${processedCount} saved, ${errorCount} errors. Cost: ${actualCost.toFixed(4)}`,
+    );
+  }
+
+  private async processTranslateOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: {
+      model: string;
+      bible_version?: string;
+      book_id?: number | null;
+    },
+  ) {
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonl = await fileContent.text();
+    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+    let processedCount = 0;
+    let errorCount = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+
+    const connection = this.db.getOrCreateConnection();
+
+    for (const line of lines) {
+      let customId = "unknown";
+      try {
+        const parsedLine = JSON.parse(line);
+        customId = parsedLine.custom_id || "unknown";
+
+        if (parsedLine.response?.body?.usage) {
+          totalPromptTokens += parsedLine.response.body.usage.input_tokens || 0;
+          totalCompletionTokens +=
+            parsedLine.response.body.usage.output_tokens || 0;
+        }
+
+        const responseBody = parsedLine.response?.body;
+        let extractedText: string | undefined;
+        if (responseBody?.output && Array.isArray(responseBody.output)) {
+          for (const item of responseBody.output) {
+            if (
+              item.content &&
+              Array.isArray(item.content) &&
+              typeof item.content[0]?.text === "string"
+            ) {
+              extractedText = item.content[0].text;
+              break; // Stop searching once we find the first valid text
+            }
+          }
+        }
+
+        // Fallback for the old format, just in case
+        if (!extractedText) {
+          extractedText = responseBody?.output_text;
+        }
+
+        if (
+          parsedLine.custom_id?.startsWith("translate|") &&
+          parsedLine.response?.status_code === 200 &&
+          typeof extractedText === "string" &&
+          extractedText.length > 0
+        ) {
+          const parts = parsedLine.custom_id.split("|");
+
+          // Handle both new format (6 parts) and legacy format (5 parts) for backward compatibility
+          let bookName: string;
+          let chapterNumberStr: string;
+          let explanationType: string;
+          let bibleVersion: string;
+          let explanationId: string;
+
+          if (parts.length === 6) {
+            // New format: translate|book|chapter|type|version|explanation_id
+            [
+              ,
+              bookName,
+              chapterNumberStr,
+              explanationType,
+              bibleVersion,
+              explanationId,
+            ] = parts;
+            console.log(
+              `[BATCH] Processing new format translate custom_id: ${parsedLine.custom_id}`,
+            );
+          } else if (parts.length === 5) {
+            // Legacy format: translate|book|chapter|type|version
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
+            console.log(
+              `[BATCH] Processing legacy format translate custom_id: ${parsedLine.custom_id}`,
+            );
+          } else {
+            console.error(
+              `[BATCH] Invalid translate custom_id format: ${parsedLine.custom_id}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          const chapterNumber = Number(chapterNumberStr);
+
+          if (!bibleVersion) {
+            errorCount++;
+            console.error(
+              `[BATCH] Bible version (language code) is missing in custom_id: ${parsedLine.custom_id}`,
+            );
+            continue;
+          }
+
+          const book = await connection
+            .selectFrom("books")
+            .where("name", "=", bookName)
+            .select("book_id")
+            .executeTakeFirst();
+
+          if (!book) {
+            errorCount++;
+            console.error(`[BATCH] Book not found for translate: ${bookName}`);
+            continue;
+          }
+
+          const chapter = await connection
+            .selectFrom("chapters")
+            .where("book_id", "=", book.book_id)
+            .where("chapter_number", "=", chapterNumber)
+            .select("chapter_id")
+            .executeTakeFirst();
+
+          if (!chapter) {
+            errorCount++;
+            console.error(
+              `[BATCH] Chapter not found for translate: ${bookName} ${chapterNumber}`,
+            );
+            continue;
+          }
+
+          // Find the most recent version of this specific explanation
+          const existingExplanation = await connection
+            .selectFrom("explanations")
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("type", "=", explanationType as any)
+            .where("language_code", "=", bibleVersion)
+            .orderBy("version", "desc")
+            .selectAll()
+            .executeTakeFirst();
+
+          const nextVersion = existingExplanation
+            ? existingExplanation.version + 1
+            : 1;
+          const parentExplanationId =
+            existingExplanation?.explanation_id || null;
+
+          console.log(
+            `[BATCH] Processing translation for ${bookName} ${chapterNumber} ${explanationType}, version: ${nextVersion}`,
+          );
+
+          await connection.transaction().execute(async (trx) => {
+            // Deactivate all existing versions of this specific explanation
+            await trx
+              .updateTable("explanations")
+              .set({ is_active: false })
+              .where("chapter_id", "=", chapter.chapter_id)
+              .where("type", "=", explanationType as any)
+              .where("language_code", "=", bibleVersion)
+              .execute();
+
+            // Insert the new, active version with proper parent tracking
+            await trx
+              .insertInto("explanations")
+              .values({
+                type: explanationType as any,
+                explanation: extractedText,
+                chapter_id: chapter.chapter_id,
+                language_code: bibleVersion,
+                version: nextVersion,
+                is_active: true,
+                created_by_admin: false,
+                parent_explanation_id: parentExplanationId,
+                created_at: new Date(),
+              })
+              .execute();
+          });
+          processedCount++;
+        } else {
+          errorCount++;
+          console.error(
+            `[BATCH] Failed to process translate line for custom_id: ${
+              parsedLine.custom_id
+            }. Response:`,
+            JSON.stringify(parsedLine.response, null, 2),
+          );
+        }
+      } catch (error) {
+        errorCount++;
+        console.error(
+          `[BATCH] Error processing translate line for custom_id: ${customId}:`,
+          error,
+        );
+      }
+    }
+
+    const actualCost = await calculateActualCost(
+      totalPromptTokens,
+      totalCompletionTokens,
+      batchJob.model,
+    );
+
+    await connection
+      .updateTable("batch_jobs")
+      .set({
+        explanations_processed: true,
+        actual_cost: actualCost,
+        prompt_tokens: totalPromptTokens,
+        completion_tokens: totalCompletionTokens,
+        total_tokens: totalPromptTokens + totalCompletionTokens,
+      })
+      .where("openai_batch_id", "=", batchId)
+      .execute();
+
+    console.log(
+      `[BATCH] Translate batch ${batchId} processed: ${processedCount} saved, ${errorCount} errors. Cost: ${actualCost.toFixed(4)}`,
+    );
+  }
+
+  /**
+   * Validates custom ID uniqueness within a batch and ensures no collisions
+   * @param batchRequests Array of batch requests to validate
+   * @returns Object containing validation results and any duplicates found
+   */
+  private validateCustomIdUniqueness(batchRequests: BatchJobRequest[]): {
+    isValid: boolean;
+    duplicates: string[];
+    summary: string;
+  } {
+    const customIdSet = new Set<string>();
+    const duplicates: string[] = [];
+
+    for (const request of batchRequests) {
+      if (customIdSet.has(request.custom_id)) {
+        duplicates.push(request.custom_id);
+      } else {
+        customIdSet.add(request.custom_id);
+      }
+    }
+
+    const isValid = duplicates.length === 0;
+    const summary = isValid
+      ? `All ${batchRequests.length} custom IDs are unique`
+      : `Found ${duplicates.length} duplicate custom IDs out of ${batchRequests.length} total`;
+
+    console.log(`[BATCH] Custom ID validation: ${summary}`);
+    if (!isValid) {
+      console.error("[BATCH] Duplicate custom IDs found:", duplicates);
+    }
+
+    return { isValid, duplicates, summary };
+  }
+
+  /**
+   * Enhanced error detection and reporting for batch processing failures
+   * @param batchStatus OpenAI batch status response
+   * @param batchId The batch ID for logging context
+   * @returns Enhanced error details with duplicate detection
+   */
+  private async enhancedBatchErrorDetection(
+    batchStatus: any,
+    batchId: string,
+  ): Promise<{
+    hasDuplicateErrors: boolean;
+    duplicateCustomIds: string[];
+    errorSummary: string;
+    totalErrors: number;
+  }> {
+    const result = {
+      hasDuplicateErrors: false,
+      duplicateCustomIds: [] as string[],
+      errorSummary: "No errors detected",
+      totalErrors: 0,
+    };
+
+    if (!batchStatus.errors?.data || batchStatus.errors.data.length === 0) {
+      return result;
+    }
+
+    result.totalErrors = batchStatus.errors.data.length;
+    const duplicateErrors = [];
+    const otherErrors = [];
+
+    for (const error of batchStatus.errors.data) {
+      const errorMessage = error.message || "";
+      const errorCode = error.code || "";
+
+      // Detect duplicate custom_id errors
+      if (
+        errorMessage.toLowerCase().includes("duplicate") &&
+        errorMessage.toLowerCase().includes("custom_id")
+      ) {
+        result.hasDuplicateErrors = true;
+        duplicateErrors.push(error);
+
+        // Try to extract the custom_id from the error message
+        const customIdMatch = errorMessage.match(
+          /custom_id["']?[:\s]*["']?([^"'\s,]+)/i,
+        );
+        if (customIdMatch) {
+          result.duplicateCustomIds.push(customIdMatch[1]);
+        }
+      } else {
+        otherErrors.push(error);
+      }
+    }
+
+    // Create comprehensive error summary
+    const summaryParts = [];
+    if (duplicateErrors.length > 0) {
+      summaryParts.push(`${duplicateErrors.length} duplicate custom_id errors`);
+    }
+    if (otherErrors.length > 0) {
+      summaryParts.push(`${otherErrors.length} other errors`);
+    }
+
+    result.errorSummary = summaryParts.join(", ");
+
+    // Enhanced logging
+    console.error(
+      `[BATCH] Enhanced error detection for batch ${batchId}: ${result.errorSummary}`,
+    );
+
+    if (result.hasDuplicateErrors) {
+      console.error(
+        `[BATCH] Duplicate custom_id errors detected in batch ${batchId}:`,
+        {
+          duplicateCustomIds: result.duplicateCustomIds,
+          duplicateErrorDetails: duplicateErrors,
+        },
+      );
+    }
+
+    if (otherErrors.length > 0) {
+      console.error(
+        `[BATCH] Other errors in batch ${batchId}:`,
+        otherErrors.slice(0, 5), // Log first 5 other errors to avoid spam
+      );
+    }
+
+    return result;
   }
 }

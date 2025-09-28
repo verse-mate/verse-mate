@@ -4,8 +4,10 @@ import * as RadixTabs from "@radix-ui/react-tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
+import { getBookVerse, getExplanation } from "../../api/bible";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
 import {
@@ -67,6 +69,8 @@ export const MainContent = () => {
     conversationId,
   } = useGetSearchParams();
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
+  const [visibleChapters, setVisibleChapters] = useState<any[]>([]);
+  const isAnimating = useRef(false);
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
   const { testaments } = fetchAllTestaments();
@@ -87,6 +91,18 @@ export const MainContent = () => {
     session,
     explanation?.explanation_id,
   );
+
+  useEffect(() => {
+    const savedExplanationType = localStorage.getItem(
+      "postLoginExplanationType",
+    );
+    if (savedExplanationType) {
+      saveSearchParams({
+        explanationType: savedExplanationType as ExplanationTypeEnum,
+      });
+      localStorage.removeItem("postLoginExplanationType");
+    }
+  }, [saveSearchParams]);
 
   useEffect(() => {
     if (lastRead?.result && !bookId && !verseId && !testament) {
@@ -119,6 +135,7 @@ export const MainContent = () => {
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
     resetFilter: leftPanelResetFilter,
+    recentlyViewedBooks,
   } = useSelectDropdown(testaments);
 
   const {
@@ -152,10 +169,16 @@ export const MainContent = () => {
     setHoverRating,
   } = useRating(5, session, bookId, verseId, explanation?.explanation_id);
 
-  const oldTestamentBooks =
-    testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [];
-  const newTestamentBooks =
-    testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [];
+  const oldTestamentBooks = useMemo(
+    () =>
+      testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [],
+    [testaments],
+  );
+  const newTestamentBooks = useMemo(
+    () =>
+      testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [],
+    [testaments],
+  );
 
   const {
     isOpen: isDropdownOpenVersion,
@@ -241,9 +264,86 @@ export const MainContent = () => {
 
   const { handleNextChapter, handlePreviousChapter } = useChapter();
 
-  const handleMobileSwipe = useSwipeable({
-    onSwipedRight: () => handlePreviousChapter(),
-    onSwipedLeft: () => handleNextChapter(chapters),
+  useEffect(() => {
+    if (bookVerseData && !isAnimating.current) {
+      setVisibleChapters([
+        { ...bookVerseData, key: `${bookId}-${verseId}`, className: "" },
+      ]);
+    }
+  }, [bookVerseData, bookId, verseId]);
+
+  const handleAnimationEnd = useCallback(() => {
+    isAnimating.current = false;
+    setVisibleChapters((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      if (prev.length >= 2) return [prev[prev.length - 1]];
+      return prev;
+    });
+  }, []);
+
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: () => {
+      if (isAnimating.current) return;
+      const prevVerseId = Number(verseId) - 1;
+      if (prevVerseId < 1) return;
+
+      const prevChapterData = queryClient.getQueryData([
+        "bookVerse",
+        bookId,
+        prevVerseId,
+        bibleVersion,
+      ]);
+      if (!prevChapterData) {
+        handlePreviousChapter();
+        return;
+      }
+
+      isAnimating.current = true;
+      setVisibleChapters((prev) => {
+        const outgoingChapter = {
+          ...prev[0],
+          className: (styles as any).slideOutRight,
+        };
+        const incomingChapter = {
+          ...(prevChapterData as object),
+          key: `${bookId}-${prevVerseId}`,
+          className: (styles as any).slideInLeft,
+        };
+        return [outgoingChapter, incomingChapter];
+      });
+      setTimeout(() => handlePreviousChapter(), 50);
+    },
+    onSwipedLeft: () => {
+      if (isAnimating.current) return;
+      const nextVerseId = Number(verseId) + 1;
+      if (!chapters || nextVerseId > chapters) return;
+
+      const nextChapterData = queryClient.getQueryData([
+        "bookVerse",
+        bookId,
+        nextVerseId,
+        bibleVersion,
+      ]);
+      if (!nextChapterData) {
+        handleNextChapter(chapters);
+        return;
+      }
+
+      isAnimating.current = true;
+      setVisibleChapters((prev) => {
+        const outgoingChapter = {
+          ...prev[0],
+          className: (styles as any).slideOutLeft,
+        };
+        const incomingChapter = {
+          ...(nextChapterData as object),
+          key: `${bookId}-${nextVerseId}`,
+          className: (styles as any).slideInRight,
+        };
+        return [outgoingChapter, incomingChapter];
+      });
+      setTimeout(() => handleNextChapter(chapters), 50);
+    },
     delta: 30,
     swipeDuration: 500,
     preventScrollOnSwipe: false,
@@ -251,14 +351,77 @@ export const MainContent = () => {
     trackMouse: false,
   });
 
-  const handleDesktopSwipe = useSwipeable({
-    onSwipedRight: () => handlePreviousChapter(),
-    onSwipedLeft: () => handleNextChapter(),
-    delta: 50,
-    preventScrollOnSwipe: false,
-    trackTouch: true,
-    trackMouse: false,
-  });
+  const handlePreviousButtonClick = () => {
+    if (window.innerWidth < 1024) {
+      if (isAnimating.current) return;
+      const prevVerseId = Number(verseId) - 1;
+      if (prevVerseId < 1) return;
+
+      const prevChapterData = queryClient.getQueryData([
+        "bookVerse",
+        bookId,
+        prevVerseId,
+        bibleVersion,
+      ]);
+      if (!prevChapterData) {
+        handlePreviousChapter();
+        return;
+      }
+
+      isAnimating.current = true;
+      setVisibleChapters((prev) => {
+        const outgoingChapter = {
+          ...prev[0],
+          className: (styles as any).slideOutRight,
+        };
+        const incomingChapter = {
+          ...(prevChapterData as object),
+          key: `${bookId}-${prevVerseId}`,
+          className: (styles as any).slideInLeft,
+        };
+        return [outgoingChapter, incomingChapter];
+      });
+      setTimeout(() => handlePreviousChapter(), 50);
+    } else {
+      handlePreviousChapter();
+    }
+  };
+
+  const handleNextButtonClick = () => {
+    if (window.innerWidth < 1024) {
+      if (isAnimating.current) return;
+      const nextVerseId = Number(verseId) + 1;
+      if (!chapters || nextVerseId > chapters) return;
+
+      const nextChapterData = queryClient.getQueryData([
+        "bookVerse",
+        bookId,
+        nextVerseId,
+        bibleVersion,
+      ]);
+      if (!nextChapterData) {
+        handleNextChapter(chapters);
+        return;
+      }
+
+      isAnimating.current = true;
+      setVisibleChapters((prev) => {
+        const outgoingChapter = {
+          ...prev[0],
+          className: (styles as any).slideOutLeft,
+        };
+        const incomingChapter = {
+          ...(nextChapterData as object),
+          key: `${bookId}-${nextVerseId}`,
+          className: (styles as any).slideInRight,
+        };
+        return [outgoingChapter, incomingChapter];
+      });
+      setTimeout(() => handleNextChapter(chapters), 50);
+    } else {
+      handleNextChapter(chapters);
+    }
+  };
 
   const { activeTab, setActiveTab } = useHandleTab();
   const previousTabRef = useRef<string>("explanation");
@@ -267,19 +430,61 @@ export const MainContent = () => {
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
 
+  const prevActiveTabRef = useRef<string>();
+  const lastMobileTabRef = useRef<string | null>(null);
+  const prevWidthRef = useRef(
+    typeof window !== "undefined" ? window.innerWidth : 0,
+  );
+
+  useEffect(() => {
+    if (activeTab !== "book") {
+      isAnimating.current = false;
+      if (bookVerseData) {
+        setVisibleChapters([
+          { ...bookVerseData, key: `${bookId}-${verseId}`, className: "" },
+        ]);
+      }
+    }
+  }, [activeTab, bookVerseData, bookId, verseId]);
+
+  useEffect(() => {
+    if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
+      setRightPanelContent("default");
+    }
+    prevActiveTabRef.current = activeTab;
+  }, [activeTab]);
+
   useEffect(() => {
     const handleResize = () => {
-      // Removed automatic tab switching to allow tab persistence.
-      // Responsive layout should be handled by CSS media queries.
+      const currentWidth = window.innerWidth;
+      const prevWidth = prevWidthRef.current;
+
+      // From mobile to desktop
+      if (prevWidth < 1024 && currentWidth >= 1024) {
+        lastMobileTabRef.current = activeTabRef.current;
+        if (activeTabRef.current === "book") {
+          setActiveTab("explanation");
+        }
+      }
+
+      // From desktop to mobile
+      if (prevWidth >= 1024 && currentWidth < 1024) {
+        if (lastMobileTabRef.current) {
+          setActiveTab(lastMobileTabRef.current);
+        } else {
+          setActiveTab("book");
+        }
+      }
+
+      prevWidthRef.current = currentWidth;
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize();
 
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [setActiveTab]);
 
   const { conversationsHistory, selectConversation, handleChatExists } =
     useConversationManager(session);
@@ -462,6 +667,105 @@ export const MainContent = () => {
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
 
+  const renderRecentlyViewed = () => {
+    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
+    return recentlyViewedBooks
+      .filter((id) => Number(id) !== bookId)
+      .map((bookId) => {
+        const book = allBooks.find((b) => b.b === Number(bookId));
+        if (!book) return null;
+        return (
+          <Accordion.Item value={book.n} key={`recently-${book.n}`}>
+            <div
+              data-accordion-trigger={book.n}
+              onClick={() => handleMobileAccordionTriggerClick(book.n)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ")
+                  handleMobileAccordionTriggerClick(book.n);
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <Accordion.Trigger
+                label={book.n}
+                highlightBook={false}
+                icon={
+                  <Icon.HistoryIcon
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      marginRight: "8px",
+                      fill: "var(--charcoal-grey)",
+                    }}
+                  />
+                }
+                iconPosition="right"
+              />
+            </div>
+            <Accordion.Content>
+              <VerseGrid
+                testament={book.t}
+                bookId={String(book.b)}
+                bookName={book.n}
+                verses={Array.from({ length: book.c }, (_, i) =>
+                  (i + 1).toString(),
+                )}
+                onVerseSelect={(bookId, bookName, verse, testament) => {
+                  leftPanelHandleVerseSelect(
+                    bookId,
+                    bookName,
+                    verse,
+                    testament,
+                  );
+                  handleMobileVerseSelect(testament || "", bookName, verse);
+                  closeDropdownBook();
+                }}
+                selectedVerse={String(verseId)}
+                selectedBook={String(bookId)}
+              />
+            </Accordion.Content>
+          </Accordion.Item>
+        );
+      })
+      .filter(Boolean);
+  };
+
+  const renderSelectedBook = () => {
+    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
+    const selectedBook = allBooks.find((book) => book.b === bookId);
+    if (!selectedBook || leftPanelDebouncedFilter.trim()) return null;
+
+    return (
+      <Accordion.Item value={selectedBook.n} key={selectedBook.n}>
+        <div
+          data-accordion-trigger={selectedBook.n}
+          onClick={() => handleMobileAccordionTriggerClick(selectedBook.n)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ")
+              handleMobileAccordionTriggerClick(selectedBook.n);
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <Accordion.Trigger label={selectedBook.n} highlightBook={true} />
+        </div>
+        <Accordion.Content styles={fixedItem ? { position: "relative" } : {}}>
+          <VerseGrid
+            testament={selectedBook.t}
+            bookId={String(selectedBook.b)}
+            bookName={selectedBook.n}
+            verses={Array.from({ length: selectedBook.c }, (_, i) =>
+              (i + 1).toString(),
+            )}
+            onVerseSelect={leftPanelHandleVerseSelect}
+            selectedVerse={String(verseId)}
+            selectedBook={String(bookId)}
+          />
+        </Accordion.Content>
+      </Accordion.Item>
+    );
+  };
+
   const selectedBookDetails = [...oldTestamentBooks, ...newTestamentBooks].find(
     (book) => book.b === bookId,
   );
@@ -640,6 +944,66 @@ export const MainContent = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (bookId && verseId && chapters) {
+      const nextChapterVerseId = Number(verseId) + 1;
+      const previousChapterVerseId = Number(verseId) - 1;
+
+      if (nextChapterVerseId <= chapters) {
+        // Prefetch next chapter's Bible text
+        queryClient.prefetchQuery({
+          queryKey: ["bookVerse", bookId, nextChapterVerseId, bibleVersion],
+          queryFn: () => getBookVerse(bookId, nextChapterVerseId, bibleVersion),
+        });
+
+        // Prefetch next chapter's explanation
+        queryClient.prefetchQuery({
+          queryKey: [
+            "explanation",
+            bookId,
+            nextChapterVerseId,
+            explanationType,
+            bibleVersion,
+          ],
+          queryFn: () =>
+            getExplanation(
+              bookId,
+              nextChapterVerseId,
+              explanationType,
+              bibleVersion,
+            ),
+        });
+      }
+
+      if (previousChapterVerseId > 0) {
+        // Prefetch previous chapter's Bible text
+        queryClient.prefetchQuery({
+          queryKey: ["bookVerse", bookId, previousChapterVerseId, bibleVersion],
+          queryFn: () =>
+            getBookVerse(bookId, previousChapterVerseId, bibleVersion),
+        });
+
+        // Prefetch previous chapter's explanation
+        queryClient.prefetchQuery({
+          queryKey: [
+            "explanation",
+            bookId,
+            previousChapterVerseId,
+            explanationType,
+            bibleVersion,
+          ],
+          queryFn: () =>
+            getExplanation(
+              bookId,
+              previousChapterVerseId,
+              explanationType,
+              bibleVersion,
+            ),
+        });
+      }
+    }
+  }, [bookId, verseId, chapters, bibleVersion, explanationType, queryClient]);
+
   return (
     <>
       <RadixTabs.Root
@@ -721,82 +1085,109 @@ export const MainContent = () => {
                             className={`${styles.contentGroupedTrigger}`}
                             style={{ paddingBottom: "16px" }}
                           >
+                            <div
+                              className={styles.selectedBook}
+                              style={
+                                fixedItem
+                                  ? { position: "relative", marginTop: 48 }
+                                  : {}
+                              }
+                            >
+                              <Accordion.Root type="multiple">
+                                {renderSelectedBook()}
+                              </Accordion.Root>
+                            </div>
                             <Tabs.Content value="OT">
-                              <Accordion.Root
-                                style={
-                                  fixedItem
-                                    ? { position: "relative", marginTop: 48 }
-                                    : {}
-                                }
-                              >
-                                {fixedItem && selectedBookDetails && (
-                                  <Accordion.Item
-                                    value={selectedBookDetails.n}
-                                    key={`selected-${selectedBookDetails.n}`}
-                                  >
-                                    <div
-                                      data-mobile-accordion-trigger={
-                                        selectedBookDetails.n
-                                      }
-                                      onClick={() =>
-                                        handleMobileAccordionTriggerClick(
-                                          selectedBookDetails.n,
-                                        )
-                                      }
-                                      onKeyDown={(event) => {
-                                        if (
-                                          event.key === "Enter" ||
-                                          event.key === " "
-                                        )
-                                          handleMobileAccordionTriggerClick(
-                                            selectedBookDetails.n,
-                                          );
-                                      }}
-                                      role="button"
-                                      tabIndex={0}
-                                    >
-                                      <Accordion.Trigger
-                                        label={selectedBookDetails.n}
-                                        highlightBook={true}
-                                      />
-                                    </div>
-                                    <Accordion.Content
-                                      styles={{ position: "relative" }}
-                                    >
-                                      <VerseGrid
-                                        testament={selectedBookDetails.t}
-                                        bookId={String(selectedBookDetails.b)}
-                                        bookName={selectedBookDetails.n}
-                                        verses={Array.from(
-                                          { length: selectedBookDetails.c },
-                                          (_, i) => (i + 1).toString(),
-                                        )}
-                                        onVerseSelect={(
-                                          bookId,
-                                          bookName,
-                                          verse,
-                                          testament,
-                                        ) => {
-                                          leftPanelHandleVerseSelect(
-                                            bookId,
-                                            bookName,
-                                            verse,
-                                            testament,
-                                          );
-                                          handleMobileVerseSelect(
-                                            testament || "",
-                                            bookName,
-                                            verse,
-                                          );
-                                          closeDropdownBook();
-                                        }}
-                                        selectedVerse={String(verseId)}
-                                        selectedBook={String(bookId)}
-                                      />
-                                    </Accordion.Content>
-                                  </Accordion.Item>
-                                )}
-
+                              <Accordion.Root>
+                                {/* Recently viewed books (all testaments) */}
+                                {!leftPanelDebouncedFilter.trim() &&
+                                  recentlyViewedBooks
+                                    .filter((id) => Number(id) !== bookId)
+                                    .map((bookId) => {
+                                      const book = [
+                                        ...oldTestamentBooks,
+                                        ...newTestamentBooks,
+                                      ].find((b) => b.b === Number(bookId));
+                                      if (!book) return null;
+                                      return (
+                                        <Accordion.Item
+                                          value={book.n}
+                                          key={`recently-${book.n}`}
+                                        >
+                                          <div
+                                            data-mobile-accordion-trigger={
+                                              book.n
+                                            }
+                                            onClick={() =>
+                                              handleMobileAccordionTriggerClick(
+                                                book.n,
+                                              )
+                                            }
+                                            onKeyDown={(event) => {
+                                              if (
+                                                event.key === "Enter" ||
+                                                event.key === " "
+                                              )
+                                                handleMobileAccordionTriggerClick(
+                                                  book.n,
+                                                );
+                                            }}
+                                            role="button"
+                                            tabIndex={0}
+                                          >
+                                            <Accordion.Trigger
+                                              label={book.n}
+                                              highlightBook={false}
+                                              icon={
+                                                <Icon.HistoryIcon
+                                                  style={{
+                                                    width: "16px",
+                                                    height: "16px",
+                                                    marginRight: "8px",
+                                                    fill: "var(--charcoal-grey)",
+                                                  }}
+                                                />
+                                              }
+                                              iconPosition="right"
+                                            />
+                                          </div>
+                                          <Accordion.Content>
+                                            <VerseGrid
+                                              testament={book.t}
+                                              bookId={String(book.b)}
+                                              bookName={book.n}
+                                              verses={Array.from(
+                                                { length: book.c },
+                                                (_, i) => (i + 1).toString(),
+                                              )}
+                                              onVerseSelect={(
+                                                bookId,
+                                                bookName,
+                                                verse,
+                                                testament,
+                                              ) => {
+                                                leftPanelHandleVerseSelect(
+                                                  bookId,
+                                                  bookName,
+                                                  verse,
+                                                  testament,
+                                                );
+                                                handleMobileVerseSelect(
+                                                  testament || "",
+                                                  bookName,
+                                                  verse,
+                                                );
+                                                closeDropdownBook();
+                                              }}
+                                              selectedVerse={String(verseId)}
+                                              selectedBook={String(bookId)}
+                                            />
+                                          </Accordion.Content>
+                                        </Accordion.Item>
+                                      );
+                                    })
+                                    .filter(Boolean)}
+                                {/* Regular OT books */}
                                 {leftPanelFilteredBooks
                                   .map((bookName) =>
                                     testaments?.find((t) => t.n === bookName),
@@ -807,6 +1198,12 @@ export const MainContent = () => {
                                     ): book is NonNullable<typeof book> => {
                                       if (!book) return false;
                                       if (book.b === bookId) return false;
+                                      if (
+                                        recentlyViewedBooks.includes(
+                                          String(book.b),
+                                        )
+                                      )
+                                        return false;
                                       return leftPanelDebouncedFilter.trim()
                                         ? true
                                         : book.t === "OT";
@@ -882,81 +1279,96 @@ export const MainContent = () => {
                             </Tabs.Content>
 
                             <Tabs.Content value="NT">
-                              <Accordion.Root
-                                style={
-                                  fixedItem
-                                    ? { position: "relative", marginTop: 48 }
-                                    : {}
-                                }
-                              >
-                                {fixedItem && selectedBookDetails && (
-                                  <Accordion.Item
-                                    value={selectedBookDetails.n}
-                                    key={`selected-${selectedBookDetails.n}`}
-                                  >
-                                    <div
-                                      data-mobile-accordion-trigger={
-                                        selectedBookDetails.n
-                                      }
-                                      onClick={() =>
-                                        handleMobileAccordionTriggerClick(
-                                          selectedBookDetails.n,
-                                        )
-                                      }
-                                      onKeyDown={(event) => {
-                                        if (
-                                          event.key === "Enter" ||
-                                          event.key === " "
-                                        )
-                                          handleMobileAccordionTriggerClick(
-                                            selectedBookDetails.n,
-                                          );
-                                      }}
-                                      role="button"
-                                      tabIndex={0}
-                                    >
-                                      <Accordion.Trigger
-                                        label={selectedBookDetails.n}
-                                        highlightBook={true}
-                                      />
-                                    </div>
-                                    <Accordion.Content
-                                      styles={{ position: "relative" }}
-                                    >
-                                      <VerseGrid
-                                        testament={selectedBookDetails.t}
-                                        bookId={String(selectedBookDetails.b)}
-                                        bookName={selectedBookDetails.n}
-                                        verses={Array.from(
-                                          { length: selectedBookDetails.c },
-                                          (_, i) => (i + 1).toString(),
-                                        )}
-                                        onVerseSelect={(
-                                          bookId,
-                                          bookName,
-                                          verse,
-                                          testament,
-                                        ) => {
-                                          leftPanelHandleVerseSelect(
-                                            bookId,
-                                            bookName,
-                                            verse,
-                                            testament,
-                                          );
-                                          handleMobileVerseSelect(
-                                            testament || "",
-                                            bookName,
-                                            verse,
-                                          );
-                                          closeDropdownBook();
-                                        }}
-                                        selectedVerse={String(verseId)}
-                                        selectedBook={String(bookId)}
-                                      />
-                                    </Accordion.Content>
-                                  </Accordion.Item>
-                                )}
-
+                              <Accordion.Root>
+                                {/* Recently viewed books (all testaments) */}
+                                {!leftPanelDebouncedFilter.trim() &&
+                                  recentlyViewedBooks
+                                    .filter((id) => Number(id) !== bookId)
+                                    .map((bookId) => {
+                                      const book = [
+                                        ...oldTestamentBooks,
+                                        ...newTestamentBooks,
+                                      ].find((b) => b.b === Number(bookId));
+                                      if (!book) return null;
+                                      return (
+                                        <Accordion.Item
+                                          value={book.n}
+                                          key={`recently-${book.n}`}
+                                        >
+                                          <div
+                                            data-mobile-accordion-trigger={
+                                              book.n
+                                            }
+                                            onClick={() =>
+                                              handleMobileAccordionTriggerClick(
+                                                book.n,
+                                              )
+                                            }
+                                            onKeyDown={(event) => {
+                                              if (
+                                                event.key === "Enter" ||
+                                                event.key === " "
+                                              )
+                                                handleMobileAccordionTriggerClick(
+                                                  book.n,
+                                                );
+                                            }}
+                                            role="button"
+                                            tabIndex={0}
+                                          >
+                                            <Accordion.Trigger
+                                              label={book.n}
+                                              highlightBook={false}
+                                              icon={
+                                                <Icon.HistoryIcon
+                                                  style={{
+                                                    width: "16px",
+                                                    height: "16px",
+                                                    marginRight: "8px",
+                                                    fill: "var(--charcoal-grey)",
+                                                  }}
+                                                />
+                                              }
+                                              iconPosition="right"
+                                            />
+                                          </div>
+                                          <Accordion.Content>
+                                            <VerseGrid
+                                              testament={book.t}
+                                              bookId={String(book.b)}
+                                              bookName={book.n}
+                                              verses={Array.from(
+                                                { length: book.c },
+                                                (_, i) => (i + 1).toString(),
+                                              )}
+                                              onVerseSelect={(
+                                                bookId,
+                                                bookName,
+                                                verse,
+                                                testament,
+                                              ) => {
+                                                leftPanelHandleVerseSelect(
+                                                  bookId,
+                                                  bookName,
+                                                  verse,
+                                                  testament,
+                                                );
+                                                handleMobileVerseSelect(
+                                                  testament || "",
+                                                  bookName,
+                                                  verse,
+                                                );
+                                                closeDropdownBook();
+                                              }}
+                                              selectedVerse={String(verseId)}
+                                              selectedBook={String(bookId)}
+                                            />
+                                          </Accordion.Content>
+                                        </Accordion.Item>
+                                      );
+                                    })
+                                    .filter(Boolean)}
+                                {/* Regular NT books */}
                                 {leftPanelFilteredBooks
                                   .map((bookName) =>
                                     testaments?.find((t) => t.n === bookName),
@@ -967,6 +1379,12 @@ export const MainContent = () => {
                                     ): book is NonNullable<typeof book> => {
                                       if (!book) return false;
                                       if (book.b === bookId) return false;
+                                      if (
+                                        recentlyViewedBooks.includes(
+                                          String(book.b),
+                                        )
+                                      )
+                                        return false;
                                       return leftPanelDebouncedFilter.trim()
                                         ? true
                                         : book.t === "NT";
@@ -1137,6 +1555,7 @@ export const MainContent = () => {
                   closeDropdownBook();
                   if (activeTab === "menu") {
                     setActiveTab(previousTabRef.current);
+                    setRightPanelContent("default"); // Reset content
                   } else {
                     previousTabRef.current = activeTab;
                     setActiveTab("menu");
@@ -1152,61 +1571,93 @@ export const MainContent = () => {
           </div>
           <div>
             <RadixTabs.Content value="book">
-              <div className={`${styles.bookContainer}`} {...handleMobileSwipe}>
+              <div className={`${styles.bookContainer}`} {...swipeHandlers}>
+                {/* 1. Map and render the chapter views */}
+                {visibleChapters.map((chapter, index) => {
+                  const isLastChapter = index === visibleChapters.length - 1;
+                  return (
+                    <div
+                      key={chapter.key}
+                      className={`${styles.bookContent} ${chapter.className}`}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        zIndex: index + 1,
+                      }}
+                      onAnimationEnd={
+                        index === 0 ? handleAnimationEnd : undefined
+                      }
+                      ref={isLastChapter ? scrollableCallbackRef : null}
+                    >
+                      <MainText.Root>
+                        <MainText.Content
+                          bookId={String(chapter.bookId)}
+                          verseId={String(chapter.chapters[0].chapterNumber)}
+                          book={chapter}
+                        />
+                        <div style={{ height: "25px" }} />
+                      </MainText.Root>
+                    </div>
+                  );
+                })}
+
+                {/* 2. Render the UI controls separately on top */}
+                {chapters && Number(verseId) < chapters && (
+                  <button
+                    ref={nextChapterButtonRef}
+                    type="button"
+                    className={`${styles.nextChapterBtn} ${
+                      !buttonsVisible && !isNearNext ? styles.hidden : ""
+                    }`}
+                    onClick={handleNextButtonClick}
+                    style={{ zIndex: 10 }}
+                  >
+                    <Icon.ChevronForward className={styles.chevronForward} />
+                  </button>
+                )}
+                {chapters && Number(verseId) > 1 && (
+                  <button
+                    ref={prevChapterButtonRef}
+                    type="button"
+                    className={`${styles.previousChapterBtn} ${
+                      !buttonsVisible && !isNearPrev ? styles.hidden : ""
+                    }`}
+                    onClick={handlePreviousButtonClick}
+                    style={{ zIndex: 10 }}
+                  >
+                    <Icon.ChevronBackward className={styles.chevronBackward} />
+                  </button>
+                )}
+
+                {/* Progress bar */}
                 {bookVerseData && (
                   <div
-                    className={`${styles.bookContent}`}
-                    ref={scrollableCallbackRef}
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      width: "100%",
+                      zIndex: 10, // Ensure it's on top
+                    }}
                   >
-                    <MainText.Root>
-                      <MainText.Content
-                        bookId={String(bookId)}
-                        verseId={String(verseId)}
-                        book={bookVerseData}
-                      />
-                    </MainText.Root>
-                    {chapters && Number(verseId) < chapters && (
-                      <button
-                        ref={nextChapterButtonRef}
-                        type="button"
-                        className={`${styles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? styles.hidden : ""}`}
-                        onClick={() => handleNextChapter(chapters)}
-                      >
-                        <Icon.ChevronForward
-                          className={styles.chevronForward}
-                        />
-                      </button>
-                    )}
-                    {chapters && Number(verseId) > 1 && (
-                      <button
-                        ref={prevChapterButtonRef}
-                        type="button"
-                        className={`${styles.previousChapterBtn} ${!buttonsVisible && !isNearPrev ? styles.hidden : ""}`}
-                        onClick={handlePreviousChapter}
-                      >
-                        <Icon.ChevronBackward
-                          className={styles.chevronBackward}
-                        />
-                      </button>
-                    )}
+                    <ProgressBar.Root>
+                      <ProgressBar.IndicatorBackground>
+                        <ProgressBar.Indicator value={progress} />
+                      </ProgressBar.IndicatorBackground>
+                      <ProgressBar.Label value={progress} />
+                    </ProgressBar.Root>
                   </div>
-                )}
-                {bookVerseData && (
-                  <ProgressBar.Root>
-                    <ProgressBar.IndicatorBackground>
-                      <ProgressBar.Indicator value={progress} />
-                    </ProgressBar.IndicatorBackground>
-                    <ProgressBar.Label value={progress} />
-                  </ProgressBar.Root>
                 )}
               </div>
             </RadixTabs.Content>
 
             <RadixTabs.Content value="explanation">
-              <Explanation.Container chapters={chapters}>
-                <Explanation.NavHeader />
-                <Explanation.Content />
-              </Explanation.Container>
+              <Explanation.MobileContainer
+                chapters={chapters}
+                explanation={explanation}
+              />
             </RadixTabs.Content>
 
             {askVerseMate && (
@@ -1269,6 +1720,25 @@ export const MainContent = () => {
                             </Accordion.Content>
                           </Accordion.Item>
                         ))}
+                      </Accordion.Root>
+                      <Accordion.Root type="multiple">
+                        <Accordion.Item value="settings">
+                          <div
+                            onClick={() => setRightPanelContent("settings")}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                setRightPanelContent("settings");
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <Accordion.Trigger
+                              label="Settings"
+                              icon={<Icon.SettingsIcon />}
+                            />
+                          </div>
+                        </Accordion.Item>
                       </Accordion.Root>
                     </div>
                   </>
@@ -1334,16 +1804,19 @@ export const MainContent = () => {
               setRating={setRating}
               verseIdToString={verseIdToString}
               book={book}
+              recentlyViewedBooks={recentlyViewedBooks}
             />
             <LeftPanel.Content
               bookId={bookId}
               verseId={verseId}
               bookVerseData={bookVerseData}
-              handleDesktopSwipe={handleDesktopSwipe}
+              handleDesktopSwipe={swipeHandlers}
               progress={progress}
               chapters={chapters}
               buttonsVisible={buttonsVisible}
               scrollableCallbackRef={scrollableCallbackRef}
+              onNextChapterClick={handleNextButtonClick}
+              onPrevChapterClick={handlePreviousButtonClick}
             />
           </LeftPanel.Root>
 
@@ -1368,6 +1841,7 @@ export const MainContent = () => {
             <RightPanel.Content
               conversationsHistory={conversationsHistory}
               explanation={explanation}
+              chapters={chapters}
               session={session}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}
@@ -1375,7 +1849,7 @@ export const MainContent = () => {
               setRightPanelContent={setRightPanelContent}
               selectedBibleVersion={bibleVersionSelected}
               handleBibleVersionSelected={handleBibleVersionSelected}
-              handleDesktopSwipe={handleDesktopSwipe}
+              handleDesktopSwipe={swipeHandlers}
             />
           </RightPanel.Root>
         </main>

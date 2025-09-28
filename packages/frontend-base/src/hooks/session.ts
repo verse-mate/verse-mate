@@ -4,4 +4,5 @@ export type UserSession = {
   firstName: string;
   lastName: string;
   is_admin: boolean;
+  preferred_language?: string | null;
 };

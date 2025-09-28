@@ -6,6 +6,7 @@ import type { default as BibleVersionsTable } from "./BibleVersions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
 import type { default as ConversationsTable } from "./Conversations";
+import type { default as ExplanationLanguagesTable } from "./ExplanationLanguages";
 import type { default as ExplanationRatingsTable } from "./ExplanationRatings";
 import type { default as ExplanationsTable } from "./Explanations";
 import type { default as FavoritesTable } from "./Favorites";
@@ -18,6 +19,7 @@ import type { default as SubtitlesTable } from "./Subtitles";
 import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
 import type { default as UserPromptTemplatesTable } from "./UserPromptTemplates";
+import type { default as VerseHighlightsTable } from "./VerseHighlights";
 import type { default as VersesTable } from "./Verses";
 
 export default interface PublicSchema {
@@ -56,4 +58,8 @@ export default interface PublicSchema {
   user_prompt_templates: UserPromptTemplatesTable;
 
   batch_jobs: BatchJobsTable;
+
+  verse_highlights: VerseHighlightsTable;
+
+  explanation_languages: ExplanationLanguagesTable;
 }

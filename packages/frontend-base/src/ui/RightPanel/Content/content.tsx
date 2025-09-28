@@ -11,6 +11,7 @@ import { homeOptions } from "../../../utils/home-options";
 import { Accordion } from "../../Accordion";
 import { Chat } from "../../Chat";
 import { Explanation } from "../../Explanation";
+import explanationStyles from "../../Explanation/explanation.module.css";
 import { ProfileButton } from "../../Header/UserProfile/user-profile";
 import * as Icon from "../../Icons";
 import { LoginCard } from "../../LoginCard";
@@ -31,6 +32,7 @@ type Props = {
       }
     | null
     | undefined;
+  chapters: number | undefined;
   conversationsHistory:
     | never[]
     | {
@@ -76,6 +78,8 @@ type Props = {
 
 export const Content = ({
   session,
+  explanation,
+  chapters,
   conversationsHistory,
   selectConversation,
   askVerseMate,
@@ -88,10 +92,13 @@ export const Content = ({
   return (
     <>
       <RadixTabs.Content className={styles.content} value="explanation">
-        <div {...handleDesktopSwipe}>
-          <Explanation.Container>
+        <div
+          {...handleDesktopSwipe}
+          className={explanationStyles.explanationContent}
+        >
+          <Explanation.DesktopContainer>
             <Explanation.Content />
-          </Explanation.Container>
+          </Explanation.DesktopContainer>
         </div>
       </RadixTabs.Content>
 
@@ -185,33 +192,52 @@ export const Content = ({
           className={`${styles.moreOptionsContainer} ${!session?.id && styles.noPadding}`}
         >
           {session?.id ? (
-            <>
-              {rightPanelContent === "settings" ? (
-                <Settings
-                  selectedBibleVersion={selectedBibleVersion}
-                  setSelectedBibleVersion={handleBibleVersionSelected}
-                  setRightPanelContent={setRightPanelContent}
-                />
-              ) : (
+            rightPanelContent === "settings" ? (
+              <Settings
+                selectedBibleVersion={selectedBibleVersion}
+                setSelectedBibleVersion={handleBibleVersionSelected}
+                setRightPanelContent={setRightPanelContent}
+              />
+            ) : (
+              <>
                 <ProfileButton
                   link="/"
                   setRightPanelContent={setRightPanelContent}
                 />
-              )}
-              <div className={styles.menuOptions}>
-                <Accordion.Root type="multiple">
-                  {homeOptions.map((option) => (
-                    <Accordion.Item key={option.name} value={option.name}>
-                      <Accordion.Trigger
-                        label={option.label}
-                        icon={option.icon}
-                      />
-                      <Accordion.Content>{option.content}</Accordion.Content>
+                <div className={styles.menuOptions}>
+                  <Accordion.Root type="multiple">
+                    {homeOptions.map((option) => (
+                      <Accordion.Item key={option.name} value={option.name}>
+                        <Accordion.Trigger
+                          label={option.label}
+                          icon={option.icon}
+                        />
+                        <Accordion.Content>{option.content}</Accordion.Content>
+                      </Accordion.Item>
+                    ))}
+                  </Accordion.Root>
+                  <Accordion.Root type="multiple">
+                    <Accordion.Item value="settings">
+                      <div
+                        onClick={() => setRightPanelContent("settings")}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            setRightPanelContent("settings");
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <Accordion.Trigger
+                          label="Settings"
+                          icon={<Icon.SettingsIcon />}
+                        />
+                      </div>
                     </Accordion.Item>
-                  ))}
-                </Accordion.Root>
-              </div>
-            </>
+                  </Accordion.Root>
+                </div>
+              </>
+            )
           ) : (
             <>
               {rightPanelContent === "login" && (

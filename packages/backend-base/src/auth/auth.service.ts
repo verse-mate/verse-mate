@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { sql } from "database";
 import type { User } from "database/src/models/public/User";
 
 import { VerifyEmail, render } from "../../../emails";
@@ -12,6 +13,7 @@ import type { AuthForgotPasswordInput } from "./dto/auth-forgot-password.input";
 import type { AuthLoginInput } from "./dto/auth-login.input";
 import type { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import type { AuthSignupInput } from "./dto/auth-signup.input";
+import type { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 
 function resetPasswordURL(key: string): string {
@@ -119,13 +121,25 @@ export class AuthService {
     userId: string,
   ): Promise<Pick<
     User,
-    "id" | "email" | "firstName" | "lastName" | "is_admin"
+    | "id"
+    | "email"
+    | "firstName"
+    | "lastName"
+    | "is_admin"
+    | "preferred_language"
   > | null> {
     const user = await this.db
       .getOrCreateConnection()
       .selectFrom("user")
       .where("id", "=", userId)
-      .select(["id", "email", "firstName", "lastName", "is_admin"])
+      .select([
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "is_admin",
+        "preferred_language",
+      ])
       .executeTakeFirst();
     if (!user) return null;
     return user;
@@ -416,6 +430,58 @@ export class AuthService {
       .execute();
 
     return this.loginUser(user, jwt);
+  }
+
+  public async updateProfile(
+    userId: string,
+    authUpdateProfileInput: AuthUpdateProfileInput,
+  ): Promise<Pick<
+    User,
+    "id" | "email" | "firstName" | "lastName" | "is_admin"
+  > | null> {
+    const { firstName, lastName, email } = authUpdateProfileInput;
+
+    // Check if the new email is already taken by another user (case-insensitive)
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      const existingUser = await this.db
+        .getOrCreateConnection()
+        .selectFrom("user")
+        .where((eb) =>
+          eb.and([
+            eb(sql`LOWER(email)`, "=", normalizedEmail),
+            eb("id", "!=", userId),
+          ]),
+        )
+        .select("id")
+        .executeTakeFirst();
+
+      if (existingUser) {
+        throw new Error("EMAIL_ALREADY_EXISTS");
+      }
+    }
+
+    // Build partial update payload to avoid nulling unspecified fields
+    const updatePayload: Partial<
+      Pick<User, "firstName" | "lastName" | "email">
+    > = {};
+    if (typeof firstName === "string")
+      updatePayload.firstName = firstName.trim();
+    if (typeof lastName === "string") updatePayload.lastName = lastName.trim();
+    if (typeof email === "string")
+      updatePayload.email = email.toLowerCase().trim();
+
+    if (Object.keys(updatePayload).length > 0) {
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("user")
+        .set(updatePayload)
+        .where("id", "=", userId)
+        .execute();
+    }
+
+    // Return the updated user information
+    return this.getUserById(userId);
   }
 
   // TODO: Implement refresh accessToken (keep alive)

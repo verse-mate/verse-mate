@@ -6,6 +6,7 @@ import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
 import { Dialog } from "../../Dialog";
 import { CheckIcon, ChevronDownIcon } from "../../Icons";
+import { Input } from "../../Input/Input";
 import { SelectDropdown } from "../../SelectDropdown";
 import { Table, type TableColumn } from "../../Table/Table";
 import styles from "./BatchOperations.module.css";
@@ -28,6 +29,8 @@ interface BatchJob {
   failed_requests?: number;
   parent_batch_id?: number | null;
   error_file_content?: string | null;
+  source_language_code?: string | null;
+  target_language_code?: string | null;
 }
 
 interface BatchSummary {
@@ -151,7 +154,9 @@ const ActionsMenu = ({
             padding: "8px",
           }}
         >
-          {job.batch_type === "bible" ? (
+          {job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible" ? (
             <>
               <Button
                 variant="outlined"
@@ -237,9 +242,22 @@ export const BatchOperations = () => {
 
   // Dropdown states
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const [effortDropdownOpen, setEffortDropdownOpen] = useState(false);
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
-  const [effortDropdownOpen, setEffortDropdownOpen] = useState(false);
+  const [targetVersionDropdownOpen, setTargetVersionDropdownOpen] =
+    useState(false);
+  const [availableLanguages, setAvailableLanguages] = useState<
+    { code: string; name: string; nativeName: string }[]
+  >([]);
+  const [availableBibleLanguages, setAvailableBibleLanguages] = useState<
+    { code: string; name: string; nativeName: string }[]
+  >([]);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [languageToConfirm, setLanguageToConfirm] = useState<{
+    code: string;
+    name: string;
+  } | null>(null);
 
   // Modal 1 (Bible Details) state
   const [bibleDetailsModalOpen, setBibleDetailsModalOpen] = useState(false);
@@ -253,6 +271,93 @@ export const BatchOperations = () => {
     null,
   );
   const [bookDetailsLoading, setBookDetailsLoading] = useState(false);
+
+  // Modal 3 (Rephrase) state
+  const [rephraseModalOpen, setRephraseModalOpen] = useState(false);
+  const [rephrasing, setRephrasing] = useState(false);
+
+  // Modal 4 (Translate) state
+  const [translateModalOpen, setTranslateModalOpen] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [sourceLanguage, setSourceLanguage] = useState("en");
+  const [targetLanguage, setTargetLanguage] = useState("es");
+  const [customTargetLanguage, setCustomTargetLanguage] = useState("");
+  const [sourceLanguageDropdownOpen, setSourceLanguageDropdownOpen] =
+    useState(false);
+  const [targetLanguageDropdownOpen, setTargetLanguageDropdownOpen] =
+    useState(false);
+
+  // Language validation function
+  const validateLanguageCode = (code: string): boolean => {
+    if (!code || typeof code !== "string") return false;
+    const normalized = code.trim();
+    const full = normalized.toLowerCase();
+    const base = full.split("-")[0];
+    try {
+      const dnEn = new Intl.DisplayNames(["en"], { type: "language" });
+      const nameFull = dnEn.of(full);
+      const nameBase = dnEn.of(base);
+      return (
+        Boolean(nameFull && nameFull !== full) ||
+        Boolean(nameBase && nameBase !== base)
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      try {
+        setError(null); // Clear any previous errors
+        const response = await api.bible.languages.get();
+
+        if (!response.data || !Array.isArray(response.data)) {
+          throw new Error("Invalid response format from languages API");
+        }
+
+        const languages = (
+          response.data as {
+            language_code: string;
+            name: string;
+            native_name: string;
+          }[]
+        ).map((lang) => ({
+          code: lang.language_code,
+          name: lang.name,
+          nativeName: lang.native_name,
+        }));
+
+        // Validate that we received proper language objects
+        const validLanguages = languages.filter(
+          (lang) => lang.code && lang.name && lang.nativeName,
+        );
+
+        if (validLanguages.length === 0) {
+          throw new Error("No valid languages received from API");
+        }
+
+        setAvailableLanguages(validLanguages);
+        setAvailableBibleLanguages(validLanguages);
+      } catch (error) {
+        console.error("Failed to fetch available languages:", error);
+        setError(
+          "Failed to load available languages. Please try refreshing the page.",
+        );
+
+        // Set fallback languages in case of API failure
+        const fallbackLanguages = [
+          { code: "en", name: "English", nativeName: "English" },
+          { code: "es", name: "Spanish", nativeName: "Español" },
+          { code: "fr", name: "French", nativeName: "Français" },
+        ];
+        setAvailableLanguages(fallbackLanguages);
+        setAvailableBibleLanguages(fallbackLanguages);
+      }
+    };
+
+    fetchLanguages();
+  }, []);
 
   const fetchBatchJobsOnly = useCallback(async () => {
     try {
@@ -273,7 +378,12 @@ export const BatchOperations = () => {
         jobs.sort((a, b) => Number(b.id) - Number(a.id));
         setBatchJobs(jobs);
 
-        const bibleBatches = jobs.filter((job) => job.batch_type === "bible");
+        const bibleBatches = jobs.filter(
+          (job) =>
+            job.batch_type === "bible" ||
+            job.batch_type === "rephrase-bible" ||
+            job.batch_type === "translate-bible",
+        );
         const newSummaries: Record<string, any> = {};
         for (const batch of bibleBatches) {
           try {
@@ -346,6 +456,106 @@ export const BatchOperations = () => {
     }
   };
 
+  const handleRephraseBatch = async () => {
+    if (!isBibleBatch && selectedBook === null) {
+      setError("Please select a book to rephrase");
+      return;
+    }
+
+    try {
+      setRephrasing(true);
+      setError(null);
+      await api.admin["batch-rephrase"].post({
+        type: isBibleBatch ? "bible" : "book",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        model: selectedModel,
+        effort: selectedEffort as "low" | "medium" | "high",
+        bibleVersion: selectedBibleVersion,
+      });
+      await fetchBatchJobs();
+      setRephraseModalOpen(false);
+    } catch (err) {
+      setError("Failed to create rephrase batch job");
+      console.error("Error creating rephrase batch job:", err);
+    } finally {
+      setRephrasing(false);
+    }
+  };
+
+  const handleTranslateBatch = async () => {
+    if (!isBibleBatch && selectedBook === null) {
+      setError("Please select a book to translate");
+      return;
+    }
+
+    const targetCode = customTargetLanguage.trim() || targetLanguage;
+
+    // Enhanced language validation
+    if (!validateLanguageCode(targetCode)) {
+      setError(
+        `Invalid language code: ${targetCode}. Please enter a valid ISO 639-1 language code.`,
+      );
+      return;
+    }
+
+    try {
+      const displayName = new Intl.DisplayNames(["en"], { type: "language" });
+      const languageName = displayName.of(targetCode);
+
+      if (!languageName || languageName === targetCode) {
+        setError(
+          `Unsupported language code: ${targetCode}. Please use a supported ISO 639-1 language code.`,
+        );
+        return;
+      }
+
+      setLanguageToConfirm({ code: targetCode, name: languageName });
+      setConfirmModalOpen(true);
+    } catch (e) {
+      setError(
+        `Error validating language code: ${targetCode}. Please check the format and try again.`,
+      );
+      console.error("Language validation error:", e);
+    }
+  };
+
+  const confirmTranslateBatch = async () => {
+    if (!languageToConfirm) {
+      setError("No language selected for translation");
+      return;
+    }
+
+    try {
+      setTranslating(true);
+      setError(null);
+
+      await api.admin["batch-translate"].post({
+        type: isBibleBatch ? "bible" : "book",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        model: selectedModel,
+        effort: selectedEffort as "low" | "medium" | "high",
+        source_language_code: sourceLanguage,
+        target_language_code: languageToConfirm.code,
+        explanationTypes: selectedExplanationTypes,
+        skipExisting: skipExistingExplanations,
+      });
+
+      await fetchBatchJobs();
+      setTranslateModalOpen(false);
+      setConfirmModalOpen(false);
+      setLanguageToConfirm(null);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to create translate batch job";
+      setError(`Translation batch creation failed: ${errorMessage}`);
+      console.error("Error creating translate batch job:", err);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   const handleMonitorBatch = async (batchId: string) => {
     try {
       setMonitoringId(batchId);
@@ -367,7 +577,11 @@ export const BatchOperations = () => {
       await api.admin.batch({ batchJobId: batchId }).delete();
 
       const job = batchJobs.find((j) => j.id === batchId);
-      if (job?.batch_type === "bible") {
+      if (
+        job?.batch_type === "bible" ||
+        job?.batch_type === "rephrase-bible" ||
+        job?.batch_type === "translate-bible"
+      ) {
         await handleMonitorBibleBatch(batchId);
       } else if (job?.openai_batch_id) {
         await handleMonitorBatch(job.openai_batch_id);
@@ -438,6 +652,19 @@ export const BatchOperations = () => {
     }
   };
 
+  const handleMonitorAllActive = async () => {
+    try {
+      setMonitoringId("all");
+      await api.admin.batches["monitor-all"].post();
+      await fetchBatchJobs();
+    } catch (err) {
+      setError("Failed to start monitoring all active batches.");
+      console.error("Error monitoring all active batches:", err);
+    } finally {
+      setMonitoringId(null);
+    }
+  };
+
   const refreshAndMonitorAll = useCallback(async () => {
     // Implementation for this will need to be updated to handle bible batches
     await fetchBatchJobs();
@@ -455,7 +682,11 @@ export const BatchOperations = () => {
       render: (job) => {
         const handleClick = (e: React.MouseEvent) => {
           e.preventDefault();
-          if (job.batch_type === "bible") {
+          if (
+            job.batch_type === "bible" ||
+            job.batch_type === "rephrase-bible" ||
+            job.batch_type === "translate-bible"
+          ) {
             handleViewBibleDetails(job.id);
           } else if (job.openai_batch_id) {
             handleViewBookDetails(job.openai_batch_id);
@@ -485,14 +716,31 @@ export const BatchOperations = () => {
       title: "Book/Batch",
       property: "book_name",
       className: styles.bookColumn,
-      render: (job) => (
-        <span className={styles.nowrapColumn}>
-          {job.batch_type === "bible" ? "Entire Bible" : job.book_name || "N/A"}
-          {job.bible_version && (
-            <span className={styles.versionBadge}>({job.bible_version})</span>
-          )}
-        </span>
-      ),
+      render: (job) => {
+        const isTranslateBibleParent = job.batch_type === "translate-bible";
+        const displayText =
+          job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible"
+            ? "Entire Bible"
+            : job.book_name || "N/A";
+
+        let versionCode = job.bible_version;
+
+        // For translate-bible parent batches, show target language instead of source
+        if (isTranslateBibleParent && job.target_language_code) {
+          versionCode = job.target_language_code;
+        }
+
+        return (
+          <span className={styles.nowrapColumn}>
+            {displayText}
+            {versionCode && (
+              <span className={styles.versionBadge}>({versionCode})</span>
+            )}
+          </span>
+        );
+      },
     },
     {
       title: "Type",
@@ -508,14 +756,14 @@ export const BatchOperations = () => {
       className: styles.statusColumn,
       render: (job) => {
         const summary = summaries[job.id];
+        const isParentBatch =
+          job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible";
         const status =
-          job.batch_type === "bible" && summary
-            ? summary.aggregate_status
-            : job.status;
+          isParentBatch && summary ? summary.aggregate_status : job.status;
         const statusText =
-          job.batch_type === "bible" && summary
-            ? summary.status_progress_text
-            : status;
+          isParentBatch && summary ? summary.status_progress_text : status;
 
         return (
           <span
@@ -540,13 +788,15 @@ export const BatchOperations = () => {
       className: styles.costColumn,
       render: (job) => {
         const summary = summaries[job.id];
+        const isParentBatch =
+          job.batch_type === "bible" ||
+          job.batch_type === "rephrase-bible" ||
+          job.batch_type === "translate-bible";
         const cost =
-          job.batch_type === "bible" && summary
-            ? summary.total_cost
-            : job.actual_cost;
+          isParentBatch && summary ? summary.total_cost : job.actual_cost;
         return (
           <span className={styles.nowrapColumn}>
-            {cost ? `$${Number(cost).toFixed(4)}` : "N/A"}
+            {typeof cost === "number" ? `$${Number(cost).toFixed(4)}` : "N/A"}
           </span>
         );
       },
@@ -874,22 +1124,45 @@ export const BatchOperations = () => {
           </p>
         </div>
         {/* Other form elements... */}
-        <Button
-          onClick={handleCreateBatch}
-          disabled={
-            creating ||
-            (!isBibleBatch && selectedBook === null) ||
-            selectedExplanationTypes.length === 0
-          }
-          loading={creating}
-          style={{ minWidth: "180px", padding: "8px 16px" }}
-        >
-          {creating ? "Creating..." : "Create New Batch"}
-        </Button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Button
+            onClick={handleCreateBatch}
+            disabled={
+              creating ||
+              (!isBibleBatch && selectedBook === null) ||
+              selectedExplanationTypes.length === 0
+            }
+            loading={creating}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            {creating ? "Creating..." : "Create New Batch"}
+          </Button>
+          <Button
+            onClick={() => setRephraseModalOpen(true)}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Rephrase All Explanations
+          </Button>
+          <Button
+            onClick={() => setTranslateModalOpen(true)}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Translate All Explanations
+          </Button>
+        </div>
       </div>
 
       {/* Main Table */}
       <div className={styles.tableContainer}>
+        <div style={{ marginBottom: "1rem" }}>
+          <Button
+            onClick={handleMonitorAllActive}
+            disabled={monitoringId === "all"}
+            loading={monitoringId === "all"}
+          >
+            Monitor All Active Batches
+          </Button>
+        </div>
         <Table
           columns={columns}
           data={batchJobs}
@@ -975,6 +1248,193 @@ export const BatchOperations = () => {
           <Dialog.Footer>
             <Button onClick={() => setBookDetailsModalOpen(false)}>
               Close
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Modal 3: Rephrase Confirmation */}
+      <Dialog
+        open={rephraseModalOpen}
+        onOpenChange={setRephraseModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Rephrase</Dialog.Head>
+          <Dialog.Description>
+            Are you sure you want to rephrase all active explanations? This will
+            create a new batch job and may incur costs.
+          </Dialog.Description>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setRephraseModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleRephraseBatch} loading={rephrasing}>
+              {rephrasing ? "Starting..." : "Confirm"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Modal 4: Translate Confirmation */}
+      <Dialog
+        open={translateModalOpen}
+        onOpenChange={setTranslateModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Translate</Dialog.Head>
+          <Dialog.Description>
+            Select the source and target Bible versions for the translation.
+          </Dialog.Description>
+          <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Source Language:
+              </label>
+              <SelectDropdown.Root
+                open={sourceLanguageDropdownOpen}
+                onOpenChange={setSourceLanguageDropdownOpen}
+                onValueChange={(val) => setSourceLanguage(val)}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={
+                    availableLanguages.find((v) => v.code === sourceLanguage)
+                      ?.name || "Select Language"
+                  }
+                  icon={<ChevronDownIcon />}
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{
+                    width: "300px",
+                    maxHeight: "400px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {availableLanguages.map((language) => (
+                    <SelectDropdown.Item
+                      key={language.code}
+                      value={language.code}
+                      icon={<CheckIcon />}
+                    >
+                      {language.name} ({language.nativeName})
+                    </SelectDropdown.Item>
+                  ))}
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Target Language:
+              </label>
+              <SelectDropdown.Root
+                open={targetLanguageDropdownOpen}
+                onOpenChange={setTargetLanguageDropdownOpen}
+                onValueChange={(val) => setTargetLanguage(val)}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={
+                    availableBibleLanguages.find(
+                      (v) => v.code === targetLanguage,
+                    )?.name || "Select Language"
+                  }
+                  icon={<ChevronDownIcon />}
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{
+                    width: "300px",
+                    maxHeight: "400px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {availableBibleLanguages.map((language) => (
+                    <SelectDropdown.Item
+                      key={language.code}
+                      value={language.code}
+                      icon={<CheckIcon />}
+                    >
+                      {language.name} ({language.nativeName})
+                    </SelectDropdown.Item>
+                  ))}
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
+            </div>
+          </div>
+          <div style={{ marginTop: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              Or enter a custom target language code (e.g., pt-BR):
+            </label>
+            <Input
+              value={customTargetLanguage}
+              onChange={(e) => setCustomTargetLanguage(e.target.value)}
+              placeholder="e.g., pt-BR"
+            />
+          </div>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setTranslateModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleTranslateBatch} loading={translating}>
+              {translating ? "Starting..." : "Confirm"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Modal 5: Translate Confirmation */}
+      <Dialog
+        open={confirmModalOpen}
+        onOpenChange={setConfirmModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Translation</Dialog.Head>
+          <Dialog.Description>
+            Are you sure you want to translate explanations to{" "}
+            <strong>
+              {languageToConfirm?.name} ({languageToConfirm?.code})
+            </strong>
+            ?
+          </Dialog.Description>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setConfirmModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button onClick={confirmTranslateBatch} loading={translating}>
+              {translating ? "Starting..." : "Confirm"}
             </Button>
           </Dialog.Footer>
         </Dialog.Content>

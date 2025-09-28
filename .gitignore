@@ -183,6 +183,7 @@ infra
 
 .claude/*
 bugs.txt
+.qoder
 
 test-opennext
 .mcp/
