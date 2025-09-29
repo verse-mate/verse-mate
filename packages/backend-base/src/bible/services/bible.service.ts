@@ -118,6 +118,10 @@ export class BibleService {
     return { success };
   }
 
+  /**
+   * Notes
+   */
+
   async getExplanation({
     book_id,
     chapter_number,
@@ -884,6 +888,99 @@ export class BibleService {
       message: `Successfully set version ${version} as active for ${result.updatedCount} explanations.`,
       updatedCount: result.updatedCount,
     };
+  }
+
+  async getNotes({ id: user_id }: Pick<UserDto, "id">) {
+    console.log("=== BibleService.getNotes ===");
+    console.log("Getting notes for user ID:", user_id);
+
+    try {
+      console.log("Calling bibleRepository.getNotes with user_id:", user_id);
+      const { notes } = await this.bibleRepository.getNotes({
+        user_id: user_id,
+      });
+
+      console.log("Repository returned notes count:", notes.length);
+      return { notes };
+    } catch (error) {
+      console.error("ERROR in BibleService.getNotes:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      throw error;
+    }
+  }
+
+  async addNote(noteData: {
+    user_id: string;
+    book_id: number;
+    chapter_number: number;
+    verse_id?: number;
+    content: string;
+  }) {
+    console.log("=== BibleService.addNote ===");
+    console.log("Adding note:", noteData);
+
+    try {
+      // Use existing getChapterId method like bookmarks
+      const { chapter_id } = await this.bibleRepository.getChapterId({
+        book_id: noteData.book_id,
+        chapter_number: noteData.chapter_number,
+      });
+
+      // Use either real or synthetic chapter_id (consistent with bookmarks)
+      const finalChapterId =
+        chapter_id || noteData.book_id * 1000 + noteData.chapter_number;
+
+      const { note } = await this.bibleRepository.addNote({
+        user_id: noteData.user_id,
+        chapter_id: finalChapterId,
+        verse_id: noteData.verse_id,
+        content: noteData.content,
+      });
+      console.log("Successfully added note with ID:", note.note_id);
+      return { note };
+    } catch (error) {
+      console.error("ERROR in BibleService.addNote:", error);
+      throw error;
+    }
+  }
+
+  async updateNote(noteId: string, content: string) {
+    console.log("=== BibleService.updateNote ===");
+    console.log(
+      "Updating note ID:",
+      noteId,
+      "with content length:",
+      content.length,
+    );
+
+    try {
+      const { success } = await this.bibleRepository.updateNote(
+        noteId,
+        content,
+      );
+      console.log("Note update success:", success);
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleService.updateNote:", error);
+      throw error;
+    }
+  }
+
+  async deleteNote(noteId: string) {
+    console.log("=== BibleService.deleteNote ===");
+    console.log("Deleting note ID:", noteId);
+
+    try {
+      const { success } = await this.bibleRepository.deleteNote(noteId);
+      console.log("Note deletion success:", success);
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleService.deleteNote:", error);
+      throw error;
+    }
   }
 
   async getExplanationsByFilter(options: {
