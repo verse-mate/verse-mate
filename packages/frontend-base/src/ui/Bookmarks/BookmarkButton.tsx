@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useBookmarks } from "../../hooks/useBookmarks";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { userSession } from "../../hooks/userSession";
-import { addModal } from "../../modal/store";
-import { removeAllModals } from "../../modal/store";
+import { addModal, removeAllModals } from "../../modal/store";
 import * as Icon from "../Icons";
 import styles from "./bookmarks.module.css";
 

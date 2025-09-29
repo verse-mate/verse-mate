@@ -69,8 +69,20 @@ export const useNotes = () => {
             if (data?.notes) {
               const convertedNotes = data.notes.map(convertBackendNote);
               setNotes(convertedNotes);
+<<<<<<< HEAD
             }
           }
+=======
+              return;
+            }
+          }
+          // Non-OK or missing payload: fallback to localStorage
+          const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+          if (storedNotes) {
+            const parsedNotes = JSON.parse(storedNotes);
+            setNotes(parsedNotes);
+          }
+>>>>>>> 9a37767 (main merged with notes functionality)
         } else {
           // Load from localStorage (current implementation)
           const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);

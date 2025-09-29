@@ -464,13 +464,14 @@ export const MainContent = () => {
     prevActiveTabRef.current = activeTab;
   }, [activeTab]);
 
-  // Also listen to a custom event so components can request right panel content immediately
+  // Support external requests to open specific right panel content (e.g., from modals)
   useEffect(() => {
     const handler = (e: Event) => {
       const custom = e as CustomEvent<string>;
       const requested = custom.detail;
       if (requested) {
         setRightPanelContent(requested);
+        setActiveTab("menu");
       }
     };
     window.addEventListener("openRightPanelContent", handler as EventListener);
@@ -480,21 +481,31 @@ export const MainContent = () => {
         handler as EventListener,
       );
     };
-  }, []);
+  }, [setActiveTab]);
 
-  // Listen for external requests to change active tab (e.g., open 'menu')
+  // Allow external tab switch requests
   useEffect(() => {
     const tabHandler = (e: Event) => {
       const custom = e as CustomEvent<string>;
       const tab = custom.detail;
-      if (tab) {
-        setActiveTab(tab);
-      }
+      if (tab) setActiveTab(tab);
     };
     window.addEventListener("setActiveTab", tabHandler as EventListener);
     return () => {
       window.removeEventListener("setActiveTab", tabHandler as EventListener);
     };
+  }, [setActiveTab]);
+
+  // Fallback: honor pending right panel content from localStorage (set by modals)
+  useEffect(() => {
+    try {
+      const pending = localStorage.getItem("postRightPanelContent");
+      if (pending && typeof pending === "string") {
+        setRightPanelContent(pending);
+        setActiveTab("menu");
+        localStorage.removeItem("postRightPanelContent");
+      }
+    } catch {}
   }, [setActiveTab]);
 
   useEffect(() => {

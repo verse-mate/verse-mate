@@ -663,10 +663,7 @@ const plugin = new Elysia()
               !body.content
             ) {
               console.error("Missing required fields for adding note");
-              return {
-                success: false,
-                error: "Missing required fields",
-              };
+              return { success: false, error: "Missing required fields" };
             }
 
             const { note } = await bibleService.addNote({
@@ -680,10 +677,7 @@ const plugin = new Elysia()
             return { success: true, note };
           } catch (error) {
             console.error("Error adding note:", error);
-            return {
-              success: false,
-              error: "Failed to add note",
-            };
+            return { success: false, error: "Failed to add note" };
           }
         },
         {
@@ -704,10 +698,7 @@ const plugin = new Elysia()
 
             if (!body.note_id || !body.content) {
               console.error("Missing required fields for updating note");
-              return {
-                success: false,
-                error: "Missing required fields",
-              };
+              return { success: false, error: "Missing required fields" };
             }
 
             const { success } = await bibleService.updateNote(
@@ -718,10 +709,7 @@ const plugin = new Elysia()
             return { success };
           } catch (error) {
             console.error("Error updating note:", error);
-            return {
-              success: false,
-              error: "Failed to update note",
-            };
+            return { success: false, error: "Failed to update note" };
           }
         },
         {
@@ -739,10 +727,7 @@ const plugin = new Elysia()
 
             if (!query.note_id) {
               console.error("Missing note_id for removing note");
-              return {
-                success: false,
-                error: "Missing note_id",
-              };
+              return { success: false, error: "Missing note_id" };
             }
 
             const { success } = await bibleService.deleteNote(query.note_id);

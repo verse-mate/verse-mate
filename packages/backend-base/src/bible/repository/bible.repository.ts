@@ -1076,10 +1076,6 @@ export class BibleRepository {
       console.log("DATABASE DEBUG: getNotes for user_id:", user_id);
 
       const connection = this.db.getOrCreateConnection();
-      console.log(
-        "DATABASE DEBUG: Executing getNotes query for user:",
-        user_id,
-      );
 
       const notes = await (connection as any)
         .selectFrom("notes as n")
@@ -1100,7 +1096,6 @@ export class BibleRepository {
         .orderBy("n.created_at", "desc")
         .execute();
 
-      console.log("DATABASE DEBUG: Query returned", notes.length, "notes");
       return { notes };
     } catch (error) {
       console.error("ERROR in BibleRepository.getNotes:", error);
@@ -1116,8 +1111,6 @@ export class BibleRepository {
   }) {
     try {
       console.log("=== BibleRepository.addNote ===");
-      console.log("DATABASE DEBUG: Adding note:", noteData);
-
       const connection = this.db.getOrCreateConnection();
       const now = new Date().toISOString();
 
@@ -1142,10 +1135,6 @@ export class BibleRepository {
         ])
         .executeTakeFirstOrThrow();
 
-      console.log(
-        "DATABASE DEBUG: Successfully added note with ID:",
-        result.note_id,
-      );
       return { note: result };
     } catch (error) {
       console.error("ERROR in BibleRepository.addNote:", error);
@@ -1156,22 +1145,16 @@ export class BibleRepository {
   async updateNote(noteId: string, content: string) {
     try {
       console.log("=== BibleRepository.updateNote ===");
-      console.log("DATABASE DEBUG: Updating note ID:", noteId);
-
       const connection = this.db.getOrCreateConnection();
       const now = new Date().toISOString();
 
       const result = await (connection as any)
         .updateTable("notes")
-        .set({
-          content: content,
-          updated_at: now,
-        })
+        .set({ content, updated_at: now })
         .where("note_id", "=", noteId)
         .executeTakeFirst();
 
       const success = Number(result.numUpdatedRows) > 0;
-      console.log("DATABASE DEBUG: Note update success:", success);
       return { success };
     } catch (error) {
       console.error("ERROR in BibleRepository.updateNote:", error);
@@ -1182,8 +1165,6 @@ export class BibleRepository {
   async deleteNote(noteId: string) {
     try {
       console.log("=== BibleRepository.deleteNote ===");
-      console.log("DATABASE DEBUG: Deleting note ID:", noteId);
-
       const connection = this.db.getOrCreateConnection();
 
       const result = await (connection as any)
@@ -1192,7 +1173,6 @@ export class BibleRepository {
         .executeTakeFirst();
 
       const success = Number(result.numDeletedRows) > 0;
-      console.log("DATABASE DEBUG: Note deletion success:", success);
       return { success };
     } catch (error) {
       console.error("ERROR in BibleRepository.deleteNote:", error);

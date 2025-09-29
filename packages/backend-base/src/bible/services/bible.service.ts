@@ -118,6 +118,10 @@ export class BibleService {
     return { success };
   }
 
+  /**
+   * Notes
+   */
+  
   async getExplanation({
     book_id,
     chapter_number,

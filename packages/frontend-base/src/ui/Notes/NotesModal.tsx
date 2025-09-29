@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useNotesContext } from "../../contexts/NotesContext";
 import * as Icon from "../Icons";
+<<<<<<< HEAD
 import { NoteViewModal } from "./NoteViewModal";
+=======
+import { NoteViewModal } from "./NoteViewModal.tsx";
+>>>>>>> 9a37767 (main merged with notes functionality)
 import styles from "./notes.module.css";
 
 // Utility function to truncate note content to 1-2 lines

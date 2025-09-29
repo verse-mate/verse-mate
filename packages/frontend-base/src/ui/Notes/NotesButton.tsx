@@ -5,7 +5,7 @@ import { userSession } from "../../hooks/userSession";
 import { addModal, removeAllModals } from "../../modal/store";
 import bmStyles from "../Bookmarks/bookmarks.module.css";
 import * as Icon from "../Icons";
-import { NotesModal } from "./NotesModal";
+import { NotesModal } from "./NotesModal.tsx";
 import styles from "./notes.module.css";
 
 type NotesButtonProps = {
