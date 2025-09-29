@@ -23,18 +23,18 @@
     &[data-highlighted] {
         outline: none;
         background-color: var(--fantasy);
-        color: var(--dust);
+        color: var(--oil);
     }
 
     &[data-state="checked"] {
         background-color: var(--dust);
-        color: var(--snow);
+        color: var(--oil);
     }
 }
 
 .item:hover:not([data-state="checked"]) {
     background-color: var(--fantasy);
-    color: var(--dust)
+    color: var(--oil)
 }
 
 .itemIndicator {
@@ -46,5 +46,5 @@
 }
 
 .itemIndicator svg {
-    fill: var(--snow);
+    fill: var(--oil);
 }
