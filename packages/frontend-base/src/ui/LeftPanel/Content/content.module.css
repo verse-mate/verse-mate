@@ -412,7 +412,21 @@
     .bookContent {
         /* z-index: 1; */
         height: calc(100dvh - 88px); /* header 56px - footer 48px (removed the footer, so for now i will remove the footer height as well) - progressbar 32px */
-        padding: 24px 88px;
+        padding: 24px 50px;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+    
+    .bookContent::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    
+    .nextChapterBtn {
+        right: 4px;
+    }
+    
+    .previousChapterBtn {
+        left: 1px;
     }
 }
 
