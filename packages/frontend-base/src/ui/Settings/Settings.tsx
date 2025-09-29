@@ -273,6 +273,8 @@ export const Settings = ({
                   style={{
                     maxHeight: "400px",
                     overflowY: "auto",
+                    scrollbarWidth: "none" /* Firefox */,
+                    msOverflowStyle: "none" /* IE and Edge */,
                   }}
                 >
                   {bibleVersions.map((version) => (
@@ -333,6 +335,8 @@ export const Settings = ({
                     style={{
                       maxHeight: "300px",
                       overflowY: "auto",
+                      scrollbarWidth: "none" /* Firefox */,
+                      msOverflowStyle: "none" /* IE and Edge */,
                     }}
                   >
                     <SelectDropdown.Item

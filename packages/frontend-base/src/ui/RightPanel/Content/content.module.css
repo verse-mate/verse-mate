@@ -90,6 +90,12 @@
     background-color: var(--snow);
     padding: 16px;
     overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.moreOptionsContainer::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .moreOptionsContainer > :last-child {

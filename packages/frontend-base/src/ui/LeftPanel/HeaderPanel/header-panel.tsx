@@ -548,6 +548,7 @@ export const Nav = ({
 
               <div
                 ref={scrollContainerRef}
+                className={styles.contentGroupedTrigger}
                 style={{
                   marginTop: "127px",
                   maxHeight: "min(calc(100vh - 230px), 512px)",

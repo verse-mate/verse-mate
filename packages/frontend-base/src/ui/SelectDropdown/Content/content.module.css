@@ -7,9 +7,15 @@
     width: 100%;
     max-width: 480px;
     max-height: 640px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
 
     &[data-state="checked"] {
         background-color: var(--dust);
         color: var(--snow);
     }
+}
+
+.content::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
