@@ -37,7 +37,7 @@ export const BookmarkButton = ({
       // Save this chapter as a pending bookmark in localStorage
       savePendingBookmark(bookId, chapterNumber, bookName, testament);
 
-      // Show login modal
+      // Show login modal with option to open right panel login
       addModal({
         content: (
           <div className={styles.loginModal}>
@@ -48,9 +48,41 @@ export const BookmarkButton = ({
               you log in.
             </p>
             <div className={styles.loginModalButtons}>
-              <a href="/login" className={styles.loginButton}>
+              <button
+                type="button"
+                className={styles.loginButton}
+                onClick={() => {
+                  // Open right panel login by switching to the menu tab
+                  try {
+                    localStorage.setItem("postRightPanelContent", "login");
+                  } catch {}
+                  // Notify MainContent to switch tab and open login immediately
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("openRightPanelContent", {
+                        detail: "login",
+                      }),
+                    );
+                    window.dispatchEvent(
+                      new CustomEvent("setActiveTab", { detail: "menu" }),
+                    );
+                  } catch {}
+                  // Fallback for older flows
+                  try {
+                    const setActiveTab = (window as any).setActiveTab;
+                    if (typeof setActiveTab === "function") {
+                      setActiveTab("menu");
+                    }
+                  } catch {}
+                  // Remove the modal after a short delay to allow the panel to open
+                  setTimeout(() => {
+                    const { removeAllModals } = require("../../modal/store");
+                    removeAllModals();
+                  }, 100);
+                }}
+              >
                 Sign In
-              </a>
+              </button>
             </div>
           </div>
         ),
