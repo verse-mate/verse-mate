@@ -10,6 +10,7 @@ import { useSwipeable } from "react-swipeable";
 import { getBookVerse, getExplanation } from "../../api/bible";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
+import { NotesProvider } from "../../contexts/NotesContext";
 import {
   fetchAllChaptersByBook,
   fetchAllTestaments,
@@ -1059,7 +1060,7 @@ export const MainContent = () => {
   }, [bookId, verseId, chapters, bibleVersion, explanationType, queryClient]);
 
   return (
-    <>
+    <NotesProvider>
       <RadixTabs.Root
         className={`${styles.container}`}
         value={activeTab}
@@ -1909,6 +1910,6 @@ export const MainContent = () => {
         </main>
       </div>
       <ModalContainer />
-    </>
+    </NotesProvider>
   );
 };
