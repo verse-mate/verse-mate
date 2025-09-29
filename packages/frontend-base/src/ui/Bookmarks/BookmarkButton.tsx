@@ -43,7 +43,7 @@ export const BookmarkButton = ({
           <div className={styles.loginModal}>
             <h3>Sign in Required to Use Bookmarks</h3>
             <p>
-              Bookmarking is available only for signed-in accounts. We've saved
+              Bookmarking is only available for signed-in accounts. We've saved
               this chapter for you and will add it to your bookmarks as soon as
               you log in.
             </p>
