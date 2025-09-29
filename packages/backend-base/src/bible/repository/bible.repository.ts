@@ -962,6 +962,51 @@ export class BibleRepository {
     selected_text,
   }: CreateHighlightDto) {
     try {
+      // FIX: Add validation to ensure start_char <= end_char before database insertion
+      // This provides better error handling and prevents constraint violations
+      if (
+        start_char !== undefined &&
+        end_char !== undefined &&
+        start_char > end_char
+      ) {
+        console.warn(
+          "Invalid character range detected in addHighlight: start_char > end_char. Swapping values.",
+          {
+            start_char,
+            end_char,
+            start_verse,
+            end_verse,
+          },
+        );
+        // Swap the values to ensure valid range
+        [start_char, end_char] = [end_char, start_char];
+      }
+
+      // FIX: Add bounds validation for character positions
+      if (
+        selected_text !== undefined &&
+        start_char !== undefined &&
+        end_char !== undefined
+      ) {
+        const expectedLength = selected_text.length;
+        const actualLength = end_char - start_char;
+
+        // If there's a significant discrepancy, log a warning
+        if (Math.abs(actualLength - expectedLength) > 5) {
+          console.warn("Character range length mismatch detected in backend", {
+            expectedLength,
+            actualLength,
+            start_char,
+            end_char,
+            selected_text,
+          });
+        }
+
+        // Ensure character positions are non-negative
+        if (start_char < 0) start_char = 0;
+        if (end_char < 0) end_char = 0;
+      }
+
       const newHighlight: NewVerseHighlights = {
         user_id,
         chapter_id,
@@ -983,7 +1028,38 @@ export class BibleRepository {
       return { highlight: result, success: true };
     } catch (error) {
       console.error("Error adding highlight:", error);
-      return { highlight: null, success: false };
+      // Enhanced error handling with specific messages for constraint violations
+      if (error instanceof Error) {
+        if (error.message.includes("check_valid_char_range")) {
+          return {
+            highlight: null,
+            success: false,
+            error:
+              "Invalid character range: start position must be less than or equal to end position.",
+          };
+        }
+        if (error.message.includes("check_valid_verse_range")) {
+          return {
+            highlight: null,
+            success: false,
+            error:
+              "Invalid verse range: start verse must be less than or equal to end verse.",
+          };
+        }
+        if (error.message.includes("check_non_negative_chars")) {
+          return {
+            highlight: null,
+            success: false,
+            error:
+              "Invalid character positions: positions must be non-negative.",
+          };
+        }
+      }
+      return {
+        highlight: null,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
     }
   }
 
@@ -1026,19 +1102,58 @@ export class BibleRepository {
     chapter_id,
     start_verse,
     end_verse,
+    start_char,
+    end_char,
   }: {
     user_id: string;
     chapter_id: number;
     start_verse: number;
     end_verse: number;
+    start_char?: number;
+    end_char?: number;
   }) {
     try {
-      const overlaps = await this.db
+      let query = this.db
         .getOrCreateConnection()
         .selectFrom("verse_highlights")
         .where("user_id", "=", user_id)
-        .where("chapter_id", "=", chapter_id)
-        .where((eb) =>
+        .where("chapter_id", "=", chapter_id);
+
+      // If character positions are provided and it's a single verse highlight, do precise overlap checking
+      if (
+        start_char !== undefined &&
+        end_char !== undefined &&
+        start_verse === end_verse
+      ) {
+        query = query.where((eb) =>
+          eb.and([
+            // Same verse range
+            eb("start_verse", "=", start_verse),
+            eb("end_verse", "=", end_verse),
+            // And character overlap
+            eb.or([
+              // New highlight starts within existing highlight
+              eb.and([
+                eb("start_char", "<=", start_char),
+                eb("end_char", ">=", start_char),
+              ]),
+              // New highlight ends within existing highlight
+              eb.and([
+                eb("start_char", "<=", end_char),
+                eb("end_char", ">=", end_char),
+              ]),
+              // New highlight completely contains existing highlight
+              eb.and([
+                eb("start_char", ">=", start_char),
+                eb("end_char", "<=", end_char),
+              ]),
+            ]),
+          ]),
+        );
+      } else {
+        // For multi-verse highlights or when character positions are not provided,
+        // use verse-based overlap checking
+        query = query.where((eb) =>
           eb.or([
             // New highlight starts within existing highlight
             eb.and([
@@ -1055,11 +1170,21 @@ export class BibleRepository {
               eb("start_verse", ">=", start_verse),
               eb("end_verse", "<=", end_verse),
             ]),
+            // Existing highlight starts within new highlight
+            eb.and([
+              eb("start_verse", ">=", start_verse),
+              eb("start_verse", "<=", end_verse),
+            ]),
+            // Existing highlight ends within new highlight
+            eb.and([
+              eb("end_verse", ">=", start_verse),
+              eb("end_verse", "<=", end_verse),
+            ]),
           ]),
-        )
-        .selectAll()
-        .execute();
+        );
+      }
 
+      const overlaps = await query.selectAll().execute();
       return { overlaps, hasOverlap: overlaps.length > 0 };
     } catch (error) {
       console.error("Error checking highlight overlap:", error);

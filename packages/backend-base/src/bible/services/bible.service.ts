@@ -528,6 +528,8 @@ export class BibleService {
         chapter_id,
         start_verse,
         end_verse,
+        start_char,
+        end_char,
       });
 
     if (hasOverlap) {
