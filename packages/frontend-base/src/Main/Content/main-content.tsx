@@ -102,10 +102,90 @@ export const MainContent = () => {
       });
       localStorage.removeItem("postLoginExplanationType");
     }
-  }, [saveSearchParams]);
 
-  useEffect(() => {
-    if (lastRead?.result && !bookId && !verseId && !testament) {
+    // Handle post-login redirection based on device type
+    const postLoginRedirect = localStorage.getItem("postLoginRedirect");
+    if (postLoginRedirect) {
+      // Remove the flag first to prevent infinite loops
+      localStorage.removeItem("postLoginRedirect");
+
+      // Check if we're on desktop or mobile
+      const isDesktop = window.innerWidth >= 1024;
+
+      if (postLoginRedirect === "desktop" && isDesktop) {
+        // For desktop: set activeTab to "explanation" and close hamburger menu
+        setActiveTab("explanation");
+        setRightPanelContent("default");
+      } else if (postLoginRedirect === "mobile") {
+        // For mobile/tablet: ensure we're on the book tab and close hamburger menu
+        setActiveTab("book");
+        setRightPanelContent("default");
+      }
+    }
+
+    // Handle post-logout redirection based on device type
+    const postLogoutRedirect = localStorage.getItem("postLogoutRedirect");
+    if (postLogoutRedirect) {
+      // Remove the flag first to prevent infinite loops
+      localStorage.removeItem("postLogoutRedirect");
+
+      // Check if we're on desktop or mobile
+      const isDesktop = window.innerWidth >= 1024;
+
+      if (postLogoutRedirect === "desktop" && isDesktop) {
+        // For desktop: set activeTab to "explanation" and close hamburger menu
+        setActiveTab("explanation");
+        setRightPanelContent("default");
+      } else if (postLogoutRedirect === "mobile") {
+        // For mobile/tablet: ensure we're on the book tab and close hamburger menu
+        setActiveTab("book");
+        setRightPanelContent("default");
+      }
+    }
+
+    // Check if we're in the middle of a post-login redirection
+    const redirectTo = localStorage.getItem("redirectTo");
+
+    // Handle redirectTo if it exists and we're not in the middle of a post-login redirection
+    if (redirectTo) {
+      // Parse the redirectTo URL to extract search params
+      try {
+        const redirectUrl = new URL(redirectTo, window.location.origin);
+        const bookId = redirectUrl.searchParams.get("bookId");
+        const verseId = redirectUrl.searchParams.get("verseId");
+        const testament = redirectUrl.searchParams.get("testament");
+        const explanationType = redirectUrl.searchParams.get("explanationType");
+
+        // Save the search params
+        const paramsToSave: any = {};
+        if (bookId) paramsToSave.bookId = bookId;
+        if (verseId) paramsToSave.verseId = verseId;
+        if (testament) paramsToSave.testament = testament;
+        if (explanationType) paramsToSave.explanationType = explanationType;
+
+        if (Object.keys(paramsToSave).length > 0) {
+          saveSearchParams(paramsToSave);
+        }
+
+        // Remove the redirectTo from localStorage
+        localStorage.removeItem("redirectTo");
+      } catch (e) {
+        console.error("Error parsing redirectTo URL:", e);
+        // Remove the redirectTo from localStorage in case of error
+        localStorage.removeItem("redirectTo");
+      }
+    }
+
+    // Only apply lastRead if we're not in the middle of a post-login redirection
+    if (
+      !postLoginRedirect &&
+      !savedExplanationType &&
+      !redirectTo &&
+      lastRead?.result &&
+      !bookId &&
+      !verseId &&
+      !testament
+    ) {
       saveSearchParams({
         bookId: String(lastRead.result.book_id),
         verseId: String(lastRead.result.chapterNumber),
@@ -113,7 +193,7 @@ export const MainContent = () => {
         explanationType: ExplanationTypeEnum.summary,
       });
     }
-  }, [lastRead, bookId, verseId, testament, saveSearchParams]);
+  }, [saveSearchParams, lastRead, bookId, verseId, testament]);
 
   useEffect(() => {
     if (bookId && verseId) {
