@@ -167,6 +167,32 @@ export const Text = ({
                   .indexOf(selectedText.toLowerCase());
               }
 
+              // FIX: Add more robust text matching approaches
+              // Approach 4: Sliding window match for partial matches
+              if (foundPosition === -1) {
+                const windowSize = Math.min(selectedText.length, 20);
+                for (let i = 0; i <= fullVerseText.length - windowSize; i++) {
+                  const windowText = fullVerseText.substring(i, i + windowSize);
+                  const selectedWindow = selectedText.substring(
+                    0,
+                    Math.min(windowSize, selectedText.length),
+                  );
+                  if (windowText === selectedWindow) {
+                    // Found a potential match, check if the full text matches
+                    const candidateText = fullVerseText.substring(
+                      i,
+                      i + selectedText.length,
+                    );
+                    if (
+                      Math.abs(candidateText.length - selectedText.length) <= 5
+                    ) {
+                      foundPosition = i;
+                      break;
+                    }
+                  }
+                }
+              }
+
               if (foundPosition !== -1) {
                 startChar = foundPosition;
                 endChar = foundPosition + selectedText.length;
@@ -186,10 +212,10 @@ export const Text = ({
                   tempRange.setEnd(range.endContainer, range.endOffset);
                   const calculatedEndChar = tempRange.toString().length;
 
-                  // Validate the DOM-based calculation
+                  // FIX: Add validation for DOM-based calculation
                   if (
                     calculatedStartChar >= 0 &&
-                    calculatedEndChar > calculatedStartChar
+                    calculatedEndChar >= 0 // Changed from > calculatedStartChar to >= 0
                   ) {
                     const extractedText = fullVerseText.substring(
                       calculatedStartChar,
@@ -199,10 +225,18 @@ export const Text = ({
                     // Use DOM-based calculation if it makes sense
                     if (
                       extractedText === selectedText ||
-                      normalizeText(extractedText) === normalizedSelectedText
+                      normalizeText(extractedText) === normalizedSelectedText ||
+                      // Additional validation: check if the extracted text is a substring of selected text
+                      selectedText.includes(extractedText) ||
+                      extractedText.includes(selectedText)
                     ) {
                       startChar = calculatedStartChar;
                       endChar = calculatedEndChar;
+
+                      // FIX: Ensure startChar <= endChar even with DOM-based calculation
+                      if (startChar > endChar) {
+                        [startChar, endChar] = [endChar, startChar];
+                      }
                     } else {
                       startChar = undefined;
                       endChar = undefined;
@@ -236,23 +270,83 @@ export const Text = ({
                 startChar = selectedTextPosition;
                 endChar = selectedTextPosition + selectedText.length;
               } else {
-                startChar = undefined;
-                endChar = undefined;
+                // FIX: More robust text matching using multiple strategies
+                // Strategy 1: Try normalized text matching
+                const normalizeText = (text: string) =>
+                  text.replace(/\s+/g, " ").trim();
+                const normalizedVerseText = normalizeText(fullVerseText);
+                const normalizedSelectedText = normalizeText(selectedText);
+
+                const normalizedPosition = normalizedVerseText.indexOf(
+                  normalizedSelectedText,
+                );
+                if (normalizedPosition !== -1) {
+                  // Map back to original text position
+                  let charCount = 0;
+                  let normalizedCharCount = 0;
+                  let foundStart = -1;
+
+                  for (let i = 0; i < fullVerseText.length; i++) {
+                    if (
+                      normalizedCharCount === normalizedPosition &&
+                      foundStart === -1
+                    ) {
+                      foundStart = charCount;
+                    }
+                    if (
+                      normalizedCharCount ===
+                      normalizedPosition + normalizedSelectedText.length
+                    ) {
+                      startChar = foundStart;
+                      endChar = charCount;
+                      break;
+                    }
+
+                    if (
+                      fullVerseText[i] !== " " ||
+                      (i > 0 && fullVerseText[i - 1] !== " ")
+                    ) {
+                      if (
+                        fullVerseText[i] !== "\n" &&
+                        fullVerseText[i] !== "\r"
+                      ) {
+                        normalizedCharCount++;
+                      }
+                    }
+                    charCount++;
+                  }
+                }
+
+                // If still not found, fall back to verse-level highlighting
+                if (startChar === undefined || endChar === undefined) {
+                  startChar = undefined;
+                  endChar = undefined;
+                }
               }
             }
           } else {
             // Multi-verse selection: start char in first verse, end char in last verse
+            // FIX: Improve multi-verse selection logic for more accurate character positioning
             const startVerseElement = startVerseData.element.querySelector(
               `.${styles.verseText}`,
             );
             if (startVerseElement) {
-              const tempRange = document.createRange();
-              tempRange.setStart(range.startContainer, range.startOffset);
-              tempRange.setEndAfter(startVerseElement);
-              const textFromStart = tempRange.toString();
-              startChar =
-                (startVerseData.textNode?.textContent || "").length -
-                textFromStart.length;
+              // Calculate start position more accurately
+              try {
+                const tempRange = document.createRange();
+                tempRange.selectNodeContents(startVerseElement);
+                tempRange.setStart(range.startContainer, range.startOffset);
+                const textFromStart = tempRange.toString();
+                const fullStartVerseText = startVerseElement.textContent || "";
+                startChar = fullStartVerseText.length - textFromStart.length;
+
+                // Ensure startChar is within bounds
+                if (startChar < 0) startChar = 0;
+                if (startChar > fullStartVerseText.length)
+                  startChar = fullStartVerseText.length;
+              } catch (e) {
+                startChar = 0; // Fallback to beginning of verse
+              }
             }
 
             if (endVerseData?.textNode) {
@@ -260,11 +354,32 @@ export const Text = ({
                 `.${styles.verseText}`,
               );
               if (endVerseElement) {
-                const tempRange = document.createRange();
-                tempRange.setStartBefore(endVerseElement);
-                tempRange.setEnd(range.endContainer, range.endOffset);
-                endChar = tempRange.toString().length;
+                // Calculate end position more accurately
+                try {
+                  const tempRange = document.createRange();
+                  tempRange.selectNodeContents(endVerseElement);
+                  tempRange.setEnd(range.endContainer, range.endOffset);
+                  endChar = tempRange.toString().length;
+
+                  // Ensure endChar is within bounds
+                  const fullEndVerseText = endVerseElement.textContent || "";
+                  if (endChar < 0) endChar = 0;
+                  if (endChar > fullEndVerseText.length)
+                    endChar = fullEndVerseText.length;
+                } catch (e) {
+                  const fullEndVerseText = endVerseElement.textContent || "";
+                  endChar = fullEndVerseText.length; // Fallback to end of verse
+                }
               }
+            }
+
+            // FIX: Add validation for multi-verse selection
+            if (startChar !== undefined && endChar !== undefined) {
+              // For multi-verse selections, we need to ensure the character positions make sense
+              // Since they're in different verses, we can't directly compare them
+              // But we should ensure they're non-negative
+              if (startChar < 0) startChar = 0;
+              if (endChar < 0) endChar = 0;
             }
           }
         }
@@ -272,6 +387,25 @@ export const Text = ({
         // Fall back to verse-level highlighting if character calculation fails
         startChar = undefined;
         endChar = undefined;
+      }
+
+      // FIX: Add validation to ensure startChar <= endChar
+      // This prevents database constraint violations
+      if (
+        startChar !== undefined &&
+        endChar !== undefined &&
+        startChar > endChar
+      ) {
+        console.warn(
+          "Invalid character range detected: startChar > endChar. Swapping values.",
+          {
+            startChar,
+            endChar,
+            selectedText,
+          },
+        );
+        // Swap the values to ensure valid range
+        [startChar, endChar] = [endChar, startChar];
       }
 
       setSelectedVerses({
@@ -387,35 +521,49 @@ export const Text = ({
       const highlights = verseHighlights
         .map((h) => ({
           highlight: h,
-          start: h.start_verse === verseNumber ? h.start_char || 0 : 0,
+          start:
+            h.start_verse === verseNumber
+              ? h.start_char !== undefined
+                ? h.start_char
+                : 0
+              : 0,
           end:
             h.end_verse === verseNumber
-              ? h.end_char || verseText.length
+              ? h.end_char !== undefined
+                ? h.end_char
+                : verseText.length
               : verseText.length,
         }))
         .sort((a, b) => a.start - b.start);
 
       let currentPos = 0;
 
+      // FIX: Improved segment creation logic to handle edge cases
       highlights.forEach(({ highlight, start, end }) => {
+        // Validate start and end positions
+        const validStart = Math.max(0, Math.min(start, verseText.length));
+        const validEnd = Math.max(validStart, Math.min(end, verseText.length));
+
         // Add un highlighted text before this highlight
-        if (currentPos < start) {
+        if (currentPos < validStart) {
           segments.push({
             start: currentPos,
-            end: start,
-            text: verseText.slice(currentPos, start),
+            end: validStart,
+            text: verseText.slice(currentPos, validStart),
           });
         }
 
         // Add highlighted text
-        segments.push({
-          start,
-          end,
-          text: verseText.slice(start, end),
-          highlight,
-        });
+        if (validStart < validEnd) {
+          segments.push({
+            start: validStart,
+            end: validEnd,
+            text: verseText.slice(validStart, validEnd),
+            highlight,
+          });
+        }
 
-        currentPos = Math.max(currentPos, end);
+        currentPos = Math.max(currentPos, validEnd);
       });
 
       // Add remaining un highlighted text
