@@ -113,6 +113,19 @@ export const Settings = ({
 
   const handleLogout = async () => {
     destroyCookie(null, "accessToken");
+
+    // Check device type for redirection
+    const isDesktop =
+      typeof window !== "undefined" && window.innerWidth >= 1024;
+
+    if (isDesktop) {
+      // For desktop: set activeTab to "explanation" and close hamburger menu
+      localStorage.setItem("postLogoutRedirect", "desktop");
+    } else {
+      // For mobile/tablet: redirect to Bible page and close hamburger menu
+      localStorage.setItem("postLogoutRedirect", "mobile");
+    }
+
     window.location.reload();
   };
 
