@@ -17,6 +17,7 @@ import {
 } from "../Icons";
 import { Input } from "../Input";
 import { SelectDropdown } from "../SelectDropdown";
+import { formatLanguageDisplay } from "./languageFormatting";
 import styles from "./settings.module.css";
 
 interface SettingsProps {
@@ -317,13 +318,15 @@ export const Settings = ({
                     defaultPlaceholder={
                       selectedLanguage === "automatic"
                         ? "Automatic (Based on Bible Version)"
-                        : availableLanguages.find(
-                            (lang) => lang.code === selectedLanguage,
-                          )?.nativeName ||
-                          availableLanguages.find(
-                            (lang) => lang.code === selectedLanguage,
-                          )?.name ||
-                          "Select Language"
+                        : (() => {
+                            const selectedLang = availableLanguages.find(
+                              (lang) => lang.code === selectedLanguage,
+                            );
+                            if (!selectedLang) return "Select Language";
+
+                            // Apply the same formatting logic as in the dropdown items
+                            return formatLanguageDisplay(selectedLang);
+                          })()
                     }
                     icon={<ChevronDownIcon />}
                     theme="light" // Explicitly set light theme for settings context
@@ -352,7 +355,7 @@ export const Settings = ({
                         value={language.code}
                         icon={<CheckIcon />}
                       >
-                        {language.nativeName} ({language.name})
+                        {formatLanguageDisplay(language)}
                       </SelectDropdown.Item>
                     ))}
                   </SelectDropdown.Content>
