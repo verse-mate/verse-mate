@@ -90,7 +90,7 @@ describe("Auth", () => {
     loginAuthPayload = data;
   });
 
-  it("login - invalid", async () => {
+  it("login - user not found", async () => {
     const { data, error } = await client.auth.login.post({
       email: "invalid@email.com",
       password: authSignupInput.password,
@@ -98,6 +98,20 @@ describe("Auth", () => {
 
     expect(data?.accessToken).not.toBeDefined();
     expect(error).toBeTruthy();
+    // Check that we get USER_NOT_FOUND error for non-existent users
+    expect(error?.value).toBe("USER_NOT_FOUND");
+  });
+
+  it("login - invalid credentials", async () => {
+    const { data, error } = await client.auth.login.post({
+      email: authSignupInput.email,
+      password: "wrongpassword",
+    });
+
+    expect(data?.accessToken).not.toBeDefined();
+    expect(error).toBeTruthy();
+    // Check that we get INVALID_USER error for wrong password
+    expect(error?.value).toBe("INVALID_USER");
   });
 
   it("Change Password", async () => {
