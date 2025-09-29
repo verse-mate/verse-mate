@@ -8,7 +8,7 @@
     display: flex;
     align-items: center;
     height: 48px;
-    padding: 0 1.5rem;
+    padding: 0 3rem 0 1.5rem; /* Increased right padding to accommodate checkmark */
     position: relative;
     user-select: none;
     border-bottom: 1px solid var(--geyser);
@@ -43,6 +43,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 20px; /* Fixed width for consistent spacing */
 }
 
 .itemIndicator svg {

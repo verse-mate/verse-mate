@@ -5,7 +5,8 @@
     box-shadow: 0 0 15px 0 #00000026;
     background-color: var(--snow);
     width: 100%;
-    max-width: 480px;
+    max-width: 520px; /* Increased from 480px to 520px */
+    min-width: 240px; /* Added minimum width */
     max-height: 640px;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
