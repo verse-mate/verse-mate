@@ -113,7 +113,7 @@
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   hyphens: none;
   word-break: normal;
 }
@@ -124,8 +124,11 @@
   -webkit-box-orient: vertical;
   line-clamp: 2;
   overflow: hidden;
-  word-break: normal;
   white-space: normal;
+
+  /* Force consistent wrapping even for long unspaced tokens */
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 

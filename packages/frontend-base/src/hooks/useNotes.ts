@@ -69,10 +69,6 @@ export const useNotes = () => {
             if (data?.notes) {
               const convertedNotes = data.notes.map(convertBackendNote);
               setNotes(convertedNotes);
-<<<<<<< HEAD
-            }
-          }
-=======
               return;
             }
           }
@@ -82,7 +78,6 @@ export const useNotes = () => {
             const parsedNotes = JSON.parse(storedNotes);
             setNotes(parsedNotes);
           }
->>>>>>> 9a37767 (main merged with notes functionality)
         } else {
           // Load from localStorage (current implementation)
           const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);

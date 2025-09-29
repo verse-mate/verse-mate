@@ -159,7 +159,7 @@ export const NotesList = () => {
                             const currentNote =
                               notes.find((n) => n.id === noteFromGroup.id) ||
                               noteFromGroup;
-                            const { truncated, isTruncated } = truncateNote(
+                            const { isTruncated } = truncateNote(
                               currentNote.content,
                             );
 
@@ -213,7 +213,7 @@ export const NotesList = () => {
                                   <div
                                     className={`${styles.noteContent} ${styles.clamped}`}
                                   >
-                                    {truncated}
+                                    {currentNote.content}
                                   </div>
                                   {isTruncated && (
                                     <span className={styles.readMore}>

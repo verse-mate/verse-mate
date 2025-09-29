@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { useNotesContext } from "../../contexts/NotesContext";
 import * as Icon from "../Icons";
-<<<<<<< HEAD
-import { NoteViewModal } from "./NoteViewModal";
-=======
 import { NoteViewModal } from "./NoteViewModal.tsx";
->>>>>>> 9a37767 (main merged with notes functionality)
 import styles from "./notes.module.css";
 
 // Utility function to truncate note content to 1-2 lines
@@ -253,40 +249,42 @@ export const NotesModal = ({
                             </div>
                           ) : (
                             <>
-                              <div
-                                className={`${styles.noteContent} ${styles.clamped}`}
-                              >
-                                {(() => {
-                                  const { truncated } = truncateNote(
-                                    note.content,
-                                  );
-                                  return truncated;
-                                })()}
-                              </div>
                               {(() => {
                                 const { isTruncated } = truncateNote(
                                   note.content,
                                 );
-                                return isTruncated ? (
-                                  <span
-                                    className={styles.readMore}
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openNoteView(note, false);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter" || e.key === " ") {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        openNoteView(note, false);
-                                      }
-                                    }}
-                                  >
-                                    Click to read more
-                                  </span>
-                                ) : null;
+                                return (
+                                  <>
+                                    <div
+                                      className={`${styles.noteContent} ${styles.clamped}`}
+                                    >
+                                      {note.content}
+                                    </div>
+                                    {isTruncated ? (
+                                      <span
+                                        className={styles.readMore}
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openNoteView(note, false);
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (
+                                            e.key === "Enter" ||
+                                            e.key === " "
+                                          ) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openNoteView(note, false);
+                                          }
+                                        }}
+                                      >
+                                        Click to read more
+                                      </span>
+                                    ) : null}
+                                  </>
+                                );
                               })()}
                             </>
                           )}
