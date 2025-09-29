@@ -127,7 +127,7 @@ export const MobileContainer = ({ chapters, explanation }: Props) => {
         {visibleExplanations.map((exp, index) => (
           <div
             key={exp.key}
-            className={exp.className}
+            className={`${exp.className} ${styles.explanationContent} ${styles.mobileExplanationContent}`}
             style={{
               position: "absolute",
               top: 0,
@@ -136,6 +136,8 @@ export const MobileContainer = ({ chapters, explanation }: Props) => {
               height: "100%",
               zIndex: index + 1,
               overflowY: "auto",
+              scrollbarWidth: "none" /* Firefox */,
+              msOverflowStyle: "none" /* IE and Edge */,
               padding: "inherit", // Inherit padding from parent
             }}
             onAnimationEnd={index === 0 ? handleAnimationEnd : undefined}

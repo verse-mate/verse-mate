@@ -41,6 +41,21 @@
     width: 100%;
     overflow-y: auto;
     background-color: var(--snow);
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.explanationContent::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.mobileExplanationContent {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.mobileExplanationContent::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .loadingCard {
@@ -149,6 +164,12 @@
         padding-top: 24px;
         padding-left: 48px;
         padding-right: 48px;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+    
+    .explanationContent::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
     }
 }
 
