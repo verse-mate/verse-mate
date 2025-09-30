@@ -237,6 +237,16 @@
     display: none;
 }
 
+.contentGroupedTrigger {
+    /* Hide scrollbar for WebKit browsers */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.contentGroupedTrigger::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
 /* end mobile */
 
 /* star tablet portrait */

@@ -99,6 +99,57 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
         return false;
       }
 
+      // FIX: Add validation to ensure startChar <= endChar before sending to backend
+      // This prevents database constraint violations
+      let validatedStartChar = startChar;
+      let validatedEndChar = endChar;
+
+      if (
+        validatedStartChar !== undefined &&
+        validatedEndChar !== undefined &&
+        validatedStartChar > validatedEndChar
+      ) {
+        console.warn(
+          "Invalid character range detected in createHighlight: startChar > endChar. Swapping values.",
+          {
+            startChar: validatedStartChar,
+            endChar: validatedEndChar,
+            startVerse,
+            endVerse,
+          },
+        );
+        // Swap the values to ensure valid range
+        [validatedStartChar, validatedEndChar] = [
+          validatedEndChar,
+          validatedStartChar,
+        ];
+      }
+
+      // FIX: Add bounds validation for character positions
+      if (
+        selectedText !== undefined &&
+        validatedStartChar !== undefined &&
+        validatedEndChar !== undefined
+      ) {
+        const expectedLength = selectedText.length;
+        const actualLength = validatedEndChar - validatedStartChar;
+
+        // If there's a significant discrepancy, log a warning
+        if (Math.abs(actualLength - expectedLength) > 5) {
+          console.warn("Character range length mismatch detected", {
+            expectedLength,
+            actualLength,
+            startChar: validatedStartChar,
+            endChar: validatedEndChar,
+            selectedText,
+          });
+        }
+
+        // Ensure character positions are non-negative
+        if (validatedStartChar < 0) validatedStartChar = 0;
+        if (validatedEndChar < 0) validatedEndChar = 0;
+      }
+
       setLoading(true);
       setError(null);
 
@@ -113,8 +164,10 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
         };
 
         // Add character positions if available (for future backend support)
-        if (startChar !== undefined) highlightData.start_char = startChar;
-        if (endChar !== undefined) highlightData.end_char = endChar;
+        if (validatedStartChar !== undefined)
+          highlightData.start_char = validatedStartChar;
+        if (validatedEndChar !== undefined)
+          highlightData.end_char = validatedEndChar;
         if (selectedText) highlightData.selected_text = selectedText;
 
         const response = await api.bible.highlight.add.post(highlightData);
@@ -142,7 +195,14 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
         return false;
       } catch (err) {
         console.error("Error creating highlight:", err);
-        setError("Failed to create highlight");
+        // Enhanced error handling with specific messages from backend
+        if (err && typeof err === "object" && "error" in err) {
+          setError(
+            (err as { error: string }).error || "Failed to create highlight",
+          );
+        } else {
+          setError("Failed to create highlight");
+        }
         return false;
       } finally {
         setLoading(false);
