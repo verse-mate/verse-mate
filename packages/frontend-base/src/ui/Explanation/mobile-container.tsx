@@ -136,8 +136,6 @@ export const MobileContainer = ({ chapters, explanation }: Props) => {
               height: "100%",
               zIndex: index + 1,
               overflowY: "auto",
-              scrollbarWidth: "none" /* Firefox */,
-              msOverflowStyle: "none" /* IE and Edge */,
               padding: "inherit", // Inherit padding from parent
             }}
             onAnimationEnd={index === 0 ? handleAnimationEnd : undefined}
