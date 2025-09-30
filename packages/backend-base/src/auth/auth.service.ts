@@ -67,7 +67,7 @@ export class AuthService {
       ));
 
     if (!validCredentials) {
-      throw new Error("INVALID_USER");
+      throw new Error(ErrorCode.INVALID_USER);
     }
 
     return user;
@@ -264,7 +264,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error("INVALID_USER");
+      throw new Error(ErrorCode.INVALID_USER);
     }
 
     await this.validateUser({

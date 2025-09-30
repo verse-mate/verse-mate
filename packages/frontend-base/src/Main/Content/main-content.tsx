@@ -93,6 +93,8 @@ export const MainContent = () => {
   );
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const savedExplanationType = localStorage.getItem(
       "postLoginExplanationType",
     );
@@ -110,7 +112,8 @@ export const MainContent = () => {
       localStorage.removeItem("postLoginRedirect");
 
       // Check if we're on desktop or mobile
-      const isDesktop = window.innerWidth >= 1024;
+      const isDesktop =
+        typeof window !== "undefined" && window.innerWidth >= 1024;
 
       if (postLoginRedirect === "desktop" && isDesktop) {
         // For desktop: set activeTab to "explanation" and close hamburger menu
@@ -130,7 +133,8 @@ export const MainContent = () => {
       localStorage.removeItem("postLogoutRedirect");
 
       // Check if we're on desktop or mobile
-      const isDesktop = window.innerWidth >= 1024;
+      const isDesktop =
+        typeof window !== "undefined" && window.innerWidth >= 1024;
 
       if (postLogoutRedirect === "desktop" && isDesktop) {
         // For desktop: set activeTab to "explanation" and close hamburger menu
@@ -147,7 +151,7 @@ export const MainContent = () => {
     const redirectTo = localStorage.getItem("redirectTo");
 
     // Handle redirectTo if it exists and we're not in the middle of a post-login redirection
-    if (redirectTo) {
+    if (redirectTo && typeof window !== "undefined") {
       // Parse the redirectTo URL to extract search params
       try {
         const redirectUrl = new URL(redirectTo, window.location.origin);
@@ -432,7 +436,7 @@ export const MainContent = () => {
   });
 
   const handlePreviousButtonClick = () => {
-    if (window.innerWidth < 1024) {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
       if (isAnimating.current) return;
       const prevVerseId = Number(verseId) - 1;
       if (prevVerseId < 1) return;
@@ -468,7 +472,7 @@ export const MainContent = () => {
   };
 
   const handleNextButtonClick = () => {
-    if (window.innerWidth < 1024) {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
       if (isAnimating.current) return;
       const nextVerseId = Number(verseId) + 1;
       if (!chapters || nextVerseId > chapters) return;
@@ -536,6 +540,7 @@ export const MainContent = () => {
 
   useEffect(() => {
     const handleResize = () => {
+      if (typeof window === "undefined") return;
       const currentWidth = window.innerWidth;
       const prevWidth = prevWidthRef.current;
 
