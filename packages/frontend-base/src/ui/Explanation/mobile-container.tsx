@@ -127,7 +127,7 @@ export const MobileContainer = ({ chapters, explanation }: Props) => {
         {visibleExplanations.map((exp, index) => (
           <div
             key={exp.key}
-            className={exp.className}
+            className={`${exp.className} ${styles.explanationContent} ${styles.mobileExplanationContent}`}
             style={{
               position: "absolute",
               top: 0,

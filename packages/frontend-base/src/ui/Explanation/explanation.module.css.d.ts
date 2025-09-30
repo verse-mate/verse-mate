@@ -11,5 +11,6 @@ declare const styles: {
   readonly spin: string;
   readonly markdown: string;
   readonly rating: string;
+  readonly mobileExplanationContent: string;
 };
 export = styles;

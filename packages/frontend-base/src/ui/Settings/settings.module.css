@@ -3,7 +3,7 @@
   padding: 20px;
   align-self: flex-start;
   font-family: Inter, sans-serif;
-}
+  }
 
 .heightSpacer {
   height: 30px;
@@ -328,9 +328,15 @@
 /* Dropdown Content Responsive Sizing */
 .settingsRoot [data-radix-select-content] {
   width: 100% !important;
-  max-width: 300px !important;
-  min-width: 200px !important;
+  max-width: 340px !important; /* Increased from 300px */
+  min-width: 240px !important; /* Increased from 200px */
   box-sizing: border-box !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.settingsRoot [data-radix-select-content]::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 @media screen and (max-width: 834px) {
@@ -346,4 +352,13 @@
   }
 }
 
+.invisibleScrollbar {
+  /* Hide scrollbar for WebKit browsers */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.invisibleScrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
 

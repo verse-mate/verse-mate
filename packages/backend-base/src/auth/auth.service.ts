@@ -50,7 +50,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error("INVALID_USER");
+      throw new Error(ErrorCode.USER_NOT_FOUND);
     }
 
     // if (!user.isActive) {
@@ -66,8 +66,8 @@ export class AuthService {
         "bcrypt",
       ));
 
-    if (!validCredentials || !user) {
-      throw new Error("INVALID_USER");
+    if (!validCredentials) {
+      throw new Error(ErrorCode.INVALID_USER);
     }
 
     return user;
@@ -264,7 +264,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error("INVALID_USER");
+      throw new Error(ErrorCode.INVALID_USER);
     }
 
     await this.validateUser({
