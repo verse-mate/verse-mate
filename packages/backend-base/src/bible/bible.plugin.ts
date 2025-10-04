@@ -656,22 +656,28 @@ const plugin = new Elysia()
           try {
             console.log("Adding note:", body);
 
+            const content =
+              typeof body.content === "string" ? body.content.trim() : "";
             if (
               !body.user_id ||
               !body.book_id ||
               !body.chapter_number ||
-              !body.content
+              !content
             ) {
               console.error("Missing required fields for adding note");
               return { success: false, error: "Missing required fields" };
             }
 
+            // Normalize verse_id: keep a number or leave undefined; repo converts to null
+            const verse_id =
+              typeof body.verse_id === "number" ? body.verse_id : undefined;
+
             const { note } = await bibleService.addNote({
               user_id: body.user_id,
               book_id: body.book_id,
               chapter_number: body.chapter_number,
-              verse_id: body.verse_id,
-              content: body.content,
+              verse_id,
+              content,
             });
 
             return { success: true, note };

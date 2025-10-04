@@ -66,13 +66,15 @@ export const useNotes = () => {
           const response = await fetch(getApiPath(`/book/notes/${session.id}`));
           if (response.ok) {
             const data = await response.json();
-            if (data?.notes) {
-              const convertedNotes = data.notes.map(convertBackendNote);
+            if (Array.isArray(data?.notes)) {
+              const convertedNotes = (data.notes as BackendNote[]).map(
+                convertBackendNote,
+              );
               setNotes(convertedNotes);
               return;
             }
           }
-          // Non-OK or missing payload: fallback to localStorage
+          // Non-OK or invalid payload: fallback to localStorage
           const storedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
           if (storedNotes) {
             const parsedNotes = JSON.parse(storedNotes);

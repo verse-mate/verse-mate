@@ -925,19 +925,21 @@ export class BibleService {
     console.log("Adding note:", noteData);
 
     try {
-      // Use existing getChapterId method like bookmarks
+      // Resolve a real chapter_id and fail fast if not found
       const { chapter_id } = await this.bibleRepository.getChapterId({
         book_id: noteData.book_id,
         chapter_number: noteData.chapter_number,
       });
 
-      // Use either real or synthetic chapter_id (consistent with bookmarks)
-      const finalChapterId =
-        chapter_id || noteData.book_id * 1000 + noteData.chapter_number;
+      if (!chapter_id) {
+        throw new Error(
+          `Chapter not found for book_id=${noteData.book_id} chapter_number=${noteData.chapter_number}`,
+        );
+      }
 
       const { note } = await this.bibleRepository.addNote({
         user_id: noteData.user_id,
-        chapter_id: finalChapterId,
+        chapter_id,
         verse_id: noteData.verse_id,
         content: noteData.content,
       });
