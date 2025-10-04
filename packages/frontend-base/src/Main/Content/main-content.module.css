@@ -57,6 +57,14 @@
     margin-top: 128px;
     max-height: calc(100dvh - 248px);
     overflow-y: auto;
+
+    /* Hide scrollbar for WebKit browsers */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.contentGroupedTrigger::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .bookContainer {
@@ -75,6 +83,12 @@
     overflow-y: auto;
     background-color: var(--fantasy);
     padding: 16px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.bookContent::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .separator {
@@ -118,6 +132,12 @@
     width: 100%;
     overflow-y: auto;
     background-color: var(--snow);
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.explanationContainer::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .markdown {
@@ -141,6 +161,14 @@
     overflow-y: auto;
     max-height: calc(100dvh - 200px);
     padding: 16px;
+
+    /* Hide scrollbar for WebKit browsers */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.menuOptions::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .flexBetween {
@@ -194,6 +222,12 @@
     background-color: var(--snow);
     padding: 16px;
     overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.historyContainer::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .groupContainer{
@@ -210,6 +244,13 @@
     width: 100%;
     height: calc(100dvh - 56px);
     background-color: var(--snow);
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+.moreOptionsContainer::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .moreOptionsContainer > :last-child {
