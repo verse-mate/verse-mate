@@ -11,46 +11,49 @@ interface Topic {
   updated_at?: string;
 }
 
-// TODO: Fix API structure - currently using mock data for demonstration
 export const getTopics = async (): Promise<Topic[]> => {
-  // Mock implementation for now
-  return [
-    {
-      topic_id: "1",
-      name: "The Fall of Man",
-      description:
-        "The story of Adam and Eve's disobedience in the Garden of Eden",
-      category: "EVENT",
-      sort_order: 1,
-      is_active: true,
-    },
-    {
-      topic_id: "2",
-      name: "The Birth of Jesus Christ",
-      description: "The miraculous birth of Jesus in Bethlehem",
-      category: "EVENT",
-      sort_order: 2,
-      is_active: true,
-    },
-  ];
+  try {
+    const response = await (api.admin as any).topics.get();
+    return response.data?.topics || [];
+  } catch (error) {
+    console.error("Error fetching topics:", error);
+    throw error;
+  }
 };
 
 export const createTopic = async (
   topic: Omit<Topic, "topic_id">,
 ): Promise<Topic> => {
-  // Mock implementation for now
-  return {
-    ...topic,
-    topic_id: "mock-id",
-  };
+  try {
+    const response = await (api.admin as any).topics.post(topic);
+    return response.data?.topic;
+  } catch (error) {
+    console.error("Error creating topic:", error);
+    throw error;
+  }
 };
 
 export const updateTopic = async (topic: Topic): Promise<Topic> => {
-  // Mock implementation for now
-  return topic;
+  try {
+    const response = await (api.admin as any).topics[topic.topic_id].put({
+      name: topic.name,
+      description: topic.description,
+      category: topic.category,
+      sort_order: topic.sort_order,
+      is_active: topic.is_active,
+    });
+    return response.data?.topic;
+  } catch (error) {
+    console.error("Error updating topic:", error);
+    throw error;
+  }
 };
 
 export const deleteTopic = async (topicId: string): Promise<void> => {
-  // Mock implementation for now
-  return Promise.resolve();
+  try {
+    await (api.admin as any).topics[topicId].delete();
+  } catch (error) {
+    console.error("Error deleting topic:", error);
+    throw error;
+  }
 };

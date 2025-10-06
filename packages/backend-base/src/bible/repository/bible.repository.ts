@@ -245,6 +245,102 @@ export class BibleRepository {
     }
   }
 
+  /**
+   * Get chapter by book name and chapter number
+   * @param bookName The name of the book
+   * @param chapterNumber The chapter number
+   * @returns The chapter object or null if not found
+   */
+  async getChapterByBookNameAndNumber(bookName: string, chapterNumber: number) {
+    try {
+      console.log(
+        "Repository: Getting chapter for bookName:",
+        bookName,
+        "chapterNumber:",
+        chapterNumber,
+      );
+
+      const connection = this.db.getOrCreateConnection();
+
+      const chapter = await connection
+        .selectFrom("chapters")
+        .innerJoin("books", "chapters.book_id", "books.book_id")
+        .where("books.name", "=", bookName)
+        .where("chapters.chapter_number", "=", chapterNumber)
+        .select(["chapters.chapter_id", "chapters.chapter_number"])
+        .executeTakeFirst();
+
+      console.log("Repository: getChapterByBookNameAndNumber result:", chapter);
+
+      if (!chapter?.chapter_id) {
+        console.log(
+          "Repository: No chapter found for bookName:",
+          bookName,
+          "chapterNumber:",
+          chapterNumber,
+        );
+      }
+
+      return { chapter: chapter ?? null };
+    } catch (error) {
+      console.error("Repository: Error getting chapter:", error);
+      if (error instanceof Error) {
+        console.error("Repository: Error details:", error.message);
+        console.error("Repository: Error stack:", error.stack);
+      }
+      return { chapter: null };
+    }
+  }
+
+  /**
+   * Get all verses for a chapter by book name and chapter number
+   * @param bookName The name of the book
+   * @param chapterNumber The chapter number
+   * @param versionId The Bible version ID
+   * @returns Array of verses for the chapter
+   */
+  async getChapterVersesByBookNameAndChapter(
+    bookName: string,
+    chapterNumber: number,
+    versionId: string,
+  ) {
+    try {
+      console.log(
+        "Repository: Getting chapter verses for bookName:",
+        bookName,
+        "chapterNumber:",
+        chapterNumber,
+      );
+
+      const connection = this.db.getOrCreateConnection();
+
+      const verses = await connection
+        .selectFrom("verses")
+        .innerJoin("chapters", "verses.chapter_id", "chapters.chapter_id")
+        .innerJoin("books", "chapters.book_id", "books.book_id")
+        .where("books.name", "=", bookName)
+        .where("chapters.chapter_number", "=", chapterNumber)
+        .where("verses.version_id", "=", versionId)
+        .select(["verses.verse_number as verseNumber", "verses.text"])
+        .orderBy("verseNumber", "asc")
+        .execute();
+
+      console.log(
+        "Repository: getChapterVersesByBookNameAndChapter result count:",
+        verses.length,
+      );
+
+      return { verses: verses ?? null };
+    } catch (error) {
+      console.error("Repository: Error getting chapter verses:", error);
+      if (error instanceof Error) {
+        console.error("Repository: Error details:", error.message);
+        console.error("Repository: Error stack:", error.stack);
+      }
+      return { verses: [] };
+    }
+  }
+
   async getExplanation({
     book_id,
     chapter_number,

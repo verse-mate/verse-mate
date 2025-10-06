@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getTopicDetails, getTopicExplanation } from "../../api/topics";
+import { useGetSearchParams } from "../../hooks/useSearchParams";
 import { useVerseParser } from "../../hooks/useVerseParser";
 import { Renderer } from "../../ui/MarkdownRenderer/Content/content";
 
@@ -13,6 +14,8 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
   topicId,
   onBack,
 }) => {
+  const { bibleVersion } = useGetSearchParams();
+
   const {
     data: topicDetails,
     isLoading: isTopicLoading,
@@ -52,9 +55,9 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
 
   useEffect(() => {
     if (contentToParse) {
-      parseVerses({ content: contentToParse, bibleVersion: "NASB1995" });
+      parseVerses({ content: contentToParse, bibleVersion });
     }
-  }, [contentToParse, parseVerses]);
+  }, [contentToParse, parseVerses, bibleVersion]);
 
   const isLoading =
     isTopicLoading || isSummaryLoading || isBylineLoading || isDetailedLoading;
