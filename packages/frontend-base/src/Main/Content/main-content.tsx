@@ -34,6 +34,7 @@ import {
   useDropdownToggle,
   useSelectDropdown,
 } from "../../hooks/useSelectDropdown";
+import { useTopicsByCategory } from "../../hooks/useTopics";
 import { userSession } from "../../hooks/userSession";
 import { ModalContainer } from "../../modal/ModalContainer";
 import { updateSelectedBook } from "../../store/book-selection";
@@ -55,6 +56,7 @@ import { Tabs } from "../../ui/Tabs";
 import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
 import { homeOptions } from "../../utils/home-options";
+import { TopicContent } from "./TopicContent";
 import styles from "./main-content.module.css";
 
 export const MainContent = () => {
@@ -1620,15 +1622,7 @@ export const MainContent = () => {
                                     label="Parables"
                                   />
                                 </Tabs.List>
-                                <Tabs.Content value="EVENTS">
-                                  <p>Events content will go here.</p>
-                                </Tabs.Content>
-                                <Tabs.Content value="PROPHECIES">
-                                  <p>Prophecies content will go here.</p>
-                                </Tabs.Content>
-                                <Tabs.Content value="PARABLES">
-                                  <p>Parables content will go here.</p>
-                                </Tabs.Content>
+                                <TopicContent category={activeTopicTab} />
                               </Tabs.Root>
                             </Tabs.Content>
                           </div>

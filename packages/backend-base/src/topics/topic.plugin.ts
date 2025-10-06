@@ -89,6 +89,23 @@ const plugin = new Elysia()
             lang: t.Optional(t.String()),
           }),
         },
+      )
+      .post(
+        "/parse-references",
+        async ({ body, store: { topicService } }) => {
+          const { content, bibleVersion } = body;
+          const parsedContent = await topicService.parseTopicReferences(
+            content,
+            bibleVersion,
+          );
+          return { parsedContent };
+        },
+        {
+          body: t.Object({
+            content: t.String(),
+            bibleVersion: t.String(),
+          }),
+        },
       ),
   );
 

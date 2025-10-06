@@ -52,7 +52,7 @@ export class TopicRepository {
     return topic;
   }
 
-  async createTopic(topic: Insertable<Topics>) {
+  async createTopic(topic: Omit<Insertable<Topics>, "topic_id">) {
     return await this.db
       .getOrCreateConnection()
       .insertInto("topics")
