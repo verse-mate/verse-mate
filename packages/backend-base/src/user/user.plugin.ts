@@ -49,7 +49,7 @@ const plugin = new Elysia()
     ...state,
     userService: new UserService(state.db),
   }))
-  .guard((app) => {
+  .guard(authGuard, (app) => {
     return app
       .use(bearer())
       .resolve({ as: "scoped" }, authDerive)

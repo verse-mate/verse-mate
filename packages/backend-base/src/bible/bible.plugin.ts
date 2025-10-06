@@ -381,7 +381,7 @@ const plugin = new Elysia()
         "/testaments",
         async ({ store: { bibleService } }) => {
           const { testaments } = await bibleService.getTestaments();
-          return { testaments: testaments };
+          return { testaments: testaments.keys };
         },
         {
           response: {
@@ -458,7 +458,9 @@ const plugin = new Elysia()
             book_id: body.book_id,
             chapter_number: body.chapter_number,
           });
-          return { chatExists };
+          return {
+            chatExists: Array.isArray(chatExists) && chatExists.length > 0,
+          };
         },
         {
           body: t.Intersect([
@@ -784,7 +786,7 @@ const plugin = new Elysia()
           const disabledChat = await chatService.disableChat({
             conversation_id: Number(conversation_id),
           });
-          return { disabledChat: disabledChat.chat_id };
+          return { disabledChat: disabledChat.chat_id ?? 0 };
         },
         {
           params: t.Pick(ChatDto, ["conversation_id"]),

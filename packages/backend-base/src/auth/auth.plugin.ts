@@ -33,7 +33,7 @@ const UserSessionResponse = t.Object({
   firstName: t.String(),
   lastName: t.String(),
   is_admin: t.Boolean(),
-  preferred_language: t.String(),
+  preferred_language: t.Union([t.String(), t.Null()]),
 });
 
 const SuccessResponse = t.Object({
@@ -51,7 +51,7 @@ const plugin = new Elysia()
   })
   .group("/auth", (app) =>
     app
-      .guard((app) =>
+      .guard(authGuard, (app) =>
         app
           .use(bearer())
           .resolve({ as: "scoped" }, authDerive)
@@ -181,7 +181,11 @@ const plugin = new Elysia()
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
-              return await authService.getUserById(currentUserId);
+              const user = await authService.getUserById(currentUserId);
+              if (!user) {
+                throw new UnauthorizedError("User not found");
+              }
+              return user;
             },
             {
               response: {
@@ -197,7 +201,11 @@ const plugin = new Elysia()
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
-              return await authService.updateProfile(currentUserId, body);
+              const user = await authService.updateProfile(currentUserId, body);
+              if (!user) {
+                throw new UnauthorizedError("User not found");
+              }
+              return user;
             },
             {
               body: AuthUpdateProfileInput,
@@ -242,7 +250,8 @@ const plugin = new Elysia()
       .post(
         "/forgot-password",
         async ({ body, store: { authService } }) => {
-          return authService.forgotPassword(body);
+          const success = await authService.forgotPassword(body);
+          return { success };
         },
         {
           body: AuthForgotPasswordInput,
@@ -257,7 +266,8 @@ const plugin = new Elysia()
       .post(
         "/reset-password",
         async ({ body, store: { authService } }) => {
-          return authService.resetPassword(body);
+          const success = await authService.resetPassword(body);
+          return { success };
         },
         {
           body: AuthResetPasswordInput,
@@ -272,7 +282,8 @@ const plugin = new Elysia()
       .get(
         "/reset-password-verify",
         async ({ query, store: { authService } }) => {
-          return authService.resetPasswordVerify(query.token);
+          const success = await authService.resetPasswordVerify(query.token);
+          return { success };
         },
         {
           query: t.Object({

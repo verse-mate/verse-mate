@@ -30,7 +30,10 @@ export const BookmarkList = () => {
 
     // If testament is missing or invalid, look it up from book data
     if (!testament && testaments) {
-      const bookData = testaments.find((book) => book.b === bookmark.book_id);
+      const bookData = testaments.find(
+        (book: { b: number; n: string; c: number; t: string }) =>
+          book.b === bookmark.book_id,
+      );
       if (bookData?.t) {
         testament = bookData.t as TestamentEnum;
       } else {
@@ -81,9 +84,15 @@ export const BookmarkList = () => {
         .sort((a, b) => {
           // Get testament info for each bookmark
           const testamentA =
-            testaments?.find((t) => t.b === a.book_id)?.t || "OT";
+            testaments?.find(
+              (t: { b: number; n: string; c: number; t: string }) =>
+                t.b === a.book_id,
+            )?.t || "OT";
           const testamentB =
-            testaments?.find((t) => t.b === b.book_id)?.t || "OT";
+            testaments?.find(
+              (t: { b: number; n: string; c: number; t: string }) =>
+                t.b === b.book_id,
+            )?.t || "OT";
 
           // First sort by testament: OT before NT
           if (testamentA !== testamentB) {

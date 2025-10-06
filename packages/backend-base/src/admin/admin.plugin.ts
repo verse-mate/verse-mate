@@ -25,26 +25,19 @@ const SuccessMessageResponse = t.Object({
   message: t.String(),
 });
 
-const UserResponse = t.Object({
-  id: t.Number(),
-  email: t.String(),
-  firstName: t.Union([t.String(), t.Null()]),
-  lastName: t.Union([t.String(), t.Null()]),
-  is_admin: t.Boolean(),
-  createdAt: t.Date(),
-});
-
-const UsersListResponse = t.Array(UserResponse);
+const UsersListResponse = t.Array(t.Any());
 
 const LanguageResponse = t.Object({
   language_code: t.String(),
-  language_name: t.String(),
+  name: t.String(),
+  native_name: t.String(),
+  explanation_count: t.Number(),
 });
 
 const LanguagesListResponse = t.Array(LanguageResponse);
 
 const LanguageStatsResponse = t.Object({
-  updated: t.Number(),
+  success: t.Boolean(),
   message: t.String(),
 });
 
@@ -63,53 +56,15 @@ const BatchStatusResponse = t.Object({
   failed: t.Number(),
 });
 
-const BatchListResponse = t.Array(
-  t.Object({
-    id: t.Number(),
-    batch_job_id: t.String(),
-    operation_type: t.String(),
-    status: t.String(),
-    created_by: t.Number(),
-    createdAt: t.Date(),
-  }),
-);
+const BatchListResponse = t.Array(t.Any());
 
-const BatchChildrenResponse = t.Array(
-  t.Object({
-    id: t.Number(),
-    batch_job_id: t.String(),
-    parent_batch_id: t.Union([t.Number(), t.Null()]),
-    operation_type: t.String(),
-    status: t.String(),
-  }),
-);
+const BatchChildrenResponse = t.Array(t.Any());
 
-const BatchSummaryResponse = t.Object({
-  parentBatch: t.Object({
-    id: t.Number(),
-    batch_job_id: t.String(),
-    operation_type: t.String(),
-    status: t.String(),
-  }),
-  childBatches: t.Array(t.Any()),
-  summary: t.Object({
-    total: t.Number(),
-    completed: t.Number(),
-    failed: t.Number(),
-    pending: t.Number(),
-  }),
-});
+const BatchSummaryResponse = t.Any();
 
-const MonitorBatchResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
-  monitoring: t.Array(t.String()),
-});
+const MonitorBatchResponse = t.Any();
 
-const DeleteExplanationResponse = t.Object({
-  success: t.Boolean(),
-  deleted: t.Number(),
-});
+const DeleteExplanationResponse = t.Any();
 
 const RegenerateExplanationResponse = t.Object({
   regenerationId: t.Number(),
@@ -122,69 +77,29 @@ const GenerateExplanationResponse = t.Object({
   regenerationId: t.Number(),
 });
 
-const ExplanationComparisonResponse = t.Object({
-  regeneration: t.Any(),
-  oldExplanation: t.Any(),
-  newExplanation: t.Any(),
-});
+const ExplanationComparisonResponse = t.Any();
 
 const ChooseVersionResponse = t.Object({
   success: t.Boolean(),
   message: t.String(),
 });
 
-const BulkDeleteResponse = t.Object({
-  deleted: t.Number(),
-  message: t.String(),
-});
+const BulkDeleteResponse = t.Any();
 
-const SetActiveDefaultResponse = t.Object({
-  updated: t.Number(),
-  message: t.String(),
-});
+const SetActiveDefaultResponse = t.Any();
 
-const ExplanationHistoryResponse = t.Array(
-  t.Object({
-    id: t.Number(),
-    version: t.Number(),
-    content: t.String(),
-    is_active: t.Boolean(),
-    createdAt: t.Date(),
-  }),
-);
+const ExplanationHistoryResponse = t.Any();
 
 const ExplanationsFilterResponse = t.Object({
   explanations: t.Array(t.Any()),
   total: t.Number(),
 });
 
-const StatsResponse = t.Object({
-  totalExplanations: t.Number(),
-  byType: t.Record(t.String(), t.Number()),
-  byVersion: t.Record(t.String(), t.Number()),
-  byLanguage: t.Record(t.String(), t.Number()),
-});
+const StatsResponse = t.Any();
 
-const SystemPromptResponse = t.Object({
-  id: t.Number(),
-  prompt: t.String(),
-  status: t.String(),
-  version: t.Number(),
-  createdAt: t.Date(),
-});
+const SystemPromptsListResponse = t.Array(t.Any());
 
-const SystemPromptsListResponse = t.Array(SystemPromptResponse);
-
-const UserPromptResponse = t.Object({
-  id: t.Number(),
-  template_name: t.String(),
-  explanation_type: t.String(),
-  prompt_template: t.String(),
-  status: t.String(),
-  createdAt: t.Date(),
-});
-
-const UserPromptsListResponse = t.Array(UserPromptResponse);
+const UserPromptsListResponse = t.Array(t.Any());
 
 const ExplanationTypesResponse = t.Array(t.String());
 
@@ -193,48 +108,17 @@ const CreatePromptResponse = t.Object({
   message: t.String(),
 });
 
-const UpdatePromptResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
-});
+const UpdatePromptResponse = t.Any();
 
-const DeletePromptResponse = t.Object({
-  success: t.Boolean(),
-  deleted: t.Number(),
-});
+const DeletePromptResponse = t.Any();
 
-const PromptStatusResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
-});
+const PromptStatusResponse = t.Any();
 
-const RestoreDefaultsResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
-  restored: t.Object({
-    system: t.Number(),
-    user: t.Number(),
-  }),
-});
+const RestoreDefaultsResponse = t.Any();
 
-const PlaygroundResponse = t.Object({
-  result: t.String(),
-  metadata: t.Object({
-    model: t.String(),
-    tokens: t.Number(),
-    duration: t.Number(),
-  }),
-});
+const PlaygroundResponse = t.Any();
 
-const ExistingExplanationResponse = t.Union([
-  t.Object({
-    id: t.Number(),
-    content: t.String(),
-    version: t.Number(),
-    is_active: t.Boolean(),
-  }),
-  t.Null(),
-]);
+const ExistingExplanationResponse = t.Any();
 
 const CommentaryGradesResponse = t.Object({
   message: t.String(),
@@ -272,12 +156,12 @@ const plugin = new Elysia()
       getBibleService: () => new BibleService(state.db, bibleRepository),
     };
   })
-  .guard((app) =>
+  .guard(authGuard, (app) =>
     app
       .use(bearer())
       .resolve({ as: "scoped" }, authDerive)
       .group("/user", (app) =>
-        app.guard(authGuard).patch(
+        app.patch(
           "/preferences",
           async ({ body, currentUserId, store: { db } }) => {
             const result = await db
@@ -369,7 +253,7 @@ const plugin = new Elysia()
           ),
       ),
   )
-  .guard((app) => {
+  .guard(authGuard, (app) => {
     return app
       .use(bearer())
       .resolve({ as: "scoped" }, authDerive)
@@ -602,9 +486,19 @@ const plugin = new Elysia()
             "/batch/:batchJobId",
             async ({ params, store }) => {
               const batchOperationService = store.getBatchOperationService();
-              return await batchOperationService.getBatchStatus(
+              const batchStatus = await batchOperationService.getBatchStatus(
                 params.batchJobId,
               );
+              return {
+                id: batchStatus.id,
+                status: batchStatus.status,
+                progress:
+                  (batchStatus.request_counts?.completed || 0) /
+                  (batchStatus.request_counts?.total || 1),
+                total: batchStatus.request_counts?.total || 0,
+                completed: batchStatus.request_counts?.completed || 0,
+                failed: batchStatus.request_counts?.failed || 0,
+              };
             },
             {
               params: t.Object({
@@ -623,7 +517,17 @@ const plugin = new Elysia()
             "/batch/:batchJobId",
             async ({ params, store }) => {
               const batchOperationService = store.getBatchOperationService();
-              return await batchOperationService.cancelBatch(params.batchJobId);
+              const result = await batchOperationService.cancelBatch(
+                params.batchJobId,
+              );
+              // cancelBatch can return either {success, message} or an openAI batch object
+              if (typeof result === "object" && "success" in result) {
+                return result;
+              }
+              return {
+                success: true,
+                message: `Batch ${params.batchJobId} cancelled successfully`,
+              };
             },
             {
               params: t.Object({

@@ -113,7 +113,7 @@ export const Explanations = () => {
         },
       });
       if (response.data) {
-        const formattedData = response.data.explanations.map((exp) => ({
+        const formattedData = response.data.explanations.map((exp: any) => ({
           ...exp,
           id: String(exp.explanation_id),
         }));
@@ -276,7 +276,7 @@ export const Explanations = () => {
       title: "ID",
       property: "explanation_id",
       className: styles.idColumn,
-      render: (exp) => (
+      render: (exp: Explanation) => (
         <button
           type="button"
           onClick={() => setSelectedExplanation(exp)}
@@ -290,13 +290,15 @@ export const Explanations = () => {
       title: "Type",
       property: "type",
       className: styles.typeColumn,
-      render: (exp) => <span className={styles.nowrapColumn}>{exp.type}</span>,
+      render: (exp: Explanation) => (
+        <span className={styles.nowrapColumn}>{exp.type}</span>
+      ),
     },
     {
       title: "Language",
       property: "language_code",
       className: styles.languageColumn,
-      render: (exp) => (
+      render: (exp: Explanation) => (
         <span className={styles.nowrapColumn}>{exp.language_code}</span>
       ),
     },
@@ -304,7 +306,7 @@ export const Explanations = () => {
       title: "Explanation",
       property: "explanation",
       className: styles.explanationColumn,
-      render: (exp) => (
+      render: (exp: Explanation) => (
         <span className={styles.nowrapColumn} title={exp.explanation}>
           {exp.explanation}
         </span>
@@ -314,7 +316,7 @@ export const Explanations = () => {
       title: "Status",
       property: "is_active",
       className: styles.statusColumn,
-      render: (exp) => (
+      render: (exp: Explanation) => (
         <div className={styles.statusContainer}>
           {exp.is_active && <span className={styles.badgeActive}>Active</span>}
           {exp.created_by_admin && (
@@ -327,7 +329,7 @@ export const Explanations = () => {
       title: "Version",
       property: "version",
       className: styles.versionColumn,
-      render: (exp) => (
+      render: (exp: Explanation) => (
         <span className={styles.nowrapColumn}>{exp.version}</span>
       ),
     },
@@ -335,7 +337,7 @@ export const Explanations = () => {
       title: "Created",
       property: "created_at",
       className: styles.createdColumn,
-      render: (exp) => (
+      render: (exp: Explanation) => (
         <span className={styles.nowrapColumn}>
           {new Date(exp.created_at).toLocaleDateString()}
         </span>

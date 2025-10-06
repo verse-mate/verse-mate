@@ -12,13 +12,13 @@ describe("Auth", () => {
   let signupAuthPayload: AuthPayload | null;
   let loginAuthPayload: AuthPayload | null;
 
-  const authSignupInput: AuthPlugin["_routes"]["auth"]["signup"]["post"]["body"] =
-    {
-      email: faker.internet.email().toLocaleLowerCase(),
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      password: faker.internet.password(),
-    };
+  // Using type assertion instead of _routes (internal Elysia API)
+  const authSignupInput = {
+    email: faker.internet.email().toLocaleLowerCase(),
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+    password: faker.internet.password(),
+  };
   const changePasswordValue = faker.internet.password();
 
   it("signup", async () => {
