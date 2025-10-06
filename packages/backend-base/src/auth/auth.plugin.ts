@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 
 import bearer from "@elysiajs/bearer";
+import { UnauthorizedError } from "../common/errors";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
 import { authDerive, authGuard } from "./auth.utils";
@@ -11,6 +12,34 @@ import { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import { AuthSignupInput } from "./dto/auth-signup.input";
 import { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
+
+// Response schemas
+const AuthPayloadResponse = t.Object({
+  accessToken: t.String({ description: "JWT access token" }),
+  verified: t.Boolean({ description: "Email verification status" }),
+});
+
+const UserIdResponse = t.Object({
+  id: t.Union([t.String(), t.Null()], {
+    description: "Current user ID or null if not authenticated",
+  }),
+});
+
+const BooleanResponse = t.Boolean({ description: "Operation success status" });
+
+const UserSessionResponse = t.Object({
+  id: t.String(),
+  email: t.String(),
+  firstName: t.String(),
+  lastName: t.String(),
+  is_admin: t.Boolean(),
+  preferred_language: t.String(),
+});
+
+const SuccessResponse = t.Object({
+  success: t.Boolean(),
+  message: t.Optional(t.String()),
+});
 
 const plugin = new Elysia()
   .use(shared)
@@ -33,6 +62,13 @@ const plugin = new Elysia()
                 id: currentUserId,
               };
             },
+            {
+              response: {
+                200: UserIdResponse,
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
+            },
           )
           .post(
             "/change-password",
@@ -42,12 +78,17 @@ const plugin = new Elysia()
               store: { authService },
             }): Promise<boolean> => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return authService.changePassword(currentUserId, body);
             },
             {
               body: AuthChangePasswordInput,
+              response: {
+                200: BooleanResponse,
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
             },
           )
           .post(
@@ -63,6 +104,13 @@ const plugin = new Elysia()
 
               return authService.logout(bearer, jwt);
             },
+            {
+              response: {
+                200: BooleanResponse,
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
+            },
           )
           .post(
             "/logout-all",
@@ -71,18 +119,32 @@ const plugin = new Elysia()
               store: { authService },
             }): Promise<boolean> => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return authService.logoutAll(currentUserId);
+            },
+            {
+              response: {
+                200: BooleanResponse,
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
             },
           )
           .post(
             "/send-email-verification",
             async ({ currentUserId, store: { authService } }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               await authService.sendVerifyEmail(currentUserId);
+            },
+            {
+              response: {
+                204: t.Void(),
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
             },
           )
           .post(
@@ -94,7 +156,7 @@ const plugin = new Elysia()
               jwt,
             }): Promise<AuthPayload> => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return authService.verifyEmail({
                 currentUserId,
@@ -106,27 +168,44 @@ const plugin = new Elysia()
               body: t.Object({
                 token: t.String(),
               }),
+              response: {
+                200: AuthPayloadResponse,
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
             },
           )
           .get(
             "/session",
             async ({ currentUserId, store: { authService } }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return await authService.getUserById(currentUserId);
+            },
+            {
+              response: {
+                200: UserSessionResponse,
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
             },
           )
           .put(
             "/profile",
             async ({ currentUserId, body, store: { authService } }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return await authService.updateProfile(currentUserId, body);
             },
             {
               body: AuthUpdateProfileInput,
+              response: {
+                200: UserSessionResponse,
+                401: t.Ref("ErrorResponse"),
+                500: t.Ref("ErrorResponse"),
+              },
             },
           ),
       )
@@ -137,6 +216,12 @@ const plugin = new Elysia()
         },
         {
           body: AuthSignupInput,
+          response: {
+            200: AuthPayloadResponse,
+            400: t.Ref("ErrorResponse"),
+            409: t.Ref("ErrorResponse"),
+            500: t.Ref("ErrorResponse"),
+          },
         },
       )
       .post(
@@ -146,6 +231,12 @@ const plugin = new Elysia()
         },
         {
           body: AuthLoginInput,
+          response: {
+            200: AuthPayloadResponse,
+            400: t.Ref("ErrorResponse"),
+            401: t.Ref("ErrorResponse"),
+            500: t.Ref("ErrorResponse"),
+          },
         },
       )
       .post(
@@ -155,6 +246,12 @@ const plugin = new Elysia()
         },
         {
           body: AuthForgotPasswordInput,
+          response: {
+            200: SuccessResponse,
+            400: t.Ref("ErrorResponse"),
+            404: t.Ref("ErrorResponse"),
+            500: t.Ref("ErrorResponse"),
+          },
         },
       )
       .post(
@@ -164,6 +261,12 @@ const plugin = new Elysia()
         },
         {
           body: AuthResetPasswordInput,
+          response: {
+            200: SuccessResponse,
+            400: t.Ref("ErrorResponse"),
+            404: t.Ref("ErrorResponse"),
+            500: t.Ref("ErrorResponse"),
+          },
         },
       )
       .get(
@@ -175,6 +278,12 @@ const plugin = new Elysia()
           query: t.Object({
             token: t.String(),
           }),
+          response: {
+            200: SuccessResponse,
+            400: t.Ref("ErrorResponse"),
+            404: t.Ref("ErrorResponse"),
+            500: t.Ref("ErrorResponse"),
+          },
         },
       ),
   );

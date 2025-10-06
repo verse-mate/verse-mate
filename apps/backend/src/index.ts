@@ -1,12 +1,60 @@
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
-import { adminPlugin, authPlugin, biblePlugin, userPlugin } from "backend-base";
+import {
+  ApiError,
+  adminPlugin,
+  authPlugin,
+  biblePlugin,
+  userPlugin,
+} from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
 import { Elysia } from "elysia";
 
 const app = new Elysia()
+  .onError(({ code, error, set }) => {
+    // Handle custom API errors
+    if (error instanceof ApiError) {
+      set.status = error.status;
+      return error.toResponse();
+    }
+
+    // Handle Elysia built-in errors
+    switch (code) {
+      case "VALIDATION":
+        set.status = 400;
+        return {
+          error: "VALIDATION_ERROR",
+          message: "Invalid request data",
+          details: error,
+        };
+      case "NOT_FOUND":
+        set.status = 404;
+        return {
+          error: "NOT_FOUND",
+          message: "Route not found",
+        };
+      case "PARSE":
+        set.status = 400;
+        return {
+          error: "PARSE_ERROR",
+          message: "Failed to parse request body",
+        };
+      default:
+        console.error("Unhandled error:", error);
+        set.status = 500;
+        return {
+          error: "INTERNAL_SERVER_ERROR",
+          message:
+            process.env.ENVIRONMENT === "production"
+              ? "An unexpected error occurred"
+              : error instanceof Error
+                ? error.message
+                : "An unexpected error occurred",
+        };
+    }
+  })
   .use(authPlugin)
   .use(userPlugin)
   .use(biblePlugin)

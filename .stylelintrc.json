@@ -16,11 +16,18 @@
       }
     ],
     "selector-class-pattern": [
-      "^[a-z][a-zA-Z0-9]+$",
+      "^[a-z][a-zA-Z0-9]+(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
       {
-        "message": "Expected custom property name to be lowerCamelCase"
+        "message": "Expected class name to be lowerCamelCase or kebab-case with optional BEM notation"
       }
     ],
-    "no-duplicate-selectors": null
+    "selector-id-pattern": [
+      "^[a-z][a-z0-9]*(-[a-z0-9]+)*$|^__next$",
+      {
+        "message": "Expected id selector to be kebab-case (exception for Next.js #__next)"
+      }
+    ],
+    "no-duplicate-selectors": null,
+    "no-descending-specificity": null
   }
 }
