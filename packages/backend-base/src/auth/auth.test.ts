@@ -282,6 +282,6 @@ describe("Auth", () => {
     });
 
     expect(secondIsValid.error).toBeFalsy();
-    expect(secondIsValid.data).toBeFalsy();
+    expect(secondIsValid.data?.success).toBe(false);
   });
 });
