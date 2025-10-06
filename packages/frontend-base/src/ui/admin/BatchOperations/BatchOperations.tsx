@@ -287,6 +287,20 @@ export const BatchOperations = () => {
   const [targetLanguageDropdownOpen, setTargetLanguageDropdownOpen] =
     useState(false);
 
+  // Topic batch state
+  const [topicBatchModalOpen, setTopicBatchModalOpen] = useState(false);
+  const [topicBatchType, setTopicBatchType] = useState<
+    "discovery" | "references" | "explanations" | null
+  >(null);
+  const [topicCategory, setTopicCategory] = useState("EVENT");
+  const [topicLanguageCode, setTopicLanguageCode] = useState("en");
+  const [topicExplanationTypes, setTopicExplanationTypes] = useState<string[]>([
+    "summary",
+    "byline",
+    "detailed",
+  ]);
+  const [creatingTopicBatch, setCreatingTopicBatch] = useState(false);
+
   // Language validation function
   const validateLanguageCode = (code: string): boolean => {
     if (!code || typeof code !== "string") return false;
@@ -453,6 +467,55 @@ export const BatchOperations = () => {
       console.error("Error creating batch job:", err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  // Topic batch handlers
+  const handleCreateTopicBatch = async () => {
+    if (!topicBatchType) {
+      setError("Please select a topic batch type");
+      return;
+    }
+
+    try {
+      setCreatingTopicBatch(true);
+      setError(null);
+
+      switch (topicBatchType) {
+        case "discovery":
+          await api.admin["batch-topic-discovery"].post({
+            category: topicCategory,
+            model: selectedModel,
+            effort: selectedEffort as "low" | "medium" | "high",
+          });
+          break;
+        case "references":
+          await api.admin["batch-topic-references"].post({
+            model: selectedModel,
+            effort: selectedEffort as "low" | "medium" | "high",
+          });
+          break;
+        case "explanations":
+          if (topicExplanationTypes.length === 0) {
+            setError("Please select at least one explanation type");
+            return;
+          }
+          await api.admin["batch-topic-explanations"].post({
+            model: selectedModel,
+            languageCode: topicLanguageCode,
+            explanationTypes: topicExplanationTypes,
+            effort: selectedEffort as "low" | "medium" | "high",
+          });
+          break;
+      }
+
+      await fetchBatchJobs();
+      setTopicBatchModalOpen(false);
+    } catch (err) {
+      setError(`Failed to create topic ${topicBatchType} batch job`);
+      console.error(`Error creating topic ${topicBatchType} batch job:`, err);
+    } finally {
+      setCreatingTopicBatch(false);
     }
   };
 
@@ -1149,6 +1212,12 @@ export const BatchOperations = () => {
           >
             Translate All Explanations
           </Button>
+          <Button
+            onClick={() => setTopicBatchModalOpen(true)}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Create Topic Batch
+          </Button>
         </div>
       </div>
 
@@ -1435,6 +1504,179 @@ export const BatchOperations = () => {
             </Button>
             <Button onClick={confirmTranslateBatch} loading={translating}>
               {translating ? "Starting..." : "Confirm"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Topic Batch Modal */}
+      <Dialog
+        open={topicBatchModalOpen}
+        onOpenChange={setTopicBatchModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Create Topic Batch</Dialog.Head>
+          <Dialog.Description>
+            Select the type of topic batch operation you want to create.
+          </Dialog.Description>
+
+          <div style={{ margin: "20px 0" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              Topic Batch Type:
+            </label>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+              <Button
+                variant={
+                  topicBatchType === "discovery" ? "contained" : "outlined"
+                }
+                onClick={() => setTopicBatchType("discovery")}
+              >
+                Discovery
+              </Button>
+              <Button
+                variant={
+                  topicBatchType === "references" ? "contained" : "outlined"
+                }
+                onClick={() => setTopicBatchType("references")}
+              >
+                References
+              </Button>
+              <Button
+                variant={
+                  topicBatchType === "explanations" ? "contained" : "outlined"
+                }
+                onClick={() => setTopicBatchType("explanations")}
+              >
+                Explanations
+              </Button>
+            </div>
+          </div>
+
+          {topicBatchType === "discovery" && (
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Topic Category:
+              </label>
+              <SelectDropdown.Root
+                onValueChange={(val) => setTopicCategory(val)}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={topicCategory}
+                  icon={<ChevronDownIcon />}
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{ width: "300px" }}
+                >
+                  <SelectDropdown.Item value="EVENT" icon={<CheckIcon />}>
+                    Events
+                  </SelectDropdown.Item>
+                  <SelectDropdown.Item value="PROPHECY" icon={<CheckIcon />}>
+                    Prophecies
+                  </SelectDropdown.Item>
+                  <SelectDropdown.Item value="PARABLE" icon={<CheckIcon />}>
+                    Parables
+                  </SelectDropdown.Item>
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
+            </div>
+          )}
+
+          {topicBatchType === "explanations" && (
+            <>
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Language Code:
+                </label>
+                <Input
+                  value={topicLanguageCode}
+                  onChange={(e) => setTopicLanguageCode(e.target.value)}
+                  placeholder="e.g., en, es, fr"
+                />
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Explanation Types:
+                </label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {["summary", "detailed", "byline"].map((type) => (
+                    <label
+                      key={type}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={topicExplanationTypes.includes(type)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setTopicExplanationTypes([
+                              ...topicExplanationTypes,
+                              type,
+                            ]);
+                          } else {
+                            setTopicExplanationTypes(
+                              topicExplanationTypes.filter((t) => t !== type),
+                            );
+                          }
+                        }}
+                      />
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          <Dialog.Footer>
+            <Button
+              onClick={() => setTopicBatchModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateTopicBatch}
+              loading={creatingTopicBatch}
+              disabled={
+                !topicBatchType ||
+                (topicBatchType === "explanations" &&
+                  topicExplanationTypes.length === 0)
+              }
+            >
+              {creatingTopicBatch ? "Creating..." : "Create Batch"}
             </Button>
           </Dialog.Footer>
         </Dialog.Content>
