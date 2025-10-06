@@ -10,6 +10,7 @@ import { useSwipeable } from "react-swipeable";
 import { getBookVerse, getExplanation } from "../../api/bible";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
+import { NotesProvider } from "../../contexts/NotesContext";
 import {
   fetchAllChaptersByBook,
   fetchAllTestaments,
@@ -532,11 +533,65 @@ export const MainContent = () => {
   }, [activeTab, bookVerseData, bookId, verseId]);
 
   useEffect(() => {
-    if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
+    if (activeTab === "menu") {
+      // When switching into the menu tab, apply any pending right panel content
+      try {
+        const pending = localStorage.getItem("postRightPanelContent");
+        if (pending && typeof pending === "string") {
+          setRightPanelContent(pending);
+          localStorage.removeItem("postRightPanelContent");
+        }
+      } catch {}
+    } else if (prevActiveTabRef.current === "menu" && activeTab !== "menu") {
+      // When leaving the menu tab, reset content to default
       setRightPanelContent("default");
     }
     prevActiveTabRef.current = activeTab;
   }, [activeTab]);
+
+  // Support external requests to open specific right panel content (e.g., from modals)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      const requested = custom.detail;
+      if (requested) {
+        setRightPanelContent(requested);
+        setActiveTab("menu");
+      }
+    };
+    window.addEventListener("openRightPanelContent", handler as EventListener);
+    return () => {
+      window.removeEventListener(
+        "openRightPanelContent",
+        handler as EventListener,
+      );
+    };
+  }, [setActiveTab]);
+
+  // Allow external tab switch requests
+  useEffect(() => {
+    const tabHandler = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      const tab = custom.detail;
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener("setActiveTab", tabHandler as EventListener);
+    return () => {
+      window.removeEventListener("setActiveTab", tabHandler as EventListener);
+    };
+  }, [setActiveTab]);
+
+  // Fallback: honor pending right panel content from localStorage (set by modals)
+  useEffect(() => {
+    try {
+      const pending = localStorage.getItem("postRightPanelContent");
+      if (pending && typeof pending === "string") {
+        setRightPanelContent(pending);
+        setActiveTab("menu");
+        localStorage.removeItem("postRightPanelContent");
+      }
+    } catch {}
+  }, [setActiveTab]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1090,7 +1145,7 @@ export const MainContent = () => {
   }, [bookId, verseId, chapters, bibleVersion, explanationType, queryClient]);
 
   return (
-    <>
+    <NotesProvider>
       <RadixTabs.Root
         className={`${styles.container}`}
         value={activeTab}
@@ -1940,6 +1995,6 @@ export const MainContent = () => {
         </main>
       </div>
       <ModalContainer />
-    </>
+    </NotesProvider>
   );
 };

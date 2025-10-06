@@ -623,6 +623,136 @@ const plugin = new Elysia()
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
         },
       )
+      .get(
+        "/book/notes/:user_id",
+        async ({ params, store: { bibleService } }) => {
+          console.log("=== GET /book/notes/:user_id ENDPOINT ===");
+          console.log("Request params:", params);
+
+          try {
+            console.log("Attempting to get notes for user:", params.user_id);
+            const { notes } = await bibleService.getNotes({
+              id: params.user_id,
+            });
+
+            console.log("Successfully retrieved notes, count:", notes.length);
+            return { notes };
+          } catch (error) {
+            console.error("ERROR in GET /book/notes/:user_id:", error);
+            return {
+              error: "Failed to retrieve notes",
+              details: error instanceof Error ? error.message : String(error),
+              notes: [],
+            };
+          }
+        },
+        {
+          params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+        },
+      )
+      .post(
+        "/book/note/add",
+        async ({ body, store: { bibleService } }) => {
+          try {
+            console.log("Adding note:", body);
+
+            const content =
+              typeof body.content === "string" ? body.content.trim() : "";
+            if (
+              !body.user_id ||
+              !body.book_id ||
+              !body.chapter_number ||
+              !content
+            ) {
+              console.error("Missing required fields for adding note");
+              return { success: false, error: "Missing required fields" };
+            }
+
+            // Normalize verse_id: keep a number or leave undefined; repo converts to null
+            const verse_id =
+              typeof body.verse_id === "number" ? body.verse_id : undefined;
+
+            const { note } = await bibleService.addNote({
+              user_id: body.user_id,
+              book_id: body.book_id,
+              chapter_number: body.chapter_number,
+              verse_id,
+              content,
+            });
+
+            return { success: true, note };
+          } catch (error) {
+            console.error("Error adding note:", error);
+            return { success: false, error: "Failed to add note" };
+          }
+        },
+        {
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+            verse_id: t.Optional(t.Number()),
+            content: t.String(),
+          }),
+        },
+      )
+      .put(
+        "/book/note/update",
+        async ({ body, store: { bibleService } }) => {
+          try {
+            console.log("Updating note:", body);
+
+            if (!body.note_id || !body.content) {
+              console.error("Missing required fields for updating note");
+              return { success: false, error: "Missing required fields" };
+            }
+
+            const { success } = await bibleService.updateNote(
+              body.note_id,
+              body.content,
+            );
+
+            return { success };
+          } catch (error) {
+            console.error("Error updating note:", error);
+            return { success: false, error: "Failed to update note" };
+          }
+        },
+        {
+          body: t.Object({
+            note_id: t.String({ format: "uuid" }),
+            content: t.String(),
+          }),
+        },
+      )
+      .delete(
+        "/book/note/remove",
+        async ({ query, store: { bibleService } }) => {
+          try {
+            console.log("Removing note - query params:", query);
+
+            if (!query.note_id) {
+              console.error("Missing note_id for removing note");
+              return { success: false, error: "Missing note_id" };
+            }
+
+            const { success } = await bibleService.deleteNote(query.note_id);
+
+            return { success };
+          } catch (error) {
+            console.error("Error removing note:", error);
+            return {
+              success: false,
+              error: "Failed to remove note",
+            };
+          }
+        },
+        {
+          query: t.Object({
+            note_id: t.String({ format: "uuid" }),
+          }),
+        },
+      )
       .post(
         "/book/bookmark/add",
         async ({ body, store: { bibleService } }) => {
