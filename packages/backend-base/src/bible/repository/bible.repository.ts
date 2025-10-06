@@ -82,14 +82,22 @@ export class BibleRepository {
     return { chapter: chapter ?? null };
   }
 
-  async getSubtitles({ chapter_id }: Pick<ChapterDto, "chapter_id">) {
-    const subtitles = await this.db
+  async getSubtitles({
+    chapter_id,
+    version_id,
+  }: Pick<ChapterDto, "chapter_id"> & { version_id?: string }) {
+    let query = this.db
       .getOrCreateConnection()
       .selectFrom("subtitles")
       .where("chapter_id", "=", chapter_id)
-      .select(["subtitle", "start_verse", "end_verse"])
-      .orderBy("start_verse", "asc")
-      .execute();
+      .select(["subtitle", "start_verse", "end_verse"]);
+
+    // If version_id is provided, filter by it
+    if (version_id) {
+      query = query.where("version_id", "=", version_id);
+    }
+
+    const subtitles = await query.orderBy("start_verse", "asc").execute();
 
     return { subtitles: subtitles ?? null };
   }

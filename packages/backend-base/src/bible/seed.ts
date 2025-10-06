@@ -79,6 +79,7 @@ async function saveSubtitles({
   subtitle,
   start_verse,
   end_verse,
+  version_id,
 }: Omit<Subtitles, "subtitle_id">) {
   const exists = await db
     .getOrCreateConnection()
@@ -87,6 +88,7 @@ async function saveSubtitles({
     .where("subtitle", "=", subtitle)
     .where("start_verse", "=", start_verse)
     .where("end_verse", "=", end_verse)
+    .where("version_id", "=", version_id)
     .select("subtitle_id")
     .executeTakeFirst();
   if (exists) {
@@ -96,7 +98,7 @@ async function saveSubtitles({
   await db
     .getOrCreateConnection()
     .insertInto("subtitles")
-    .values({ chapter_id, subtitle, start_verse, end_verse })
+    .values({ chapter_id, subtitle, start_verse, end_verse, version_id })
     .execute();
 }
 
@@ -343,7 +345,14 @@ export async function main() {
     .getOrCreateConnection()
     .selectFrom("bible_versions")
     .selectAll()
-    .executeTakeFirstOrThrow();
+    .executeTakeFirst();
+
+  // Add a check to ensure version exists
+  if (!version) {
+    throw new Error(
+      "No Bible version found in database. Please run the initial seed first.",
+    );
+  }
 
   // 3. Insert Books, Chapters, Subtitles, Verses
   for (const book of bible.books) {
@@ -410,6 +419,7 @@ export async function main() {
           subtitle: sub.subtitle,
           start_verse: sub.start_verse,
           end_verse: sub.end_verse,
+          version_id: version.id,
         });
         // console.log(`Subtitle created: ${sub.subtitle}`);
       }
