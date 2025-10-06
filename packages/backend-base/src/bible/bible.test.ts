@@ -200,4 +200,178 @@ describe("Bible Plugin", () => {
       expect(typeof data?.chatExists).toBe("boolean");
     });
   });
+
+  describe.skip("Notes CRUD", () => {
+    let noteId: string;
+
+    it("POST /bible/book/note/add - add note", async () => {
+      const { data, error } = await testClient.bible.book.note.add.post(
+        {
+          user_id: testUser.userId,
+          book_id: 1,
+          chapter_number: 1,
+          content: "Test note content",
+        },
+        {
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.note).toBeDefined();
+      noteId = data?.note?.id;
+    });
+
+    it("PUT /bible/book/note/update - update note", async () => {
+      const { data, error } = await testClient.bible.book.note.update.put(
+        {
+          note_id: noteId,
+          content: "Updated note content",
+        },
+        {
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
+    });
+
+    it("DELETE /bible/book/note/remove - remove note", async () => {
+      const { data, error } = await testClient.bible.book.note.remove.delete(
+        {},
+        {
+          query: {
+            note_id: noteId,
+          },
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
+    });
+  });
+
+  describe.skip("Highlights CRUD", () => {
+    let highlightId: number;
+
+    it("POST /bible/highlight/add - add highlight", async () => {
+      const { data, error } = await testClient.bible.highlight.add.post(
+        {
+          user_id: testUser.userId,
+          book_id: 1,
+          chapter_number: 1,
+          start_verse: 1,
+          end_verse: 1,
+          color: "#FFFF00",
+        },
+        {
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.highlight).toBeDefined();
+      highlightId = data?.highlight?.id;
+    });
+
+    it("PUT /bible/highlight/:highlight_id - update highlight color", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { data, error } = await testClient.bible.highlight[highlightId].put(
+        {
+          user_id: testUser.userId,
+          color: "#00FF00",
+        },
+        {
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
+    });
+
+    it("DELETE /bible/highlight/:highlight_id - delete highlight", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { data, error } = await testClient.bible.highlight[
+        highlightId
+      ].delete(
+        {},
+        {
+          query: {
+            user_id: testUser.userId,
+          },
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
+    });
+  });
+
+  describe.skip("Ratings", () => {
+    it("POST /bible/book/explanation/save-rating - save rating", async () => {
+      const { data, error } = await testClient.bible.book.explanation[
+        "save-rating"
+      ].post(
+        {
+          user: { id: testUser.userId },
+          explanation_id: 1,
+          book_id: 1,
+          chapter_number: 1,
+          rating: 5,
+        },
+        {
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.result).toBeDefined();
+    });
+
+    it("POST /bible/book/explanation/ratings - get ratings stats", async () => {
+      const { data, error } =
+        await testClient.bible.book.explanation.ratings.post(
+          {
+            user: { id: testUser.userId },
+            book_id: 1,
+            chapter_number: 1,
+            explanation_id: 1,
+          },
+          {
+            headers: {
+              authorization: `Bearer ${testUser.accessToken}`,
+            },
+          },
+        );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.totalUsersWhoRated).toBeDefined();
+    });
+  });
 });

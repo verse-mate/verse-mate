@@ -46,13 +46,13 @@ export async function createTestUser(options?: {
     .selectAll()
     .executeTakeFirstOrThrow();
 
-  // Update user role to admin if requested
+  // Update user to admin if requested
   if (isAdmin) {
     await plugin.store.db
       .getOrCreateConnection()
       .updateTable("user")
       .set({
-        role: "admin" as any, // Type assertion needed for RoleEnum
+        is_admin: true,
       })
       .where("id", "=", user.id)
       .executeTakeFirstOrThrow();
