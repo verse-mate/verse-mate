@@ -35,6 +35,16 @@ export class PromptRepository {
     };
   }
 
+  async getUserPromptByType(type: string) {
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("user_prompt_templates")
+      .where("explanation_type", "=", type)
+      .where("status", "=", "active")
+      .selectAll()
+      .executeTakeFirst();
+  }
+
   async getAll() {
     return this.db
       .getOrCreateConnection()

@@ -285,6 +285,7 @@ export const MainContent = () => {
   const [bibleVersionSelected, setBibleVersionSelected] = useState(
     bibleVersion || "NASB1995",
   );
+  const [activeTopicTab, setActiveTopicTab] = useState("EVENTS");
 
   const accordionRef = useRef<HTMLButtonElement>(null);
   const accordionRefVersion = useRef<HTMLButtonElement>(null);
@@ -1210,6 +1211,11 @@ export const MainContent = () => {
                               label="New Testament"
                               resetFilter={leftPanelResetFilter}
                             />
+                            <Tabs.Trigger
+                              value="TOPICS"
+                              label="Topics"
+                              resetFilter={leftPanelResetFilter}
+                            />
                           </Tabs.List>
 
                           <FilterInput
@@ -1597,6 +1603,33 @@ export const MainContent = () => {
                                     );
                                   })}
                               </Accordion.Root>
+                            </Tabs.Content>
+                            <Tabs.Content value="TOPICS">
+                              <Tabs.Root
+                                value={activeTopicTab}
+                                onValueChange={setActiveTopicTab}
+                              >
+                                <Tabs.List>
+                                  <Tabs.Trigger value="EVENTS" label="Events" />
+                                  <Tabs.Trigger
+                                    value="PROPHECIES"
+                                    label="Prophecies"
+                                  />
+                                  <Tabs.Trigger
+                                    value="PARABLES"
+                                    label="Parables"
+                                  />
+                                </Tabs.List>
+                                <Tabs.Content value="EVENTS">
+                                  <p>Events content will go here.</p>
+                                </Tabs.Content>
+                                <Tabs.Content value="PROPHECIES">
+                                  <p>Prophecies content will go here.</p>
+                                </Tabs.Content>
+                                <Tabs.Content value="PARABLES">
+                                  <p>Parables content will go here.</p>
+                                </Tabs.Content>
+                              </Tabs.Root>
                             </Tabs.Content>
                           </div>
                         </Tabs.Root>

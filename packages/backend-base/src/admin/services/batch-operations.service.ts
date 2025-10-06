@@ -91,6 +91,76 @@ export class BatchOperationService {
     this.promptRepository = new PromptRepository(this.db);
   }
 
+  async generateTopicDiscoveryBatch(
+    category: string,
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high" = "medium",
+  ) {
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-discovery");
+    if (!prompt) {
+      throw new Error("No active topic-discovery prompt found.");
+    }
+
+    const batchRequests: BatchJobRequest[] = [
+      {
+        custom_id: `topic-discovery-${category}-${Date.now()}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: prompt.prompt_template.replace(
+            "{topic_category}",
+            category,
+          ),
+          input: "",
+          max_output_tokens: 25000,
+        },
+      },
+    ];
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const file = await openai.files.create({
+      file: new File([blob], `topic_discovery_${category}_${Date.now()}.jsonl`),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-discovery",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: 1,
+        created_by: adminUserId,
+        bible_version: "N/A",
+        explanation_types: [],
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
+  }
+
   async generateBookBatchByName(
     bookName: string,
     bibleVersion: string,
@@ -1665,6 +1735,13 @@ export class BatchOperationService {
       if (batchJob.batch_type === "translate") {
         return this.processTranslateOutputFile(batchId, outputFileId, batchJob);
       }
+      if (batchJob.batch_type === "topic-discovery") {
+        return this.processTopicDiscoveryOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
 
       const version = await this.db
         .getOrCreateConnection()
@@ -2382,6 +2459,43 @@ export class BatchOperationService {
     console.log(
       `[BATCH] Translate batch ${batchId} processed: ${processedCount} saved, ${errorCount} errors. Cost: ${actualCost.toFixed(4)}`,
     );
+  }
+
+  private async processTopicDiscoveryOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonl = await fileContent.text();
+    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+    for (const line of lines) {
+      const parsedLine = JSON.parse(line);
+      const outputText = parsedLine.response?.body?.output_text;
+
+      if (outputText) {
+        const topics = outputText.split("\n\n");
+        for (const topic of topics) {
+          const nameMatch = topic.match(/Title: (.*)/);
+          const categoryMatch = topic.match(/Category: (.*)/);
+          const descriptionMatch = topic.match(/Description: (.*)/);
+
+          if (nameMatch && categoryMatch && descriptionMatch) {
+            await this.db
+              .getOrCreateConnection()
+              .insertInto("topics")
+              .values({
+                name: nameMatch[1],
+                category: categoryMatch[1],
+                description: descriptionMatch[1],
+              })
+              .onConflict((oc) => oc.column("name").doNothing())
+              .execute();
+          }
+        }
+      }
+    }
   }
 
   /**
