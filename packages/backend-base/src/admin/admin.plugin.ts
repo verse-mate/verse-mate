@@ -224,6 +224,8 @@ const plugin = new Elysia()
                 body.model,
                 currentUserId,
                 body.effort || "medium",
+                body.category,
+                body.topicId,
               );
             },
             {
@@ -236,6 +238,8 @@ const plugin = new Elysia()
                     t.Literal("high"),
                   ]),
                 ),
+                category: t.Optional(t.String()), // Add optional category parameter
+                topicId: t.Optional(t.String()), // Add optional topicId parameter
               }),
             },
           )
@@ -312,6 +316,8 @@ const plugin = new Elysia()
                 body.languageCode,
                 body.explanationTypes,
                 body.effort || "medium",
+                body.category, // Pass category if provided
+                body.topicId, // Pass topicId if provided
               );
             },
             {
@@ -326,6 +332,8 @@ const plugin = new Elysia()
                     t.Literal("high"),
                   ]),
                 ),
+                category: t.Optional(t.String()), // Add optional category parameter
+                topicId: t.Optional(t.String()), // Add optional topicId parameter
               }),
             },
           )

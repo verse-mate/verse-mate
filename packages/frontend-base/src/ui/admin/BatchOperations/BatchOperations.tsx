@@ -300,29 +300,49 @@ export const BatchOperations = () => {
     "detailed",
   ]);
   const [creatingTopicBatch, setCreatingTopicBatch] = useState(false);
-  const [topicsForCategory, setTopicsForCategory] = useState<any[]>([]);
-  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [topicsForCategory, setTopicsForCategory] = useState<
+    {
+      topic_id: string;
+      name: string;
+      description: string | null;
+      sort_order: number | null;
+    }[]
+  >([]);
+  const [selectedTopicForBatch, setSelectedTopicForBatch] = useState<
+    string | null
+  >(null);
   const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
+  const [loadingTopics, setLoadingTopics] = useState(false);
 
   // Fetch topics when category changes
   useEffect(() => {
     const fetchTopicsForCategory = async () => {
-      if (topicCategory) {
+      if (
+        topicCategory &&
+        (topicBatchType === "references" || topicBatchType === "explanations")
+      ) {
         try {
-          // This would need to be implemented in the topicsAdminApi
-          // For now, we'll just reset the topics list
-          setTopicsForCategory([]);
-          setSelectedTopicId(null);
+          setLoadingTopics(true);
+          // Import the topics API
+          const topicsApi = await import("../Topics/topicsAdminApi");
+          const topics = await topicsApi.getTopicsByCategory(topicCategory);
+          setTopicsForCategory(topics || []);
+          setSelectedTopicForBatch(null); // Reset selected topic when category changes
         } catch (error) {
           console.error("Error fetching topics for category:", error);
           setTopicsForCategory([]);
-          setSelectedTopicId(null);
+          setSelectedTopicForBatch(null);
+        } finally {
+          setLoadingTopics(false);
         }
+      } else {
+        setTopicsForCategory([]);
+        setSelectedTopicForBatch(null);
       }
     };
 
     fetchTopicsForCategory();
-  }, [topicCategory]);
+  }, [topicCategory, topicBatchType]);
 
   // Language validation function
   const validateLanguageCode = (code: string): boolean => {
@@ -516,6 +536,8 @@ export const BatchOperations = () => {
           await api.admin["batch-topic-references"].post({
             model: selectedModel,
             effort: selectedEffort as "low" | "medium" | "high",
+            category: topicCategory, // Pass category
+            ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }), // Pass topicId if selected
           });
           break;
         case "explanations":
@@ -528,6 +550,8 @@ export const BatchOperations = () => {
             languageCode: topicLanguageCode,
             explanationTypes: topicExplanationTypes,
             effort: selectedEffort as "low" | "medium" | "high",
+            category: topicCategory,
+            ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }),
           });
           break;
       }
@@ -1619,6 +1643,73 @@ export const BatchOperations = () => {
                   </SelectDropdown.Item>
                 </SelectDropdown.Content>
               </SelectDropdown.Root>
+            </div>
+          )}
+
+          {(topicBatchType === "references" ||
+            topicBatchType === "explanations") && (
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Specific Topic (Optional):
+              </label>
+              <SelectDropdown.Root
+                open={topicDropdownOpen}
+                onOpenChange={setTopicDropdownOpen}
+                onValueChange={(selectedValue: string) => {
+                  if (selectedValue === "all") {
+                    setSelectedTopicForBatch(null);
+                  } else {
+                    setSelectedTopicForBatch(selectedValue);
+                  }
+                }}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={
+                    selectedTopicForBatch
+                      ? topicsForCategory.find(
+                          (t) => t.topic_id === selectedTopicForBatch,
+                        )?.name || "All topics in category"
+                      : "All topics in category"
+                  }
+                  icon={<ChevronDownIcon />}
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{ width: "300px" }}
+                >
+                  <SelectDropdown.Item value="all" icon={<CheckIcon />}>
+                    All topics in category
+                  </SelectDropdown.Item>
+                  {loadingTopics ? (
+                    <SelectDropdown.Item value="" icon={<CheckIcon />} disabled>
+                      Loading topics...
+                    </SelectDropdown.Item>
+                  ) : (
+                    topicsForCategory.map((topic) => (
+                      <SelectDropdown.Item
+                        key={topic.topic_id}
+                        value={topic.topic_id}
+                        icon={<CheckIcon />}
+                      >
+                        {topic.name}
+                      </SelectDropdown.Item>
+                    ))
+                  )}
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
+              <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                Select a specific topic to process only that topic, or "All
+                topics in category" to process all topics in the selected
+                category.
+              </p>
             </div>
           )}
 

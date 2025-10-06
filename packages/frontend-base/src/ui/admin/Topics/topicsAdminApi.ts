@@ -11,12 +11,35 @@ interface Topic {
   updated_at?: string;
 }
 
+interface TopicByCategory {
+  topic_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
+}
+
 export const getTopics = async (): Promise<Topic[]> => {
   try {
     const response = await (api.admin as any).topics.get();
     return response.data?.topics || [];
   } catch (error) {
     console.error("Error fetching topics:", error);
+    throw error;
+  }
+};
+
+export const getTopicsByCategory = async (
+  category: string,
+): Promise<TopicByCategory[]> => {
+  try {
+    const response = await api.topics.search.get({
+      query: {
+        category,
+      },
+    });
+    return response.data?.topics || [];
+  } catch (error) {
+    console.error(`Error fetching topics for category ${category}:`, error);
     throw error;
   }
 };
