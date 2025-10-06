@@ -1,3 +1,5 @@
+import type { Topics } from "database/src/models/public/Topics";
+import type { Insertable, Updateable } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 
 export class TopicRepository {
@@ -29,6 +31,16 @@ export class TopicRepository {
     return topics;
   }
 
+  async getAllTopics() {
+    return await this.db
+      .getOrCreateConnection()
+      .selectFrom("topics")
+      .selectAll()
+      .orderBy("sort_order")
+      .orderBy("name")
+      .execute();
+  }
+
   async getTopic(topicId: string) {
     const topic = await this.db
       .getOrCreateConnection()
@@ -38,6 +50,35 @@ export class TopicRepository {
       .executeTakeFirst();
 
     return topic;
+  }
+
+  async createTopic(topic: Insertable<Topics>) {
+    return await this.db
+      .getOrCreateConnection()
+      .insertInto("topics")
+      .values(topic)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+  }
+
+  async updateTopic(topicId: string, topic: Updateable<Topics>) {
+    return await this.db
+      .getOrCreateConnection()
+      .updateTable("topics")
+      .set(topic)
+      .where("topic_id", "=", topicId)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+  }
+
+  async deleteTopic(topicId: string) {
+    const result = await this.db
+      .getOrCreateConnection()
+      .deleteFrom("topics")
+      .where("topic_id", "=", topicId)
+      .executeTakeFirst();
+
+    return result.numDeletedRows > 0;
   }
 
   async saveTopicReferences(topicId: string, content: string) {
