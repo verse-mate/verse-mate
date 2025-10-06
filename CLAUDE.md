@@ -29,9 +29,15 @@ bun stylelint # Lint CSS files
 
 ### Testing
 ```bash
-bun test                    # Run all tests from root
-cd apps/backend && bun test # Backend tests (when implemented)
+# IMPORTANT: Backend tests require .env file to be present
+cd packages/backend-base && bun test              # Run backend tests (requires .env)
+cd packages/backend-base && bun test --coverage   # Run with coverage report
+
+# From root (will fail without proper .env setup)
+bun test  # NOT RECOMMENDED - run from packages/backend-base instead
 ```
+
+**Note**: Backend tests require environment variables (especially `OPEN_AI_KEY` for OpenAI client initialization). Always run tests from `packages/backend-base/` directory where the `.env` file is located.
 
 ### Building
 ```bash
