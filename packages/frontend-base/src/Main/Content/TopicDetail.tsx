@@ -15,6 +15,9 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
   onBack,
 }) => {
   const { bibleVersion } = useGetSearchParams();
+  const [activeExplanationTab, setActiveExplanationTab] = useState<
+    "summary" | "byline" | "detailed"
+  >("summary");
 
   const {
     data: topicDetails,
@@ -26,22 +29,23 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
     enabled: !!topicId,
   });
 
+  // Fetch explanations only when their tab is active
   const { data: summaryExplanation, isLoading: isSummaryLoading } = useQuery({
     queryKey: ["topic-explanation", topicId, "summary"],
     queryFn: () => getTopicExplanation(topicId, "summary"),
-    enabled: !!topicId,
+    enabled: !!topicId && activeExplanationTab === "summary",
   });
 
   const { data: bylineExplanation, isLoading: isBylineLoading } = useQuery({
     queryKey: ["topic-explanation", topicId, "byline"],
     queryFn: () => getTopicExplanation(topicId, "byline"),
-    enabled: !!topicId,
+    enabled: !!topicId && activeExplanationTab === "byline",
   });
 
   const { data: detailedExplanation, isLoading: isDetailedLoading } = useQuery({
     queryKey: ["topic-explanation", topicId, "detailed"],
     queryFn: () => getTopicExplanation(topicId, "detailed"),
-    enabled: !!topicId,
+    enabled: !!topicId && activeExplanationTab === "detailed",
   });
 
   const { mutate: parseVerses, data: parsedContent } = useVerseParser();
@@ -59,17 +63,33 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
     }
   }, [contentToParse, parseVerses, bibleVersion]);
 
-  const isLoading =
-    isTopicLoading || isSummaryLoading || isBylineLoading || isDetailedLoading;
+  const isLoadingExplanation =
+    (activeExplanationTab === "summary" && isSummaryLoading) ||
+    (activeExplanationTab === "byline" && isBylineLoading) ||
+    (activeExplanationTab === "detailed" && isDetailedLoading);
+
   const hasError = topicError;
 
-  if (isLoading) {
+  if (isTopicLoading) {
     return <p>Loading topic details...</p>;
   }
 
   if (hasError) {
     return <p>Error loading topic details.</p>;
   }
+
+  const getExplanationData = () => {
+    switch (activeExplanationTab) {
+      case "summary":
+        return summaryExplanation?.explanation || "";
+      case "byline":
+        return bylineExplanation?.explanation || "";
+      case "detailed":
+        return detailedExplanation?.explanation || "";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div>
@@ -88,25 +108,57 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
       <div>
         <h3>Explanation</h3>
         <div>
-          <h4>Summary</h4>
-          {summaryExplanation?.explanation ? (
-            <Renderer markdownContent={summaryExplanation.explanation} />
-          ) : (
-            <p>No summary explanation available.</p>
-          )}
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+            <button
+              type="button"
+              onClick={() => setActiveExplanationTab("summary")}
+              style={{
+                padding: "0.5rem 1rem",
+                border: "1px solid #ccc",
+                borderRadius: "0.25rem",
+                cursor: "pointer",
+                backgroundColor:
+                  activeExplanationTab === "summary" ? "#eee" : "transparent",
+              }}
+            >
+              Summary
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveExplanationTab("byline")}
+              style={{
+                padding: "0.5rem 1rem",
+                border: "1px solid #ccc",
+                borderRadius: "0.25rem",
+                cursor: "pointer",
+                backgroundColor:
+                  activeExplanationTab === "byline" ? "#eee" : "transparent",
+              }}
+            >
+              Byline
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveExplanationTab("detailed")}
+              style={{
+                padding: "0.5rem 1rem",
+                border: "1px solid #ccc",
+                borderRadius: "0.25rem",
+                cursor: "pointer",
+                backgroundColor:
+                  activeExplanationTab === "detailed" ? "#eee" : "transparent",
+              }}
+            >
+              Detailed
+            </button>
+          </div>
 
-          <h4>Byline</h4>
-          {bylineExplanation?.explanation ? (
-            <Renderer markdownContent={bylineExplanation.explanation} />
+          {isLoadingExplanation ? (
+            <p>Loading {activeExplanationTab} explanation...</p>
+          ) : getExplanationData() ? (
+            <Renderer markdownContent={getExplanationData()} />
           ) : (
-            <p>No byline explanation available.</p>
-          )}
-
-          <h4>Detailed</h4>
-          {detailedExplanation?.explanation ? (
-            <Renderer markdownContent={detailedExplanation.explanation} />
-          ) : (
-            <p>No detailed explanation available.</p>
+            <p>No {activeExplanationTab} explanation available.</p>
           )}
         </div>
       </div>
