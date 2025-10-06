@@ -149,6 +149,7 @@ export class BatchOperationService {
         created_by: adminUserId,
         bible_version: "N/A",
         explanation_types: [],
+        topic_category: category,
       })
       .execute();
 
@@ -233,6 +234,16 @@ export class BatchOperationService {
         explanation_types: [],
       })
       .execute();
+
+    // Update each batch job with the topic_id
+    for (const topic of topics) {
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({ topic_id: topic.topic_id })
+        .where("openai_batch_id", "=", batch.id)
+        .execute();
+    }
 
     await this.batchMonitoringQueue.add(
       BATCH_MONITORING_QUEUE,
@@ -2672,35 +2683,85 @@ export class BatchOperationService {
     outputFileId: string,
     batchJob: { model: string },
   ) {
-    const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    console.log(
+      `[BATCH_TOPIC_DISCOVERY] Processing output file for batch ${batchId}`,
+    );
 
-    for (const line of lines) {
-      const parsedLine = JSON.parse(line);
-      const outputText = parsedLine.response?.body?.output_text;
+    try {
+      const fileContent = await openai.files.content(outputFileId);
+      const jsonl = await fileContent.text();
+      const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
-      if (outputText) {
-        const topics = outputText.split("\n\n");
-        for (const topic of topics) {
-          const nameMatch = topic.match(/Title: (.*)/);
-          const categoryMatch = topic.match(/Category: (.*)/);
-          const descriptionMatch = topic.match(/Description: (.*)/);
+      let processedCount = 0;
+      let errorCount = 0;
 
-          if (nameMatch && categoryMatch && descriptionMatch) {
-            await this.db
-              .getOrCreateConnection()
-              .insertInto("topics")
-              .values({
-                name: nameMatch[1],
-                category: categoryMatch[1],
-                description: descriptionMatch[1],
-              })
-              .onConflict((oc) => oc.column("name").doNothing())
-              .execute();
+      for (const line of lines) {
+        try {
+          const parsedLine = JSON.parse(line);
+          const outputText = parsedLine.response?.body?.output_text;
+
+          if (outputText) {
+            const topics = outputText.split("\n\n");
+            for (const topic of topics) {
+              try {
+                const nameMatch = topic.match(/Title: (.*)/);
+                const categoryMatch = topic.match(/Category: (.*)/);
+                const descriptionMatch = topic.match(/Description: (.*)/);
+
+                if (nameMatch && categoryMatch && descriptionMatch) {
+                  await this.db
+                    .getOrCreateConnection()
+                    .insertInto("topics")
+                    .values({
+                      name: nameMatch[1],
+                      category: categoryMatch[1],
+                      description: descriptionMatch[1],
+                    })
+                    .onConflict((oc) => oc.column("name").doNothing())
+                    .execute();
+
+                  processedCount++;
+                  console.log(
+                    `[BATCH_TOPIC_DISCOVERY] Added topic: ${nameMatch[1]}`,
+                  );
+                } else {
+                  errorCount++;
+                  console.warn(
+                    `[BATCH_TOPIC_DISCOVERY] Invalid topic format in batch ${batchId}: ${topic.substring(0, 100)}...`,
+                  );
+                }
+              } catch (topicError) {
+                errorCount++;
+                console.error(
+                  `[BATCH_TOPIC_DISCOVERY] Error processing topic in batch ${batchId}:`,
+                  topicError,
+                );
+              }
+            }
+          } else {
+            errorCount++;
+            console.warn(
+              `[BATCH_TOPIC_DISCOVERY] No output text found in line for batch ${batchId}`,
+            );
           }
+        } catch (lineError) {
+          errorCount++;
+          console.error(
+            `[BATCH_TOPIC_DISCOVERY] Error processing line in batch ${batchId}:`,
+            lineError,
+          );
         }
       }
+
+      console.log(
+        `[BATCH_TOPIC_DISCOVERY] Batch ${batchId} completed: ${processedCount} topics added, ${errorCount} errors`,
+      );
+    } catch (error) {
+      console.error(
+        `[BATCH_TOPIC_DISCOVERY] Error processing output file for batch ${batchId}:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -2709,29 +2770,74 @@ export class BatchOperationService {
     outputFileId: string,
     batchJob: { model: string },
   ) {
-    const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    console.log(
+      `[BATCH_TOPIC_REFERENCES] Processing output file for batch ${batchId}`,
+    );
 
-    for (const line of lines) {
-      const parsedLine = JSON.parse(line);
-      const outputText = parsedLine.response?.body?.output_text;
-      const customId = parsedLine.custom_id;
+    try {
+      const fileContent = await openai.files.content(outputFileId);
+      const jsonl = await fileContent.text();
+      const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
-      if (outputText && customId) {
-        const topicId = customId.replace("topic-references-", "");
-        await this.db
-          .getOrCreateConnection()
-          .insertInto("topic_references")
-          .values({
-            topic_id: topicId,
-            content: outputText,
-          })
-          .onConflict((oc) =>
-            oc.column("topic_id").doUpdateSet({ content: outputText }),
-          )
-          .execute();
+      let processedCount = 0;
+      let errorCount = 0;
+
+      for (const line of lines) {
+        try {
+          const parsedLine = JSON.parse(line);
+          const outputText = parsedLine.response?.body?.output_text;
+          const customId = parsedLine.custom_id;
+
+          if (outputText && customId) {
+            try {
+              const topicId = customId.replace("topic-references-", "");
+              await this.db
+                .getOrCreateConnection()
+                .insertInto("topic_references")
+                .values({
+                  topic_id: topicId,
+                  content: outputText,
+                })
+                .onConflict((oc) =>
+                  oc.column("topic_id").doUpdateSet({ content: outputText }),
+                )
+                .execute();
+
+              processedCount++;
+              console.log(
+                `[BATCH_TOPIC_REFERENCES] Added references for topic ${topicId}`,
+              );
+            } catch (dbError) {
+              errorCount++;
+              console.error(
+                `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
+                dbError,
+              );
+            }
+          } else {
+            errorCount++;
+            console.warn(
+              `[BATCH_TOPIC_REFERENCES] Missing output text or custom ID in line for batch ${batchId}`,
+            );
+          }
+        } catch (lineError) {
+          errorCount++;
+          console.error(
+            `[BATCH_TOPIC_REFERENCES] Error processing line in batch ${batchId}:`,
+            lineError,
+          );
+        }
       }
+
+      console.log(
+        `[BATCH_TOPIC_REFERENCES] Batch ${batchId} completed: ${processedCount} references added, ${errorCount} errors`,
+      );
+    } catch (error) {
+      console.error(
+        `[BATCH_TOPIC_REFERENCES] Error processing output file for batch ${batchId}:`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -2740,47 +2846,99 @@ export class BatchOperationService {
     outputFileId: string,
     batchJob: { model: string },
   ) {
-    const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    console.log(
+      `[BATCH_TOPIC_EXPLANATIONS] Processing output file for batch ${batchId}`,
+    );
 
-    for (const line of lines) {
-      const parsedLine = JSON.parse(line);
-      const outputText = parsedLine.response?.body?.output_text;
-      const customId = parsedLine.custom_id;
+    try {
+      const fileContent = await openai.files.content(outputFileId);
+      const jsonl = await fileContent.text();
+      const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
-      if (outputText && customId) {
-        // Parse custom ID to extract topic_id, explanation_type, and language_code
-        // Format: topic-explanations-{topic_id}-{explanation_type}-{language_code}-{timestamp}
-        const parts = customId.split("-");
-        if (parts.length >= 6) {
-          const topicId = parts[2];
-          const explanationType = parts[3];
-          const languageCode = parts[4];
+      let processedCount = 0;
+      let errorCount = 0;
 
-          await this.db
-            .getOrCreateConnection()
-            .insertInto("topic_explanations")
-            .values({
-              topic_id: topicId,
-              type: explanationType,
-              explanation: outputText,
-              language_code: languageCode,
-              is_active: true,
-              default: false,
-              version: 1,
-            })
-            .onConflict((oc) =>
-              oc.columns(["topic_id", "language_code", "type"]).doUpdateSet({
-                explanation: outputText,
-                is_active: true,
-                default: false,
-                updated_at: new Date(),
-              }),
-            )
-            .execute();
+      for (const line of lines) {
+        try {
+          const parsedLine = JSON.parse(line);
+          const outputText = parsedLine.response?.body?.output_text;
+          const customId = parsedLine.custom_id;
+
+          if (outputText && customId) {
+            try {
+              // Parse custom ID to extract topic_id, explanation_type, and language_code
+              // Format: topic-explanations-{topic_id}-{explanation_type}-{language_code}-{timestamp}
+              const parts = customId.split("-");
+              if (parts.length >= 6) {
+                const topicId = parts[2];
+                const explanationType = parts[3];
+                const languageCode = parts[4];
+
+                await this.db
+                  .getOrCreateConnection()
+                  .insertInto("topic_explanations")
+                  .values({
+                    topic_id: topicId,
+                    type: explanationType,
+                    explanation: outputText,
+                    language_code: languageCode,
+                    is_active: true,
+                    default: false,
+                    version: 1,
+                  })
+                  .onConflict((oc) =>
+                    oc
+                      .columns(["topic_id", "language_code", "type"])
+                      .doUpdateSet({
+                        explanation: outputText,
+                        is_active: true,
+                        default: false,
+                        updated_at: new Date(),
+                      }),
+                  )
+                  .execute();
+
+                processedCount++;
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Added ${explanationType} explanation for topic ${topicId} in ${languageCode}`,
+                );
+              } else {
+                errorCount++;
+                console.warn(
+                  `[BATCH_TOPIC_EXPLANATIONS] Invalid custom ID format in batch ${batchId}: ${customId}`,
+                );
+              }
+            } catch (dbError) {
+              errorCount++;
+              console.error(
+                `[BATCH_TOPIC_EXPLANATIONS] Database error for explanation in batch ${batchId}:`,
+                dbError,
+              );
+            }
+          } else {
+            errorCount++;
+            console.warn(
+              `[BATCH_TOPIC_EXPLANATIONS] Missing output text or custom ID in line for batch ${batchId}`,
+            );
+          }
+        } catch (lineError) {
+          errorCount++;
+          console.error(
+            `[BATCH_TOPIC_EXPLANATIONS] Error processing line in batch ${batchId}:`,
+            lineError,
+          );
         }
       }
+
+      console.log(
+        `[BATCH_TOPIC_EXPLANATIONS] Batch ${batchId} completed: ${processedCount} explanations added, ${errorCount} errors`,
+      );
+    } catch (error) {
+      console.error(
+        `[BATCH_TOPIC_EXPLANATIONS] Error processing output file for batch ${batchId}:`,
+        error,
+      );
+      throw error;
     }
   }
 

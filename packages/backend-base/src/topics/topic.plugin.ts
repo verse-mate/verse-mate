@@ -35,12 +35,24 @@ const plugin = new Elysia()
           const { id } = params;
           const topic = await topicService.getTopic(id);
           const references = await topicService.getTopicReferences(id);
-          // For now, we'll just return a placeholder for the explanation.
-          // In the future, this will fetch the real explanation.
+          // Fetch real explanations for all types
+          const [summaryExplanation, bylineExplanation, detailedExplanation] =
+            await Promise.all([
+              topicService.getTopicExplanation(id, "en", "summary"),
+              topicService.getTopicExplanation(id, "en", "byline"),
+              topicService.getTopicExplanation(id, "en", "detailed"),
+            ]);
+
           const explanation = {
-            summary: "Summary explanation placeholder.",
-            byline: "Byline explanation placeholder.",
-            detailed: "Detailed explanation placeholder.",
+            summary:
+              summaryExplanation?.explanation ||
+              "No summary explanation available.",
+            byline:
+              bylineExplanation?.explanation ||
+              "No byline explanation available.",
+            detailed:
+              detailedExplanation?.explanation ||
+              "No detailed explanation available.",
           };
 
           return {

@@ -24,6 +24,11 @@ type UserPrompt = {
 };
 
 const EXPLANATION_TYPE_ORDER = ["summary", "byline", "detailed"];
+const TOPIC_PROMPT_TYPES = [
+  "topic-discovery",
+  "topic-references",
+  "topic-explanations",
+];
 
 type ModalMode = "closed" | "createSystem" | "createUser" | "edit" | "view";
 
@@ -73,9 +78,12 @@ export const PromptManagement = () => {
       if (explanationTypesResponse.data) {
         // Custom sort order for explanation types
         const fetchedTypes = explanationTypesResponse.data as string[];
-        const sortedAndFilteredTypes = EXPLANATION_TYPE_ORDER.filter((type) =>
-          fetchedTypes.includes(type),
-        );
+        const sortedAndFilteredTypes = [
+          ...EXPLANATION_TYPE_ORDER.filter((type) =>
+            fetchedTypes.includes(type),
+          ),
+          ...TOPIC_PROMPT_TYPES.filter((type) => fetchedTypes.includes(type)),
+        ];
         setExplanationTypes(sortedAndFilteredTypes);
       }
     } catch (err) {
@@ -279,6 +287,15 @@ export const PromptManagement = () => {
     setModalMode("edit");
   };
 
+  // Filter user prompts by type for better organization
+  const explanationPrompts = userPrompts.filter((prompt) =>
+    EXPLANATION_TYPE_ORDER.includes(prompt.explanation_type),
+  );
+
+  const topicPrompts = userPrompts.filter((prompt) =>
+    TOPIC_PROMPT_TYPES.includes(prompt.explanation_type),
+  );
+
   if (loading) {
     return <div>Loading prompts...</div>;
   }
@@ -388,7 +405,7 @@ export const PromptManagement = () => {
 
         <div className={styles.listWrapper}>
           <div className={styles.headerWithButton}>
-            <h2>User Prompts</h2>
+            <h2>User Prompts - Explanations</h2>
             <span> &mdash; </span>
             <button
               type="button"
@@ -399,7 +416,64 @@ export const PromptManagement = () => {
             </button>
           </div>
           <ul className={styles.list}>
-            {userPrompts.map((prompt) => (
+            {explanationPrompts.map((prompt) => (
+              <li key={prompt.id} className={styles.listItem}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPrompt(prompt);
+                    setModalMode("view");
+                  }}
+                  className={`${styles.listItemButton} ${prompt.status === PromptStatusEnum.active ? styles.active : ""}`}
+                >
+                  {prompt.id} - {prompt.template_name} - {prompt.status}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEditPromptClick(prompt)}
+                  className={styles.listItemButton}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteUserPrompt(prompt.id)}
+                  className={styles.listItemButton}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSetUserPromptStatus(
+                      prompt.id,
+                      PromptStatusEnum.active,
+                    )
+                  }
+                  disabled={prompt.status === PromptStatusEnum.active}
+                  className={styles.listItemButton}
+                >
+                  Set Active
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className={styles.listWrapper}>
+          <div className={styles.headerWithButton}>
+            <h2>User Prompts - Topics</h2>
+            <span> &mdash; </span>
+            <button
+              type="button"
+              onClick={handleCreateUserPromptClick}
+              className={styles.primaryButton}
+            >
+              Create Topic Prompt
+            </button>
+          </div>
+          <ul className={styles.list}>
+            {topicPrompts.map((prompt) => (
               <li key={prompt.id} className={styles.listItem}>
                 <button
                   type="button"
