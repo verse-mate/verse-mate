@@ -18,3 +18,17 @@ export const getTopicDetails = async (topicId: string) => {
   const response = await api.topics({ id: topicId }).get();
   return response.data;
 };
+
+export const getTopicExplanation = async (
+  topicId: string,
+  type: string,
+  lang = "en",
+) => {
+  const response = await api.topics({ id: topicId }).explanation.get({
+    query: {
+      type,
+      lang,
+    },
+  });
+  return response.data?.explanation;
+};
