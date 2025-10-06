@@ -39,8 +39,8 @@ const setup = new Elysia({ name: "shared" })
   .state("notification", new EmailNotificationConsumer())
   .state("batchMonitoringQueue", batchMonitoringQueue)
   .derive(async ({ jwt, cookie: { auth }, store }) => {
-    const payload = await jwt.verify(auth?.value);
-    if (!payload) {
+    const payload = await jwt.verify(auth?.value as string | undefined);
+    if (!payload || typeof payload !== "object" || !("id" in payload)) {
       return { user: null };
     }
 
@@ -51,18 +51,17 @@ const setup = new Elysia({ name: "shared" })
       user,
     };
   })
-  .macro(({ onBeforeHandle }) => {
-    return {
-      isAuthenticated() {
-        onBeforeHandle(({ user, set }) => {
-          if (!user) {
-            set.status = 401;
-            return "Unauthorized";
-          }
-        });
-      },
-    };
-  });
+  // @ts-expect-error - Elysia macro types are complex and not fully inferred
+  .macro(({ onBeforeHandle }: any) => ({
+    isAuthenticated() {
+      onBeforeHandle(({ user, set }: any) => {
+        if (!user) {
+          set.status = 401;
+          return "Unauthorized";
+        }
+      });
+    },
+  }));
 
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";

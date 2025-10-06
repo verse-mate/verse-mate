@@ -34,7 +34,8 @@ export const fetchAllChaptersByBook = (bookId?: number | null) => {
       const allTestaments = (await api.bible.testaments.get()).data?.testaments
         .keys;
       const chaptersByBook = allTestaments?.find(
-        (testament) => testament.b === bookId,
+        (testament: { b: number; n: string; c: number; t: string }) =>
+          testament.b === bookId,
       );
       return chaptersByBook?.c || 0;
     },

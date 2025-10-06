@@ -7,13 +7,13 @@ import Backend from "./user.plugin";
 
 describe("User", () => {
   let accessToken: string;
-  const authSignupInput: AuthPlugin["_routes"]["auth"]["signup"]["post"]["body"] =
-    {
-      email: faker.internet.email().toLocaleLowerCase(),
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      password: faker.internet.password(),
-    };
+  // Using type assertion instead of _routes (internal Elysia API)
+  const authSignupInput = {
+    email: faker.internet.email().toLocaleLowerCase(),
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+    password: faker.internet.password(),
+  };
   const plugin = Backend.use(authPlugin);
   // @ts-ignore - TODO: Fix this
   const testClient = getTestClient<typeof plugin>(plugin);

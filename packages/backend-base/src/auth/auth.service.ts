@@ -437,7 +437,12 @@ export class AuthService {
     authUpdateProfileInput: AuthUpdateProfileInput,
   ): Promise<Pick<
     User,
-    "id" | "email" | "firstName" | "lastName" | "is_admin"
+    | "id"
+    | "email"
+    | "firstName"
+    | "lastName"
+    | "is_admin"
+    | "preferred_language"
   > | null> {
     const { firstName, lastName, email } = authUpdateProfileInput;
 
