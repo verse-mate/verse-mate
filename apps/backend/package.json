@@ -11,6 +11,6 @@
   "dependencies": {
     "@elysiajs/openapi": "1.4.11",
     "backend-base": "workspace:*",
-    "elysia": "1.4.0"
+    "elysia": "1.4.9"
   }
 }
