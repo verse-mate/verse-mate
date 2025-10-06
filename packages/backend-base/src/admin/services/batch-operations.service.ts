@@ -166,8 +166,11 @@ export class BatchOperationService {
     model: string,
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
+    category?: string,
+    topicId?: string,
   ) {
-    const topics = await this.db
+    // Modify the query to filter by category if provided
+    let query = this.db
       .getOrCreateConnection()
       .selectFrom("topics")
       .leftJoin(
@@ -175,9 +178,19 @@ export class BatchOperationService {
         "topics.topic_id",
         "topic_references.topic_id",
       )
-      .where("topic_references.reference_id", "is", null)
-      .selectAll("topics")
-      .execute();
+      .where("topic_references.reference_id", "is", null);
+
+    // Filter by category if provided
+    if (category) {
+      query = query.where("topics.category", "=", category);
+    }
+
+    // Filter by specific topic if provided
+    if (topicId) {
+      query = query.where("topics.topic_id", "=", topicId);
+    }
+
+    const topics = await query.selectAll("topics").execute();
 
     if (topics.length === 0) {
       throw new Error("No topics found that need references.");
@@ -232,18 +245,10 @@ export class BatchOperationService {
         created_by: adminUserId,
         bible_version: "N/A",
         explanation_types: [],
+        topic_category: category || null, // Store category if provided
+        topic_id: topicId || null, // Store topic_id if provided
       })
       .execute();
-
-    // Update each batch job with the topic_id
-    for (const topic of topics) {
-      await this.db
-        .getOrCreateConnection()
-        .updateTable("batch_jobs")
-        .set({ topic_id: topic.topic_id })
-        .where("openai_batch_id", "=", batch.id)
-        .execute();
-    }
 
     await this.batchMonitoringQueue.add(
       BATCH_MONITORING_QUEUE,
@@ -260,9 +265,11 @@ export class BatchOperationService {
     languageCode: string,
     explanationTypes: string[] = ["summary", "byline", "detailed"],
     effort: "low" | "medium" | "high" = "medium",
+    category?: string, // Add category parameter
+    topicId?: string, // Add topicId parameter for individual topic processing
   ) {
-    // Get topics that have references but don't have explanations for the specified types and language
-    const topics = await this.db
+    // Modify the query to filter by category if provided
+    let query = this.db
       .getOrCreateConnection()
       .selectFrom("topics")
       .innerJoin(
@@ -283,9 +290,17 @@ export class BatchOperationService {
               .where("topic_explanations.is_active", "=", true),
           ),
         ),
-      )
-      .selectAll("topics")
-      .execute();
+      );
+
+    if (category) {
+      query = query.where("topics.category", "=", category);
+    }
+
+    if (topicId) {
+      query = query.where("topics.topic_id", "=", topicId);
+    }
+
+    const topics = await query.selectAll("topics").execute();
 
     if (topics.length === 0) {
       throw new Error("No topics found that need explanations.");
@@ -352,6 +367,8 @@ export class BatchOperationService {
         bible_version: languageCode, // Using bible_version field to store language code
         explanation_types: explanationTypes,
         target_language_code: languageCode,
+        topic_category: category || null, // Store category if provided
+        topic_id: topicId || null, // Store topic_id if provided
       })
       .execute();
 
@@ -363,7 +380,6 @@ export class BatchOperationService {
 
     return batch;
   }
-
   async generateBookBatchByName(
     bookName: string,
     bibleVersion: string,
