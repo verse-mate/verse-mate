@@ -1619,30 +1619,32 @@ export const BatchOperations = () => {
               >
                 Topic Category:
               </label>
-              <SelectDropdown.Root
-                onValueChange={(val) => setTopicCategory(val)}
-              >
-                <SelectDropdown.Trigger
-                  selectedBook={null}
-                  selectedVerse={null}
-                  defaultPlaceholder={topicCategory}
-                  icon={<ChevronDownIcon />}
-                />
-                <SelectDropdown.Content
-                  align="start"
-                  style={{ width: "300px" }}
+              <div style={{ position: "relative", zIndex: 1001 }}>
+                <SelectDropdown.Root
+                  onValueChange={(val) => setTopicCategory(val)}
                 >
-                  <SelectDropdown.Item value="EVENT" icon={<CheckIcon />}>
-                    Events
-                  </SelectDropdown.Item>
-                  <SelectDropdown.Item value="PROPHECY" icon={<CheckIcon />}>
-                    Prophecies
-                  </SelectDropdown.Item>
-                  <SelectDropdown.Item value="PARABLE" icon={<CheckIcon />}>
-                    Parables
-                  </SelectDropdown.Item>
-                </SelectDropdown.Content>
-              </SelectDropdown.Root>
+                  <SelectDropdown.Trigger
+                    selectedBook={null}
+                    selectedVerse={null}
+                    defaultPlaceholder={topicCategory}
+                    icon={<ChevronDownIcon />}
+                  />
+                  <SelectDropdown.Content
+                    align="start"
+                    style={{ width: "300px" }}
+                  >
+                    <SelectDropdown.Item value="EVENT" icon={<CheckIcon />}>
+                      Events
+                    </SelectDropdown.Item>
+                    <SelectDropdown.Item value="PROPHECY" icon={<CheckIcon />}>
+                      Prophecies
+                    </SelectDropdown.Item>
+                    <SelectDropdown.Item value="PARABLE" icon={<CheckIcon />}>
+                      Parables
+                    </SelectDropdown.Item>
+                  </SelectDropdown.Content>
+                </SelectDropdown.Root>
+              </div>
             </div>
           )}
 
@@ -1658,53 +1660,64 @@ export const BatchOperations = () => {
               >
                 Specific Topic (Optional):
               </label>
-              <SelectDropdown.Root
-                open={topicDropdownOpen}
-                onOpenChange={setTopicDropdownOpen}
-                onValueChange={(selectedValue: string) => {
-                  if (selectedValue === "all") {
-                    setSelectedTopicForBatch(null);
-                  } else {
-                    setSelectedTopicForBatch(selectedValue);
-                  }
-                }}
-              >
-                <SelectDropdown.Trigger
-                  selectedBook={null}
-                  selectedVerse={null}
-                  defaultPlaceholder={
-                    selectedTopicForBatch
-                      ? topicsForCategory.find(
-                          (t) => t.topic_id === selectedTopicForBatch,
-                        )?.name || "All topics in category"
-                      : "All topics in category"
-                  }
-                  icon={<ChevronDownIcon />}
-                />
-                <SelectDropdown.Content
-                  align="start"
-                  style={{ width: "300px" }}
+              <div style={{ position: "relative", zIndex: 1000 }}>
+                <SelectDropdown.Root
+                  open={topicDropdownOpen}
+                  onOpenChange={setTopicDropdownOpen}
+                  onValueChange={(selectedValue: string) => {
+                    if (selectedValue === "all") {
+                      setSelectedTopicForBatch(null);
+                    } else {
+                      setSelectedTopicForBatch(selectedValue);
+                    }
+                  }}
                 >
-                  <SelectDropdown.Item value="all" icon={<CheckIcon />}>
-                    All topics in category
-                  </SelectDropdown.Item>
-                  {loadingTopics ? (
-                    <SelectDropdown.Item value="" icon={<CheckIcon />} disabled>
-                      Loading topics...
+                  <SelectDropdown.Trigger
+                    selectedBook={null}
+                    selectedVerse={null}
+                    defaultPlaceholder={
+                      selectedTopicForBatch
+                        ? topicsForCategory.find(
+                            (t) => t.topic_id === selectedTopicForBatch,
+                          )?.name || "All topics in category"
+                        : "All topics in category"
+                    }
+                    icon={<ChevronDownIcon />}
+                  />
+                  <SelectDropdown.Content
+                    align="start"
+                    style={{ width: "300px" }}
+                  >
+                    <SelectDropdown.Item value="all" icon={<CheckIcon />}>
+                      All topics in category
                     </SelectDropdown.Item>
-                  ) : (
-                    topicsForCategory.map((topic) => (
+                    {loadingTopics ? (
                       <SelectDropdown.Item
-                        key={topic.topic_id}
-                        value={topic.topic_id}
+                        value="loading"
                         icon={<CheckIcon />}
+                        disabled
                       >
-                        {topic.name}
+                        Loading topics...
                       </SelectDropdown.Item>
-                    ))
-                  )}
-                </SelectDropdown.Content>
-              </SelectDropdown.Root>
+                    ) : (
+                      topicsForCategory
+                        .filter(
+                          (topic) =>
+                            topic.topic_id && topic.topic_id.trim() !== "",
+                        )
+                        .map((topic) => (
+                          <SelectDropdown.Item
+                            key={topic.topic_id}
+                            value={topic.topic_id}
+                            icon={<CheckIcon />}
+                          >
+                            {topic.name}
+                          </SelectDropdown.Item>
+                        ))
+                    )}
+                  </SelectDropdown.Content>
+                </SelectDropdown.Root>
+              </div>
               <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
                 Select a specific topic to process only that topic, or "All
                 topics in category" to process all topics in the selected
