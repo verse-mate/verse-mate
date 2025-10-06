@@ -1,3 +1,4 @@
+import type { Topics } from "database/src/models/public/Topics";
 import type { ExplanationDto } from "../dto/book/explanation.dto";
 import type { PromptRepository } from "../repository/prompt.repository";
 import type { BibleService } from "./bible.service";
@@ -12,7 +13,11 @@ export class PromptService {
     book_id,
     chapter_number,
     version_id,
-  }: { book_id: number; chapter_number: number; version_id: string }) {
+  }: {
+    book_id: number;
+    chapter_number: number;
+    version_id: string;
+  }) {
     const { book } = await this.bibleService.getBook({
       book_id,
       chapter_number,
@@ -37,6 +42,35 @@ export class PromptService {
     return this.promptRepository.getActivePrompt();
   }
 
+  async getTopicDiscoveryPrompt(category: string) {
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-discovery");
+    return prompt?.prompt_template.replace("{topic_category}", category);
+  }
+
+  async getTopicReferencesPrompt(topic: Topics) {
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-references");
+    return prompt?.prompt_template
+      .replace("{topic_name}", topic.name)
+      .replace("{topic_description}", topic.description || "");
+  }
+
+  async getTopicExplanationPrompt(
+    topic: Topics,
+    placeholders: string,
+    languageCode: string,
+    type: string,
+  ) {
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-explanations");
+    return prompt?.prompt_template
+      .replace("{explanation_type}", type)
+      .replace("{topic_name}", topic.name)
+      .replace("{topic_description}", topic.description || "")
+      .replace("{bible_placeholders}", placeholders);
+  }
+
   private formatChapterVerses(chapterData: {
     chapterNumber: number;
     subtitles: { subtitle: string; start_verse: number; end_verse: number }[];
@@ -51,11 +85,19 @@ export class PromptService {
             verse.verseNumber >= subtitle.start_verse &&
             verse.verseNumber <= subtitle.end_verse,
         )
-        .map((verse) => `${verse.verseNumber}\n${verse.text}`)
+        .map(
+          (verse) => `${verse.verseNumber}
+${verse.text}`,
+        )
         .join("\n");
-      return `${subtitle.subtitle}\n(${chapterNumber}:${subtitle.start_verse} - ${subtitle.end_verse})\n\n${subtitleVerses}`;
+      return `${subtitle.subtitle}
+(${chapterNumber}:${subtitle.start_verse} - ${subtitle.end_verse})
+
+${subtitleVerses}`;
     });
 
-    return `${chapterNumber}\n\n${subtitleSections.join("\n\n")}`;
+    return `${chapterNumber}
+
+${subtitleSections.join("\n\n")}`;
   }
 }

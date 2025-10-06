@@ -7,10 +7,12 @@ import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
+import { TopicService } from "../topics/services/topic.service";
 import { AdminDatabaseService } from "./services/admin-database.service";
 import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
+import adminTopicPlugin from "./topics.plugin";
 
 const plugin = new Elysia()
   .use(shared)
@@ -30,6 +32,7 @@ const plugin = new Elysia()
         new ExplanationRegenerationService(state.db),
       getAdminPromptService: () => new AdminPromptService(state.db),
       getBibleService: () => new BibleService(state.db, bibleRepository),
+      topicService: new TopicService(state.db),
     };
   })
   .guard((app) =>
@@ -200,6 +203,34 @@ const plugin = new Elysia()
                 model: t.String(),
                 explanationTypes: t.Array(t.String()),
                 skipExisting: t.Optional(t.Boolean()),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+              }),
+            },
+          )
+          .post(
+            "/batch-topic-discovery",
+            async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTopicDiscoveryBatch(
+                body.category,
+                body.model,
+                currentUserId,
+                body.effort || "medium",
+              );
+            },
+            {
+              body: t.Object({
+                category: t.String(),
+                model: t.String(),
                 effort: t.Optional(
                   t.Union([
                     t.Literal("low"),
@@ -751,20 +782,24 @@ const plugin = new Elysia()
               ),
           )
 
-          .get("/commentary/grades", async ({ store: { db } }) => {
-            return {
-              message: "Commentary grading feature - to be implemented",
-              grades: [],
-              stats: {
-                total: 0,
-                averageGrade: 0,
-                gradingCriteria: [],
-              },
-            };
-          })
+          .use(adminTopicPlugin)
+          .get(
+            "/commentary/grades",
+            async ({ store }: { store: { db: any } }) => {
+              return {
+                message: "Commentary grading feature - to be implemented",
+                grades: [],
+                stats: {
+                  total: 0,
+                  averageGrade: 0,
+                  gradingCriteria: [],
+                },
+              };
+            },
+          )
           .post(
             "/commentary/grade",
-            async ({ body, store: { db } }) => {
+            async ({ body, store }: { body: any; store: { db: any } }) => {
               return {
                 success: true,
                 grade: 0,
