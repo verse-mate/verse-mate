@@ -300,6 +300,29 @@ export const BatchOperations = () => {
     "detailed",
   ]);
   const [creatingTopicBatch, setCreatingTopicBatch] = useState(false);
+  const [topicsForCategory, setTopicsForCategory] = useState<any[]>([]);
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
+
+  // Fetch topics when category changes
+  useEffect(() => {
+    const fetchTopicsForCategory = async () => {
+      if (topicCategory) {
+        try {
+          // This would need to be implemented in the topicsAdminApi
+          // For now, we'll just reset the topics list
+          setTopicsForCategory([]);
+          setSelectedTopicId(null);
+        } catch (error) {
+          console.error("Error fetching topics for category:", error);
+          setTopicsForCategory([]);
+          setSelectedTopicId(null);
+        }
+      }
+    };
+
+    fetchTopicsForCategory();
+  }, [topicCategory]);
 
   // Language validation function
   const validateLanguageCode = (code: string): boolean => {
@@ -1559,7 +1582,9 @@ export const BatchOperations = () => {
             </div>
           </div>
 
-          {topicBatchType === "discovery" && (
+          {(topicBatchType === "discovery" ||
+            topicBatchType === "references" ||
+            topicBatchType === "explanations") && (
             <div style={{ marginBottom: "20px" }}>
               <label
                 style={{
