@@ -25,7 +25,7 @@ steps:
     failure: ignore
     image: oven/bun:1.1.36
     commands:
-      - bun run lint:ci
+      - bun run lint
     depends_on:
       - compile
 

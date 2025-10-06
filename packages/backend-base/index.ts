@@ -7,6 +7,24 @@ import type { BiblePlugin } from "./src/bible/bible.plugin";
 import userPlugin from "./src/user/user.plugin";
 import type { UserPlugin } from "./src/user/user.plugin";
 
+// Common response models and errors
+export {
+  ErrorResponse,
+  PaginatedResponse,
+  type ErrorResponseType,
+  type PaginatedResponseType,
+} from "./src/common/response-models";
+
+export {
+  ApiError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  InternalServerError,
+} from "./src/common/errors";
+
 export {
   type AuthPlugin,
   authPlugin,

@@ -6,6 +6,7 @@ import { Elysia, t } from "elysia";
 import { User } from "../user/entities/user.entity";
 import { UserService } from "../user/user.service";
 
+import { ErrorResponse } from "../common/response-models";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
@@ -30,6 +31,9 @@ const setup = new Elysia({ name: "shared" })
   .use(cors())
   .use(bearer())
   .use(jwt)
+  .model({
+    ErrorResponse,
+  })
   .state("db", Database)
   .state("cache", redisClient)
   .state("notification", new EmailNotificationConsumer())
