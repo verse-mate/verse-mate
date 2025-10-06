@@ -201,6 +201,7 @@ describe("Bible Plugin", () => {
     });
   });
 
+  // Notes table doesn't exist in database yet - skip these tests
   describe.skip("Notes CRUD", () => {
     let noteId: string;
 
@@ -262,6 +263,7 @@ describe("Bible Plugin", () => {
     });
   });
 
+  // Highlights endpoints have implementation issues - skip for now
   describe.skip("Highlights CRUD", () => {
     let highlightId: number;
 
@@ -284,7 +286,9 @@ describe("Bible Plugin", () => {
 
       expect(error).toBeFalsy();
       expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
       expect(data?.highlight).toBeDefined();
+      expect(data?.highlight?.id).toBeDefined();
       highlightId = data?.highlight?.id;
     });
 
@@ -329,6 +333,7 @@ describe("Bible Plugin", () => {
     });
   });
 
+  // Ratings endpoints have schema validation issues - skip for now
   describe.skip("Ratings", () => {
     it("POST /bible/book/explanation/save-rating - save rating", async () => {
       const { data, error } = await testClient.bible.book.explanation[
