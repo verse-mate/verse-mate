@@ -243,6 +243,116 @@ export class BatchOperationService {
     return batch;
   }
 
+  async generateTopicExplanationsBatch(
+    model: string,
+    adminUserId: string,
+    languageCode: string,
+    explanationTypes: string[] = ["summary", "byline", "detailed"],
+    effort: "low" | "medium" | "high" = "medium",
+  ) {
+    // Get topics that have references but don't have explanations for the specified types and language
+    const topics = await this.db
+      .getOrCreateConnection()
+      .selectFrom("topics")
+      .innerJoin(
+        "topic_references",
+        "topics.topic_id",
+        "topic_references.topic_id",
+      )
+      .where("topic_references.is_active", "=", true)
+      .where(({ eb, not, exists }) =>
+        not(
+          exists(
+            eb
+              .selectFrom("topic_explanations")
+              .select("topic_explanations.topic_id")
+              .whereRef("topic_explanations.topic_id", "=", "topics.topic_id")
+              .where("topic_explanations.language_code", "=", languageCode)
+              .where("topic_explanations.type", "in", explanationTypes)
+              .where("topic_explanations.is_active", "=", true),
+          ),
+        ),
+      )
+      .selectAll("topics")
+      .execute();
+
+    if (topics.length === 0) {
+      throw new Error("No topics found that need explanations.");
+    }
+
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-explanations");
+    if (!prompt) {
+      throw new Error("No active topic-explanations prompt found.");
+    }
+
+    const batchRequests: BatchJobRequest[] = [];
+
+    // Create a batch request for each topic and explanation type combination
+    for (const topic of topics) {
+      for (const type of explanationTypes) {
+        batchRequests.push({
+          custom_id: `topic-explanations-${topic.topic_id}-${type}-${languageCode}-${Date.now()}`,
+          method: "POST",
+          url: "/v1/responses",
+          body: {
+            model,
+            reasoning: { effort },
+            instructions: prompt.prompt_template
+              .replace("{topic_name}", topic.name)
+              .replace("{topic_description}", topic.description || "")
+              .replace("{explanation_type}", type),
+            input: topic.description || "",
+            max_output_tokens: 25000,
+          },
+        });
+      }
+    }
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const file = await openai.files.create({
+      file: new File(
+        [blob],
+        `topic_explanations_${languageCode}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-explanations",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        bible_version: languageCode, // Using bible_version field to store language code
+        explanation_types: explanationTypes,
+        target_language_code: languageCode,
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
+  }
+
   async generateBookBatchByName(
     bookName: string,
     bibleVersion: string,
@@ -1831,6 +1941,13 @@ export class BatchOperationService {
           batchJob,
         );
       }
+      if (batchJob.batch_type === "topic-explanations") {
+        return this.processTopicExplanationsOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
 
       const version = await this.db
         .getOrCreateConnection()
@@ -2614,6 +2731,55 @@ export class BatchOperationService {
             oc.column("topic_id").doUpdateSet({ content: outputText }),
           )
           .execute();
+      }
+    }
+  }
+
+  private async processTopicExplanationsOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonl = await fileContent.text();
+    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+    for (const line of lines) {
+      const parsedLine = JSON.parse(line);
+      const outputText = parsedLine.response?.body?.output_text;
+      const customId = parsedLine.custom_id;
+
+      if (outputText && customId) {
+        // Parse custom ID to extract topic_id, explanation_type, and language_code
+        // Format: topic-explanations-{topic_id}-{explanation_type}-{language_code}-{timestamp}
+        const parts = customId.split("-");
+        if (parts.length >= 6) {
+          const topicId = parts[2];
+          const explanationType = parts[3];
+          const languageCode = parts[4];
+
+          await this.db
+            .getOrCreateConnection()
+            .insertInto("topic_explanations")
+            .values({
+              topic_id: topicId,
+              type: explanationType,
+              explanation: outputText,
+              language_code: languageCode,
+              is_active: true,
+              default: false,
+              version: 1,
+            })
+            .onConflict((oc) =>
+              oc.columns(["topic_id", "language_code", "type"]).doUpdateSet({
+                explanation: outputText,
+                is_active: true,
+                default: false,
+                updated_at: new Date(),
+              }),
+            )
+            .execute();
+        }
       }
     }
   }

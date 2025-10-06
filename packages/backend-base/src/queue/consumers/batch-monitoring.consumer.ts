@@ -246,7 +246,8 @@ export const batchMonitoringConsumer = async (job: Job) => {
           batchJob.batch_type === "rephrase" ||
           batchJob.batch_type === "rephrase-bible" ||
           batchJob.batch_type === "translate" ||
-          batchJob.batch_type === "translate-bible"
+          batchJob.batch_type === "translate-bible" ||
+          batchJob.batch_type === "topic-explanations"
         ) {
           console.log(
             `[BATCH_MONITORING] Batch ${batchId} is a ${batchJob.batch_type} batch. Queueing output processing before completion.`,
