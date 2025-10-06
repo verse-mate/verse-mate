@@ -214,6 +214,32 @@ const plugin = new Elysia()
             },
           )
           .post(
+            "/batch-topic-references",
+            async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTopicReferencesBatch(
+                body.model,
+                currentUserId,
+                body.effort || "medium",
+              );
+            },
+            {
+              body: t.Object({
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+              }),
+            },
+          )
+          .post(
             "/batch-topic-discovery",
             async ({ body, currentUserId, store }) => {
               if (!currentUserId) {
@@ -270,6 +296,36 @@ const plugin = new Elysia()
                   ]),
                 ),
                 bibleVersion: t.String(),
+              }),
+            },
+          )
+          .post(
+            "/batch-topic-explanations",
+            async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTopicExplanationsBatch(
+                body.model,
+                currentUserId,
+                body.languageCode,
+                body.explanationTypes,
+                body.effort || "medium",
+              );
+            },
+            {
+              body: t.Object({
+                model: t.String(),
+                languageCode: t.String(),
+                explanationTypes: t.Optional(t.Array(t.String())),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
               }),
             },
           )
