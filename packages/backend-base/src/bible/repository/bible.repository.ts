@@ -120,6 +120,15 @@ export class BibleRepository {
     return { verses: verses ?? null };
   }
 
+  async getVersionBykey(versionKey: string) {
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", versionKey)
+      .selectAll()
+      .executeTakeFirst();
+  }
+
   async getSpecificVersesByBookNameAndChapter(
     bookName: string,
     chapterNumber: number,

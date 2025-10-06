@@ -2,17 +2,21 @@ import type { Topics } from "database/src/models/public/Topics";
 import type { Static } from "elysia";
 import type { Insertable } from "kysely";
 import { BibleRepository } from "../../bible/repository/bible.repository";
+import { SubtitleService } from "../../bible/services/subtitle.service";
 import type { db } from "../../shared/shared.plugin";
+import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { TopicDto, UpdateTopicDto } from "../dto/topic.dto";
 import { TopicRepository } from "../repository/topic.repository";
 
 export class TopicService {
   private topicRepository: TopicRepository;
   private bibleRepository: BibleRepository;
+  private subtitleService: SubtitleService;
 
   constructor(private readonly db: db) {
     this.topicRepository = new TopicRepository(this.db);
     this.bibleRepository = new BibleRepository(this.db);
+    this.subtitleService = new SubtitleService(this.bibleRepository);
   }
 
   async getCategories() {
@@ -32,13 +36,7 @@ export class TopicService {
   }
 
   async createTopic(topic: Static<typeof TopicDto>) {
-    return this.topicRepository.createTopic({
-      name: topic.name,
-      description: topic.description,
-      category: topic.category,
-      sort_order: topic.sort_order,
-      is_active: topic.is_active,
-    } as Insertable<Topics>);
+    return this.topicRepository.createTopic(topic);
   }
 
   async updateTopic(topicId: string, topic: Static<typeof UpdateTopicDto>) {
@@ -65,10 +63,21 @@ export class TopicService {
     );
   }
 
-  async parseTopicReferences(content: string, versionId: string) {
-    // This will be implemented later.
-    // It will parse and replace all placeholders in topic references content
-    // with actual Bible text and subtitles.
-    return content;
+  async parseTopicReferences(content: string, bibleVersion: string) {
+    const version = await this.bibleRepository.getVersionBykey(bibleVersion);
+    if (!version) {
+      throw new Error("Invalid bible version");
+    }
+
+    let parsedContent = await this.subtitleService.enhanceContentWithSubtitles(
+      content,
+      version.id,
+    );
+    parsedContent = await parseAndInjectVerses(
+      parsedContent,
+      bibleVersion,
+      this.db,
+    );
+    return parsedContent;
   }
 }

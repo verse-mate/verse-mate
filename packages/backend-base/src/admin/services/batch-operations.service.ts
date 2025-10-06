@@ -161,6 +161,88 @@ export class BatchOperationService {
     return batch;
   }
 
+  async generateTopicReferencesBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high" = "medium",
+  ) {
+    const topics = await this.db
+      .getOrCreateConnection()
+      .selectFrom("topics")
+      .leftJoin(
+        "topic_references",
+        "topics.topic_id",
+        "topic_references.topic_id",
+      )
+      .where("topic_references.reference_id", "is", null)
+      .selectAll("topics")
+      .execute();
+
+    if (topics.length === 0) {
+      throw new Error("No topics found that need references.");
+    }
+
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-references");
+    if (!prompt) {
+      throw new Error("No active topic-references prompt found.");
+    }
+
+    const batchRequests: BatchJobRequest[] = topics.map((topic) => ({
+      custom_id: `topic-references-${topic.topic_id}`,
+      method: "POST",
+      url: "/v1/responses",
+      body: {
+        model,
+        reasoning: { effort },
+        instructions: prompt.prompt_template
+          .replace("{topic_name}", topic.name)
+          .replace("{topic_description}", topic.description || ""),
+        input: "",
+        max_output_tokens: 25000,
+      },
+    }));
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const file = await openai.files.create({
+      file: new File([blob], `topic_references_${Date.now()}.jsonl`),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-references",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        bible_version: "N/A",
+        explanation_types: [],
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
+  }
+
   async generateBookBatchByName(
     bookName: string,
     bibleVersion: string,
@@ -1742,6 +1824,13 @@ export class BatchOperationService {
           batchJob,
         );
       }
+      if (batchJob.batch_type === "topic-references") {
+        return this.processTopicReferencesOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
 
       const version = await this.db
         .getOrCreateConnection()
@@ -2494,6 +2583,37 @@ export class BatchOperationService {
               .execute();
           }
         }
+      }
+    }
+  }
+
+  private async processTopicReferencesOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonl = await fileContent.text();
+    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+    for (const line of lines) {
+      const parsedLine = JSON.parse(line);
+      const outputText = parsedLine.response?.body?.output_text;
+      const customId = parsedLine.custom_id;
+
+      if (outputText && customId) {
+        const topicId = customId.replace("topic-references-", "");
+        await this.db
+          .getOrCreateConnection()
+          .insertInto("topic_references")
+          .values({
+            topic_id: topicId,
+            content: outputText,
+          })
+          .onConflict((oc) =>
+            oc.column("topic_id").doUpdateSet({ content: outputText }),
+          )
+          .execute();
       }
     }
   }
