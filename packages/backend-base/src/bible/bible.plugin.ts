@@ -5,7 +5,11 @@ import { Elysia, t } from "elysia";
 import OpenAI from "openai";
 import { authDerive } from "../auth/auth.utils";
 import { NotFoundError, ValidationError } from "../common/errors";
-import { ErrorResponse } from "../common/response-models";
+import {
+  AuthErrors,
+  ErrorResponse,
+  StandardErrors,
+} from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
@@ -220,7 +224,7 @@ const plugin = new Elysia()
         {
           response: {
             200: BooksResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -232,7 +236,7 @@ const plugin = new Elysia()
         {
           response: {
             200: LanguagesResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -267,8 +271,8 @@ const plugin = new Elysia()
           }),
           response: {
             200: BookResponse,
+            ...AuthErrors,
             404: ErrorResponse,
-            500: ErrorResponse,
           },
         },
       )
@@ -372,8 +376,8 @@ const plugin = new Elysia()
           }),
           response: {
             200: ExplanationResponse,
+            ...AuthErrors,
             404: ErrorResponse,
-            500: ErrorResponse,
           },
         },
       )
@@ -386,7 +390,7 @@ const plugin = new Elysia()
         {
           response: {
             200: TestamentsResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -412,8 +416,8 @@ const plugin = new Elysia()
           }),
           response: {
             200: ChapterIdResponse,
+            ...AuthErrors,
             404: ErrorResponse,
-            500: ErrorResponse,
           },
         },
       )
@@ -429,7 +433,7 @@ const plugin = new Elysia()
           body: ChatHistoryDto,
           response: {
             200: UserChatHistoryResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -446,7 +450,7 @@ const plugin = new Elysia()
           body: MessageHistoryDto,
           response: {
             200: MessagesHistoryResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -468,7 +472,7 @@ const plugin = new Elysia()
           ]),
           response: {
             200: ChatExistsResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -559,9 +563,8 @@ const plugin = new Elysia()
           ]),
           response: {
             200: NewConversationResponse,
-            400: ErrorResponse,
+            ...StandardErrors,
             404: ErrorResponse,
-            500: ErrorResponse,
           },
         },
       )
@@ -581,7 +584,7 @@ const plugin = new Elysia()
           body: RatingDto,
           response: {
             200: SaveRatingResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -603,7 +606,7 @@ const plugin = new Elysia()
           body: RatingDto,
           response: {
             200: UpdateRatingResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -639,7 +642,7 @@ const plugin = new Elysia()
           body: t.Omit(RatingDto, ["rating"]),
           response: {
             200: RatingsResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -661,7 +664,7 @@ const plugin = new Elysia()
           ]),
           response: {
             200: LastChapterReadSaveResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -680,7 +683,7 @@ const plugin = new Elysia()
           ]),
           response: {
             200: LastChapterReadResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -699,7 +702,7 @@ const plugin = new Elysia()
           body: t.Pick(AddMessageDto, ["chat_id", "content"]),
           response: {
             200: SaveUserMessageResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -774,8 +777,8 @@ const plugin = new Elysia()
           ]),
           response: {
             200: SaveAiMessageResponse,
+            ...AuthErrors,
             404: ErrorResponse,
-            500: ErrorResponse,
           },
         },
       )
@@ -792,7 +795,7 @@ const plugin = new Elysia()
           params: t.Pick(ChatDto, ["conversation_id"]),
           response: {
             200: DisableChatResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -824,7 +827,7 @@ const plugin = new Elysia()
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
           response: {
             200: BookmarksResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -846,7 +849,7 @@ const plugin = new Elysia()
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
           response: {
             200: NotesResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -891,8 +894,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: AddNoteResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       )
@@ -920,8 +922,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: UpdateNoteResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       )
@@ -945,8 +946,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: DeleteNoteResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       )
@@ -980,8 +980,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: AddBookmarkResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       )
@@ -1021,8 +1020,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: RemoveBookmarkResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       )
@@ -1063,8 +1061,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: RemoveBookmarkResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       )
@@ -1091,7 +1088,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: HighlightsResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -1130,7 +1127,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: HighlightsResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -1178,8 +1175,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: AddHighlightResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       )
@@ -1212,7 +1208,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: UpdateHighlightResponse,
-            500: ErrorResponse,
+            ...AuthErrors,
           },
         },
       )
@@ -1241,8 +1237,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: DeleteHighlightResponse,
-            400: ErrorResponse,
-            500: ErrorResponse,
+            ...StandardErrors,
           },
         },
       ),

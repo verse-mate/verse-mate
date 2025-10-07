@@ -7,7 +7,11 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
-import { ErrorResponse } from "../common/response-models";
+import {
+  AuthErrors,
+  ErrorResponse,
+  StandardErrors,
+} from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { UserService } from "./user.service";
 
@@ -68,8 +72,7 @@ const plugin = new Elysia()
               },
               response: {
                 200: UsersListResponse,
-                401: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -95,9 +98,8 @@ const plugin = new Elysia()
               },
               response: {
                 200: UserResponse,
-                401: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -161,10 +163,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: UpdateUserResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
+                ...StandardErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           );

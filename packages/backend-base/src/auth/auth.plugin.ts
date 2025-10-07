@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 
 import bearer from "@elysiajs/bearer";
 import { UnauthorizedError } from "../common/errors";
+import { AuthErrorsRef, StandardErrorsRef } from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
 import { authDerive, authGuard } from "./auth.utils";
@@ -65,8 +66,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: UserIdResponse,
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           )
@@ -86,8 +86,7 @@ const plugin = new Elysia()
               body: AuthChangePasswordInput,
               response: {
                 200: BooleanResponse,
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           )
@@ -107,8 +106,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: BooleanResponse,
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           )
@@ -126,8 +124,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: BooleanResponse,
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           )
@@ -142,8 +139,7 @@ const plugin = new Elysia()
             {
               response: {
                 204: t.Void(),
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           )
@@ -170,8 +166,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: AuthPayloadResponse,
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           )
@@ -190,8 +185,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: UserSessionResponse,
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           )
@@ -211,8 +205,7 @@ const plugin = new Elysia()
               body: AuthUpdateProfileInput,
               response: {
                 200: UserSessionResponse,
-                401: t.Ref("ErrorResponse"),
-                500: t.Ref("ErrorResponse"),
+                ...AuthErrorsRef,
               },
             },
           ),
@@ -226,9 +219,8 @@ const plugin = new Elysia()
           body: AuthSignupInput,
           response: {
             200: AuthPayloadResponse,
-            400: t.Ref("ErrorResponse"),
+            ...StandardErrorsRef,
             409: t.Ref("ErrorResponse"),
-            500: t.Ref("ErrorResponse"),
           },
         },
       )
@@ -241,9 +233,7 @@ const plugin = new Elysia()
           body: AuthLoginInput,
           response: {
             200: AuthPayloadResponse,
-            400: t.Ref("ErrorResponse"),
-            401: t.Ref("ErrorResponse"),
-            500: t.Ref("ErrorResponse"),
+            ...StandardErrorsRef,
           },
         },
       )
@@ -257,9 +247,8 @@ const plugin = new Elysia()
           body: AuthForgotPasswordInput,
           response: {
             200: SuccessResponse,
-            400: t.Ref("ErrorResponse"),
+            ...StandardErrorsRef,
             404: t.Ref("ErrorResponse"),
-            500: t.Ref("ErrorResponse"),
           },
         },
       )
@@ -273,9 +262,8 @@ const plugin = new Elysia()
           body: AuthResetPasswordInput,
           response: {
             200: SuccessResponse,
-            400: t.Ref("ErrorResponse"),
+            ...StandardErrorsRef,
             404: t.Ref("ErrorResponse"),
-            500: t.Ref("ErrorResponse"),
           },
         },
       )
@@ -291,9 +279,8 @@ const plugin = new Elysia()
           }),
           response: {
             200: SuccessResponse,
-            400: t.Ref("ErrorResponse"),
+            ...StandardErrorsRef,
             404: t.Ref("ErrorResponse"),
-            500: t.Ref("ErrorResponse"),
           },
         },
       ),

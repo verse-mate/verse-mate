@@ -11,7 +11,11 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
-import { ErrorResponse } from "../common/response-models";
+import {
+  AuthErrors,
+  ErrorResponse,
+  StandardErrors,
+} from "../common/response-models";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { AdminDatabaseService } from "./services/admin-database.service";
@@ -186,9 +190,8 @@ const plugin = new Elysia()
             }),
             response: {
               200: SuccessMessageResponse,
-              401: ErrorResponse,
+              ...AuthErrors,
               404: ErrorResponse,
-              500: ErrorResponse,
             },
           },
         ),
@@ -205,9 +208,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: LanguagesListResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -220,9 +221,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: LanguageStatsResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -245,9 +244,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: UsersListResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           ),
@@ -279,9 +276,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: UsersListResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -310,10 +305,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: SuccessMessageResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -391,10 +384,7 @@ const plugin = new Elysia()
               }),
               response: {
                 201: BatchOperationResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -430,10 +420,7 @@ const plugin = new Elysia()
               }),
               response: {
                 201: BatchOperationResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -475,10 +462,7 @@ const plugin = new Elysia()
               }),
               response: {
                 201: BatchOperationResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -506,10 +490,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: BatchStatusResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -535,10 +517,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: SuccessMessageResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -562,9 +542,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: BatchListResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -582,10 +560,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: BatchChildrenResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -603,10 +579,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: MonitorBatchResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -619,9 +593,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: MonitorBatchResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -639,10 +611,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: BatchSummaryResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -656,10 +626,8 @@ const plugin = new Elysia()
             {
               response: {
                 200: DeleteExplanationResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -687,11 +655,8 @@ const plugin = new Elysia()
               }),
               response: {
                 201: RegenerateExplanationResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...StandardErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -723,11 +688,8 @@ const plugin = new Elysia()
               }),
               response: {
                 201: GenerateExplanationResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...StandardErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -742,10 +704,8 @@ const plugin = new Elysia()
             {
               response: {
                 200: ExplanationComparisonResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -768,11 +728,8 @@ const plugin = new Elysia()
               }),
               response: {
                 200: ChooseVersionResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...StandardErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -796,10 +753,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: BulkDeleteResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -821,10 +775,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: SetActiveDefaultResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -846,10 +797,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: SetActiveDefaultResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -872,10 +820,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: SetActiveDefaultResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -897,10 +842,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: BulkDeleteResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -915,10 +857,8 @@ const plugin = new Elysia()
             {
               response: {
                 200: ExplanationHistoryResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
+                ...AuthErrors,
                 404: ErrorResponse,
-                500: ErrorResponse,
               },
             },
           )
@@ -946,10 +886,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: ExplanationsFilterResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           )
@@ -962,9 +899,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: StatsResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -980,9 +915,7 @@ const plugin = new Elysia()
                 {
                   response: {
                     200: SystemPromptsListResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
-                    500: ErrorResponse,
+                    ...AuthErrors,
                   },
                 },
               )
@@ -995,9 +928,7 @@ const plugin = new Elysia()
                 {
                   response: {
                     200: UserPromptsListResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
-                    500: ErrorResponse,
+                    ...AuthErrors,
                   },
                 },
               )
@@ -1010,9 +941,7 @@ const plugin = new Elysia()
                 {
                   response: {
                     200: ExplanationTypesResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
-                    500: ErrorResponse,
+                    ...AuthErrors,
                   },
                 },
               )
@@ -1027,10 +956,7 @@ const plugin = new Elysia()
                   body: t.Object({ prompt: t.String() }),
                   response: {
                     201: CreatePromptResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
-                    500: ErrorResponse,
+                    ...StandardErrors,
                   },
                 },
               )
@@ -1056,10 +982,7 @@ const plugin = new Elysia()
                   }),
                   response: {
                     201: CreatePromptResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
-                    500: ErrorResponse,
+                    ...StandardErrors,
                   },
                 },
               )
@@ -1078,11 +1001,8 @@ const plugin = new Elysia()
                   params: t.Object({ id: t.String() }),
                   response: {
                     200: UpdatePromptResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
+                    ...StandardErrors,
                     404: ErrorResponse,
-                    500: ErrorResponse,
                   },
                 },
               )
@@ -1100,11 +1020,8 @@ const plugin = new Elysia()
                   params: t.Object({ id: t.String() }),
                   response: {
                     200: UpdatePromptResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
+                    ...StandardErrors,
                     404: ErrorResponse,
-                    500: ErrorResponse,
                   },
                 },
               )
@@ -1120,10 +1037,8 @@ const plugin = new Elysia()
                 {
                   response: {
                     200: DeletePromptResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
+                    ...AuthErrors,
                     404: ErrorResponse,
-                    500: ErrorResponse,
                   },
                 },
               )
@@ -1136,10 +1051,8 @@ const plugin = new Elysia()
                 {
                   response: {
                     200: DeletePromptResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
+                    ...AuthErrors,
                     404: ErrorResponse,
-                    500: ErrorResponse,
                   },
                 },
               )
@@ -1158,11 +1071,8 @@ const plugin = new Elysia()
                   params: t.Object({ id: t.String() }),
                   response: {
                     200: PromptStatusResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
+                    ...StandardErrors,
                     404: ErrorResponse,
-                    500: ErrorResponse,
                   },
                 },
               )
@@ -1185,11 +1095,8 @@ const plugin = new Elysia()
                   params: t.Object({ id: t.String() }),
                   response: {
                     200: PromptStatusResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
+                    ...StandardErrors,
                     404: ErrorResponse,
-                    500: ErrorResponse,
                   },
                 },
               )
@@ -1203,9 +1110,7 @@ const plugin = new Elysia()
                 {
                   response: {
                     200: RestoreDefaultsResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
-                    500: ErrorResponse,
+                    ...AuthErrors,
                   },
                 },
               )
@@ -1233,10 +1138,7 @@ const plugin = new Elysia()
                   }),
                   response: {
                     200: PlaygroundResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
-                    500: ErrorResponse,
+                    ...StandardErrors,
                   },
                 },
               )
@@ -1260,11 +1162,8 @@ const plugin = new Elysia()
                   }),
                   response: {
                     200: ExistingExplanationResponse,
-                    400: ErrorResponse,
-                    401: ErrorResponse,
-                    403: ErrorResponse,
+                    ...StandardErrors,
                     404: ErrorResponse,
-                    500: ErrorResponse,
                   },
                 },
               ),
@@ -1286,9 +1185,7 @@ const plugin = new Elysia()
             {
               response: {
                 200: CommentaryGradesResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...AuthErrors,
               },
             },
           )
@@ -1308,10 +1205,7 @@ const plugin = new Elysia()
               }),
               response: {
                 200: CommentaryGradeResponse,
-                400: ErrorResponse,
-                401: ErrorResponse,
-                403: ErrorResponse,
-                500: ErrorResponse,
+                ...StandardErrors,
               },
             },
           );
