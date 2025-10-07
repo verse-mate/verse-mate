@@ -113,11 +113,8 @@ export class BatchOperationService {
         body: {
           model,
           reasoning: { effort },
-          instructions: prompt.prompt_template.replace(
-            "{topic_category}",
-            "Events, Prophecies, and Parables",
-          ),
-          input: "",
+          instructions: "",
+          input: prompt.prompt_template,
           max_output_tokens: 25000,
         },
       },
@@ -214,10 +211,10 @@ export class BatchOperationService {
       body: {
         model,
         reasoning: { effort },
-        instructions: prompt.prompt_template
+        instructions: "",
+        input: prompt.prompt_template
           .replace("{topic_name}", topic.name)
           .replace("{topic_description}", topic.description || ""),
-        input: "",
         max_output_tokens: 25000,
       },
     }));
@@ -329,11 +326,11 @@ export class BatchOperationService {
           body: {
             model,
             reasoning: { effort },
-            instructions: prompt.prompt_template
+            instructions: "",
+            input: prompt.prompt_template
               .replace("{topic_name}", topic.name)
               .replace("{topic_description}", topic.description || "")
               .replace("{explanation_type}", type),
-            input: topic.description || "",
             max_output_tokens: 25000,
           },
         });
@@ -2720,64 +2717,46 @@ export class BatchOperationService {
 
       for (const line of lines) {
         try {
-          const parsedLine = JSON.parse(line);
-          const outputText = parsedLine.response?.body?.output_text;
+          const data = JSON.parse(line);
+          const content = data.response.body.output[1].content[0].text;
+          const topics = JSON.parse(content);
 
-          if (outputText) {
-            const topics = outputText.split("\n\n");
+          if (Array.isArray(topics)) {
             for (const topic of topics) {
-              try {
-                const nameMatch = topic.match(/Title: (.*)/);
-                const categoryMatch = topic.match(/Category: (.*)/);
-                const descriptionMatch = topic.match(/Description: (.*)/);
-
-                if (nameMatch && categoryMatch && descriptionMatch) {
-                  await this.db
-                    .getOrCreateConnection()
-                    .insertInto("topics")
-                    .values({
-                      name: nameMatch[1],
-                      category: categoryMatch[1],
-                      description: descriptionMatch[1],
-                    })
-                    .onConflict((oc) => oc.column("name").doNothing())
-                    .execute();
-
-                  processedCount++;
-                  console.log(
-                    `[BATCH_TOPIC_DISCOVERY] Added topic: ${nameMatch[1]}`,
-                  );
-                } else {
-                  errorCount++;
-                  console.warn(
-                    `[BATCH_TOPIC_DISCOVERY] Invalid topic format in batch ${batchId}: ${topic.substring(0, 100)}...`,
-                  );
-                }
-              } catch (topicError) {
-                errorCount++;
-                console.error(
-                  `[BATCH_TOPIC_DISCOVERY] Error processing topic in batch ${batchId}:`,
-                  topicError,
-                );
-              }
+              await this.db
+                .getOrCreateConnection()
+                .insertInto("topics")
+                .values({
+                  name: topic.name,
+                  description: topic.description,
+                  category: topic.category,
+                })
+                .onConflict((oc) => oc.column("topic_id").doNothing())
+                .execute();
+              processedCount++;
             }
-          } else {
-            errorCount++;
-            console.warn(
-              `[BATCH_TOPIC_DISCOVERY] No output text found in line for batch ${batchId}`,
-            );
           }
-        } catch (lineError) {
-          errorCount++;
+        } catch (error) {
           console.error(
-            `[BATCH_TOPIC_DISCOVERY] Error processing line in batch ${batchId}:`,
-            lineError,
+            `[BATCH] Error processing line for topic discovery batch ${batchId}:`,
+            error,
           );
+          errorCount++;
         }
       }
 
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({
+          explanations_processed: true,
+          status: errorCount > 0 ? "partial_failure" : "completed",
+        })
+        .where("openai_batch_id", "=", batchId)
+        .execute();
+
       console.log(
-        `[BATCH_TOPIC_DISCOVERY] Batch ${batchId} completed: ${processedCount} topics added, ${errorCount} errors`,
+        `[BATCH] Processed ${processedCount} topics for batch ${batchId}. Errors: ${errorCount}`,
       );
     } catch (error) {
       console.error(
