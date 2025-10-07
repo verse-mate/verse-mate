@@ -1259,8 +1259,8 @@ export class BatchOperationService {
 
       const needsProcessing =
         (correctStatus === "completed" ||
-          correctStatus === "partial_failure") &&
-        completed > 0 &&
+          correctStatus === "partial_failure" ||
+          correctStatus === "failed") &&
         !currentBatchJob.explanations_processed;
 
       if (needsProcessing) {
@@ -1306,7 +1306,9 @@ export class BatchOperationService {
       }
     }
 
-    await this.processOutputFile(batchId, outputFileId);
+    if (outputFileId) {
+      await this.processOutputFile(batchId, outputFileId);
+    }
   }
 
   async cancelBatch(batchId: string) {
