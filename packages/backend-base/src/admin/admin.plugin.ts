@@ -251,15 +251,15 @@ const plugin = new Elysia()
               }
               const batchOperationService = store.getBatchOperationService();
               return await batchOperationService.generateTopicDiscoveryBatch(
-                body.category,
                 body.model,
                 currentUserId,
                 body.effort || "medium",
+                body.category,
               );
             },
             {
               body: t.Object({
-                category: t.String(),
+                category: t.Optional(t.String()),
                 model: t.String(),
                 effort: t.Optional(
                   t.Union([
