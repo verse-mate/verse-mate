@@ -31,6 +31,8 @@ interface BatchJob {
   error_file_content?: string | null;
   source_language_code?: string | null;
   target_language_code?: string | null;
+  topic_category?: string | null;
+  topic_id?: string | null;
 }
 
 interface BatchSummary {
@@ -527,7 +529,6 @@ export const BatchOperations = () => {
       switch (topicBatchType) {
         case "discovery":
           await api.admin["batch-topic-discovery"].post({
-            category: topicCategory,
             model: selectedModel,
             effort: selectedEffort as "low" | "medium" | "high",
           });
@@ -828,12 +829,44 @@ export const BatchOperations = () => {
       className: styles.bookColumn,
       render: (job) => {
         const isTranslateBibleParent = job.batch_type === "translate-bible";
-        const displayText =
+
+        let displayText: string;
+        if (job.batch_type.startsWith("topic-")) {
+          switch (job.batch_type) {
+            case "topic-discovery":
+              displayText = "Topic Discovery";
+              if (job.topic_category && job.topic_category !== "all") {
+                displayText += ` (${job.topic_category})`;
+              }
+              break;
+            case "topic-references":
+              displayText = "Topic References";
+              if (job.topic_id) {
+                displayText += " (Single Topic)";
+              } else if (job.topic_category) {
+                displayText += ` (${job.topic_category})`;
+              }
+              break;
+            case "topic-explanations":
+              displayText = "Topic Explanations";
+              if (job.topic_id) {
+                displayText += " (Single Topic)";
+              } else if (job.topic_category) {
+                displayText += ` (${job.topic_category})`;
+              }
+              break;
+            default:
+              displayText = job.book_name || "N/A";
+          }
+        } else if (
           job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
           job.batch_type === "translate-bible"
-            ? "Entire Bible"
-            : job.book_name || "N/A";
+        ) {
+          displayText = "Entire Bible";
+        } else {
+          displayText = job.book_name || "N/A";
+        }
 
         let versionCode = job.bible_version;
 
@@ -845,7 +878,7 @@ export const BatchOperations = () => {
         return (
           <span className={styles.nowrapColumn}>
             {displayText}
-            {versionCode && (
+            {versionCode && versionCode !== "N/A" && (
               <span className={styles.versionBadge}>({versionCode})</span>
             )}
           </span>
@@ -1606,8 +1639,7 @@ export const BatchOperations = () => {
             </div>
           </div>
 
-          {(topicBatchType === "discovery" ||
-            topicBatchType === "references" ||
+          {(topicBatchType === "references" ||
             topicBatchType === "explanations") && (
             <div style={{ marginBottom: "20px" }}>
               <label

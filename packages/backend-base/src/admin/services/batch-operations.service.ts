@@ -92,10 +92,10 @@ export class BatchOperationService {
   }
 
   async generateTopicDiscoveryBatch(
-    category: string,
     model: string,
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
+    category?: string,
   ) {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-discovery");
@@ -103,9 +103,11 @@ export class BatchOperationService {
       throw new Error("No active topic-discovery prompt found.");
     }
 
+    const discoveryTopicType = category || "all";
+
     const batchRequests: BatchJobRequest[] = [
       {
-        custom_id: `topic-discovery-${category}-${Date.now()}`,
+        custom_id: `topic-discovery-${discoveryTopicType}-${Date.now()}`,
         method: "POST",
         url: "/v1/responses",
         body: {
@@ -113,7 +115,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: prompt.prompt_template.replace(
             "{topic_category}",
-            category,
+            "Events, Prophecies, and Parables",
           ),
           input: "",
           max_output_tokens: 25000,
@@ -127,7 +129,10 @@ export class BatchOperationService {
 
     const blob = new Blob([jsonlContent], { type: "application/jsonl" });
     const file = await openai.files.create({
-      file: new File([blob], `topic_discovery_${category}_${Date.now()}.jsonl`),
+      file: new File(
+        [blob],
+        `topic_discovery_${discoveryTopicType}_${Date.now()}.jsonl`,
+      ),
       purpose: "batch",
     });
 
@@ -149,7 +154,7 @@ export class BatchOperationService {
         created_by: adminUserId,
         bible_version: "N/A",
         explanation_types: [],
-        topic_category: category,
+        topic_category: discoveryTopicType,
       })
       .execute();
 
@@ -159,7 +164,7 @@ export class BatchOperationService {
       { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
     );
 
-    return batch;
+    return [batch];
   }
 
   async generateTopicReferencesBatch(
