@@ -126,21 +126,21 @@ const plugin = new Elysia()
                 );
               }
 
-              try {
-                const updatedUser = await db
-                  .getOrCreateConnection()
-                  .updateTable("user")
-                  .set({
-                    firstName: body.firstName,
-                    lastName: body.lastName,
-                  })
-                  .where("id", "=", currentUserId)
-                  .executeTakeFirstOrThrow();
+              const result = await db
+                .getOrCreateConnection()
+                .updateTable("user")
+                .set({
+                  firstName: body.firstName,
+                  lastName: body.lastName,
+                })
+                .where("id", "=", currentUserId)
+                .executeTakeFirst();
 
-                return Boolean(updatedUser.numUpdatedRows);
-              } catch (error) {
+              if (!result || result.numUpdatedRows === BigInt(0)) {
                 throw new NotFoundError("User not found or update failed");
               }
+
+              return true;
             },
             {
               detail: {

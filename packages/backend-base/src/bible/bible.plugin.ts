@@ -4,7 +4,11 @@ import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import OpenAI from "openai";
 import { authDerive } from "../auth/auth.utils";
-import { NotFoundError, ValidationError } from "../common/errors";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../common/errors";
 import {
   AuthErrors,
   ErrorResponse,
@@ -406,6 +410,10 @@ const plugin = new Elysia()
             book_id: Number(bookId),
             chapter_number: Number(chapterNumber),
           });
+
+          if (chapter_id == null) {
+            throw new NotFoundError("Chapter not found");
+          }
 
           return { chapter_id };
         },
@@ -1214,16 +1222,16 @@ const plugin = new Elysia()
       )
       .delete(
         "/highlight/:highlight_id",
-        async ({ params, query, store: { bibleService } }) => {
+        async ({ params, currentUserId, store: { bibleService } }) => {
           console.log("Deleting highlight:", params.highlight_id);
 
-          if (!query.user_id) {
-            throw new ValidationError("Missing user_id");
+          if (!currentUserId) {
+            throw new UnauthorizedError("Authentication required");
           }
 
           const { success } = await bibleService.deleteHighlight({
             highlight_id: params.highlight_id,
-            user_id: query.user_id,
+            user_id: currentUserId,
           });
 
           return { success };
@@ -1231,9 +1239,6 @@ const plugin = new Elysia()
         {
           params: t.Object({
             highlight_id: t.Number(),
-          }),
-          query: t.Object({
-            user_id: t.String({ format: "uuid" }),
           }),
           response: {
             200: DeleteHighlightResponse,

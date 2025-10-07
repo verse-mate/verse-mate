@@ -39,17 +39,32 @@ const setup = new Elysia({ name: "shared" })
   .state("notification", new EmailNotificationConsumer())
   .state("batchMonitoringQueue", batchMonitoringQueue)
   .derive(async ({ jwt, cookie: { auth }, store }) => {
-    const payload = await jwt.verify(auth?.value as string | undefined);
-    if (!payload || typeof payload !== "object" || !("id" in payload)) {
+    let payload: any;
+    try {
+      payload = await jwt.verify(auth?.value as string | undefined);
+    } catch (e) {
+      console.warn("JWT verification failed");
       return { user: null };
     }
 
-    const userService = new UserService(store.db);
-    const user = await userService.findOne(payload.id as string);
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      typeof (payload as any).id !== "string" ||
+      !(payload as any).id
+    ) {
+      return { user: null };
+    }
 
-    return {
-      user,
-    };
+    try {
+      const userService = new UserService(store.db);
+      const user = await userService.findOne((payload as any).id);
+      if (!user) return { user: null };
+      return { user };
+    } catch (e) {
+      console.error("Failed to load user from store");
+      return { user: null };
+    }
   })
   // @ts-expect-error - Elysia macro types are complex and not fully inferred
   .macro(({ onBeforeHandle }: any) => ({
@@ -57,7 +72,11 @@ const setup = new Elysia({ name: "shared" })
       onBeforeHandle(({ user, set }: any) => {
         if (!user) {
           set.status = 401;
-          return "Unauthorized";
+          return {
+            error: "UNAUTHORIZED",
+            message: "Authentication required",
+            details: undefined,
+          };
         }
       });
     },

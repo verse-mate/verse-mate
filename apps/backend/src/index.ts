@@ -20,14 +20,20 @@ const app = new Elysia()
       return error.toResponse();
     }
 
+    // Sanitize validation error details to prevent leaking internals
+    const safeDetails =
+      code === "VALIDATION" && error && typeof error === "object"
+        ? { message: (error as any).message, name: (error as any).name }
+        : undefined;
+
     // Handle Elysia built-in errors
     switch (code) {
       case "VALIDATION":
-        set.status = 400;
+        set.status = 422;
         return {
           error: "VALIDATION_ERROR",
           message: "Invalid request data",
-          details: error,
+          ...(safeDetails && { details: safeDetails }),
         };
       case "NOT_FOUND":
         set.status = 404;
@@ -42,7 +48,10 @@ const app = new Elysia()
           message: "Failed to parse request body",
         };
       default:
-        console.error("Unhandled error:", error);
+        console.error(
+          "Unhandled error:",
+          error instanceof Error ? error.message : String(error),
+        );
         set.status = 500;
         return {
           error: "INTERNAL_SERVER_ERROR",

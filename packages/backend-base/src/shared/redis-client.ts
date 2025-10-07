@@ -84,13 +84,27 @@ class RedisClient {
   async set(key: string, value: object, ttl: string): Promise<string | null> {
     await this.connect();
     try {
-      const ttlMs = typeof ttl === "string" ? ms(ttl) : ttl;
-      return await this.client.set(key, JSON.stringify(value), {
+      const ttlMs = ms(ttl);
+      if (typeof ttlMs !== "number" || !Number.isFinite(ttlMs) || ttlMs <= 0) {
+        throw new Error(`Invalid TTL provided: "${ttl}"`);
+      }
+
+      let payload: string;
+      try {
+        payload = JSON.stringify(value);
+      } catch (serializationError) {
+        console.error("Error serializing value for Redis:", serializationError);
+        throw new Error(`Failed to serialize value for Redis key "${key}"`);
+      }
+
+      return await this.client.set(key, payload, {
         PX: ttlMs,
       });
     } catch (error) {
       console.error("Error setting value in Redis:", error);
-      throw error;
+      throw error instanceof Error
+        ? error
+        : new Error("Redis set operation failed");
     }
   }
 

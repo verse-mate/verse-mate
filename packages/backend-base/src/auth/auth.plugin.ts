@@ -130,11 +130,13 @@ const plugin = new Elysia()
           )
           .post(
             "/send-email-verification",
-            async ({ currentUserId, store: { authService } }) => {
+            async ({ currentUserId, store: { authService }, set }) => {
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
               await authService.sendVerifyEmail(currentUserId);
+              set.status = 204;
+              return undefined;
             },
             {
               response: {
