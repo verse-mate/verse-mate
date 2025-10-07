@@ -2786,7 +2786,6 @@ export class BatchOperationService {
 
       for (const line of lines) {
         try {
-          const parsedLine = JSON.parse(line);
           const data = JSON.parse(line);
           const content = data.response.body.output[1].content[0].text;
           const customId = data.custom_id;
@@ -2794,13 +2793,17 @@ export class BatchOperationService {
           if (content && customId) {
             try {
               const topicId = customId.replace("topic-references-", "");
-              const references = JSON.parse(content);
-
-              if (Array.isArray(references)) {
-                for (const reference of references) {
-                  // ... (database insertion logic remains the same)
-                }
-              }
+              await this.db
+                .getOrCreateConnection()
+                .insertInto("topic_references")
+                .values({
+                  topic_id: topicId,
+                  content: content,
+                })
+                .onConflict((oc) =>
+                  oc.column("topic_id").doUpdateSet({ content: content }),
+                )
+                .execute();
 
               processedCount++;
               console.log(
