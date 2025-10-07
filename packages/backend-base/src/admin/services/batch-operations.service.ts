@@ -2862,7 +2862,6 @@ export class BatchOperationService {
 
       for (const line of lines) {
         try {
-          const parsedLine = JSON.parse(line);
           const data = JSON.parse(line);
           const content = data.response.body.output[1].content[0].text;
           const customId = data.custom_id;
