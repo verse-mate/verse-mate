@@ -84,8 +84,9 @@ class RedisClient {
   async set(key: string, value: object, ttl: string): Promise<string | null> {
     await this.connect();
     try {
+      const ttlMs = typeof ttl === "string" ? ms(ttl) : ttl;
       return await this.client.set(key, JSON.stringify(value), {
-        PX: ms(ttl),
+        PX: ttlMs,
       });
     } catch (error) {
       console.error("Error setting value in Redis:", error);
