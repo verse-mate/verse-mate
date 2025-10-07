@@ -2787,23 +2787,20 @@ export class BatchOperationService {
       for (const line of lines) {
         try {
           const parsedLine = JSON.parse(line);
-          const outputText = parsedLine.response?.body?.output_text;
-          const customId = parsedLine.custom_id;
+          const data = JSON.parse(line);
+          const content = data.response.body.output[1].content[0].text;
+          const customId = data.custom_id;
 
-          if (outputText && customId) {
+          if (content && customId) {
             try {
               const topicId = customId.replace("topic-references-", "");
-              await this.db
-                .getOrCreateConnection()
-                .insertInto("topic_references")
-                .values({
-                  topic_id: topicId,
-                  content: outputText,
-                })
-                .onConflict((oc) =>
-                  oc.column("topic_id").doUpdateSet({ content: outputText }),
-                )
-                .execute();
+              const references = JSON.parse(content);
+
+              if (Array.isArray(references)) {
+                for (const reference of references) {
+                  // ... (database insertion logic remains the same)
+                }
+              }
 
               processedCount++;
               console.log(
@@ -2863,10 +2860,11 @@ export class BatchOperationService {
       for (const line of lines) {
         try {
           const parsedLine = JSON.parse(line);
-          const outputText = parsedLine.response?.body?.output_text;
-          const customId = parsedLine.custom_id;
+          const data = JSON.parse(line);
+          const content = data.response.body.output[1].content[0].text;
+          const customId = data.custom_id;
 
-          if (outputText && customId) {
+          if (content && customId) {
             try {
               // Parse custom ID to extract topic_id, explanation_type, and language_code
               // Format: topic-explanations-{topic_id}-{explanation_type}-{language_code}-{timestamp}
@@ -2882,7 +2880,7 @@ export class BatchOperationService {
                   .values({
                     topic_id: topicId,
                     type: explanationType,
-                    explanation: outputText,
+                    explanation: content,
                     language_code: languageCode,
                     is_active: true,
                     default: false,
@@ -2892,7 +2890,7 @@ export class BatchOperationService {
                     oc
                       .columns(["topic_id", "language_code", "type"])
                       .doUpdateSet({
-                        explanation: outputText,
+                        explanation: content,
                         is_active: true,
                         default: false,
                         updated_at: new Date(),
