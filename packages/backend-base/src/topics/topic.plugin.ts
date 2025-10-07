@@ -1,5 +1,8 @@
 import { Elysia, t } from "elysia";
+import { BibleRepository } from "../bible/repository/bible.repository";
+import { BibleService } from "../bible/services/bible.service";
 import shared from "../shared/shared.plugin";
+import { parseAndInjectVerses } from "../shared/verse-parser";
 import { TopicService } from "./services/topic.service";
 
 const plugin = new Elysia()
@@ -8,6 +11,7 @@ const plugin = new Elysia()
     return {
       ...state,
       topicService: new TopicService(state.db),
+      bibleService: new BibleService(state.db, new BibleRepository(state.db)),
     };
   })
   .group("/topics", (app) =>
@@ -69,9 +73,18 @@ const plugin = new Elysia()
       )
       .get(
         "/:id/references",
-        async ({ params, store: { topicService } }) => {
+        async ({ params, store }) => {
           const { id } = params;
+          const { topicService, db } = store;
           const references = await topicService.getTopicReferences(id);
+          if (references?.content) {
+            const processedContent = await parseAndInjectVerses(
+              references.content,
+              "NASB1995", // Assuming a default version for now
+              db,
+            );
+            return { references: { ...references, content: processedContent } };
+          }
           return { references };
         },
         {
