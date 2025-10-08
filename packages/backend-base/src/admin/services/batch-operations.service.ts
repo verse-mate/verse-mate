@@ -1351,12 +1351,12 @@ export class BatchOperationService {
 
       const isFinished =
         correctStatus === "completed" || correctStatus === "partial_failure";
+      const outputFileId = batchStatus.output_file_id; // Extract outputFileId from batchStatus
       const needsProcessing =
         isFinished &&
         !!outputFileId &&
         (!currentBatchJob.explanations_processed ||
           currentBatchJob.actual_cost === null);
-
       if (needsProcessing) {
         console.log(
           `[BATCH] Batch ${batchId} is complete and needs processing. Adding to queue.`,
