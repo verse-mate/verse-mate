@@ -229,9 +229,11 @@ export const MainContent = () => {
     closeDropdown: closeDropdownBook,
   } = useDropdownToggle();
 
-  const book = testaments?.find((item) => {
-    return item.b === Number(bookId);
-  })?.n;
+  const book = testaments?.find(
+    (item: { b: number; n: string; c: number; t: string }) => {
+      return item.b === Number(bookId);
+    },
+  )?.n;
 
   useEffect(() => {
     if (book) {
@@ -256,12 +258,18 @@ export const MainContent = () => {
 
   const oldTestamentBooks = useMemo(
     () =>
-      testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [],
+      testaments?.filter(
+        (testament: { b: number; n: string; c: number; t: string }) =>
+          testament.t === TestamentEnum.OT,
+      ) || [],
     [testaments],
   );
   const newTestamentBooks = useMemo(
     () =>
-      testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [],
+      testaments?.filter(
+        (testament: { b: number; n: string; c: number; t: string }) =>
+          testament.t === TestamentEnum.NT,
+      ) || [],
     [testaments],
   );
 
@@ -312,7 +320,9 @@ export const MainContent = () => {
   useEffect(() => {
     if (bookId && verseId && testament) {
       const testamentLabel = testamentLabelMap[testament];
-      const bookName = testaments?.find((b) => b.b === bookId)?.n;
+      const bookName = testaments?.find(
+        (b: { b: number; n: string; c: number; t: string }) => b.b === bookId,
+      )?.n;
       const chapterNumber = verseId;
 
       if (testamentLabel && bookName) {
@@ -792,7 +802,8 @@ export const MainContent = () => {
     }).then((data) => data?.chatExists);
 
     const hasChat = chats?.find(
-      (chat) => chat.conversation_id === Number(conversationId),
+      (chat: { conversation_id: number }) =>
+        chat.conversation_id === Number(conversationId),
     );
 
     if (hasChat) {
@@ -1330,7 +1341,14 @@ export const MainContent = () => {
                                 {/* Regular OT books */}
                                 {leftPanelFilteredBooks
                                   .map((bookName) =>
-                                    testaments?.find((t) => t.n === bookName),
+                                    testaments?.find(
+                                      (t: {
+                                        b: number;
+                                        n: string;
+                                        c: number;
+                                        t: string;
+                                      }) => t.n === bookName,
+                                    ),
                                   )
                                   .filter(
                                     (
@@ -1511,7 +1529,14 @@ export const MainContent = () => {
                                 {/* Regular NT books */}
                                 {leftPanelFilteredBooks
                                   .map((bookName) =>
-                                    testaments?.find((t) => t.n === bookName),
+                                    testaments?.find(
+                                      (t: {
+                                        b: number;
+                                        n: string;
+                                        c: number;
+                                        t: string;
+                                      }) => t.n === bookName,
+                                    ),
                                   )
                                   .filter(
                                     (

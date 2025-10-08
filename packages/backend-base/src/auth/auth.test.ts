@@ -12,13 +12,13 @@ describe("Auth", () => {
   let signupAuthPayload: AuthPayload | null;
   let loginAuthPayload: AuthPayload | null;
 
-  const authSignupInput: AuthPlugin["_routes"]["auth"]["signup"]["post"]["body"] =
-    {
-      email: faker.internet.email().toLocaleLowerCase(),
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      password: faker.internet.password(),
-    };
+  // Using type assertion instead of _routes (internal Elysia API)
+  const authSignupInput = {
+    email: faker.internet.email().toLocaleLowerCase(),
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+    password: faker.internet.password(),
+  };
   const changePasswordValue = faker.internet.password();
 
   it("signup", async () => {
@@ -98,8 +98,8 @@ describe("Auth", () => {
 
     expect(data?.accessToken).not.toBeDefined();
     expect(error).toBeTruthy();
-    // Check that we get USER_NOT_FOUND error for non-existent users
-    expect(error?.value).toBe("USER_NOT_FOUND");
+    // Check that we get NOT_FOUND error for non-existent users
+    expect((error as any)?.value?.error).toBe("NOT_FOUND");
   });
 
   it("login - invalid credentials", async () => {
@@ -110,8 +110,8 @@ describe("Auth", () => {
 
     expect(data?.accessToken).not.toBeDefined();
     expect(error).toBeTruthy();
-    // Check that we get INVALID_USER error for wrong password
-    expect(error?.value).toBe("INVALID_USER");
+    // Check that we get UNAUTHORIZED error for wrong password
+    expect((error as any)?.value?.error).toBe("UNAUTHORIZED");
   });
 
   it("Change Password", async () => {
@@ -282,6 +282,6 @@ describe("Auth", () => {
     });
 
     expect(secondIsValid.error).toBeFalsy();
-    expect(secondIsValid.data).toBeFalsy();
+    expect(secondIsValid.data?.success).toBe(false);
   });
 });

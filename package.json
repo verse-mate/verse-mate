@@ -25,8 +25,8 @@
     "typescript": "^5.0.0"
   },
   "resolutions": {
-    "elysia": "1.1.4",
-    "@elysiajs/eden": "1.1.2",
+    "elysia": "1.4.9",
+    "@elysiajs/eden": "1.4.1",
     "nanostores": "0.11.2",
     "esbuild": "0.25.0",
     "react": "^18.3.1",
@@ -44,5 +44,5 @@
   "dependencies": {
     "typescript": "^5.5.4"
   },
-  "packageManager": "bun@1.2.19"
+  "packageManager": "bun@1.2.23"
 }

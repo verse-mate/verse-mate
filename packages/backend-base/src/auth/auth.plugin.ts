@@ -1,6 +1,9 @@
 import { Elysia, t } from "elysia";
 
 import bearer from "@elysiajs/bearer";
+import { createErrorHandler } from "../common/error-handler";
+import { UnauthorizedError } from "../common/errors";
+import { AuthErrorsRef, StandardErrorsRef } from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
 import { authDerive, authGuard } from "./auth.utils";
@@ -12,8 +15,37 @@ import { AuthSignupInput } from "./dto/auth-signup.input";
 import { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 
+// Response schemas
+const AuthPayloadResponse = t.Object({
+  accessToken: t.String({ description: "JWT access token" }),
+  verified: t.Boolean({ description: "Email verification status" }),
+});
+
+const UserIdResponse = t.Object({
+  id: t.Union([t.String(), t.Null()], {
+    description: "Current user ID or null if not authenticated",
+  }),
+});
+
+const BooleanResponse = t.Boolean({ description: "Operation success status" });
+
+const UserSessionResponse = t.Object({
+  id: t.String(),
+  email: t.String(),
+  firstName: t.String(),
+  lastName: t.String(),
+  is_admin: t.Boolean(),
+  preferred_language: t.Union([t.String(), t.Null()]),
+});
+
+const SuccessResponse = t.Object({
+  success: t.Boolean(),
+  message: t.Optional(t.String()),
+});
+
 const plugin = new Elysia()
   .use(shared)
+  .onError(createErrorHandler("auth plugin"))
   .state((state) => {
     return {
       ...state,
@@ -22,7 +54,7 @@ const plugin = new Elysia()
   })
   .group("/auth", (app) =>
     app
-      .guard((app) =>
+      .guard(authGuard, (app) =>
         app
           .use(bearer())
           .resolve({ as: "scoped" }, authDerive)
@@ -33,6 +65,12 @@ const plugin = new Elysia()
                 id: currentUserId,
               };
             },
+            {
+              response: {
+                200: UserIdResponse,
+                ...AuthErrorsRef,
+              },
+            },
           )
           .post(
             "/change-password",
@@ -42,12 +80,16 @@ const plugin = new Elysia()
               store: { authService },
             }): Promise<boolean> => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return authService.changePassword(currentUserId, body);
             },
             {
               body: AuthChangePasswordInput,
+              response: {
+                200: BooleanResponse,
+                ...AuthErrorsRef,
+              },
             },
           )
           .post(
@@ -63,6 +105,12 @@ const plugin = new Elysia()
 
               return authService.logout(bearer, jwt);
             },
+            {
+              response: {
+                200: BooleanResponse,
+                ...AuthErrorsRef,
+              },
+            },
           )
           .post(
             "/logout-all",
@@ -71,18 +119,32 @@ const plugin = new Elysia()
               store: { authService },
             }): Promise<boolean> => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return authService.logoutAll(currentUserId);
+            },
+            {
+              response: {
+                200: BooleanResponse,
+                ...AuthErrorsRef,
+              },
             },
           )
           .post(
             "/send-email-verification",
-            async ({ currentUserId, store: { authService } }) => {
+            async ({ currentUserId, store: { authService }, set }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               await authService.sendVerifyEmail(currentUserId);
+              set.status = 204;
+              return undefined;
+            },
+            {
+              response: {
+                204: t.Void(),
+                ...AuthErrorsRef,
+              },
             },
           )
           .post(
@@ -94,7 +156,7 @@ const plugin = new Elysia()
               jwt,
             }): Promise<AuthPayload> => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
               return authService.verifyEmail({
                 currentUserId,
@@ -106,27 +168,49 @@ const plugin = new Elysia()
               body: t.Object({
                 token: t.String(),
               }),
+              response: {
+                200: AuthPayloadResponse,
+                ...AuthErrorsRef,
+              },
             },
           )
           .get(
             "/session",
             async ({ currentUserId, store: { authService } }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
-              return await authService.getUserById(currentUserId);
+              const user = await authService.getUserById(currentUserId);
+              if (!user) {
+                throw new UnauthorizedError("User not found");
+              }
+              return user;
+            },
+            {
+              response: {
+                200: UserSessionResponse,
+                ...AuthErrorsRef,
+              },
             },
           )
           .put(
             "/profile",
             async ({ currentUserId, body, store: { authService } }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("Unauthorized");
               }
-              return await authService.updateProfile(currentUserId, body);
+              const user = await authService.updateProfile(currentUserId, body);
+              if (!user) {
+                throw new UnauthorizedError("User not found");
+              }
+              return user;
             },
             {
               body: AuthUpdateProfileInput,
+              response: {
+                200: UserSessionResponse,
+                ...AuthErrorsRef,
+              },
             },
           ),
       )
@@ -137,6 +221,11 @@ const plugin = new Elysia()
         },
         {
           body: AuthSignupInput,
+          response: {
+            200: AuthPayloadResponse,
+            ...StandardErrorsRef,
+            409: t.Ref("ErrorResponse"),
+          },
         },
       )
       .post(
@@ -146,35 +235,57 @@ const plugin = new Elysia()
         },
         {
           body: AuthLoginInput,
+          response: {
+            200: AuthPayloadResponse,
+            ...StandardErrorsRef,
+          },
         },
       )
       .post(
         "/forgot-password",
         async ({ body, store: { authService } }) => {
-          return authService.forgotPassword(body);
+          const success = await authService.forgotPassword(body);
+          return { success };
         },
         {
           body: AuthForgotPasswordInput,
+          response: {
+            200: SuccessResponse,
+            ...StandardErrorsRef,
+            404: t.Ref("ErrorResponse"),
+          },
         },
       )
       .post(
         "/reset-password",
         async ({ body, store: { authService } }) => {
-          return authService.resetPassword(body);
+          const success = await authService.resetPassword(body);
+          return { success };
         },
         {
           body: AuthResetPasswordInput,
+          response: {
+            200: SuccessResponse,
+            ...StandardErrorsRef,
+            404: t.Ref("ErrorResponse"),
+          },
         },
       )
       .get(
         "/reset-password-verify",
         async ({ query, store: { authService } }) => {
-          return authService.resetPasswordVerify(query.token);
+          const success = await authService.resetPasswordVerify(query.token);
+          return { success };
         },
         {
           query: t.Object({
             token: t.String(),
           }),
+          response: {
+            200: SuccessResponse,
+            ...StandardErrorsRef,
+            404: t.Ref("ErrorResponse"),
+          },
         },
       ),
   );

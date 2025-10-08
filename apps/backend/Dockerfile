@@ -1,4 +1,4 @@
-FROM oven/bun:1.1.36
+FROM oven/bun:1.2.23
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y wget postgresql-client && rm -rf /var/lib/apt/lists/*

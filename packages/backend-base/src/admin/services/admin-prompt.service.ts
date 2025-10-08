@@ -3,6 +3,11 @@ import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
 const PROTECTED_PROMPT_IDS = [1, 2, 3];
@@ -59,7 +64,7 @@ export class AdminPromptService {
 
   async updateSystemPrompt(id: number, prompt: string) {
     if (PROTECTED_PROMPT_IDS.includes(id)) {
-      throw new Error("This is a default prompt and cannot be edited.");
+      throw new ForbiddenError("This is a default prompt and cannot be edited");
     }
     await this.promptRepository.update(id, prompt);
     return { success: true, message: `System prompt ${id} updated` };
@@ -67,7 +72,9 @@ export class AdminPromptService {
 
   async deleteSystemPrompt(id: number) {
     if (PROTECTED_PROMPT_IDS.includes(id)) {
-      throw new Error("This is a default prompt and cannot be deleted.");
+      throw new ForbiddenError(
+        "This is a default prompt and cannot be deleted",
+      );
     }
     await this.promptRepository.delete(id);
     return { success: true, message: `System prompt ${id} deleted` };
@@ -106,7 +113,7 @@ export class AdminPromptService {
   async setUserPromptStatus(id: number, status: "active" | "inactive") {
     if (status === "active") {
       const type = await this.userPromptRepository.getTypeById(id);
-      if (!type) throw new Error(`Prompt ${id} not found.`);
+      if (!type) throw new NotFoundError(`Prompt ${id} not found`);
       await this.userPromptRepository.setInactiveByType(type);
     }
     await this.userPromptRepository.setStatus(id, status);
@@ -118,15 +125,15 @@ export class AdminPromptService {
 
   async updateUserPrompt(id: number, promptTemplate: string) {
     if (PROTECTED_PROMPT_IDS.includes(id)) {
-      throw new Error("This is a default prompt and cannot be edited.");
+      throw new ForbiddenError("This is a default prompt and cannot be edited");
     }
     const result = await this.userPromptRepository.updatePromptTemplate(
       id,
       promptTemplate,
     );
     if (!result.success) {
-      throw new Error(
-        `User prompt template ${id} not found or failed to update.`,
+      throw new NotFoundError(
+        `User prompt template ${id} not found or failed to update`,
       );
     }
     return {
@@ -137,7 +144,9 @@ export class AdminPromptService {
 
   async deleteUserPrompt(id: number) {
     if (PROTECTED_PROMPT_IDS.includes(id)) {
-      throw new Error("This is a default prompt and cannot be deleted.");
+      throw new ForbiddenError(
+        "This is a default prompt and cannot be deleted",
+      );
     }
     await this.userPromptRepository.delete(id);
     return { success: true, message: `User prompt template ${id} deleted` };
@@ -183,7 +192,7 @@ export class AdminPromptService {
       .executeTakeFirst();
 
     if (!version) {
-      throw new Error(`Bible version ${bible_version} not found`);
+      throw new NotFoundError(`Bible version ${bible_version} not found`);
     }
 
     const language = this.getLanguageName(version.language_code);
@@ -202,7 +211,7 @@ export class AdminPromptService {
         .where("name", "=", book_name)
         .select("book_id")
         .executeTakeFirst();
-      if (!book) throw new Error(`Book ${book_name} not found`);
+      if (!book) throw new NotFoundError(`Book ${book_name} not found`);
 
       const chapter = await connection
         .selectFrom("chapters")
@@ -211,7 +220,7 @@ export class AdminPromptService {
         .select("chapter_id")
         .executeTakeFirst();
       if (!chapter)
-        throw new Error(
+        throw new NotFoundError(
           `Chapter ${chapter_number} not found for book ${book_name}`,
         );
 
@@ -224,7 +233,7 @@ export class AdminPromptService {
         .execute();
 
       if (!verses || verses.length === 0) {
-        throw new Error(
+        throw new NotFoundError(
           `No verses found for chapter ${chapter_number} in version ${bible_version}`,
         );
       }

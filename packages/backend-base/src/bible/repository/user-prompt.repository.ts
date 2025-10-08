@@ -1,3 +1,4 @@
+import { InternalServerError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
 export class UserPromptRepository {
@@ -128,7 +129,7 @@ export class UserPromptRepository {
       if (result) {
         return result;
       }
-      throw new Error("Failed to create prompt template");
+      throw new InternalServerError("Failed to create prompt template");
     } catch (error) {
       console.error("[TEMPLATE] Error creating prompt template:", error);
       return {
