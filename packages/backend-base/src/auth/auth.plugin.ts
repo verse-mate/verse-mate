@@ -1,7 +1,8 @@
 import { Elysia, t } from "elysia";
 
 import bearer from "@elysiajs/bearer";
-import { ApiError, UnauthorizedError } from "../common/errors";
+import { createErrorHandler } from "../common/error-handler";
+import { UnauthorizedError } from "../common/errors";
 import { AuthErrorsRef, StandardErrorsRef } from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
@@ -44,39 +45,7 @@ const SuccessResponse = t.Object({
 
 const plugin = new Elysia()
   .use(shared)
-  .onError(({ code, error, set }) => {
-    // Handle custom API errors
-    if (error instanceof ApiError) {
-      set.status = error.status;
-      return error.toResponse();
-    }
-
-    // Handle Elysia built-in errors
-    switch (code) {
-      case "VALIDATION":
-        set.status = 422;
-        return {
-          error: "VALIDATION_ERROR",
-          message: "Invalid request data",
-        };
-      case "NOT_FOUND":
-        set.status = 404;
-        return {
-          error: "NOT_FOUND",
-          message: "Route not found",
-        };
-      default:
-        console.error("Unhandled error in auth plugin:", error);
-        set.status = 500;
-        return {
-          error: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred",
-        };
-    }
-  })
+  .onError(createErrorHandler("auth plugin"))
   .state((state) => {
     return {
       ...state,
