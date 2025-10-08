@@ -35,6 +35,37 @@ export class PromptRepository {
     };
   }
 
+  async getActivePromptByType(type: string): Promise<{
+    prompt_id: number;
+    status: PromptStatusEnum;
+    prompt: string;
+    prompt_type: string;
+  }> {
+    const prompt = await this.db
+      .getOrCreateConnection()
+      .selectFrom("prompts")
+      .select([
+        "prompts.prompt_id",
+        "prompts.prompt",
+        "prompts.status",
+        "prompts.prompt_type",
+      ])
+      .where("prompts.status", "=", PromptStatusEnum.active)
+      .where("prompts.prompt_type", "=", type)
+      .executeTakeFirst();
+
+    if (!prompt) {
+      throw new Error(`Active prompt of type '${type}' not found`);
+    }
+
+    return {
+      prompt_id: prompt.prompt_id,
+      status: prompt.status,
+      prompt: prompt.prompt,
+      prompt_type: prompt.prompt_type,
+    };
+  }
+
   async getUserPromptByType(type: string) {
     return this.db
       .getOrCreateConnection()
