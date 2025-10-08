@@ -305,20 +305,30 @@ const plugin = new Elysia()
           )
           .post(
             "/batch-topic-explanations",
-            async ({ body, currentUserId, store }) => {
+            async ({ body, currentUserId, store, set }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                set.status = 401;
+                return { error: "Unauthorized" };
               }
-              const batchOperationService = store.getBatchOperationService();
-              return await batchOperationService.generateTopicExplanationsBatch(
-                body.model,
-                currentUserId,
-                body.languageCode,
-                body.explanationTypes,
-                body.effort || "medium",
-                body.category, // Pass category if provided
-                body.topicId, // Pass topicId if provided
-              );
+              try {
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.generateTopicExplanationsBatch(
+                  body.model,
+                  currentUserId,
+                  body.languageCode,
+                  body.explanationTypes,
+                  body.effort || "medium",
+                  body.category,
+                  body.topicId,
+                );
+              } catch (error: any) {
+                console.error(
+                  "[PLUGIN] Caught error from BatchOperationService:",
+                  error.message,
+                );
+                set.status = 400;
+                return { error: error.message };
+              }
             },
             {
               body: t.Object({
@@ -332,8 +342,8 @@ const plugin = new Elysia()
                     t.Literal("high"),
                   ]),
                 ),
-                category: t.Optional(t.String()), // Add optional category parameter
-                topicId: t.Optional(t.String()), // Add optional topicId parameter
+                category: t.Optional(t.String()),
+                topicId: t.Optional(t.String()),
               }),
             },
           )

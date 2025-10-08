@@ -323,19 +323,13 @@ export class BatchOperationService {
     const topics = await query.selectAll("topics").execute();
 
     if (topics.length === 0) {
-      // If no topics are found, update the parent batch to "completed" to avoid a hanging "in_progress" state.
-      await connection
-        .updateTable("batch_jobs")
-        .set({ status: "completed", total_requests: 0 })
-        .where("id", "=", parentBatchId)
-        .execute();
-      // We don't throw an error here to prevent a silent failure on the frontend.
-      // The frontend will simply show a completed batch with 0 children.
-      return {
-        success: true,
-        message: "No topics found that need new explanations.",
-        parentBatchId,
-      };
+      // Throw an error to provide clear feedback to the frontend.
+      console.error(
+        "[BATCH] No topics found that need explanations. Throwing error.",
+      );
+      throw new Error(
+        "No topics found that need new explanations. Ensure that the 'References' batch has been run and that explanations do not already exist for the selected topics.",
+      );
     }
 
     // Update the parent batch with the total number of child batches to be created.
@@ -1571,9 +1565,11 @@ export class BatchOperationService {
       .selectFrom("batch_jobs")
       .where("parent_batch_id", "=", parentBatchId)
       .leftJoin("books", "batch_jobs.book_id", "books.book_id")
+      .leftJoin("topics", "batch_jobs.topic_id", "topics.topic_id") // Join with topics table
       .selectAll("batch_jobs")
-      .select("books.name as book_name")
+      .select(["books.name as book_name", "topics.name as topic_name"]) // Select topic_name
       .orderBy("batch_jobs.book_id", "asc")
+      .orderBy("batch_jobs.topic_id", "asc")
       .execute();
   }
 

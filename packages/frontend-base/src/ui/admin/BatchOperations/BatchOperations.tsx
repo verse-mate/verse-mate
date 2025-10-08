@@ -33,6 +33,7 @@ interface BatchJob {
   target_language_code?: string | null;
   topic_category?: string | null;
   topic_id?: string | null;
+  topic_name?: string | null;
 }
 
 interface BatchSummary {
@@ -560,9 +561,17 @@ export const BatchOperations = () => {
 
       await fetchBatchJobs();
       setTopicBatchModalOpen(false);
-    } catch (err) {
-      setError(`Failed to create topic ${topicBatchType} batch job`);
-      console.error(`Error creating topic ${topicBatchType} batch job:`, err);
+    } catch (err: any) {
+      console.error("Caught frontend error:", err); // Full error object
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        `Failed to create topic ${topicBatchType} batch job`;
+      setError(errorMessage);
+      console.error(
+        `Error creating topic ${topicBatchType} batch job:`,
+        err.message,
+      );
     } finally {
       setCreatingTopicBatch(false);
     }
@@ -797,7 +806,8 @@ export const BatchOperations = () => {
           if (
             job.batch_type === "bible" ||
             job.batch_type === "rephrase-bible" ||
-            job.batch_type === "translate-bible"
+            job.batch_type === "translate-bible" ||
+            job.batch_type === "topic-explanations-parent"
           ) {
             handleViewBibleDetails(job.id);
           } else if (job.openai_batch_id) {
@@ -841,19 +851,25 @@ export const BatchOperations = () => {
               }
               break;
             case "topic-references":
-              displayText = "Topic References";
-              if (job.topic_id) {
+              displayText = job.topic_name || "Topic References";
+              if (job.topic_id && !job.topic_name) {
                 displayText += " (Single Topic)";
-              } else if (job.topic_category) {
+              } else if (job.topic_category && !job.topic_name) {
                 displayText += ` (${job.topic_category})`;
               }
               break;
             case "topic-explanations":
-              displayText = "Topic Explanations";
-              if (job.topic_id) {
+              displayText = job.topic_name || "Topic Explanations";
+              if (job.topic_id && !job.topic_name) {
                 displayText += " (Single Topic)";
-              } else if (job.topic_category) {
+              }
+              break;
+            case "topic-explanations-parent":
+              displayText = "Topic Explanations";
+              if (job.topic_category && job.topic_category !== "all") {
                 displayText += ` (${job.topic_category})`;
+              } else {
+                displayText += " (All)";
               }
               break;
             default:
@@ -865,8 +881,6 @@ export const BatchOperations = () => {
           job.batch_type === "translate-bible"
         ) {
           displayText = "Entire Bible";
-        } else if (job.batch_type === "topic-explanations-parent") {
-          displayText = "Topic Explanations (Parent)";
         } else {
           displayText = job.book_name || "N/A";
         }
