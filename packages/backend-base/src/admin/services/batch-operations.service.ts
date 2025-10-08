@@ -392,6 +392,12 @@ export class BatchOperationService {
   ) {
     const batchRequests: BatchJobRequest[] = [];
 
+    const systemPrompt =
+      await this.promptRepository.getActivePromptByType("topic-system");
+    if (!systemPrompt) {
+      throw new Error("No active topic-system prompt found.");
+    }
+
     for (const type of explanationTypes) {
       const prompt = await new UserPromptRepository(
         this.db,
@@ -408,7 +414,7 @@ export class BatchOperationService {
         body: {
           model,
           reasoning: { effort },
-          instructions: "",
+          instructions: systemPrompt.prompt,
           input: prompt.prompt_template
             .replace("{topic_name}", topic.name)
             .replace("{topic_description}", topic.description || ""),
