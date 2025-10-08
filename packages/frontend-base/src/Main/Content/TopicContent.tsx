@@ -37,21 +37,25 @@ export const TopicContent: React.FC<TopicContentProps> = ({ category }) => {
     <div className={styles.contentGroupedTrigger}>
       <Accordion.Root>
         {topics?.map((topic: any) => (
-          <Accordion.Item value={topic.name} key={topic.topic_id}>
-            <div
-              onClick={() => handleTopicClick(topic.topic_id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  handleTopicClick(topic.topic_id);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <Accordion.Trigger label={topic.name} highlightBook={false} />
-            </div>
+          <Accordion.Item value={topic.topic_id} key={topic.topic_id}>
+            <Accordion.Trigger label={topic.name} highlightBook={false} />
             <Accordion.Content>
               <p>{topic.description}</p>
+              <button
+                type="button"
+                onClick={() => handleTopicClick(topic.topic_id)}
+                style={{
+                  marginTop: "8px",
+                  padding: "8px 16px",
+                  backgroundColor: "var(--dust)",
+                  color: "var(--snow)",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                View Details
+              </button>
             </Accordion.Content>
           </Accordion.Item>
         ))}

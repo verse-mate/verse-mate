@@ -1,8 +1,15 @@
 import { db } from "database";
 
-const MIGRATION_NAME = "20251006190000-fix-corrupted-migration"; //change name for desired migration
+const MIGRATION_NAME = process.argv[2] || process.env.MIGRATION_NAME;
 
 async function fixCorruptedMigration() {
+  if (!MIGRATION_NAME) {
+    console.error(
+      "Missing migration name. Provide as CLI arg or MIGRATION_NAME env.",
+    );
+    process.exit(1);
+  }
+
   console.log(
     `Attempting to fix corrupted migrations by deleting entry for ${MIGRATION_NAME}`,
   );
@@ -14,7 +21,8 @@ async function fixCorruptedMigration() {
       .where("name", "=", MIGRATION_NAME)
       .executeTakeFirst();
 
-    if (result.numDeletedRows > 0) {
+    const deleted = Number(result?.numDeletedRows ?? 0);
+    if (deleted > 0) {
       console.log(`Successfully deleted migration entry for ${MIGRATION_NAME}`);
     } else {
       console.log(

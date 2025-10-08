@@ -45,13 +45,23 @@ export class PromptService {
   async getTopicDiscoveryPrompt(category: string) {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-discovery");
-    return prompt?.prompt_template.replace("{topic_category}", category);
+    const template = prompt?.prompt_template ?? "";
+    if (!template.includes("{topic_category}")) {
+      throw new Error(
+        "Topic discovery template missing {topic_category} placeholder",
+      );
+    }
+    return template.replace("{topic_category}", category);
   }
 
   async getTopicReferencesPrompt(topic: Topics) {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-references");
-    return prompt?.prompt_template
+    const template = prompt?.prompt_template ?? "";
+    if (!template) {
+      throw new Error("Active topic-references template not found");
+    }
+    return template
       .replace("{topic_name}", topic.name)
       .replace("{topic_description}", topic.description || "");
   }
@@ -64,11 +74,16 @@ export class PromptService {
   ) {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-explanations");
-    return prompt?.prompt_template
+    const template = prompt?.prompt_template ?? "";
+    if (!template) {
+      throw new Error("Active topic-explanations template not found");
+    }
+    return template
       .replace("{explanation_type}", type)
       .replace("{topic_name}", topic.name)
       .replace("{topic_description}", topic.description || "")
-      .replace("{bible_placeholders}", placeholders);
+      .replace("{bible_placeholders}", placeholders)
+      .replace("{language_code}", languageCode);
   }
 
   private formatChapterVerses(chapterData: {

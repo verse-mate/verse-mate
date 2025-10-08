@@ -73,14 +73,15 @@ const plugin = new Elysia()
       )
       .get(
         "/:id/references",
-        async ({ params, store }) => {
+        async ({ params, query, store }) => {
           const { id } = params;
+          const { version = "NASB1995" } = query;
           const { topicService, db } = store;
           const references = await topicService.getTopicReferences(id);
           if (references?.content) {
             const processedContent = await parseAndInjectVerses(
               references.content,
-              "NASB1995", // Assuming a default version for now
+              version,
               db,
             );
             return { references: { ...references, content: processedContent } };
@@ -90,6 +91,9 @@ const plugin = new Elysia()
         {
           params: t.Object({
             id: t.String({ format: "uuid" }),
+          }),
+          query: t.Object({
+            version: t.Optional(t.String()),
           }),
         },
       )
@@ -110,7 +114,13 @@ const plugin = new Elysia()
             id: t.String({ format: "uuid" }),
           }),
           query: t.Object({
-            type: t.Optional(t.String()),
+            type: t.Optional(
+              t.Union([
+                t.Literal("summary"),
+                t.Literal("byline"),
+                t.Literal("detailed"),
+              ]),
+            ),
             lang: t.Optional(t.String()),
           }),
         },
