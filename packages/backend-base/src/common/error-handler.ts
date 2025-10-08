@@ -1,12 +1,16 @@
-import type { ErrorHandler } from "elysia";
 import { ApiError } from "./errors";
 
 /**
  * Shared error handler for all Elysia plugins
  * Handles ApiError instances and Elysia built-in errors consistently
+ *
+ * Note: Return type is intentionally loose to work across different plugin contexts
  */
-export const createErrorHandler = (pluginName: string): ErrorHandler => {
-  return ({ code, error, set }) => {
+// biome-ignore lint/suspicious/noExplicitAny: Error handler must be compatible with all plugin contexts
+export const createErrorHandler = (pluginName: string) => {
+  // biome-ignore lint/suspicious/noExplicitAny: Parameters inferred from Elysia context
+  return (context: any) => {
+    const { code, error, set } = context;
     // Handle custom API errors
     if (error instanceof ApiError) {
       set.status = error.status;
