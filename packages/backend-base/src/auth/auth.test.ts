@@ -99,7 +99,7 @@ describe("Auth", () => {
     expect(data?.accessToken).not.toBeDefined();
     expect(error).toBeTruthy();
     // Check that we get NOT_FOUND error for non-existent users
-    expect((error as any)?.error).toBe("NOT_FOUND");
+    expect((error as any)?.value?.error).toBe("NOT_FOUND");
   });
 
   it("login - invalid credentials", async () => {
@@ -111,7 +111,7 @@ describe("Auth", () => {
     expect(data?.accessToken).not.toBeDefined();
     expect(error).toBeTruthy();
     // Check that we get UNAUTHORIZED error for wrong password
-    expect((error as any)?.error).toBe("UNAUTHORIZED");
+    expect((error as any)?.value?.error).toBe("UNAUTHORIZED");
   });
 
   it("Change Password", async () => {

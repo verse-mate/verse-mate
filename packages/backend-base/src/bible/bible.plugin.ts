@@ -5,6 +5,7 @@ import { Elysia, t } from "elysia";
 import OpenAI from "openai";
 import { authDerive } from "../auth/auth.utils";
 import {
+  ApiError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
@@ -198,6 +199,39 @@ The response should be in ${language} using Markdown format only.`;
 
 const plugin = new Elysia()
   .use(shared)
+  .onError(({ code, error, set }) => {
+    // Handle custom API errors
+    if (error instanceof ApiError) {
+      set.status = error.status;
+      return error.toResponse();
+    }
+
+    // Handle Elysia built-in errors
+    switch (code) {
+      case "VALIDATION":
+        set.status = 422;
+        return {
+          error: "VALIDATION_ERROR",
+          message: "Invalid request data",
+        };
+      case "NOT_FOUND":
+        set.status = 404;
+        return {
+          error: "NOT_FOUND",
+          message: "Route not found",
+        };
+      default:
+        console.error("Unhandled error in bible plugin:", error);
+        set.status = 500;
+        return {
+          error: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred",
+        };
+    }
+  })
   .state((state) => {
     return {
       ...state,
