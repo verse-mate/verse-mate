@@ -6,6 +6,7 @@ import type {
   VerseHighlights,
 } from "database/src/models/public/VerseHighlights";
 import { sql } from "kysely";
+import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
@@ -703,7 +704,7 @@ export class BibleRepository {
 
         if (!book) {
           console.error(`[Admin Deletion] Book ${bookName} not found.`);
-          throw new Error(`Book ${bookName} not found.`);
+          throw new NotFoundError(`Book ${bookName} not found`);
         }
         console.log(`[Admin Deletion] Found book_id: ${book.book_id}`);
 

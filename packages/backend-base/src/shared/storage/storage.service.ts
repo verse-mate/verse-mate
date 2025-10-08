@@ -9,6 +9,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { InternalServerError } from "../../common/errors";
 
 import storageConstants from "./storage.constants";
 
@@ -44,7 +45,7 @@ class S3Helper {
       await this.client.send(command);
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Operation failed: ${error.message}`);
+        throw new InternalServerError(`Operation failed: ${error.message}`);
       }
       throw error;
     }
@@ -57,7 +58,9 @@ class S3Helper {
       await this.client.send(command);
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Bucket policy update failed: ${error.message}`);
+        throw new InternalServerError(
+          `Bucket policy update failed: ${error.message}`,
+        );
       }
       throw error;
     }
@@ -125,7 +128,7 @@ class S3Helper {
     return getSignedUrl(this.client, command, {
       expiresIn: storageConstants.privateObjectStorageUrlExpiresInSeconds(),
     }).catch((error) => {
-      throw new Error(`Operation failed: ${error.message}`);
+      throw new InternalServerError(`Operation failed: ${error.message}`);
     });
   }
 
@@ -148,7 +151,7 @@ class S3Helper {
         ? storageConstants.publicObjectStorageUrlExpiresInSeconds()
         : storageConstants.privateObjectStorageUrlExpiresInSeconds(),
     }).catch((error) => {
-      throw new Error(`Operation failed: ${error.message}`);
+      throw new InternalServerError(`Operation failed: ${error.message}`);
     });
   }
 
@@ -203,7 +206,7 @@ export class ObjectStorageService {
 
   public async makeBucket(bucketName: string): Promise<void> {
     return this.s3Helper.createBucket(bucketName).catch((error) => {
-      throw new Error(`Operation failed: ${error.message}`);
+      throw new InternalServerError(`Operation failed: ${error.message}`);
     });
   }
 
