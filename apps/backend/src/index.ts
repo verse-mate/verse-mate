@@ -1,18 +1,90 @@
 import { cors } from "@elysiajs/cors";
-import { swagger } from "@elysiajs/swagger";
-import { adminPlugin, authPlugin, biblePlugin, userPlugin } from "backend-base";
+import { openapi } from "@elysiajs/openapi";
+import {
+  ApiError,
+  adminPlugin,
+  authPlugin,
+  biblePlugin,
+  userPlugin,
+} from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
 import { Elysia } from "elysia";
 
 const app = new Elysia()
+  .onError(({ code, error, set }) => {
+    // Handle custom API errors
+    if (error instanceof ApiError) {
+      set.status = error.status;
+      return error.toResponse();
+    }
+
+    // Sanitize validation error details to prevent leaking internals
+    const safeDetails =
+      code === "VALIDATION" && error && typeof error === "object"
+        ? { message: (error as any).message, name: (error as any).name }
+        : undefined;
+
+    // Handle Elysia built-in errors
+    switch (code) {
+      case "VALIDATION":
+        set.status = 422;
+        return {
+          error: "VALIDATION_ERROR",
+          message: "Invalid request data",
+          ...(safeDetails && { details: safeDetails }),
+        };
+      case "NOT_FOUND":
+        set.status = 404;
+        return {
+          error: "NOT_FOUND",
+          message: "Route not found",
+        };
+      case "PARSE":
+        set.status = 400;
+        return {
+          error: "PARSE_ERROR",
+          message: "Failed to parse request body",
+        };
+      default:
+        console.error(
+          "Unhandled error:",
+          error instanceof Error ? error.message : String(error),
+        );
+        set.status = 500;
+        return {
+          error: "INTERNAL_SERVER_ERROR",
+          message:
+            process.env.ENVIRONMENT === "production"
+              ? "An unexpected error occurred"
+              : error instanceof Error
+                ? error.message
+                : "An unexpected error occurred",
+        };
+    }
+  })
   .use(authPlugin)
   .use(userPlugin)
   .use(biblePlugin)
   .use(adminPlugin)
   .use(cors())
-  .use(swagger());
+  .use(
+    openapi({
+      documentation: {
+        info: {
+          title: "VerseMate API",
+          version: "1.0.0",
+          description:
+            "Bible reading platform API with AI-driven translations and interactive Q&A",
+        },
+        servers: [
+          { url: "http://localhost:3001", description: "Development" },
+          { url: "https://api.versemate.com", description: "Production" },
+        ],
+      },
+    }),
+  );
 
 app.listen(process.env.PORT || 3000, async () => {
   console.log(

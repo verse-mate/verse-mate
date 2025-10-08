@@ -1,6 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import { NotFoundError, ValidationError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { BookDto } from "../dto/book/book.dto";
@@ -700,7 +701,9 @@ export class BibleService {
     const { isBibleBatch, language_code, bookName, chapter } = options;
 
     if (!isBibleBatch && !bookName) {
-      throw new Error("Book name is required for non-bible batch deletions.");
+      throw new ValidationError(
+        "Book name is required for non-bible batch deletions.",
+      );
     }
 
     const result = await this.bibleRepository.deleteInactiveExplanations({
@@ -730,8 +733,8 @@ export class BibleService {
 
     if (!isBibleBatch) {
       if (!bookName) {
-        throw new Error(
-          "Book name is required for non-bible batch operations.",
+        throw new ValidationError(
+          "Book name is required for non-bible batch operations",
         );
       }
       const book = await this.db
@@ -742,7 +745,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
@@ -788,8 +791,8 @@ export class BibleService {
 
     if (!isBibleBatch) {
       if (!bookName) {
-        throw new Error(
-          "Book name is required for non-bible batch operations.",
+        throw new ValidationError(
+          "Book name is required for non-bible batch operations",
         );
       }
       const book = await this.db
@@ -800,7 +803,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
@@ -847,8 +850,8 @@ export class BibleService {
 
     if (!isBibleBatch) {
       if (!bookName) {
-        throw new Error(
-          "Book name is required for non-bible batch operations.",
+        throw new ValidationError(
+          "Book name is required for non-bible batch operations",
         );
       }
       const book = await this.db
@@ -859,7 +862,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
@@ -932,7 +935,7 @@ export class BibleService {
       });
 
       if (!chapter_id) {
-        throw new Error(
+        throw new NotFoundError(
           `Chapter not found for book_id=${noteData.book_id} chapter_number=${noteData.chapter_number}`,
         );
       }
@@ -1017,7 +1020,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);

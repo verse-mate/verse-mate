@@ -5,6 +5,18 @@ import { adminGuard } from "../auth/admin.utils";
 import { authDerive, authGuard } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
+import { createErrorHandler } from "../common/error-handler";
+import {
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../common/errors";
+import {
+  AuthErrors,
+  ErrorResponse,
+  StandardErrors,
+} from "../common/response-models";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { AdminDatabaseService } from "./services/admin-database.service";
@@ -12,8 +24,126 @@ import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
+// Response Schemas
+const SuccessMessageResponse = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+});
+
+const UsersListResponse = t.Array(t.Any());
+
+const LanguageResponse = t.Object({
+  language_code: t.String(),
+  name: t.String(),
+  native_name: t.String(),
+  explanation_count: t.Number(),
+});
+
+const LanguagesListResponse = t.Array(LanguageResponse);
+
+const LanguageStatsResponse = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+});
+
+const BatchOperationResponse = t.Object({
+  batchJobId: t.String(),
+  message: t.String(),
+  totalVerses: t.Number(),
+});
+
+const BatchStatusResponse = t.Object({
+  id: t.String(),
+  status: t.String(),
+  progress: t.Number(),
+  total: t.Number(),
+  completed: t.Number(),
+  failed: t.Number(),
+});
+
+const BatchListResponse = t.Array(t.Any());
+
+const BatchChildrenResponse = t.Array(t.Any());
+
+const BatchSummaryResponse = t.Any();
+
+const MonitorBatchResponse = t.Any();
+
+const DeleteExplanationResponse = t.Any();
+
+const RegenerateExplanationResponse = t.Object({
+  regenerationId: t.Number(),
+  message: t.String(),
+});
+
+const GenerateExplanationResponse = t.Object({
+  success: t.Boolean(),
+  explanationId: t.Number(),
+  regenerationId: t.Number(),
+});
+
+const ExplanationComparisonResponse = t.Any();
+
+const ChooseVersionResponse = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+});
+
+const BulkDeleteResponse = t.Any();
+
+const SetActiveDefaultResponse = t.Any();
+
+const ExplanationHistoryResponse = t.Any();
+
+const ExplanationsFilterResponse = t.Object({
+  explanations: t.Array(t.Any()),
+  total: t.Number(),
+});
+
+const StatsResponse = t.Any();
+
+const SystemPromptsListResponse = t.Array(t.Any());
+
+const UserPromptsListResponse = t.Array(t.Any());
+
+const ExplanationTypesResponse = t.Array(t.String());
+
+const CreatePromptResponse = t.Object({
+  id: t.Number(),
+  message: t.String(),
+});
+
+const UpdatePromptResponse = t.Any();
+
+const DeletePromptResponse = t.Any();
+
+const PromptStatusResponse = t.Any();
+
+const RestoreDefaultsResponse = t.Any();
+
+const PlaygroundResponse = t.Any();
+
+const ExistingExplanationResponse = t.Any();
+
+const CommentaryGradesResponse = t.Object({
+  message: t.String(),
+  grades: t.Array(t.Any()),
+  stats: t.Object({
+    total: t.Number(),
+    averageGrade: t.Number(),
+    gradingCriteria: t.Array(t.Any()),
+  }),
+});
+
+const CommentaryGradeResponse = t.Object({
+  success: t.Boolean(),
+  grade: t.Number(),
+  message: t.String(),
+});
+
 const plugin = new Elysia()
   .use(shared)
+  .onError(createErrorHandler("admin plugin"))
   .state("batchProcessingQueue", batchProcessingQueue)
   .state((state) => {
     const bibleRepository = new BibleRepository(state.db);
@@ -32,12 +162,12 @@ const plugin = new Elysia()
       getBibleService: () => new BibleService(state.db, bibleRepository),
     };
   })
-  .guard((app) =>
+  .guard(authGuard, (app) =>
     app
       .use(bearer())
       .resolve({ as: "scoped" }, authDerive)
       .group("/user", (app) =>
-        app.guard(authGuard).patch(
+        app.patch(
           "/preferences",
           async ({ body, currentUserId, store: { db } }) => {
             const result = await db
@@ -48,7 +178,7 @@ const plugin = new Elysia()
               .executeTakeFirst();
 
             if (result.numUpdatedRows === BigInt(0)) {
-              throw new Error(`User ${currentUserId} not found`);
+              throw new NotFoundError(`User ${currentUserId} not found`);
             }
 
             return {
@@ -60,57 +190,98 @@ const plugin = new Elysia()
             body: t.Object({
               preferred_language: t.Union([t.String(), t.Null()]),
             }),
+            response: {
+              200: SuccessMessageResponse,
+              ...AuthErrors,
+              404: ErrorResponse,
+            },
           },
         ),
       )
       .group("/admin", (app) =>
         app
           .guard(adminGuard)
-          .get("/explanations/languages", async ({ store }) => {
-            const bibleService = store.getBibleService();
-            return await bibleService.getAvailableExplanationLanguages();
-          })
-          .post("/explanations/refresh-language-stats", async ({ store }) => {
-            const bibleService = store.getBibleService();
-            return await bibleService.refreshLanguageStats();
-          })
-          .get("/users", async ({ store: { db } }) => {
-            return await db
-              .getOrCreateConnection()
-              .selectFrom("user")
-              .select([
-                "id",
-                "email",
-                "firstName",
-                "lastName",
-                "is_admin",
-                "createdAt",
-              ])
-              .execute();
-          }),
+          .get(
+            "/explanations/languages",
+            async ({ store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.getAvailableExplanationLanguages();
+            },
+            {
+              response: {
+                200: LanguagesListResponse,
+                ...AuthErrors,
+              },
+            },
+          )
+          .post(
+            "/explanations/refresh-language-stats",
+            async ({ store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.refreshLanguageStats();
+            },
+            {
+              response: {
+                200: LanguageStatsResponse,
+                ...AuthErrors,
+              },
+            },
+          )
+          .get(
+            "/users",
+            async ({ store: { db } }) => {
+              return await db
+                .getOrCreateConnection()
+                .selectFrom("user")
+                .select([
+                  "id",
+                  "email",
+                  "firstName",
+                  "lastName",
+                  "is_admin",
+                  "createdAt",
+                ])
+                .execute();
+            },
+            {
+              response: {
+                200: UsersListResponse,
+                ...AuthErrors,
+              },
+            },
+          ),
       ),
   )
-  .guard((app) => {
+  .guard(authGuard, (app) => {
     return app
       .use(bearer())
       .resolve({ as: "scoped" }, authDerive)
       .guard(adminGuard)
       .group("/admin", (app) => {
         return app
-          .get("/users", async ({ store: { db } }) => {
-            return await db
-              .getOrCreateConnection()
-              .selectFrom("user")
-              .select([
-                "id",
-                "email",
-                "firstName",
-                "lastName",
-                "is_admin",
-                "createdAt",
-              ])
-              .execute();
-          })
+          .get(
+            "/users",
+            async ({ store: { db } }) => {
+              return await db
+                .getOrCreateConnection()
+                .selectFrom("user")
+                .select([
+                  "id",
+                  "email",
+                  "firstName",
+                  "lastName",
+                  "is_admin",
+                  "createdAt",
+                ])
+                .execute();
+            },
+            {
+              response: {
+                200: UsersListResponse,
+                ...AuthErrors,
+              },
+            },
+          )
           .patch(
             "/user/:id/admin-status",
             async ({ params, body, store: { db } }) => {
@@ -122,7 +293,7 @@ const plugin = new Elysia()
                 .executeTakeFirst();
 
               if (result.numUpdatedRows === BigInt(0)) {
-                throw new Error(`User ${params.id} not found`);
+                throw new NotFoundError(`User ${params.id} not found`);
               }
 
               return {
@@ -134,6 +305,11 @@ const plugin = new Elysia()
               body: t.Object({
                 is_admin: t.Boolean(),
               }),
+              response: {
+                200: SuccessMessageResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
             },
           )
 
@@ -141,14 +317,14 @@ const plugin = new Elysia()
             "/batch-explanations",
             async ({ body, currentUserId, store }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("User authentication required");
               }
               const batchOperationService = store.getBatchOperationService();
 
               if (body.type === "book") {
                 // Support both bookId (legacy) and bookName (new)
                 if (!body.bookId && !body.bookName) {
-                  throw new Error(
+                  throw new ValidationError(
                     "bookId or bookName is required for book batch",
                   );
                 }
@@ -166,7 +342,7 @@ const plugin = new Elysia()
                   );
                 }
                 if (!body.bookId) {
-                  throw new Error("bookId is required");
+                  throw new ValidationError("bookId is required");
                 }
                 return await batchOperationService.generateBookBatch(
                   body.bookId,
@@ -189,7 +365,7 @@ const plugin = new Elysia()
                 );
               }
 
-              throw new Error("Invalid batch type");
+              throw new ValidationError("Invalid batch type");
             },
             {
               body: t.Object({
@@ -208,13 +384,17 @@ const plugin = new Elysia()
                   ]),
                 ),
               }),
+              response: {
+                201: BatchOperationResponse,
+                ...StandardErrors,
+              },
             },
           )
           .post(
             "/batch-rephrase",
             async ({ body, currentUserId, store }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("User authentication required");
               }
               const batchOperationService = store.getBatchOperationService();
               return await batchOperationService.generateRephraseBatch(
@@ -240,13 +420,17 @@ const plugin = new Elysia()
                 ),
                 bibleVersion: t.String(),
               }),
+              response: {
+                201: BatchOperationResponse,
+                ...StandardErrors,
+              },
             },
           )
           .post(
             "/batch-translate",
             async ({ body, currentUserId, store }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("User authentication required");
               }
               const batchOperationService = store.getBatchOperationService();
               return await batchOperationService.generateTranslateBatch(
@@ -278,32 +462,66 @@ const plugin = new Elysia()
                 explanationTypes: t.Array(t.String()),
                 skipExisting: t.Optional(t.Boolean()),
               }),
+              response: {
+                201: BatchOperationResponse,
+                ...StandardErrors,
+              },
             },
           )
           .get(
             "/batch/:batchJobId",
             async ({ params, store }) => {
               const batchOperationService = store.getBatchOperationService();
-              return await batchOperationService.getBatchStatus(
+              const batchStatus = await batchOperationService.getBatchStatus(
                 params.batchJobId,
               );
+              return {
+                id: batchStatus.id,
+                status: batchStatus.status,
+                progress:
+                  (batchStatus.request_counts?.completed || 0) /
+                  (batchStatus.request_counts?.total || 1),
+                total: batchStatus.request_counts?.total || 0,
+                completed: batchStatus.request_counts?.completed || 0,
+                failed: batchStatus.request_counts?.failed || 0,
+              };
             },
             {
               params: t.Object({
                 batchJobId: t.String(),
               }),
+              response: {
+                200: BatchStatusResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
             },
           )
           .delete(
             "/batch/:batchJobId",
             async ({ params, store }) => {
               const batchOperationService = store.getBatchOperationService();
-              return await batchOperationService.cancelBatch(params.batchJobId);
+              const result = await batchOperationService.cancelBatch(
+                params.batchJobId,
+              );
+              // cancelBatch can return either {success, message} or an openAI batch object
+              if (typeof result === "object" && "success" in result) {
+                return result;
+              }
+              return {
+                success: true,
+                message: `Batch ${params.batchJobId} cancelled successfully`,
+              };
             },
             {
               params: t.Object({
                 batchJobId: t.String(),
               }),
+              response: {
+                200: SuccessMessageResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
             },
           )
           .get(
@@ -324,6 +542,10 @@ const plugin = new Elysia()
                 offset: t.Optional(t.String()),
                 adminOnly: t.Optional(t.String()),
               }),
+              response: {
+                200: BatchListResponse,
+                ...AuthErrors,
+              },
             },
           )
           .get(
@@ -338,6 +560,11 @@ const plugin = new Elysia()
               params: t.Object({
                 parentId: t.String(),
               }),
+              response: {
+                200: BatchChildrenResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
             },
           )
           .post(
@@ -352,12 +579,26 @@ const plugin = new Elysia()
               params: t.Object({
                 parentId: t.String(),
               }),
+              response: {
+                200: MonitorBatchResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
             },
           )
-          .post("/batches/monitor-all", async ({ store }) => {
-            const batchOperationService = store.getBatchOperationService();
-            return await batchOperationService.monitorAllActiveBatches();
-          })
+          .post(
+            "/batches/monitor-all",
+            async ({ store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.monitorAllActiveBatches();
+            },
+            {
+              response: {
+                200: MonitorBatchResponse,
+                ...AuthErrors,
+              },
+            },
+          )
           .get(
             "/batch-summary/:parentId",
             async ({ params, store }) => {
@@ -370,18 +611,33 @@ const plugin = new Elysia()
               params: t.Object({
                 parentId: t.String(),
               }),
+              response: {
+                200: BatchSummaryResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
             },
           )
 
-          .delete("/explanation/:id", async ({ params, store }) => {
-            const adminDatabaseService = store.getAdminDatabaseService();
-            return await adminDatabaseService.deleteExplanation(params.id);
-          })
+          .delete(
+            "/explanation/:id",
+            async ({ params, store }) => {
+              const adminDatabaseService = store.getAdminDatabaseService();
+              return await adminDatabaseService.deleteExplanation(params.id);
+            },
+            {
+              response: {
+                200: DeleteExplanationResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
+            },
+          )
           .post(
             "/explanation/regenerate",
             async ({ body, store, currentUserId }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("User authentication required");
               }
               const adminDatabaseService = store.getAdminDatabaseService();
               return await adminDatabaseService.regenerateExplanation(
@@ -399,13 +655,18 @@ const plugin = new Elysia()
                 explanationType: t.String(),
                 bibleVersion: t.String(),
               }),
+              response: {
+                201: RegenerateExplanationResponse,
+                ...StandardErrors,
+                404: ErrorResponse,
+              },
             },
           )
           .post(
             "/explanation/regenerate/:regenerationId/generate",
             async ({ params, body, store, currentUserId }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("User authentication required");
               }
               const explanationRegenerationService =
                 store.getExplanationRegenerationService();
@@ -427,6 +688,11 @@ const plugin = new Elysia()
                 bibleVersion: t.String(),
                 model: t.String(),
               }),
+              response: {
+                201: GenerateExplanationResponse,
+                ...StandardErrors,
+                404: ErrorResponse,
+              },
             },
           )
           .get(
@@ -437,12 +703,19 @@ const plugin = new Elysia()
                 params.regenerationId,
               );
             },
+            {
+              response: {
+                200: ExplanationComparisonResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
+            },
           )
           .post(
             "/explanation/regenerate/:regenerationId/choose",
             async ({ params, body, store, currentUserId }) => {
               if (!currentUserId) {
-                throw new Error("Unauthorized");
+                throw new UnauthorizedError("User authentication required");
               }
               const adminDatabaseService = store.getAdminDatabaseService();
               return await adminDatabaseService.chooseExplanationVersion(
@@ -455,6 +728,11 @@ const plugin = new Elysia()
               body: t.Object({
                 chosenExplanationId: t.Number(),
               }),
+              response: {
+                200: ChooseVersionResponse,
+                ...StandardErrors,
+                404: ErrorResponse,
+              },
             },
           )
           .delete(
@@ -475,6 +753,10 @@ const plugin = new Elysia()
                   }),
                 ),
               }),
+              response: {
+                200: BulkDeleteResponse,
+                ...StandardErrors,
+              },
             },
           )
           .post(
@@ -493,6 +775,10 @@ const plugin = new Elysia()
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
+              response: {
+                200: SetActiveDefaultResponse,
+                ...StandardErrors,
+              },
             },
           )
           .post(
@@ -511,6 +797,10 @@ const plugin = new Elysia()
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
+              response: {
+                200: SetActiveDefaultResponse,
+                ...StandardErrors,
+              },
             },
           )
           .post(
@@ -530,6 +820,10 @@ const plugin = new Elysia()
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
                 version: t.Number(),
               }),
+              response: {
+                200: SetActiveDefaultResponse,
+                ...StandardErrors,
+              },
             },
           )
           .delete(
@@ -548,12 +842,28 @@ const plugin = new Elysia()
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
+              response: {
+                200: BulkDeleteResponse,
+                ...StandardErrors,
+              },
             },
           )
-          .get("/explanation/:id/history", async ({ params, store }) => {
-            const adminDatabaseService = store.getAdminDatabaseService();
-            return await adminDatabaseService.getExplanationHistory(params.id);
-          })
+          .get(
+            "/explanation/:id/history",
+            async ({ params, store }) => {
+              const adminDatabaseService = store.getAdminDatabaseService();
+              return await adminDatabaseService.getExplanationHistory(
+                params.id,
+              );
+            },
+            {
+              response: {
+                200: ExplanationHistoryResponse,
+                ...AuthErrors,
+                404: ErrorResponse,
+              },
+            },
+          )
           .get(
             "/explanations",
             async ({ query, store }) => {
@@ -576,27 +886,67 @@ const plugin = new Elysia()
                 limit: t.Optional(t.String()),
                 offset: t.Optional(t.String()),
               }),
+              response: {
+                200: ExplanationsFilterResponse,
+                ...StandardErrors,
+              },
             },
           )
-          .get("/stats", async ({ store }) => {
-            const adminDatabaseService = store.getAdminDatabaseService();
-            return await adminDatabaseService.getExplanationStats();
-          })
+          .get(
+            "/stats",
+            async ({ store }) => {
+              const adminDatabaseService = store.getAdminDatabaseService();
+              return await adminDatabaseService.getExplanationStats();
+            },
+            {
+              response: {
+                200: StatsResponse,
+                ...AuthErrors,
+              },
+            },
+          )
           .group("/prompts", (app) =>
             app
               // GET all prompts
-              .get("/system", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.getAllSystemPrompts();
-              })
-              .get("/user", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.getAllUserPrompts();
-              })
-              .get("/explanation-types", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.getAllExplanationTypes();
-              })
+              .get(
+                "/system",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.getAllSystemPrompts();
+                },
+                {
+                  response: {
+                    200: SystemPromptsListResponse,
+                    ...AuthErrors,
+                  },
+                },
+              )
+              .get(
+                "/user",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.getAllUserPrompts();
+                },
+                {
+                  response: {
+                    200: UserPromptsListResponse,
+                    ...AuthErrors,
+                  },
+                },
+              )
+              .get(
+                "/explanation-types",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.getAllExplanationTypes();
+                },
+                {
+                  response: {
+                    200: ExplanationTypesResponse,
+                    ...AuthErrors,
+                  },
+                },
+              )
               // CREATE prompts
               .post(
                 "/system",
@@ -604,7 +954,13 @@ const plugin = new Elysia()
                   const adminPromptService = store.getAdminPromptService();
                   return adminPromptService.createSystemPrompt(body.prompt);
                 },
-                { body: t.Object({ prompt: t.String() }) },
+                {
+                  body: t.Object({ prompt: t.String() }),
+                  response: {
+                    201: CreatePromptResponse,
+                    ...StandardErrors,
+                  },
+                },
               )
               .post(
                 "/user",
@@ -626,6 +982,10 @@ const plugin = new Elysia()
                     ]),
                     prompt_template: t.String(),
                   }),
+                  response: {
+                    201: CreatePromptResponse,
+                    ...StandardErrors,
+                  },
                 },
               )
               // UPDATE prompts
@@ -641,6 +1001,11 @@ const plugin = new Elysia()
                 {
                   body: t.Object({ prompt: t.String() }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: UpdatePromptResponse,
+                    ...StandardErrors,
+                    404: ErrorResponse,
+                  },
                 },
               )
               .put(
@@ -655,17 +1020,44 @@ const plugin = new Elysia()
                 {
                   body: t.Object({ prompt_template: t.String() }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: UpdatePromptResponse,
+                    ...StandardErrors,
+                    404: ErrorResponse,
+                  },
                 },
               )
               // DELETE prompts
-              .delete("/system/:id", async ({ params, store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.deleteSystemPrompt(Number(params.id));
-              })
-              .delete("/user/:id", async ({ params, store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.deleteUserPrompt(Number(params.id));
-              })
+              .delete(
+                "/system/:id",
+                async ({ params, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.deleteSystemPrompt(
+                    Number(params.id),
+                  );
+                },
+                {
+                  response: {
+                    200: DeletePromptResponse,
+                    ...AuthErrors,
+                    404: ErrorResponse,
+                  },
+                },
+              )
+              .delete(
+                "/user/:id",
+                async ({ params, store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.deleteUserPrompt(Number(params.id));
+                },
+                {
+                  response: {
+                    200: DeletePromptResponse,
+                    ...AuthErrors,
+                    404: ErrorResponse,
+                  },
+                },
+              )
               // SET STATUS of prompts
               .put(
                 "/system/:id/status",
@@ -679,6 +1071,11 @@ const plugin = new Elysia()
                 {
                   body: t.Object({ status: t.Enum(PromptStatusEnum) }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: PromptStatusResponse,
+                    ...StandardErrors,
+                    404: ErrorResponse,
+                  },
                 },
               )
               .put(
@@ -698,13 +1095,27 @@ const plugin = new Elysia()
                     ]),
                   }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: PromptStatusResponse,
+                    ...StandardErrors,
+                    404: ErrorResponse,
+                  },
                 },
               )
               // RESTORE defaults
-              .post("/restore-defaults", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.restoreDefaults();
-              })
+              .post(
+                "/restore-defaults",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.restoreDefaults();
+                },
+                {
+                  response: {
+                    200: RestoreDefaultsResponse,
+                    ...AuthErrors,
+                  },
+                },
+              )
               // PLAYGROUND
               .post(
                 "/playground",
@@ -727,6 +1138,10 @@ const plugin = new Elysia()
                     ]),
                     send_chapter_context: t.Boolean(),
                   }),
+                  response: {
+                    200: PlaygroundResponse,
+                    ...StandardErrors,
+                  },
                 },
               )
               .get(
@@ -747,21 +1162,35 @@ const plugin = new Elysia()
                     bible_version: t.String(),
                     explanation_type: t.String(),
                   }),
+                  response: {
+                    200: ExistingExplanationResponse,
+                    ...StandardErrors,
+                    404: ErrorResponse,
+                  },
                 },
               ),
           )
 
-          .get("/commentary/grades", async ({ store: { db } }) => {
-            return {
-              message: "Commentary grading feature - to be implemented",
-              grades: [],
-              stats: {
-                total: 0,
-                averageGrade: 0,
-                gradingCriteria: [],
+          .get(
+            "/commentary/grades",
+            async ({ store: { db } }) => {
+              return {
+                message: "Commentary grading feature - to be implemented",
+                grades: [],
+                stats: {
+                  total: 0,
+                  averageGrade: 0,
+                  gradingCriteria: [],
+                },
+              };
+            },
+            {
+              response: {
+                200: CommentaryGradesResponse,
+                ...AuthErrors,
               },
-            };
-          })
+            },
+          )
           .post(
             "/commentary/grade",
             async ({ body, store: { db } }) => {
@@ -776,6 +1205,10 @@ const plugin = new Elysia()
                 explanationId: t.String(),
                 criteria: t.Array(t.String()),
               }),
+              response: {
+                200: CommentaryGradeResponse,
+                ...StandardErrors,
+              },
             },
           );
       });

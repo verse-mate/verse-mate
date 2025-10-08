@@ -4,6 +4,17 @@ import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import OpenAI from "openai";
 import { authDerive } from "../auth/auth.utils";
+import { createErrorHandler } from "../common/error-handler";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../common/errors";
+import {
+  AuthErrors,
+  ErrorResponse,
+  StandardErrors,
+} from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
@@ -46,6 +57,131 @@ async function gpt5Text({
 
 import { getExplanationTypePrompt } from "../shared/prompt-utils";
 
+// Response Schemas
+const BooksResponse = t.Object({
+  books: t.Array(t.Any()),
+});
+
+const LanguagesResponse = t.Array(t.Any());
+
+const BookResponse = t.Any();
+
+const ExplanationResponse = t.Object({
+  explanation: t.Any(),
+});
+
+const TestamentsResponse = t.Object({
+  testaments: t.Array(t.Any()),
+});
+
+const ChapterIdResponse = t.Object({
+  chapter_id: t.Union([t.Number(), t.Null()]),
+});
+
+const UserChatHistoryResponse = t.Object({
+  userChatHistory: t.Any(),
+});
+
+const MessagesHistoryResponse = t.Object({
+  messagesHistory: t.Any(),
+});
+
+const ChatExistsResponse = t.Object({
+  chatExists: t.Boolean(),
+});
+
+const NewConversationResponse = t.Object({
+  newConversation: t.Any(),
+  generatedTitle: t.String(),
+});
+
+const SaveRatingResponse = t.Object({
+  result: t.Any(),
+});
+
+const UpdateRatingResponse = t.Object({
+  result: t.Any(),
+});
+
+const RatingsResponse = t.Object({
+  userRating: t.Any(),
+  totalUsersWhoRated: t.Number(),
+  averageRating: t.Any(),
+});
+
+const LastChapterReadSaveResponse = t.Object({
+  result: t.Any(),
+});
+
+const LastChapterReadResponse = t.Object({
+  result: t.Any(),
+});
+
+const SaveUserMessageResponse = t.Object({
+  result: t.Any(),
+});
+
+const SaveAiMessageResponse = t.Object({
+  result: t.Any(),
+});
+
+const DisableChatResponse = t.Object({
+  disabledChat: t.Number(),
+});
+
+const BookmarksResponse = t.Object({
+  favorites: t.Array(t.Any()),
+});
+
+const NotesResponse = t.Object({
+  notes: t.Array(t.Any()),
+});
+
+const AddNoteResponse = t.Object({
+  success: t.Boolean(),
+  note: t.Optional(t.Any()),
+});
+
+const UpdateNoteResponse = t.Object({
+  success: t.Boolean(),
+});
+
+const DeleteNoteResponse = t.Object({
+  success: t.Boolean(),
+});
+
+const AddBookmarkResponse = t.Object({
+  success: t.Boolean(),
+});
+
+const RemoveBookmarkResponse = t.Object({
+  success: t.Boolean(),
+});
+
+const HighlightsResponse = t.Object({
+  highlights: t.Array(t.Any()),
+});
+
+const AddHighlightResponse = t.Union([
+  t.Object({
+    success: t.Boolean(),
+    highlight: t.Optional(t.Any()),
+  }),
+  t.Object({
+    success: t.Boolean(),
+    error: t.Optional(t.String()),
+  }),
+]);
+
+const UpdateHighlightResponse = t.Object({
+  highlight: t.Optional(t.Any()),
+  success: t.Boolean(),
+});
+
+const DeleteHighlightResponse = t.Object({
+  success: t.Boolean(),
+});
+
 function getLanguageName(code: string, locale = "en"): string {
   const display = new Intl.DisplayNames([locale], { type: "language" });
 
@@ -63,6 +199,7 @@ The response should be in ${language} using Markdown format only.`;
 
 const plugin = new Elysia()
   .use(shared)
+  .onError(createErrorHandler("bible plugin"))
   .state((state) => {
     return {
       ...state,
@@ -79,18 +216,36 @@ const plugin = new Elysia()
   })
   .group("/bible", (app) =>
     app
-      .get("/books", async () => {
-        const metadataFile = Bun.file(
-          `${import.meta.dir}/data/key_english.json`,
-        );
-        const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
-        const bible = await parseBibleData(bibleFile, metadataFile);
+      .get(
+        "/books",
+        async () => {
+          const metadataFile = Bun.file(
+            `${import.meta.dir}/data/key_english.json`,
+          );
+          const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
+          const bible = await parseBibleData(bibleFile, metadataFile);
 
-        return { books: bible.books };
-      })
-      .get("/languages", async ({ store: { bibleService } }) => {
-        return await bibleService.getAvailableExplanationLanguages();
-      })
+          return { books: bible.books };
+        },
+        {
+          response: {
+            200: BooksResponse,
+            ...AuthErrors,
+          },
+        },
+      )
+      .get(
+        "/languages",
+        async ({ store: { bibleService } }) => {
+          return await bibleService.getAvailableExplanationLanguages();
+        },
+        {
+          response: {
+            200: LanguagesResponse,
+            ...AuthErrors,
+          },
+        },
+      )
       .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {
@@ -105,7 +260,7 @@ const plugin = new Elysia()
             .executeTakeFirst();
 
           if (!version) {
-            throw new Error("Invalid bible version");
+            throw new NotFoundError("Invalid bible version");
           }
 
           const book = await bibleService.getBook({
@@ -120,6 +275,11 @@ const plugin = new Elysia()
           query: t.Object({
             versionKey: t.Optional(t.String()),
           }),
+          response: {
+            200: BookResponse,
+            ...AuthErrors,
+            404: ErrorResponse,
+          },
         },
       )
       .use(bearer())
@@ -143,7 +303,7 @@ const plugin = new Elysia()
             .executeTakeFirst();
 
           if (!version) {
-            return { status: 400, body: { error: "Invalid bible version" } };
+            throw new NotFoundError("Invalid bible version");
           }
 
           const explanation = await bibleService.getExplanation({
@@ -220,12 +380,26 @@ const plugin = new Elysia()
             versionKey: t.Optional(t.String()),
             explanationType: t.Optional(t.String()),
           }),
+          response: {
+            200: ExplanationResponse,
+            ...AuthErrors,
+            404: ErrorResponse,
+          },
         },
       )
-      .get("/testaments", async ({ store: { bibleService } }) => {
-        const { testaments } = await bibleService.getTestaments();
-        return { testaments: testaments };
-      })
+      .get(
+        "/testaments",
+        async ({ store: { bibleService } }) => {
+          const { testaments } = await bibleService.getTestaments();
+          return { testaments: testaments.keys };
+        },
+        {
+          response: {
+            200: TestamentsResponse,
+            ...AuthErrors,
+          },
+        },
+      )
       .get(
         "/chapter-id/:bookId/:chapterNumber",
         async ({ params, store: { db } }) => {
@@ -234,23 +408,27 @@ const plugin = new Elysia()
           // Create repository instance to get chapter ID
           const bibleRepository = new BibleRepository(db);
 
-          try {
-            const { chapter_id } = await bibleRepository.getChapterId({
-              book_id: Number(bookId),
-              chapter_number: Number(chapterNumber),
-            });
+          const { chapter_id } = await bibleRepository.getChapterId({
+            book_id: Number(bookId),
+            chapter_number: Number(chapterNumber),
+          });
 
-            return { chapter_id };
-          } catch (error) {
-            console.error("Error getting chapter ID:", error);
-            return { chapter_id: null, error: "Failed to get chapter ID" };
+          if (chapter_id == null) {
+            throw new NotFoundError("Chapter not found");
           }
+
+          return { chapter_id };
         },
         {
           params: t.Object({
             bookId: t.String(),
             chapterNumber: t.String(),
           }),
+          response: {
+            200: ChapterIdResponse,
+            ...AuthErrors,
+            404: ErrorResponse,
+          },
         },
       )
       .post(
@@ -263,6 +441,10 @@ const plugin = new Elysia()
         },
         {
           body: ChatHistoryDto,
+          response: {
+            200: UserChatHistoryResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -276,6 +458,10 @@ const plugin = new Elysia()
         },
         {
           body: MessageHistoryDto,
+          response: {
+            200: MessagesHistoryResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -286,18 +472,26 @@ const plugin = new Elysia()
             book_id: body.book_id,
             chapter_number: body.chapter_number,
           });
-          return { chatExists };
+          return {
+            chatExists: Array.isArray(chatExists) && chatExists.length > 0,
+          };
         },
         {
           body: t.Intersect([
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
           ]),
+          response: {
+            200: ChatExistsResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
         "/book/new-conversation",
         async ({ body, store: { chatService, bibleService, db }, query }) => {
-          if (!body.user_id) return { message: "User ID is required" };
+          if (!body.user_id) {
+            throw new ValidationError("User ID is required");
+          }
           const { versionKey = "NASB1995" } = query;
 
           const version = await db
@@ -308,7 +502,7 @@ const plugin = new Elysia()
             .executeTakeFirst();
 
           if (!version) {
-            return { status: 400, body: { error: "Invalid bible version" } };
+            throw new NotFoundError("Invalid bible version");
           }
 
           const { book } = await bibleService.getBook({
@@ -318,7 +512,7 @@ const plugin = new Elysia()
           });
 
           if (!book) {
-            return { error: "book not found" };
+            throw new NotFoundError("Book not found");
           }
 
           const testamentMap = {
@@ -377,6 +571,11 @@ const plugin = new Elysia()
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
             t.Pick(AddMessageDto, ["content"]),
           ]),
+          response: {
+            200: NewConversationResponse,
+            ...StandardErrors,
+            404: ErrorResponse,
+          },
         },
       )
       .post(
@@ -393,6 +592,10 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
+          response: {
+            200: SaveRatingResponse,
+            ...AuthErrors,
+          },
         },
       )
       .put(
@@ -411,6 +614,10 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
+          response: {
+            200: UpdateRatingResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -443,6 +650,10 @@ const plugin = new Elysia()
         },
         {
           body: t.Omit(RatingDto, ["rating"]),
+          response: {
+            200: RatingsResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -461,6 +672,10 @@ const plugin = new Elysia()
             t.Pick(LastChapterReadDto, ["book_id", "chapter_number"]),
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
+          response: {
+            200: LastChapterReadSaveResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -476,6 +691,10 @@ const plugin = new Elysia()
           body: t.Intersect([
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
+          response: {
+            200: LastChapterReadResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -491,6 +710,10 @@ const plugin = new Elysia()
         },
         {
           body: t.Pick(AddMessageDto, ["chat_id", "content"]),
+          response: {
+            200: SaveUserMessageResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -506,7 +729,7 @@ const plugin = new Elysia()
             .executeTakeFirst();
 
           if (!version) {
-            return { status: 400, body: { error: "Invalid bible version" } };
+            throw new NotFoundError("Invalid bible version");
           }
 
           const { book } = await bibleService.getBook({
@@ -516,7 +739,7 @@ const plugin = new Elysia()
           });
 
           if (!book) {
-            return { error: "book not found" };
+            throw new NotFoundError("Book not found");
           }
 
           const testamentMap = {
@@ -562,6 +785,11 @@ const plugin = new Elysia()
             t.Pick(AddMessageDto, ["chat_id", "content"]),
             t.Pick(ChapterDto, ["book_id", "chapter_number"]),
           ]),
+          response: {
+            200: SaveAiMessageResponse,
+            ...AuthErrors,
+            404: ErrorResponse,
+          },
         },
       )
       .delete(
@@ -571,10 +799,14 @@ const plugin = new Elysia()
           const disabledChat = await chatService.disableChat({
             conversation_id: Number(conversation_id),
           });
-          return { disabledChat: disabledChat.chat_id };
+          return { disabledChat: disabledChat.chat_id ?? 0 };
         },
         {
           params: t.Pick(ChatDto, ["conversation_id"]),
+          response: {
+            200: DisableChatResponse,
+            ...AuthErrors,
+          },
         },
       )
       .get(
@@ -590,37 +822,23 @@ const plugin = new Elysia()
               : "Not set",
           });
 
-          try {
-            console.log(
-              "Attempting to get bookmarks for user:",
-              params.user_id,
-            );
-            const { favorites } = await bibleService.getBookmarks({
-              id: params.user_id,
-            });
+          console.log("Attempting to get bookmarks for user:", params.user_id);
+          const { favorites } = await bibleService.getBookmarks({
+            id: params.user_id,
+          });
 
-            console.log(
-              "Successfully retrieved bookmarks, count:",
-              favorites.length,
-            );
-            return { favorites };
-          } catch (error) {
-            console.error("ERROR in GET /book/bookmarks/:user_id:", error);
-            if (error instanceof Error) {
-              console.error("Error details:", error.message);
-              console.error("Error stack:", error.stack);
-            }
-
-            // Return a more detailed error response instead of just failing with 500
-            return {
-              error: "Failed to retrieve bookmarks",
-              details: error instanceof Error ? error.message : String(error),
-              favorites: [],
-            };
-          }
+          console.log(
+            "Successfully retrieved bookmarks, count:",
+            favorites.length,
+          );
+          return { favorites };
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+          response: {
+            200: BookmarksResponse,
+            ...AuthErrors,
+          },
         },
       )
       .get(
@@ -629,62 +847,52 @@ const plugin = new Elysia()
           console.log("=== GET /book/notes/:user_id ENDPOINT ===");
           console.log("Request params:", params);
 
-          try {
-            console.log("Attempting to get notes for user:", params.user_id);
-            const { notes } = await bibleService.getNotes({
-              id: params.user_id,
-            });
+          console.log("Attempting to get notes for user:", params.user_id);
+          const { notes } = await bibleService.getNotes({
+            id: params.user_id,
+          });
 
-            console.log("Successfully retrieved notes, count:", notes.length);
-            return { notes };
-          } catch (error) {
-            console.error("ERROR in GET /book/notes/:user_id:", error);
-            return {
-              error: "Failed to retrieve notes",
-              details: error instanceof Error ? error.message : String(error),
-              notes: [],
-            };
-          }
+          console.log("Successfully retrieved notes, count:", notes.length);
+          return { notes };
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+          response: {
+            200: NotesResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
         "/book/note/add",
         async ({ body, store: { bibleService } }) => {
-          try {
-            console.log("Adding note:", body);
+          console.log("Adding note:", body);
 
-            const content =
-              typeof body.content === "string" ? body.content.trim() : "";
-            if (
-              !body.user_id ||
-              !body.book_id ||
-              !body.chapter_number ||
-              !content
-            ) {
-              console.error("Missing required fields for adding note");
-              return { success: false, error: "Missing required fields" };
-            }
-
-            // Normalize verse_id: keep a number or leave undefined; repo converts to null
-            const verse_id =
-              typeof body.verse_id === "number" ? body.verse_id : undefined;
-
-            const { note } = await bibleService.addNote({
-              user_id: body.user_id,
-              book_id: body.book_id,
-              chapter_number: body.chapter_number,
-              verse_id,
-              content,
-            });
-
-            return { success: true, note };
-          } catch (error) {
-            console.error("Error adding note:", error);
-            return { success: false, error: "Failed to add note" };
+          const content =
+            typeof body.content === "string" ? body.content.trim() : "";
+          if (
+            !body.user_id ||
+            !body.book_id ||
+            !body.chapter_number ||
+            !content
+          ) {
+            console.error("Missing required fields for adding note");
+            throw new ValidationError("Missing required fields");
           }
+
+          // Normalize verse_id: keep a number or leave undefined; repo converts to null
+          const verse_id =
+            typeof body.verse_id === "number" ? body.verse_id : undefined;
+
+          const { note } = await bibleService.addNote({
+            user_id: body.user_id,
+            book_id: body.book_id,
+            chapter_number: body.chapter_number,
+            verse_id,
+            content,
+          });
+
+          return { success: true, note };
         },
         {
           body: t.Object({
@@ -694,97 +902,85 @@ const plugin = new Elysia()
             verse_id: t.Optional(t.Number()),
             content: t.String(),
           }),
+          response: {
+            200: AddNoteResponse,
+            ...StandardErrors,
+          },
         },
       )
       .put(
         "/book/note/update",
         async ({ body, store: { bibleService } }) => {
-          try {
-            console.log("Updating note:", body);
+          console.log("Updating note:", body);
 
-            if (!body.note_id || !body.content) {
-              console.error("Missing required fields for updating note");
-              return { success: false, error: "Missing required fields" };
-            }
-
-            const { success } = await bibleService.updateNote(
-              body.note_id,
-              body.content,
-            );
-
-            return { success };
-          } catch (error) {
-            console.error("Error updating note:", error);
-            return { success: false, error: "Failed to update note" };
+          if (!body.note_id || !body.content) {
+            console.error("Missing required fields for updating note");
+            throw new ValidationError("Missing required fields");
           }
+
+          const { success } = await bibleService.updateNote(
+            body.note_id,
+            body.content,
+          );
+
+          return { success };
         },
         {
           body: t.Object({
             note_id: t.String({ format: "uuid" }),
             content: t.String(),
           }),
+          response: {
+            200: UpdateNoteResponse,
+            ...StandardErrors,
+          },
         },
       )
       .delete(
         "/book/note/remove",
         async ({ query, store: { bibleService } }) => {
-          try {
-            console.log("Removing note - query params:", query);
+          console.log("Removing note - query params:", query);
 
-            if (!query.note_id) {
-              console.error("Missing note_id for removing note");
-              return { success: false, error: "Missing note_id" };
-            }
-
-            const { success } = await bibleService.deleteNote(query.note_id);
-
-            return { success };
-          } catch (error) {
-            console.error("Error removing note:", error);
-            return {
-              success: false,
-              error: "Failed to remove note",
-            };
+          if (!query.note_id) {
+            console.error("Missing note_id for removing note");
+            throw new ValidationError("Missing note_id");
           }
+
+          const { success } = await bibleService.deleteNote(query.note_id);
+
+          return { success };
         },
         {
           query: t.Object({
             note_id: t.String({ format: "uuid" }),
           }),
+          response: {
+            200: DeleteNoteResponse,
+            ...StandardErrors,
+          },
         },
       )
       .post(
         "/book/bookmark/add",
         async ({ body, store: { bibleService } }) => {
-          try {
-            console.log("Adding bookmark:", body);
+          console.log("Adding bookmark:", body);
 
-            if (
-              !body.user_id ||
-              !body.book_id ||
-              body.chapter_number === undefined
-            ) {
-              console.error("Missing required fields for adding bookmark");
-              return {
-                success: false,
-                error: "Missing required fields",
-              };
-            }
-
-            const { success } = await bibleService.addBookmark({
-              user_id: body.user_id,
-              book_id: body.book_id,
-              chapter_number: body.chapter_number,
-            });
-
-            return { success };
-          } catch (error) {
-            console.error("Error adding bookmark:", error);
-            return {
-              success: false,
-              error: "Failed to add bookmark",
-            };
+          if (
+            !body.user_id ||
+            !body.book_id ||
+            body.chapter_number === undefined
+          ) {
+            console.error("Missing required fields for adding bookmark");
+            throw new ValidationError("Missing required fields");
           }
+
+          const { success } = await bibleService.addBookmark({
+            user_id: body.user_id,
+            book_id: body.book_id,
+            chapter_number: body.chapter_number,
+          });
+
+          return { success };
         },
         {
           body: t.Object({
@@ -792,46 +988,39 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: AddBookmarkResponse,
+            ...StandardErrors,
+          },
         },
       )
       .delete(
         "/book/bookmark/remove",
         async ({ query, store: { bibleService } }) => {
-          try {
-            console.log("Removing bookmark - query params:", query);
+          console.log("Removing bookmark - query params:", query);
 
-            const user_id = query.user_id;
-            const book_id = Number(query.book_id);
-            const chapter_number = Number(query.chapter_number);
+          const user_id = query.user_id;
+          const book_id = Number(query.book_id);
+          const chapter_number = Number(query.chapter_number);
 
-            if (
-              !user_id ||
-              Number.isNaN(book_id) ||
-              Number.isNaN(chapter_number)
-            ) {
-              console.error(
-                "Missing or invalid required fields for removing bookmark",
-              );
-              return {
-                success: false,
-                error: "Missing or invalid required fields",
-              };
-            }
-
-            const { success } = await bibleService.removeBookmark({
-              user_id,
-              book_id,
-              chapter_number,
-            });
-
-            return { success };
-          } catch (error) {
-            console.error("Error removing bookmark:", error);
-            return {
-              success: false,
-              error: "Failed to remove bookmark",
-            };
+          if (
+            !user_id ||
+            Number.isNaN(book_id) ||
+            Number.isNaN(chapter_number)
+          ) {
+            console.error(
+              "Missing or invalid required fields for removing bookmark",
+            );
+            throw new ValidationError("Missing or invalid required fields");
           }
+
+          const { success } = await bibleService.removeBookmark({
+            user_id,
+            book_id,
+            chapter_number,
+          });
+
+          return { success };
         },
         {
           query: t.Object({
@@ -839,49 +1028,40 @@ const plugin = new Elysia()
             book_id: t.String(),
             chapter_number: t.String(),
           }),
+          response: {
+            200: RemoveBookmarkResponse,
+            ...StandardErrors,
+          },
         },
       )
       .post(
         "/book/bookmark/remove",
         async ({ body, request, store: { bibleService } }) => {
-          try {
-            console.log("POST method for removing bookmark:", body);
-            console.log("Headers:", request.headers);
+          console.log("POST method for removing bookmark:", body);
+          console.log("Headers:", request.headers);
 
-            // Check if this is meant to be a DELETE request
-            const methodOverride = request.headers.get(
-              "x-http-method-override",
-            );
-            if (methodOverride && methodOverride.toLowerCase() !== "delete") {
-              console.warn(`Unexpected method override: ${methodOverride}`);
-            }
-
-            if (
-              !body.user_id ||
-              !body.book_id ||
-              body.chapter_number === undefined
-            ) {
-              console.error("Missing required fields for removing bookmark");
-              return {
-                success: false,
-                error: "Missing required fields",
-              };
-            }
-
-            const { success } = await bibleService.removeBookmark({
-              user_id: body.user_id,
-              book_id: body.book_id,
-              chapter_number: body.chapter_number,
-            });
-
-            return { success };
-          } catch (error) {
-            console.error("Error removing bookmark via POST:", error);
-            return {
-              success: false,
-              error: "Failed to remove bookmark",
-            };
+          // Check if this is meant to be a DELETE request
+          const methodOverride = request.headers.get("x-http-method-override");
+          if (methodOverride && methodOverride.toLowerCase() !== "delete") {
+            console.warn(`Unexpected method override: ${methodOverride}`);
           }
+
+          if (
+            !body.user_id ||
+            !body.book_id ||
+            body.chapter_number === undefined
+          ) {
+            console.error("Missing required fields for removing bookmark");
+            throw new ValidationError("Missing required fields");
+          }
+
+          const { success } = await bibleService.removeBookmark({
+            user_id: body.user_id,
+            book_id: body.book_id,
+            chapter_number: body.chapter_number,
+          });
+
+          return { success };
         },
         {
           body: t.Object({
@@ -889,6 +1069,10 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: RemoveBookmarkResponse,
+            ...StandardErrors,
+          },
         },
       )
       // Highlight endpoints
@@ -898,28 +1082,24 @@ const plugin = new Elysia()
           console.log("=== GET /highlights/:user_id ENDPOINT ===");
           console.log("Getting all highlights for user:", params.user_id);
 
-          try {
-            const { highlights } = await bibleService.getUserHighlights({
-              user_id: params.user_id,
-            });
+          const { highlights } = await bibleService.getUserHighlights({
+            user_id: params.user_id,
+          });
 
-            console.log(
-              "Successfully retrieved highlights, count:",
-              highlights.length,
-            );
-            return { highlights };
-          } catch (error) {
-            console.error("ERROR in GET /highlights/:user_id:", error);
-            return {
-              highlights: [],
-              error: "Failed to retrieve highlights",
-            };
-          }
+          console.log(
+            "Successfully retrieved highlights, count:",
+            highlights.length,
+          );
+          return { highlights };
         },
         {
           params: t.Object({
             user_id: t.String({ format: "uuid" }),
           }),
+          response: {
+            200: HighlightsResponse,
+            ...AuthErrors,
+          },
         },
       )
       .get(
@@ -937,25 +1117,17 @@ const plugin = new Elysia()
             params.chapter_number,
           );
 
-          try {
-            const { highlights } = await bibleService.getChapterHighlights({
-              user_id: params.user_id,
-              book_id: params.book_id,
-              chapter_number: params.chapter_number,
-            });
+          const { highlights } = await bibleService.getChapterHighlights({
+            user_id: params.user_id,
+            book_id: params.book_id,
+            chapter_number: params.chapter_number,
+          });
 
-            console.log(
-              "Successfully retrieved chapter highlights, count:",
-              highlights.length,
-            );
-            return { highlights };
-          } catch (error) {
-            console.error("ERROR in GET chapter highlights:", error);
-            return {
-              highlights: [],
-              error: "Failed to retrieve chapter highlights",
-            };
-          }
+          console.log(
+            "Successfully retrieved chapter highlights, count:",
+            highlights.length,
+          );
+          return { highlights };
         },
         {
           params: t.Object({
@@ -963,6 +1135,10 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: HighlightsResponse,
+            ...AuthErrors,
+          },
         },
       )
       .post(
@@ -978,30 +1154,22 @@ const plugin = new Elysia()
             !body.end_verse
           ) {
             console.error("Missing required fields for adding highlight");
-            return { success: false, error: "Missing required fields" };
+            throw new ValidationError("Missing required fields");
           }
 
-          try {
-            const result = await bibleService.createHighlight({
-              user_id: body.user_id,
-              book_id: body.book_id,
-              chapter_number: body.chapter_number,
-              start_verse: body.start_verse,
-              end_verse: body.end_verse,
-              color: body.color as any,
-              start_char: body.start_char,
-              end_char: body.end_char,
-              selected_text: body.selected_text,
-            });
+          const result = await bibleService.createHighlight({
+            user_id: body.user_id,
+            book_id: body.book_id,
+            chapter_number: body.chapter_number,
+            start_verse: body.start_verse,
+            end_verse: body.end_verse,
+            color: body.color as any,
+            start_char: body.start_char,
+            end_char: body.end_char,
+            selected_text: body.selected_text,
+          });
 
-            return result;
-          } catch (error) {
-            console.error("Error adding highlight:", error);
-            return {
-              success: false,
-              error: "Failed to add highlight",
-            };
-          }
+          return result;
         },
         {
           body: t.Object({
@@ -1015,6 +1183,10 @@ const plugin = new Elysia()
             end_char: t.Optional(t.Number()),
             selected_text: t.Optional(t.String()),
           }),
+          response: {
+            200: AddHighlightResponse,
+            ...StandardErrors,
+          },
         },
       )
       .put(
@@ -1027,22 +1199,14 @@ const plugin = new Elysia()
             body.color,
           );
 
-          try {
-            const { highlight, success } =
-              await bibleService.updateHighlightColor({
-                highlight_id: params.highlight_id,
-                user_id: body.user_id,
-                color: body.color as any,
-              });
+          const { highlight, success } =
+            await bibleService.updateHighlightColor({
+              highlight_id: params.highlight_id,
+              user_id: body.user_id,
+              color: body.color as any,
+            });
 
-            return { highlight, success };
-          } catch (error) {
-            console.error("Error updating highlight:", error);
-            return {
-              success: false,
-              error: "Failed to update highlight",
-            };
-          }
+          return { highlight, success };
         },
         {
           params: t.Object({
@@ -1052,39 +1216,36 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
             color: t.String(),
           }),
+          response: {
+            200: UpdateHighlightResponse,
+            ...AuthErrors,
+          },
         },
       )
       .delete(
         "/highlight/:highlight_id",
-        async ({ params, query, store: { bibleService } }) => {
+        async ({ params, currentUserId, store: { bibleService } }) => {
           console.log("Deleting highlight:", params.highlight_id);
 
-          if (!query.user_id) {
-            return { success: false, error: "Missing user_id" };
+          if (!currentUserId) {
+            throw new UnauthorizedError("Authentication required");
           }
 
-          try {
-            const { success } = await bibleService.deleteHighlight({
-              highlight_id: params.highlight_id,
-              user_id: query.user_id,
-            });
+          const { success } = await bibleService.deleteHighlight({
+            highlight_id: params.highlight_id,
+            user_id: currentUserId,
+          });
 
-            return { success };
-          } catch (error) {
-            console.error("Error deleting highlight:", error);
-            return {
-              success: false,
-              error: "Failed to delete highlight",
-            };
-          }
+          return { success };
         },
         {
           params: t.Object({
             highlight_id: t.Number(),
           }),
-          query: t.Object({
-            user_id: t.String({ format: "uuid" }),
-          }),
+          response: {
+            200: DeleteHighlightResponse,
+            ...StandardErrors,
+          },
         },
       ),
   );

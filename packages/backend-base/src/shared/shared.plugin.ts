@@ -6,6 +6,7 @@ import { Elysia, t } from "elysia";
 import { User } from "../user/entities/user.entity";
 import { UserService } from "../user/user.service";
 
+import { ErrorResponse } from "../common/response-models";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
@@ -30,35 +31,56 @@ const setup = new Elysia({ name: "shared" })
   .use(cors())
   .use(bearer())
   .use(jwt)
+  .model({
+    ErrorResponse,
+  })
   .state("db", Database)
   .state("cache", redisClient)
   .state("notification", new EmailNotificationConsumer())
   .state("batchMonitoringQueue", batchMonitoringQueue)
   .derive(async ({ jwt, cookie: { auth }, store }) => {
-    const payload = await jwt.verify(auth?.value);
-    if (!payload) {
+    let payload: any;
+    try {
+      payload = await jwt.verify(auth?.value as string | undefined);
+    } catch (e) {
+      console.warn("JWT verification failed");
       return { user: null };
     }
 
-    const userService = new UserService(store.db);
-    const user = await userService.findOne(payload.id as string);
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      typeof (payload as any).id !== "string" ||
+      !(payload as any).id
+    ) {
+      return { user: null };
+    }
 
-    return {
-      user,
-    };
+    try {
+      const userService = new UserService(store.db);
+      const user = await userService.findOne((payload as any).id);
+      if (!user) return { user: null };
+      return { user };
+    } catch (e) {
+      console.error("Failed to load user from store");
+      return { user: null };
+    }
   })
-  .macro(({ onBeforeHandle }) => {
-    return {
-      isAuthenticated() {
-        onBeforeHandle(({ user, set }) => {
-          if (!user) {
-            set.status = 401;
-            return "Unauthorized";
-          }
-        });
-      },
-    };
-  });
+  // @ts-expect-error - Elysia macro types are complex and not fully inferred
+  .macro(({ onBeforeHandle }: any) => ({
+    isAuthenticated() {
+      onBeforeHandle(({ user, set }: any) => {
+        if (!user) {
+          set.status = 401;
+          return {
+            error: "UNAUTHORIZED",
+            message: "Authentication required",
+            details: undefined,
+          };
+        }
+      });
+    },
+  }));
 
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
