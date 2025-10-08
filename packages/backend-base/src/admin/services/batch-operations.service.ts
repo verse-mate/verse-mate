@@ -2834,6 +2834,16 @@ export class BatchOperationService {
       console.log(
         `[BATCH_TOPIC_REFERENCES] Batch ${batchId} completed: ${processedCount} references added, ${errorCount} errors`,
       );
+
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({
+          explanations_processed: true,
+          status: errorCount > 0 ? "partial_failure" : "completed",
+        })
+        .where("openai_batch_id", "=", batchId)
+        .execute();
     } catch (error) {
       console.error(
         `[BATCH_TOPIC_REFERENCES] Error processing output file for batch ${batchId}:`,
