@@ -267,12 +267,31 @@ export class BatchOperationService {
     languageCode: string,
     explanationTypes: string[] = ["summary", "byline", "detailed"],
     effort: "low" | "medium" | "high" = "medium",
-    category?: string, // Add category parameter
-    topicId?: string, // Add topicId parameter for individual topic processing
+    category?: string,
+    topicId?: string,
   ) {
-    // Modify the query to filter by category if provided
-    let query = this.db
-      .getOrCreateConnection()
+    const connection = this.db.getOrCreateConnection();
+
+    // 1. Create the Parent Batch Job
+    const parentBatch = await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-explanations-parent",
+        status: "in_progress",
+        model,
+        created_by: adminUserId,
+        bible_version: languageCode,
+        explanation_types: explanationTypes,
+        topic_category: category || null,
+        topic_id: topicId || null,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    const parentBatchId = parentBatch.id;
+
+    // 2. Find all topics that need explanations
+    let query = connection
       .selectFrom("topics")
       .innerJoin(
         "topic_references",
@@ -297,7 +316,6 @@ export class BatchOperationService {
     if (category) {
       query = query.where("topics.category", "=", category);
     }
-
     if (topicId) {
       query = query.where("topics.topic_id", "=", topicId);
     }
@@ -305,36 +323,105 @@ export class BatchOperationService {
     const topics = await query.selectAll("topics").execute();
 
     if (topics.length === 0) {
-      throw new Error("No topics found that need explanations.");
+      // If no topics are found, update the parent batch to "completed" to avoid a hanging "in_progress" state.
+      await connection
+        .updateTable("batch_jobs")
+        .set({ status: "completed", total_requests: 0 })
+        .where("id", "=", parentBatchId)
+        .execute();
+      // We don't throw an error here to prevent a silent failure on the frontend.
+      // The frontend will simply show a completed batch with 0 children.
+      return {
+        success: true,
+        message: "No topics found that need new explanations.",
+        parentBatchId,
+      };
     }
 
-    const prompt =
-      await this.promptRepository.getUserPromptByType("topic-explanations");
-    if (!prompt) {
-      throw new Error("No active topic-explanations prompt found.");
-    }
+    // Update the parent batch with the total number of child batches to be created.
+    await connection
+      .updateTable("batch_jobs")
+      .set({ total_requests: topics.length })
+      .where("id", "=", parentBatchId)
+      .execute();
 
-    const batchRequests: BatchJobRequest[] = [];
-
-    // Create a batch request for each topic and explanation type combination
+    // 3. Loop through topics and create a child batch for each one
+    const batchResults = [];
     for (const topic of topics) {
-      for (const type of explanationTypes) {
-        batchRequests.push({
-          custom_id: `topic-explanations-${topic.topic_id}-${type}-${languageCode}-${Date.now()}`,
-          method: "POST",
-          url: "/v1/responses",
-          body: {
-            model,
-            reasoning: { effort },
-            instructions: "",
-            input: prompt.prompt_template
-              .replace("{topic_name}", topic.name)
-              .replace("{topic_description}", topic.description || "")
-              .replace("{explanation_type}", type),
-            max_output_tokens: 25000,
-          },
+      try {
+        const childBatch = await this.createSingleTopicExplanationBatch(
+          topic,
+          model,
+          adminUserId,
+          languageCode,
+          explanationTypes,
+          effort,
+          parentBatchId,
+        );
+        batchResults.push({ success: true, ...childBatch });
+      } catch (error) {
+        console.error(
+          `[BATCH] Error processing topic ${topic.name} for explanations:`,
+          error,
+        );
+        batchResults.push({
+          success: false,
+          topicId: topic.topic_id,
+          topicName: topic.name,
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
+    }
+
+    return {
+      success: true,
+      message: `Topic explanations batch creation started for ${topics.length} topics under parent batch ${parentBatchId}.`,
+      results: batchResults,
+      parentBatchId,
+    };
+  }
+
+  private async createSingleTopicExplanationBatch(
+    topic: any,
+    model: string,
+    adminUserId: string,
+    languageCode: string,
+    explanationTypes: string[],
+    effort: "low" | "medium" | "high",
+    parentBatchId: number,
+  ) {
+    const batchRequests: BatchJobRequest[] = [];
+
+    for (const type of explanationTypes) {
+      const prompt = await new UserPromptRepository(
+        this.db,
+      ).getActivePromptByType(`topic-${type}`);
+      if (!prompt) {
+        console.warn(`No active prompt found for type: topic-${type}`);
+        continue;
+      }
+
+      batchRequests.push({
+        custom_id: `topic-explanations-${topic.topic_id}-${type}-${languageCode}-${Date.now()}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: "",
+          input: prompt.prompt_template
+            .replace("{topic_name}", topic.name)
+            .replace("{topic_description}", topic.description || ""),
+          max_output_tokens: 25000,
+        },
+      });
+    }
+
+    if (batchRequests.length === 0) {
+      console.log(
+        `[BATCH] No prompts found for topic ${topic.name}. Skipping batch creation.`,
+      );
+      return;
     }
 
     const jsonlContent = batchRequests
@@ -345,7 +432,7 @@ export class BatchOperationService {
     const file = await openai.files.create({
       file: new File(
         [blob],
-        `topic_explanations_${languageCode}_${Date.now()}.jsonl`,
+        `topic_explanations_${topic.topic_id}_${languageCode}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
     });
@@ -366,11 +453,12 @@ export class BatchOperationService {
         model,
         total_requests: batchRequests.length,
         created_by: adminUserId,
-        bible_version: languageCode, // Using bible_version field to store language code
+        bible_version: languageCode,
         explanation_types: explanationTypes,
         target_language_code: languageCode,
-        topic_category: category || null, // Store category if provided
-        topic_id: topicId || null, // Store topic_id if provided
+        topic_category: topic.category,
+        topic_id: topic.topic_id,
+        parent_batch_id: parentBatchId,
       })
       .execute();
 

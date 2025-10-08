@@ -158,7 +158,8 @@ const ActionsMenu = ({
         >
           {job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
-          job.batch_type === "translate-bible" ? (
+          job.batch_type === "translate-bible" ||
+          job.batch_type === "topic-explanations-parent" ? (
             <>
               <Button
                 variant="outlined"
@@ -864,6 +865,8 @@ export const BatchOperations = () => {
           job.batch_type === "translate-bible"
         ) {
           displayText = "Entire Bible";
+        } else if (job.batch_type === "topic-explanations-parent") {
+          displayText = "Topic Explanations (Parent)";
         } else {
           displayText = job.book_name || "N/A";
         }
@@ -902,7 +905,8 @@ export const BatchOperations = () => {
         const isParentBatch =
           job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
-          job.batch_type === "translate-bible";
+          job.batch_type === "translate-bible" ||
+          job.batch_type === "topic-explanations-parent";
         const status =
           isParentBatch && summary ? summary.aggregate_status : job.status;
         const statusText =
