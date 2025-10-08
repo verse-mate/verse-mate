@@ -1305,6 +1305,7 @@ export class BatchOperationService {
         "completed_requests",
         "failed_requests",
         "explanations_processed",
+        "actual_cost",
       ])
       .executeTakeFirst();
 
@@ -1342,11 +1343,15 @@ export class BatchOperationService {
           .execute();
       }
 
+      const isFinished =
+        correctStatus === "completed" ||
+        correctStatus === "partial_failure" ||
+        correctStatus === "failed";
       const needsProcessing =
-        (correctStatus === "completed" ||
-          correctStatus === "partial_failure" ||
-          correctStatus === "failed") &&
-        !currentBatchJob.explanations_processed;
+        isFinished &&
+        (!currentBatchJob.explanations_processed ||
+          currentBatchJob.actual_cost === null ||
+          currentBatchJob.actual_cost === 0);
 
       if (needsProcessing) {
         console.log(
@@ -2805,10 +2810,19 @@ export class BatchOperationService {
 
       let processedCount = 0;
       let errorCount = 0;
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
 
       for (const line of lines) {
         try {
           const data = JSON.parse(line);
+
+          if (data.response?.body?.usage) {
+            totalPromptTokens += data.response.body.usage.input_tokens || 0;
+            totalCompletionTokens +=
+              data.response.body.usage.output_tokens || 0;
+          }
+
           const content = data.response.body.output[1].content[0].text;
           const topics = JSON.parse(content);
 
@@ -2836,18 +2850,28 @@ export class BatchOperationService {
         }
       }
 
+      const actualCost = await calculateActualCost(
+        totalPromptTokens,
+        totalCompletionTokens,
+        batchJob.model,
+      );
+
       await this.db
         .getOrCreateConnection()
         .updateTable("batch_jobs")
         .set({
           explanations_processed: true,
           status: errorCount > 0 ? "partial_failure" : "completed",
+          actual_cost: actualCost,
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          total_tokens: totalPromptTokens + totalCompletionTokens,
         })
         .where("openai_batch_id", "=", batchId)
         .execute();
 
       console.log(
-        `[BATCH] Processed ${processedCount} topics for batch ${batchId}. Errors: ${errorCount}`,
+        `[BATCH] Processed ${processedCount} topics for batch ${batchId}. Errors: ${errorCount}. Cost: $${actualCost.toFixed(4)}`,
       );
     } catch (error) {
       console.error(
@@ -2874,10 +2898,19 @@ export class BatchOperationService {
 
       let processedCount = 0;
       let errorCount = 0;
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
 
       for (const line of lines) {
         try {
           const data = JSON.parse(line);
+
+          if (data.response?.body?.usage) {
+            totalPromptTokens += data.response.body.usage.input_tokens || 0;
+            totalCompletionTokens +=
+              data.response.body.usage.output_tokens || 0;
+          }
+
           const content = data.response.body.output[1].content[0].text;
           const customId = data.custom_id;
 
@@ -2897,9 +2930,6 @@ export class BatchOperationService {
                 .execute();
 
               processedCount++;
-              console.log(
-                `[BATCH_TOPIC_REFERENCES] Added references for topic ${topicId}`,
-              );
             } catch (dbError) {
               errorCount++;
               console.error(
@@ -2922,8 +2952,10 @@ export class BatchOperationService {
         }
       }
 
-      console.log(
-        `[BATCH_TOPIC_REFERENCES] Batch ${batchId} completed: ${processedCount} references added, ${errorCount} errors`,
+      const actualCost = await calculateActualCost(
+        totalPromptTokens,
+        totalCompletionTokens,
+        batchJob.model,
       );
 
       await this.db
@@ -2932,9 +2964,17 @@ export class BatchOperationService {
         .set({
           explanations_processed: true,
           status: errorCount > 0 ? "partial_failure" : "completed",
+          actual_cost: actualCost,
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          total_tokens: totalPromptTokens + totalCompletionTokens,
         })
         .where("openai_batch_id", "=", batchId)
         .execute();
+
+      console.log(
+        `[BATCH_TOPIC_REFERENCES] Batch ${batchId} completed: ${processedCount} references added, ${errorCount} errors. Cost: $${actualCost.toFixed(4)}`,
+      );
     } catch (error) {
       console.error(
         `[BATCH_TOPIC_REFERENCES] Error processing output file for batch ${batchId}:`,
@@ -2960,17 +3000,25 @@ export class BatchOperationService {
 
       let processedCount = 0;
       let errorCount = 0;
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
 
       for (const line of lines) {
         try {
           const data = JSON.parse(line);
+
+          if (data.response?.body?.usage) {
+            totalPromptTokens += data.response.body.usage.input_tokens || 0;
+            totalCompletionTokens +=
+              data.response.body.usage.output_tokens || 0;
+          }
+
           const content = data.response.body.output[1].content[0].text;
           const customId = data.custom_id;
 
           if (content && customId) {
             try {
               // Parse custom ID to extract topic_id, explanation_type, and language_code
-              // Format: topic-explanations-{topic_id}-{explanation_type}-{language_code}-{timestamp}
               const parts = customId.split("-");
               if (parts.length >= 6) {
                 const topicId = parts[2];
@@ -3002,9 +3050,6 @@ export class BatchOperationService {
                   .execute();
 
                 processedCount++;
-                console.log(
-                  `[BATCH_TOPIC_EXPLANATIONS] Added ${explanationType} explanation for topic ${topicId} in ${languageCode}`,
-                );
               } else {
                 errorCount++;
                 console.warn(
@@ -3033,8 +3078,28 @@ export class BatchOperationService {
         }
       }
 
+      const actualCost = await calculateActualCost(
+        totalPromptTokens,
+        totalCompletionTokens,
+        batchJob.model,
+      );
+
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({
+          explanations_processed: true,
+          status: errorCount > 0 ? "partial_failure" : "completed",
+          actual_cost: actualCost,
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          total_tokens: totalPromptTokens + totalCompletionTokens,
+        })
+        .where("openai_batch_id", "=", batchId)
+        .execute();
+
       console.log(
-        `[BATCH_TOPIC_EXPLANATIONS] Batch ${batchId} completed: ${processedCount} explanations added, ${errorCount} errors`,
+        `[BATCH_TOPIC_EXPLANATIONS] Batch ${batchId} completed: ${processedCount} explanations added, ${errorCount} errors. Cost: $${actualCost.toFixed(4)}`,
       );
     } catch (error) {
       console.error(
