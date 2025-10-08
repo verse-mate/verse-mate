@@ -124,12 +124,12 @@ export class BatchOperationService {
       .map((request) => JSON.stringify(request))
       .join("\n");
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const buffer = Buffer.from(jsonlContent, "utf8");
     const file = await openai.files.create({
-      file: new File(
-        [blob],
-        `topic_discovery_${discoveryTopicType}_${Date.now()}.jsonl`,
-      ),
+      file: {
+        name: `topic_discovery_${discoveryTopicType}_${Date.now()}.jsonl`,
+        content: buffer,
+      } as any,
       purpose: "batch",
     });
 
@@ -195,7 +195,10 @@ export class BatchOperationService {
     const topics = await query.selectAll("topics").execute();
 
     if (topics.length === 0) {
-      throw new Error("No topics found that need references.");
+      return {
+        success: false,
+        message: "No topics found that need references; batch not created.",
+      };
     }
 
     const prompt =
@@ -223,9 +226,12 @@ export class BatchOperationService {
       .map((request) => JSON.stringify(request))
       .join("\n");
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const buffer = Buffer.from(jsonlContent, "utf8");
     const file = await openai.files.create({
-      file: new File([blob], `topic_references_${Date.now()}.jsonl`),
+      file: {
+        name: `topic_references_${Date.now()}.jsonl`,
+        content: buffer,
+      } as any,
       purpose: "batch",
     });
 
@@ -428,12 +434,12 @@ export class BatchOperationService {
       .map((request) => JSON.stringify(request))
       .join("\n");
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const buffer = Buffer.from(jsonlContent, "utf8");
     const file = await openai.files.create({
-      file: new File(
-        [blob],
-        `topic_explanations_${topic.topic_id}_${languageCode}_${Date.now()}.jsonl`,
-      ),
+      file: {
+        name: `topic_explanations_${topic.topic_id}_${languageCode}_${Date.now()}.jsonl`,
+        content: buffer,
+      } as any,
       purpose: "batch",
     });
 
@@ -536,12 +542,12 @@ export class BatchOperationService {
       effort,
     );
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const buffer = Buffer.from(jsonlContent, "utf8");
     const file = await openai.files.create({
-      file: new File(
-        [blob],
-        `batch_${bookId}_${bibleVersion}_${Date.now()}.jsonl`,
-      ),
+      file: {
+        name: `batch_${bookId}_${bibleVersion}_${Date.now()}.jsonl`,
+        content: buffer,
+      } as any,
       purpose: "batch",
     });
 
@@ -987,12 +993,12 @@ export class BatchOperationService {
       .map((request) => JSON.stringify(request))
       .join("\n");
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const buffer = Buffer.from(jsonlContent, "utf8");
     const file = await openai.files.create({
-      file: new File(
-        [blob],
-        `rephrase_batch_${book.book_id}_${Date.now()}.jsonl`,
-      ),
+      file: {
+        name: `rephrase_batch_${book.book_id}_${Date.now()}.jsonl`,
+        content: buffer,
+      } as any,
       purpose: "batch",
     });
 
@@ -1222,12 +1228,12 @@ export class BatchOperationService {
       `[BATCH] Generated JSONL content with ${batchRequests.length} requests`,
     );
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    const buffer = Buffer.from(jsonlContent, "utf8");
     const file = await openai.files.create({
-      file: new File(
-        [blob],
-        `translate_batch_${book.book_id}_${Date.now()}.jsonl`,
-      ),
+      file: {
+        name: `translate_batch_${book.book_id}_${Date.now()}.jsonl`,
+        content: buffer,
+      } as any,
       purpose: "batch",
     });
 
@@ -1344,14 +1350,12 @@ export class BatchOperationService {
       }
 
       const isFinished =
-        correctStatus === "completed" ||
-        correctStatus === "partial_failure" ||
-        correctStatus === "failed";
+        correctStatus === "completed" || correctStatus === "partial_failure";
       const needsProcessing =
         isFinished &&
+        !!outputFileId &&
         (!currentBatchJob.explanations_processed ||
-          currentBatchJob.actual_cost === null ||
-          currentBatchJob.actual_cost === 0);
+          currentBatchJob.actual_cost === null);
 
       if (needsProcessing) {
         console.log(
@@ -2823,20 +2827,68 @@ export class BatchOperationService {
               data.response.body.usage.output_tokens || 0;
           }
 
-          const content = data.response.body.output[1].content[0].text;
+          const output = data?.response?.body?.output;
+          let content: string | undefined;
+          if (Array.isArray(output)) {
+            // Try to find first text item anywhere in the output array
+            for (const item of output) {
+              const textNode = item?.content?.find?.(
+                (c: any) => typeof c?.text === "string",
+              );
+              if (textNode?.text) {
+                content = textNode.text;
+                break;
+              }
+              // Fallback: some SDKs return {type:'output_text', text:'...'}
+              if (typeof item?.text === "string") {
+                content = item.text;
+                break;
+              }
+            }
+          }
+
+          // Fallbacks for other response shapes
+          if (!content) {
+            content =
+              data?.response?.body?.output_text ??
+              data?.response?.body?.message?.content?.[0]?.text ??
+              data?.response?.body?.choices?.[0]?.message?.content;
+          }
+
+          if (!content || typeof content !== "string") {
+            errorCount++;
+            console.warn(
+              `[BATCH] Missing or invalid output text for batch ${batchId}`,
+            );
+            continue;
+          }
+
           const topics = JSON.parse(content);
 
           if (Array.isArray(topics)) {
             for (const topic of topics) {
+              if (!topic?.name || !topic?.category) {
+                errorCount++;
+                console.warn(
+                  "[BATCH_TOPIC_DISCOVERY] Skipping invalid topic payload",
+                  topic,
+                );
+                continue;
+              }
               await this.db
                 .getOrCreateConnection()
                 .insertInto("topics")
                 .values({
                   name: topic.name,
-                  description: topic.description,
+                  description: topic.description ?? null,
                   category: topic.category,
                 })
-                .onConflict((oc) => oc.column("topic_id").doNothing())
+                .onConflict((oc) =>
+                  oc.columns(["name", "category"]).doUpdateSet({
+                    description: topic.description ?? null,
+                    updated_at: new Date(),
+                  }),
+                )
                 .execute();
               processedCount++;
             }
@@ -2911,10 +2963,44 @@ export class BatchOperationService {
               data.response.body.usage.output_tokens || 0;
           }
 
-          const content = data.response.body.output[1].content[0].text;
+          const output = data?.response?.body?.output;
+          let content: string | undefined;
+          if (Array.isArray(output)) {
+            for (const item of output) {
+              const textNode = item?.content?.find?.(
+                (c: any) => typeof c?.text === "string",
+              );
+              if (textNode?.text) {
+                content = textNode.text;
+                break;
+              }
+              // Fallback: some SDKs return {type:'output_text', text:'...'}
+              if (typeof item?.text === "string") {
+                content = item.text;
+                break;
+              }
+            }
+          }
+
+          // Fallbacks for other response shapes
+          if (!content) {
+            content =
+              data?.response?.body?.output_text ??
+              data?.response?.body?.message?.content?.[0]?.text ??
+              data?.response?.body?.choices?.[0]?.message?.content;
+          }
+
+          if (!content) {
+            errorCount++;
+            console.warn(
+              `[BATCH_TOPIC_REFERENCES] Missing or invalid output text for batch ${batchId}`,
+            );
+            continue;
+          }
+
           const customId = data.custom_id;
 
-          if (content && customId) {
+          if (customId) {
             try {
               const topicId = customId.replace("topic-references-", "");
               await this.db
@@ -3013,49 +3099,97 @@ export class BatchOperationService {
               data.response.body.usage.output_tokens || 0;
           }
 
-          const content = data.response.body.output[1].content[0].text;
+          const output = data?.response?.body?.output;
+          let content: string | undefined;
+          if (Array.isArray(output)) {
+            // Try to find first text item anywhere in the output array
+            for (const item of output) {
+              const textNode = item?.content?.find?.(
+                (c: any) => typeof c?.text === "string",
+              );
+              if (textNode?.text) {
+                content = textNode.text;
+                break;
+              }
+              // Fallback: some SDKs return {type:'output_text', text:'...'}
+              if (typeof item?.text === "string") {
+                content = item.text;
+                break;
+              }
+            }
+          }
+
+          // Fallbacks for other response shapes
+          if (!content) {
+            content =
+              data?.response?.body?.output_text ??
+              data?.response?.body?.message?.content?.[0]?.text ??
+              data?.response?.body?.choices?.[0]?.message?.content;
+          }
+
+          if (!content || typeof content !== "string") {
+            errorCount++;
+            console.warn(
+              `[BATCH_TOPIC_EXPLANATIONS] Missing or invalid output text for batch ${batchId}`,
+            );
+            continue;
+          }
+
           const customId = data.custom_id;
 
-          if (content && customId) {
+          if (customId) {
             try {
               // Parse custom ID to extract topic_id, explanation_type, and language_code
-              const parts = customId.split("-");
-              if (parts.length >= 6) {
-                const topicId = parts[2];
-                const explanationType = parts[3];
-                const languageCode = parts[4];
-
-                await this.db
-                  .getOrCreateConnection()
-                  .insertInto("topic_explanations")
-                  .values({
-                    topic_id: topicId,
-                    type: explanationType,
-                    explanation: content,
-                    language_code: languageCode,
-                    is_active: true,
-                    default: false,
-                    version: 1,
-                  })
-                  .onConflict((oc) =>
-                    oc
-                      .columns(["topic_id", "language_code", "type"])
-                      .doUpdateSet({
-                        explanation: content,
-                        is_active: true,
-                        default: false,
-                        updated_at: new Date(),
-                      }),
-                  )
-                  .execute();
-
-                processedCount++;
-              } else {
+              // Format: topic-explanations-{topicId}-{type}-{lang}-{timestamp}
+              if (!customId.startsWith("topic-explanations-")) {
                 errorCount++;
                 console.warn(
-                  `[BATCH_TOPIC_EXPLANATIONS] Invalid custom ID format in batch ${batchId}: ${customId}`,
+                  `[BATCH_TOPIC_EXPLANATIONS] Unexpected custom_id prefix: ${customId}`,
                 );
+                continue;
               }
+              // Remove prefix and timestamp, keeping only the middle parts
+              const withoutPrefix = customId.replace("topic-explanations-", "");
+              const parts = withoutPrefix.split("-");
+              // Last part is timestamp, before that is lang, type, and everything else is topicId (which may contain hyphens)
+              if (parts.length < 3) {
+                errorCount++;
+                console.warn(
+                  `[BATCH_TOPIC_EXPLANATIONS] Invalid custom_id format: ${customId}`,
+                );
+                continue;
+              }
+              // Extract from end: timestamp, lang, type
+              const languageCode = parts[parts.length - 2];
+              const explanationType = parts[parts.length - 3];
+              // Everything else is the topicId (may contain hyphens)
+              const topicId = parts.slice(0, parts.length - 3).join("-");
+
+              await this.db
+                .getOrCreateConnection()
+                .insertInto("topic_explanations")
+                .values({
+                  topic_id: topicId,
+                  type: explanationType,
+                  explanation: content,
+                  language_code: languageCode,
+                  is_active: true,
+                  default: false,
+                  version: 1,
+                })
+                .onConflict((oc) =>
+                  oc
+                    .columns(["topic_id", "language_code", "type"])
+                    .doUpdateSet({
+                      explanation: content,
+                      is_active: true,
+                      default: false,
+                      updated_at: new Date(),
+                    }),
+                )
+                .execute();
+
+              processedCount++;
             } catch (dbError) {
               errorCount++;
               console.error(
@@ -3066,7 +3200,7 @@ export class BatchOperationService {
           } else {
             errorCount++;
             console.warn(
-              `[BATCH_TOPIC_EXPLANATIONS] Missing output text or custom ID in line for batch ${batchId}`,
+              `[BATCH_TOPIC_EXPLANATIONS] Missing custom ID in line for batch ${batchId}`,
             );
           }
         } catch (lineError) {

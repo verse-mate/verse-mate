@@ -14,11 +14,19 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
   // 2. Set default version for existing subtitles
   console.log("Setting default version for existing subtitles");
-  // Using raw SQL since type definitions don't include version_id yet
+  // Ensure default version exists before update
+  const nasb = await db
+    .selectFrom("bible_versions")
+    .select("id")
+    .where("version_key", "=", "NASB1995")
+    .executeTakeFirst();
+  if (!nasb) {
+    throw new Error(
+      "Default version 'NASB1995' not found. Seed bible_versions first.",
+    );
+  }
   await db.executeQuery(
-    sql`UPDATE subtitles SET version_id = (SELECT id FROM bible_versions WHERE version_key = 'NASB1995' LIMIT 1)`.compile(
-      db,
-    ),
+    sql`UPDATE subtitles SET version_id = ${nasb.id}`.compile(db),
   );
 
   // 3. Make version_id NOT NULL
@@ -30,8 +38,14 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
   // 4. Update unique constraint to include version_id
   console.log("Updating unique constraint to include version_id");
+  // Drop possible previous unique index/constraint variants
   await db.executeQuery(
     sql`DROP INDEX IF EXISTS idx_subtitles_chap_range`.compile(db),
+  );
+  await db.executeQuery(
+    sql`ALTER TABLE subtitles DROP CONSTRAINT IF EXISTS subtitles_chapter_id_start_verse_end_verse_key`.compile(
+      db,
+    ),
   );
 
   await db.executeQuery(
