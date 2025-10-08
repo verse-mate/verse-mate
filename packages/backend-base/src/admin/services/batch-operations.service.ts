@@ -1419,7 +1419,8 @@ export class BatchOperationService {
     if (
       batchJob.batch_type === "bible" ||
       batchJob.batch_type === "rephrase-bible" ||
-      batchJob.batch_type === "translate-bible"
+      batchJob.batch_type === "translate-bible" ||
+      batchJob.batch_type === "topic-explanations-parent"
     ) {
       console.log(
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
