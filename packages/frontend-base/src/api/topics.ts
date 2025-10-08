@@ -21,7 +21,7 @@ export const getTopicDetails = async (topicId: string) => {
 
 export const getTopicExplanation = async (
   topicId: string,
-  type: string,
+  type: "summary" | "byline" | "detailed",
   lang = "en",
 ) => {
   const response = await api.topics({ id: topicId }).explanation.get({
