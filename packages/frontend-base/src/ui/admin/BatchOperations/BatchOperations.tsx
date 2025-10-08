@@ -439,14 +439,15 @@ export const BatchOperations = () => {
         jobs.sort((a, b) => Number(b.id) - Number(a.id));
         setBatchJobs(jobs);
 
-        const bibleBatches = jobs.filter(
+        const parentBatches = jobs.filter(
           (job) =>
             job.batch_type === "bible" ||
             job.batch_type === "rephrase-bible" ||
-            job.batch_type === "translate-bible",
+            job.batch_type === "translate-bible" ||
+            job.batch_type === "topic-explanations-parent",
         );
         const newSummaries: Record<string, any> = {};
-        for (const batch of bibleBatches) {
+        for (const batch of parentBatches) {
           try {
             const summaryRes = await (api.admin as any)["batch-summary"][
               batch.id
