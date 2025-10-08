@@ -2039,6 +2039,9 @@ export class BatchOperationService {
   }
 
   private async processOutputFile(batchId: string, outputFileId: string) {
+    console.log(
+      `[BATCH] Starting to process output file ${outputFileId} for batch ${batchId}`,
+    );
     try {
       const batchJob = await this.db
         .getOrCreateConnection()
@@ -2095,8 +2098,12 @@ export class BatchOperationService {
       }
 
       const fileContent = await openai.files.content(outputFileId);
+      console.log(
+        `[BATCH] Successfully retrieved file content for ${outputFileId}`,
+      );
       const jsonl = await fileContent.text();
       const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+      console.log(`[BATCH] File has ${lines.length} lines to process.`);
 
       let processedCount = 0;
       let errorCount = 0;
@@ -2104,8 +2111,12 @@ export class BatchOperationService {
       let totalCompletionTokens = 0;
 
       for (const line of lines) {
+        console.log(`[BATCH] Processing line: ${line.substring(0, 100)}...`);
         try {
           const parsedLine = JSON.parse(line);
+          console.log(
+            `[BATCH] Successfully parsed line for custom_id: ${parsedLine.custom_id}`,
+          );
 
           if (parsedLine.response?.body?.usage) {
             totalPromptTokens +=
@@ -3148,22 +3159,42 @@ export class BatchOperationService {
                 );
                 continue;
               }
-              // Remove prefix and timestamp, keeping only the middle parts
               const withoutPrefix = customId.replace("topic-explanations-", "");
               const parts = withoutPrefix.split("-");
-              // Last part is timestamp, before that is lang, type, and everything else is topicId (which may contain hyphens)
-              if (parts.length < 3) {
+
+              if (parts.length < 4) {
                 errorCount++;
                 console.warn(
                   `[BATCH_TOPIC_EXPLANATIONS] Invalid custom_id format: ${customId}`,
                 );
                 continue;
               }
-              // Extract from end: timestamp, lang, type
-              const languageCode = parts[parts.length - 2];
-              const explanationType = parts[parts.length - 3];
-              // Everything else is the topicId (may contain hyphens)
-              const topicId = parts.slice(0, parts.length - 3).join("-");
+
+              parts.pop(); // Remove timestamp
+
+              let languageCode: string | undefined;
+              let explanationType: string | undefined;
+              let topicId: string | undefined;
+
+              // Find language code (e.g., "en" or "en-US")
+              for (let i = parts.length - 1; i >= 0; i--) {
+                const potentialLang = parts.slice(i).join("-");
+                // Basic check for language code format (e.g., 'en', 'en-US')
+                if (/^[a-z]{2}(-[A-Z]{2})?$/.test(potentialLang)) {
+                  languageCode = potentialLang;
+                  explanationType = parts[i - 1];
+                  topicId = parts.slice(0, i - 1).join("-");
+                  break;
+                }
+              }
+
+              if (!topicId || !explanationType || !languageCode) {
+                errorCount++;
+                console.warn(
+                  `[BATCH_TOPIC_EXPLANATIONS] Could not parse custom_id: ${customId}`,
+                );
+                continue;
+              }
 
               await this.db
                 .getOrCreateConnection()
