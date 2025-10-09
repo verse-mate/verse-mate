@@ -21,7 +21,7 @@ async function checkBibleDataHebrews() {
     console.log(`   Total Chapters: ${hebrews.chapters.length}\n`);
 
     console.log("📖 Hebrews chapters in Bible data:");
-    hebrews.chapters.forEach((chapter, _index) => {
+    hebrews.chapters.forEach((chapter) => {
       console.log(
         `   Chapter ${chapter.chapterId} - ${chapter.verses.length} verses`,
       );

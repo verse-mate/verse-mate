@@ -36,6 +36,10 @@ export const useChat = () => {
           content: userMessage,
         });
 
+        if (newChat.error) {
+          throw newChat.error;
+        }
+
         currentConversationId = String(newChat.data?.newConversation?.chat_id);
         saveSearchParams({ conversationId: currentConversationId });
 

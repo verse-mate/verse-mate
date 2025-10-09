@@ -310,7 +310,7 @@ export class BibleRepository {
         })
         .execute();
       return { success: true };
-    } catch (_error) {
+    } catch {
       return { success: false };
     }
   }
@@ -345,7 +345,7 @@ export class BibleRepository {
         .where("user_progress_id", "=", user_progress_id)
         .execute();
       return { success: true };
-    } catch (_error) {
+    } catch {
       return { success: false };
     }
   }
@@ -390,7 +390,7 @@ export class BibleRepository {
         .execute();
 
       return { success: true };
-    } catch (_error) {
+    } catch {
       return { success: false };
     }
   }
@@ -410,7 +410,7 @@ export class BibleRepository {
       if (ratingExists) return { exists: true };
 
       return { exists: false };
-    } catch (_error) {
+    } catch {
       return { exists: false };
     }
   }
@@ -431,7 +431,7 @@ export class BibleRepository {
         })
         .execute();
       return { updated: true };
-    } catch (_error) {
+    } catch {
       return { updated: false };
     }
   }

@@ -87,10 +87,7 @@ export const MainContent = () => {
     bibleVersion,
   );
 
-  const { lastRead, startTimer } = useLastRead(
-    session,
-    explanation?.explanation_id,
-  );
+  const { lastRead, startTimer } = useLastRead(session);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -332,8 +329,6 @@ export const MainContent = () => {
     }
   }, [bookId, verseId, testament, testaments, bibleVersion, setSelectedTab]);
 
-  const _contentRefBook = useRef<HTMLDivElement>(null);
-  const _contentRefVersion = useRef<HTMLDivElement>(null);
   const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleBibleVersionSelected = (versionKey: string) => {
@@ -806,69 +801,6 @@ export const MainContent = () => {
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
 
-  const _renderRecentlyViewed = () => {
-    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
-    return recentlyViewedBooks
-      .filter((id) => Number(id) !== bookId)
-      .map((bookId) => {
-        const book = allBooks.find((b) => b.b === Number(bookId));
-        if (!book) return null;
-        return (
-          <Accordion.Item value={book.n} key={`recently-${book.n}`}>
-            <div
-              data-accordion-trigger={book.n}
-              onClick={() => handleMobileAccordionTriggerClick(book.n)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ")
-                  handleMobileAccordionTriggerClick(book.n);
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <Accordion.Trigger
-                label={book.n}
-                highlightBook={false}
-                icon={
-                  <Icon.HistoryIcon
-                    style={{
-                      width: "16px",
-                      height: "16px",
-                      marginRight: "8px",
-                      fill: "var(--charcoal-grey)",
-                    }}
-                  />
-                }
-                iconPosition="right"
-              />
-            </div>
-            <Accordion.Content>
-              <VerseGrid
-                testament={book.t}
-                bookId={String(book.b)}
-                bookName={book.n}
-                verses={Array.from({ length: book.c }, (_, i) =>
-                  (i + 1).toString(),
-                )}
-                onVerseSelect={(bookId, bookName, verse, testament) => {
-                  leftPanelHandleVerseSelect(
-                    bookId,
-                    bookName,
-                    verse,
-                    testament,
-                  );
-                  handleMobileVerseSelect(testament || "", bookName, verse);
-                  closeDropdownBook();
-                }}
-                selectedVerse={String(verseId)}
-                selectedBook={String(bookId)}
-              />
-            </Accordion.Content>
-          </Accordion.Item>
-        );
-      })
-      .filter(Boolean);
-  };
-
   const renderSelectedBook = () => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
     const selectedBook = allBooks.find((book) => book.b === bookId);
@@ -905,14 +837,8 @@ export const MainContent = () => {
     );
   };
 
-  const _selectedBookDetails = [
-    ...oldTestamentBooks,
-    ...newTestamentBooks,
-  ].find((book) => book.b === bookId);
-
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const _scrollableRef = useRef<HTMLDivElement>(null);
   const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
   const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
 

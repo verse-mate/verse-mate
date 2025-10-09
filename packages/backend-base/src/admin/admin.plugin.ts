@@ -442,13 +442,14 @@ const plugin = new Elysia()
               const explanationRegenerationService =
                 store.getExplanationRegenerationService();
               return await explanationRegenerationService.generateNewExplanation(
-                params.regenerationId,
-                body.bookId,
-                body.chapterNumber,
-                body.explanationType as any,
-                body.bibleVersion,
-                body.model,
-                currentUserId,
+                {
+                  regenerationId: params.regenerationId,
+                  bookId: body.bookId,
+                  chapterNumber: body.chapterNumber,
+                  explanationType: body.explanationType as any,
+                  bibleVersion: body.bibleVersion,
+                  model: body.model,
+                },
               );
             },
             {

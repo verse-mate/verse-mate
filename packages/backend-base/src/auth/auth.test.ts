@@ -12,7 +12,6 @@ describe("Auth", () => {
   let signupAuthPayload: AuthPayload | null;
   let loginAuthPayload: AuthPayload | null;
 
-  // Using type assertion instead of _routes (internal Elysia API)
   const authSignupInput = {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
@@ -33,8 +32,8 @@ describe("Auth", () => {
       },
     );
 
-    const { data } = await client.auth.signup.post(authSignupInput);
-    if (data instanceof Error) throw data;
+    const { data, error } = await client.auth.signup.post(authSignupInput);
+    if (error) throw error;
 
     expect(data?.accessToken).toBeDefined();
     expect(data?.verified).toBeFalse();
@@ -47,7 +46,9 @@ describe("Auth", () => {
       .executeTakeFirstOrThrow();
     expect(user.emailVerified).toBe(false);
 
-    const { data: verifyEmailData } = await client.auth["verify-email"].post(
+    const { data: verifyEmailData, error: verifyError } = await client.auth[
+      "verify-email"
+    ].post(
       {
         token,
       },
@@ -57,7 +58,7 @@ describe("Auth", () => {
         },
       },
     );
-    if (verifyEmailData instanceof Error) throw verifyEmailData;
+    if (verifyError) throw verifyError;
 
     expect(verifyEmailData?.accessToken).toBeDefined();
     signupAuthPayload = verifyEmailData;
@@ -72,21 +73,21 @@ describe("Auth", () => {
   });
 
   it("signup - AccessToken Works", async () => {
-    const { data } = await client.auth.user.get({
+    const { data, error } = await client.auth.user.get({
       headers: {
         authorization: `Bearer ${signupAuthPayload?.accessToken}`,
       },
     });
-    if (data instanceof Error) throw data;
+    if (error) throw error;
     expect(data).toBeTruthy();
   });
 
   it("login", async () => {
-    const { data } = await client.auth.login.post({
+    const { data, error } = await client.auth.login.post({
       email: authSignupInput.email,
       password: authSignupInput.password,
     });
-    if (data instanceof Error) throw data;
+    if (error) throw error;
 
     expect(data?.accessToken).toBeDefined();
     loginAuthPayload = data;
@@ -153,8 +154,7 @@ describe("Auth", () => {
         password: changePasswordValue,
       },
     );
-    expect(errorLogin).toBeFalsy();
-    if (dataLogin instanceof Error) throw dataLogin;
+    if (errorLogin) throw errorLogin;
     expect(dataLogin?.accessToken).toBeDefined();
   });
 
@@ -162,12 +162,12 @@ describe("Auth", () => {
     // It should have 2 sessions
     const cacheService = Backend.store.cache;
 
-    const { data } = await client.auth.user.get({
+    const { data, error } = await client.auth.user.get({
       headers: {
         authorization: `Bearer ${signupAuthPayload?.accessToken}`,
       },
     });
-    if (data instanceof Error) throw data;
+    if (error) throw error;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;
@@ -212,18 +212,20 @@ describe("Auth", () => {
   it("logout all", async () => {
     const cacheService = Backend.store.cache;
 
-    const { data: loginData } = await client.auth.login.post({
-      email: authSignupInput.email,
-      password: changePasswordValue,
-    });
-    if (loginData instanceof Error) throw loginData;
+    const { data: loginData, error: loginError } = await client.auth.login.post(
+      {
+        email: authSignupInput.email,
+        password: changePasswordValue,
+      },
+    );
+    if (loginError) throw loginError;
 
-    const { data } = await client.auth.user.get({
+    const { data, error } = await client.auth.user.get({
       headers: {
         authorization: `Bearer ${loginData?.accessToken}`,
       },
     });
-    if (data instanceof Error) throw data;
+    if (error) throw error;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;

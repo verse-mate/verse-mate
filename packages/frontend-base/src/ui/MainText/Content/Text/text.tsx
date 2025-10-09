@@ -345,7 +345,7 @@ export const Text = ({
                 if (startChar < 0) startChar = 0;
                 if (startChar > fullStartVerseText.length)
                   startChar = fullStartVerseText.length;
-              } catch (_e) {
+              } catch {
                 startChar = 0; // Fallback to beginning of verse
               }
             }
@@ -367,7 +367,7 @@ export const Text = ({
                   if (endChar < 0) endChar = 0;
                   if (endChar > fullEndVerseText.length)
                     endChar = fullEndVerseText.length;
-                } catch (_e) {
+                } catch {
                   const fullEndVerseText = endVerseElement.textContent || "";
                   endChar = fullEndVerseText.length; // Fallback to end of verse
                 }
@@ -384,7 +384,7 @@ export const Text = ({
             }
           }
         }
-      } catch (_error) {
+      } catch {
         // Fall back to verse-level highlighting if character calculation fails
         startChar = undefined;
         endChar = undefined;

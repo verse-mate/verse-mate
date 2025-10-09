@@ -7,7 +7,6 @@ import Backend from "./user.plugin";
 
 describe("User", () => {
   let accessToken: string;
-  // Using type assertion instead of _routes (internal Elysia API)
   const authSignupInput = {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
@@ -19,8 +18,8 @@ describe("User", () => {
   const testClient = getTestClient<typeof plugin>(plugin);
 
   beforeAll(async () => {
-    const { data } = await testClient.auth.signup.post(authSignupInput);
-    if (data instanceof Error) throw data;
+    const { data, error } = await testClient.auth.signup.post(authSignupInput);
+    if (error) throw error;
 
     accessToken = data?.accessToken ?? "";
   });
@@ -36,7 +35,6 @@ describe("User", () => {
         authorization: `Bearer ${accessToken}`,
       },
     });
-    if (data instanceof Error) throw data;
 
     expect(data?.email).toBe(authSignupInput.email);
     expect(data?.firstName).toBe(authSignupInput.firstName);

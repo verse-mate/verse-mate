@@ -1038,8 +1038,6 @@ export class BatchOperationService {
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
       );
       const children = await this.getBatchChildren(Number(batchId));
-      let _cancelledCount = 0;
-      let _failedToCancelCount = 0;
 
       for (const child of children) {
         if (
@@ -1062,7 +1060,6 @@ export class BatchOperationService {
               .set({ status: openaiBatch.status }) // Use the status from OpenAI API response
               .where("id", "=", Number(child.id))
               .execute();
-            _cancelledCount++;
           } catch (error) {
             if (
               error instanceof APIError &&
@@ -1094,7 +1091,6 @@ export class BatchOperationService {
                 .where("id", "=", Number(child.id))
                 .execute();
             }
-            _failedToCancelCount++;
           }
         }
       }

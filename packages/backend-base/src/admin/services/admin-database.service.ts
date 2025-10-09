@@ -91,10 +91,6 @@ export class AdminDatabaseService {
     regenerationId: string,
     newExplanationContent: string,
     originalExplanationId: number,
-    _chapterId: number,
-    _explanationType: ExplanationTypeEnum,
-    _bibleVersion: string,
-    _adminUserId: string,
   ) {
     console.log(`Saving regenerated explanation for ${regenerationId}`);
     console.log(

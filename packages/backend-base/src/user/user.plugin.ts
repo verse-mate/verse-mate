@@ -8,6 +8,7 @@ import {
   ValidationError,
 } from "../common/errors";
 import shared from "../shared/shared.plugin";
+import type { User } from "./entities/user.entity";
 import { UserService } from "./user.service";
 
 const plugin = new Elysia()
@@ -35,24 +36,16 @@ const plugin = new Elysia()
         )
         .get(
           "/me",
-          async ({ currentUserId, store: { userService } }) => {
+          async ({ currentUserId, store: { userService } }): Promise<User> => {
             if (!currentUserId) {
               throw new UnauthorizedError("Authentication required");
             }
 
             try {
               return await userService.findOne(currentUserId);
-            } catch (_error) {
+            } catch {
               throw new NotFoundError("User not found");
             }
-          },
-          {
-            detail: {
-              summary: "Get current user",
-              description:
-                "Retrieve the authenticated user's profile information",
-              tags: ["User"],
-            },
           },
         )
         .post(
