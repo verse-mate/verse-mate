@@ -1,5 +1,5 @@
 import { startOfDay, subDays } from "date-fns";
-import type { ChatDto } from "../dto/chat/chat.dto";
+import type { ChatEntity } from "../dto/chat/chat.dto";
 import type { GroupedChatHistoryDto } from "../dto/chat/grouped-chat-history.dto";
 
 interface Period {
@@ -14,7 +14,7 @@ export class ChatHistoryGrouper {
     this.periods = periods;
   }
 
-  group(chatHistory: ChatDto[]): GroupedChatHistoryDto {
+  group(chatHistory: ChatEntity[]): GroupedChatHistoryDto {
     const today = startOfDay(new Date());
     const periodDates = this.periods.map((period) => ({
       label: period.label,

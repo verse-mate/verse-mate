@@ -65,7 +65,7 @@ export const Explanations = () => {
   const [explanations, setExplanations] = useState<Explanation[]>([]);
   const [loadingExplanations, setLoadingExplanations] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, _setItemsPerPage] = useState(50);
   const [totalItems, setTotalItems] = useState(0);
 
   const selectedBookData = bookOptions.find((book) => book.n === selectedBook);
@@ -113,7 +113,7 @@ export const Explanations = () => {
         },
       });
       if (response.data) {
-        const formattedData = response.data.explanations.map((exp) => ({
+        const formattedData = response.data.explanations.map((exp: any) => ({
           ...exp,
           id: String(exp.explanation_id),
         }));

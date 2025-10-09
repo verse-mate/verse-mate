@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { FilterIcon } from "../../../Icons";
 import styles from "./grouped-trigger.module.css";
 
 type GroupedTriggerProps = {

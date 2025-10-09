@@ -17,8 +17,8 @@ const getExplanationTypePrompt = (
       return {
         prompt: `# ${bookName} ${chapterNumber} - Summary (use this as title)
 
-Summarize this chapter in approximately 250 words including relevant takeaways and 
-key theological themes. Do not go verse by verse but instead summarize the overall 
+Summarize this chapter in approximately 250 words including relevant takeaways and
+key theological themes. Do not go verse by verse but instead summarize the overall
 passage in a clear, organized way, summarize based on section sub-titles (e.g. Babylon Is Fallen Revelation 18:1 - 8), format it in such way the subtitle is on a new line and the summary is underneath the sub-tittle.
 
 **Theological Themes**
@@ -199,7 +199,7 @@ The response should be in Markdown format only.`;
 });
 
 // Job event listeners
-explanationQueue.on("completed", (job: any, result: any) => {
+explanationQueue.on("completed", (job: any) => {
   console.log(
     `🎉 Explanation job completed: ${job.data.bookName} ${job.data.chapterNumber} - ${job.data.type}`,
   );

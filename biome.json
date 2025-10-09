@@ -29,6 +29,10 @@
       },
       "complexity": {
         "noForEach": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn"
       }
     }
   },

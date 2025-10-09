@@ -9,8 +9,13 @@ export const fetchAllTestaments = () => {
     isLoading,
   } = useQuery({
     queryKey: ["allTestaments"],
-    queryFn: async () =>
-      (await api.bible.testaments.get()).data?.testaments.keys,
+    queryFn: async () => {
+      const response = await api.bible.testaments.get();
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data?.testaments;
+    },
   });
 
   if (error) {
@@ -31,8 +36,11 @@ export const fetchAllChaptersByBook = (bookId?: number | null) => {
       if (!bookId) {
         return 0;
       }
-      const allTestaments = (await api.bible.testaments.get()).data?.testaments
-        .keys;
+      const response = await api.bible.testaments.get();
+      if (response.error) {
+        throw response.error;
+      }
+      const allTestaments = response.data?.testaments;
       const chaptersByBook = allTestaments?.find(
         (testament) => testament.b === bookId,
       );

@@ -1,16 +1,10 @@
-import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI, { APIError } from "openai";
-import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
-import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
+import { NotFoundError, ValidationError } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
-import {
-  BATCH_PROCESSING_QUEUE,
-  batchProcessingQueue,
-} from "../../queue/batch-processing.queue";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
@@ -114,7 +108,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      throw new Error(`Book "${bookName}" not found in database`);
+      throw new NotFoundError(`Book "${bookName}" not found in database`);
     }
 
     console.log(
@@ -252,7 +246,7 @@ export class BatchOperationService {
       .execute();
 
     if (!books || books.length === 0) {
-      throw new Error("No books found in database");
+      throw new NotFoundError("No books found in database");
     }
 
     console.log(
@@ -302,8 +296,8 @@ export class BatchOperationService {
     bookName?: string,
   ) {
     if (type === "book" && !bookName) {
-      throw new Error(
-        "Book name is required for a book-specific rephrase batch.",
+      throw new ValidationError(
+        "Book name is required for a book-specific rephrase batch",
       );
     }
 
@@ -348,7 +342,7 @@ export class BatchOperationService {
         .execute();
 
       if (!books || books.length === 0) {
-        throw new Error("No books found in database");
+        throw new NotFoundError("No books found in database");
       }
 
       for (const book of books) {
@@ -379,7 +373,9 @@ export class BatchOperationService {
       );
     }
 
-    throw new Error("Invalid rephrase batch type or missing book name.");
+    throw new ValidationError(
+      "Invalid rephrase batch type or missing book name",
+    );
   }
 
   async generateTranslateBatch(
@@ -394,8 +390,8 @@ export class BatchOperationService {
     bookName?: string,
   ) {
     if (type === "book" && !bookName) {
-      throw new Error(
-        "Book name is required for a book-specific translate batch.",
+      throw new ValidationError(
+        "Book name is required for a book-specific translate batch",
       );
     }
 
@@ -452,7 +448,7 @@ export class BatchOperationService {
       if (!books || books.length === 0) {
         const error = "No books found in database";
         console.error(`[BATCH] ${error}`);
-        throw new Error(error);
+        throw new NotFoundError(error);
       }
 
       console.log(`[BATCH] Found ${books.length} books to process`);
@@ -505,7 +501,9 @@ export class BatchOperationService {
       );
     }
 
-    throw new Error("Invalid translate batch type or missing book name.");
+    throw new ValidationError(
+      "Invalid translate batch type or missing book name",
+    );
   }
 
   private async createBookRephraseBatch(
@@ -525,7 +523,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      throw new Error(`Book "${bookName}" not found.`);
+      throw new NotFoundError(`Book "${bookName}" not found`);
     }
 
     const version = await connection
@@ -535,7 +533,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!version) {
-      throw new Error(`Bible version "${bibleVersion}" not found.`);
+      throw new NotFoundError(`Bible version "${bibleVersion}" not found`);
     }
 
     const rephrasePrompt = await connection
@@ -546,7 +544,9 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!rephrasePrompt) {
-      throw new Error("No active rephrase prompt found in the database.");
+      throw new NotFoundError(
+        "No active rephrase prompt found in the database",
+      );
     }
 
     const activeExplanations = await connection
@@ -601,7 +601,7 @@ export class BatchOperationService {
     if (!validation.isValid) {
       const error = `Custom ID validation failed for rephrase batch: ${validation.summary}. Duplicate IDs: ${validation.duplicates.join(", ")}`;
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new ValidationError(error);
     }
 
     const jsonlContent = batchRequests
@@ -671,9 +671,9 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      const error = `Book "${bookName}" not found.`;
+      const error = `Book "${bookName}" not found`;
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new NotFoundError(error);
     }
 
     console.log(`[BATCH] Found book: ${bookName} with ID: ${book.book_id}`);
@@ -685,9 +685,9 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!sourceVersion) {
-      const error = `Source Bible version with language "${source_language_code}" not found.`;
+      const error = `Source Bible version with language "${source_language_code}" not found`;
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new NotFoundError(error);
     }
 
     console.log(
@@ -720,9 +720,9 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!translatePrompt) {
-      const error = "No active translate prompt found in the database.";
+      const error = "No active translate prompt found in the database";
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new NotFoundError(error);
     }
 
     console.log("[BATCH] Found active translate prompt");
@@ -828,7 +828,7 @@ export class BatchOperationService {
     if (!validation.isValid) {
       const error = `Custom ID validation failed: ${validation.summary}. Duplicate IDs: ${validation.duplicates.join(", ")}`;
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new ValidationError(error);
     }
 
     console.log(
@@ -1026,7 +1026,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!batchJob) {
-      throw new Error(`Batch job ${batchId} not found.`);
+      throw new NotFoundError(`Batch job ${batchId} not found`);
     }
 
     if (
@@ -1038,8 +1038,6 @@ export class BatchOperationService {
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
       );
       const children = await this.getBatchChildren(Number(batchId));
-      let cancelledCount = 0;
-      let failedToCancelCount = 0;
 
       for (const child of children) {
         if (
@@ -1062,7 +1060,6 @@ export class BatchOperationService {
               .set({ status: openaiBatch.status }) // Use the status from OpenAI API response
               .where("id", "=", Number(child.id))
               .execute();
-            cancelledCount++;
           } catch (error) {
             if (
               error instanceof APIError &&
@@ -1094,7 +1091,6 @@ export class BatchOperationService {
                 .where("id", "=", Number(child.id))
                 .execute();
             }
-            failedToCancelCount++;
           }
         }
       }
@@ -1142,8 +1138,8 @@ export class BatchOperationService {
     }
 
     if (!batchJob.openai_batch_id) {
-      throw new Error(
-        `Book batch ${batchId} does not have an OpenAI batch ID.`,
+      throw new NotFoundError(
+        `Book batch ${batchId} does not have an OpenAI batch ID`,
       );
     }
     const openaiBatch = await openai.batches.cancel(batchJob.openai_batch_id);
@@ -1510,7 +1506,7 @@ export class BatchOperationService {
 
     const systemPrompt = await this.promptRepository.getActivePrompt();
     if (!systemPrompt) {
-      throw new Error("No active system prompt found");
+      throw new NotFoundError("No active system prompt found");
     }
 
     const version = await connection
@@ -1520,7 +1516,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!version) {
-      throw new Error("Invalid bible version");
+      throw new NotFoundError("Invalid bible version");
     }
 
     const language = getLanguageName(version.language_code);
@@ -1532,7 +1528,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      throw new Error(`Book ${bookId} not found`);
+      throw new NotFoundError(`Book ${bookId} not found`);
     }
 
     console.log(
@@ -1547,7 +1543,7 @@ export class BatchOperationService {
       .execute();
 
     if (!chapters || chapters.length === 0) {
-      throw new Error(`No chapters found for book ${bookId}`);
+      throw new NotFoundError(`No chapters found for book ${bookId}`);
     }
 
     const batchRequests: BatchJobRequest[] = [];
@@ -1625,8 +1621,8 @@ export class BatchOperationService {
     }
 
     if (batchRequests.length === 0) {
-      throw new Error(
-        `No requests to process for ${book.name}. All explanations may already exist.`,
+      throw new ValidationError(
+        `No requests to process for ${book.name}. All explanations may already exist`,
       );
     }
 
@@ -1635,7 +1631,7 @@ export class BatchOperationService {
     if (!validation.isValid) {
       const error = `Custom ID validation failed for generate batch: ${validation.summary}. Duplicate IDs: ${validation.duplicates.join(", ")}`;
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new ValidationError(error);
     }
 
     const jsonlContent = batchRequests
@@ -1950,18 +1946,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: rephrase|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format rephrase custom_id: ${parsedLine.custom_id}`,
             );
@@ -2229,18 +2218,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: translate|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format translate custom_id: ${parsedLine.custom_id}`,
             );
@@ -2450,7 +2432,6 @@ export class BatchOperationService {
 
     for (const error of batchStatus.errors.data) {
       const errorMessage = error.message || "";
-      const errorCode = error.code || "";
 
       // Detect duplicate custom_id errors
       if (
