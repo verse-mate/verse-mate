@@ -1,5 +1,5 @@
 import type { Topics } from "database/src/models/public/Topics";
-import type { ExplanationDto } from "../dto/book/explanation.dto";
+import { NotFoundError } from "../../common/errors";
 import type { PromptRepository } from "../repository/prompt.repository";
 import type { BibleService } from "./bible.service";
 
@@ -25,7 +25,7 @@ export class PromptService {
     });
 
     if (!book) {
-      throw new Error("Book not found");
+      throw new NotFoundError("Book not found");
     }
 
     const chapter = this.formatChapterVerses(book.chapters[0]);

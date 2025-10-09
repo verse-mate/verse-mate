@@ -1,13 +1,4 @@
-import {
-  ArchiveIcon,
-  BookmarkIcon,
-  CopyIcon,
-  HeartIcon,
-  NotesIcon,
-  PencilIcon,
-  ShareIcon,
-  TrashIcon,
-} from "../ui/Icons";
+import { TrashIcon } from "../ui/Icons";
 
 export const chatActions = [
   // {

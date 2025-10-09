@@ -1,5 +1,3 @@
-import { textActions } from "../../../../../utils/text-actions";
-import { Popover } from "../../../../Popover";
 import styles from "./verse-number.module.css";
 
 type VerseNumberProps = {

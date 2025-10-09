@@ -7,7 +7,7 @@ export const ExplanationDto = t.Intersect([
   t.Object({
     explanation_id: t.Number(),
     type: t.Enum(ExplanationTypeEnum),
-    explanation: t.Union([t.String(), t.Null()]),
+    explanation: t.Optional(t.String()),
   }),
 ]);
 

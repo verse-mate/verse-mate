@@ -1,4 +1,5 @@
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
+import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
 export class PromptRepository {
@@ -24,7 +25,7 @@ export class PromptRepository {
       .executeTakeFirst();
 
     if (!prompt) {
-      throw new Error("Active System Prompt not found");
+      throw new NotFoundError("Active System Prompt not found");
     }
 
     return {

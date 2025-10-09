@@ -36,6 +36,10 @@ export const useChat = () => {
           content: userMessage,
         });
 
+        if (newChat.error) {
+          throw newChat.error;
+        }
+
         currentConversationId = String(newChat.data?.newConversation?.chat_id);
         saveSearchParams({ conversationId: currentConversationId });
 
@@ -94,7 +98,7 @@ export const useChat = () => {
         ],
       );
     },
-    onError: (error, userMessage, context) => {
+    onError: (_error, _userMessage, context) => {
       queryClient.setQueryData(
         ["conversationMessages", conversationId],
         context?.previousMessages,

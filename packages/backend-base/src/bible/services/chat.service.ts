@@ -1,10 +1,9 @@
 import type RoleEnum from "database/src/models/public/RoleEnum";
-import type { BookDto } from "../dto/book/book.dto";
 import type { AddMessageDto } from "../dto/chat/add-message.dto";
-import type { ChatDto } from "../dto/chat/chat.dto";
+import type { ChatEntity } from "../dto/chat/chat.dto";
 import type { GroupedChatHistoryDto } from "../dto/chat/grouped-chat-history.dto";
 import type { NewChatDto } from "../dto/chat/new-chat.dto";
-import type { RawChatHistoryDto } from "../dto/chat/raw-chat-history.dto";
+import type { RawChatHistoryEntity } from "../dto/chat/raw-chat-history.dto";
 import type { UserDto } from "../dto/user/user.dto";
 import type { BibleRepository } from "../repository/bible.repository";
 import type { ChatRepository } from "../repository/chat.repository";
@@ -44,7 +43,7 @@ export class ChatService {
     user_id,
     chapter_number,
     book_id,
-  }: Pick<ChatDto & BookDto, "user_id" | "chapter_number" | "book_id">) {
+  }: { user_id: string; chapter_number: number; book_id: number }) {
     const { chatExists } = await this.chatRepository.checkIfChatExists({
       user_id,
       book_id,
@@ -60,7 +59,7 @@ export class ChatService {
       role,
     });
 
-    const updatedChatDate = await this.chatRepository.updateChatDate({
+    await this.chatRepository.updateChatDate({
       conversation_id: chat_id,
       updated_at: currentDate(),
     });
@@ -91,7 +90,7 @@ export class ChatService {
   async getUserChatMessageHistory({
     user_id,
     conversation_id,
-  }: Pick<ChatDto, "user_id" | "conversation_id">) {
+  }: Pick<ChatEntity, "user_id" | "conversation_id">) {
     const { chatMessageHistory } =
       await this.chatRepository.getUserChatMessageHistory({
         user_id,
@@ -102,7 +101,7 @@ export class ChatService {
 
   async disableChat({
     conversation_id,
-  }: Pick<ChatDto, "conversation_id">): Promise<{
+  }: Pick<ChatEntity, "conversation_id">): Promise<{
     chat_id: number | undefined;
   }> {
     const { chat_id } = await this.chatRepository.disableChat({
@@ -111,8 +110,10 @@ export class ChatService {
     return { chat_id };
   }
 
-  private formatChatHistory(rawChatHistory: RawChatHistoryDto[]): ChatDto[] {
-    const formattedChatHistory: ChatDto[] = rawChatHistory.reduce(
+  private formatChatHistory(
+    rawChatHistory: RawChatHistoryEntity[],
+  ): ChatEntity[] {
+    const formattedChatHistory: ChatEntity[] = rawChatHistory.reduce(
       (formattedChats, rawChatRow) => {
         let chat = formattedChats.find(
           (chat) => chat.conversation_id === rawChatRow.conversation_id,
@@ -146,7 +147,7 @@ export class ChatService {
 
         return formattedChats;
       },
-      [] as ChatDto[],
+      [] as ChatEntity[],
     );
     return formattedChatHistory;
   }

@@ -11,7 +11,6 @@ import {
   ChevronBackward,
   ChevronDownIcon,
   LogoutIcon,
-  PencilIcon,
   SettingsIcon,
   UserIcon,
 } from "../Icons";
@@ -58,6 +57,9 @@ export const Settings = ({
     const fetchLanguages = async () => {
       try {
         const response = await api.bible.languages.get();
+        if (response.error) {
+          throw response.error;
+        }
         if (response.data) {
           // Properly map the API response to the expected structure
           const mappedLanguages = (response.data as any[]).map((lang) => ({
@@ -92,7 +94,7 @@ export const Settings = ({
       onSuccess: async () => {
         // Don't handle success here - will be handled by global save
       },
-      onError: (error: any) => {
+      onError: (_error: any) => {
         // Don't handle error here - will be handled by global save
       },
     });
@@ -103,11 +105,13 @@ export const Settings = ({
     isLoading: isUpdatingLanguage,
   } = useMutation({
     mutationFn: (language: string | null) =>
-      api.user.preferences.patch({ preferred_language: language }),
+      api.user.preferences.patch({
+        preferred_language: language ?? undefined,
+      }),
     onSuccess: async () => {
       // Don't handle success here - will be handled by global save
     },
-    onError: (error: any) => {
+    onError: (_error: any) => {
       // Don't handle error here - will be handled by global save
     },
   });

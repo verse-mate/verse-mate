@@ -6,7 +6,6 @@ import {
   useSaveSearchParams,
 } from "../../../hooks/useSearchParams";
 import { explanationTypes } from "../../../utils/commentary-options";
-import { OpenedBook } from "../../Icons";
 import * as Icon from "../../Icons";
 import styles from "./header-panel.module.css";
 
