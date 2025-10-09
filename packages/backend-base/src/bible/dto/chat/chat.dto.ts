@@ -4,15 +4,15 @@ import { BookDto } from "../book/book.dto";
 import { UUIDField } from "../user/user.dto";
 import { MessageDto } from "./message.dto";
 
-export const ChatDto = t.Object({
+export const ChatEntity = t.Object({
   conversation_id: t.Number(),
   user_id: UUIDField,
   title: t.String({ maxLength: 250 }),
   status: t.Enum(StatusEnum),
   updated_at: t.Date(),
   book: t.Omit(BookDto, ["genre_name"]),
-  chapter_number: t.Optional(t.Number()),
+  chapter_number: t.Nullable(t.Number()),
   messages: t.Array(MessageDto),
 });
 
-export type ChatDto = Static<typeof ChatDto>;
+export type ChatEntity = Static<typeof ChatEntity>;

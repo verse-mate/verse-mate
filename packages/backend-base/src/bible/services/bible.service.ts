@@ -240,8 +240,8 @@ export class BibleService {
 
   async ratingByUser({
     user,
-    book_id,
-    chapter_number,
+    book_id: _book_id,
+    chapter_number: _chapter_number,
     explanation_id,
   }: Omit<RatingDto, "rating">): Promise<{
     userRating: {
@@ -279,8 +279,8 @@ export class BibleService {
   }
 
   async averageRating({
-    book_id,
-    chapter_number,
+    book_id: _book_id,
+    chapter_number: _chapter_number,
     explanation_id,
   }: Pick<
     RatingDto,
@@ -674,22 +674,6 @@ export class BibleService {
         },
       ], //the first array is always "truthy"
     };
-  }
-
-  private explanationExists({
-    explanation,
-  }: {
-    explanation: {
-      book_id: number;
-      chapter_number: number;
-      explanation_id: number | null;
-      type: ExplanationTypeEnum | null;
-      explanation: string | null;
-    }[];
-  }) {
-    return explanation.some(
-      (bookExplanation) => bookExplanation.explanation_id === null,
-    );
   }
 
   async deleteInactiveExplanations(options: {

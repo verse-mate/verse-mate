@@ -1,14 +1,10 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import FavoriteTypeEnum from "database/src/models/public/FavoriteTypeEnum";
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
-import type {
-  NewVerseHighlights,
-  VerseHighlights,
-} from "database/src/models/public/VerseHighlights";
+import type { NewVerseHighlights } from "database/src/models/public/VerseHighlights";
 import { sql } from "kysely";
 import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
-import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
 import type { LastChapterReadDto } from "../dto/book/last-chapter-read.dto";
 import type { RatingDto } from "../dto/book/rating.dto";
@@ -44,7 +40,7 @@ export class BibleRepository {
     return { testaments: testaments ?? null };
   }
 
-  async getBook({ book_id }: Pick<BookDto, "book_id">) {
+  async getBook({ book_id }: { book_id: number }) {
     const book = await this.db
       .getOrCreateConnection()
       .selectFrom("books")
@@ -282,10 +278,10 @@ export class BibleRepository {
         ]),
       )
       .orderBy(
-        sql`CASE 
-          WHEN LOWER(explanations.language_code) = ${normalizedLanguageCode} THEN 0 
+        sql`CASE
+          WHEN LOWER(explanations.language_code) = ${normalizedLanguageCode} THEN 0
           WHEN LOWER(explanations.language_code) = ${base_language_code} THEN 1
-          ELSE 2 
+          ELSE 2
         END`,
       )
       .orderBy("explanations.version", "desc")
@@ -304,7 +300,7 @@ export class BibleRepository {
     chapter_id,
   }: Pick<LastChapterReadDto, "id" | "book_id" | "chapter_id">) {
     try {
-      const savedLastChapterRead = await this.db
+      await this.db
         .getOrCreateConnection()
         .insertInto("user_progress")
         .values({
@@ -314,7 +310,7 @@ export class BibleRepository {
         })
         .execute();
       return { success: true };
-    } catch (error) {
+    } catch (_error) {
       return { success: false };
     }
   }
@@ -339,7 +335,7 @@ export class BibleRepository {
     user_progress_id,
   }: Pick<LastChapterReadDto, "chapter_id" | "user_progress_id">) {
     try {
-      const updateLastChapterRead = await this.db
+      await this.db
         .getOrCreateConnection()
         .updateTable("user_progress")
         .set({
@@ -349,7 +345,7 @@ export class BibleRepository {
         .where("user_progress_id", "=", user_progress_id)
         .execute();
       return { success: true };
-    } catch (error) {
+    } catch (_error) {
       return { success: false };
     }
   }
@@ -383,7 +379,7 @@ export class BibleRepository {
     explanation_id,
   }: Pick<RatingDto, "user" | "rating" | "explanation_id">) {
     try {
-      const saveRating = await this.db
+      await this.db
         .getOrCreateConnection()
         .insertInto("explanation_ratings")
         .values({
@@ -394,7 +390,7 @@ export class BibleRepository {
         .execute();
 
       return { success: true };
-    } catch (error) {
+    } catch (_error) {
       return { success: false };
     }
   }
@@ -414,7 +410,7 @@ export class BibleRepository {
       if (ratingExists) return { exists: true };
 
       return { exists: false };
-    } catch (error) {
+    } catch (_error) {
       return { exists: false };
     }
   }
@@ -425,7 +421,7 @@ export class BibleRepository {
     rating,
   }: Pick<RatingDto, "user" | "rating" | "explanation_id">) {
     try {
-      const updateRating = await this.db
+      await this.db
         .getOrCreateConnection()
         .updateTable("explanation_ratings")
         .where("explanation_id", "=", explanation_id)
@@ -435,7 +431,7 @@ export class BibleRepository {
         })
         .execute();
       return { updated: true };
-    } catch (error) {
+    } catch (_error) {
       return { updated: false };
     }
   }

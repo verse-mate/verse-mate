@@ -94,7 +94,7 @@ export const useChat = () => {
         ],
       );
     },
-    onError: (error, userMessage, context) => {
+    onError: (_error, _userMessage, context) => {
       queryClient.setQueryData(
         ["conversationMessages", conversationId],
         context?.previousMessages,

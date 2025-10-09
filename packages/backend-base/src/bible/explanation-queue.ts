@@ -199,7 +199,7 @@ The response should be in Markdown format only.`;
 });
 
 // Job event listeners
-explanationQueue.on("completed", (job: any, result: any) => {
+explanationQueue.on("completed", (job: any, _result: any) => {
   console.log(
     `🎉 Explanation job completed: ${job.data.bookName} ${job.data.chapterNumber} - ${job.data.type}`,
   );

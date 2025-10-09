@@ -2,8 +2,6 @@ import type { StoryDefault } from "@ladle/react";
 import { useSidebar } from "../../hooks/useSidebar";
 import { options } from "../../utils/menu-options";
 import { Accordion } from "../Accordion";
-import { DefaultContent } from "../Accordion/Content/default-content";
-import * as Icon from "../Icons";
 import { Menu } from "./index";
 
 export default {

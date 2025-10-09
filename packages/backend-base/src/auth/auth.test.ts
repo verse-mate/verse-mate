@@ -34,6 +34,7 @@ describe("Auth", () => {
     );
 
     const { data } = await client.auth.signup.post(authSignupInput);
+    if (data instanceof Error) throw data;
 
     expect(data?.accessToken).toBeDefined();
     expect(data?.verified).toBeFalse();
@@ -46,9 +47,7 @@ describe("Auth", () => {
       .executeTakeFirstOrThrow();
     expect(user.emailVerified).toBe(false);
 
-    const { data: verifyEmailData, error } = await client.auth[
-      "verify-email"
-    ].post(
+    const { data: verifyEmailData } = await client.auth["verify-email"].post(
       {
         token,
       },
@@ -58,6 +57,7 @@ describe("Auth", () => {
         },
       },
     );
+    if (verifyEmailData instanceof Error) throw verifyEmailData;
 
     expect(verifyEmailData?.accessToken).toBeDefined();
     signupAuthPayload = verifyEmailData;
@@ -77,6 +77,7 @@ describe("Auth", () => {
         authorization: `Bearer ${signupAuthPayload?.accessToken}`,
       },
     });
+    if (data instanceof Error) throw data;
     expect(data).toBeTruthy();
   });
 
@@ -85,6 +86,7 @@ describe("Auth", () => {
       email: authSignupInput.email,
       password: authSignupInput.password,
     });
+    if (data instanceof Error) throw data;
 
     expect(data?.accessToken).toBeDefined();
     loginAuthPayload = data;
@@ -152,6 +154,7 @@ describe("Auth", () => {
       },
     );
     expect(errorLogin).toBeFalsy();
+    if (dataLogin instanceof Error) throw dataLogin;
     expect(dataLogin?.accessToken).toBeDefined();
   });
 
@@ -164,6 +167,7 @@ describe("Auth", () => {
         authorization: `Bearer ${signupAuthPayload?.accessToken}`,
       },
     });
+    if (data instanceof Error) throw data;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;
@@ -212,12 +216,14 @@ describe("Auth", () => {
       email: authSignupInput.email,
       password: changePasswordValue,
     });
+    if (loginData instanceof Error) throw loginData;
 
     const { data } = await client.auth.user.get({
       headers: {
         authorization: `Bearer ${loginData?.accessToken}`,
       },
     });
+    if (data instanceof Error) throw data;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;

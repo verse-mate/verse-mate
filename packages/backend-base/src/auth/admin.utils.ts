@@ -6,7 +6,7 @@ export const adminGuard = {
     bearer,
     set,
     jwt,
-    store: { cache, db },
+    store: { cache: _cache, db },
   }: {
     bearer: string | undefined;
     set: Context["set"];

@@ -24,11 +24,11 @@ export async function getUserLogged() {
     console.error(error);
   }
 
-  if (!data?.data?.id) {
+  if (data?.data instanceof Error || !data?.data?.id) {
     localStorage?.removeItem("accessToken");
   }
 
-  return data?.data;
+  return data?.data instanceof Error ? undefined : data?.data;
 }
 
 export function checkUserLogged() {
@@ -55,7 +55,7 @@ export async function alreadyLoggedRedirect() {
 
 export async function alreadyEmailConfirmedRedirect() {
   const me = await getUserLogged();
-  if (!me) {
+  if (!me || me instanceof Error) {
     return redirect("/login");
   }
 

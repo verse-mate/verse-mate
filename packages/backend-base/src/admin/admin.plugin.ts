@@ -821,7 +821,7 @@ const plugin = new Elysia()
               ),
           )
 
-          .get("/commentary/grades", async ({ store: { db } }) => {
+          .get("/commentary/grades", async ({ store: { db: _db } }) => {
             return {
               message: "Commentary grading feature - to be implemented",
               grades: [],
@@ -834,7 +834,7 @@ const plugin = new Elysia()
           })
           .post(
             "/commentary/grade",
-            async ({ body, store: { db } }) => {
+            async ({ body: _body, store: { db: _db } }) => {
               return {
                 success: true,
                 grade: 0,

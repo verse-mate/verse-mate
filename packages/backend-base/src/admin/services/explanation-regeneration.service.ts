@@ -1,7 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
-import { NotFoundError, ValidationError } from "../../common/errors";
+import { NotFoundError } from "../../common/errors";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
@@ -57,7 +57,7 @@ export class ExplanationRegenerationService {
     explanationType: ExplanationTypeEnum,
     bibleVersion: string,
     model: string,
-    adminUserId: string,
+    _adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
     sendChapterContext = false,
   ) {

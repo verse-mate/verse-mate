@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 import { Link, Text } from "../../..";
 import CheckAnimatedIcon from "../../ui/Icons/AnimatedCheck/AnimatedCheck";
 import ThreeDotsLoadingIcon from "../../ui/Icons/ThreeDotsLoadingIcon/ThreeDotsLoadingIcon";

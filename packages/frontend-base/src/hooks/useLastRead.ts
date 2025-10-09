@@ -23,7 +23,7 @@ type LastRead = {
 
 export const useLastRead = (
   session: UserSession | null,
-  explanation_id?: number | null,
+  _explanation_id?: number | null,
 ) => {
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

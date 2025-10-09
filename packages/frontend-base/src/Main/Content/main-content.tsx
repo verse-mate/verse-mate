@@ -19,7 +19,6 @@ import {
 } from "../../hooks/useBible";
 import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
-import { useExplanation } from "../../hooks/useExplanation";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { useLastRead } from "../../hooks/useLastRead";
 import { useProgressBar } from "../../hooks/useProgressBar";
@@ -333,8 +332,8 @@ export const MainContent = () => {
     }
   }, [bookId, verseId, testament, testaments, bibleVersion, setSelectedTab]);
 
-  const contentRefBook = useRef<HTMLDivElement>(null);
-  const contentRefVersion = useRef<HTMLDivElement>(null);
+  const _contentRefBook = useRef<HTMLDivElement>(null);
+  const _contentRefVersion = useRef<HTMLDivElement>(null);
   const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleBibleVersionSelected = (versionKey: string) => {
@@ -791,9 +790,9 @@ export const MainContent = () => {
       chapter_number: verseId,
     }).then((data) => data?.chatExists);
 
-    const hasChat = chats?.find(
-      (chat) => chat.conversation_id === Number(conversationId),
-    );
+    const hasChat =
+      Array.isArray(chats) &&
+      chats.find((chat) => chat.conversation_id === Number(conversationId));
 
     if (hasChat) {
       saveSearchParams({ conversationId: String(hasChat.conversation_id) });
@@ -807,7 +806,7 @@ export const MainContent = () => {
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
 
-  const renderRecentlyViewed = () => {
+  const _renderRecentlyViewed = () => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
     return recentlyViewedBooks
       .filter((id) => Number(id) !== bookId)
@@ -906,13 +905,14 @@ export const MainContent = () => {
     );
   };
 
-  const selectedBookDetails = [...oldTestamentBooks, ...newTestamentBooks].find(
-    (book) => book.b === bookId,
-  );
+  const _selectedBookDetails = [
+    ...oldTestamentBooks,
+    ...newTestamentBooks,
+  ].find((book) => book.b === bookId);
 
   const [buttonsVisible, setButtonsVisible] = useState(true);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollableRef = useRef<HTMLDivElement>(null);
+  const _scrollableRef = useRef<HTMLDivElement>(null);
   const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
   const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
 

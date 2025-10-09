@@ -9,7 +9,7 @@ import { HighlightMenu } from "../../../HighlightMenu";
 import { NotesButton } from "../../../Notes/NotesButton";
 import { ShareButton } from "../../../ShareButton";
 import styles from "./text.module.css";
-import type { Chapter, Highlight, TextProps } from "./types";
+import type { Highlight, TextProps } from "./types";
 
 const formatSubtitle = (subtitle: string) => {
   if (!subtitle) return "";
@@ -246,7 +246,7 @@ export const Text = ({
                     startChar = undefined;
                     endChar = undefined;
                   }
-                } catch (domError) {
+                } catch (_domError) {
                   startChar = undefined;
                   endChar = undefined;
                 }
@@ -345,7 +345,7 @@ export const Text = ({
                 if (startChar < 0) startChar = 0;
                 if (startChar > fullStartVerseText.length)
                   startChar = fullStartVerseText.length;
-              } catch (e) {
+              } catch (_e) {
                 startChar = 0; // Fallback to beginning of verse
               }
             }
@@ -367,7 +367,7 @@ export const Text = ({
                   if (endChar < 0) endChar = 0;
                   if (endChar > fullEndVerseText.length)
                     endChar = fullEndVerseText.length;
-                } catch (e) {
+                } catch (_e) {
                   const fullEndVerseText = endVerseElement.textContent || "";
                   endChar = fullEndVerseText.length; // Fallback to end of verse
                 }
@@ -384,7 +384,7 @@ export const Text = ({
             }
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Fall back to verse-level highlighting if character calculation fails
         startChar = undefined;
         endChar = undefined;

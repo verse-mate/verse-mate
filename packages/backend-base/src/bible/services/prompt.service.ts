@@ -1,5 +1,4 @@
 import { NotFoundError } from "../../common/errors";
-import type { ExplanationDto } from "../dto/book/explanation.dto";
 import type { PromptRepository } from "../repository/prompt.repository";
 import type { BibleService } from "./bible.service";
 

@@ -3,14 +3,12 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import Image from "next/image";
 import type { Dispatch, SetStateAction } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { selectedBookStore } from "../../../store/book-selection";
 import * as Icon from "../../../ui/Icons";
-import { bibleVersions } from "../../../utils/bible-versions";
 import { explanationTypes } from "../../../utils/commentary-options";
 import { Accordion } from "../../Accordion";
 import { TestamentControl } from "../../Control";
-import { VersionDropdown } from "../../Dropdown";
 import { MarkdownRenderer } from "../../MarkdownRenderer";
 import { Rating } from "../../Rating";
 import { SelectDropdown } from "../../SelectDropdown";
@@ -280,7 +278,7 @@ export const Nav = ({
     [fixedItem],
   );
 
-  const renderRecentlyViewed = () => {
+  const _renderRecentlyViewed = () => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
     return recentlyViewedBooks
       .filter((id) => Number(id) !== bookId)
@@ -371,7 +369,7 @@ export const Nav = ({
   };
 
   const renderAccordionItems = (
-    books: typeof oldTestamentBooks,
+    _books: typeof oldTestamentBooks,
     testament: "OT" | "NT",
   ) => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];

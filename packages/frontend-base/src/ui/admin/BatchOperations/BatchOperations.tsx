@@ -245,7 +245,7 @@ export const BatchOperations = () => {
   const [effortDropdownOpen, setEffortDropdownOpen] = useState(false);
   const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false);
-  const [targetVersionDropdownOpen, setTargetVersionDropdownOpen] =
+  const [_targetVersionDropdownOpen, _setTargetVersionDropdownOpen] =
     useState(false);
   const [availableLanguages, setAvailableLanguages] = useState<
     { code: string; name: string; nativeName: string }[]
@@ -665,7 +665,7 @@ export const BatchOperations = () => {
     }
   };
 
-  const refreshAndMonitorAll = useCallback(async () => {
+  const _refreshAndMonitorAll = useCallback(async () => {
     // Implementation for this will need to be updated to handle bible batches
     await fetchBatchJobs();
   }, [fetchBatchJobs]);

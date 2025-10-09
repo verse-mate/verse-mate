@@ -1,17 +1,10 @@
-import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI, { APIError } from "openai";
-import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
-import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
 import { NotFoundError, ValidationError } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
-import {
-  BATCH_PROCESSING_QUEUE,
-  batchProcessingQueue,
-} from "../../queue/batch-processing.queue";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
@@ -1045,8 +1038,8 @@ export class BatchOperationService {
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
       );
       const children = await this.getBatchChildren(Number(batchId));
-      let cancelledCount = 0;
-      let failedToCancelCount = 0;
+      let _cancelledCount = 0;
+      let _failedToCancelCount = 0;
 
       for (const child of children) {
         if (
@@ -1069,7 +1062,7 @@ export class BatchOperationService {
               .set({ status: openaiBatch.status }) // Use the status from OpenAI API response
               .where("id", "=", Number(child.id))
               .execute();
-            cancelledCount++;
+            _cancelledCount++;
           } catch (error) {
             if (
               error instanceof APIError &&
@@ -1101,7 +1094,7 @@ export class BatchOperationService {
                 .where("id", "=", Number(child.id))
                 .execute();
             }
-            failedToCancelCount++;
+            _failedToCancelCount++;
           }
         }
       }
@@ -1957,18 +1950,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: rephrase|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format rephrase custom_id: ${parsedLine.custom_id}`,
             );
@@ -2236,18 +2222,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: translate|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format translate custom_id: ${parsedLine.custom_id}`,
             );
@@ -2457,7 +2436,6 @@ export class BatchOperationService {
 
     for (const error of batchStatus.errors.data) {
       const errorMessage = error.message || "";
-      const errorCode = error.code || "";
 
       // Detect duplicate custom_id errors
       if (

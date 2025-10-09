@@ -46,7 +46,7 @@ export const useInput = () => {
         content: inputValue,
       });
       // save the chat_id on URL
-      const saveChatIdOnURL = saveSearchParams({
+      const _saveChatIdOnURL = saveSearchParams({
         conversationId: String(newChat.data?.newConversation?.chat_id),
       });
 
@@ -75,7 +75,7 @@ export const useInput = () => {
             });
           }
         }
-      } catch (error) {
+      } catch (_error) {
         const errorMessage = {
           role: "error",
           content: "Error processing request",
@@ -119,7 +119,7 @@ export const useInput = () => {
             });
           }
         }
-      } catch (error) {
+      } catch (_error) {
         const errorMessage = {
           role: "error",
           content: "Error processing request",

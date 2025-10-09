@@ -1,4 +1,4 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import shared from "../shared/shared.plugin";
 import { HealthCheckService } from "./healthcheck.service";
 

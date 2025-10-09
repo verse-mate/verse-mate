@@ -19,6 +19,9 @@ export const userSession = () => {
               Authorization: `Bearer ${accessToken}`,
             },
           });
+          if (response.data instanceof Error) {
+            throw response.data;
+          }
           setSession(response.data);
           setLoading(false);
           return response.data;

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 
-import authPlugin, { type AuthPlugin } from "../auth/auth.plugin";
+import authPlugin from "../auth/auth.plugin";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./user.plugin";
 
@@ -20,6 +20,7 @@ describe("User", () => {
 
   beforeAll(async () => {
     const { data } = await testClient.auth.signup.post(authSignupInput);
+    if (data instanceof Error) throw data;
 
     accessToken = data?.accessToken ?? "";
   });
@@ -35,6 +36,7 @@ describe("User", () => {
         authorization: `Bearer ${accessToken}`,
       },
     });
+    if (data instanceof Error) throw data;
 
     expect(data?.email).toBe(authSignupInput.email);
     expect(data?.firstName).toBe(authSignupInput.firstName);
