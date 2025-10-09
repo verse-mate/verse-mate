@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { getTopicDetails, getTopicReferences } from "../../api/topics";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
+import { MainText } from "../../ui/MainText";
 import { Renderer } from "../../ui/MarkdownRenderer/Content/content";
-import styles from "./main-content.module.css";
+import mainContentStyles from "./main-content.module.css";
 
 interface TopicViewProps {
   topicId: string;
@@ -32,13 +33,25 @@ export const TopicView: React.FC<TopicViewProps> = ({ topicId }) => {
     enabled: !!topicId && !!bibleVersion,
   });
 
-  if (isTopicLoading || isReferencesLoading) {
-    return <div className={styles.bookContainer}>Loading topic...</div>;
+  if (isTopicLoading) {
+    return (
+      <div className={mainContentStyles.bookContainer}>
+        Loading topic details...
+      </div>
+    );
+  }
+
+  if (isReferencesLoading) {
+    return (
+      <div className={mainContentStyles.bookContainer}>
+        Loading topic references...
+      </div>
+    );
   }
 
   if (topicError) {
     return (
-      <div className={styles.bookContainer}>
+      <div className={mainContentStyles.bookContainer}>
         Error loading topic: {(topicError as Error).message}
       </div>
     );
@@ -46,7 +59,7 @@ export const TopicView: React.FC<TopicViewProps> = ({ topicId }) => {
 
   if (referencesError) {
     return (
-      <div className={styles.bookContainer}>
+      <div className={mainContentStyles.bookContainer}>
         Error loading references: {(referencesError as Error).message}
       </div>
     );
@@ -54,13 +67,15 @@ export const TopicView: React.FC<TopicViewProps> = ({ topicId }) => {
 
   // Display topic content in the same way as Bible chapters
   return (
-    <div className={styles.bookContent}>
-      <h1>{topicDetails?.topic?.name}</h1>
-      {topicReferences?.references?.content ? (
-        <Renderer markdownContent={topicReferences.references.content} />
-      ) : (
-        <p>No content available.</p>
-      )}
+    <div className={mainContentStyles.bookContent}>
+      <MainText.Root>
+        <h1>{topicDetails?.topic?.name}</h1>
+        {topicReferences?.references?.content ? (
+          <Renderer markdownContent={topicReferences.references.content} />
+        ) : (
+          <p>No content available.</p>
+        )}
+      </MainText.Root>
     </div>
   );
 };
