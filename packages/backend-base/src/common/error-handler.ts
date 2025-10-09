@@ -6,9 +6,7 @@ import { ApiError } from "./errors";
  *
  * Note: Return type is intentionally loose to work across different plugin contexts
  */
-// biome-ignore lint/suspicious/noExplicitAny: Error handler must be compatible with all plugin contexts
 export const createErrorHandler = (pluginName: string) => {
-  // biome-ignore lint/suspicious/noExplicitAny: Parameters inferred from Elysia context
   return (context: any) => {
     const { code, error, set } = context;
     // Handle custom API errors

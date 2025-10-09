@@ -20,22 +20,6 @@ export const ErrorResponse = t.Object({
 });
 
 /**
- * Standard paginated response structure
- */
-export const PaginatedResponse = <T extends ReturnType<typeof t.Any>>(
-  dataSchema: T,
-) =>
-  t.Object({
-    data: t.Array(dataSchema),
-    pagination: t.Object({
-      page: t.Number({ description: "Current page number" }),
-      limit: t.Number({ description: "Items per page" }),
-      total: t.Number({ description: "Total number of items" }),
-      totalPages: t.Number({ description: "Total number of pages" }),
-    }),
-  });
-
-/**
  * Common error response schemas for reuse across endpoints
  * Use these when ErrorResponse is registered as a model via shared plugin
  */
@@ -107,14 +91,4 @@ export type ErrorResponseType = {
   error: string;
   message: string;
   details?: any;
-};
-
-export type PaginatedResponseType<T> = {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
 };
