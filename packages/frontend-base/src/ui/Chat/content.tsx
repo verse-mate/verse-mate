@@ -34,33 +34,31 @@ export const CardContent = () => {
       <RadixTabs.Content value="chat">
         <ScrollArea>
           <Conversation.Content>
-            {conversationMessages?.map(
-              (data: { role: string; content: string }, index: number) => {
-                if (data.role === "user" && typeof data.content === "string") {
-                  return (
-                    <Conversation.UserMessageBlock
-                      key={index.toString()}
-                      message={data.content}
-                    />
-                  );
-                }
+            {conversationMessages?.map((data, index) => {
+              if (data.role === "user" && typeof data.content === "string") {
+                return (
+                  <Conversation.UserMessageBlock
+                    key={index.toString()}
+                    message={data.content}
+                  />
+                );
+              }
 
-                if (
-                  data.role === "assistant" &&
-                  typeof data.content === "string"
-                ) {
-                  return (
-                    <Conversation.AIMessageBlock
-                      icon={<Icon.VerseMateIcon />}
-                      key={index.toString()}
-                      message={data.content}
-                    />
-                  );
-                }
+              if (
+                data.role === "assistant" &&
+                typeof data.content === "string"
+              ) {
+                return (
+                  <Conversation.AIMessageBlock
+                    icon={<Icon.VerseMateIcon />}
+                    key={index.toString()}
+                    message={data.content}
+                  />
+                );
+              }
 
-                return null;
-              },
-            )}
+              return null;
+            })}
             {(isSending === 1 || isMutating === 1) && (
               <Conversation.AIMessageBlock
                 icon={<Icon.VerseMateIcon />}
@@ -76,33 +74,31 @@ export const CardContent = () => {
       <RadixTabs.Content value="newChat">
         <ScrollArea>
           <Conversation.Content>
-            {conversationMessages?.map(
-              (data: { role: string; content: string }, index: number) => {
-                if (data.role === "user" && typeof data.content === "string") {
-                  return (
-                    <Conversation.UserMessageBlock
-                      key={index.toString()}
-                      message={data.content}
-                    />
-                  );
-                }
+            {conversationMessages?.map((data, index) => {
+              if (data.role === "user" && typeof data.content === "string") {
+                return (
+                  <Conversation.UserMessageBlock
+                    key={index.toString()}
+                    message={data.content}
+                  />
+                );
+              }
 
-                if (
-                  data.role === "assistant" &&
-                  typeof data.content === "string"
-                ) {
-                  return (
-                    <Conversation.AIMessageBlock
-                      icon={<Icon.VerseMateIcon />}
-                      key={index.toString()}
-                      message={data.content}
-                    />
-                  );
-                }
+              if (
+                data.role === "assistant" &&
+                typeof data.content === "string"
+              ) {
+                return (
+                  <Conversation.AIMessageBlock
+                    icon={<Icon.VerseMateIcon />}
+                    key={index.toString()}
+                    message={data.content}
+                  />
+                );
+              }
 
-                return null;
-              },
-            )}
+              return null;
+            })}
             {(isSending === 1 || isMutating === 1) && (
               <Conversation.AIMessageBlock
                 icon={<Icon.VerseMateIcon />}
@@ -123,11 +119,11 @@ export const CardContent = () => {
               Object.keys(conversationsHistory).length === 0 ? (
                 <span className={styles.simpleText}>no chats</span>
               ) : (
-                (Object.entries(conversationsHistory) as [string, any[]][]).map(
+                Object.entries(conversationsHistory).map(
                   ([key, conversation]) => (
                     <div key={key} className={styles.groupContainer}>
                       <History.HistoryLabel date={key} />
-                      {conversation.map((data: any) => (
+                      {conversation.map((data) => (
                         <History.HistoryButton
                           key={data.conversation_id}
                           onClick={() => {
