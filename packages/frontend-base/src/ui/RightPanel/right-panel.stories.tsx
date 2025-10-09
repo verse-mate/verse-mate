@@ -29,9 +29,9 @@ export const Default: Story = () => {
 
   const { bookId, verseId, explanationType } = useGetSearchParams();
 
-  const { chapters } = fetchAllChaptersByBook(bookId);
+  const { chapters } = fetchAllChaptersByBook(Number(bookId));
   const { explanation } = fetchExplanation(
-    bookId,
+    Number(bookId),
     Number(verseId),
     explanationType,
   );

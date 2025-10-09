@@ -82,14 +82,14 @@ export const MainContent = () => {
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
   const { testaments } = fetchAllTestaments();
-  const { chapters } = fetchAllChaptersByBook(bookId);
+  const { chapters } = fetchAllChaptersByBook(Number(bookId));
   const { bookVerseData } = fetchBookVerse(
-    bookId,
+    Number(bookId),
     Number(verseId),
     bibleVersion,
   );
   const { explanation } = fetchExplanation(
-    bookId,
+    Number(bookId),
     Number(verseId),
     explanationType,
     bibleVersion,
@@ -210,7 +210,7 @@ export const MainContent = () => {
   useEffect(() => {
     if (bookId && verseId) {
       // restart the timer whenever `bookId` or `verseId` changes
-      startTimer(bookId, Number(verseId));
+      startTimer(Number(bookId), Number(verseId));
     }
   }, [bookId, verseId, startTimer]);
 
@@ -259,7 +259,13 @@ export const MainContent = () => {
     averageRating,
     setRating,
     setHoverRating,
-  } = useRating(5, session, bookId, verseId, explanation?.explanation_id);
+  } = useRating(
+    5,
+    session,
+    Number(bookId),
+    verseId,
+    explanation?.explanation_id,
+  );
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -642,7 +648,7 @@ export const MainContent = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-  const fixedItem = bookId > 0;
+  const fixedItem = Number(bookId) > 0;
 
   const handleMobileAccordionTriggerClick = useCallback(
     (bookName: string) => {
@@ -795,7 +801,7 @@ export const MainContent = () => {
 
   const handleChat = async () => {
     const chats = await handleChatExists({
-      book_id: bookId,
+      book_id: Number(bookId),
       chapter_number: verseId,
     }).then((data) => data?.chatExists);
 
@@ -1100,22 +1106,28 @@ export const MainContent = () => {
       if (nextChapterVerseId <= chapters) {
         // Prefetch next chapter's Bible text
         queryClient.prefetchQuery({
-          queryKey: ["bookVerse", bookId, nextChapterVerseId, bibleVersion],
-          queryFn: () => getBookVerse(bookId, nextChapterVerseId, bibleVersion),
+          queryKey: [
+            "bookVerse",
+            Number(bookId),
+            nextChapterVerseId,
+            bibleVersion,
+          ],
+          queryFn: () =>
+            getBookVerse(Number(bookId), nextChapterVerseId, bibleVersion),
         });
 
         // Prefetch next chapter's explanation
         queryClient.prefetchQuery({
           queryKey: [
             "explanation",
-            bookId,
+            Number(bookId),
             nextChapterVerseId,
             explanationType,
             bibleVersion,
           ],
           queryFn: () =>
             getExplanation(
-              bookId,
+              Number(bookId),
               nextChapterVerseId,
               explanationType,
               bibleVersion,
@@ -1126,23 +1138,28 @@ export const MainContent = () => {
       if (previousChapterVerseId > 0) {
         // Prefetch previous chapter's Bible text
         queryClient.prefetchQuery({
-          queryKey: ["bookVerse", bookId, previousChapterVerseId, bibleVersion],
+          queryKey: [
+            "bookVerse",
+            Number(bookId),
+            previousChapterVerseId,
+            bibleVersion,
+          ],
           queryFn: () =>
-            getBookVerse(bookId, previousChapterVerseId, bibleVersion),
+            getBookVerse(Number(bookId), previousChapterVerseId, bibleVersion),
         });
 
         // Prefetch previous chapter's explanation
         queryClient.prefetchQuery({
           queryKey: [
             "explanation",
-            bookId,
+            Number(bookId),
             previousChapterVerseId,
             explanationType,
             bibleVersion,
           ],
           queryFn: () =>
             getExplanation(
-              bookId,
+              Number(bookId),
               previousChapterVerseId,
               explanationType,
               bibleVersion,
@@ -1969,7 +1986,7 @@ export const MainContent = () => {
             <LeftPanel.Nav
               averageRating={averageRating}
               bibleVersionSelected={bibleVersionSelected}
-              bookId={bookId}
+              bookId={Number(bookId)}
               verseId={verseId}
               explanation={explanation}
               currentRating={currentRating}
@@ -2001,7 +2018,7 @@ export const MainContent = () => {
               recentlyViewedBooks={recentlyViewedBooks}
             />
             <LeftPanel.Content
-              bookId={bookId}
+              bookId={Number(bookId)}
               verseId={verseId}
               bookVerseData={bookVerseData}
               handleDesktopSwipe={swipeHandlers}

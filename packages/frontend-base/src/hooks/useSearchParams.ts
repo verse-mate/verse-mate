@@ -56,10 +56,15 @@ export const useSaveSearchParams = () => {
 
 export const useGetSearchParams = () => {
   const searchParams = useSearchParams();
-  const bookId = Number(searchParams?.get("bookId")) || 1;
-  const verseId = Number(searchParams?.get("verseId")) || 1;
   const testament =
     (searchParams?.get("testament") as TestamentEnum) || TestamentEnum.OT;
+  const isViewingTopic = (testament as unknown as string) === "TOPIC";
+
+  // For topics, bookId is a UUID string; for Bible chapters, it's a number
+  const bookIdParam = searchParams?.get("bookId");
+  const bookId = isViewingTopic ? bookIdParam || "" : Number(bookIdParam) || 1;
+
+  const verseId = Number(searchParams?.get("verseId")) || 1;
   const bibleVersion = searchParams?.get("bibleVersion") || "NASB1995";
   const conversationId = searchParams?.get("conversationId") || "newChat";
   const explanationId = Number(searchParams?.get("explanationId"));
