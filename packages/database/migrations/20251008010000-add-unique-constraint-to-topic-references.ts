@@ -1,4 +1,4 @@
-import { type Kysely, sql } from "kysely";
+import type { Kysely } from "kysely";
 import type Database from "../src/models/Database";
 
 export async function up(db: Kysely<Database>): Promise<void> {
