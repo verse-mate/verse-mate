@@ -9,6 +9,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
@@ -22,6 +23,34 @@ import { NewChatDto } from "./dto/chat/new-chat.dto";
 import { BibleRepository } from "./repository/bible.repository";
 import { ChatRepository } from "./repository/chat.repository";
 import { PromptRepository } from "./repository/prompt.repository";
+import {
+  BookSchema,
+  BookmarkActionSchema,
+  BookmarksSchema,
+  ChapterIdSchema,
+  ChapterSchema,
+  ChatExistsSchema,
+  DisabledChatSchema,
+  ExplanationSchema,
+  HighlightAddSchema,
+  HighlightDeleteSchema,
+  HighlightUpdateSchema,
+  HighlightsSchema,
+  LanguagesSchema,
+  LastChapterReadSaveSchema,
+  LastChapterReadSchema,
+  MessagesHistorySchema,
+  NewConversationSchema,
+  NoteAddSchema,
+  NoteDeleteSchema,
+  NoteUpdateSchema,
+  NotesSchema,
+  RatingSaveSchema,
+  RatingsSchema,
+  SavedMessageSchema,
+  TestamentsSchema,
+  UserChatHistorySchema,
+} from "./schemas/bible-response.schema";
 import { BibleService } from "./services/bible.service";
 import { ChatService } from "./services/chat.service";
 import { PromptService } from "./services/prompt.service";
@@ -68,18 +97,36 @@ const plugin = new Elysia()
   })
   .group("/bible", (app) =>
     app
-      .get("/books", async () => {
-        const metadataFile = Bun.file(
-          `${import.meta.dir}/data/key_english.json`,
-        );
-        const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
-        const bible = await parseBibleData(bibleFile, metadataFile);
+      .get(
+        "/books",
+        async () => {
+          const metadataFile = Bun.file(
+            `${import.meta.dir}/data/key_english.json`,
+          );
+          const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
+          const bible = await parseBibleData(bibleFile, metadataFile);
 
-        return { books: bible.books };
-      })
-      .get("/languages", async ({ store: { bibleService } }) => {
-        return await bibleService.getAvailableExplanationLanguages();
-      })
+          return { books: bible.books };
+        },
+        {
+          response: {
+            200: BookSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/languages",
+        async ({ store: { bibleService } }) => {
+          return await bibleService.getAvailableExplanationLanguages();
+        },
+        {
+          response: {
+            200: LanguagesSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {
@@ -109,6 +156,10 @@ const plugin = new Elysia()
           query: t.Object({
             versionKey: t.Optional(t.String()),
           }),
+          response: {
+            200: ChapterSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .resolve({ as: "scoped" }, authDerive)
@@ -149,12 +200,25 @@ const plugin = new Elysia()
             versionKey: t.Optional(t.String()),
             explanationType: t.Optional(t.String()),
           }),
+          response: {
+            200: ExplanationSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
-      .get("/testaments", async ({ store: { bibleService } }) => {
-        const { testaments } = await bibleService.getTestaments();
-        return { testaments: testaments.keys };
-      })
+      .get(
+        "/testaments",
+        async ({ store: { bibleService } }) => {
+          const { testaments } = await bibleService.getTestaments();
+          return { testaments: testaments.keys };
+        },
+        {
+          response: {
+            200: TestamentsSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/chapter-id/:bookId/:chapterNumber",
         async ({ params, store: { db } }) => {
@@ -179,6 +243,10 @@ const plugin = new Elysia()
             bookId: t.String(),
             chapterNumber: t.String(),
           }),
+          response: {
+            200: ChapterIdSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -191,6 +259,10 @@ const plugin = new Elysia()
         },
         {
           body: ChatHistoryDto,
+          response: {
+            200: UserChatHistorySchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -204,6 +276,10 @@ const plugin = new Elysia()
         },
         {
           body: MessageHistoryDto,
+          response: {
+            200: MessagesHistorySchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -222,6 +298,10 @@ const plugin = new Elysia()
           body: t.Intersect([
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
           ]),
+          response: {
+            200: ChatExistsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -309,6 +389,10 @@ const plugin = new Elysia()
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
             t.Pick(AddMessageDto, ["content"]),
           ]),
+          response: {
+            200: NewConversationSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -325,6 +409,10 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
+          response: {
+            200: RatingSaveSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .put(
@@ -343,6 +431,10 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
+          response: {
+            200: RatingSaveSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -375,6 +467,10 @@ const plugin = new Elysia()
         },
         {
           body: t.Omit(RatingDto, ["rating"]),
+          response: {
+            200: RatingsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -393,6 +489,10 @@ const plugin = new Elysia()
             t.Pick(LastChapterReadDto, ["book_id", "chapter_number"]),
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
+          response: {
+            200: LastChapterReadSaveSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -408,6 +508,10 @@ const plugin = new Elysia()
           body: t.Intersect([
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
+          response: {
+            200: LastChapterReadSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -423,6 +527,10 @@ const plugin = new Elysia()
         },
         {
           body: t.Pick(AddMessageDto, ["chat_id", "content"]),
+          response: {
+            200: SavedMessageSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -494,6 +602,10 @@ const plugin = new Elysia()
             t.Pick(AddMessageDto, ["chat_id", "content"]),
             t.Pick(ChapterDto, ["book_id", "chapter_number"]),
           ]),
+          response: {
+            200: SavedMessageSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -507,6 +619,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Pick(ChatEntity, ["conversation_id"]),
+          response: {
+            200: DisabledChatSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -535,6 +651,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+          response: {
+            200: BookmarksSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -553,6 +673,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+          response: {
+            200: NotesSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -594,6 +718,10 @@ const plugin = new Elysia()
             verse_id: t.Optional(t.Number()),
             content: t.String(),
           }),
+          response: {
+            200: NoteAddSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .put(
@@ -618,6 +746,10 @@ const plugin = new Elysia()
             note_id: t.String({ format: "uuid" }),
             content: t.String(),
           }),
+          response: {
+            200: NoteUpdateSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -638,6 +770,10 @@ const plugin = new Elysia()
           query: t.Object({
             note_id: t.String({ format: "uuid" }),
           }),
+          response: {
+            200: NoteDeleteSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -668,6 +804,10 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: BookmarkActionSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -704,6 +844,10 @@ const plugin = new Elysia()
             book_id: t.String(),
             chapter_number: t.String(),
           }),
+          response: {
+            200: BookmarkActionSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -741,6 +885,10 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: BookmarkActionSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       // Highlight endpoints
@@ -764,6 +912,10 @@ const plugin = new Elysia()
           params: t.Object({
             user_id: t.String({ format: "uuid" }),
           }),
+          response: {
+            200: HighlightsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -799,6 +951,10 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: HighlightsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -843,6 +999,10 @@ const plugin = new Elysia()
             end_char: t.Optional(t.Number()),
             selected_text: t.Optional(t.String()),
           }),
+          response: {
+            200: HighlightAddSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .put(
@@ -872,6 +1032,10 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
             color: t.String(),
           }),
+          response: {
+            200: HighlightUpdateSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -894,6 +1058,10 @@ const plugin = new Elysia()
           params: t.Object({
             highlight_id: t.Number(),
           }),
+          response: {
+            200: HighlightDeleteSchema,
+            ...StandardErrorResponses,
+          },
         },
       ),
   );
