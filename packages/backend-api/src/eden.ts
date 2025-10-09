@@ -1,6 +1,7 @@
 import { treaty } from "@elysiajs/eden";
-import type { App } from "backend";
 import { $env } from "frontend-envs";
+// Import App type directly from source to ensure proper type resolution
+import type { App } from "../../../apps/backend/src/index";
 
 const getAccessToken = (): string | null => {
   if (typeof document === "undefined") return null;
