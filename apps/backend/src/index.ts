@@ -1,15 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
-import {
-  type AdminPlugin,
-  type AuthPlugin,
-  type BiblePlugin,
-  type UserPlugin,
-  adminPlugin,
-  authPlugin,
-  biblePlugin,
-  userPlugin,
-} from "backend-base";
+import { adminPlugin, authPlugin, biblePlugin, userPlugin } from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
@@ -17,10 +8,10 @@ import { Elysia } from "elysia";
 
 // Compose app with explicit plugin types to preserve type information
 const app = new Elysia()
-  .use(authPlugin as AuthPlugin)
-  .use(userPlugin as UserPlugin)
-  .use(biblePlugin as BiblePlugin)
-  .use(adminPlugin as AdminPlugin)
+  .use(authPlugin)
+  .use(userPlugin)
+  .use(biblePlugin)
+  .use(adminPlugin)
   .use(cors())
   .use(
     openapi({
@@ -32,7 +23,7 @@ const app = new Elysia()
             "Bible reading platform API with AI-driven translations and interactive Q&A",
         },
         servers: [
-          { url: "http://localhost:3001", description: "Development" },
+          { url: "http://localhost:3000", description: "Development" },
           { url: "https://api.versemate.com", description: "Production" },
         ],
       },

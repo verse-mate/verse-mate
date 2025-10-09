@@ -119,26 +119,14 @@ const plugin = new Elysia()
 
           return { books: bible.books };
         },
-        {
-          response: {
-            200: t.Object({
-              books: t.Array(BookSchema), // Complex Book structure from JSON
-            }),
-            ...AuthErrors,
-          },
-        },
+        {},
       )
       .get(
         "/languages",
         async ({ store: { bibleService } }) => {
           return await bibleService.getAvailableExplanationLanguages();
         },
-        {
-          response: {
-            200: t.Array(LanguageSchema),
-            ...AuthErrors,
-          },
-        },
+        {},
       )
       .get(
         "/book/:bookId/:chapterNumber",
@@ -169,11 +157,6 @@ const plugin = new Elysia()
           query: t.Object({
             versionKey: t.Optional(t.String()),
           }),
-          response: {
-            200: SingleChapterBookSchema, // Can be { book: Book | null } | { message: string }
-            ...AuthErrors,
-            404: ErrorResponse,
-          },
         },
       )
       .resolve({ as: "scoped" }, authDerive)
@@ -214,28 +197,12 @@ const plugin = new Elysia()
             versionKey: t.Optional(t.String()),
             explanationType: t.Optional(t.String()),
           }),
-          response: {
-            200: t.Object({
-              explanation: t.Optional(ExplanationSchema),
-            }),
-            ...AuthErrors,
-            404: ErrorResponse,
-          },
         },
       )
-      .get(
-        "/testaments",
-        async ({ store: { bibleService } }) => {
-          const { testaments } = await bibleService.getTestaments();
-          return { testaments: testaments.keys };
-        },
-        {
-          response: {
-            200: t.Object({ testaments: t.Array(TestamentSchema) }),
-            ...AuthErrors,
-          },
-        },
-      )
+      .get("/testaments", async ({ store: { bibleService } }) => {
+        const { testaments } = await bibleService.getTestaments();
+        return { testaments: testaments.keys };
+      })
       .get(
         "/chapter-id/:bookId/:chapterNumber",
         async ({ params, store: { db } }) => {
@@ -260,11 +227,6 @@ const plugin = new Elysia()
             bookId: t.String(),
             chapterNumber: t.String(),
           }),
-          response: {
-            200: t.Object({ chapter_id: t.Optional(t.Number()) }),
-            ...AuthErrors,
-            404: ErrorResponse,
-          },
         },
       )
       .post(
@@ -277,10 +239,6 @@ const plugin = new Elysia()
         },
         {
           body: ChatHistoryDto,
-          response: {
-            200: t.Object({ userChatHistory: GroupedChatHistorySchema }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -294,10 +252,6 @@ const plugin = new Elysia()
         },
         {
           body: MessageHistoryDto,
-          response: {
-            200: t.Object({ messagesHistory: MessageHistorySchema }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -316,10 +270,6 @@ const plugin = new Elysia()
           body: t.Intersect([
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
           ]),
-          response: {
-            200: t.Object({ chatExists: t.Boolean() }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -407,14 +357,6 @@ const plugin = new Elysia()
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
             t.Pick(AddMessageDto, ["content"]),
           ]),
-          response: {
-            200: t.Object({
-              newConversation: NewConversationSchema,
-              generatedTitle: t.String(),
-            }),
-            ...StandardErrors,
-            404: ErrorResponse,
-          },
         },
       )
       .post(
@@ -431,10 +373,6 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
-          response: {
-            200: t.Object({ result: SaveRatingResultSchema }),
-            ...AuthErrors,
-          },
         },
       )
       .put(
@@ -453,10 +391,6 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
-          response: {
-            200: t.Object({ result: UpdateRatingResultSchema }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -489,14 +423,6 @@ const plugin = new Elysia()
         },
         {
           body: t.Omit(RatingDto, ["rating"]),
-          response: {
-            200: t.Object({
-              userRating: t.Number(),
-              totalUsersWhoRated: t.Number(),
-              averageRating: t.Number(),
-            }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -515,10 +441,6 @@ const plugin = new Elysia()
             t.Pick(LastChapterReadDto, ["book_id", "chapter_number"]),
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
-          response: {
-            200: t.Object({ result: SaveLastChapterReadResultSchema }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -534,12 +456,6 @@ const plugin = new Elysia()
           body: t.Intersect([
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
-          response: {
-            200: t.Object({
-              result: t.Optional(LastChapterReadSchema),
-            }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -555,10 +471,6 @@ const plugin = new Elysia()
         },
         {
           body: t.Pick(AddMessageDto, ["chat_id", "content"]),
-          response: {
-            200: t.Object({ result: MessageSaveResultSchema }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -630,11 +542,6 @@ const plugin = new Elysia()
             t.Pick(AddMessageDto, ["chat_id", "content"]),
             t.Pick(ChapterDto, ["book_id", "chapter_number"]),
           ]),
-          response: {
-            200: t.Object({ result: MessageSaveResultSchema }),
-            ...AuthErrors,
-            404: ErrorResponse,
-          },
         },
       )
       .delete(
@@ -648,10 +555,6 @@ const plugin = new Elysia()
         },
         {
           params: t.Pick(ChatDto, ["conversation_id"]),
-          response: {
-            200: t.Object({ disabledChat: t.Number() }),
-            ...AuthErrors,
-          },
         },
       )
       .get(
@@ -680,10 +583,6 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
-          response: {
-            200: t.Object({ favorites: t.Array(BookmarkSchema) }),
-            ...AuthErrors,
-          },
         },
       )
       .get(
@@ -702,10 +601,6 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
-          response: {
-            200: t.Object({ notes: t.Array(NoteSchema) }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -747,13 +642,6 @@ const plugin = new Elysia()
             verse_id: t.Optional(t.Number()),
             content: t.String(),
           }),
-          response: {
-            200: t.Object({
-              success: t.Boolean(),
-              note: t.Optional(NoteSchema),
-            }),
-            ...StandardErrors,
-          },
         },
       )
       .put(
@@ -778,10 +666,6 @@ const plugin = new Elysia()
             note_id: t.String({ format: "uuid" }),
             content: t.String(),
           }),
-          response: {
-            200: t.Object({ success: t.Boolean() }),
-            ...StandardErrors,
-          },
         },
       )
       .delete(
@@ -802,10 +686,6 @@ const plugin = new Elysia()
           query: t.Object({
             note_id: t.String({ format: "uuid" }),
           }),
-          response: {
-            200: t.Object({ success: t.Boolean() }),
-            ...StandardErrors,
-          },
         },
       )
       .post(
@@ -836,10 +716,6 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
-          response: {
-            200: t.Object({ success: t.Boolean() }),
-            ...StandardErrors,
-          },
         },
       )
       .delete(
@@ -876,10 +752,6 @@ const plugin = new Elysia()
             book_id: t.String(),
             chapter_number: t.String(),
           }),
-          response: {
-            200: t.Object({ success: t.Boolean() }),
-            ...StandardErrors,
-          },
         },
       )
       .post(
@@ -917,10 +789,6 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
-          response: {
-            200: t.Object({ success: t.Boolean() }),
-            ...StandardErrors,
-          },
         },
       )
       // Highlight endpoints
@@ -944,10 +812,6 @@ const plugin = new Elysia()
           params: t.Object({
             user_id: t.String({ format: "uuid" }),
           }),
-          response: {
-            200: t.Object({ highlights: t.Array(HighlightSchema) }),
-            ...AuthErrors,
-          },
         },
       )
       .get(
@@ -983,10 +847,6 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
-          response: {
-            200: t.Object({ highlights: t.Array(HighlightSchema) }),
-            ...AuthErrors,
-          },
         },
       )
       .post(
@@ -1031,16 +891,6 @@ const plugin = new Elysia()
             end_char: t.Optional(t.Number()),
             selected_text: t.Optional(t.String()),
           }),
-          response: {
-            200: t.Union([
-              t.Object({
-                success: t.Boolean(),
-                highlight: t.Optional(HighlightSchema),
-              }),
-              t.Object({ success: t.Boolean(), error: t.Optional(t.String()) }),
-            ]),
-            ...StandardErrors,
-          },
         },
       )
       .put(
@@ -1070,13 +920,6 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
             color: t.String(),
           }),
-          response: {
-            200: t.Object({
-              highlight: t.Union([HighlightSchema, t.Null(), t.Undefined()]),
-              success: t.Boolean(),
-            }),
-            ...AuthErrors,
-          },
         },
       )
       .delete(
@@ -1099,10 +942,6 @@ const plugin = new Elysia()
           params: t.Object({
             highlight_id: t.Number(),
           }),
-          response: {
-            200: t.Object({ success: t.Boolean() }),
-            ...StandardErrors,
-          },
         },
       ),
   );

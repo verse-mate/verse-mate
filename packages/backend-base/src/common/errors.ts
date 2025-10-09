@@ -1,5 +1,3 @@
-import type { ErrorResponseType } from "./response-models";
-
 /**
  * Base class for all API errors with HTTP status codes
  */
@@ -17,7 +15,7 @@ export abstract class ApiError extends Error {
     }
   }
 
-  toResponse(): ErrorResponseType {
+  toResponse() {
     return {
       error: this.code,
       message: this.message,
