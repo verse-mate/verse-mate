@@ -119,7 +119,7 @@ export const useSelectedState = (
   resetFilter: () => void,
   setRecentlyViewedBooks: (books: string[]) => void,
 ) => {
-  const [selectedTab, setSelectedTab] = useState<"OT" | "NT">("NT");
+  const [selectedTab, setSelectedTab] = useState<"OT" | "NT" | "TOPICS">("NT");
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [selectedVerse, setSelectedVerse] = useState<string | null>(null);
   const [selectedBibleVersion, setSelectedBibleVersion] = useState<
@@ -129,7 +129,7 @@ export const useSelectedState = (
 
   const handleTabChange = useCallback(
     (value: string) => {
-      setSelectedTab(value as "OT" | "NT");
+      setSelectedTab(value as "OT" | "NT" | "TOPICS");
       if (resetFilter) {
         resetFilter();
       }

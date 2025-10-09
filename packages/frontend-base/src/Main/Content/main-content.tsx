@@ -243,6 +243,14 @@ export const MainContent = () => {
     closeDropdown: closeDropdownBook,
   } = useDropdownToggle();
 
+  useEffect(() => {
+    const handleClose = () => closeDropdownBook();
+    window.addEventListener("closeDropdownBook", handleClose);
+    return () => {
+      window.removeEventListener("closeDropdownBook", handleClose);
+    };
+  }, [closeDropdownBook]);
+
   const book = testaments?.find((item) => {
     return item.b === Number(bookId);
   })?.n;
@@ -357,6 +365,12 @@ export const MainContent = () => {
   const contentRefBook = useRef<HTMLDivElement>(null);
   const contentRefVersion = useRef<HTMLDivElement>(null);
   const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (mobileScrollContainerRef.current) {
+      mobileScrollContainerRef.current.scrollTop = 0;
+    }
+  }, []);
 
   const handleBibleVersionSelected = (versionKey: string) => {
     saveBibleVersionOnURL(versionKey);
@@ -1255,7 +1269,7 @@ export const MainContent = () => {
                           </Tabs.List>
 
                           <FilterInput
-                            placeholder="Filter Books..."
+                            placeholder="Filter..."
                             debouncedFilter={leftPanelDebouncedFilter}
                             handleChange={leftPanelHandleChange}
                             filterable
@@ -1265,21 +1279,26 @@ export const MainContent = () => {
                           <div
                             ref={mobileScrollContainerRef}
                             className={`${styles.contentGroupedTrigger}`}
-                            style={{ paddingBottom: "16px" }}
+                            style={{
+                              paddingBottom:
+                                leftPanelSelectedTab === "TOPICS"
+                                  ? "0px"
+                                  : "16px",
+                            }}
                           >
-                            <div
-                              className={styles.selectedBook}
-                              style={
-                                fixedItem
-                                  ? { position: "relative", marginTop: 48 }
-                                  : {}
-                              }
-                            >
-                              <Accordion.Root type="multiple">
-                                {renderSelectedBook()}
-                              </Accordion.Root>
-                            </div>
                             <Tabs.Content value="OT">
+                              <div
+                                className={styles.selectedBook}
+                                style={
+                                  fixedItem
+                                    ? { position: "relative", marginTop: 48 }
+                                    : {}
+                                }
+                              >
+                                <Accordion.Root type="multiple">
+                                  {renderSelectedBook()}
+                                </Accordion.Root>
+                              </div>
                               <Accordion.Root>
                                 {/* Recently viewed books (all testaments) */}
                                 {!leftPanelDebouncedFilter.trim() &&
@@ -1461,6 +1480,18 @@ export const MainContent = () => {
                             </Tabs.Content>
 
                             <Tabs.Content value="NT">
+                              <div
+                                className={styles.selectedBook}
+                                style={
+                                  fixedItem
+                                    ? { position: "relative", marginTop: 48 }
+                                    : {}
+                                }
+                              >
+                                <Accordion.Root type="multiple">
+                                  {renderSelectedBook()}
+                                </Accordion.Root>
+                              </div>
                               <Accordion.Root>
                                 {/* Recently viewed books (all testaments) */}
                                 {!leftPanelDebouncedFilter.trim() &&
@@ -1656,7 +1687,10 @@ export const MainContent = () => {
                                     label="Parables"
                                   />
                                 </Tabs.List>
-                                <TopicContent category={activeTopicTab} />
+                                <TopicContent
+                                  category={activeTopicTab}
+                                  filter={leftPanelDebouncedFilter}
+                                />
                               </Tabs.Root>
                             </Tabs.Content>
                           </div>
