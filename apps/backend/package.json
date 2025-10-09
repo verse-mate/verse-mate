@@ -9,6 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@elysiajs/cors": "1.4.0",
     "@elysiajs/openapi": "1.4.11",
     "backend-base": "workspace:*",
     "elysia": "1.4.9"

@@ -25,6 +25,7 @@
       "name": "backend",
       "version": "1.0.50",
       "dependencies": {
+        "@elysiajs/cors": "1.4.0",
         "@elysiajs/openapi": "1.4.11",
         "backend-base": "workspace:*",
         "elysia": "1.4.9",
@@ -89,7 +90,6 @@
         "@aws-sdk/client-s3": "^3.620.1",
         "@aws-sdk/s3-request-presigner": "^3.620.1",
         "@elysiajs/bearer": "1.4.1",
-        "@elysiajs/cors": "1.4.0",
         "@elysiajs/jwt": "1.4.0",
         "bullmq": "^5.7.0",
         "database": "workspace:*",

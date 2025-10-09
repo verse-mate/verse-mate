@@ -15,34 +15,6 @@ import { AuthSignupInput } from "./dto/auth-signup.input";
 import { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 
-// Response schemas
-const AuthPayloadResponse = t.Object({
-  accessToken: t.String({ description: "JWT access token" }),
-  verified: t.Boolean({ description: "Email verification status" }),
-});
-
-const UserIdResponse = t.Object({
-  id: t.Union([t.String(), t.Null()], {
-    description: "Current user ID or null if not authenticated",
-  }),
-});
-
-const BooleanResponse = t.Boolean({ description: "Operation success status" });
-
-const UserSessionResponse = t.Object({
-  id: t.String(),
-  email: t.String(),
-  firstName: t.String(),
-  lastName: t.String(),
-  is_admin: t.Boolean(),
-  preferred_language: t.Union([t.String(), t.Null()]),
-});
-
-const SuccessResponse = t.Object({
-  success: t.Boolean(),
-  message: t.Optional(t.String()),
-});
-
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("auth plugin"))
@@ -67,7 +39,11 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: UserIdResponse,
+                200: t.Object({
+                  id: t.Union([t.String(), t.Null()], {
+                    description: "Current user ID or null if not authenticated",
+                  }),
+                }),
                 ...AuthErrorsRef,
               },
             },
@@ -87,7 +63,7 @@ const plugin = new Elysia()
             {
               body: AuthChangePasswordInput,
               response: {
-                200: BooleanResponse,
+                200: t.Boolean({ description: "Operation success status" }),
                 ...AuthErrorsRef,
               },
             },
@@ -107,7 +83,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: BooleanResponse,
+                200: t.Boolean({ description: "Operation success status" }),
                 ...AuthErrorsRef,
               },
             },
@@ -125,7 +101,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: BooleanResponse,
+                200: t.Boolean({ description: "Operation success status" }),
                 ...AuthErrorsRef,
               },
             },
@@ -169,7 +145,12 @@ const plugin = new Elysia()
                 token: t.String(),
               }),
               response: {
-                200: AuthPayloadResponse,
+                200: t.Object({
+                  accessToken: t.String({ description: "JWT access token" }),
+                  verified: t.Boolean({
+                    description: "Email verification status",
+                  }),
+                }),
                 ...AuthErrorsRef,
               },
             },
@@ -188,7 +169,14 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: UserSessionResponse,
+                200: t.Object({
+                  id: t.String(),
+                  email: t.String(),
+                  firstName: t.String(),
+                  lastName: t.String(),
+                  is_admin: t.Boolean(),
+                  preferred_language: t.Union([t.String(), t.Null()]),
+                }),
                 ...AuthErrorsRef,
               },
             },
@@ -208,7 +196,14 @@ const plugin = new Elysia()
             {
               body: AuthUpdateProfileInput,
               response: {
-                200: UserSessionResponse,
+                200: t.Object({
+                  id: t.String(),
+                  email: t.String(),
+                  firstName: t.String(),
+                  lastName: t.String(),
+                  is_admin: t.Boolean(),
+                  preferred_language: t.Union([t.String(), t.Null()]),
+                }),
                 ...AuthErrorsRef,
               },
             },
@@ -222,7 +217,10 @@ const plugin = new Elysia()
         {
           body: AuthSignupInput,
           response: {
-            200: AuthPayloadResponse,
+            200: t.Object({
+              accessToken: t.String({ description: "JWT access token" }),
+              verified: t.Boolean({ description: "Email verification status" }),
+            }),
             ...StandardErrorsRef,
             409: t.Ref("ErrorResponse"),
           },
@@ -236,7 +234,10 @@ const plugin = new Elysia()
         {
           body: AuthLoginInput,
           response: {
-            200: AuthPayloadResponse,
+            200: t.Object({
+              accessToken: t.String({ description: "JWT access token" }),
+              verified: t.Boolean({ description: "Email verification status" }),
+            }),
             ...StandardErrorsRef,
           },
         },
@@ -250,7 +251,10 @@ const plugin = new Elysia()
         {
           body: AuthForgotPasswordInput,
           response: {
-            200: SuccessResponse,
+            200: t.Object({
+              success: t.Boolean(),
+              message: t.Optional(t.String()),
+            }),
             ...StandardErrorsRef,
             404: t.Ref("ErrorResponse"),
           },
@@ -265,7 +269,10 @@ const plugin = new Elysia()
         {
           body: AuthResetPasswordInput,
           response: {
-            200: SuccessResponse,
+            200: t.Object({
+              success: t.Boolean(),
+              message: t.Optional(t.String()),
+            }),
             ...StandardErrorsRef,
             404: t.Ref("ErrorResponse"),
           },
@@ -282,7 +289,10 @@ const plugin = new Elysia()
             token: t.String(),
           }),
           response: {
-            200: SuccessResponse,
+            200: t.Object({
+              success: t.Boolean(),
+              message: t.Optional(t.String()),
+            }),
             ...StandardErrorsRef,
             404: t.Ref("ErrorResponse"),
           },

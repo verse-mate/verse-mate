@@ -56,131 +56,23 @@ async function gpt5Text({
 }
 
 import { getExplanationTypePrompt } from "../shared/prompt-utils";
-
-// Response Schemas
-const BooksResponse = t.Object({
-  books: t.Array(t.Any()),
-});
-
-const LanguagesResponse = t.Array(t.Any());
-
-const BookResponse = t.Any();
-
-const ExplanationResponse = t.Object({
-  explanation: t.Any(),
-});
-
-const TestamentsResponse = t.Object({
-  testaments: t.Array(t.Any()),
-});
-
-const ChapterIdResponse = t.Object({
-  chapter_id: t.Union([t.Number(), t.Null()]),
-});
-
-const UserChatHistoryResponse = t.Object({
-  userChatHistory: t.Any(),
-});
-
-const MessagesHistoryResponse = t.Object({
-  messagesHistory: t.Any(),
-});
-
-const ChatExistsResponse = t.Object({
-  chatExists: t.Boolean(),
-});
-
-const NewConversationResponse = t.Object({
-  newConversation: t.Any(),
-  generatedTitle: t.String(),
-});
-
-const SaveRatingResponse = t.Object({
-  result: t.Any(),
-});
-
-const UpdateRatingResponse = t.Object({
-  result: t.Any(),
-});
-
-const RatingsResponse = t.Object({
-  userRating: t.Any(),
-  totalUsersWhoRated: t.Number(),
-  averageRating: t.Any(),
-});
-
-const LastChapterReadSaveResponse = t.Object({
-  result: t.Any(),
-});
-
-const LastChapterReadResponse = t.Object({
-  result: t.Any(),
-});
-
-const SaveUserMessageResponse = t.Object({
-  result: t.Any(),
-});
-
-const SaveAiMessageResponse = t.Object({
-  result: t.Any(),
-});
-
-const DisableChatResponse = t.Object({
-  disabledChat: t.Number(),
-});
-
-const BookmarksResponse = t.Object({
-  favorites: t.Array(t.Any()),
-});
-
-const NotesResponse = t.Object({
-  notes: t.Array(t.Any()),
-});
-
-const AddNoteResponse = t.Object({
-  success: t.Boolean(),
-  note: t.Optional(t.Any()),
-});
-
-const UpdateNoteResponse = t.Object({
-  success: t.Boolean(),
-});
-
-const DeleteNoteResponse = t.Object({
-  success: t.Boolean(),
-});
-
-const AddBookmarkResponse = t.Object({
-  success: t.Boolean(),
-});
-
-const RemoveBookmarkResponse = t.Object({
-  success: t.Boolean(),
-});
-
-const HighlightsResponse = t.Object({
-  highlights: t.Array(t.Any()),
-});
-
-const AddHighlightResponse = t.Union([
-  t.Object({
-    success: t.Boolean(),
-    highlight: t.Optional(t.Any()),
-  }),
-  t.Object({
-    success: t.Boolean(),
-    error: t.Optional(t.String()),
-  }),
-]);
-
-const UpdateHighlightResponse = t.Object({
-  highlight: t.Optional(t.Any()),
-  success: t.Boolean(),
-});
-
-const DeleteHighlightResponse = t.Object({
-  success: t.Boolean(),
-});
+import {
+  BookSchema,
+  BookmarkSchema,
+  ExplanationSchema,
+  GroupedChatHistorySchema,
+  HighlightSchema,
+  LanguageSchema,
+  LastChapterReadSchema,
+  MessageHistorySchema,
+  MessageSaveResultSchema,
+  NewConversationSchema,
+  NoteSchema,
+  SaveLastChapterReadResultSchema,
+  SaveRatingResultSchema,
+  TestamentSchema,
+  UpdateRatingResultSchema,
+} from "./entities/bible-entities";
 
 function getLanguageName(code: string, locale = "en"): string {
   const display = new Intl.DisplayNames([locale], { type: "language" });
@@ -229,7 +121,9 @@ const plugin = new Elysia()
         },
         {
           response: {
-            200: BooksResponse,
+            200: t.Object({
+              books: t.Array(BookSchema), // Complex Book structure from JSON
+            }),
             ...AuthErrors,
           },
         },
@@ -241,7 +135,7 @@ const plugin = new Elysia()
         },
         {
           response: {
-            200: LanguagesResponse,
+            200: t.Array(LanguageSchema),
             ...AuthErrors,
           },
         },
@@ -276,7 +170,7 @@ const plugin = new Elysia()
             versionKey: t.Optional(t.String()),
           }),
           response: {
-            200: BookResponse,
+            200: BookSchema, // Can be { book: Book } | { message: string } - service handles this
             ...AuthErrors,
             404: ErrorResponse,
           },
@@ -314,65 +208,6 @@ const plugin = new Elysia()
             user_id: currentUserId || undefined,
           });
 
-          // const missingTypes = Object.keys(ExplanationTypeEnum).filter(
-          //   (type) => !explanation?.some((exp) => exp.type === type),
-          // ) as ExplanationTypeEnum[];
-
-          // if (missingTypes.length > 0) {
-          //   await Promise.all(
-          //     missingTypes.map(async (type) => {
-          //       const prompt = await promptService.getActivePrompt();
-
-          //       if (!prompt) {
-          //         return;
-          //       }
-
-          //       try {
-          //         const { book } = await bibleService.getBook({
-          //           book_id: Number(bookId),
-          //           chapter_number: Number(chapterNumber),
-          //           version_id: version.id,
-          //         });
-
-          //         const language = getLanguageName(version.language_code);
-
-          //         const explanationConfig = await getExplanationTypePrompt(
-          //           type,
-          //           book?.name || "",
-          //           Number(chapterNumber),
-          //           db,
-          //           language,
-          //         );
-
-          //         const text = await gpt5Text({
-          //           system: prompt.prompt,
-          //           user: getUserPrompt({
-          //             explanationPrompt: explanationConfig.prompt,
-          //             language,
-          //           }),
-          //         });
-
-          //         await bibleService.saveExplanation({
-          //           type,
-          //           explanation: text || "",
-          //           book_id: Number(bookId),
-          //           chapter_number: Number(chapterNumber),
-          //           version_id: version.id,
-          //         });
-          //       } catch (e) {
-          //         console.error("[bible.plugin.ts][error]: ", e);
-          //       }
-          //     }),
-          //   );
-
-          //   // Refetch the explanations after generation
-          //   explanation = await bibleService.getExplanation({
-          //     book_id: Number(bookId),
-          //     chapter_number: Number(chapterNumber),
-          //     version_id: version.id,
-          //   });
-          // }
-
           return { explanation };
         },
         {
@@ -381,7 +216,9 @@ const plugin = new Elysia()
             explanationType: t.Optional(t.String()),
           }),
           response: {
-            200: ExplanationResponse,
+            200: t.Object({
+              explanation: t.Union([ExplanationSchema, t.Null()]),
+            }),
             ...AuthErrors,
             404: ErrorResponse,
           },
@@ -395,7 +232,7 @@ const plugin = new Elysia()
         },
         {
           response: {
-            200: TestamentsResponse,
+            200: t.Object({ testaments: t.Array(TestamentSchema) }),
             ...AuthErrors,
           },
         },
@@ -425,7 +262,7 @@ const plugin = new Elysia()
             chapterNumber: t.String(),
           }),
           response: {
-            200: ChapterIdResponse,
+            200: t.Object({ chapter_id: t.Union([t.Number(), t.Null()]) }),
             ...AuthErrors,
             404: ErrorResponse,
           },
@@ -442,7 +279,7 @@ const plugin = new Elysia()
         {
           body: ChatHistoryDto,
           response: {
-            200: UserChatHistoryResponse,
+            200: t.Object({ userChatHistory: GroupedChatHistorySchema }),
             ...AuthErrors,
           },
         },
@@ -459,7 +296,7 @@ const plugin = new Elysia()
         {
           body: MessageHistoryDto,
           response: {
-            200: MessagesHistoryResponse,
+            200: t.Object({ messagesHistory: MessageHistorySchema }),
             ...AuthErrors,
           },
         },
@@ -481,7 +318,7 @@ const plugin = new Elysia()
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
           ]),
           response: {
-            200: ChatExistsResponse,
+            200: t.Object({ chatExists: t.Boolean() }),
             ...AuthErrors,
           },
         },
@@ -572,7 +409,10 @@ const plugin = new Elysia()
             t.Pick(AddMessageDto, ["content"]),
           ]),
           response: {
-            200: NewConversationResponse,
+            200: t.Object({
+              newConversation: NewConversationSchema,
+              generatedTitle: t.String(),
+            }),
             ...StandardErrors,
             404: ErrorResponse,
           },
@@ -593,7 +433,7 @@ const plugin = new Elysia()
         {
           body: RatingDto,
           response: {
-            200: SaveRatingResponse,
+            200: t.Object({ result: SaveRatingResultSchema }),
             ...AuthErrors,
           },
         },
@@ -615,7 +455,7 @@ const plugin = new Elysia()
         {
           body: RatingDto,
           response: {
-            200: UpdateRatingResponse,
+            200: t.Object({ result: UpdateRatingResultSchema }),
             ...AuthErrors,
           },
         },
@@ -651,7 +491,11 @@ const plugin = new Elysia()
         {
           body: t.Omit(RatingDto, ["rating"]),
           response: {
-            200: RatingsResponse,
+            200: t.Object({
+              userRating: t.Number(),
+              totalUsersWhoRated: t.Number(),
+              averageRating: t.Number(),
+            }),
             ...AuthErrors,
           },
         },
@@ -673,7 +517,7 @@ const plugin = new Elysia()
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
           response: {
-            200: LastChapterReadSaveResponse,
+            200: t.Object({ result: SaveLastChapterReadResultSchema }),
             ...AuthErrors,
           },
         },
@@ -692,7 +536,9 @@ const plugin = new Elysia()
             t.Object({ user_id: t.String({ format: "uuid" }) }),
           ]),
           response: {
-            200: LastChapterReadResponse,
+            200: t.Object({
+              result: t.Union([LastChapterReadSchema, t.Null()]),
+            }),
             ...AuthErrors,
           },
         },
@@ -711,7 +557,7 @@ const plugin = new Elysia()
         {
           body: t.Pick(AddMessageDto, ["chat_id", "content"]),
           response: {
-            200: SaveUserMessageResponse,
+            200: t.Object({ result: MessageSaveResultSchema }),
             ...AuthErrors,
           },
         },
@@ -786,7 +632,7 @@ const plugin = new Elysia()
             t.Pick(ChapterDto, ["book_id", "chapter_number"]),
           ]),
           response: {
-            200: SaveAiMessageResponse,
+            200: t.Object({ result: MessageSaveResultSchema }),
             ...AuthErrors,
             404: ErrorResponse,
           },
@@ -804,7 +650,7 @@ const plugin = new Elysia()
         {
           params: t.Pick(ChatDto, ["conversation_id"]),
           response: {
-            200: DisableChatResponse,
+            200: t.Object({ disabledChat: t.Number() }),
             ...AuthErrors,
           },
         },
@@ -836,7 +682,7 @@ const plugin = new Elysia()
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
           response: {
-            200: BookmarksResponse,
+            200: t.Object({ favorites: t.Array(BookmarkSchema) }),
             ...AuthErrors,
           },
         },
@@ -858,7 +704,7 @@ const plugin = new Elysia()
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
           response: {
-            200: NotesResponse,
+            200: t.Object({ notes: t.Array(NoteSchema) }),
             ...AuthErrors,
           },
         },
@@ -903,7 +749,10 @@ const plugin = new Elysia()
             content: t.String(),
           }),
           response: {
-            200: AddNoteResponse,
+            200: t.Object({
+              success: t.Boolean(),
+              note: t.Optional(NoteSchema),
+            }),
             ...StandardErrors,
           },
         },
@@ -931,7 +780,7 @@ const plugin = new Elysia()
             content: t.String(),
           }),
           response: {
-            200: UpdateNoteResponse,
+            200: t.Object({ success: t.Boolean() }),
             ...StandardErrors,
           },
         },
@@ -955,7 +804,7 @@ const plugin = new Elysia()
             note_id: t.String({ format: "uuid" }),
           }),
           response: {
-            200: DeleteNoteResponse,
+            200: t.Object({ success: t.Boolean() }),
             ...StandardErrors,
           },
         },
@@ -989,7 +838,7 @@ const plugin = new Elysia()
             chapter_number: t.Number(),
           }),
           response: {
-            200: AddBookmarkResponse,
+            200: t.Object({ success: t.Boolean() }),
             ...StandardErrors,
           },
         },
@@ -1029,7 +878,7 @@ const plugin = new Elysia()
             chapter_number: t.String(),
           }),
           response: {
-            200: RemoveBookmarkResponse,
+            200: t.Object({ success: t.Boolean() }),
             ...StandardErrors,
           },
         },
@@ -1070,7 +919,7 @@ const plugin = new Elysia()
             chapter_number: t.Number(),
           }),
           response: {
-            200: RemoveBookmarkResponse,
+            200: t.Object({ success: t.Boolean() }),
             ...StandardErrors,
           },
         },
@@ -1097,7 +946,7 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
           }),
           response: {
-            200: HighlightsResponse,
+            200: t.Object({ highlights: t.Array(HighlightSchema) }),
             ...AuthErrors,
           },
         },
@@ -1136,7 +985,7 @@ const plugin = new Elysia()
             chapter_number: t.Number(),
           }),
           response: {
-            200: HighlightsResponse,
+            200: t.Object({ highlights: t.Array(HighlightSchema) }),
             ...AuthErrors,
           },
         },
@@ -1184,7 +1033,13 @@ const plugin = new Elysia()
             selected_text: t.Optional(t.String()),
           }),
           response: {
-            200: AddHighlightResponse,
+            200: t.Union([
+              t.Object({
+                success: t.Boolean(),
+                highlight: t.Optional(HighlightSchema),
+              }),
+              t.Object({ success: t.Boolean(), error: t.Optional(t.String()) }),
+            ]),
             ...StandardErrors,
           },
         },
@@ -1217,7 +1072,10 @@ const plugin = new Elysia()
             color: t.String(),
           }),
           response: {
-            200: UpdateHighlightResponse,
+            200: t.Object({
+              highlight: t.Union([HighlightSchema, t.Null(), t.Undefined()]),
+              success: t.Boolean(),
+            }),
             ...AuthErrors,
           },
         },
@@ -1243,7 +1101,7 @@ const plugin = new Elysia()
             highlight_id: t.Number(),
           }),
           response: {
-            200: DeleteHighlightResponse,
+            200: t.Object({ success: t.Boolean() }),
             ...StandardErrors,
           },
         },

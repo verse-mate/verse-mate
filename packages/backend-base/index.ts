@@ -10,9 +10,7 @@ import type { UserPlugin } from "./src/user/user.plugin";
 // Common response models and errors
 export {
   ErrorResponse,
-  PaginatedResponse,
   type ErrorResponseType,
-  type PaginatedResponseType,
 } from "./src/common/response-models";
 
 export {

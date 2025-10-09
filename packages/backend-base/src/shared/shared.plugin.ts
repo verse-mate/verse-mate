@@ -1,9 +1,7 @@
 import { bearer } from "@elysiajs/bearer";
-import { cors } from "@elysiajs/cors";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia, t } from "elysia";
-import { User } from "../user/entities/user.entity";
 import { UserService } from "../user/user.service";
 
 import { ErrorResponse } from "../common/response-models";
@@ -28,7 +26,6 @@ export type JWT = (typeof jwt)["decorator"]["jwt"];
 // const storage = new ObjectStorageService();
 
 const setup = new Elysia({ name: "shared" })
-  .use(cors())
   .use(bearer())
   .use(jwt)
   .model({

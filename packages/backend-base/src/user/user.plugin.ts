@@ -16,38 +16,6 @@ import {
 import shared from "../shared/shared.plugin";
 import { UserService } from "./user.service";
 
-// Response schemas
-const UserResponse = t.Object({
-  id: t.String({
-    description: "User unique identifier",
-  }),
-  email: t.String({
-    description: "User email address",
-  }),
-  firstName: t.String({
-    description: "User first name",
-  }),
-  lastName: t.String({
-    description: "User last name",
-  }),
-  fullName: t.String({
-    description: "User full name (firstName + lastName)",
-  }),
-  emailVerified: t.Optional(
-    t.Boolean({
-      description: "Whether the user's email is verified",
-    }),
-  ),
-});
-
-const UsersListResponse = t.Array(UserResponse, {
-  description: "List of all users",
-});
-
-const UpdateUserResponse = t.Boolean({
-  description: "Whether the update was successful",
-});
-
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("user plugin"))
@@ -73,7 +41,33 @@ const plugin = new Elysia()
                 tags: ["User"],
               },
               response: {
-                200: UsersListResponse,
+                200: t.Array(
+                  t.Object({
+                    id: t.String({
+                      description: "User unique identifier",
+                    }),
+                    email: t.String({
+                      description: "User email address",
+                    }),
+                    firstName: t.String({
+                      description: "User first name",
+                    }),
+                    lastName: t.String({
+                      description: "User last name",
+                    }),
+                    fullName: t.String({
+                      description: "User full name (firstName + lastName)",
+                    }),
+                    emailVerified: t.Optional(
+                      t.Boolean({
+                        description: "Whether the user's email is verified",
+                      }),
+                    ),
+                  }),
+                  {
+                    description: "List of all users",
+                  },
+                ),
                 ...AuthErrors,
               },
             },
@@ -99,7 +93,28 @@ const plugin = new Elysia()
                 tags: ["User"],
               },
               response: {
-                200: UserResponse,
+                200: t.Object({
+                  id: t.String({
+                    description: "User unique identifier",
+                  }),
+                  email: t.String({
+                    description: "User email address",
+                  }),
+                  firstName: t.String({
+                    description: "User first name",
+                  }),
+                  lastName: t.String({
+                    description: "User last name",
+                  }),
+                  fullName: t.String({
+                    description: "User full name (firstName + lastName)",
+                  }),
+                  emailVerified: t.Optional(
+                    t.Boolean({
+                      description: "Whether the user's email is verified",
+                    }),
+                  ),
+                }),
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -164,7 +179,9 @@ const plugin = new Elysia()
                 }),
               }),
               response: {
-                200: UpdateUserResponse,
+                200: t.Boolean({
+                  description: "Whether the update was successful",
+                }),
                 ...StandardErrors,
                 404: ErrorResponse,
               },

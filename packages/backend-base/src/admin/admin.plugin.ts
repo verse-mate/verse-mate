@@ -24,123 +24,6 @@ import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
 
-// Response Schemas
-const SuccessMessageResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
-});
-
-const UsersListResponse = t.Array(t.Any());
-
-const LanguageResponse = t.Object({
-  language_code: t.String(),
-  name: t.String(),
-  native_name: t.String(),
-  explanation_count: t.Number(),
-});
-
-const LanguagesListResponse = t.Array(LanguageResponse);
-
-const LanguageStatsResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
-});
-
-const BatchOperationResponse = t.Object({
-  batchJobId: t.String(),
-  message: t.String(),
-  totalVerses: t.Number(),
-});
-
-const BatchStatusResponse = t.Object({
-  id: t.String(),
-  status: t.String(),
-  progress: t.Number(),
-  total: t.Number(),
-  completed: t.Number(),
-  failed: t.Number(),
-});
-
-const BatchListResponse = t.Array(t.Any());
-
-const BatchChildrenResponse = t.Array(t.Any());
-
-const BatchSummaryResponse = t.Any();
-
-const MonitorBatchResponse = t.Any();
-
-const DeleteExplanationResponse = t.Any();
-
-const RegenerateExplanationResponse = t.Object({
-  regenerationId: t.Number(),
-  message: t.String(),
-});
-
-const GenerateExplanationResponse = t.Object({
-  success: t.Boolean(),
-  explanationId: t.Number(),
-  regenerationId: t.Number(),
-});
-
-const ExplanationComparisonResponse = t.Any();
-
-const ChooseVersionResponse = t.Object({
-  success: t.Boolean(),
-  message: t.String(),
-});
-
-const BulkDeleteResponse = t.Any();
-
-const SetActiveDefaultResponse = t.Any();
-
-const ExplanationHistoryResponse = t.Any();
-
-const ExplanationsFilterResponse = t.Object({
-  explanations: t.Array(t.Any()),
-  total: t.Number(),
-});
-
-const StatsResponse = t.Any();
-
-const SystemPromptsListResponse = t.Array(t.Any());
-
-const UserPromptsListResponse = t.Array(t.Any());
-
-const ExplanationTypesResponse = t.Array(t.String());
-
-const CreatePromptResponse = t.Object({
-  id: t.Number(),
-  message: t.String(),
-});
-
-const UpdatePromptResponse = t.Any();
-
-const DeletePromptResponse = t.Any();
-
-const PromptStatusResponse = t.Any();
-
-const RestoreDefaultsResponse = t.Any();
-
-const PlaygroundResponse = t.Any();
-
-const ExistingExplanationResponse = t.Any();
-
-const CommentaryGradesResponse = t.Object({
-  message: t.String(),
-  grades: t.Array(t.Any()),
-  stats: t.Object({
-    total: t.Number(),
-    averageGrade: t.Number(),
-    gradingCriteria: t.Array(t.Any()),
-  }),
-});
-
-const CommentaryGradeResponse = t.Object({
-  success: t.Boolean(),
-  grade: t.Number(),
-  message: t.String(),
-});
-
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("admin plugin"))
@@ -191,7 +74,7 @@ const plugin = new Elysia()
               preferred_language: t.Union([t.String(), t.Null()]),
             }),
             response: {
-              200: SuccessMessageResponse,
+              200: t.Object({ success: t.Boolean(), message: t.String() }),
               ...AuthErrors,
               404: ErrorResponse,
             },
@@ -209,7 +92,14 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: LanguagesListResponse,
+                200: t.Array(
+                  t.Object({
+                    language_code: t.String(),
+                    name: t.String(),
+                    native_name: t.String(),
+                    explanation_count: t.Number(),
+                  }),
+                ),
                 ...AuthErrors,
               },
             },
@@ -222,7 +112,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: LanguageStatsResponse,
+                200: t.Object({ success: t.Boolean(), message: t.String() }),
                 ...AuthErrors,
               },
             },
@@ -245,7 +135,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: UsersListResponse,
+                200: t.Array(t.Any()), // Complex user list
                 ...AuthErrors,
               },
             },
@@ -277,7 +167,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: UsersListResponse,
+                200: t.Array(t.Any()), // Complex user list
                 ...AuthErrors,
               },
             },
@@ -306,7 +196,7 @@ const plugin = new Elysia()
                 is_admin: t.Boolean(),
               }),
               response: {
-                200: SuccessMessageResponse,
+                200: t.Object({ success: t.Boolean(), message: t.String() }),
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -385,7 +275,11 @@ const plugin = new Elysia()
                 ),
               }),
               response: {
-                201: BatchOperationResponse,
+                201: t.Object({
+                  batchJobId: t.String(),
+                  message: t.String(),
+                  totalVerses: t.Number(),
+                }),
                 ...StandardErrors,
               },
             },
@@ -421,7 +315,11 @@ const plugin = new Elysia()
                 bibleVersion: t.String(),
               }),
               response: {
-                201: BatchOperationResponse,
+                201: t.Object({
+                  batchJobId: t.String(),
+                  message: t.String(),
+                  totalVerses: t.Number(),
+                }),
                 ...StandardErrors,
               },
             },
@@ -463,7 +361,11 @@ const plugin = new Elysia()
                 skipExisting: t.Optional(t.Boolean()),
               }),
               response: {
-                201: BatchOperationResponse,
+                201: t.Object({
+                  batchJobId: t.String(),
+                  message: t.String(),
+                  totalVerses: t.Number(),
+                }),
                 ...StandardErrors,
               },
             },
@@ -491,7 +393,14 @@ const plugin = new Elysia()
                 batchJobId: t.String(),
               }),
               response: {
-                200: BatchStatusResponse,
+                200: t.Object({
+                  id: t.String(),
+                  status: t.String(),
+                  progress: t.Number(),
+                  total: t.Number(),
+                  completed: t.Number(),
+                  failed: t.Number(),
+                }),
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -518,7 +427,7 @@ const plugin = new Elysia()
                 batchJobId: t.String(),
               }),
               response: {
-                200: SuccessMessageResponse,
+                200: t.Object({ success: t.Boolean(), message: t.String() }),
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -543,7 +452,7 @@ const plugin = new Elysia()
                 adminOnly: t.Optional(t.String()),
               }),
               response: {
-                200: BatchListResponse,
+                200: t.Array(t.Any()), // Complex batch job list
                 ...AuthErrors,
               },
             },
@@ -561,7 +470,7 @@ const plugin = new Elysia()
                 parentId: t.String(),
               }),
               response: {
-                200: BatchChildrenResponse,
+                200: t.Array(t.Any()), // Complex batch children
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -580,7 +489,7 @@ const plugin = new Elysia()
                 parentId: t.String(),
               }),
               response: {
-                200: MonitorBatchResponse,
+                200: t.Any(), // Complex monitoring result
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -594,7 +503,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: MonitorBatchResponse,
+                200: t.Any(), // Complex monitoring result
                 ...AuthErrors,
               },
             },
@@ -612,7 +521,7 @@ const plugin = new Elysia()
                 parentId: t.String(),
               }),
               response: {
-                200: BatchSummaryResponse,
+                200: t.Any(), // Complex batch summary
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -627,7 +536,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: DeleteExplanationResponse,
+                200: t.Any(), // Delete result
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -656,7 +565,10 @@ const plugin = new Elysia()
                 bibleVersion: t.String(),
               }),
               response: {
-                201: RegenerateExplanationResponse,
+                201: t.Object({
+                  regenerationId: t.Number(),
+                  message: t.String(),
+                }),
                 ...StandardErrors,
                 404: ErrorResponse,
               },
@@ -689,7 +601,11 @@ const plugin = new Elysia()
                 model: t.String(),
               }),
               response: {
-                201: GenerateExplanationResponse,
+                201: t.Object({
+                  success: t.Boolean(),
+                  explanationId: t.Number(),
+                  regenerationId: t.Number(),
+                }),
                 ...StandardErrors,
                 404: ErrorResponse,
               },
@@ -705,7 +621,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: ExplanationComparisonResponse,
+                200: t.Any(), // Complex explanation comparison
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -729,7 +645,7 @@ const plugin = new Elysia()
                 chosenExplanationId: t.Number(),
               }),
               response: {
-                200: ChooseVersionResponse,
+                200: t.Object({ success: t.Boolean(), message: t.String() }),
                 ...StandardErrors,
                 404: ErrorResponse,
               },
@@ -754,7 +670,7 @@ const plugin = new Elysia()
                 ),
               }),
               response: {
-                200: BulkDeleteResponse,
+                200: t.Any(), // Bulk delete result
                 ...StandardErrors,
               },
             },
@@ -776,7 +692,7 @@ const plugin = new Elysia()
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
               response: {
-                200: SetActiveDefaultResponse,
+                200: t.Any(), // Set active result
                 ...StandardErrors,
               },
             },
@@ -798,7 +714,7 @@ const plugin = new Elysia()
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
               response: {
-                200: SetActiveDefaultResponse,
+                200: t.Any(), // Set active result
                 ...StandardErrors,
               },
             },
@@ -821,7 +737,7 @@ const plugin = new Elysia()
                 version: t.Number(),
               }),
               response: {
-                200: SetActiveDefaultResponse,
+                200: t.Any(), // Set active result
                 ...StandardErrors,
               },
             },
@@ -843,7 +759,7 @@ const plugin = new Elysia()
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
               response: {
-                200: BulkDeleteResponse,
+                200: t.Any(), // Bulk delete result
                 ...StandardErrors,
               },
             },
@@ -858,7 +774,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: ExplanationHistoryResponse,
+                200: t.Any(), // Complex explanation history
                 ...AuthErrors,
                 404: ErrorResponse,
               },
@@ -887,7 +803,10 @@ const plugin = new Elysia()
                 offset: t.Optional(t.String()),
               }),
               response: {
-                200: ExplanationsFilterResponse,
+                200: t.Object({
+                  explanations: t.Array(t.Any()),
+                  total: t.Number(),
+                }),
                 ...StandardErrors,
               },
             },
@@ -900,7 +819,7 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: StatsResponse,
+                200: t.Any(), // Complex stats object
                 ...AuthErrors,
               },
             },
@@ -916,7 +835,7 @@ const plugin = new Elysia()
                 },
                 {
                   response: {
-                    200: SystemPromptsListResponse,
+                    200: t.Array(t.Any()), // Complex system prompts
                     ...AuthErrors,
                   },
                 },
@@ -929,7 +848,7 @@ const plugin = new Elysia()
                 },
                 {
                   response: {
-                    200: UserPromptsListResponse,
+                    200: t.Array(t.Any()), // Complex user prompts
                     ...AuthErrors,
                   },
                 },
@@ -942,7 +861,7 @@ const plugin = new Elysia()
                 },
                 {
                   response: {
-                    200: ExplanationTypesResponse,
+                    200: t.Array(t.String()),
                     ...AuthErrors,
                   },
                 },
@@ -957,7 +876,7 @@ const plugin = new Elysia()
                 {
                   body: t.Object({ prompt: t.String() }),
                   response: {
-                    201: CreatePromptResponse,
+                    201: t.Object({ id: t.Number(), message: t.String() }),
                     ...StandardErrors,
                   },
                 },
@@ -983,7 +902,7 @@ const plugin = new Elysia()
                     prompt_template: t.String(),
                   }),
                   response: {
-                    201: CreatePromptResponse,
+                    201: t.Object({ id: t.Number(), message: t.String() }),
                     ...StandardErrors,
                   },
                 },
@@ -1002,7 +921,7 @@ const plugin = new Elysia()
                   body: t.Object({ prompt: t.String() }),
                   params: t.Object({ id: t.String() }),
                   response: {
-                    200: UpdatePromptResponse,
+                    200: t.Any(), // Update result
                     ...StandardErrors,
                     404: ErrorResponse,
                   },
@@ -1021,7 +940,7 @@ const plugin = new Elysia()
                   body: t.Object({ prompt_template: t.String() }),
                   params: t.Object({ id: t.String() }),
                   response: {
-                    200: UpdatePromptResponse,
+                    200: t.Any(), // Update result
                     ...StandardErrors,
                     404: ErrorResponse,
                   },
@@ -1038,7 +957,7 @@ const plugin = new Elysia()
                 },
                 {
                   response: {
-                    200: DeletePromptResponse,
+                    200: t.Any(), // Delete result
                     ...AuthErrors,
                     404: ErrorResponse,
                   },
@@ -1052,7 +971,7 @@ const plugin = new Elysia()
                 },
                 {
                   response: {
-                    200: DeletePromptResponse,
+                    200: t.Any(), // Delete result
                     ...AuthErrors,
                     404: ErrorResponse,
                   },
@@ -1072,7 +991,7 @@ const plugin = new Elysia()
                   body: t.Object({ status: t.Enum(PromptStatusEnum) }),
                   params: t.Object({ id: t.String() }),
                   response: {
-                    200: PromptStatusResponse,
+                    200: t.Any(), // Status update result
                     ...StandardErrors,
                     404: ErrorResponse,
                   },
@@ -1096,7 +1015,7 @@ const plugin = new Elysia()
                   }),
                   params: t.Object({ id: t.String() }),
                   response: {
-                    200: PromptStatusResponse,
+                    200: t.Any(), // Status update result
                     ...StandardErrors,
                     404: ErrorResponse,
                   },
@@ -1111,7 +1030,7 @@ const plugin = new Elysia()
                 },
                 {
                   response: {
-                    200: RestoreDefaultsResponse,
+                    200: t.Any(), // Restore defaults result
                     ...AuthErrors,
                   },
                 },
@@ -1139,7 +1058,7 @@ const plugin = new Elysia()
                     send_chapter_context: t.Boolean(),
                   }),
                   response: {
-                    200: PlaygroundResponse,
+                    200: t.Any(), // Complex AI response
                     ...StandardErrors,
                   },
                 },
@@ -1163,7 +1082,7 @@ const plugin = new Elysia()
                     explanation_type: t.String(),
                   }),
                   response: {
-                    200: ExistingExplanationResponse,
+                    200: t.Any(), // Complex explanation
                     ...StandardErrors,
                     404: ErrorResponse,
                   },
@@ -1186,7 +1105,15 @@ const plugin = new Elysia()
             },
             {
               response: {
-                200: CommentaryGradesResponse,
+                200: t.Object({
+                  message: t.String(),
+                  grades: t.Array(t.Any()),
+                  stats: t.Object({
+                    total: t.Number(),
+                    averageGrade: t.Number(),
+                    gradingCriteria: t.Array(t.Any()),
+                  }),
+                }),
                 ...AuthErrors,
               },
             },
@@ -1206,7 +1133,11 @@ const plugin = new Elysia()
                 criteria: t.Array(t.String()),
               }),
               response: {
-                200: CommentaryGradeResponse,
+                200: t.Object({
+                  success: t.Boolean(),
+                  grade: t.Number(),
+                  message: t.String(),
+                }),
                 ...StandardErrors,
               },
             },
