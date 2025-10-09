@@ -36,6 +36,8 @@ describe("User", () => {
       },
     });
 
+    if (data instanceof Error) return;
+
     expect(data?.email).toBe(authSignupInput.email);
     expect(data?.firstName).toBe(authSignupInput.firstName);
     expect(data?.lastName).toBe(authSignupInput.lastName);

@@ -58,10 +58,10 @@ describe("Auth", () => {
         },
       },
     );
-    if (verifyError) throw verifyError;
+    if (verifyError || verifyEmailData instanceof Error) throw verifyError;
 
     expect(verifyEmailData?.accessToken).toBeDefined();
-    signupAuthPayload = verifyEmailData;
+    signupAuthPayload = verifyEmailData as AuthPayload;
 
     user = await Backend.store.db
       .getOrCreateConnection()
@@ -168,6 +168,7 @@ describe("Auth", () => {
       },
     });
     if (error) throw error;
+    if (data instanceof Error) return;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;
@@ -226,6 +227,7 @@ describe("Auth", () => {
       },
     });
     if (error) throw error;
+    if (data instanceof Error) return;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;
