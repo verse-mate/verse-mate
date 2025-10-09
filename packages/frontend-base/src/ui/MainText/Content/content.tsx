@@ -3,7 +3,7 @@ import { useHighlights } from "../../../hooks/useHighlights";
 import { getChapterId } from "../../../utils/chapter-utils";
 import { MainText } from "../index";
 import styles from "./content.module.css";
-import type { BookVerse, Chapter, ContentProps } from "./types";
+import type { ContentProps } from "./types";
 
 export const Content = ({ bookId, verseId, book }: ContentProps) => {
   const { highlights, createHighlight, deleteHighlight, updateHighlightColor } =

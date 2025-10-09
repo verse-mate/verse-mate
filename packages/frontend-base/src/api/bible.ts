@@ -48,7 +48,7 @@ export const getExplanation = async (
     }
 
     return explanation;
-  } catch (err) {
+  } catch (_err) {
     return {
       book_id: bookId,
       chapter_number: chapterId,

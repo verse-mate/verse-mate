@@ -52,9 +52,11 @@ export const useConversationManager = (session: UserSession | null) => {
         chapter_number,
       });
 
-      if (data?.chatExists.length === 0) return { chatExists: null };
+      if (data instanceof Error) return { chatExists: null };
+      if (!Array.isArray(data?.chatExists) || data.chatExists.length === 0)
+        return { chatExists: null };
 
-      return { chatExists: data?.chatExists };
+      return { chatExists: data.chatExists };
     },
     [session],
   );

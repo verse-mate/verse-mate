@@ -22,7 +22,7 @@ const app = new Elysia()
             "Bible reading platform API with AI-driven translations and interactive Q&A",
         },
         servers: [
-          { url: "http://localhost:3000", description: "Development" },
+          { url: "http://localhost:4000", description: "Development" },
           { url: "https://api.versemate.com", description: "Production" },
         ],
       },

@@ -42,7 +42,7 @@ const plugin = new Elysia()
 
             try {
               return await userService.findOne(currentUserId);
-            } catch (error) {
+            } catch (_error) {
               throw new NotFoundError("User not found");
             }
           },

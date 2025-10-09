@@ -50,8 +50,7 @@ describe("Bible Plugin", () => {
     });
   });
 
-  // Requires Bible data in database - skipped in CI fresh database
-  describe.skip("Bookmarks CRUD", () => {
+  describe("Bookmarks CRUD", () => {
     const testBookmark = {
       book_id: 1, // Genesis
       chapter_number: 1,
@@ -135,8 +134,7 @@ describe("Bible Plugin", () => {
     });
   });
 
-  // Requires Bible data in database - skipped in CI fresh database
-  describe.skip("Last Chapter Read", () => {
+  describe("Last Chapter Read", () => {
     it("POST /bible/book/chapter/save-last-read - save last read chapter", async () => {
       const { data, error } = await testClient.bible.book.chapter[
         "save-last-read"
@@ -153,7 +151,6 @@ describe("Bible Plugin", () => {
         },
       );
 
-      // May fail due to schema issues - skip if needed
       if (error) {
         console.log("Save last read validation error:", error);
       }
@@ -180,8 +177,7 @@ describe("Bible Plugin", () => {
     });
   });
 
-  // Requires Bible data in database - skipped in CI fresh database
-  describe.skip("Conversation Endpoints", () => {
+  describe("Conversation Endpoints", () => {
     it("POST /bible/book/conversation-exists - check if chat exists", async () => {
       const { data, error } = await testClient.bible.book[
         "conversation-exists"
@@ -205,7 +201,7 @@ describe("Bible Plugin", () => {
   });
 
   // Notes table doesn't exist in database yet
-  describe.skip("Notes CRUD", () => {
+  describe("Notes CRUD", () => {
     let noteId: string;
 
     it("POST /bible/book/note/add - add note", async () => {
@@ -271,7 +267,7 @@ describe("Bible Plugin", () => {
   });
 
   // Highlights have database/overlap issues - needs cleanup strategy or unique test data
-  describe.skip("Highlights CRUD", () => {
+  describe("Highlights CRUD", () => {
     let highlightId: number;
 
     it("POST /bible/highlight/add - add highlight", async () => {
@@ -351,7 +347,7 @@ describe("Bible Plugin", () => {
   });
 
   // Ratings have schema validation issues with user field - needs API investigation
-  describe.skip("Ratings", () => {
+  describe("Ratings", () => {
     it("POST /bible/book/explanation/save-rating - save rating", async () => {
       const { data, error } = await testClient.bible.book.explanation[
         "save-rating"

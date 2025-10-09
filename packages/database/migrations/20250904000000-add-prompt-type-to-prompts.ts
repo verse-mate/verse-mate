@@ -1,5 +1,4 @@
 import type { Kysely } from "kysely";
-import { sql } from "kysely";
 
 import type Database from "../src/models/Database";
 

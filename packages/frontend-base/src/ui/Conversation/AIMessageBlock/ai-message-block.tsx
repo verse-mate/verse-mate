@@ -1,6 +1,4 @@
-import { textActions } from "../../../utils/text-actions";
 import { MarkdownRenderer } from "../../MarkdownRenderer";
-import { Popover } from "../../Popover";
 import styles from "./ai-message-block.module.css";
 
 type AIMessageBlockProps = {

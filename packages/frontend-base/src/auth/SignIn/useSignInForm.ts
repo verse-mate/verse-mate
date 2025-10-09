@@ -24,13 +24,10 @@ const schema = z.object({
     .max(64, "Password must have maximum of 64 characters."),
 });
 
-import { useGetSearchParams } from "../../hooks/useSearchParams";
-
 export function useSignInForm() {
   const [backendError, setBackendError] = useState<ErrorState | undefined>(
     undefined,
   );
-  const { bookId, verseId, explanationType } = useGetSearchParams();
 
   const { handleSubmit, register, formState, getValues } = useForm<SignInData>({
     resolver: zodResolver(schema),

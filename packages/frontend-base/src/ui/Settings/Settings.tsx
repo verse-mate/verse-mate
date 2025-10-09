@@ -11,7 +11,6 @@ import {
   ChevronBackward,
   ChevronDownIcon,
   LogoutIcon,
-  PencilIcon,
   SettingsIcon,
   UserIcon,
 } from "../Icons";
@@ -92,7 +91,7 @@ export const Settings = ({
       onSuccess: async () => {
         // Don't handle success here - will be handled by global save
       },
-      onError: (error: any) => {
+      onError: (_error: any) => {
         // Don't handle error here - will be handled by global save
       },
     });
@@ -103,11 +102,13 @@ export const Settings = ({
     isLoading: isUpdatingLanguage,
   } = useMutation({
     mutationFn: (language: string | null) =>
-      api.user.preferences.patch({ preferred_language: language }),
+      api.user.preferences.patch({
+        preferred_language: language ?? undefined,
+      }),
     onSuccess: async () => {
       // Don't handle success here - will be handled by global save
     },
-    onError: (error: any) => {
+    onError: (_error: any) => {
       // Don't handle error here - will be handled by global save
     },
   });

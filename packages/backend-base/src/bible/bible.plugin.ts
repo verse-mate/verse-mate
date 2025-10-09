@@ -16,7 +16,7 @@ import { LastChapterReadDto } from "./dto/book/last-chapter-read.dto";
 import { RatingDto } from "./dto/book/rating.dto";
 import { AddMessageDto } from "./dto/chat/add-message.dto";
 import { ChatHistoryDto } from "./dto/chat/chat-history.dto";
-import { ChatDto } from "./dto/chat/chat.dto";
+import { ChatEntity } from "./dto/chat/chat.dto";
 import { MessageHistoryDto } from "./dto/chat/message-history.dto";
 import { NewChatDto } from "./dto/chat/new-chat.dto";
 import { BibleRepository } from "./repository/bible.repository";
@@ -116,7 +116,7 @@ const plugin = new Elysia()
         "/book/explanation/:bookId/:chapterNumber",
         async ({
           params,
-          store: { bibleService, promptService, db },
+          store: { bibleService, promptService: _promptService, db },
           query,
           currentUserId,
         }) => {
@@ -506,7 +506,7 @@ const plugin = new Elysia()
           return { disabledChat: disabledChat.chat_id ?? 0 };
         },
         {
-          params: t.Pick(ChatDto, ["conversation_id"]),
+          params: t.Pick(ChatEntity, ["conversation_id"]),
         },
       )
       .get(

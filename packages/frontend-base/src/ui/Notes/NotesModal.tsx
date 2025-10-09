@@ -73,7 +73,7 @@ export const NotesModal = ({
     setNewNoteContent("");
   };
 
-  const handleEditNote = (noteId: string, content: string) => {
+  const _handleEditNote = (noteId: string, content: string) => {
     setEditingNoteId(noteId);
     setEditContent(content);
   };
@@ -95,7 +95,7 @@ export const NotesModal = ({
     deleteNote(noteId);
   };
 
-  const toggleNoteExpansion = (noteId: string) => {
+  const _toggleNoteExpansion = (noteId: string) => {
     setExpandedNoteId(expandedNoteId === noteId ? null : noteId);
   };
 

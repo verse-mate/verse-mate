@@ -1,7 +1,7 @@
 import { bearer } from "@elysiajs/bearer";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { UserService } from "../user/user.service";
 
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
@@ -35,7 +35,7 @@ const setup = new Elysia({ name: "shared" })
     let payload: any;
     try {
       payload = await jwt.verify(auth?.value as string | undefined);
-    } catch (e) {
+    } catch (_e) {
       console.warn("JWT verification failed");
       return { user: null };
     }
@@ -54,7 +54,7 @@ const setup = new Elysia({ name: "shared" })
       const user = await userService.findOne((payload as any).id);
       if (!user) return { user: null };
       return { user };
-    } catch (e) {
+    } catch (_e) {
       console.error("Failed to load user from store");
       return { user: null };
     }

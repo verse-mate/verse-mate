@@ -1,6 +1,5 @@
 import { spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
-import type RoleEnum from "database/src/models/public/RoleEnum";
 import authPlugin from "../auth/auth.plugin";
 import biblePlugin from "../bible/bible.plugin";
 import { getTestClient } from "./test-client";

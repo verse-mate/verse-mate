@@ -3,11 +3,7 @@ import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
-import {
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-} from "../../common/errors";
+import { ForbiddenError, NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
 const PROTECTED_PROMPT_IDS = [1, 2, 3];

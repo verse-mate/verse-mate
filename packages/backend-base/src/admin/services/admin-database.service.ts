@@ -91,10 +91,10 @@ export class AdminDatabaseService {
     regenerationId: string,
     newExplanationContent: string,
     originalExplanationId: number,
-    chapterId: number,
-    explanationType: ExplanationTypeEnum,
-    bibleVersion: string,
-    adminUserId: string,
+    _chapterId: number,
+    _explanationType: ExplanationTypeEnum,
+    _bibleVersion: string,
+    _adminUserId: string,
   ) {
     console.log(`Saving regenerated explanation for ${regenerationId}`);
     console.log(
@@ -188,7 +188,6 @@ export class AdminDatabaseService {
       `Admin ${adminUserId} chose explanation ${chosenExplanationId} for ${regenerationId}`,
     );
 
-    const parts = regenerationId.split("_");
     const isNewVersion = chosenExplanationId > 10000;
 
     if (isNewVersion) {

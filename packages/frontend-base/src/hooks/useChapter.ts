@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
 
 export const useChapter = () => {
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const { verseId } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
 

@@ -370,12 +370,14 @@ export const AskVerseMate: Story = () => {
   const queryClient = useQueryClient();
   const { bookId, verseId } = useGetSearchParams();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(false);
-  const [isPending, setIsPending] = useState<boolean>(false);
+  const [_isPending, _setIsPending] = useState<boolean>(false);
   const [initialMessageHandled, setInitialMessageHandled] =
     useState<boolean>(false);
-  const [userMessage, setUserMessage] = useState<string | null>(null);
+  const [_userMessage, setUserMessage] = useState<string | null>(null);
   const { session } = userSession();
-  const [processedMessage, setProcessedMessage] = useState<string | null>(null);
+  const [_processedMessage, _setProcessedMessage] = useState<string | null>(
+    null,
+  );
   const { saveUserMessage, saveAiMessage } = useConversationManager(session);
 
   const toggleRightPanel = () => {
@@ -391,7 +393,7 @@ export const AskVerseMate: Story = () => {
     initialData: [],
   });
 
-  const addUserMessage = useCallback(
+  const _addUserMessage = useCallback(
     (message: string) => {
       const newMessage = { role: "user", content: message };
       queryClient.setQueryData(["conversation"], (oldData: Message[]) => [
@@ -404,8 +406,8 @@ export const AskVerseMate: Story = () => {
 
   // if (!bookId && !verseId) return;
 
-  const parsedBookId = String(bookId).padStart(2, "0");
-  const parsedVerseId = String(verseId).padStart(2, "0");
+  const _parsedBookId = String(bookId).padStart(2, "0");
+  const _parsedVerseId = String(verseId).padStart(2, "0");
 
   useEffect(() => {
     if (ask && !initialMessageHandled) {
