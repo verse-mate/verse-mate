@@ -1,6 +1,4 @@
-import type { Topics } from "database/src/models/public/Topics";
 import type { Static } from "elysia";
-import type { Insertable } from "kysely";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { SubtitleService } from "../../bible/services/subtitle.service";
 import type { db } from "../../shared/shared.plugin";

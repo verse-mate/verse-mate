@@ -1,7 +1,6 @@
 import { useSaveSearchParams } from "../../hooks/useSearchParams";
 import { useTopicsByCategory } from "../../hooks/useTopics";
 import { Accordion } from "../../ui/Accordion";
-import styles from "./main-content.module.css";
 
 interface TopicContentProps {
   category: string;
