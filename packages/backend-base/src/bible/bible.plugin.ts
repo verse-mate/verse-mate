@@ -68,26 +68,18 @@ const plugin = new Elysia()
   })
   .group("/bible", (app) =>
     app
-      .get(
-        "/books",
-        async () => {
-          const metadataFile = Bun.file(
-            `${import.meta.dir}/data/key_english.json`,
-          );
-          const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
-          const bible = await parseBibleData(bibleFile, metadataFile);
+      .get("/books", async () => {
+        const metadataFile = Bun.file(
+          `${import.meta.dir}/data/key_english.json`,
+        );
+        const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
+        const bible = await parseBibleData(bibleFile, metadataFile);
 
-          return { books: bible.books };
-        },
-        {},
-      )
-      .get(
-        "/languages",
-        async ({ store: { bibleService } }) => {
-          return await bibleService.getAvailableExplanationLanguages();
-        },
-        {},
-      )
+        return { books: bible.books };
+      })
+      .get("/languages", async ({ store: { bibleService } }) => {
+        return await bibleService.getAvailableExplanationLanguages();
+      })
       .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {

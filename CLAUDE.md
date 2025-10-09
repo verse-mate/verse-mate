@@ -4,8 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VerseMate is a Bible reading platform with AI-driven translations built as a Bun-based monorepo. It uses Elysia 
-for the backend API and Next.js 14 for the frontend.
+VerseMate is a Bible reading platform with AI-driven translations built as a Bun-based monorepo. It uses Elysia for the backend API and Next.js 14 for the frontend.
 
 ## Essential Commands
 
