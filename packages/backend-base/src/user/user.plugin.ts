@@ -36,36 +36,6 @@ const plugin = new Elysia()
               description: "Retrieve a list of all registered users",
               tags: ["User"],
             },
-            response: {
-              200: t.Array(
-                t.Object({
-                  id: t.String({
-                    description: "User unique identifier",
-                  }),
-                  email: t.String({
-                    description: "User email address",
-                  }),
-                  firstName: t.String({
-                    description: "User first name",
-                  }),
-                  lastName: t.String({
-                    description: "User last name",
-                  }),
-                  fullName: t.String({
-                    description: "User full name (firstName + lastName)",
-                  }),
-                  emailVerified: t.Optional(
-                    t.Boolean({
-                      description: "Whether the user's email is verified",
-                    }),
-                  ),
-                }),
-                {
-                  description: "List of all users",
-                },
-              ),
-              ...AuthErrors,
-            },
           },
         )
         .get(
@@ -87,32 +57,6 @@ const plugin = new Elysia()
               description:
                 "Retrieve the authenticated user's profile information",
               tags: ["User"],
-            },
-            response: {
-              200: t.Object({
-                id: t.String({
-                  description: "User unique identifier",
-                }),
-                email: t.String({
-                  description: "User email address",
-                }),
-                firstName: t.String({
-                  description: "User first name",
-                }),
-                lastName: t.String({
-                  description: "User last name",
-                }),
-                fullName: t.String({
-                  description: "User full name (firstName + lastName)",
-                }),
-                emailVerified: t.Optional(
-                  t.Boolean({
-                    description: "Whether the user's email is verified",
-                  }),
-                ),
-              }),
-              ...AuthErrors,
-              404: ErrorResponse,
             },
           },
         )
@@ -174,13 +118,6 @@ const plugin = new Elysia()
                 description: "User's last name",
               }),
             }),
-            response: {
-              200: t.Boolean({
-                description: "Whether the update was successful",
-              }),
-              ...StandardErrors,
-              404: ErrorResponse,
-            },
           },
         );
     });

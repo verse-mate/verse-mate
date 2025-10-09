@@ -2,7 +2,6 @@ import { Elysia, t } from "elysia";
 
 import { createErrorHandler } from "../common/error-handler";
 import { UnauthorizedError } from "../common/errors";
-import { AuthErrorsRef, StandardErrorsRef } from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
 import { authDerive, authGuard } from "./auth.utils";
@@ -35,16 +34,6 @@ const plugin = new Elysia()
                 id: currentUserId,
               };
             },
-            {
-              response: {
-                200: t.Object({
-                  id: t.Union([t.String(), t.Null()], {
-                    description: "Current user ID or null if not authenticated",
-                  }),
-                }),
-                ...AuthErrorsRef,
-              },
-            },
           )
           .post(
             "/change-password",
@@ -60,10 +49,6 @@ const plugin = new Elysia()
             },
             {
               body: AuthChangePasswordInput,
-              response: {
-                200: t.Boolean({ description: "Operation success status" }),
-                ...AuthErrorsRef,
-              },
             },
           )
           .post(
@@ -79,12 +64,6 @@ const plugin = new Elysia()
 
               return authService.logout(bearer, jwt);
             },
-            {
-              response: {
-                200: t.Boolean({ description: "Operation success status" }),
-                ...AuthErrorsRef,
-              },
-            },
           )
           .post(
             "/logout-all",
@@ -97,12 +76,6 @@ const plugin = new Elysia()
               }
               return authService.logoutAll(currentUserId);
             },
-            {
-              response: {
-                200: t.Boolean({ description: "Operation success status" }),
-                ...AuthErrorsRef,
-              },
-            },
           )
           .post(
             "/send-email-verification",
@@ -113,12 +86,6 @@ const plugin = new Elysia()
               await authService.sendVerifyEmail(currentUserId);
               set.status = 204;
               return undefined;
-            },
-            {
-              response: {
-                204: t.Void(),
-                ...AuthErrorsRef,
-              },
             },
           )
           .post(
@@ -142,15 +109,6 @@ const plugin = new Elysia()
               body: t.Object({
                 token: t.String(),
               }),
-              response: {
-                200: t.Object({
-                  accessToken: t.String({ description: "JWT access token" }),
-                  verified: t.Boolean({
-                    description: "Email verification status",
-                  }),
-                }),
-                ...AuthErrorsRef,
-              },
             },
           )
           .get(
@@ -164,19 +122,6 @@ const plugin = new Elysia()
                 throw new UnauthorizedError("User not found");
               }
               return user;
-            },
-            {
-              response: {
-                200: t.Object({
-                  id: t.String(),
-                  email: t.String(),
-                  firstName: t.String(),
-                  lastName: t.String(),
-                  is_admin: t.Boolean(),
-                  preferred_language: t.Optional(t.String()),
-                }),
-                ...AuthErrorsRef,
-              },
             },
           )
           .put(
@@ -193,17 +138,6 @@ const plugin = new Elysia()
             },
             {
               body: AuthUpdateProfileInput,
-              response: {
-                200: t.Object({
-                  id: t.String(),
-                  email: t.String(),
-                  firstName: t.String(),
-                  lastName: t.String(),
-                  is_admin: t.Boolean(),
-                  preferred_language: t.Optional(t.String()),
-                }),
-                ...AuthErrorsRef,
-              },
             },
           ),
       )
@@ -214,14 +148,6 @@ const plugin = new Elysia()
         },
         {
           body: AuthSignupInput,
-          response: {
-            200: t.Object({
-              accessToken: t.String({ description: "JWT access token" }),
-              verified: t.Boolean({ description: "Email verification status" }),
-            }),
-            ...StandardErrorsRef,
-            409: t.Ref("ErrorResponse"),
-          },
         },
       )
       .post(
@@ -231,13 +157,6 @@ const plugin = new Elysia()
         },
         {
           body: AuthLoginInput,
-          response: {
-            200: t.Object({
-              accessToken: t.String({ description: "JWT access token" }),
-              verified: t.Boolean({ description: "Email verification status" }),
-            }),
-            ...StandardErrorsRef,
-          },
         },
       )
       .post(
@@ -248,14 +167,6 @@ const plugin = new Elysia()
         },
         {
           body: AuthForgotPasswordInput,
-          response: {
-            200: t.Object({
-              success: t.Boolean(),
-              message: t.Optional(t.String()),
-            }),
-            ...StandardErrorsRef,
-            404: t.Ref("ErrorResponse"),
-          },
         },
       )
       .post(
@@ -266,14 +177,6 @@ const plugin = new Elysia()
         },
         {
           body: AuthResetPasswordInput,
-          response: {
-            200: t.Object({
-              success: t.Boolean(),
-              message: t.Optional(t.String()),
-            }),
-            ...StandardErrorsRef,
-            404: t.Ref("ErrorResponse"),
-          },
         },
       )
       .get(
@@ -286,14 +189,6 @@ const plugin = new Elysia()
           query: t.Object({
             token: t.String(),
           }),
-          response: {
-            200: t.Object({
-              success: t.Boolean(),
-              message: t.Optional(t.String()),
-            }),
-            ...StandardErrorsRef,
-            404: t.Ref("ErrorResponse"),
-          },
         },
       ),
   );
