@@ -1,4 +1,3 @@
-import bearer from "@elysiajs/bearer";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
@@ -177,7 +176,6 @@ const plugin = new Elysia()
           },
         },
       )
-      .use(bearer())
       .resolve({ as: "scoped" }, authDerive)
       .get(
         "/book/explanation/:bookId/:chapterNumber",

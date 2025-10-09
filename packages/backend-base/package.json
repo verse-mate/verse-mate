@@ -7,7 +7,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.620.1",
     "@aws-sdk/s3-request-presigner": "^3.620.1",
-    "@elysiajs/bearer": "1.4.1",
+    "@elysiajs/bearer": "1.2.0",
     "@elysiajs/jwt": "1.4.0",
     "database": "workspace:*",
     "dayjs": "^1.11.12",
@@ -19,7 +19,7 @@
     "bullmq": "^5.7.0"
   },
   "devDependencies": {
-    "@elysiajs/eden": "1.0.14",
+    "@elysiajs/eden": "1.4.1",
     "@faker-js/faker": "^8.4.1",
     "@types/bun": "^1.1.11"
   }
