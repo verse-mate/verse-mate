@@ -322,6 +322,79 @@ async function saveDefaultPrompt() {
     .execute();
 }
 
+// --------------- Topics Seeder Function ---------------
+
+async function seedTopics() {
+  // Check if topics already exist
+  const existingTopics = await db
+    .getOrCreateConnection()
+    .selectFrom("topics")
+    .select("topic_id")
+    .execute();
+
+  if (existingTopics.length > 0) {
+    console.log("Topics already exist, skipping seed.");
+    return;
+  }
+
+  // Sample topics data
+  const topics = [
+    {
+      name: "The Resurrection of Jesus",
+      description: "The resurrection of Jesus Christ from the dead",
+      category: "EVENT",
+      sort_order: 1,
+      is_active: true,
+    },
+    {
+      name: "The Messiah Prophecy",
+      description: "Prophecies about the coming Messiah",
+      category: "PROPHECY",
+      sort_order: 1,
+      is_active: true,
+    },
+    {
+      name: "The Parable of the Good Samaritan",
+      description: "The parable of the Good Samaritan told by Jesus",
+      category: "PARABLE",
+      sort_order: 1,
+      is_active: true,
+    },
+    {
+      name: "The Birth of Jesus",
+      description: "The birth of Jesus Christ in Bethlehem",
+      category: "EVENT",
+      sort_order: 2,
+      is_active: true,
+    },
+    {
+      name: "The Second Coming",
+      description: "Prophecies about the second coming of Christ",
+      category: "PROPHECY",
+      sort_order: 2,
+      is_active: true,
+    },
+    {
+      name: "The Parable of the Prodigal Son",
+      description: "The parable of the prodigal son told by Jesus",
+      category: "PARABLE",
+      sort_order: 2,
+      is_active: true,
+    },
+  ];
+
+  // Insert topics
+  for (const topic of topics) {
+    await db
+      .getOrCreateConnection()
+      .insertInto("topics")
+      .values(topic)
+      .execute();
+  }
+
+  console.log("Topics seeded successfully.");
+}
+
 // --------------- MAIN SEED FUNCTION ---------------
 
 export async function main() {
@@ -510,6 +583,9 @@ export async function main() {
 
   // 6. Seed user prompt templates
   await saveDefaultUserPromptTemplates();
+
+  // 7. Seed topics
+  await seedTopics();
 
   console.log("Seed completed!");
 }

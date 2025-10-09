@@ -57,6 +57,8 @@ import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
 import { homeOptions } from "../../utils/home-options";
 import { TopicContent } from "./TopicContent";
+import { TopicExplanationContainer } from "./TopicExplanationContainer";
+import { TopicView } from "./TopicView";
 import styles from "./main-content.module.css";
 
 export const MainContent = () => {
@@ -71,6 +73,9 @@ export const MainContent = () => {
     bibleVersion,
     conversationId,
   } = useGetSearchParams();
+
+  // Check if we're viewing a topic (special testament value)
+  const isViewingTopic = (testament as unknown as string) === "TOPIC";
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
   const [visibleChapters, setVisibleChapters] = useState<any[]>([]);
   const isAnimating = useRef(false);
@@ -1739,92 +1744,114 @@ export const MainContent = () => {
           <div>
             <RadixTabs.Content value="book">
               <div className={`${styles.bookContainer}`} {...swipeHandlers}>
-                {/* 1. Map and render the chapter views */}
-                {visibleChapters.map((chapter, index) => {
-                  const isLastChapter = index === visibleChapters.length - 1;
-                  return (
-                    <div
-                      key={chapter.key}
-                      className={`${styles.bookContent} ${chapter.className}`}
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        zIndex: index + 1,
-                      }}
-                      onAnimationEnd={
-                        index === 0 ? handleAnimationEnd : undefined
-                      }
-                      ref={isLastChapter ? scrollableCallbackRef : null}
-                    >
-                      <MainText.Root>
-                        <MainText.Content
-                          bookId={String(chapter.bookId)}
-                          verseId={String(chapter.chapters[0].chapterNumber)}
-                          book={chapter}
+                {isViewingTopic ? (
+                  // Show topic view when viewing a topic
+                  <TopicView topicId={String(bookId)} />
+                ) : (
+                  // Show normal Bible content
+                  <>
+                    {/* 1. Map and render the chapter views */}
+                    {visibleChapters.map((chapter, index) => {
+                      const isLastChapter =
+                        index === visibleChapters.length - 1;
+                      return (
+                        <div
+                          key={chapter.key}
+                          className={`${styles.bookContent} ${chapter.className}`}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            zIndex: index + 1,
+                          }}
+                          onAnimationEnd={
+                            index === 0 ? handleAnimationEnd : undefined
+                          }
+                          ref={isLastChapter ? scrollableCallbackRef : null}
+                        >
+                          <MainText.Root>
+                            <MainText.Content
+                              bookId={String(chapter.bookId)}
+                              verseId={String(
+                                chapter.chapters[0].chapterNumber,
+                              )}
+                              book={chapter}
+                            />
+                            <div style={{ height: "25px" }} />
+                          </MainText.Root>
+                        </div>
+                      );
+                    })}
+
+                    {/* 2. Render the UI controls separately on top */}
+                    {chapters && Number(verseId) < chapters && (
+                      <button
+                        ref={nextChapterButtonRef}
+                        type="button"
+                        className={`${styles.nextChapterBtn} ${
+                          !buttonsVisible && !isNearNext ? styles.hidden : ""
+                        }`}
+                        onClick={handleNextButtonClick}
+                        style={{ zIndex: 10 }}
+                      >
+                        <Icon.ChevronForward
+                          className={styles.chevronForward}
                         />
-                        <div style={{ height: "25px" }} />
-                      </MainText.Root>
-                    </div>
-                  );
-                })}
+                      </button>
+                    )}
+                    {chapters && Number(verseId) > 1 && (
+                      <button
+                        ref={prevChapterButtonRef}
+                        type="button"
+                        className={`${styles.previousChapterBtn} ${
+                          !buttonsVisible && !isNearPrev ? styles.hidden : ""
+                        }`}
+                        onClick={handlePreviousButtonClick}
+                        style={{ zIndex: 10 }}
+                      >
+                        <Icon.ChevronBackward
+                          className={styles.chevronBackward}
+                        />
+                      </button>
+                    )}
 
-                {/* 2. Render the UI controls separately on top */}
-                {chapters && Number(verseId) < chapters && (
-                  <button
-                    ref={nextChapterButtonRef}
-                    type="button"
-                    className={`${styles.nextChapterBtn} ${
-                      !buttonsVisible && !isNearNext ? styles.hidden : ""
-                    }`}
-                    onClick={handleNextButtonClick}
-                    style={{ zIndex: 10 }}
-                  >
-                    <Icon.ChevronForward className={styles.chevronForward} />
-                  </button>
-                )}
-                {chapters && Number(verseId) > 1 && (
-                  <button
-                    ref={prevChapterButtonRef}
-                    type="button"
-                    className={`${styles.previousChapterBtn} ${
-                      !buttonsVisible && !isNearPrev ? styles.hidden : ""
-                    }`}
-                    onClick={handlePreviousButtonClick}
-                    style={{ zIndex: 10 }}
-                  >
-                    <Icon.ChevronBackward className={styles.chevronBackward} />
-                  </button>
-                )}
-
-                {/* Progress bar */}
-                {bookVerseData && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      width: "100%",
-                      zIndex: 10, // Ensure it's on top
-                    }}
-                  >
-                    <ProgressBar.Root>
-                      <ProgressBar.IndicatorBackground>
-                        <ProgressBar.Indicator value={progress} />
-                      </ProgressBar.IndicatorBackground>
-                      <ProgressBar.Label value={progress} />
-                    </ProgressBar.Root>
-                  </div>
+                    {/* Progress bar */}
+                    {bookVerseData && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          width: "100%",
+                          zIndex: 10, // Ensure it's on top
+                        }}
+                      >
+                        <ProgressBar.Root>
+                          <ProgressBar.IndicatorBackground>
+                            <ProgressBar.Indicator value={progress} />
+                          </ProgressBar.IndicatorBackground>
+                          <ProgressBar.Label value={progress} />
+                        </ProgressBar.Root>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </RadixTabs.Content>
 
+            {/* Use the same explanation system for topics as Bible chapters */}
             <RadixTabs.Content value="explanation">
-              <Explanation.MobileContainer
-                chapters={chapters}
-                explanation={explanation}
-              />
+              {isViewingTopic ? (
+                // Show topic explanation using the same system as Bible chapters
+                <TopicExplanationContainer topicId={String(bookId)} />
+              ) : (
+                // Show normal Bible explanation
+                <Explanation.MobileContainer
+                  chapters={chapters}
+                  explanation={explanation}
+                />
+              )}
             </RadixTabs.Content>
 
             {askVerseMate && (
