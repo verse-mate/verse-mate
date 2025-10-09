@@ -21,7 +21,7 @@ export const TestamentSchema = t.Object({
   b: t.Number(), // book_id
   c: t.Number(), // total_chapters
   n: t.String(), // name
-  t: t.Union([t.Literal("OT"), t.Literal("NT"), t.Null()]), // testament
+  t: t.Optional(t.Union([t.Literal("OT"), t.Literal("NT")])), // testament
   g: t.Union([t.String(), t.Number()]), // genre_id
 });
 
@@ -40,7 +40,7 @@ export const NoteSchema = t.Object({
   chapter_number: t.Number(),
   book_id: t.Number(),
   book_name: t.String(),
-  verse_number: t.Union([t.Number(), t.Null()]),
+  verse_number: t.Optional(t.Number()),
 });
 
 export const HighlightSchema = t.Object({
@@ -50,11 +50,15 @@ export const HighlightSchema = t.Object({
   start_verse: t.Number(),
   end_verse: t.Number(),
   color: t.String(),
-  start_char: t.Union([t.Number(), t.Null()]),
-  end_char: t.Union([t.Number(), t.Null()]),
-  selected_text: t.Union([t.String(), t.Null()]),
-  created_at: t.Union([t.String({ format: "date-time" }), t.Date(), t.Null()]), // Can be Date from DB
-  updated_at: t.Union([t.String({ format: "date-time" }), t.Date(), t.Null()]), // Can be Date from DB
+  start_char: t.Optional(t.Number()),
+  end_char: t.Optional(t.Number()),
+  selected_text: t.Optional(t.String()),
+  created_at: t.Optional(
+    t.Union([t.String({ format: "date-time" }), t.Date()]),
+  ), // Can be Date from DB
+  updated_at: t.Optional(
+    t.Union([t.String({ format: "date-time" }), t.Date()]),
+  ), // Can be Date from DB
 });
 
 export const ExplanationSchema = t.Object({
@@ -119,8 +123,8 @@ export const SingleChapterBookSchema = t.Union([
         name: t.String(),
         testament: t.Union([t.Literal("OT"), t.Literal("NT")]),
         genre: t.Object({
-          g: t.Union([t.Number(), t.Null()]),
-          n: t.Union([t.String(), t.Null()]),
+          g: t.Optional(t.Number()),
+          n: t.Optional(t.String()),
         }),
         chapters: t.Array(
           t.Object({
@@ -160,9 +164,9 @@ export const LastChapterReadSchema = t.Object({
     t.Object({
       book_id: t.Number(),
       chapter_number: t.Number(),
-      explanation_id: t.Union([t.Number(), t.Null()]),
-      type: t.Union([t.String(), t.Null()]),
-      explanation: t.Union([t.String(), t.Null()]),
+      explanation_id: t.Optional(t.Number()),
+      type: t.Optional(t.String()),
+      explanation: t.Optional(t.String()),
     }),
   ),
 });
@@ -178,12 +182,12 @@ const ChatItemSchema = t.Object({
   status: t.String(),
   updated_at: t.Date(),
   book: t.Object({
-    book_id: t.Union([t.Number(), t.Null()]),
-    name: t.Union([t.String(), t.Null()]),
-    testament: t.Union([t.Literal("OT"), t.Literal("NT"), t.Null()]),
-    genre_id: t.Union([t.Number(), t.Null()]),
+    book_id: t.Optional(t.Number()),
+    name: t.Optional(t.String()),
+    testament: t.Optional(t.Union([t.Literal("OT"), t.Literal("NT")])),
+    genre_id: t.Optional(t.Number()),
   }),
-  chapter_number: t.Union([t.Number(), t.Null()]),
+  chapter_number: t.Optional(t.Number()),
   messages: t.Array(
     t.Object({
       message_id: t.Number(),
@@ -214,19 +218,17 @@ export const MessageHistorySchema = t.Array(
     user_id: t.String({ format: "uuid" }),
     title: t.String(),
     status: t.String(),
-    updated_at: t.Union([
-      t.String({ format: "date-time" }),
-      t.Date(),
-      t.Null(),
-    ]),
-    message_id: t.Union([t.Number(), t.Null()]),
-    content: t.Union([t.String(), t.Null()]),
-    role: t.Union([t.String(), t.Null()]),
-    chapter_number: t.Union([t.Number(), t.Null()]),
-    book_id: t.Union([t.Number(), t.Null()]),
-    bookName: t.Union([t.String(), t.Null()]),
-    bookTestament: t.Union([t.String(), t.Null()]),
-    genreId: t.Union([t.Number(), t.Null()]),
+    updated_at: t.Optional(
+      t.Union([t.String({ format: "date-time" }), t.Date()]),
+    ),
+    message_id: t.Optional(t.Number()),
+    content: t.Optional(t.String()),
+    role: t.Optional(t.String()),
+    chapter_number: t.Optional(t.Number()),
+    book_id: t.Optional(t.Number()),
+    bookName: t.Optional(t.String()),
+    bookTestament: t.Optional(t.String()),
+    genreId: t.Optional(t.Number()),
   }),
 );
 

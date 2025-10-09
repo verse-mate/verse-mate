@@ -11,7 +11,7 @@ export const ChatDto = t.Object({
   status: t.Enum(StatusEnum),
   updated_at: t.Date(),
   book: t.Omit(BookDto, ["genre_name"]),
-  chapter_number: t.Union([t.Number(), t.Null()]),
+  chapter_number: t.Optional(t.Number()),
   messages: t.Array(MessageDto),
 });
 
