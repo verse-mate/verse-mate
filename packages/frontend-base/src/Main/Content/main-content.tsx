@@ -1,13 +1,14 @@
 "use client";
 
 import * as RadixTabs from "@radix-ui/react-tabs";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import { getBookVerse, getExplanation } from "../../api/bible";
+import { getTopicDetails } from "../../api/topics";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
 import { NotesProvider } from "../../contexts/NotesContext";
@@ -72,14 +73,20 @@ export const MainContent = () => {
     explanationType,
     bibleVersion,
     conversationId,
+    isViewingTopic,
   } = useGetSearchParams();
 
   // Check if we're viewing a topic (special testament value)
-  const isViewingTopic = (testament as unknown as string) === "TOPIC";
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
   const [visibleChapters, setVisibleChapters] = useState<any[]>([]);
   const isAnimating = useRef(false);
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
+
+  const { data: topicDetails, isLoading: isTopicDetailsLoading } = useQuery({
+    queryKey: ["topic-details", bookId],
+    queryFn: () => getTopicDetails(bookId as string),
+    enabled: isViewingTopic && typeof bookId === "string",
+  });
 
   const { testaments } = fetchAllTestaments();
   const { chapters } = fetchAllChaptersByBook(Number(bookId));
@@ -1181,14 +1188,19 @@ export const MainContent = () => {
             <Icon.VerseMateLogoExtended className={styles.verseMateLogo} />
 
             <div className={styles.mobileTriggersWrapper}>
-              {!book ? (
+              {(!isViewingTopic && !book) ||
+              (isViewingTopic && isTopicDetailsLoading) ? (
                 <SelectDropdown.GroupedSelect.Skeleton />
               ) : (
                 <>
                   {/* Book trigger */}
                   <SelectDropdown.GroupedSelect.GroupedTrigger
-                    selectedBook={book}
-                    selectedVerse={verseIdToString}
+                    selectedBook={
+                      isViewingTopic
+                        ? topicDetails?.topic?.name ?? "Topic"
+                        : book ?? null
+                    }
+                    selectedVerse={isViewingTopic ? "" : verseIdToString}
                     defaultPlaceholder="Select a Book"
                     isOpen={isDropdownOpenBook}
                     toggleDropdown={() => {

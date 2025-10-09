@@ -80,6 +80,7 @@ export const useGetSearchParams = () => {
     conversationId,
     explanationId,
     explanationType,
+    isViewingTopic,
     // chapters is intentionally omitted here
   };
 };
