@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import animationStyles from "../../Main/Content/main-content.module.css";
 import { useChapter } from "../../hooks/useChapter";

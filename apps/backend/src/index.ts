@@ -1,5 +1,5 @@
 import { cors } from "@elysiajs/cors";
-import { swagger } from "@elysiajs/swagger";
+import { openapi } from "@elysiajs/openapi";
 import { adminPlugin, authPlugin, biblePlugin, userPlugin } from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
@@ -12,7 +12,25 @@ const app = new Elysia()
   .use(biblePlugin)
   .use(adminPlugin)
   .use(cors())
-  .use(swagger());
+  .use(
+    openapi({
+      documentation: {
+        info: {
+          title: "VerseMate API",
+          version: "1.0.0",
+          description:
+            "Bible reading platform API with AI-driven translations and interactive Q&A",
+        },
+        servers: [
+          { url: "http://localhost:4000", description: "Development" },
+          { url: "https://api.versemate.com", description: "Production" },
+        ],
+      },
+    }),
+  );
+
+// Export type before .listen() to preserve full type information for Eden Treaty
+export type App = typeof app;
 
 app.listen(process.env.PORT || 3000, async () => {
   console.log(
@@ -52,5 +70,3 @@ app.listen(process.env.PORT || 3000, async () => {
     }
   });
 });
-
-export type App = typeof app;

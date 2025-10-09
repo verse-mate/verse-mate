@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import cacheConstants from "../shared/cache.constants";
@@ -12,13 +12,12 @@ describe("Auth", () => {
   let signupAuthPayload: AuthPayload | null;
   let loginAuthPayload: AuthPayload | null;
 
-  const authSignupInput: AuthPlugin["_routes"]["auth"]["signup"]["post"]["body"] =
-    {
-      email: faker.internet.email().toLocaleLowerCase(),
-      firstName: faker.person.firstName(),
-      lastName: faker.person.lastName(),
-      password: faker.internet.password(),
-    };
+  const authSignupInput = {
+    email: faker.internet.email().toLocaleLowerCase(),
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+    password: faker.internet.password(),
+  };
   const changePasswordValue = faker.internet.password();
 
   it("signup", async () => {
@@ -33,7 +32,8 @@ describe("Auth", () => {
       },
     );
 
-    const { data } = await client.auth.signup.post(authSignupInput);
+    const { data, error } = await client.auth.signup.post(authSignupInput);
+    if (error) throw error;
 
     expect(data?.accessToken).toBeDefined();
     expect(data?.verified).toBeFalse();
@@ -46,7 +46,7 @@ describe("Auth", () => {
       .executeTakeFirstOrThrow();
     expect(user.emailVerified).toBe(false);
 
-    const { data: verifyEmailData, error } = await client.auth[
+    const { data: verifyEmailData, error: verifyError } = await client.auth[
       "verify-email"
     ].post(
       {
@@ -58,6 +58,7 @@ describe("Auth", () => {
         },
       },
     );
+    if (verifyError) throw verifyError;
 
     expect(verifyEmailData?.accessToken).toBeDefined();
     signupAuthPayload = verifyEmailData;
@@ -72,19 +73,21 @@ describe("Auth", () => {
   });
 
   it("signup - AccessToken Works", async () => {
-    const { data } = await client.auth.user.get({
+    const { data, error } = await client.auth.user.get({
       headers: {
         authorization: `Bearer ${signupAuthPayload?.accessToken}`,
       },
     });
+    if (error) throw error;
     expect(data).toBeTruthy();
   });
 
   it("login", async () => {
-    const { data } = await client.auth.login.post({
+    const { data, error } = await client.auth.login.post({
       email: authSignupInput.email,
       password: authSignupInput.password,
     });
+    if (error) throw error;
 
     expect(data?.accessToken).toBeDefined();
     loginAuthPayload = data;
@@ -98,8 +101,8 @@ describe("Auth", () => {
 
     expect(data?.accessToken).not.toBeDefined();
     expect(error).toBeTruthy();
-    // Check that we get USER_NOT_FOUND error for non-existent users
-    expect(error?.value).toBe("USER_NOT_FOUND");
+    // Check that we get NOT_FOUND error for non-existent users
+    expect((error as any)?.value?.error).toBe("NOT_FOUND");
   });
 
   it("login - invalid credentials", async () => {
@@ -110,8 +113,8 @@ describe("Auth", () => {
 
     expect(data?.accessToken).not.toBeDefined();
     expect(error).toBeTruthy();
-    // Check that we get INVALID_USER error for wrong password
-    expect(error?.value).toBe("INVALID_USER");
+    // Check that we get UNAUTHORIZED error for wrong password
+    expect((error as any)?.value?.error).toBe("UNAUTHORIZED");
   });
 
   it("Change Password", async () => {
@@ -151,7 +154,7 @@ describe("Auth", () => {
         password: changePasswordValue,
       },
     );
-    expect(errorLogin).toBeFalsy();
+    if (errorLogin) throw errorLogin;
     expect(dataLogin?.accessToken).toBeDefined();
   });
 
@@ -159,11 +162,12 @@ describe("Auth", () => {
     // It should have 2 sessions
     const cacheService = Backend.store.cache;
 
-    const { data } = await client.auth.user.get({
+    const { data, error } = await client.auth.user.get({
       headers: {
         authorization: `Bearer ${signupAuthPayload?.accessToken}`,
       },
     });
+    if (error) throw error;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;
@@ -208,16 +212,20 @@ describe("Auth", () => {
   it("logout all", async () => {
     const cacheService = Backend.store.cache;
 
-    const { data: loginData } = await client.auth.login.post({
-      email: authSignupInput.email,
-      password: changePasswordValue,
-    });
+    const { data: loginData, error: loginError } = await client.auth.login.post(
+      {
+        email: authSignupInput.email,
+        password: changePasswordValue,
+      },
+    );
+    if (loginError) throw loginError;
 
-    const { data } = await client.auth.user.get({
+    const { data, error } = await client.auth.user.get({
       headers: {
         authorization: `Bearer ${loginData?.accessToken}`,
       },
     });
+    if (error) throw error;
     expect(data?.id).toBeTruthy();
     if (!data?.id) {
       return;
@@ -282,6 +290,6 @@ describe("Auth", () => {
     });
 
     expect(secondIsValid.error).toBeFalsy();
-    expect(secondIsValid.data).toBeFalsy();
+    expect(secondIsValid.data?.success).toBe(false);
   });
 });

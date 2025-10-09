@@ -41,6 +41,9 @@ export const useRating = (
         },
         explanation_id,
       });
+      if (response.error) {
+        throw response.error;
+      }
       return response.data;
     },
     initialData: {

@@ -3,7 +3,7 @@ import { UserDto } from "../user/user.dto";
 
 export const MessageHistoryDto = t.Object({
   conversation_id: t.Number({
-    error: { message: "Invalid conversation id" },
+    error: "Invalid conversation id",
   }),
   session: t.Pick(UserDto, ["id"]),
 });

@@ -8,6 +8,16 @@ import userPlugin from "./src/user/user.plugin";
 import type { UserPlugin } from "./src/user/user.plugin";
 
 export {
+  ApiError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  InternalServerError,
+} from "./src/common/errors";
+
+export {
   type AuthPlugin,
   authPlugin,
   type UserPlugin,

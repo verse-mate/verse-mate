@@ -1,10 +1,9 @@
 import StatusEnum from "database/src/models/public/StatusEnum";
 import type { db } from "../../shared/shared.plugin";
-import type { BookDto } from "../dto/book/book.dto";
 import type { AddMessageDto } from "../dto/chat/add-message.dto";
-import type { ChatDto } from "../dto/chat/chat.dto";
+import type { ChatEntity } from "../dto/chat/chat.dto";
 import type { NewChatDto } from "../dto/chat/new-chat.dto";
-import type { RawChatHistoryDto } from "../dto/chat/raw-chat-history.dto";
+import type { RawChatHistoryEntity } from "../dto/chat/raw-chat-history.dto";
 import type { UserDto } from "../dto/user/user.dto";
 
 export class ChatRepository {
@@ -36,7 +35,11 @@ export class ChatRepository {
     user_id,
     chapter_number,
     book_id,
-  }: Pick<ChatDto & BookDto, "user_id" | "chapter_number" | "book_id">) {
+  }: {
+    user_id: string;
+    chapter_number: number;
+    book_id: number;
+  }) {
     const chatExists = await this.db
       .getOrCreateConnection()
       .selectFrom("conversations")
@@ -72,8 +75,8 @@ export class ChatRepository {
   async updateChatDate({
     conversation_id: chat_id,
     updated_at,
-  }: Pick<ChatDto, "conversation_id" | "updated_at">) {
-    const updateChatDate = await this.db
+  }: Pick<ChatEntity, "conversation_id" | "updated_at">) {
+    await this.db
       .getOrCreateConnection()
       .updateTable("conversations")
       .set({
@@ -85,7 +88,7 @@ export class ChatRepository {
 
   async getUserChatHistory({
     id: user_id,
-  }: Pick<UserDto, "id">): Promise<{ rawChatHistory: RawChatHistoryDto[] }> {
+  }: Pick<UserDto, "id">): Promise<{ rawChatHistory: RawChatHistoryEntity[] }> {
     const rawChatHistory = await this.db
       .getOrCreateConnection()
       .selectFrom("conversations")
@@ -116,16 +119,14 @@ export class ChatRepository {
       .orderBy("conversations.updated_at", "desc")
       .execute();
 
-    typeof rawChatHistory;
-
     return { rawChatHistory: rawChatHistory };
   }
 
   async getUserChatMessageHistory({
     user_id,
     conversation_id,
-  }: Pick<ChatDto, "user_id" | "conversation_id">): Promise<{
-    chatMessageHistory: RawChatHistoryDto[];
+  }: Pick<ChatEntity, "user_id" | "conversation_id">): Promise<{
+    chatMessageHistory: RawChatHistoryEntity[];
   }> {
     const chatMessageHistory = await this.db
       .getOrCreateConnection()
@@ -162,7 +163,7 @@ export class ChatRepository {
 
   async disableChat({
     conversation_id,
-  }: Pick<ChatDto, "conversation_id">): Promise<{
+  }: Pick<ChatEntity, "conversation_id">): Promise<{
     chat_id: number | undefined;
   }> {
     const updateChatStatus = await this.db

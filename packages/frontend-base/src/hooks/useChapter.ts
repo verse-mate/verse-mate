@@ -1,9 +1,7 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
 
 export const useChapter = () => {
-  const queryClient = useQueryClient();
   const { verseId } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
 
