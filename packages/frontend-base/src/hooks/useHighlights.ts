@@ -64,6 +64,10 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
         response = await (api.bible.highlights as any)[session.id].get();
       }
 
+      if (response.error) {
+        throw response.error;
+      }
+
       if (response.data) {
         const fetchedHighlights = response.data.highlights || [];
         globalHighlights = fetchedHighlights;
@@ -172,6 +176,10 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
 
         const response = await api.bible.highlight.add.post(highlightData);
 
+        if (response.error) {
+          throw response.error;
+        }
+
         if (response.data?.success) {
           if ("highlight" in response.data && response.data.highlight) {
             const newHighlight: Highlight = {
@@ -246,6 +254,10 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
             color,
           });
 
+        if (response.error) {
+          throw response.error;
+        }
+
         if (response.data?.success) {
           if ("highlight" in response.data && response.data.highlight) {
             const updatedHighlight: Highlight = {
@@ -309,6 +321,10 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
           .delete(undefined, {
             query: { user_id: session.id },
           });
+
+        if (response.error) {
+          throw response.error;
+        }
 
         if (response.data?.success) {
           return true;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { notify } from "../../notification";
 import { Button } from "../Button/Button";
 import { CopyIcon } from "../Icons/copyIcon";

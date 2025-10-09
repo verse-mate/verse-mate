@@ -3,14 +3,12 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import Image from "next/image";
 import type { Dispatch, SetStateAction } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { selectedBookStore } from "../../../store/book-selection";
 import * as Icon from "../../../ui/Icons";
-import { bibleVersions } from "../../../utils/bible-versions";
 import { explanationTypes } from "../../../utils/commentary-options";
 import { Accordion } from "../../Accordion";
 import { TestamentControl } from "../../Control";
-import { VersionDropdown } from "../../Dropdown";
 import { MarkdownRenderer } from "../../MarkdownRenderer";
 import { Rating } from "../../Rating";
 import { SelectDropdown } from "../../SelectDropdown";
@@ -280,60 +278,6 @@ export const Nav = ({
     [fixedItem],
   );
 
-  const renderRecentlyViewed = () => {
-    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
-    return recentlyViewedBooks
-      .filter((id) => Number(id) !== bookId)
-      .map((bookId) => {
-        const book = allBooks.find((b) => b.b === Number(bookId));
-        if (!book) return null;
-        return (
-          <Accordion.Item value={book.n} key={`recently-${book.n}`}>
-            <div
-              data-accordion-trigger={book.n}
-              onClick={() => handleAccordionTriggerClick(book.n)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ")
-                  handleAccordionTriggerClick(book.n);
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <Accordion.Trigger
-                label={book.n}
-                highlightBook={false}
-                icon={
-                  <Icon.HistoryIcon
-                    style={{
-                      width: "16px",
-                      height: "16px",
-                      marginRight: "8px",
-                      fill: "var(--charcoal-grey)",
-                    }}
-                  />
-                }
-                iconPosition="right"
-              />
-            </div>
-            <Accordion.Content>
-              <VerseGrid
-                testament={book.t}
-                bookId={String(book.b)}
-                bookName={book.n}
-                verses={Array.from({ length: book.c }, (_, i) =>
-                  (i + 1).toString(),
-                )}
-                onVerseSelect={leftPanelHandleVerseSelect}
-                selectedVerse={String(verseId)}
-                selectedBook={String(bookId)}
-              />
-            </Accordion.Content>
-          </Accordion.Item>
-        );
-      })
-      .filter(Boolean);
-  };
-
   const renderSelectedBook = () => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
     const selectedBook = allBooks.find((book) => book.b === bookId);
@@ -370,10 +314,7 @@ export const Nav = ({
     );
   };
 
-  const renderAccordionItems = (
-    books: typeof oldTestamentBooks,
-    testament: "OT" | "NT",
-  ) => {
+  const renderAccordionItems = (testament: "OT" | "NT") => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
     const filteredBooksWithData = leftPanelFilteredBooks
       .map((bookName) => allBooks.find((t) => t.n === bookName))
@@ -568,15 +509,11 @@ export const Nav = ({
                   </Accordion.Root>
                 </div>
                 <Tabs.Content value="OT">
-                  <Accordion.Root>
-                    {renderAccordionItems(oldTestamentBooks, "OT")}
-                  </Accordion.Root>
+                  <Accordion.Root>{renderAccordionItems("OT")}</Accordion.Root>
                 </Tabs.Content>
 
                 <Tabs.Content value="NT">
-                  <Accordion.Root>
-                    {renderAccordionItems(newTestamentBooks, "NT")}
-                  </Accordion.Root>
+                  <Accordion.Root>{renderAccordionItems("NT")}</Accordion.Root>
                 </Tabs.Content>
               </div>
             </Tabs.Root>

@@ -6,8 +6,6 @@ import { MainText } from "../../MainText";
 import { ProgressBar } from "../../ProgressBar";
 import styles from "./content.module.css";
 
-import { useChapter } from "../../../hooks/useChapter";
-
 type Props = {
   bookVerseData:
     | {

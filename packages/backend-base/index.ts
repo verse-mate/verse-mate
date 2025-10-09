@@ -11,6 +11,16 @@ import topicPlugin from "./src/topics/topic.plugin";
 import type { TopicPlugin } from "./src/topics/topic.plugin";
 
 export {
+  ApiError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  InternalServerError,
+} from "./src/common/errors";
+
+export {
   type AuthPlugin,
   authPlugin,
   type UserPlugin,

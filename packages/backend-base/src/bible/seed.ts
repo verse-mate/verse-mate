@@ -1,4 +1,3 @@
-import type { BunFile } from "bun";
 import { db } from "database";
 import type { Books } from "database/src/models/public/Books";
 import type { Chapters } from "database/src/models/public/Chapters";
@@ -139,7 +138,7 @@ async function getExplanationFromFile(bookName: string, chapterId: number) {
   try {
     const explanation = await Bun.file(filePath).text();
     return { explanation };
-  } catch (err) {
+  } catch {
     return { error: `Explanation not found for ${filePath}` };
   }
 }
@@ -554,7 +553,7 @@ export async function main() {
         chapter_id: savedChapter.chapter_id,
       });
       if (!exists) {
-        const { explanation, error } = await getExplanationFromFile(
+        const { explanation } = await getExplanationFromFile(
           book.name,
           chapter.chapterId,
         );

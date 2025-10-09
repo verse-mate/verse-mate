@@ -1,5 +1,4 @@
 import type { db } from "../shared/shared.plugin";
-import { ObjectStorageService } from "../shared/storage/storage.service";
 import type { User } from "./entities/user.entity";
 
 export class UserService {

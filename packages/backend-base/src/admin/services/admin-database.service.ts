@@ -1,4 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import { NotFoundError, ValidationError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
 export class AdminDatabaseService {
@@ -12,7 +13,7 @@ export class AdminDatabaseService {
       .executeTakeFirst();
 
     if (result.numDeletedRows === BigInt(0)) {
-      throw new Error(`Explanation ${explanationId} not found`);
+      throw new NotFoundError(`Explanation ${explanationId} not found`);
     }
 
     return {
@@ -39,7 +40,9 @@ export class AdminDatabaseService {
       .executeTakeFirst()) || { chapter_id: null };
 
     if (!chapter_id) {
-      throw new Error(`Chapter ${chapterNumber} not found for book ${bookId}`);
+      throw new NotFoundError(
+        `Chapter ${chapterNumber} not found for book ${bookId}`,
+      );
     }
 
     const version = await connection
@@ -49,7 +52,7 @@ export class AdminDatabaseService {
       .executeTakeFirst();
 
     if (!version) {
-      throw new Error(`Bible version ${bibleVersion} not found`);
+      throw new NotFoundError(`Bible version ${bibleVersion} not found`);
     }
 
     const currentExplanation = await connection
@@ -61,7 +64,7 @@ export class AdminDatabaseService {
       .executeTakeFirst();
 
     if (!currentExplanation) {
-      throw new Error(
+      throw new NotFoundError(
         `No explanation found for chapter ${chapterNumber}, type ${explanationType}`,
       );
     }
@@ -88,10 +91,6 @@ export class AdminDatabaseService {
     regenerationId: string,
     newExplanationContent: string,
     originalExplanationId: number,
-    chapterId: number,
-    explanationType: ExplanationTypeEnum,
-    bibleVersion: string,
-    adminUserId: string,
   ) {
     console.log(`Saving regenerated explanation for ${regenerationId}`);
     console.log(
@@ -114,7 +113,7 @@ export class AdminDatabaseService {
   async getExplanationComparison(regenerationId: string) {
     const parts = regenerationId.split("_");
     if (parts.length < 4) {
-      throw new Error("Invalid regeneration ID format");
+      throw new ValidationError("Invalid regeneration ID format");
     }
 
     const bookId = Number(parts[1]);
@@ -131,7 +130,7 @@ export class AdminDatabaseService {
       .executeTakeFirst()) || { chapter_id: null };
 
     if (!chapter_id) {
-      throw new Error("Chapter not found");
+      throw new NotFoundError("Chapter not found");
     }
 
     const version = await connection
@@ -141,7 +140,7 @@ export class AdminDatabaseService {
       .executeTakeFirst();
 
     if (!version) {
-      throw new Error(`Bible version ${parts[4]} not found`);
+      throw new NotFoundError(`Bible version ${parts[4]} not found`);
     }
 
     const currentExplanation = await connection
@@ -185,7 +184,6 @@ export class AdminDatabaseService {
       `Admin ${adminUserId} chose explanation ${chosenExplanationId} for ${regenerationId}`,
     );
 
-    const parts = regenerationId.split("_");
     const isNewVersion = chosenExplanationId > 10000;
 
     if (isNewVersion) {
@@ -318,7 +316,7 @@ export class AdminDatabaseService {
       .executeTakeFirst();
 
     if (!explanation) {
-      throw new Error(`Explanation ${explanationId} not found`);
+      throw new NotFoundError(`Explanation ${explanationId} not found`);
     }
 
     return {

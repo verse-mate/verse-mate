@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useBookmarks } from "../../hooks/useBookmarks";
 import { userSession } from "../../hooks/userSession";
 import { addModal } from "../../modal/store";
@@ -98,7 +98,7 @@ export const BookmarkButton = ({
       } else {
         await addBookmark(bookId, chapterNumber, bookName, testament);
       }
-    } catch (error) {
+    } catch {
       // Silently handle bookmark toggle errors
     } finally {
       setIsLoading(false);
