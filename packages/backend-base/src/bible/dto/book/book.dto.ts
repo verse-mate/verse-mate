@@ -2,11 +2,11 @@ import TestamentEnum from "database/src/models/public/TestamentEnum";
 import { type Static, t } from "elysia";
 
 export const BookDto = t.Object({
-  book_id: t.Union([t.Number(), t.Null()]),
-  name: t.Union([t.String(), t.Null()]),
-  testament: t.Union([t.Enum(TestamentEnum), t.Null()]),
-  genre_id: t.Union([t.Number(), t.Null()]),
-  genre_name: t.Union([t.String(), t.Null()]),
+  book_id: t.Optional(t.Number()),
+  name: t.Optional(t.String()),
+  testament: t.Optional(t.Enum(TestamentEnum)),
+  genre_id: t.Optional(t.Number()),
+  genre_name: t.Optional(t.String()),
 });
 
 export type BookDto = Static<typeof BookDto>;

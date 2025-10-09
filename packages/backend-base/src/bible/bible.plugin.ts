@@ -216,7 +216,7 @@ const plugin = new Elysia()
           }),
           response: {
             200: t.Object({
-              explanation: t.Union([ExplanationSchema, t.Null()]),
+              explanation: t.Optional(ExplanationSchema),
             }),
             ...AuthErrors,
             404: ErrorResponse,
@@ -261,7 +261,7 @@ const plugin = new Elysia()
             chapterNumber: t.String(),
           }),
           response: {
-            200: t.Object({ chapter_id: t.Union([t.Number(), t.Null()]) }),
+            200: t.Object({ chapter_id: t.Optional(t.Number()) }),
             ...AuthErrors,
             404: ErrorResponse,
           },
@@ -536,7 +536,7 @@ const plugin = new Elysia()
           ]),
           response: {
             200: t.Object({
-              result: t.Union([LastChapterReadSchema, t.Null()]),
+              result: t.Optional(LastChapterReadSchema),
             }),
             ...AuthErrors,
           },

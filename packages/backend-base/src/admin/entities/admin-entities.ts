@@ -87,9 +87,9 @@ export const UserSchema = t.Object({
   is_admin: t.Boolean(),
   createdAt: t.Union([t.String({ format: "date-time" }), t.Date()]),
   emailVerified: t.Optional(t.Boolean()),
-  imageSrc: t.Union([t.String(), t.Null()]),
-  preferred_language: t.Union([t.String(), t.Null()]),
-  preferred_bible_version: t.Union([t.String(), t.Null()]),
+  imageSrc: t.Optional(t.String()),
+  preferred_language: t.Optional(t.String()),
+  preferred_bible_version: t.Optional(t.String()),
 });
 
 export const UsersListSchema = t.Array(UserSchema);
@@ -101,37 +101,37 @@ export const UsersListSchema = t.Array(UserSchema);
 export const BatchJobSchema = t.Object({
   id: t.Number(),
   batch_type: t.String(),
-  openai_batch_id: t.Union([t.String(), t.Null()]),
+  openai_batch_id: t.Optional(t.String()),
   status: t.String(),
-  book_id: t.Union([t.Number(), t.Null()]),
+  book_id: t.Optional(t.Number()),
   bible_version: t.String(),
   model: t.String(),
   explanation_types: t.Array(t.String()),
   total_requests: t.Number(),
   completed_requests: t.Number(),
   failed_requests: t.Number(),
-  input_file_path: t.Union([t.String(), t.Null()]),
-  output_file_path: t.Union([t.String(), t.Null()]),
-  total_tokens: t.Union([t.Number(), t.Null()]),
-  prompt_tokens: t.Union([t.Number(), t.Null()]),
-  completion_tokens: t.Union([t.Number(), t.Null()]),
-  estimated_cost: t.Union([t.Number(), t.Null()]),
-  actual_cost: t.Union([t.Number(), t.Null()]),
+  input_file_path: t.Optional(t.String()),
+  output_file_path: t.Optional(t.String()),
+  total_tokens: t.Optional(t.Number()),
+  prompt_tokens: t.Optional(t.Number()),
+  completion_tokens: t.Optional(t.Number()),
+  estimated_cost: t.Optional(t.Number()),
+  actual_cost: t.Optional(t.Number()),
   created_by: t.String({ format: "uuid" }),
   created_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
-  started_at: t.Union([t.String({ format: "date-time" }), t.Date(), t.Null()]),
-  completed_at: t.Union([
-    t.String({ format: "date-time" }),
-    t.Date(),
-    t.Null(),
-  ]),
-  error_message: t.Union([t.String(), t.Null()]),
+  started_at: t.Optional(
+    t.Union([t.String({ format: "date-time" }), t.Date()]),
+  ),
+  completed_at: t.Optional(
+    t.Union([t.String({ format: "date-time" }), t.Date()]),
+  ),
+  error_message: t.Optional(t.String()),
   explanations_processed: t.Boolean(),
-  parent_batch_id: t.Union([t.Number(), t.Null()]),
-  error_file_content: t.Union([t.String(), t.Null()]),
-  source_language_code: t.Union([t.String(), t.Null()]),
-  target_language_code: t.Union([t.String(), t.Null()]),
-  book_name: t.Union([t.String(), t.Null()]),
+  parent_batch_id: t.Optional(t.Number()),
+  error_file_content: t.Optional(t.String()),
+  source_language_code: t.Optional(t.String()),
+  target_language_code: t.Optional(t.String()),
+  book_name: t.Optional(t.String()),
 });
 
 export const BatchListSchema = t.Array(BatchJobSchema);
@@ -188,7 +188,7 @@ export const ExplanationComparisonSchema = t.Object({
   chapterNumber: t.Number(),
   explanationType: t.String(),
   comparison: t.Object({
-    current: t.Union([ExplanationVersionSchema, t.Null()]),
+    current: t.Optional(ExplanationVersionSchema),
     new: ExplanationVersionSchema,
   }),
 });
@@ -224,7 +224,7 @@ export const ExplanationHistoryItemSchema = t.Object({
   version: t.Number(),
   is_active: t.Boolean(),
   created_by_admin: t.Boolean(),
-  parent_explanation_id: t.Union([t.Number(), t.Null()]),
+  parent_explanation_id: t.Optional(t.Number()),
   created_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
   language_code: t.String(),
 });
@@ -333,7 +333,7 @@ export const PlaygroundSchema = t.Any();
  * Existing explanation - string or null (just the explanation text)
  * The getExistingExplanation method returns explanation?.explanation || null
  */
-export const ExistingExplanationSchema = t.Union([t.String(), t.Null()]);
+export const ExistingExplanationSchema = t.Optional(t.String());
 
 /**
  * Stats response - complex object with explanation statistics
@@ -387,7 +387,7 @@ export const ExplanationFilterItemSchema = t.Object({
   version: t.Number(),
   is_active: t.Boolean(),
   created_by_admin: t.Boolean(),
-  parent_explanation_id: t.Union([t.Number(), t.Null()]),
+  parent_explanation_id: t.Optional(t.Number()),
   created_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
   language_code: t.String(),
 });

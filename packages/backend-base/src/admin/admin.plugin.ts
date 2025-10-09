@@ -69,7 +69,7 @@ const plugin = new Elysia()
           },
           {
             body: t.Object({
-              preferred_language: t.Union([t.String(), t.Null()]),
+              preferred_language: t.Optional(t.String()),
             }),
             response: {
               200: t.Object({ success: t.Boolean(), message: t.String() }),
