@@ -33,6 +33,8 @@ describe("Admin Plugin", () => {
       expect(error).toBeFalsy();
       expect(data).toBeTruthy();
       expect(Array.isArray(data)).toBe(true);
+
+      if (!data) throw new Error("Data should not be null");
       expect(data.length).toBeGreaterThan(0);
 
       // Verify user structure

@@ -226,7 +226,11 @@ describe("Bible Plugin", () => {
       expect(error).toBeFalsy();
       expect(data).toBeTruthy();
       expect(data?.note).toBeDefined();
-      noteId = data?.note?.id;
+
+      if (!data?.note?.note_id) {
+        throw new Error("Note ID should be defined");
+      }
+      noteId = data.note.note_id;
     });
 
     it("PUT /bible/book/note/update - update note", async () => {
@@ -294,9 +298,15 @@ describe("Bible Plugin", () => {
       expect(error).toBeFalsy();
       expect(data).toBeTruthy();
       expect(data?.success).toBe(true);
-      expect(data?.highlight).toBeDefined();
-      expect(data?.highlight?.id).toBeDefined();
-      highlightId = data?.highlight?.id;
+
+      // Type narrowing for union response
+      if (data && "highlight" in data && data.highlight) {
+        expect(data.highlight).toBeDefined();
+        expect(data.highlight.highlight_id).toBeDefined();
+        highlightId = data.highlight.highlight_id;
+      } else {
+        throw new Error("Expected highlight in response");
+      }
     });
 
     it("PUT /bible/highlight/:highlight_id - update highlight color", async () => {

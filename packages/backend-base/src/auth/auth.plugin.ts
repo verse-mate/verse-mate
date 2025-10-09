@@ -1,6 +1,5 @@
 import { Elysia, t } from "elysia";
 
-import bearer from "@elysiajs/bearer";
 import { createErrorHandler } from "../common/error-handler";
 import { UnauthorizedError } from "../common/errors";
 import { AuthErrorsRef, StandardErrorsRef } from "../common/response-models";
@@ -28,7 +27,6 @@ const plugin = new Elysia()
     app
       .guard(authGuard, (app) =>
         app
-          .use(bearer())
           .resolve({ as: "scoped" }, authDerive)
           .get(
             "/user",

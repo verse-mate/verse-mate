@@ -1,4 +1,3 @@
-import bearer from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
 import PromptStatusEnum from "../../../database/src/models/public/PromptStatusEnum";
 import { adminGuard } from "../auth/admin.utils";
@@ -47,7 +46,6 @@ const plugin = new Elysia()
   })
   .guard(authGuard, (app) =>
     app
-      .use(bearer())
       .resolve({ as: "scoped" }, authDerive)
       .group("/user", (app) =>
         app.patch(
@@ -144,7 +142,6 @@ const plugin = new Elysia()
   )
   .guard(authGuard, (app) => {
     return app
-      .use(bearer())
       .resolve({ as: "scoped" }, authDerive)
       .guard(adminGuard)
       .group("/admin", (app) => {
