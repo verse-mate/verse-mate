@@ -4,7 +4,6 @@ import { db as Database } from "database";
 import { Elysia, t } from "elysia";
 import { UserService } from "../user/user.service";
 
-import { ErrorResponse } from "../common/response-models";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
@@ -28,9 +27,6 @@ export type JWT = (typeof jwt)["decorator"]["jwt"];
 const setup = new Elysia({ name: "shared" })
   .use(bearer())
   .use(jwt)
-  .model({
-    ErrorResponse,
-  })
   .state("db", Database)
   .state("cache", redisClient)
   .state("notification", new EmailNotificationConsumer())

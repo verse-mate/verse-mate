@@ -24,6 +24,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
+    "noUnusedLocals": true,
     "composite": true,
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,

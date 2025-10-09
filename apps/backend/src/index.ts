@@ -6,7 +6,6 @@ import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
 import { Elysia } from "elysia";
 
-// Compose app with explicit plugin types to preserve type information
 const app = new Elysia()
   .use(authPlugin)
   .use(userPlugin)

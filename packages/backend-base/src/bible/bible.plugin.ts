@@ -9,11 +9,6 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
-import {
-  AuthErrors,
-  ErrorResponse,
-  StandardErrors,
-} from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
@@ -53,41 +48,6 @@ async function gpt5Text({
 
   return response.output_text ?? "oopsies";
 }
-
-import { getExplanationTypePrompt } from "../shared/prompt-utils";
-import {
-  BookSchema,
-  BookmarkSchema,
-  ExplanationSchema,
-  GroupedChatHistorySchema,
-  HighlightSchema,
-  LanguageSchema,
-  LastChapterReadSchema,
-  MessageHistorySchema,
-  MessageSaveResultSchema,
-  NewConversationSchema,
-  NoteSchema,
-  SaveLastChapterReadResultSchema,
-  SaveRatingResultSchema,
-  SingleChapterBookSchema,
-  TestamentSchema,
-  UpdateRatingResultSchema,
-} from "./entities/bible-entities";
-
-function getLanguageName(code: string, locale = "en"): string {
-  const display = new Intl.DisplayNames([locale], { type: "language" });
-
-  return display.of(code) ?? display.of("en") ?? "English";
-}
-
-const getUserPrompt = ({
-  explanationPrompt,
-  language,
-}: { explanationPrompt: string; language: string }) => {
-  return `${explanationPrompt}
-
-The response should be in ${language} using Markdown format only.`;
-};
 
 const plugin = new Elysia()
   .use(shared)
