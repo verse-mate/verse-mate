@@ -12,7 +12,7 @@ export const ErrorResponse = t.Object({
     description: "Human-readable error message",
   }),
   details: t.Optional(
-    t.Any({
+    t.Unknown({
       description:
         "Additional error context (validation errors, stack traces, etc.)",
     }),

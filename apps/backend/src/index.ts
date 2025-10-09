@@ -1,16 +1,26 @@
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
-import { adminPlugin, authPlugin, biblePlugin, userPlugin } from "backend-base";
+import {
+  type AdminPlugin,
+  type AuthPlugin,
+  type BiblePlugin,
+  type UserPlugin,
+  adminPlugin,
+  authPlugin,
+  biblePlugin,
+  userPlugin,
+} from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
 import { Elysia } from "elysia";
 
+// Compose app with explicit plugin types to preserve type information
 const app = new Elysia()
-  .use(authPlugin)
-  .use(userPlugin)
-  .use(biblePlugin)
-  .use(adminPlugin)
+  .use(authPlugin as AuthPlugin)
+  .use(userPlugin as UserPlugin)
+  .use(biblePlugin as BiblePlugin)
+  .use(adminPlugin as AdminPlugin)
   .use(cors())
   .use(
     openapi({
@@ -28,6 +38,9 @@ const app = new Elysia()
       },
     }),
   );
+
+// Export type before .listen() to preserve full type information for Eden Treaty
+export type App = typeof app;
 
 app.listen(process.env.PORT || 3000, async () => {
   console.log(
@@ -67,5 +80,3 @@ app.listen(process.env.PORT || 3000, async () => {
     }
   });
 });
-
-export type App = typeof app;
