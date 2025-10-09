@@ -7,12 +7,6 @@ import type { BiblePlugin } from "./src/bible/bible.plugin";
 import userPlugin from "./src/user/user.plugin";
 import type { UserPlugin } from "./src/user/user.plugin";
 
-// Common response models and errors
-export {
-  ErrorResponse,
-  type ErrorResponseType,
-} from "./src/common/response-models";
-
 export {
   ApiError,
   UnauthorizedError,

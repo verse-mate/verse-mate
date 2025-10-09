@@ -6,16 +6,10 @@ import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import { createErrorHandler } from "../common/error-handler";
 import {
-  ForbiddenError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
-import {
-  AuthErrors,
-  ErrorResponse,
-  StandardErrors,
-} from "../common/response-models";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { AdminDatabaseService } from "./services/admin-database.service";

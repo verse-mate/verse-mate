@@ -7,11 +7,6 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
-import {
-  AuthErrors,
-  ErrorResponse,
-  StandardErrors,
-} from "../common/response-models";
 import shared from "../shared/shared.plugin";
 import { UserService } from "./user.service";
 
