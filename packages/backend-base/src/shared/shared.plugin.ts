@@ -35,7 +35,7 @@ const setup = new Elysia({ name: "shared" })
     let payload: any;
     try {
       payload = await jwt.verify(auth?.value as string | undefined);
-    } catch (_e) {
+    } catch {
       console.warn("JWT verification failed");
       return { user: null };
     }
@@ -54,7 +54,7 @@ const setup = new Elysia({ name: "shared" })
       const user = await userService.findOne((payload as any).id);
       if (!user) return { user: null };
       return { user };
-    } catch (_e) {
+    } catch {
       console.error("Failed to load user from store");
       return { user: null };
     }

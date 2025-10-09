@@ -30,6 +30,10 @@ export async function getChapterId(
       chapterNumber
     ].get();
 
+    if (response.error) {
+      throw response.error;
+    }
+
     if (response.data && response.data.chapter_id !== null) {
       const chapterId = response.data.chapter_id;
       console.log(

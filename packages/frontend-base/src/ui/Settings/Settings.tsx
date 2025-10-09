@@ -57,6 +57,9 @@ export const Settings = ({
     const fetchLanguages = async () => {
       try {
         const response = await api.bible.languages.get();
+        if (response.error) {
+          throw response.error;
+        }
         if (response.data) {
           // Properly map the API response to the expected structure
           const mappedLanguages = (response.data as any[]).map((lang) => ({

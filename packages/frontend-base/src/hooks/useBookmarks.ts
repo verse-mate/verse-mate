@@ -35,7 +35,7 @@ const getPendingBookmarks = (): Array<{
   try {
     const stored = localStorage.getItem(PENDING_BOOKMARKS_KEY);
     return stored ? JSON.parse(stored) : [];
-  } catch (_error) {
+  } catch {
     return [];
   }
 };
@@ -50,7 +50,7 @@ const savePendingBookmarks = (
 ): void => {
   try {
     localStorage.setItem(PENDING_BOOKMARKS_KEY, JSON.stringify(bookmarks));
-  } catch (_error) {}
+  } catch {}
 };
 
 // Add a chapter to pending bookmarks
@@ -130,7 +130,7 @@ export const useBookmarks = () => {
         try {
           // Try to parse as JSON if possible
           result = JSON.parse(await response.text());
-        } catch (_e) {
+        } catch {
           throw new Error(
             `Error adding bookmark: ${response.status} - ${await response.text()}`,
           );
@@ -166,7 +166,7 @@ export const useBookmarks = () => {
           return newBookmark;
         }
         throw new Error("Server returned success: false");
-      } catch (_err) {
+      } catch {
         setError("Failed to add bookmark");
         return null;
       }
@@ -204,7 +204,7 @@ export const useBookmarks = () => {
         try {
           // Try to parse as JSON if possible
           result = JSON.parse(responseText);
-        } catch (_e) {
+        } catch {
           // If we couldn't parse as JSON but response was ok, assume success
           if (response.ok) {
             result = { success: true };
@@ -232,7 +232,7 @@ export const useBookmarks = () => {
         notifyListeners();
 
         return result.success;
-      } catch (_err) {
+      } catch {
         setError("Failed to remove bookmark");
         return false;
       }
@@ -244,7 +244,6 @@ export const useBookmarks = () => {
   const fetchBookmarks = useCallback(async () => {
     if (!session) {
       // For non-logged in users, use only pending bookmarks from localStorage
-      const _storedPendingBookmarks = getPendingBookmarks();
       setBookmarks([]);
       setIsLoading(false);
       return;
@@ -259,19 +258,6 @@ export const useBookmarks = () => {
 
       // For debugging production issues - capture detailed error info
       if (!response.ok) {
-        try {
-          const errorText = await response.text();
-
-          // Try parsing as JSON if possible
-          try {
-            const _errorJson = JSON.parse(errorText);
-          } catch (_e) {
-            // Not JSON, that's fine
-          }
-        } catch (_e) {
-          // Could not read error response body
-        }
-
         throw new Error(`Error fetching bookmarks: ${response.status}`);
       }
 
@@ -294,7 +280,7 @@ export const useBookmarks = () => {
 
       // Update local state
       setBookmarks(globalBookmarks);
-    } catch (_err) {
+    } catch {
       setError("Failed to fetch bookmarks");
     } finally {
       setIsLoading(false);
@@ -318,7 +304,7 @@ export const useBookmarks = () => {
                 bookmark.book_name,
                 bookmark.testament,
               );
-            } catch (_error) {
+            } catch {
               // Error syncing pending bookmark
             }
           }

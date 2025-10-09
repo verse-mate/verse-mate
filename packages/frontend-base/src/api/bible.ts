@@ -16,6 +16,9 @@ export const getBookVerse = async (
         versionKey,
       },
     });
+  if (response.error) {
+    throw response.error;
+  }
   return response.data?.book;
 };
 
@@ -40,6 +43,10 @@ export const getExplanation = async (
       },
     });
 
+  if (response.error) {
+    throw response.error;
+  }
+
   const explanation = response.data?.explanation;
 
   try {
@@ -48,7 +55,7 @@ export const getExplanation = async (
     }
 
     return explanation;
-  } catch (_err) {
+  } catch {
     return {
       book_id: bookId,
       chapter_number: chapterId,

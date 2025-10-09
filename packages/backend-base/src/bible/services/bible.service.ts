@@ -240,8 +240,6 @@ export class BibleService {
 
   async ratingByUser({
     user,
-    book_id: _book_id,
-    chapter_number: _chapter_number,
     explanation_id,
   }: Omit<RatingDto, "rating">): Promise<{
     userRating: {
@@ -279,8 +277,6 @@ export class BibleService {
   }
 
   async averageRating({
-    book_id: _book_id,
-    chapter_number: _chapter_number,
     explanation_id,
   }: Pick<
     RatingDto,

@@ -19,8 +19,13 @@ export const userSession = () => {
               Authorization: `Bearer ${accessToken}`,
             },
           });
-          if (response.data instanceof Error) {
-            throw response.data;
+          if (response.error) {
+            throw response.error;
+          }
+          if (!response.data || response.data instanceof Error) {
+            throw response.data instanceof Error
+              ? response.data
+              : new Error("No session data received");
           }
           setSession(response.data);
           setLoading(false);

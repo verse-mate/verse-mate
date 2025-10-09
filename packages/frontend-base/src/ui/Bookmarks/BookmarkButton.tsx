@@ -98,7 +98,7 @@ export const BookmarkButton = ({
       } else {
         await addBookmark(bookId, chapterNumber, bookName, testament);
       }
-    } catch (_error) {
+    } catch {
       // Silently handle bookmark toggle errors
     } finally {
       setIsLoading(false);

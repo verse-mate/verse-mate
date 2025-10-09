@@ -136,7 +136,7 @@ async function getExplanationFromFile(bookName: string, chapterId: number) {
   try {
     const explanation = await Bun.file(filePath).text();
     return { explanation };
-  } catch (_err) {
+  } catch {
     return { error: `Explanation not found for ${filePath}` };
   }
 }

@@ -50,17 +50,25 @@ export class ExplanationRegenerationService {
     return `${explanationPrompt}\n\nThe response should be in ${language} using Markdown format only.`;
   }
 
-  async generateNewExplanation(
-    regenerationId: string,
-    bookId: number,
-    chapterNumber: number,
-    explanationType: ExplanationTypeEnum,
-    bibleVersion: string,
-    model: string,
-    _adminUserId: string,
-    effort: "low" | "medium" | "high" = "medium",
+  async generateNewExplanation({
+    regenerationId,
+    bookId,
+    chapterNumber,
+    explanationType,
+    bibleVersion,
+    model,
+    effort = "medium",
     sendChapterContext = false,
-  ) {
+  }: {
+    regenerationId: string;
+    bookId: number;
+    chapterNumber: number;
+    explanationType: ExplanationTypeEnum;
+    bibleVersion: string;
+    model: string;
+    effort?: "low" | "medium" | "high";
+    sendChapterContext?: boolean;
+  }) {
     try {
       const connection = this.db.getOrCreateConnection();
 
