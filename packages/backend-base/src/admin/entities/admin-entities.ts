@@ -79,128 +79,320 @@ export const CommentaryGradeSchema = t.Object({
  * Users list - complex array with user fields
  * Fields: id, email, firstName, lastName, is_admin, createdAt
  */
-export const UsersListSchema = t.Array(t.Any());
+export const UserSchema = t.Object({
+  id: t.String({ format: "uuid" }),
+  email: t.String({ format: "email" }),
+  firstName: t.String(),
+  lastName: t.String(),
+  is_admin: t.Boolean(),
+  createdAt: t.Union([t.String({ format: "date-time" }), t.Date()]),
+  emailVerified: t.Optional(t.Boolean()),
+  imageSrc: t.Union([t.String(), t.Null()]),
+  preferred_language: t.Union([t.String(), t.Null()]),
+  preferred_bible_version: t.Union([t.String(), t.Null()]),
+});
+
+export const UsersListSchema = t.Array(UserSchema);
 
 /**
  * Batch list - complex array with batch job metadata
  * Fields: various batch job fields from database
  */
-export const BatchListSchema = t.Array(t.Any());
+export const BatchJobSchema = t.Object({
+  id: t.Number(),
+  batch_type: t.String(),
+  openai_batch_id: t.Union([t.String(), t.Null()]),
+  status: t.String(),
+  book_id: t.Union([t.Number(), t.Null()]),
+  bible_version: t.String(),
+  model: t.String(),
+  explanation_types: t.Array(t.String()),
+  total_requests: t.Number(),
+  completed_requests: t.Number(),
+  failed_requests: t.Number(),
+  input_file_path: t.Union([t.String(), t.Null()]),
+  output_file_path: t.Union([t.String(), t.Null()]),
+  total_tokens: t.Union([t.Number(), t.Null()]),
+  prompt_tokens: t.Union([t.Number(), t.Null()]),
+  completion_tokens: t.Union([t.Number(), t.Null()]),
+  estimated_cost: t.Union([t.Number(), t.Null()]),
+  actual_cost: t.Union([t.Number(), t.Null()]),
+  created_by: t.String({ format: "uuid" }),
+  created_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
+  started_at: t.Union([t.String({ format: "date-time" }), t.Date(), t.Null()]),
+  completed_at: t.Union([
+    t.String({ format: "date-time" }),
+    t.Date(),
+    t.Null(),
+  ]),
+  error_message: t.Union([t.String(), t.Null()]),
+  explanations_processed: t.Boolean(),
+  parent_batch_id: t.Union([t.Number(), t.Null()]),
+  error_file_content: t.Union([t.String(), t.Null()]),
+  source_language_code: t.Union([t.String(), t.Null()]),
+  target_language_code: t.Union([t.String(), t.Null()]),
+  book_name: t.Union([t.String(), t.Null()]),
+});
+
+export const BatchListSchema = t.Array(BatchJobSchema);
 
 /**
  * Batch children - complex array with child batch information
- * Fields: child batch job details
+ * Fields: child batch job details (same structure as BatchJobSchema)
  */
-export const BatchChildrenSchema = t.Array(t.Any());
+export const BatchChildrenSchema = t.Array(BatchJobSchema);
 
 /**
  * Batch summary - complex object with batch statistics
- * Fields: summary, stats, child batches info
+ * Fields: aggregate_status, status_progress_text, total_cost
  */
-export const BatchSummarySchema = t.Any();
+export const BatchSummarySchema = t.Object({
+  aggregate_status: t.String(),
+  status_progress_text: t.String(),
+  total_cost: t.Number(),
+});
 
 /**
  * Monitor batch result - complex object with monitoring status
- * Fields: monitoring status, queued jobs info
+ * Fields: success, message, optional summary
  */
-export const MonitorBatchSchema = t.Any();
+export const MonitorBatchSchema = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+  summary: t.Optional(BatchSummarySchema),
+});
 
 /**
- * Delete explanation result - { success: boolean, message: string }
+ * Delete explanation result - { success: boolean, deletedId: string, deletedAt: Date }
  */
-export const DeleteExplanationSchema = t.Any();
+export const DeleteExplanationSchema = t.Object({
+  success: t.Boolean(),
+  deletedId: t.String(),
+  deletedAt: t.Union([t.String({ format: "date-time" }), t.Date()]),
+});
 
 /**
  * Explanation comparison - complex object with old/new explanation comparison
  * Fields: regeneration details, original/new explanation data
  */
-export const ExplanationComparisonSchema = t.Any();
+export const ExplanationVersionSchema = t.Object({
+  id: t.Number(),
+  content: t.String(),
+  version: t.Number(),
+  createdAt: t.Optional(t.Union([t.String({ format: "date-time" }), t.Date()])),
+});
+
+export const ExplanationComparisonSchema = t.Object({
+  regenerationId: t.String(),
+  bookId: t.Number(),
+  chapterNumber: t.Number(),
+  explanationType: t.String(),
+  comparison: t.Object({
+    current: t.Union([ExplanationVersionSchema, t.Null()]),
+    new: ExplanationVersionSchema,
+  }),
+});
 
 /**
- * Bulk delete result - { success: boolean, deletedCount: number, message: string }
+ * Bulk delete result - { success: boolean, deletedCount: number, criteria: object, deletedAt: Date }
  */
-export const BulkDeleteSchema = t.Any();
+export const BulkDeleteSchema = t.Object({
+  success: t.Boolean(),
+  deletedCount: t.Number(),
+  criteria: t.Any(),
+  deletedAt: t.Union([t.String({ format: "date-time" }), t.Date()]),
+});
 
 /**
- * Set active default result - { success: boolean, affectedCount: number, message: string }
+ * Set active default result - { message: string, promotedCount: number } | { message: string, activatedCount: number } | { message: string, updatedCount: number }
  */
-export const SetActiveDefaultSchema = t.Any();
+export const SetActiveDefaultSchema = t.Union([
+  t.Object({ message: t.String(), promotedCount: t.Number() }),
+  t.Object({ message: t.String(), activatedCount: t.Number() }),
+  t.Object({ message: t.String(), updatedCount: t.Number() }),
+]);
 
 /**
- * Explanation history - complex array with explanation version history
- * Fields: version, explanation, created_at, is_active, etc.
+ * Explanation history - complex object with explanation version history
+ * Fields: explanationId, versions, currentVersion, totalVersions
  */
-export const ExplanationHistorySchema = t.Any();
+export const ExplanationHistoryItemSchema = t.Object({
+  explanation_id: t.Number(),
+  type: t.String(),
+  explanation: t.String(),
+  chapter_id: t.Number(),
+  version: t.Number(),
+  is_active: t.Boolean(),
+  created_by_admin: t.Boolean(),
+  parent_explanation_id: t.Union([t.Number(), t.Null()]),
+  created_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
+  language_code: t.String(),
+});
+
+export const ExplanationHistorySchema = t.Object({
+  explanationId: t.String(),
+  versions: t.Array(ExplanationHistoryItemSchema),
+  currentVersion: ExplanationHistoryItemSchema,
+  totalVersions: t.Number(),
+});
 
 /**
  * System prompts list - complex array with system prompt details
- * Fields: id, prompt, status, created_at, etc.
+ * Fields: prompt_id, prompt, status, prompt_type
  */
-export const SystemPromptsListSchema = t.Array(t.Any());
+export const SystemPromptSchema = t.Object({
+  prompt_id: t.Number(),
+  prompt: t.String(),
+  status: t.String(),
+  prompt_type: t.String(),
+});
+
+export const SystemPromptsListSchema = t.Array(SystemPromptSchema);
 
 /**
  * User prompts list - complex array with user prompt templates
- * Fields: id, template_name, explanation_type, prompt_template, status, etc.
+ * Fields: id, template_name, explanation_type, prompt_template, status, created_at, updated_at
  */
-export const UserPromptsListSchema = t.Array(t.Any());
+export const UserPromptSchema = t.Object({
+  id: t.Number(),
+  template_name: t.String(),
+  explanation_type: t.String(),
+  prompt_template: t.String(),
+  status: t.String(),
+  created_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
+  updated_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
+});
+
+export const UserPromptsListSchema = t.Array(UserPromptSchema);
 
 /**
  * Update prompt result - { success: boolean, message: string }
  */
-export const UpdatePromptSchema = t.Any();
+export const UpdatePromptSchema = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+});
 
 /**
  * Delete prompt result - { success: boolean, message: string }
  */
-export const DeletePromptSchema = t.Any();
+export const DeletePromptSchema = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+});
 
 /**
  * Prompt status result - { success: boolean, message: string }
  */
-export const PromptStatusSchema = t.Any();
+export const PromptStatusSchema = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+});
 
 /**
- * Restore defaults result - { success: boolean, message: string, restored: number }
+ * Restore defaults result - { success: boolean, message: string }
  */
-export const RestoreDefaultsSchema = t.Any();
+export const RestoreDefaultsSchema = t.Object({
+  success: t.Boolean(),
+  message: t.String(),
+});
 
 /**
- * Playground result - complex object with AI response
- * Fields: explanation, usage, model, timing, etc.
+ * Playground result - OpenAI API response wrapper
+ *
+ * This schema is intentionally kept as t.Any() because it wraps arbitrary OpenAI API responses
+ * that vary significantly based on:
+ * - The model used (GPT-5 Nano, GPT-4, etc.)
+ * - The prompt content and structure
+ * - API version and response format changes
+ * - Optional features enabled (reasoning, tokens, metadata, etc.)
+ *
+ * The response structure from AdminPromptService.testPrompts() returns:
+ * {
+ *   result: string | object  // OpenAI response.output_text or full response object
+ * }
+ *
+ * The actual OpenAI response may contain fields like:
+ * - output_text: Generated text response
+ * - usage: Token usage statistics (prompt_tokens, completion_tokens, total_tokens)
+ * - model: Model identifier used
+ * - reasoning: Reasoning effort and process (if enabled)
+ * - metadata: Additional response metadata
+ * - timing: Response timing information
+ *
+ * Since this is a testing/playground endpoint that intentionally supports arbitrary
+ * prompts and models, maintaining a strict schema would require constant updates
+ * and would limit the flexibility needed for prompt experimentation.
+ *
+ * @see AdminPromptService.testPrompts() for the implementation
+ * @see AdminPromptService.gpt5Text() for the OpenAI API call details
  */
 export const PlaygroundSchema = t.Any();
 
 /**
- * Existing explanation - complex object with explanation details
- * Fields: explanation_id, explanation, book_id, chapter_number, type, etc.
+ * Existing explanation - string or null (just the explanation text)
+ * The getExistingExplanation method returns explanation?.explanation || null
  */
-export const ExistingExplanationSchema = t.Any();
+export const ExistingExplanationSchema = t.Union([t.String(), t.Null()]);
 
 /**
  * Stats response - complex object with explanation statistics
- * Fields: various database statistics
+ * Fields: totalExplanations, explanationsByType, explanationsByBook, explanationsByVersion, recentActivity, lastUpdated
  */
-export const StatsSchema = t.Any();
+export const StatsSchema = t.Object({
+  totalExplanations: t.Number(),
+  explanationsByType: t.Record(t.String(), t.Number()),
+  explanationsByBook: t.Record(t.String(), t.Number()),
+  explanationsByVersion: t.Record(t.String(), t.Number()),
+  recentActivity: t.Array(t.Any()),
+  lastUpdated: t.Union([t.String({ format: "date-time" }), t.Date()]),
+});
 
 /**
  * Commentary grades - complex object with grading results and statistics
  * Fields: message, grades[], stats: { total, averageGrade, gradingCriteria[] }
+ * Note: grades array structure is TBD - using t.Any() until feature is fully implemented
  */
+export const CommentaryGradeItemSchema = t.Object({
+  explanation_id: t.Number(),
+  grade: t.Number(),
+  criteria: t.Array(t.String()),
+  feedback: t.Optional(t.String()),
+});
+
 export const CommentaryGradesSchema = t.Object({
   message: t.String(),
-  grades: t.Array(t.Any()),
+  grades: t.Array(CommentaryGradeItemSchema),
   stats: t.Object({
     total: t.Number(),
     averageGrade: t.Number(),
-    gradingCriteria: t.Array(t.Any()),
+    gradingCriteria: t.Array(
+      t.Object({
+        name: t.Optional(t.String()),
+        weight: t.Optional(t.Number()),
+      }),
+    ),
   }),
 });
 
 /**
  * Explanations filter result - explanations array with total count
- * Fields: explanations[] (complex), total
+ * Fields: explanations[] (full explanation records from database), total
  */
+export const ExplanationFilterItemSchema = t.Object({
+  explanation_id: t.Number(),
+  type: t.String(),
+  explanation: t.String(),
+  chapter_id: t.Number(),
+  version: t.Number(),
+  is_active: t.Boolean(),
+  created_by_admin: t.Boolean(),
+  parent_explanation_id: t.Union([t.Number(), t.Null()]),
+  created_at: t.Union([t.String({ format: "date-time" }), t.Date()]),
+  language_code: t.String(),
+});
+
 export const ExplanationsFilterSchema = t.Object({
-  explanations: t.Array(t.Any()),
+  explanations: t.Array(ExplanationFilterItemSchema),
   total: t.Number(),
 });

@@ -70,6 +70,7 @@ import {
   NoteSchema,
   SaveLastChapterReadResultSchema,
   SaveRatingResultSchema,
+  SingleChapterBookSchema,
   TestamentSchema,
   UpdateRatingResultSchema,
 } from "./entities/bible-entities";
@@ -170,7 +171,7 @@ const plugin = new Elysia()
             versionKey: t.Optional(t.String()),
           }),
           response: {
-            200: BookSchema, // Can be { book: Book } | { message: string } - service handles this
+            200: SingleChapterBookSchema, // Can be { book: Book | null } | { message: string }
             ...AuthErrors,
             404: ErrorResponse,
           },
