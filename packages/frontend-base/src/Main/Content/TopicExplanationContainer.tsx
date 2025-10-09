@@ -1,7 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import type React from "react";
-import { useEffect } from "react";
+import { getTopicDetails } from "../../api/topics";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
-import { fetchTopicExplanation } from "../../hooks/useTopics";
 import { Explanation } from "../../ui/Explanation";
 
 interface TopicExplanationContainerProps {
@@ -13,12 +13,19 @@ export const TopicExplanationContainer: React.FC<
 > = ({ topicId }) => {
   const { explanationType, bibleVersion } = useGetSearchParams();
 
-  // Fetch topic explanation using the same hook pattern as Bible explanations
-  const { explanation, error, isLoading } = fetchTopicExplanation(
-    topicId,
-    explanationType,
-    bibleVersion,
-  );
+  // Use the main topic details endpoint which fetches all explanation types at once
+  const {
+    data: topicDetails,
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: ["topic-details-explanation", topicId],
+    queryFn: () => getTopicDetails(topicId),
+    enabled: !!topicId,
+  });
+
+  // Extract the specific explanation type we need
+  const explanation = topicDetails?.explanation?.[explanationType || "summary"];
 
   // Handle loading state
   if (isLoading) {
@@ -56,10 +63,19 @@ export const TopicExplanationContainer: React.FC<
     );
   }
 
-  // Handle empty content
-  if (!explanation) {
+  // Check if explanation exists and is not the default "No explanation available" message
+  const hasRealExplanation =
+    explanation &&
+    !explanation.startsWith("No ") &&
+    !explanation.includes("No explanation available") &&
+    !explanation.includes("No detailed explanation") &&
+    !explanation.includes("No byline explanation") &&
+    !explanation.includes("No summary explanation");
+
+  if (!hasRealExplanation) {
     const emptyExplanation = {
-      explanation: "No explanation available for this topic.",
+      explanation:
+        "**Topic Explanation Coming Soon**\n\nExplanations for this topic are currently being generated. In the meantime, you can:\n\n- Read the Bible references in the main topic content\n- Explore the verses and passages mentioned\n- Use the chat feature to ask questions about this topic\n\nCheck back later for detailed explanations!",
       explanation_id: `topic-${topicId}`,
       language_code: bibleVersion || "en",
     };

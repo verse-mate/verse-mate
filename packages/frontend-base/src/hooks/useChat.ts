@@ -31,7 +31,7 @@ export const useChat = () => {
       if (currentConversationId === "newChat") {
         const newChat = await api.bible.book["new-conversation"].post({
           user_id: session.id,
-          book_id: bookId,
+          book_id: Number(bookId),
           chapter_number: verseId,
           content: userMessage,
         });

@@ -1,6 +1,32 @@
 import { BibleRepository } from "../bible/repository/bible.repository";
 import type { db } from "./shared.plugin";
 
+/**
+ * Normalize book names to handle common variations
+ * Maps singular/alternate forms to the canonical plural forms used in the database
+ */
+function normalizeBookName(bookName: string): string {
+  const normalized = bookName.trim();
+
+  // Handle common book name variations
+  const bookNameMap: Record<string, string> = {
+    Psalm: "Psalms",
+    "Song of Solomon": "Song of Songs",
+    "Song of Song": "Song of Songs",
+    "1 Corinthian": "1 Corinthians",
+    "2 Corinthian": "2 Corinthians",
+    "1 Thessalonian": "1 Thessalonians",
+    "2 Thessalonian": "2 Thessalonians",
+    "1 Peter": "1 Peter",
+    "2 Peter": "2 Peter",
+    "1 John": "1 John",
+    "2 John": "2 John",
+    "3 John": "3 John",
+  };
+
+  return bookNameMap[normalized] || normalized;
+}
+
 export async function parseAndInjectVerses(
   text: string,
   bibleVersion: string,
@@ -21,15 +47,18 @@ export async function parseAndInjectVerses(
   }
 
   // Process verse placeholders
-  const verseRefs = versePlaceholders.map((match) => ({
-    fullMatch: match[0],
-    bookName: match[1].trim(),
-    chapterNumber: Number.parseInt(match[2], 10),
-    startVerse: Number.parseInt(match[3], 10),
-    endVerse: match[4]
-      ? Number.parseInt(match[4], 10)
-      : Number.parseInt(match[3], 10),
-  }));
+  const verseRefs = versePlaceholders.map((match) => {
+    const startVerse = Number.parseInt(match[3], 10);
+    const endVerse = match[4] ? Number.parseInt(match[4], 10) : startVerse;
+    return {
+      fullMatch: match[0],
+      bookName: normalizeBookName(match[1].trim()),
+      chapterNumber: Number.parseInt(match[2], 10),
+      startVerse,
+      endVerse,
+      isRange: endVerse > startVerse,
+    };
+  });
 
   // Group by book and chapter to fetch verses efficiently
   const refsByChapter = verseRefs.reduce(
@@ -58,32 +87,39 @@ export async function parseAndInjectVerses(
 
   let processedText = text;
 
-  // Process verse placeholders
-  for (const key in refsByChapter) {
-    const chapterRef = refsByChapter[key];
+  // Process verse placeholders - we need to handle each original placeholder separately
+  // because a range like {verse:Joel 2:28-32} needs to be replaced with the concatenated text of all verses in that range
+  for (const verseRef of verseRefs) {
     const fetchedVerses =
       await bibleRepository.getSpecificVersesByBookNameAndChapter(
-        chapterRef.bookName,
-        chapterRef.chapterNumber,
+        verseRef.bookName,
+        verseRef.chapterNumber,
         bibleVersion,
-        Array.from(chapterRef.verses),
+        Array.from(
+          { length: verseRef.endVerse - verseRef.startVerse + 1 },
+          (_, i) => verseRef.startVerse + i,
+        ),
       );
 
-    for (const verse of fetchedVerses) {
-      const placeholder = `{verse:${chapterRef.bookName} ${chapterRef.chapterNumber}:${verse.verseNumber}}`;
-      // Use a regex for replacement to handle global occurrences
+    if (fetchedVerses.length > 0) {
+      // Concatenate all verses in the range
+      const versesText = fetchedVerses
+        .map((v) => `${v.verseNumber}\n${v.text}`)
+        .join("\n");
+
+      // Replace the original placeholder (which may include a range like 28-32)
       const replacementRegex = new RegExp(
-        placeholder.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        verseRef.fullMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
         "g",
       );
-      processedText = processedText.replace(replacementRegex, verse.text);
+      processedText = processedText.replace(replacementRegex, versesText);
     }
   }
 
   // Process chapter placeholders
   const chapterRefs = chapterPlaceholders.map((match) => ({
     fullMatch: match[0],
-    bookName: match[1].trim(),
+    bookName: normalizeBookName(match[1].trim()),
     startChapter: Number.parseInt(match[2], 10),
     endChapter: match[3]
       ? Number.parseInt(match[3], 10)

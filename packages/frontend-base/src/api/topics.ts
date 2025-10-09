@@ -19,6 +19,16 @@ export const getTopicDetails = async (topicId: string) => {
   return response.data;
 };
 
+export const getTopicReferences = async (
+  topicId: string,
+  version = "NASB1995",
+) => {
+  const response = await api.topics({ id: topicId }).references.get({
+    query: { version },
+  });
+  return response.data;
+};
+
 export const getTopicExplanation = async (
   topicId: string,
   type: "summary" | "byline" | "detailed",

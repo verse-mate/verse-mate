@@ -42,9 +42,9 @@ const plugin = new Elysia()
           // Fetch real explanations for all types
           const [summaryExplanation, bylineExplanation, detailedExplanation] =
             await Promise.all([
-              topicService.getTopicExplanation(id, "en", "summary"),
-              topicService.getTopicExplanation(id, "en", "byline"),
-              topicService.getTopicExplanation(id, "en", "detailed"),
+              topicService.getTopicExplanation(id, "en-US", "summary"),
+              topicService.getTopicExplanation(id, "en-US", "byline"),
+              topicService.getTopicExplanation(id, "en-US", "detailed"),
             ]);
 
           const explanation = {

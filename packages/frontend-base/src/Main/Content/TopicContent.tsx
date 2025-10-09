@@ -52,10 +52,19 @@ export const TopicContent: React.FC<TopicContentProps> = ({ category }) => {
     return <p style={{ padding: "16px" }}>No topics found in this category.</p>;
   }
 
+  // Remove duplicate topics by name - keep the first occurrence of each unique topic
+  const uniqueTopics = topics.reduce((acc: any[], current: any) => {
+    const duplicate = acc.find((topic) => topic.name === current.name);
+    if (!duplicate) {
+      acc.push(current);
+    }
+    return acc;
+  }, []);
+
   return (
     <div className={styles.contentGroupedTrigger}>
       <Accordion.Root>
-        {topics?.map((topic: any) => (
+        {uniqueTopics.map((topic: any) => (
           <Accordion.Item value={topic.topic_id} key={topic.topic_id}>
             <div
               onClick={() => handleTopicClick(topic.topic_id)}

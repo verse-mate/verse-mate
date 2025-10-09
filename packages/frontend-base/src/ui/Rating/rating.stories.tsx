@@ -20,7 +20,7 @@ export const Default: Story = () => {
     averageRating,
     setRating,
     setHoverRating,
-  } = useRating(5, session, bookId, verseId);
+  } = useRating(5, session, Number(bookId), verseId);
 
   return (
     <Rating.Root>
