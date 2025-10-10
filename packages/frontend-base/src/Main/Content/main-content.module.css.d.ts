@@ -50,5 +50,9 @@ declare const styles: {
   readonly recentlyViewed: string;
   readonly recentlyViewedTitle: string;
   readonly menuOptions: string;
+  readonly searchContainer: string;
+  readonly backButton: string;
+  readonly backButtonIcon: string;
+  readonly topicsHeader: string;
 };
 export default styles;

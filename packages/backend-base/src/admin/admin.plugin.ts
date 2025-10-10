@@ -12,10 +12,12 @@ import {
 } from "../common/errors";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
+import { TopicService } from "../topics/services/topic.service";
 import { AdminDatabaseService } from "./services/admin-database.service";
 import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
 import { ExplanationRegenerationService } from "./services/explanation-regeneration.service";
+import adminTopicPlugin from "./topics.plugin";
 
 const plugin = new Elysia()
   .use(shared)
@@ -36,6 +38,7 @@ const plugin = new Elysia()
         new ExplanationRegenerationService(state.db),
       getAdminPromptService: () => new AdminPromptService(state.db),
       getBibleService: () => new BibleService(state.db, bibleRepository),
+      topicService: new TopicService(state.db),
     };
   })
   .guard(authGuard, (app) =>
@@ -215,6 +218,64 @@ const plugin = new Elysia()
             },
           )
           .post(
+            "/batch-topic-references",
+            async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTopicReferencesBatch(
+                body.model,
+                currentUserId,
+                body.effort || "medium",
+                body.category,
+                body.topicId,
+              );
+            },
+            {
+              body: t.Object({
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+                category: t.Optional(t.String()), // Add optional category parameter
+                topicId: t.Optional(t.String()), // Add optional topicId parameter
+              }),
+            },
+          )
+          .post(
+            "/batch-topic-discovery",
+            async ({ body, currentUserId, store }) => {
+              if (!currentUserId) {
+                throw new Error("Unauthorized");
+              }
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.generateTopicDiscoveryBatch(
+                body.model,
+                currentUserId,
+                body.effort || "medium",
+                body.category,
+              );
+            },
+            {
+              body: t.Object({
+                category: t.Optional(t.String()),
+                model: t.String(),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+              }),
+            },
+          )
+          .post(
             "/batch-rephrase",
             async ({ body, currentUserId, store }) => {
               if (!currentUserId) {
@@ -243,6 +304,50 @@ const plugin = new Elysia()
                   ]),
                 ),
                 bibleVersion: t.String(),
+              }),
+            },
+          )
+          .post(
+            "/batch-topic-explanations",
+            async ({ body, currentUserId, store, set }) => {
+              if (!currentUserId) {
+                set.status = 401;
+                return { error: "Unauthorized" };
+              }
+              try {
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.generateTopicExplanationsBatch(
+                  body.model,
+                  currentUserId,
+                  body.languageCode,
+                  body.explanationTypes,
+                  body.effort || "medium",
+                  body.category,
+                  body.topicId,
+                );
+              } catch (error: any) {
+                console.error(
+                  "[PLUGIN] Caught error from BatchOperationService:",
+                  error.message,
+                );
+                set.status = 400;
+                return { error: error.message };
+              }
+            },
+            {
+              body: t.Object({
+                model: t.String(),
+                languageCode: t.String(),
+                explanationTypes: t.Optional(t.Array(t.String())),
+                effort: t.Optional(
+                  t.Union([
+                    t.Literal("low"),
+                    t.Literal("medium"),
+                    t.Literal("high"),
+                  ]),
+                ),
+                category: t.Optional(t.String()),
+                topicId: t.Optional(t.String()),
               }),
             },
           )
@@ -822,6 +927,7 @@ const plugin = new Elysia()
               ),
           )
 
+          .use(adminTopicPlugin)
           .get("/commentary/grades", async ({ store: { db: _db } }) => {
             return {
               message: "Commentary grading feature - to be implemented",

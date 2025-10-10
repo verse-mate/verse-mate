@@ -43,6 +43,7 @@ export class BibleService {
 
     const { subtitles } = await this.bibleRepository.getSubtitles({
       chapter_id: chapter.chapter_id,
+      version_id,
     });
 
     const { verses } = await this.bibleRepository.getVerses({

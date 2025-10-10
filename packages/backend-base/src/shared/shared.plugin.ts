@@ -59,7 +59,7 @@ const setup = new Elysia({ name: "shared" })
       return { user: null };
     }
   })
-  // @ts-expect-error - Elysia macro types are complex and not fully inferred
+  // @ts-ignore - Elysia macro types are complex and not fully inferred
   .macro(({ onBeforeHandle }: any) => ({
     isAuthenticated() {
       onBeforeHandle(({ user, set }: any) => {

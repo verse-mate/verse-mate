@@ -16,6 +16,9 @@ import type { default as KyselyMigrationLockTable } from "./KyselyMigrationLock"
 import type { default as MessagesTable } from "./Messages";
 import type { default as PromptsTable } from "./Prompts";
 import type { default as SubtitlesTable } from "./Subtitles";
+import type { default as TopicExplanationsTable } from "./TopicExplanations";
+import type { default as TopicReferencesTable } from "./TopicReferences";
+import type { default as TopicsTable } from "./Topics";
 import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
 import type { default as UserPromptTemplatesTable } from "./UserPromptTemplates";
@@ -62,4 +65,10 @@ export default interface PublicSchema {
   verse_highlights: VerseHighlightsTable;
 
   explanation_languages: ExplanationLanguagesTable;
+
+  topics: TopicsTable;
+
+  topic_references: TopicReferencesTable;
+
+  topic_explanations: TopicExplanationsTable;
 }

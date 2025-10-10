@@ -78,6 +78,7 @@ async function saveSubtitles({
   subtitle,
   start_verse,
   end_verse,
+  version_id,
 }: Omit<Subtitles, "subtitle_id">) {
   const exists = await db
     .getOrCreateConnection()
@@ -86,6 +87,7 @@ async function saveSubtitles({
     .where("subtitle", "=", subtitle)
     .where("start_verse", "=", start_verse)
     .where("end_verse", "=", end_verse)
+    .where("version_id", "=", version_id)
     .select("subtitle_id")
     .executeTakeFirst();
   if (exists) {
@@ -95,7 +97,7 @@ async function saveSubtitles({
   await db
     .getOrCreateConnection()
     .insertInto("subtitles")
-    .values({ chapter_id, subtitle, start_verse, end_verse })
+    .values({ chapter_id, subtitle, start_verse, end_verse, version_id })
     .execute();
 }
 
@@ -319,6 +321,79 @@ async function saveDefaultPrompt() {
     .execute();
 }
 
+// --------------- Topics Seeder Function ---------------
+
+async function seedTopics() {
+  // Check if topics already exist
+  const existingTopics = await db
+    .getOrCreateConnection()
+    .selectFrom("topics")
+    .select("topic_id")
+    .execute();
+
+  if (existingTopics.length > 0) {
+    console.log("Topics already exist, skipping seed.");
+    return;
+  }
+
+  // Sample topics data
+  const topics = [
+    {
+      name: "The Resurrection of Jesus",
+      description: "The resurrection of Jesus Christ from the dead",
+      category: "EVENT",
+      sort_order: 1,
+      is_active: true,
+    },
+    {
+      name: "The Messiah Prophecy",
+      description: "Prophecies about the coming Messiah",
+      category: "PROPHECY",
+      sort_order: 1,
+      is_active: true,
+    },
+    {
+      name: "The Parable of the Good Samaritan",
+      description: "The parable of the Good Samaritan told by Jesus",
+      category: "PARABLE",
+      sort_order: 1,
+      is_active: true,
+    },
+    {
+      name: "The Birth of Jesus",
+      description: "The birth of Jesus Christ in Bethlehem",
+      category: "EVENT",
+      sort_order: 2,
+      is_active: true,
+    },
+    {
+      name: "The Second Coming",
+      description: "Prophecies about the second coming of Christ",
+      category: "PROPHECY",
+      sort_order: 2,
+      is_active: true,
+    },
+    {
+      name: "The Parable of the Prodigal Son",
+      description: "The parable of the prodigal son told by Jesus",
+      category: "PARABLE",
+      sort_order: 2,
+      is_active: true,
+    },
+  ];
+
+  // Insert topics
+  for (const topic of topics) {
+    await db
+      .getOrCreateConnection()
+      .insertInto("topics")
+      .values(topic)
+      .execute();
+  }
+
+  console.log("Topics seeded successfully.");
+}
+
 // --------------- MAIN SEED FUNCTION ---------------
 
 export async function main() {
@@ -342,7 +417,14 @@ export async function main() {
     .getOrCreateConnection()
     .selectFrom("bible_versions")
     .selectAll()
-    .executeTakeFirstOrThrow();
+    .executeTakeFirst();
+
+  // Add a check to ensure version exists
+  if (!version) {
+    throw new Error(
+      "No Bible version found in database. Please run the initial seed first.",
+    );
+  }
 
   // 3. Insert Books, Chapters, Subtitles, Verses
   for (const book of bible.books) {
@@ -409,6 +491,7 @@ export async function main() {
           subtitle: sub.subtitle,
           start_verse: sub.start_verse,
           end_verse: sub.end_verse,
+          version_id: version.id,
         });
         // console.log(`Subtitle created: ${sub.subtitle}`);
       }
@@ -499,6 +582,9 @@ export async function main() {
 
   // 6. Seed user prompt templates
   await saveDefaultUserPromptTemplates();
+
+  // 7. Seed topics
+  await seedTopics();
 
   console.log("Seed completed!");
 }

@@ -26,6 +26,8 @@ declare const styles: {
   readonly rightPanelContent: string;
   readonly askVerseMateText: string;
   readonly selectedBook: string;
+  readonly backButton: string;
+  readonly backButtonIcon: string;
   readonly separator: string;
 };
 export default styles;

@@ -1,13 +1,14 @@
 "use client";
 
 import * as RadixTabs from "@radix-ui/react-tabs";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import TestamentEnum from "database/src/models/public/TestamentEnum";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import { getBookVerse, getExplanation } from "../../api/bible";
+import { getTopicDetails } from "../../api/topics";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
 import { NotesProvider } from "../../contexts/NotesContext";
@@ -54,6 +55,9 @@ import { Tabs } from "../../ui/Tabs";
 import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
 import { homeOptions } from "../../utils/home-options";
+import { TopicContent } from "./TopicContent";
+import { TopicExplanationContainer } from "./TopicExplanationContainer";
+import { TopicView } from "./TopicView";
 import styles from "./main-content.module.css";
 
 export const MainContent = () => {
@@ -67,21 +71,30 @@ export const MainContent = () => {
     explanationType,
     bibleVersion,
     conversationId,
+    isViewingTopic,
   } = useGetSearchParams();
+
+  // Check if we're viewing a topic (special testament value)
   const { saveBibleVersionOnURL, saveSearchParams } = useSaveSearchParams();
   const [visibleChapters, setVisibleChapters] = useState<any[]>([]);
   const isAnimating = useRef(false);
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
+  const { data: topicDetails, isLoading: isTopicDetailsLoading } = useQuery({
+    queryKey: ["topic-details", bookId],
+    queryFn: () => getTopicDetails(bookId as string),
+    enabled: isViewingTopic && typeof bookId === "string",
+  });
+
   const { testaments } = fetchAllTestaments();
-  const { chapters } = fetchAllChaptersByBook(bookId);
+  const { chapters } = fetchAllChaptersByBook(Number(bookId));
   const { bookVerseData } = fetchBookVerse(
-    bookId,
+    Number(bookId),
     Number(verseId),
     bibleVersion,
   );
   const { explanation } = fetchExplanation(
-    bookId,
+    Number(bookId),
     Number(verseId),
     explanationType,
     bibleVersion,
@@ -199,7 +212,7 @@ export const MainContent = () => {
   useEffect(() => {
     if (bookId && verseId) {
       // restart the timer whenever `bookId` or `verseId` changes
-      startTimer(bookId, Number(verseId));
+      startTimer(Number(bookId), Number(verseId));
     }
   }, [bookId, verseId, startTimer]);
 
@@ -225,6 +238,14 @@ export const MainContent = () => {
     closeDropdown: closeDropdownBook,
   } = useDropdownToggle();
 
+  useEffect(() => {
+    const handleClose = () => closeDropdownBook();
+    window.addEventListener("closeDropdownBook", handleClose);
+    return () => {
+      window.removeEventListener("closeDropdownBook", handleClose);
+    };
+  }, [closeDropdownBook]);
+
   const book = testaments?.find((item) => {
     return item.b === Number(bookId);
   })?.n;
@@ -248,7 +269,13 @@ export const MainContent = () => {
     averageRating,
     setRating,
     setHoverRating,
-  } = useRating(5, session, bookId, verseId, explanation?.explanation_id);
+  } = useRating(
+    5,
+    session,
+    Number(bookId),
+    verseId,
+    explanation?.explanation_id,
+  );
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -281,6 +308,7 @@ export const MainContent = () => {
   const [bibleVersionSelected, setBibleVersionSelected] = useState(
     bibleVersion || "NASB1995",
   );
+  const [activeTopicTab, setActiveTopicTab] = useState("EVENTS");
 
   const accordionRef = useRef<HTMLButtonElement>(null);
   const accordionRefVersion = useRef<HTMLButtonElement>(null);
@@ -330,6 +358,12 @@ export const MainContent = () => {
   }, [bookId, verseId, testament, testaments, bibleVersion, setSelectedTab]);
 
   const mobileScrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (mobileScrollContainerRef.current) {
+      mobileScrollContainerRef.current.scrollTop = 0;
+    }
+  }, []);
 
   const handleBibleVersionSelected = (versionKey: string) => {
     saveBibleVersionOnURL(versionKey);
@@ -628,7 +662,7 @@ export const MainContent = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-  const fixedItem = bookId > 0;
+  const fixedItem = Number(bookId) > 0;
 
   const handleMobileAccordionTriggerClick = useCallback(
     (bookName: string) => {
@@ -781,7 +815,7 @@ export const MainContent = () => {
 
   const handleChat = async () => {
     const chats = await handleChatExists({
-      book_id: bookId,
+      book_id: Number(bookId),
       chapter_number: verseId,
     }).then((data) => data?.chatExists);
 
@@ -1018,22 +1052,28 @@ export const MainContent = () => {
       if (nextChapterVerseId <= chapters) {
         // Prefetch next chapter's Bible text
         queryClient.prefetchQuery({
-          queryKey: ["bookVerse", bookId, nextChapterVerseId, bibleVersion],
-          queryFn: () => getBookVerse(bookId, nextChapterVerseId, bibleVersion),
+          queryKey: [
+            "bookVerse",
+            Number(bookId),
+            nextChapterVerseId,
+            bibleVersion,
+          ],
+          queryFn: () =>
+            getBookVerse(Number(bookId), nextChapterVerseId, bibleVersion),
         });
 
         // Prefetch next chapter's explanation
         queryClient.prefetchQuery({
           queryKey: [
             "explanation",
-            bookId,
+            Number(bookId),
             nextChapterVerseId,
             explanationType,
             bibleVersion,
           ],
           queryFn: () =>
             getExplanation(
-              bookId,
+              Number(bookId),
               nextChapterVerseId,
               explanationType,
               bibleVersion,
@@ -1044,23 +1084,28 @@ export const MainContent = () => {
       if (previousChapterVerseId > 0) {
         // Prefetch previous chapter's Bible text
         queryClient.prefetchQuery({
-          queryKey: ["bookVerse", bookId, previousChapterVerseId, bibleVersion],
+          queryKey: [
+            "bookVerse",
+            Number(bookId),
+            previousChapterVerseId,
+            bibleVersion,
+          ],
           queryFn: () =>
-            getBookVerse(bookId, previousChapterVerseId, bibleVersion),
+            getBookVerse(Number(bookId), previousChapterVerseId, bibleVersion),
         });
 
         // Prefetch previous chapter's explanation
         queryClient.prefetchQuery({
           queryKey: [
             "explanation",
-            bookId,
+            Number(bookId),
             previousChapterVerseId,
             explanationType,
             bibleVersion,
           ],
           queryFn: () =>
             getExplanation(
-              bookId,
+              Number(bookId),
               previousChapterVerseId,
               explanationType,
               bibleVersion,
@@ -1082,14 +1127,19 @@ export const MainContent = () => {
             <Icon.VerseMateLogoExtended className={styles.verseMateLogo} />
 
             <div className={styles.mobileTriggersWrapper}>
-              {!book ? (
+              {(!isViewingTopic && !book) ||
+              (isViewingTopic && isTopicDetailsLoading) ? (
                 <SelectDropdown.GroupedSelect.Skeleton />
               ) : (
                 <>
                   {/* Book trigger */}
                   <SelectDropdown.GroupedSelect.GroupedTrigger
-                    selectedBook={book}
-                    selectedVerse={verseIdToString}
+                    selectedBook={
+                      isViewingTopic
+                        ? topicDetails?.topic?.name ?? "Topic"
+                        : book ?? null
+                    }
+                    selectedVerse={isViewingTopic ? "" : verseIdToString}
                     defaultPlaceholder="Select a Book"
                     isOpen={isDropdownOpenBook}
                     toggleDropdown={() => {
@@ -1136,10 +1186,15 @@ export const MainContent = () => {
                               label="New Testament"
                               resetFilter={leftPanelResetFilter}
                             />
+                            <Tabs.Trigger
+                              value="TOPICS"
+                              label="Topics"
+                              resetFilter={leftPanelResetFilter}
+                            />
                           </Tabs.List>
 
                           <FilterInput
-                            placeholder="Filter Books..."
+                            placeholder="Filter..."
                             debouncedFilter={leftPanelDebouncedFilter}
                             handleChange={leftPanelHandleChange}
                             filterable
@@ -1149,21 +1204,26 @@ export const MainContent = () => {
                           <div
                             ref={mobileScrollContainerRef}
                             className={`${styles.contentGroupedTrigger}`}
-                            style={{ paddingBottom: "16px" }}
+                            style={{
+                              paddingBottom:
+                                leftPanelSelectedTab === "TOPICS"
+                                  ? "0px"
+                                  : "16px",
+                            }}
                           >
-                            <div
-                              className={styles.selectedBook}
-                              style={
-                                fixedItem
-                                  ? { position: "relative", marginTop: 48 }
-                                  : {}
-                              }
-                            >
-                              <Accordion.Root type="multiple">
-                                {renderSelectedBook()}
-                              </Accordion.Root>
-                            </div>
                             <Tabs.Content value="OT">
+                              <div
+                                className={styles.selectedBook}
+                                style={
+                                  fixedItem
+                                    ? { position: "relative", marginTop: 48 }
+                                    : {}
+                                }
+                              >
+                                <Accordion.Root type="multiple">
+                                  {renderSelectedBook()}
+                                </Accordion.Root>
+                              </div>
                               <Accordion.Root>
                                 {/* Recently viewed books (all testaments) */}
                                 {!leftPanelDebouncedFilter.trim() &&
@@ -1345,6 +1405,18 @@ export const MainContent = () => {
                             </Tabs.Content>
 
                             <Tabs.Content value="NT">
+                              <div
+                                className={styles.selectedBook}
+                                style={
+                                  fixedItem
+                                    ? { position: "relative", marginTop: 48 }
+                                    : {}
+                                }
+                              >
+                                <Accordion.Root type="multiple">
+                                  {renderSelectedBook()}
+                                </Accordion.Root>
+                              </div>
                               <Accordion.Root>
                                 {/* Recently viewed books (all testaments) */}
                                 {!leftPanelDebouncedFilter.trim() &&
@@ -1524,6 +1596,38 @@ export const MainContent = () => {
                                   })}
                               </Accordion.Root>
                             </Tabs.Content>
+                            <Tabs.Content value="TOPICS">
+                              <button
+                                type="button"
+                                onClick={() => leftPanelHandleTabChange("NT")}
+                                className={styles.backButton}
+                              >
+                                <Icon.ChevronBackward
+                                  className={styles.backButtonIcon}
+                                />
+                                <span>Back to Books</span>
+                              </button>
+                              <Tabs.Root
+                                value={activeTopicTab}
+                                onValueChange={setActiveTopicTab}
+                              >
+                                <Tabs.List>
+                                  <Tabs.Trigger value="EVENTS" label="Events" />
+                                  <Tabs.Trigger
+                                    value="PROPHECIES"
+                                    label="Prophecies"
+                                  />
+                                  <Tabs.Trigger
+                                    value="PARABLES"
+                                    label="Parables"
+                                  />
+                                </Tabs.List>
+                                <TopicContent
+                                  category={activeTopicTab}
+                                  filter={leftPanelDebouncedFilter}
+                                />
+                              </Tabs.Root>
+                            </Tabs.Content>
                           </div>
                         </Tabs.Root>
                       </Accordion.Content>
@@ -1638,92 +1742,114 @@ export const MainContent = () => {
           <div>
             <RadixTabs.Content value="book">
               <div className={`${styles.bookContainer}`} {...swipeHandlers}>
-                {/* 1. Map and render the chapter views */}
-                {visibleChapters.map((chapter, index) => {
-                  const isLastChapter = index === visibleChapters.length - 1;
-                  return (
-                    <div
-                      key={chapter.key}
-                      className={`${styles.bookContent} ${chapter.className}`}
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        zIndex: index + 1,
-                      }}
-                      onAnimationEnd={
-                        index === 0 ? handleAnimationEnd : undefined
-                      }
-                      ref={isLastChapter ? scrollableCallbackRef : null}
-                    >
-                      <MainText.Root>
-                        <MainText.Content
-                          bookId={String(chapter.bookId)}
-                          verseId={String(chapter.chapters[0].chapterNumber)}
-                          book={chapter}
+                {isViewingTopic ? (
+                  // Show topic view when viewing a topic
+                  <TopicView topicId={String(bookId)} />
+                ) : (
+                  // Show normal Bible content
+                  <>
+                    {/* 1. Map and render the chapter views */}
+                    {visibleChapters.map((chapter, index) => {
+                      const isLastChapter =
+                        index === visibleChapters.length - 1;
+                      return (
+                        <div
+                          key={chapter.key}
+                          className={`${styles.bookContent} ${chapter.className}`}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            zIndex: index + 1,
+                          }}
+                          onAnimationEnd={
+                            index === 0 ? handleAnimationEnd : undefined
+                          }
+                          ref={isLastChapter ? scrollableCallbackRef : null}
+                        >
+                          <MainText.Root>
+                            <MainText.Content
+                              bookId={String(chapter.bookId)}
+                              verseId={String(
+                                chapter.chapters[0].chapterNumber,
+                              )}
+                              book={chapter}
+                            />
+                            <div style={{ height: "25px" }} />
+                          </MainText.Root>
+                        </div>
+                      );
+                    })}
+
+                    {/* 2. Render the UI controls separately on top */}
+                    {chapters && Number(verseId) < chapters && (
+                      <button
+                        ref={nextChapterButtonRef}
+                        type="button"
+                        className={`${styles.nextChapterBtn} ${
+                          !buttonsVisible && !isNearNext ? styles.hidden : ""
+                        }`}
+                        onClick={handleNextButtonClick}
+                        style={{ zIndex: 10 }}
+                      >
+                        <Icon.ChevronForward
+                          className={styles.chevronForward}
                         />
-                        <div style={{ height: "25px" }} />
-                      </MainText.Root>
-                    </div>
-                  );
-                })}
+                      </button>
+                    )}
+                    {chapters && Number(verseId) > 1 && (
+                      <button
+                        ref={prevChapterButtonRef}
+                        type="button"
+                        className={`${styles.previousChapterBtn} ${
+                          !buttonsVisible && !isNearPrev ? styles.hidden : ""
+                        }`}
+                        onClick={handlePreviousButtonClick}
+                        style={{ zIndex: 10 }}
+                      >
+                        <Icon.ChevronBackward
+                          className={styles.chevronBackward}
+                        />
+                      </button>
+                    )}
 
-                {/* 2. Render the UI controls separately on top */}
-                {chapters && Number(verseId) < chapters && (
-                  <button
-                    ref={nextChapterButtonRef}
-                    type="button"
-                    className={`${styles.nextChapterBtn} ${
-                      !buttonsVisible && !isNearNext ? styles.hidden : ""
-                    }`}
-                    onClick={handleNextButtonClick}
-                    style={{ zIndex: 10 }}
-                  >
-                    <Icon.ChevronForward className={styles.chevronForward} />
-                  </button>
-                )}
-                {chapters && Number(verseId) > 1 && (
-                  <button
-                    ref={prevChapterButtonRef}
-                    type="button"
-                    className={`${styles.previousChapterBtn} ${
-                      !buttonsVisible && !isNearPrev ? styles.hidden : ""
-                    }`}
-                    onClick={handlePreviousButtonClick}
-                    style={{ zIndex: 10 }}
-                  >
-                    <Icon.ChevronBackward className={styles.chevronBackward} />
-                  </button>
-                )}
-
-                {/* Progress bar */}
-                {bookVerseData && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      width: "100%",
-                      zIndex: 10, // Ensure it's on top
-                    }}
-                  >
-                    <ProgressBar.Root>
-                      <ProgressBar.IndicatorBackground>
-                        <ProgressBar.Indicator value={progress} />
-                      </ProgressBar.IndicatorBackground>
-                      <ProgressBar.Label value={progress} />
-                    </ProgressBar.Root>
-                  </div>
+                    {/* Progress bar */}
+                    {bookVerseData && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          width: "100%",
+                          zIndex: 10, // Ensure it's on top
+                        }}
+                      >
+                        <ProgressBar.Root>
+                          <ProgressBar.IndicatorBackground>
+                            <ProgressBar.Indicator value={progress} />
+                          </ProgressBar.IndicatorBackground>
+                          <ProgressBar.Label value={progress} />
+                        </ProgressBar.Root>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </RadixTabs.Content>
 
+            {/* Use the same explanation system for topics as Bible chapters */}
             <RadixTabs.Content value="explanation">
-              <Explanation.MobileContainer
-                chapters={chapters}
-                explanation={explanation}
-              />
+              {isViewingTopic ? (
+                // Show topic explanation using the same system as Bible chapters
+                <TopicExplanationContainer topicId={String(bookId)} />
+              ) : (
+                // Show normal Bible explanation
+                <Explanation.MobileContainer
+                  chapters={chapters}
+                  explanation={explanation}
+                />
+              )}
             </RadixTabs.Content>
 
             {askVerseMate && (
@@ -1839,9 +1965,11 @@ export const MainContent = () => {
             }}
           >
             <LeftPanel.Nav
+              isViewingTopic={isViewingTopic}
+              topicDetails={topicDetails}
               averageRating={averageRating}
               bibleVersionSelected={bibleVersionSelected}
-              bookId={bookId}
+              bookId={Number(bookId)}
               verseId={verseId}
               explanation={explanation}
               currentRating={currentRating}
@@ -1873,17 +2001,19 @@ export const MainContent = () => {
               recentlyViewedBooks={recentlyViewedBooks}
             />
             <LeftPanel.Content
-              bookId={bookId}
-              verseId={verseId}
+              isViewingTopic={isViewingTopic}
+              topicId={String(bookId)}
               bookVerseData={bookVerseData}
-              handleDesktopSwipe={swipeHandlers}
-              progress={progress}
+              bookId={Number(bookId)}
+              verseId={verseId}
               chapters={chapters}
+              progress={progress}
+              handleDesktopSwipe={swipeHandlers}
               buttonsVisible={buttonsVisible}
               scrollableCallbackRef={scrollableCallbackRef}
               onNextChapterClick={handleNextButtonClick}
               onPrevChapterClick={handlePreviousButtonClick}
-            />
+            />{" "}
           </LeftPanel.Root>
 
           <PanelResizer startResize={startResize} />
@@ -1905,10 +2035,12 @@ export const MainContent = () => {
               setRightPanelContent={setRightPanelContent}
             />
             <RightPanel.Content
-              conversationsHistory={conversationsHistory}
+              isViewingTopic={isViewingTopic}
+              topicId={String(bookId)}
+              session={session}
               explanation={explanation}
               chapters={chapters}
-              session={session}
+              conversationsHistory={conversationsHistory}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}
               rightPanelContent={rightPanelContent}
@@ -1916,7 +2048,7 @@ export const MainContent = () => {
               selectedBibleVersion={bibleVersionSelected}
               handleBibleVersionSelected={handleBibleVersionSelected}
               handleDesktopSwipe={swipeHandlers}
-            />
+            />{" "}
           </RightPanel.Root>
         </main>
       </div>

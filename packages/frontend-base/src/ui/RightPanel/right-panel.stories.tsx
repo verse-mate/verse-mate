@@ -29,9 +29,9 @@ export const Default: Story = () => {
 
   const { bookId, verseId, explanationType } = useGetSearchParams();
 
-  const { chapters } = fetchAllChaptersByBook(bookId);
+  const { chapters } = fetchAllChaptersByBook(Number(bookId));
   const { explanation } = fetchExplanation(
-    bookId,
+    Number(bookId),
     Number(verseId),
     explanationType,
   );
@@ -64,17 +64,19 @@ export const Default: Story = () => {
         setRightPanelContent={setRightPanelContent}
       />
       <RightPanel.Content
-        conversationsHistory={conversationsHistory}
-        explanation={explanation}
-        chapters={chapters}
-        session={session}
-        selectConversation={selectConversation}
-        askVerseMate={askVerseMate}
-        rightPanelContent={rightPanelContent}
-        setRightPanelContent={setRightPanelContent}
+        isViewingTopic={false}
+        topicId=""
+        session={null}
+        explanation={null}
+        chapters={0}
+        conversationsHistory={[]}
+        selectConversation={() => {}}
+        askVerseMate={true}
+        rightPanelContent="default"
+        setRightPanelContent={() => {}}
         selectedBibleVersion="NASB1995"
         handleBibleVersionSelected={() => {}}
-        handleDesktopSwipe={handleDesktopSwipe}
+        handleDesktopSwipe={{ ref: () => {} }}
       />
     </RightPanel.Root>
   );
