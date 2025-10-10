@@ -1,7 +1,7 @@
 import { t } from "elysia";
 import {
   BookTypeCompact,
-  ExplanationType,
+  ExplanationTypeEnum,
   TestamentEnum,
 } from "../../shared/schemas/common-types.schema";
 
@@ -64,9 +64,19 @@ export const ChapterSchema = t.Object({
   message: t.Optional(t.String()),
 });
 
-// Explanation response
+// Explanation response - can be null if not found
 export const ExplanationSchema = t.Object({
-  explanation: ExplanationType,
+  explanation: t.Union([
+    t.Object({
+      book_id: t.Number(),
+      chapter_number: t.Number(),
+      type: ExplanationTypeEnum,
+      explanation: t.Union([t.String(), t.Null()]),
+      explanation_id: t.Number(),
+      language_code: t.String(),
+    }),
+    t.Null(),
+  ]),
 });
 
 export const ChapterIdSchema = t.Object({
@@ -105,13 +115,15 @@ export const DisabledChatSchema = t.Object({
  * Rating schemas
  */
 export const RatingSaveSchema = t.Object({
-  result: t.Any(),
+  result: t.Object({
+    message: t.String(),
+  }),
 });
 
 export const RatingsSchema = t.Object({
-  userRating: t.Any(),
-  totalUsersWhoRated: t.Any(),
-  averageRating: t.Any(),
+  userRating: t.Number(),
+  totalUsersWhoRated: t.Number(),
+  averageRating: t.Number(),
 });
 
 /**
