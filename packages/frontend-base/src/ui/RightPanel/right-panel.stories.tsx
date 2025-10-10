@@ -64,17 +64,19 @@ export const Default: Story = () => {
         setRightPanelContent={setRightPanelContent}
       />
       <RightPanel.Content
-        conversationsHistory={conversationsHistory}
-        explanation={explanation}
-        chapters={chapters}
-        session={session}
-        selectConversation={selectConversation}
-        askVerseMate={askVerseMate}
-        rightPanelContent={rightPanelContent}
-        setRightPanelContent={setRightPanelContent}
+        isViewingTopic={false}
+        topicId=""
+        session={null}
+        explanation={null}
+        chapters={0}
+        conversationsHistory={[]}
+        selectConversation={() => {}}
+        askVerseMate={true}
+        rightPanelContent="default"
+        setRightPanelContent={() => {}}
         selectedBibleVersion="NASB1995"
         handleBibleVersionSelected={() => {}}
-        handleDesktopSwipe={handleDesktopSwipe}
+        handleDesktopSwipe={{ ref: () => {} }}
       />
     </RightPanel.Root>
   );

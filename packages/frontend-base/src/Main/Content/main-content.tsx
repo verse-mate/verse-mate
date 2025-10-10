@@ -1965,6 +1965,8 @@ export const MainContent = () => {
             }}
           >
             <LeftPanel.Nav
+              isViewingTopic={isViewingTopic}
+              topicDetails={topicDetails}
               averageRating={averageRating}
               bibleVersionSelected={bibleVersionSelected}
               bookId={Number(bookId)}
@@ -1999,17 +2001,19 @@ export const MainContent = () => {
               recentlyViewedBooks={recentlyViewedBooks}
             />
             <LeftPanel.Content
+              isViewingTopic={isViewingTopic}
+              topicId={String(bookId)}
+              bookVerseData={bookVerseData}
               bookId={Number(bookId)}
               verseId={verseId}
-              bookVerseData={bookVerseData}
-              handleDesktopSwipe={swipeHandlers}
-              progress={progress}
               chapters={chapters}
+              progress={progress}
+              handleDesktopSwipe={swipeHandlers}
               buttonsVisible={buttonsVisible}
               scrollableCallbackRef={scrollableCallbackRef}
               onNextChapterClick={handleNextButtonClick}
               onPrevChapterClick={handlePreviousButtonClick}
-            />
+            />{" "}
           </LeftPanel.Root>
 
           <PanelResizer startResize={startResize} />
@@ -2031,10 +2035,12 @@ export const MainContent = () => {
               setRightPanelContent={setRightPanelContent}
             />
             <RightPanel.Content
-              conversationsHistory={conversationsHistory}
+              isViewingTopic={isViewingTopic}
+              topicId={String(bookId)}
+              session={session}
               explanation={explanation}
               chapters={chapters}
-              session={session}
+              conversationsHistory={conversationsHistory}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}
               rightPanelContent={rightPanelContent}
@@ -2042,7 +2048,7 @@ export const MainContent = () => {
               selectedBibleVersion={bibleVersionSelected}
               handleBibleVersionSelected={handleBibleVersionSelected}
               handleDesktopSwipe={swipeHandlers}
-            />
+            />{" "}
           </RightPanel.Root>
         </main>
       </div>
