@@ -135,12 +135,33 @@ export const RatingsSchema = t.Object({
 /**
  * Last chapter read schemas
  */
+// saveLastChapterRead() returns: { message: string }
 export const LastChapterReadSaveSchema = t.Object({
-  result: t.Any(),
+  result: t.Object({
+    message: t.String(),
+  }),
 });
 
+// lastChapterReadByUser() returns: { book_id, chapterNumber, bookName, testament, explanation[] } | null
 export const LastChapterReadSchema = t.Object({
-  result: t.Any(),
+  result: t.Union([
+    t.Object({
+      book_id: t.Number(),
+      chapterNumber: t.Number(),
+      bookName: t.String(),
+      testament: TestamentEnum,
+      explanation: t.Array(
+        t.Object({
+          book_id: t.Number(),
+          chapter_number: t.Number(),
+          explanation_id: t.Union([t.Number(), t.Null()]),
+          type: t.Union([ExplanationTypeEnum, t.Null()]),
+          explanation: t.Union([t.String(), t.Null()]),
+        }),
+      ),
+    }),
+    t.Null(),
+  ]),
 });
 
 /**
