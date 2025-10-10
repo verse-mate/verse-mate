@@ -1,22 +1,72 @@
 import { t } from "elysia";
+import {
+  BookTypeCompact,
+  ExplanationType,
+  TestamentEnum,
+} from "../../shared/schemas/common-types.schema";
 
 /**
  * Book response schemas
  */
-export const BookSchema = t.Object({
-  books: t.Array(t.Any()), // Books structure is complex, using Any for now
-});
 
-export const LanguagesSchema = t.Array(t.Any()); // Language structure
-
-export const ChapterSchema = t.Any(); // Chapter structure is complex
-
-export const ExplanationSchema = t.Object({
-  explanation: t.Any(), // Explanation structure
-});
-
+// Testament response - returns books array with compact format (note: no nested testaments object, just keys array)
 export const TestamentsSchema = t.Object({
-  testaments: t.Any(), // Testaments structure
+  testaments: t.Array(BookTypeCompact),
+});
+
+// Legacy BookSchema - parses Bible JSON and returns books from bible/types.ts format
+// Uses different structure than BookTypeCompact (full names vs abbreviated)
+const LegacyBookType = t.Object({
+  bookId: t.Number(),
+  name: t.String(),
+  testament: TestamentEnum,
+  genre: t.Object({
+    g: t.Number(),
+    n: t.String(),
+  }),
+  chapters: t.Array(
+    t.Object({
+      chapterId: t.Number(),
+      subtitles: t.Array(
+        t.Object({
+          subtitle: t.String(),
+          start_verse: t.Number(),
+          end_verse: t.Number(),
+        }),
+      ),
+      verses: t.Array(
+        t.Object({
+          verseId: t.Number(),
+          text: t.String(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const BookSchema = t.Object({
+  books: t.Array(LegacyBookType),
+});
+
+// Languages response - explanation languages with stats
+export const LanguagesSchema = t.Array(
+  t.Object({
+    language_code: t.String(),
+    name: t.String(),
+    native_name: t.String(),
+    explanation_count: t.Number(),
+  }),
+);
+
+// Chapter response - returns book object with chapter details
+export const ChapterSchema = t.Object({
+  book: t.Union([LegacyBookType, t.Null()]),
+  message: t.Optional(t.String()),
+});
+
+// Explanation response
+export const ExplanationSchema = t.Object({
+  explanation: ExplanationType,
 });
 
 export const ChapterIdSchema = t.Object({

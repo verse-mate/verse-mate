@@ -23,14 +23,14 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 ### Phase 2: Bible Plugin Response Schemas (Part 1 - Core Data)
 
-- [ ] 2. Replace Books, Chapters, and Languages Schemas
-  - [ ] 2.1 Define proper BookSchema with books array of Book objects (bookId, name, testament, genre, chapters)
-  - [ ] 2.2 Define ChapterSchema with verses array and chapter metadata
-  - [ ] 2.3 Define LanguagesSchema as array of Language objects
-  - [ ] 2.4 Define TestamentsSchema with proper testament object structure
-  - [ ] 2.5 Update bible.plugin.ts imports and verify endpoints still work
-  - [ ] 2.6 Run tests for books, chapters, languages, testaments endpoints
-  - [ ] 2.7 Verify OpenAPI spec shows concrete types for these endpoints
+- [x] 2. Replace Books, Chapters, and Languages Schemas
+  - [x] 2.1 Define proper BookSchema with books array of Book objects (bookId, name, testament, genre, chapters)
+  - [x] 2.2 Define ChapterSchema with verses array and chapter metadata
+  - [x] 2.3 Define LanguagesSchema as array of Language objects
+  - [x] 2.4 Define TestamentsSchema with proper testament object structure
+  - [x] 2.5 Update bible.plugin.ts imports and verify endpoints still work
+  - [x] 2.6 Run tests for books, chapters, languages, testaments endpoints (verified with curl)
+  - [x] 2.7 Verify OpenAPI spec shows concrete types for these endpoints
 
 - [ ] 3. Replace Explanation and Rating Schemas
   - [ ] 3.1 Define ExplanationSchema.explanation with proper object structure (id, content, type, language, etc.)
