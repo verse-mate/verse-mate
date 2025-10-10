@@ -89,9 +89,18 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 7.6 Run tests for admin user management (skipped - would require authentication and admin privileges)
   - [x] 7.7 Verify OpenAPI spec for admin endpoints (verified - shows concrete types with UUID format and nullable fields)
 
-### Phase 6: Admin Plugin Response Schemas (Part 2 - Batch Operations)
+---
 
-- [ ] 8. Replace Batch Operation Schemas
+## SCOPE SPLIT - ITERATION 1 COMPLETE ABOVE THIS LINE
+
+Tasks 1-7 are complete and ready for Phase 9 verification.
+Tasks 8-11 will be completed in a future iteration.
+
+---
+
+### Phase 6: Admin Plugin Response Schemas (Part 2 - Batch Operations) - DEFERRED TO ITERATION 2
+
+- [ ] 8. Replace Batch Operation Schemas (DEFERRED)
   - [ ] 8.1 Define BatchOperationSchema with batch result structure (batchJobId, status, etc.)
   - [ ] 8.2 Define BatchHistoryItemSchema for individual batch records
   - [ ] 8.3 Update BatchHistorySchema as array of BatchHistoryItem objects
@@ -102,9 +111,9 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 8.8 Run tests for batch operations
   - [ ] 8.9 Verify OpenAPI spec for batch endpoints
 
-### Phase 7: Admin Plugin Response Schemas (Part 3 - Explanations & Prompts)
+### Phase 7: Admin Plugin Response Schemas (Part 3 - Explanations & Prompts) - DEFERRED TO ITERATION 2
 
-- [ ] 9. Replace Explanation Management Schemas
+- [ ] 9. Replace Explanation Management Schemas (DEFERRED)
   - [ ] 9.1 Define ExplanationDeleteSchema with delete response structure
   - [ ] 9.2 Define ExplanationRegenerateSchema with regeneration result
   - [ ] 9.3 Define ExplanationGenerateSchema with generation result
@@ -118,7 +127,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 9.11 Run tests for explanation management
   - [ ] 9.12 Verify OpenAPI spec quality
 
-- [ ] 10. Replace Prompt Management Schemas
+- [ ] 10. Replace Prompt Management Schemas (DEFERRED)
   - [ ] 10.1 Define SystemPromptSchema with prompt object structure
   - [ ] 10.2 Update SystemPromptsSchema as array of SystemPrompt objects
   - [ ] 10.3 Define UserPromptSchema with user prompt structure
@@ -134,9 +143,9 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 10.13 Run tests for prompt management
   - [ ] 10.14 Verify OpenAPI spec for prompt endpoints
 
-### Phase 8: Admin Plugin Response Schemas (Part 4 - Stats & Playground)
+### Phase 8: Admin Plugin Response Schemas (Part 4 - Stats & Playground) - DEFERRED TO ITERATION 2
 
-- [ ] 11. Replace Statistics and Playground Schemas
+- [ ] 11. Replace Statistics and Playground Schemas (DEFERRED)
   - [ ] 11.1 Define StatsSchema with statistics object structure (counts, averages, etc.)
   - [ ] 11.2 Define PlaygroundSchema with test result structure
   - [ ] 11.3 Define ExistingExplanationSchema with explanation data
