@@ -12,11 +12,29 @@ export const UserPreferencesUpdateSchema = t.Object({
 });
 
 // Languages and stats
-export const LanguagesArraySchema = t.Array(t.Any());
+// getAvailableExplanationLanguages() returns: language_code, name, native_name, explanation_count
+const AdminLanguageType = t.Object({
+  language_code: t.String(),
+  name: t.String(),
+  native_name: t.String(),
+  explanation_count: t.Number(),
+});
+
+export const LanguagesArraySchema = t.Array(AdminLanguageType);
 export const StatsSchema = t.Any();
 
 // Users
-export const UsersArraySchema = t.Array(t.Any());
+// Admin /users endpoint returns: id (UUID string), email, firstName, lastName, is_admin, createdAt
+const AdminUserType = t.Object({
+  id: t.String({ format: "uuid" }),
+  email: t.String(),
+  firstName: t.Union([t.String(), t.Null()]),
+  lastName: t.Union([t.String(), t.Null()]),
+  is_admin: t.Boolean(),
+  createdAt: t.String(), // ISO date string (Date object serialized)
+});
+
+export const UsersArraySchema = t.Array(AdminUserType);
 export const AdminStatusUpdateSchema = t.Object({
   success: t.Boolean(),
   message: t.String(),
