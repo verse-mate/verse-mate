@@ -1,6 +1,12 @@
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
-import { adminPlugin, authPlugin, biblePlugin, userPlugin } from "backend-base";
+import {
+  adminPlugin,
+  authPlugin,
+  biblePlugin,
+  topicPlugin,
+  userPlugin,
+} from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
@@ -10,6 +16,7 @@ const app = new Elysia()
   .use(authPlugin)
   .use(userPlugin)
   .use(biblePlugin)
+  .use(topicPlugin)
   .use(adminPlugin)
   .use(cors())
   .use(

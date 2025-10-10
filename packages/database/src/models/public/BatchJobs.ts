@@ -3,6 +3,7 @@
 
 import type { ColumnType, Insertable, Selectable, Updateable } from "kysely";
 import type { BooksBookId } from "./Books";
+import type { TopicsTopicId } from "./Topics";
 import type { UserId } from "./User";
 
 export type BatchJobsId = number;
@@ -80,6 +81,16 @@ export default interface BatchJobsTable {
   source_language_code: ColumnType<string | null, string | null, string | null>;
 
   target_language_code: ColumnType<string | null, string | null, string | null>;
+
+  topic_category: ColumnType<string | null, string | null, string | null>;
+
+  topic_id: ColumnType<
+    TopicsTopicId | null,
+    TopicsTopicId | null,
+    TopicsTopicId | null
+  >;
+
+  explanation_type: ColumnType<string | null, string | null, string | null>;
 }
 
 export type BatchJobs = Selectable<BatchJobsTable>;

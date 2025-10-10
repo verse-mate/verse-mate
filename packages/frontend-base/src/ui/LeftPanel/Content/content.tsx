@@ -1,12 +1,15 @@
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useEffect, useRef, useState } from "react";
 import type { SwipeableHandlers } from "react-swipeable";
+import { DesktopTopicView } from "../../../Main/Content/DesktopTopicView";
 import * as Icon from "../../../ui/Icons";
 import { MainText } from "../../MainText";
 import { ProgressBar } from "../../ProgressBar";
 import styles from "./content.module.css";
 
 type Props = {
+  isViewingTopic: boolean;
+  topicId: string;
   bookVerseData:
     | {
         bookId: number;
@@ -43,6 +46,8 @@ type Props = {
 };
 
 export const Content = ({
+  isViewingTopic,
+  topicId,
   bookVerseData,
   chapters,
   bookId,
@@ -91,6 +96,10 @@ export const Content = ({
       window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
+
+  if (isViewingTopic) {
+    return <DesktopTopicView topicId={topicId} />;
+  }
 
   return (
     <>

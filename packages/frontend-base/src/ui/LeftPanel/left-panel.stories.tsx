@@ -64,8 +64,8 @@ export const Main: Story = () => {
   };
 
   const { bookId, verseId } = useGetSearchParams();
-  const { chapters } = fetchAllChaptersByBook(bookId);
-  const { bookVerseData } = fetchBookVerse(bookId, verseId, "NASB1995");
+  const { chapters } = fetchAllChaptersByBook(Number(bookId));
+  const { bookVerseData } = fetchBookVerse(Number(bookId), verseId, "NASB1995");
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
   const {
