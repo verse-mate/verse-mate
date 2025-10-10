@@ -268,10 +268,26 @@ const plugin = new Elysia()
       .post(
         "/book/messages-history",
         async ({ body, store: { chatService } }) => {
-          const messagesHistory = await chatService.getUserChatMessageHistory({
-            conversation_id: body.conversation_id,
-            user_id: body.session.id,
-          });
+          const chatMessageHistory =
+            await chatService.getUserChatMessageHistory({
+              conversation_id: body.conversation_id,
+              user_id: body.session.id,
+            });
+
+          // Transform to message format and serialize dates
+          const messagesHistory = chatMessageHistory
+            .filter((msg) => msg.message_id && msg.content && msg.role)
+            .map((msg) => ({
+              conversation_id: msg.conversation_id,
+              message_id: msg.message_id as number,
+              content: msg.content as string,
+              role: msg.role as RoleEnum,
+              created_at:
+                msg.created_at instanceof Date
+                  ? msg.created_at.toISOString()
+                  : (msg.created_at as string) || new Date().toISOString(),
+            }));
+
           return { messagesHistory };
         },
         {
@@ -523,7 +539,23 @@ const plugin = new Elysia()
             content: body.content,
           });
 
-          return { result: saveUserMessage.newMessage };
+          // Serialize Date to ISO string and return only required fields
+          const message = saveUserMessage.newMessage;
+          if (!message) {
+            throw new Error("Failed to save message");
+          }
+          return {
+            result: {
+              message_id: message.message_id,
+              conversation_id: message.conversation_id,
+              content: message.content,
+              role: message.role,
+              created_at:
+                message.created_at instanceof Date
+                  ? message.created_at.toISOString()
+                  : message.created_at,
+            },
+          };
         },
         {
           body: t.Pick(AddMessageDto, ["chat_id", "content"]),
@@ -595,7 +627,23 @@ const plugin = new Elysia()
             content: chatText || "",
           });
 
-          return { result: saveAiMessage.newMessage };
+          // Serialize Date to ISO string and return only required fields
+          const message = saveAiMessage.newMessage;
+          if (!message) {
+            throw new Error("Failed to save AI message");
+          }
+          return {
+            result: {
+              message_id: message.message_id,
+              conversation_id: message.conversation_id,
+              content: message.content,
+              role: message.role,
+              created_at:
+                message.created_at instanceof Date
+                  ? message.created_at.toISOString()
+                  : message.created_at,
+            },
+          };
         },
         {
           body: t.Intersect([
@@ -906,7 +954,21 @@ const plugin = new Elysia()
             "Successfully retrieved highlights, count:",
             highlights.length,
           );
-          return { highlights };
+
+          // Serialize Date fields to ISO strings with fallback for null
+          const serializedHighlights = highlights.map((h) => ({
+            ...h,
+            created_at:
+              h.created_at instanceof Date
+                ? h.created_at.toISOString()
+                : h.created_at || new Date().toISOString(),
+            updated_at:
+              h.updated_at instanceof Date
+                ? h.updated_at.toISOString()
+                : h.updated_at || new Date().toISOString(),
+          }));
+
+          return { highlights: serializedHighlights };
         },
         {
           params: t.Object({
@@ -943,7 +1005,21 @@ const plugin = new Elysia()
             "Successfully retrieved chapter highlights, count:",
             highlights.length,
           );
-          return { highlights };
+
+          // Serialize Date fields to ISO strings with fallback for null
+          const serializedHighlights = highlights.map((h) => ({
+            ...h,
+            created_at:
+              h.created_at instanceof Date
+                ? h.created_at.toISOString()
+                : h.created_at || new Date().toISOString(),
+            updated_at:
+              h.updated_at instanceof Date
+                ? h.updated_at.toISOString()
+                : h.updated_at || new Date().toISOString(),
+          }));
+
+          return { highlights: serializedHighlights };
         },
         {
           params: t.Object({

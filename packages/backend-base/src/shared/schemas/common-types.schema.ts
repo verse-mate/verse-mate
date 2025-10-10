@@ -1,3 +1,10 @@
+import ExplanationTypeEnumDB from "database/src/models/public/ExplanationTypeEnum";
+import FavoriteTypeEnumDB from "database/src/models/public/FavoriteTypeEnum";
+import HighlightColorEnumDB from "database/src/models/public/HighlightColorEnum";
+import PromptStatusEnumDB from "database/src/models/public/PromptStatusEnum";
+import RoleEnumDB from "database/src/models/public/RoleEnum";
+import StatusEnumDB from "database/src/models/public/StatusEnum";
+import TestamentEnumDB from "database/src/models/public/TestamentEnum";
 import { type Static, t } from "elysia";
 
 /**
@@ -12,58 +19,37 @@ import { type Static, t } from "elysia";
 /**
  * Testament enum matching database TestamentEnum
  */
-export const TestamentEnum = t.Union([t.Literal("OT"), t.Literal("NT")]);
+export const TestamentEnum = t.Enum(TestamentEnumDB);
 
 /**
  * Explanation type enum matching database ExplanationTypeEnum
  */
-export const ExplanationTypeEnum = t.Union([
-  t.Literal("summary"),
-  t.Literal("byline"),
-  t.Literal("detailed"),
-]);
+export const ExplanationTypeEnum = t.Enum(ExplanationTypeEnumDB);
 
 /**
  * Chat message role enum matching database RoleEnum
  */
-export const RoleEnum = t.Union([t.Literal("user"), t.Literal("assistant")]);
+export const RoleEnum = t.Enum(RoleEnumDB);
 
 /**
  * Status enum matching database StatusEnum
  */
-export const StatusEnum = t.Union([
-  t.Literal("active"),
-  t.Literal("inactive"),
-  t.Literal("archived"),
-]);
+export const StatusEnum = t.Enum(StatusEnumDB);
 
 /**
  * Highlight color enum matching database HighlightColorEnum
  */
-export const HighlightColorEnum = t.Union([
-  t.Literal("yellow"),
-  t.Literal("green"),
-  t.Literal("blue"),
-  t.Literal("pink"),
-  t.Literal("purple"),
-  t.Literal("orange"),
-]);
+export const HighlightColorEnum = t.Enum(HighlightColorEnumDB);
 
 /**
  * Favorite type enum matching database FavoriteTypeEnum
  */
-export const FavoriteTypeEnum = t.Union([
-  t.Literal("chapter"),
-  t.Literal("message"),
-]);
+export const FavoriteTypeEnum = t.Enum(FavoriteTypeEnumDB);
 
 /**
  * Prompt status enum matching database PromptStatusEnum
  */
-export const PromptStatusEnum = t.Union([
-  t.Literal("active"),
-  t.Literal("inactive"),
-]);
+export const PromptStatusEnum = t.Enum(PromptStatusEnumDB);
 
 // ============================================================================
 // Bible Content Types
@@ -77,7 +63,7 @@ export const BookTypeCompact = t.Object({
   b: t.Number(), // bookId
   n: t.String(), // name
   t: TestamentEnum, // testament
-  g: t.String(), // genre
+  g: t.Number(), // genre_id
   c: t.Number(), // chapters count
 });
 
@@ -189,7 +175,7 @@ export const RatingSummaryType = t.Object({
 // ============================================================================
 
 /**
- * Conversation type - represents a chat conversation
+ * Conversation type - represents a chat conversation (simple version for database records)
  */
 export const ConversationType = t.Object({
   conversation_id: t.Number(),
@@ -202,7 +188,7 @@ export const ConversationType = t.Object({
 });
 
 /**
- * Message type - represents a chat message
+ * Message type - represents a chat message (full version with metadata)
  */
 export const MessageType = t.Object({
   message_id: t.Number(),
@@ -213,13 +199,47 @@ export const MessageType = t.Object({
 });
 
 /**
+ * Simple message type - used in conversation context (no conversation_id or timestamp needed)
+ */
+const SimpleMessageType = t.Object({
+  message_id: t.Number(),
+  content: t.String(),
+  role: RoleEnum,
+});
+
+/**
+ * Book reference in chat - minimal book info for chat context
+ */
+const ChatBookReferenceType = t.Object({
+  book_id: t.Union([t.Number(), t.Null()]),
+  name: t.Union([t.String(), t.Null()]),
+  testament: t.Union([TestamentEnum, t.Null()]),
+  genre_id: t.Union([t.Number(), t.Null()]),
+});
+
+/**
+ * Rich conversation type - used in chat history with messages and book info
+ */
+export const RichConversationType = t.Object({
+  conversation_id: t.Number(),
+  user_id: t.String(), // UUID
+  title: t.String(),
+  status: StatusEnum,
+  updated_at: t.String(), // ISO date string (serialized from Date)
+  book: ChatBookReferenceType,
+  chapter_number: t.Union([t.Number(), t.Null()]),
+  messages: t.Array(SimpleMessageType),
+});
+
+/**
  * Grouped chat history type - conversations grouped by time period
+ * Uses RichConversationType which includes messages and book info
  */
 export const GroupedChatHistoryType = t.Object({
-  today: t.Array(ConversationType),
-  yesterday: t.Array(ConversationType),
-  lastSevenDays: t.Array(ConversationType),
-  older: t.Array(ConversationType),
+  today: t.Array(RichConversationType),
+  yesterday: t.Array(RichConversationType),
+  lastSevenDays: t.Array(RichConversationType),
+  older: t.Array(RichConversationType),
 });
 
 // ============================================================================

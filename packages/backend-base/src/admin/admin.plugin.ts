@@ -139,7 +139,7 @@ const plugin = new Elysia()
           .get(
             "/users",
             async ({ store: { db } }) => {
-              return await db
+              const users = await db
                 .getOrCreateConnection()
                 .selectFrom("user")
                 .select([
@@ -151,6 +151,12 @@ const plugin = new Elysia()
                   "createdAt",
                 ])
                 .execute();
+
+              // Serialize Date objects to ISO strings
+              return users.map((user) => ({
+                ...user,
+                createdAt: user.createdAt.toISOString(),
+              }));
             },
             {
               response: {
@@ -170,7 +176,7 @@ const plugin = new Elysia()
           .get(
             "/users",
             async ({ store: { db } }) => {
-              return await db
+              const users = await db
                 .getOrCreateConnection()
                 .selectFrom("user")
                 .select([
@@ -182,6 +188,12 @@ const plugin = new Elysia()
                   "createdAt",
                 ])
                 .execute();
+
+              // Serialize Date objects to ISO strings
+              return users.map((user) => ({
+                ...user,
+                createdAt: user.createdAt.toISOString(),
+              }));
             },
             {
               response: {

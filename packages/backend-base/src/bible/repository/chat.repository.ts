@@ -66,7 +66,13 @@ export class ChatRepository {
         content,
         role,
       })
-      .returning(["message_id"])
+      .returning([
+        "message_id",
+        "conversation_id",
+        "content",
+        "role",
+        "created_at",
+      ])
       .executeTakeFirst();
 
     return { newMessage: addnewMessage };
@@ -150,6 +156,7 @@ export class ChatRepository {
         "messages.message_id",
         "messages.content",
         "messages.role",
+        "messages.created_at",
         "chapters.chapter_number",
         "books.book_id",
         "books.name as bookName",
