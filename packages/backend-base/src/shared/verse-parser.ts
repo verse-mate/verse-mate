@@ -31,6 +31,7 @@ export async function parseAndInjectVerses(
   text: string,
   bibleVersion: string,
   database: db,
+  options?: { includeReference?: boolean },
 ) {
   const bibleRepository = new BibleRepository(database);
 
@@ -107,12 +108,18 @@ export async function parseAndInjectVerses(
         .map((v) => `${v.verseNumber}\n${v.text}`)
         .join("\n");
 
+      let replacementText = versesText;
+      if (options?.includeReference) {
+        const referenceString = `(${verseRef.bookName} ${verseRef.chapterNumber}:${verseRef.startVerse}${verseRef.isRange ? `-${verseRef.endVerse}` : ""})`;
+        replacementText = `${versesText} ${referenceString}`;
+      }
+
       // Replace the original placeholder (which may include a range like 28-32)
       const replacementRegex = new RegExp(
         verseRef.fullMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
         "g",
       );
-      processedText = processedText.replace(replacementRegex, versesText);
+      processedText = processedText.replace(replacementRegex, replacementText);
     }
   }
 
@@ -163,11 +170,7 @@ export async function parseAndInjectVerses(
 
           // Add chapter heading if it's a range
           if (chapterRef.startChapter !== chapterRef.endChapter) {
-            chapterContent += `## ${chapterRef.bookName} ${chapterNum}
-
-${formattedVerses}
-
-`;
+            chapterContent += `## ${chapterRef.bookName} ${chapterNum}\n\n${formattedVerses}\n\n`;
           } else {
             chapterContent += formattedVerses;
           }
@@ -175,15 +178,19 @@ ${formattedVerses}
       }
     }
 
+    let replacementText = chapterContent.trim();
+    if (options?.includeReference) {
+      const isRange = chapterRef.startChapter !== chapterRef.endChapter;
+      const referenceString = `(${chapterRef.bookName} ${chapterRef.startChapter}${isRange ? `-${chapterRef.endChapter}` : ""})`;
+      replacementText = `${replacementText} ${referenceString}`;
+    }
+
     // Replace the placeholder with the chapter content
     const replacementRegex = new RegExp(
       chapterRef.fullMatch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
       "g",
     );
-    processedText = processedText.replace(
-      replacementRegex,
-      chapterContent.trim(),
-    );
+    processedText = processedText.replace(replacementRegex, replacementText);
   }
 
   return processedText;

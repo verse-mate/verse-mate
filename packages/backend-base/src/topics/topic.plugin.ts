@@ -35,8 +35,9 @@ const plugin = new Elysia()
       )
       .get(
         "/:id",
-        async ({ params, store: { topicService } }) => {
+        async ({ params, store }) => {
           const { id } = params;
+          const { topicService, db } = store;
           const topic = await topicService.getTopic(id);
           const references = await topicService.getTopicReferences(id);
           // Fetch real explanations for all types
@@ -51,7 +52,7 @@ const plugin = new Elysia()
             bylineExplanation.explanation = await parseAndInjectVerses(
               bylineExplanation.explanation,
               "NASB1995", // Assuming a default version, or get from query
-              app.store.db,
+              db,
             );
           }
 
@@ -91,6 +92,7 @@ const plugin = new Elysia()
               references.content,
               version,
               db,
+              { includeReference: true },
             );
             return { references: { ...references, content: processedContent } };
           }
