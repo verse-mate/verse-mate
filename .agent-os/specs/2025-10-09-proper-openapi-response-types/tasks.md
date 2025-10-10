@@ -17,6 +17,9 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.5 Define enum types (TestamentEnum, RoleEnum, StatusEnum, etc.) as Elysia schemas
   - [x] 1.6 Document type mapping strategy for complex nested objects
   - [x] 1.7 Verify TypeScript compilation with base type definitions
+  - [x] 1.8 Analyze existing types and DTOs for consolidation opportunities
+  - [x] 1.9 Add clarifying comments to `bible/types.ts` (kept for data parsing)
+  - [x] 1.10 Document architecture: DTOs vs Response Schemas vs Common Types
 
 ### Phase 2: Bible Plugin Response Schemas (Part 1 - Core Data)
 
