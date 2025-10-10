@@ -47,6 +47,14 @@ const plugin = new Elysia()
               topicService.getTopicExplanation(id, "en-US", "detailed"),
             ]);
 
+          if (bylineExplanation?.explanation) {
+            bylineExplanation.explanation = await parseAndInjectVerses(
+              bylineExplanation.explanation,
+              "NASB1995", // Assuming a default version, or get from query
+              app.store.db,
+            );
+          }
+
           const explanation = {
             summary:
               summaryExplanation?.explanation ||
