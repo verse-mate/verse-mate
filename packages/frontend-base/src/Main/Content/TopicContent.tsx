@@ -5,11 +5,13 @@ import { Accordion } from "../../ui/Accordion";
 interface TopicContentProps {
   category: string;
   filter: string;
+  onTopicClick?: () => void;
 }
 
 export const TopicContent: React.FC<TopicContentProps> = ({
   category,
   filter,
+  onTopicClick,
 }) => {
   // Map frontend category names to backend category names
   const backendCategory =
@@ -33,9 +35,12 @@ export const TopicContent: React.FC<TopicContentProps> = ({
       testament: "TOPIC" as any, // Special value to indicate topic view
     });
 
-    // Close the dropdown
+    // Close the mobile dropdown
     const closeEvent = new CustomEvent("closeDropdownBook");
     window.dispatchEvent(closeEvent);
+
+    // Execute the callback if provided (for desktop dropdown)
+    onTopicClick?.();
   };
 
   if (isLoading) {
