@@ -3,6 +3,7 @@ import {
   BookTypeCompact,
   ExplanationTypeEnum,
   GroupedChatHistoryType,
+  HighlightColorEnum,
   MessageType,
   TestamentEnum,
 } from "../../shared/schemas/common-types.schema";
@@ -145,8 +146,16 @@ export const LastChapterReadSchema = t.Object({
 /**
  * Bookmark schemas
  */
+// Bookmark response from repository (getFavorites) - includes book_name computed field
+const BookmarkResponseType = t.Object({
+  favorite_id: t.Number(),
+  chapter_number: t.Number(),
+  book_id: t.Number(),
+  book_name: t.String(),
+});
+
 export const BookmarksSchema = t.Object({
-  favorites: t.Array(t.Any()),
+  favorites: t.Array(BookmarkResponseType),
 });
 
 export const BookmarkActionSchema = t.Object({
@@ -156,13 +165,36 @@ export const BookmarkActionSchema = t.Object({
 /**
  * Note schemas
  */
+// Note response from repository (getNotes) - includes book_name and verse_number computed fields
+const NoteResponseType = t.Object({
+  note_id: t.String(), // UUID
+  content: t.String(),
+  created_at: t.String(), // ISO date string (Date object serialized)
+  updated_at: t.String(), // ISO date string (Date object serialized)
+  chapter_number: t.Number(),
+  book_id: t.Number(),
+  book_name: t.String(),
+  verse_number: t.Union([t.Number(), t.Null()]),
+});
+
+// Note returned from addNote() - different structure (database fields)
+const NoteCreatedType = t.Object({
+  note_id: t.String(), // UUID
+  user_id: t.String(), // UUID
+  chapter_id: t.Number(),
+  verse_id: t.Union([t.Number(), t.Null()]),
+  content: t.String(),
+  created_at: t.String(), // ISO date string
+  updated_at: t.String(), // ISO date string
+});
+
 export const NotesSchema = t.Object({
-  notes: t.Array(t.Any()),
+  notes: t.Array(NoteResponseType),
 });
 
 export const NoteAddSchema = t.Object({
   success: t.Boolean(),
-  note: t.Any(),
+  note: NoteCreatedType,
 });
 
 export const NoteUpdateSchema = t.Object({
@@ -176,14 +208,40 @@ export const NoteDeleteSchema = t.Object({
 /**
  * Highlight schemas
  */
-export const HighlightsSchema = t.Object({
-  highlights: t.Array(t.Any()),
+// Highlight response from repository - has chapter_id and Date objects
+const HighlightResponseType = t.Object({
+  highlight_id: t.Number(),
+  user_id: t.String(), // UUID
+  chapter_id: t.Number(),
+  start_verse: t.Number(),
+  end_verse: t.Number(),
+  color: HighlightColorEnum,
+  start_char: t.Union([t.Number(), t.Null()]),
+  end_char: t.Union([t.Number(), t.Null()]),
+  selected_text: t.Union([t.String(), t.Null()]),
+  created_at: t.String(), // ISO date string (Date serialized)
+  updated_at: t.String(), // ISO date string (Date serialized)
 });
 
-export const HighlightAddSchema = t.Any(); // Returns highlight object directly
+export const HighlightsSchema = t.Object({
+  highlights: t.Array(HighlightResponseType),
+});
+
+// createHighlight() returns { highlight, success } or { success: false, error, overlaps? }
+export const HighlightAddSchema = t.Union([
+  t.Object({
+    highlight: HighlightResponseType,
+    success: t.Literal(true),
+  }),
+  t.Object({
+    success: t.Literal(false),
+    error: t.String(),
+    overlaps: t.Optional(t.Array(t.Any())),
+  }),
+]);
 
 export const HighlightUpdateSchema = t.Object({
-  highlight: t.Any(),
+  highlight: t.Union([HighlightResponseType, t.Null()]),
   success: t.Boolean(),
 });
 
