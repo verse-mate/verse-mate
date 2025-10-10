@@ -2,6 +2,8 @@ import { t } from "elysia";
 import {
   BookTypeCompact,
   ExplanationTypeEnum,
+  GroupedChatHistoryType,
+  MessageType,
   TestamentEnum,
 } from "../../shared/schemas/common-types.schema";
 
@@ -87,11 +89,11 @@ export const ChapterIdSchema = t.Object({
  * Chat and conversation schemas
  */
 export const UserChatHistorySchema = t.Object({
-  userChatHistory: t.Any(), // Grouped chat history object with periods (today, yesterday, etc.)
+  userChatHistory: GroupedChatHistoryType, // Grouped chat history object with periods (today, yesterday, etc.)
 });
 
 export const MessagesHistorySchema = t.Object({
-  messagesHistory: t.Array(t.Any()),
+  messagesHistory: t.Array(MessageType),
 });
 
 export const ChatExistsSchema = t.Object({
@@ -99,12 +101,15 @@ export const ChatExistsSchema = t.Object({
 });
 
 export const NewConversationSchema = t.Object({
-  newConversation: t.Any(),
+  newConversation: t.Object({
+    chat_id: t.Number(),
+    message: t.String(),
+  }),
   generatedTitle: t.String(),
 });
 
 export const SavedMessageSchema = t.Object({
-  result: t.Any(),
+  result: MessageType,
 });
 
 export const DisabledChatSchema = t.Object({
