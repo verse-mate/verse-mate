@@ -1597,6 +1597,16 @@ export const MainContent = () => {
                               </Accordion.Root>
                             </Tabs.Content>
                             <Tabs.Content value="TOPICS">
+                              <button
+                                type="button"
+                                onClick={() => leftPanelHandleTabChange("NT")}
+                                className={styles.backButton}
+                              >
+                                <Icon.ChevronBackward
+                                  className={styles.backButtonIcon}
+                                />
+                                <span>Back to Books</span>
+                              </button>
                               <Tabs.Root
                                 value={activeTopicTab}
                                 onValueChange={setActiveTopicTab}
