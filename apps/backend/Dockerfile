@@ -1,7 +1,7 @@
 FROM oven/bun:1.2.23
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wget postgresql-client && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y wget postgresql-client vim && rm -rf /var/lib/apt/lists/*
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 bunjs
