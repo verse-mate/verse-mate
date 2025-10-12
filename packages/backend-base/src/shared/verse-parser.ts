@@ -31,7 +31,7 @@ export async function parseAndInjectVerses(
   text: string,
   bibleVersion: string,
   database: db,
-  options?: { includeReference?: boolean },
+  options?: { includeReference?: boolean; includeVerseNumbers?: boolean },
 ) {
   const bibleRepository = new BibleRepository(database);
 
@@ -104,8 +104,12 @@ export async function parseAndInjectVerses(
 
     if (fetchedVerses.length > 0) {
       // Concatenate all verses in the range
+      // Use verse numbers only if includeVerseNumbers is true (default behavior for backward compatibility)
+      const includeVerseNumbers = options?.includeVerseNumbers !== false;
       const versesText = fetchedVerses
-        .map((v) => `${v.verseNumber}\n${v.text}`)
+        .map((v) =>
+          includeVerseNumbers ? `${v.verseNumber}\n${v.text}` : v.text,
+        )
         .join("\n");
 
       let replacementText = versesText;
@@ -164,13 +168,23 @@ export async function parseAndInjectVerses(
 
         if (verses) {
           // Format chapter content as verses with numbers
+          // Use verse numbers only if includeVerseNumbers is true (default behavior for backward compatibility)
+          const includeVerseNumbers = options?.includeVerseNumbers !== false;
           const formattedVerses = verses
-            .map((verse) => `${verse.verseNumber}\n${verse.text}`)
+            .map((verse) =>
+              includeVerseNumbers
+                ? `${verse.verseNumber}\n${verse.text}`
+                : verse.text,
+            )
             .join("\n");
 
           // Add chapter heading if it's a range
           if (chapterRef.startChapter !== chapterRef.endChapter) {
-            chapterContent += `## ${chapterRef.bookName} ${chapterNum}\n\n${formattedVerses}\n\n`;
+            chapterContent += `## ${chapterRef.bookName} ${chapterNum}
+
+${formattedVerses}
+
+`;
           } else {
             chapterContent += formattedVerses;
           }

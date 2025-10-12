@@ -280,6 +280,7 @@ export class TopicService {
         parsedContent,
         bibleVersion,
         this.db,
+        { includeVerseNumbers: true },
       );
       return parsedContent;
     } catch (error: unknown) {
