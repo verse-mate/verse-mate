@@ -317,14 +317,10 @@ export const batchMonitoringConsumer = async (job: Job) => {
           if (parsedLine.custom_id && hasContent) {
             try {
               const customIdParts = parsedLine.custom_id.split("-");
-              
+
               // Handle variable-length custom IDs where book names may contain hyphens
               // Format: book_name-chapter-type-chapter_id (where book_name can have hyphens)
-              // Examples: 
-              //   "john-1-summary-472" (4 parts)
-              //   "1-kings-1-summary-472" (5 parts)
-              //   "song-of-solomon-1-summary-472" (6 parts)
-              
+
               if (customIdParts.length < 4) {
                 console.error(
                   `[BATCH_MONITORING] Invalid custom_id format (too few parts): ${parsedLine.custom_id}`,
@@ -332,24 +328,27 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 failedExplanations++;
                 continue;
               }
-              
+
               // Extract components from the end
               const chapterIdStr = customIdParts[customIdParts.length - 1];
               const explanationType = customIdParts[customIdParts.length - 2];
               const chapterNumberStr = customIdParts[customIdParts.length - 3];
-              
+
               // Everything before the last 3 parts is the book name
-              const bookNameParts = customIdParts.slice(0, customIdParts.length - 3);
+              const bookNameParts = customIdParts.slice(
+                0,
+                customIdParts.length - 3,
+              );
               const bookName = bookNameParts.join("-");
-              
+
               console.log(
                 `[BATCH_MONITORING] Processing custom_id: ${parsedLine.custom_id} => book: ${bookName}, chapter: ${chapterNumberStr}, type: ${explanationType}, id: ${chapterIdStr}`,
               );
-              
+
               // Parse the numbers
               const chapterNumber = Number.parseInt(chapterNumberStr);
               const chapterId = Number.parseInt(chapterIdStr);
-              
+
               // Validate that chapterNumber is a valid number
               if (Number.isNaN(chapterNumber)) {
                 console.error(
