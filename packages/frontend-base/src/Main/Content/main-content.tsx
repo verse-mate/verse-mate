@@ -288,11 +288,8 @@ export const MainContent = () => {
     [testaments],
   );
 
-  const {
-    isOpen: isDropdownOpenVersion,
-    toggleDropdown: toggleMobileDropdownVersion,
-    closeDropdown: closeDropdownVersion,
-  } = useDropdownToggle();
+  const { isOpen: isDropdownOpenVersion, closeDropdown: closeDropdownVersion } =
+    useDropdownToggle();
 
   const { filteredArray: filteredMobileArray } = useArrayFilter(bibleVersions);
 
@@ -1896,7 +1893,6 @@ export const MainContent = () => {
                 ) : session?.id ? (
                   <>
                     <ProfileButton
-                      link="/"
                       setRightPanelContent={setRightPanelContent}
                     />
                     <div className={styles.menuOptions}>
@@ -2029,9 +2025,7 @@ export const MainContent = () => {
           >
             <RightPanel.Nav
               activeTab={activeTab}
-              askVerseMate={askVerseMate}
               setActiveTab={setActiveTab}
-              rightPanelContent={rightPanelContent}
               setRightPanelContent={setRightPanelContent}
             />
             <RightPanel.Content
@@ -2039,7 +2033,6 @@ export const MainContent = () => {
               topicId={String(bookId)}
               session={session}
               explanation={explanation}
-              chapters={chapters}
               conversationsHistory={conversationsHistory}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}

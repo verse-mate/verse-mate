@@ -10,7 +10,7 @@ import styles from "./VerifyEmail.module.css";
 import { useVerifyEmail } from "./useVerifyEmail";
 
 export function ConfirmedEmailVerification() {
-  const { isLoading, mutateAsync, error, getKey } = useVerifyEmail();
+  const { isLoading, error } = useVerifyEmail();
 
   if (isLoading) {
     return <ThreeDotsLoadingIcon color="var(--brand)" />;

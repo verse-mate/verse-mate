@@ -61,31 +61,6 @@ export async function parseAndInjectVerses(
     };
   });
 
-  // Group by book and chapter to fetch verses efficiently
-  const refsByChapter = verseRefs.reduce(
-    (acc, ref) => {
-      const key = `${ref.bookName}-${ref.chapterNumber}`;
-      if (!acc[key]) {
-        acc[key] = {
-          bookName: ref.bookName,
-          chapterNumber: ref.chapterNumber,
-          verses: new Set<number>(),
-        };
-      }
-
-      // Add all verses in the range
-      for (let i = ref.startVerse; i <= ref.endVerse; i++) {
-        acc[key].verses.add(i);
-      }
-
-      return acc;
-    },
-    {} as Record<
-      string,
-      { bookName: string; chapterNumber: number; verses: Set<number> }
-    >,
-  );
-
   let processedText = text;
 
   // Process verse placeholders - we need to handle each original placeholder separately

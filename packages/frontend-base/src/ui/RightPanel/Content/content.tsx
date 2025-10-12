@@ -37,7 +37,6 @@ type Props = {
       }
     | null
     | undefined;
-  chapters: number | undefined;
   conversationsHistory:
     | never[]
     | {
@@ -143,7 +142,6 @@ export const Content = ({
   topicId,
   session,
   explanation,
-  chapters,
   conversationsHistory,
   selectConversation,
   askVerseMate,
@@ -281,10 +279,7 @@ export const Content = ({
               />
             ) : (
               <>
-                <ProfileButton
-                  link="/"
-                  setRightPanelContent={setRightPanelContent}
-                />
+                <ProfileButton setRightPanelContent={setRightPanelContent} />
                 <div className={styles.menuOptions}>
                   <Accordion.Root type="multiple">
                     {homeOptions.map((option) => (

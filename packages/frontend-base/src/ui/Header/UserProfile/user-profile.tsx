@@ -4,14 +4,10 @@ import { userSession } from "../../../hooks/userSession";
 import styles from "./user-profile.module.css";
 
 type UserProfileProps = {
-  link: string;
   setRightPanelContent: (value: string) => void;
 };
 
-export const ProfileButton = ({
-  link,
-  setRightPanelContent,
-}: UserProfileProps) => {
+export const ProfileButton = ({ setRightPanelContent }: UserProfileProps) => {
   const { session, loading } = userSession();
 
   // Don't render anything to avoid flash during loading or for authenticated users
