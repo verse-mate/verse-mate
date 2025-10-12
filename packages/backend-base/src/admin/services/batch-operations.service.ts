@@ -3069,10 +3069,23 @@ export class BatchOperationService {
             try {
               // Parse custom ID to extract topic_id, explanation_type, and language_code
               const parts = customId.split("-");
-              if (parts.length >= 6) {
-                const topicId = parts[2];
-                const explanationType = parts[3];
-                const languageCode = parts[4];
+              if (parts.length >= 9) {
+                const topicId = `${parts[2]}-${parts[3]}-${parts[4]}-${parts[5]}-${parts[6]}`;
+                const explanationType = parts[7];
+                const languageCode = parts[8];
+
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Parsing custom ID: ${customId}`,
+                );
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Extracted topicId: ${topicId}`,
+                );
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Extracted explanationType: ${explanationType}`,
+                );
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Extracted languageCode: ${languageCode}`,
+                );
 
                 await this.db
                   .getOrCreateConnection()
