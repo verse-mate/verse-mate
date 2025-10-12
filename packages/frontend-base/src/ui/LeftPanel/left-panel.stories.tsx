@@ -9,7 +9,6 @@ import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { fetchAllChaptersByBook, fetchBookVerse } from "../../hooks/useBible";
-import { useConversationManager } from "../../hooks/useConversationManager";
 import type { Message } from "../../hooks/useInput";
 import { useProgressBar } from "../../hooks/useProgressBar";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
@@ -18,7 +17,6 @@ import {
   useSelectDropdown,
 } from "../../hooks/useSelectDropdown";
 import { useSidebar } from "../../hooks/useSidebar";
-import { userSession } from "../../hooks/userSession";
 import { bibleVersions } from "../../utils/bible-versions";
 import { options } from "../../utils/menu-options";
 import { testaments } from "../../utils/testaments";
@@ -374,12 +372,9 @@ export const AskVerseMate: Story = () => {
   const [initialMessageHandled, setInitialMessageHandled] =
     useState<boolean>(false);
   const [_userMessage, setUserMessage] = useState<string | null>(null);
-  const { session } = userSession();
   const [_processedMessage, _setProcessedMessage] = useState<string | null>(
     null,
   );
-  const { saveUserMessage, saveAiMessage } = useConversationManager(session);
-
   const toggleRightPanel = () => {
     setIsRightPanelOpen(!isRightPanelOpen);
   };
@@ -387,7 +382,7 @@ export const AskVerseMate: Story = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const ask = searchParams.get("ask");
 
-  const { data: conversation = [] } = useQuery({
+  useQuery({
     queryKey: ["conversation"],
     queryFn: () => queryClient.getQueryData<Message[]>(["conversation"]),
     initialData: [],

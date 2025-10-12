@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { useHandleTab } from "../../hooks/useHandleTab";
-import { userSession } from "../../hooks/userSession";
 import { RightPanel } from "./index";
 
 export default {
@@ -20,11 +19,7 @@ export default {
 } satisfies StoryDefault;
 
 export const Default: Story = () => {
-  const { session } = userSession();
-
   const { activeTab, setActiveTab } = useHandleTab();
-
-  const askVerseMate = process.env.NEXT_PUBLIC_ASK_VERSE_MATE === "true";
 
   const [rightPanelContent, setRightPanelContent] = React.useState<any>(null);
 

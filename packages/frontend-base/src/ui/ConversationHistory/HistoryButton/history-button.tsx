@@ -24,7 +24,7 @@ export const HistoryButton = ({
   ...rest
 }: HistoryButtonProps) => {
   const queryClient = useQueryClient();
-  const { bookId, verseId, conversationId } = useGetSearchParams();
+  const { conversationId } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
 
   const selectedChat = conversationId === String(conversation_id);
@@ -96,7 +96,6 @@ export const HistoryButton = ({
                 <Popover.ListItem>
                   {chatActions.map((action) => (
                     <Popover.Item
-                      id={action.name}
                       key={action.name}
                       icon={action.icon}
                       label={action.label}

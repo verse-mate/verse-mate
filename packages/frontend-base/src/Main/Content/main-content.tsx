@@ -1964,13 +1964,11 @@ export const MainContent = () => {
               isViewingTopic={isViewingTopic}
               topicDetails={topicDetails}
               averageRating={averageRating}
-              bibleVersionSelected={bibleVersionSelected}
               bookId={Number(bookId)}
               verseId={verseId}
               explanation={explanation}
               currentRating={currentRating}
               explanationType={explanationType}
-              handleBibleVersionSelected={handleBibleVersionSelected}
               handleValueChange={handleValueChange}
               maxRating={maxRating}
               totalRatings={totalRatings}
@@ -1982,7 +1980,6 @@ export const MainContent = () => {
               leftPanelHandleTabChange={leftPanelHandleTabChange}
               leftPanelHandleVerseSelect={leftPanelHandleVerseSelect}
               leftPanelIsOpen={leftPanelIsOpen}
-              leftPanelSelectedBook={leftPanelSelectedBook}
               leftPanelSelectedTab={leftPanelSelectedTab}
               leftPanelSelectedVerse={leftPanelSelectedVerse}
               leftPanelSetIsOpen={leftPanelSetIsOpen}

@@ -110,7 +110,6 @@ export const NotesButton = ({
           bookId={bookId}
           chapterNumber={chapterNumber}
           bookName={bookName}
-          testament={testament}
           onClose={handleCloseModal}
         />
       )}

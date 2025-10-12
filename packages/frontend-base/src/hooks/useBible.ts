@@ -26,11 +26,7 @@ export const fetchAllTestaments = () => {
 };
 
 export const fetchAllChaptersByBook = (bookId?: number | null) => {
-  const {
-    data: chapters,
-    error,
-    isLoading,
-  } = useQuery({
+  const { data: chapters, isLoading } = useQuery({
     queryKey: ["allChaptersByBook", bookId],
     queryFn: async () => {
       if (!bookId) {
@@ -76,7 +72,6 @@ export const fetchExplanation = (
   const {
     data: explanation,
     error,
-    isPending,
     isFetching,
     isLoading,
   } = useQuery({

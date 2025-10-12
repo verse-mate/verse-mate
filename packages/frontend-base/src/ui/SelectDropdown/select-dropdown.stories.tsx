@@ -50,7 +50,6 @@ export const AccordionSelectWithFilter: Story = () => {
     handleChange: leftPanelHandleChange,
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
-    resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
   const book = testaments?.find((testament) => testament.b === bookId)?.n;
