@@ -105,7 +105,8 @@ const plugin = new Elysia()
           const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
           const bible = await parseBibleData(bibleFile, metadataFile);
 
-          return { books: bible.books };
+          // Cast testament types to match schema (both are "OT" | "NT")
+          return { books: bible.books as any };
         },
         {
           response: {
@@ -143,13 +144,14 @@ const plugin = new Elysia()
             throw new NotFoundError("Invalid bible version");
           }
 
-          const book = await bibleService.getBook({
+          const result = await bibleService.getBook({
             book_id: bookId,
             chapter_number: chapterNumber,
             version_id: version.id,
           });
 
-          return book;
+          // Cast testament types to match schema (both are "OT" | "NT")
+          return result as any;
         },
         {
           params: t.Object({
@@ -292,7 +294,7 @@ const plugin = new Elysia()
               created_at:
                 msg.created_at instanceof Date
                   ? msg.created_at.toISOString()
-                  : (msg.created_at as string) || new Date().toISOString(),
+                  : msg.created_at || new Date().toISOString(),
             }));
 
           return { messagesHistory };
@@ -402,8 +404,19 @@ const plugin = new Elysia()
             chapter_number: body.chapter_number,
           });
 
+          // Ensure chat_id is present
+          if ("message" in newConversation && !("chat_id" in newConversation)) {
+            throw new Error(newConversation.message);
+          }
+          if (!newConversation.chat_id) {
+            throw new Error("Failed to create conversation");
+          }
+
           return {
-            newConversation,
+            newConversation: {
+              chat_id: newConversation.chat_id,
+              message: newConversation.message,
+            },
             generatedTitle: generatedTitleText,
           };
         },
@@ -560,7 +573,7 @@ const plugin = new Elysia()
               created_at:
                 message.generated_at instanceof Date
                   ? message.generated_at.toISOString()
-                  : message.generated_at,
+                  : message.generated_at || new Date().toISOString(),
             },
           };
         },
@@ -648,7 +661,7 @@ const plugin = new Elysia()
               created_at:
                 message.generated_at instanceof Date
                   ? message.generated_at.toISOString()
-                  : message.generated_at,
+                  : message.generated_at || new Date().toISOString(),
             },
           };
         },

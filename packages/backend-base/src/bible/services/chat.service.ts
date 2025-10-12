@@ -61,7 +61,7 @@ export class ChatService {
 
     await this.chatRepository.updateChatDate({
       conversation_id: chat_id,
-      updated_at: currentDate(),
+      updated_at: currentDate().toISOString(),
     });
 
     return { newMessage };
