@@ -178,6 +178,7 @@ export class BibleService {
         explanation.explanation,
         version.version_key,
         this.db,
+        { includeVerseNumbers: false }, // Don't include verse numbers in Bible explanations
       );
     }
 
