@@ -71,7 +71,7 @@ export class ChatRepository {
         "conversation_id",
         "content",
         "role",
-        "created_at",
+        "generated_at",
       ])
       .executeTakeFirst();
 
@@ -116,6 +116,7 @@ export class ChatRepository {
         "messages.message_id",
         "messages.content",
         "messages.role",
+        "messages.generated_at as created_at",
         "chapters.chapter_number",
         "books.book_id",
         "books.name as bookName",
@@ -156,7 +157,7 @@ export class ChatRepository {
         "messages.message_id",
         "messages.content",
         "messages.role",
-        "messages.created_at",
+        "messages.generated_at as created_at",
         "chapters.chapter_number",
         "books.book_id",
         "books.name as bookName",

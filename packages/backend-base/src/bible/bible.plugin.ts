@@ -558,9 +558,9 @@ const plugin = new Elysia()
               content: message.content,
               role: message.role,
               created_at:
-                message.created_at instanceof Date
-                  ? message.created_at.toISOString()
-                  : message.created_at,
+                message.generated_at instanceof Date
+                  ? message.generated_at.toISOString()
+                  : message.generated_at,
             },
           };
         },
@@ -646,9 +646,9 @@ const plugin = new Elysia()
               content: message.content,
               role: message.role,
               created_at:
-                message.created_at instanceof Date
-                  ? message.created_at.toISOString()
-                  : message.created_at,
+                message.generated_at instanceof Date
+                  ? message.generated_at.toISOString()
+                  : message.generated_at,
             },
           };
         },
@@ -1070,7 +1070,26 @@ const plugin = new Elysia()
             selected_text: body.selected_text,
           });
 
-          return result;
+          // Serialize dates if successful
+          if (result.success && result.highlight) {
+            return {
+              success: true as const,
+              highlight: {
+                ...result.highlight,
+                created_at:
+                  result.highlight.created_at instanceof Date
+                    ? result.highlight.created_at.toISOString()
+                    : result.highlight.created_at || new Date().toISOString(),
+                updated_at:
+                  result.highlight.updated_at instanceof Date
+                    ? result.highlight.updated_at.toISOString()
+                    : result.highlight.updated_at || new Date().toISOString(),
+              },
+            };
+          }
+
+          // Return error with proper type
+          return result as { success: false; error: string; overlaps?: any[] };
         },
         {
           body: t.Object({
@@ -1107,7 +1126,25 @@ const plugin = new Elysia()
               color: body.color as any,
             });
 
-          return { highlight, success };
+          // Serialize dates if highlight exists
+          if (highlight) {
+            return {
+              success,
+              highlight: {
+                ...highlight,
+                created_at:
+                  highlight.created_at instanceof Date
+                    ? highlight.created_at.toISOString()
+                    : highlight.created_at || new Date().toISOString(),
+                updated_at:
+                  highlight.updated_at instanceof Date
+                    ? highlight.updated_at.toISOString()
+                    : highlight.updated_at || new Date().toISOString(),
+              },
+            };
+          }
+
+          return { success, highlight: null };
         },
         {
           params: t.Object({
