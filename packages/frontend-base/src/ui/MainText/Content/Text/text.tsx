@@ -643,7 +643,6 @@ export const Text = ({
               bookId={Number(bookId)}
               chapterNumber={text.chapterNumber}
               bookName={bookName}
-              testament={String(testament || "")}
             />
           )}
           <CopyLinkButton

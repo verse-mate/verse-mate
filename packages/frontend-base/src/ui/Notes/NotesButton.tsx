@@ -12,7 +12,6 @@ type NotesButtonProps = {
   bookId: number;
   chapterNumber: number;
   bookName: string;
-  testament: string;
   className?: string;
 };
 
@@ -20,7 +19,6 @@ export const NotesButton = ({
   bookId,
   chapterNumber,
   bookName,
-  testament,
   className,
 }: NotesButtonProps) => {
   const { notes } = useNotesContext();

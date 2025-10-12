@@ -219,7 +219,6 @@ export const MainContent = () => {
   const {
     isOpen: leftPanelIsOpen,
     setIsOpen: leftPanelSetIsOpen,
-    selectedBook: leftPanelSelectedBook,
     selectedVerse: leftPanelSelectedVerse,
     selectedTab: leftPanelSelectedTab,
     setSelectedTab,
