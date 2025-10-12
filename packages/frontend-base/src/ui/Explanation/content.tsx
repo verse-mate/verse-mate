@@ -17,7 +17,12 @@ export const Content = ({
     explanation: explanationFromFetch,
     error,
     isLoading,
-  } = fetchExplanation(bookId, Number(verseId), explanationType, bibleVersion);
+  } = fetchExplanation(
+    Number(bookId),
+    Number(verseId),
+    explanationType,
+    bibleVersion,
+  );
 
   const explanation = explanationFromProp || explanationFromFetch;
 
@@ -29,7 +34,13 @@ export const Content = ({
     averageRating,
     setRating,
     setHoverRating,
-  } = useRating(5, session, bookId, verseId, explanation?.explanation_id);
+  } = useRating(
+    5,
+    session,
+    Number(bookId),
+    verseId,
+    explanation?.explanation_id,
+  );
 
   return (
     <>

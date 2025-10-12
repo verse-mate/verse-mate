@@ -1,11 +1,17 @@
 FROM oven/bun:1.2.23
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wget postgresql-client && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y wget postgresql-client vim && rm -rf /var/lib/apt/lists/*
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 bunjs
 RUN adduser --system --uid 1001 bunjs
+
+# Create Bun cache and temp directories with proper permissions
+RUN mkdir -p /home/bunjs/.bun/install/cache && \
+    chown -R bunjs:bunjs /home/bunjs && \
+    chown -R bunjs:bunjs /app
+
 USER bunjs
 
 COPY --chown=bunjs:bunjs apps/backend/dist ./dist

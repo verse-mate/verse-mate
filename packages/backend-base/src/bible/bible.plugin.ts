@@ -17,7 +17,6 @@ import { LastChapterReadDto } from "./dto/book/last-chapter-read.dto";
 import { RatingDto } from "./dto/book/rating.dto";
 import { AddMessageDto } from "./dto/chat/add-message.dto";
 import { ChatHistoryDto } from "./dto/chat/chat-history.dto";
-import { ChatEntity } from "./dto/chat/chat.dto";
 import { MessageHistoryDto } from "./dto/chat/message-history.dto";
 import { NewChatDto } from "./dto/chat/new-chat.dto";
 import { BibleRepository } from "./repository/bible.repository";
@@ -145,14 +144,18 @@ const plugin = new Elysia()
           }
 
           const book = await bibleService.getBook({
-            book_id: Number(bookId),
-            chapter_number: Number(chapterNumber),
+            book_id: bookId,
+            chapter_number: chapterNumber,
             version_id: version.id,
           });
 
           return book;
         },
         {
+          params: t.Object({
+            bookId: t.Numeric(),
+            chapterNumber: t.Numeric(),
+          }),
           query: t.Object({
             versionKey: t.Optional(t.String()),
           }),
@@ -186,8 +189,8 @@ const plugin = new Elysia()
           }
 
           const explanation = await bibleService.getExplanation({
-            book_id: Number(bookId),
-            chapter_number: Number(chapterNumber),
+            book_id: bookId,
+            chapter_number: chapterNumber,
             version_id: version.id,
             type: explanationType as ExplanationTypeEnum | undefined,
             user_id: currentUserId || undefined,
@@ -196,6 +199,10 @@ const plugin = new Elysia()
           return { explanation };
         },
         {
+          params: t.Object({
+            bookId: t.Numeric(),
+            chapterNumber: t.Numeric(),
+          }),
           query: t.Object({
             versionKey: t.Optional(t.String()),
             explanationType: t.Optional(t.String()),
@@ -228,8 +235,8 @@ const plugin = new Elysia()
           const bibleRepository = new BibleRepository(db);
 
           const { chapter_id } = await bibleRepository.getChapterId({
-            book_id: Number(bookId),
-            chapter_number: Number(chapterNumber),
+            book_id: bookId,
+            chapter_number: chapterNumber,
           });
 
           if (chapter_id == null) {
@@ -240,8 +247,8 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({
-            bookId: t.String(),
-            chapterNumber: t.String(),
+            bookId: t.Numeric(),
+            chapterNumber: t.Numeric(),
           }),
           response: {
             200: ChapterIdSchema,
@@ -661,12 +668,14 @@ const plugin = new Elysia()
         async ({ params, store: { chatService } }) => {
           const { conversation_id } = params;
           const disabledChat = await chatService.disableChat({
-            conversation_id: Number(conversation_id),
+            conversation_id: conversation_id,
           });
           return { disabledChat: disabledChat.chat_id ?? 0 };
         },
         {
-          params: t.Pick(ChatEntity, ["conversation_id"]),
+          params: t.Object({
+            conversation_id: t.Numeric(),
+          }),
           response: {
             200: DisabledChatSchema,
             ...StandardErrorResponses,
@@ -1024,8 +1033,8 @@ const plugin = new Elysia()
         {
           params: t.Object({
             user_id: t.String({ format: "uuid" }),
-            book_id: t.Number(),
-            chapter_number: t.Number(),
+            book_id: t.Numeric(),
+            chapter_number: t.Numeric(),
           }),
           response: {
             200: HighlightsSchema,

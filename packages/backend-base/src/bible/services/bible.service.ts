@@ -43,6 +43,7 @@ export class BibleService {
 
     const { subtitles } = await this.bibleRepository.getSubtitles({
       chapter_id: chapter.chapter_id,
+      version_id,
     });
 
     const { verses } = await this.bibleRepository.getVerses({
@@ -177,6 +178,7 @@ export class BibleService {
         explanation.explanation,
         version.version_key,
         this.db,
+        { includeVerseNumbers: false }, // Don't include verse numbers in Bible explanations
       );
     }
 
