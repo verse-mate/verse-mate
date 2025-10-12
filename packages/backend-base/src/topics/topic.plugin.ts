@@ -5,6 +5,67 @@ import shared from "../shared/shared.plugin";
 import { parseAndInjectVerses } from "../shared/verse-parser";
 import { TopicService } from "./services/topic.service";
 
+// Response schemas
+const CategoryResponseSchema = t.Object({
+  categories: t.Array(t.String()),
+});
+
+// Schema for topic search results (limited fields from repository)
+const TopicSearchItemSchema = t.Object({
+  topic_id: t.String({ format: "uuid" }),
+  name: t.String(),
+  description: t.Union([t.String(), t.Null()]),
+  sort_order: t.Union([t.Number(), t.Null()]),
+});
+
+const TopicSearchResponseSchema = t.Object({
+  topics: t.Array(TopicSearchItemSchema),
+});
+
+// Schema for full topic details (all fields from database)
+const TopicSchema = t.Object({
+  topic_id: t.String({ format: "uuid" }),
+  name: t.String(),
+  description: t.Union([t.String(), t.Null()]),
+  category: t.String(),
+  sort_order: t.Union([t.Number(), t.Null()]),
+  is_active: t.Union([t.Boolean(), t.Null()]),
+  created_at: t.Union([t.Date(), t.Null()]),
+  updated_at: t.Union([t.Date(), t.Null()]),
+});
+
+// Schema for topic references (only content field from repository)
+const TopicReferencesSchema = t.Object({
+  content: t.String(),
+});
+
+const TopicDetailsResponseSchema = t.Object({
+  topic: t.Union([TopicSchema, t.Null()]),
+  references: t.Union([TopicReferencesSchema, t.Null()]),
+  explanation: t.Object({
+    summary: t.String(),
+    byline: t.String(),
+    detailed: t.String(),
+  }),
+});
+
+const TopicReferencesResponseSchema = t.Object({
+  references: t.Union([TopicReferencesSchema, t.Null()]),
+});
+
+// Schema for topic explanation (only explanation field from repository)
+const TopicExplanationSchema = t.Object({
+  explanation: t.String(),
+});
+
+const TopicExplanationResponseSchema = t.Object({
+  explanation: t.Union([TopicExplanationSchema, t.Null()]),
+});
+
+const ParseReferencesResponseSchema = t.Object({
+  parsedContent: t.String(),
+});
+
 const plugin = new Elysia()
   .use(shared)
   .state((state) => {
@@ -16,10 +77,16 @@ const plugin = new Elysia()
   })
   .group("/topics", (app) =>
     app
-      .get("/categories", async ({ store: { topicService } }) => {
-        const categories = await topicService.getCategories();
-        return { categories };
-      })
+      .get(
+        "/categories",
+        async ({ store: { topicService } }) => {
+          const categories = await topicService.getCategories();
+          return { categories };
+        },
+        {
+          response: CategoryResponseSchema,
+        },
+      )
       .get(
         "/search",
         async ({ query, store: { topicService } }) => {
@@ -31,6 +98,7 @@ const plugin = new Elysia()
           query: t.Object({
             category: t.String(),
           }),
+          response: TopicSearchResponseSchema,
         },
       )
       .get(
@@ -70,8 +138,8 @@ const plugin = new Elysia()
           };
 
           return {
-            topic,
-            references,
+            topic: topic || null,
+            references: references || null,
             explanation,
           };
         },
@@ -79,6 +147,7 @@ const plugin = new Elysia()
           params: t.Object({
             id: t.String({ format: "uuid" }),
           }),
+          response: TopicDetailsResponseSchema,
         },
       )
       .get(
@@ -97,7 +166,7 @@ const plugin = new Elysia()
             );
             return { references: { ...references, content: processedContent } };
           }
-          return { references };
+          return { references: references || null };
         },
         {
           params: t.Object({
@@ -106,6 +175,7 @@ const plugin = new Elysia()
           query: t.Object({
             version: t.Optional(t.String()),
           }),
+          response: TopicReferencesResponseSchema,
         },
       )
       .get(
@@ -118,7 +188,7 @@ const plugin = new Elysia()
             lang,
             type,
           );
-          return { explanation };
+          return { explanation: explanation || null };
         },
         {
           params: t.Object({
@@ -134,6 +204,7 @@ const plugin = new Elysia()
             ),
             lang: t.Optional(t.String()),
           }),
+          response: TopicExplanationResponseSchema,
         },
       )
       .post(
@@ -151,6 +222,7 @@ const plugin = new Elysia()
             content: t.String(),
             bibleVersion: t.String(),
           }),
+          response: ParseReferencesResponseSchema,
         },
       ),
   );
