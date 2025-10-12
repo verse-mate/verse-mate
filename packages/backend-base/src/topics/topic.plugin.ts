@@ -53,6 +53,7 @@ const plugin = new Elysia()
               bylineExplanation.explanation,
               "NASB1995", // Assuming a default version, or get from query
               db,
+              { includeVerseNumbers: false }, // Don't include verse numbers in byline
             );
           }
 
@@ -92,7 +93,7 @@ const plugin = new Elysia()
               references.content,
               version,
               db,
-              { includeReference: true },
+              { includeReference: true, includeVerseNumbers: true },
             );
             return { references: { ...references, content: processedContent } };
           }
