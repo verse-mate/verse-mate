@@ -92,21 +92,23 @@ export const Content = ({ bookId, verseId, book }: ContentProps) => {
 
   return (
     <section className={styles.content}>
-      {book.chapters?.map((chapter) => (
-        <div key={chapter.chapterNumber}>
-          <MainText.Text
-            text={chapter}
-            bookName={book.name}
-            testament={book.testament}
-            bookId={Number(bookId)}
-            chapterId={chapterIds[chapter.chapterNumber] || undefined}
-            highlights={highlights}
-            onHighlightCreate={createHighlightCreator(chapter.chapterNumber)}
-            onHighlightDelete={handleHighlightDelete}
-            onHighlightUpdate={handleHighlightUpdate}
-          />
-        </div>
-      ))}
+      {book.chapters
+        ?.filter((chapter) => chapter.chapterNumber !== undefined)
+        .map((chapter) => (
+          <div key={chapter.chapterNumber}>
+            <MainText.Text
+              text={chapter}
+              bookName={book.name}
+              testament={book.testament}
+              bookId={Number(bookId)}
+              chapterId={chapterIds[chapter.chapterNumber] || undefined}
+              highlights={highlights}
+              onHighlightCreate={createHighlightCreator(chapter.chapterNumber)}
+              onHighlightDelete={handleHighlightDelete}
+              onHighlightUpdate={handleHighlightUpdate}
+            />
+          </div>
+        ))}
     </section>
   );
 };
