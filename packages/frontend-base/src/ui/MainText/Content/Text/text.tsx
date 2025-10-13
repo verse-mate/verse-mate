@@ -659,43 +659,65 @@ export const Text = ({
         </div>
       </div>
 
-      {text.subtitles.map((subtitle) => (
-        <div key={subtitle.subtitle} className={styles.textBox}>
-          <div className={styles.subtitleBox}>
-            <h2 className={styles.subtitle}>
-              {formatSubtitle(subtitle.subtitle)}
-            </h2>
-            <p className={styles.description}>
-              ({bookName} {text.chapterNumber}:{subtitle.start_verse} -{" "}
-              {subtitle.end_verse})
-            </p>
-          </div>
-          <div className={styles.versesContainer}>
-            {text.verses
-              .filter(
-                (verse) =>
-                  verse.verseNumber >= subtitle.start_verse &&
-                  verse.verseNumber <= subtitle.end_verse,
-              )
-              .map((verse) => {
-                return (
-                  <span
-                    key={verse.verseNumber}
-                    className={`${styles.verse}`}
-                    data-verse-number={verse.verseNumber}
-                  >
-                    <sup className={styles.verseNumber}>
-                      {verse.verseNumber}
-                    </sup>
-                    <span className={styles.verseText}>
-                      {renderHighlightedText(verse.text, verse.verseNumber)}
+      {text.subtitles && text.subtitles.length > 0 ? (
+        text.subtitles.map((subtitle) => (
+          <div key={subtitle.subtitle} className={styles.textBox}>
+            <div className={styles.subtitleBox}>
+              <h2 className={styles.subtitle}>
+                {formatSubtitle(subtitle.subtitle)}
+              </h2>
+              <p className={styles.description}>
+                ({bookName} {text.chapterNumber}:{subtitle.start_verse} -{" "}
+                {subtitle.end_verse})
+              </p>
+            </div>
+            <div className={styles.versesContainer}>
+              {text.verses
+                .filter(
+                  (verse) =>
+                    verse.verseNumber >= subtitle.start_verse &&
+                    verse.verseNumber <= subtitle.end_verse,
+                )
+                .map((verse) => {
+                  return (
+                    <span
+                      key={verse.verseNumber}
+                      className={`${styles.verse}`}
+                      data-verse-number={verse.verseNumber}
+                    >
+                      <sup className={styles.verseNumber}>
+                        {verse.verseNumber}
+                      </sup>
+                      <span className={styles.verseText}>
+                        {renderHighlightedText(verse.text, verse.verseNumber)}
+                      </span>
                     </span>
+                  );
+                })}
+            </div>
+          </div>
+        ))
+      ) : (
+        // Fallback: render all verses without subtitle grouping
+        <div className={styles.textBox}>
+          <div className={styles.versesContainer}>
+            {text.verses.map((verse) => {
+              return (
+                <span
+                  key={verse.verseNumber}
+                  className={`${styles.verse}`}
+                  data-verse-number={verse.verseNumber}
+                >
+                  <sup className={styles.verseNumber}>{verse.verseNumber}</sup>
+                  <span className={styles.verseText}>
+                    {renderHighlightedText(verse.text, verse.verseNumber)}
                   </span>
-                );
-              })}
+                </span>
+              );
+            })}
           </div>
         </div>
-      ))}
+      )}
 
       {showColorPicker && (
         <HighlightColorPicker
