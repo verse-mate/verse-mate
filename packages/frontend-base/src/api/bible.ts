@@ -28,11 +28,11 @@ export const getBookVerse = async (
 
   return {
     ...book,
-    chapters: book.chapters.map((chapter: any) => ({
-      chapterNumber: chapter.chapterId,
+    chapters: book.chapters.map((chapter) => ({
+      chapterNumber: chapter.chapterNumber,
       subtitles: chapter.subtitles,
-      verses: chapter.verses.map((verse: any) => ({
-        verseNumber: verse.verseId,
+      verses: chapter.verses.map((verse) => ({
+        verseNumber: verse.verseNumber,
         text: verse.text,
       })),
     })),
