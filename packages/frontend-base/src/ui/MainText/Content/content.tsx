@@ -92,23 +92,25 @@ export const Content = ({ bookId, verseId, book }: ContentProps) => {
 
   return (
     <section className={styles.content}>
-      {book.chapters
-        ?.filter((chapter) => chapter.chapterNumber !== undefined)
-        .map((chapter) => (
-          <div key={chapter.chapterNumber}>
+      {book.chapters?.map((chapter, index) => {
+        // Use chapterNumber if available, otherwise use index as fallback
+        const chapterNum = chapter.chapterNumber ?? index + 1;
+        return (
+          <div key={`chapter-${chapterNum}`}>
             <MainText.Text
               text={chapter}
               bookName={book.name}
               testament={book.testament}
               bookId={Number(bookId)}
-              chapterId={chapterIds[chapter.chapterNumber] || undefined}
+              chapterId={chapterIds[chapterNum] || undefined}
               highlights={highlights}
-              onHighlightCreate={createHighlightCreator(chapter.chapterNumber)}
+              onHighlightCreate={createHighlightCreator(chapterNum)}
               onHighlightDelete={handleHighlightDelete}
               onHighlightUpdate={handleHighlightUpdate}
             />
           </div>
-        ))}
+        );
+      })}
     </section>
   );
 };
