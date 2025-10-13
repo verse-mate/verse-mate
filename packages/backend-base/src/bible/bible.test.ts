@@ -49,6 +49,39 @@ describe("Bible Plugin", () => {
       expect(Array.isArray(data?.testaments)).toBe(true);
       // Note: May be empty in fresh test database without Bible data seeded
     });
+
+    it("GET /bible/book/:bookId/:chapterNumber - returns chapter with verseNumber", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { data, error } = await testClient.bible.book[1][1].get({
+        query: { versionKey: "NASB1995" },
+      });
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.book).toBeDefined();
+      expect(data?.book?.chapters).toBeDefined();
+      expect(Array.isArray(data?.book?.chapters)).toBe(true);
+      expect(data?.book?.chapters.length).toBeGreaterThan(0);
+
+      // Check that verses have verseNumber
+      const firstChapter = data?.book?.chapters[0];
+      expect(firstChapter).toBeDefined();
+      expect(firstChapter?.verses).toBeDefined();
+      expect(Array.isArray(firstChapter?.verses)).toBe(true);
+      expect(firstChapter?.verses.length).toBeGreaterThan(0);
+
+      // CRITICAL: Verify verseNumber exists on verses
+      const firstVerse = firstChapter?.verses[0];
+      expect(firstVerse).toBeDefined();
+      expect(firstVerse?.verseNumber).toBeDefined();
+      expect(typeof firstVerse?.verseNumber).toBe("number");
+      expect(firstVerse?.text).toBeDefined();
+      expect(typeof firstVerse?.text).toBe("string");
+
+      // Verify chapterNumber exists
+      expect(firstChapter?.chapterNumber).toBeDefined();
+      expect(typeof firstChapter?.chapterNumber).toBe("number");
+    });
   });
 
   describe("Bookmarks CRUD", () => {
