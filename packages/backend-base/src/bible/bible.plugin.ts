@@ -1,4 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import OpenAI from "openai";
@@ -13,7 +14,6 @@ import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
-import { LastChapterReadDto } from "./dto/book/last-chapter-read.dto";
 import { RatingDto } from "./dto/book/rating.dto";
 import { AddMessageDto } from "./dto/chat/add-message.dto";
 import { ChatHistoryDto } from "./dto/chat/chat-history.dto";
@@ -105,8 +105,7 @@ const plugin = new Elysia()
           const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
           const bible = await parseBibleData(bibleFile, metadataFile);
 
-          // Cast testament types to match schema (both are "OT" | "NT")
-          return { books: bible.books as any };
+          return { books: bible.books };
         },
         {
           response: {
@@ -150,8 +149,7 @@ const plugin = new Elysia()
             version_id: version.id,
           });
 
-          // Cast testament types to match schema (both are "OT" | "NT")
-          return result as any;
+          return result;
         },
         {
           params: t.Object({
@@ -521,10 +519,11 @@ const plugin = new Elysia()
           return { result: saveLastChapterRead };
         },
         {
-          body: t.Intersect([
-            t.Pick(LastChapterReadDto, ["book_id", "chapter_number"]),
-            t.Object({ user_id: t.String({ format: "uuid" }) }),
-          ]),
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+          }),
           response: {
             200: LastChapterReadSaveSchema,
             ...StandardErrorResponses,
@@ -541,9 +540,9 @@ const plugin = new Elysia()
           return { result: lastChapterReadByUser };
         },
         {
-          body: t.Intersect([
-            t.Object({ user_id: t.String({ format: "uuid" }) }),
-          ]),
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+          }),
           response: {
             200: LastChapterReadSchema,
             ...StandardErrorResponses,
@@ -1077,7 +1076,7 @@ const plugin = new Elysia()
             chapter_number: body.chapter_number,
             start_verse: body.start_verse,
             end_verse: body.end_verse,
-            color: body.color as any,
+            color: body.color,
             start_char: body.start_char,
             end_char: body.end_char,
             selected_text: body.selected_text,
@@ -1101,8 +1100,12 @@ const plugin = new Elysia()
             };
           }
 
-          // Return error with proper type
-          return result as { success: false; error: string; overlaps?: any[] };
+          // Return error response with proper literal type
+          return {
+            success: false as const,
+            error: result.error || "Failed to create highlight",
+            overlaps: result.overlaps,
+          };
         },
         {
           body: t.Object({
@@ -1111,7 +1114,7 @@ const plugin = new Elysia()
             chapter_number: t.Number(),
             start_verse: t.Number(),
             end_verse: t.Number(),
-            color: t.Optional(t.String()),
+            color: t.Optional(t.Enum(HighlightColorEnum)),
             start_char: t.Optional(t.Number()),
             end_char: t.Optional(t.Number()),
             selected_text: t.Optional(t.String()),
@@ -1136,7 +1139,7 @@ const plugin = new Elysia()
             await bibleService.updateHighlightColor({
               highlight_id: params.highlight_id,
               user_id: body.user_id,
-              color: body.color as any,
+              color: body.color,
             });
 
           // Serialize dates if highlight exists
@@ -1165,7 +1168,7 @@ const plugin = new Elysia()
           }),
           body: t.Object({
             user_id: t.String({ format: "uuid" }),
-            color: t.String(),
+            color: t.Enum(HighlightColorEnum),
           }),
           response: {
             200: HighlightUpdateSchema,

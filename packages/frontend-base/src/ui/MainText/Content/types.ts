@@ -1,4 +1,3 @@
-import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { Chapter, Verse } from "./Text/types";
 
 export type Genre = {
@@ -9,7 +8,7 @@ export type Genre = {
 export type BookVerse = {
   bookId: number;
   name: string;
-  testament: TestamentEnum;
+  testament: "OT" | "NT";
   genre: Genre;
   chapters: Chapter[];
 };

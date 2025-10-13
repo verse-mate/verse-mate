@@ -22,7 +22,8 @@ export const getBookVerse = async (
 
   // Transform backend response to match frontend types
   // Backend uses chapterId/verseId but frontend expects chapterNumber/verseNumber
-  const book = response.data?.book;
+  // Handle union type: response could be { book: ... } or { message: string }
+  const book = "book" in response.data ? response.data.book : null;
   if (!book) return book;
 
   return {

@@ -1,19 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 
 import authPlugin from "../auth/auth.plugin";
 import { getTestClient } from "../shared/test-client";
-import { createTestUser } from "../shared/test-helpers";
 import Backend from "./topic.plugin";
 
 describe("Topics Plugin", () => {
-  let testUser: Awaited<ReturnType<typeof createTestUser>>;
   const plugin = Backend.use(authPlugin);
   // @ts-ignore - Combined plugin types
   const testClient = getTestClient<typeof plugin>(plugin);
-
-  beforeAll(async () => {
-    testUser = await createTestUser();
-  });
 
   afterAll(() => {
     Backend.store.db.closeConnection();

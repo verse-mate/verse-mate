@@ -1,4 +1,5 @@
 import { api } from "backend-api";
+import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import { useCallback, useEffect, useState } from "react";
 import type { HighlightColor } from "../ui/HighlightColorPicker";
 import { getChapterId } from "../utils/chapter-utils";
@@ -251,7 +252,7 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
           .highlight({ highlight_id: highlightId })
           .put({
             user_id: session.id,
-            color,
+            color: color as HighlightColorEnum,
           });
 
         if (response.error) {

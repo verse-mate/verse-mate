@@ -19,10 +19,12 @@ export const TestamentsSchema = t.Object({
 
 // Legacy BookSchema - parses Bible JSON and returns books from bible/types.ts format
 // Uses different structure than BookTypeCompact (full names vs abbreviated)
+// This is for /books endpoint which returns chapterId and verseId
+// Uses string literals for testament because that's what the JSON parser returns
 const LegacyBookType = t.Object({
   bookId: t.Number(),
   name: t.String(),
-  testament: TestamentEnum,
+  testament: t.Union([t.Literal("OT"), t.Literal("NT")]),
   genre: t.Object({
     g: t.Number(),
     n: t.String(),
@@ -51,6 +53,36 @@ export const BookSchema = t.Object({
   books: t.Array(LegacyBookType),
 });
 
+// ChapterBookType - for /book/:bookId/:chapterNumber endpoint which returns chapterNumber and verseNumber
+// Uses string literals for testament to match the actual data structure
+const ChapterBookType = t.Object({
+  bookId: t.Number(),
+  name: t.String(),
+  testament: t.Union([t.Literal("OT"), t.Literal("NT")]),
+  genre: t.Object({
+    g: t.Number(),
+    n: t.Union([t.String(), t.Null()]),
+  }),
+  chapters: t.Array(
+    t.Object({
+      chapterNumber: t.Number(),
+      subtitles: t.Array(
+        t.Object({
+          subtitle: t.String(),
+          start_verse: t.Number(),
+          end_verse: t.Number(),
+        }),
+      ),
+      verses: t.Array(
+        t.Object({
+          verseNumber: t.Number(),
+          text: t.String(),
+        }),
+      ),
+    }),
+  ),
+});
+
 // Languages response - explanation languages with stats
 export const LanguagesSchema = t.Array(
   t.Object({
@@ -62,10 +94,16 @@ export const LanguagesSchema = t.Array(
 );
 
 // Chapter response - returns book object with chapter details
-export const ChapterSchema = t.Object({
-  book: t.Union([LegacyBookType, t.Null()]),
-  message: t.Optional(t.String()),
-});
+// Can return either { book: ..., message?: string } or { message: string }
+export const ChapterSchema = t.Union([
+  t.Object({
+    book: t.Union([ChapterBookType, t.Null()]),
+    message: t.Optional(t.String()),
+  }),
+  t.Object({
+    message: t.String(),
+  }),
+]);
 
 // Explanation response - can be null if not found
 export const ExplanationSchema = t.Object({
