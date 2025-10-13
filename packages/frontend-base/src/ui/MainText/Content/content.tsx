@@ -22,7 +22,10 @@ export const Content = ({ bookId, verseId, book }: ContentProps) => {
     if (!book?.chapters || !bookId) return;
 
     const loadChapterIds = async () => {
-      const chapterNumbers = book.chapters.map((ch) => ch.chapterNumber);
+      const chapterNumbers = book.chapters
+        .map((ch) => ch.chapterNumber)
+        .filter((num): num is number => num !== undefined && num !== null);
+
       const promises = chapterNumbers.map(async (chapterNumber) => {
         try {
           const chapterId = await getChapterId(Number(bookId), chapterNumber);
