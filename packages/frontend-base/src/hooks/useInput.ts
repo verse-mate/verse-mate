@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import { useConversationManager } from "./useConversationManager";
-import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
+import { useGetSearchParams } from "./useSearchParams";
 import { userSession } from "./userSession";
 
 export type Message = {
@@ -15,7 +15,6 @@ export type Message = {
 export const useInput = () => {
   const queryClient = useQueryClient();
   const { bookId, verseId, conversationId } = useGetSearchParams();
-  const { saveSearchParams } = useSaveSearchParams();
   const [inputValue, setInputValue] = useState("");
   const [lastSendMessage, setLastSentMessage] = useState("");
   const [isFocused, setIsFocusedState] = useState(false);

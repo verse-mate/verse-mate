@@ -10,9 +10,44 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { StandardErrorResponses } from "../common/response-schemas";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { TopicService } from "../topics/services/topic.service";
+import {
+  AdminStatusUpdateSchema,
+  BatchCancelSchema,
+  BatchChildrenSchema,
+  BatchHistorySchema,
+  BatchOperationSchema,
+  BatchStatusSchema,
+  BatchSummarySchema,
+  CommentaryGradeSchema,
+  CommentaryGradesSchema,
+  ExistingExplanationSchema,
+  ExplanationChooseSchema,
+  ExplanationComparisonSchema,
+  ExplanationDeleteSchema,
+  ExplanationGenerateSchema,
+  ExplanationHistorySchema,
+  ExplanationRegenerateSchema,
+  ExplanationTypesSchema,
+  ExplanationsBulkDeleteSchema,
+  ExplanationsFilterSchema,
+  ExplanationsSetActiveSchema,
+  LanguagesArraySchema,
+  PlaygroundSchema,
+  PromptCreateSchema,
+  PromptDeleteSchema,
+  PromptStatusUpdateSchema,
+  PromptUpdateSchema,
+  RestoreDefaultsSchema,
+  StatsSchema,
+  SystemPromptsSchema,
+  UserPreferencesUpdateSchema,
+  UserPromptsSchema,
+  UsersArraySchema,
+} from "./schemas/admin-response.schema";
 import { AdminDatabaseService } from "./services/admin-database.service";
 import { AdminPromptService } from "./services/admin-prompt.service";
 import { BatchOperationService } from "./services/batch-operations.service";
@@ -68,34 +103,71 @@ const plugin = new Elysia()
             body: t.Object({
               preferred_language: t.Optional(t.String()),
             }),
+            response: {
+              200: UserPreferencesUpdateSchema,
+              ...StandardErrorResponses,
+            },
           },
         ),
       )
       .group("/admin", (app) =>
         app
           .guard(adminGuard)
-          .get("/explanations/languages", async ({ store }) => {
-            const bibleService = store.getBibleService();
-            return await bibleService.getAvailableExplanationLanguages();
-          })
-          .post("/explanations/refresh-language-stats", async ({ store }) => {
-            const bibleService = store.getBibleService();
-            return await bibleService.refreshLanguageStats();
-          })
-          .get("/users", async ({ store: { db } }) => {
-            return await db
-              .getOrCreateConnection()
-              .selectFrom("user")
-              .select([
-                "id",
-                "email",
-                "firstName",
-                "lastName",
-                "is_admin",
-                "createdAt",
-              ])
-              .execute();
-          }),
+          .get(
+            "/explanations/languages",
+            async ({ store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.getAvailableExplanationLanguages();
+            },
+            {
+              response: {
+                200: LanguagesArraySchema,
+                ...StandardErrorResponses,
+              },
+            },
+          )
+          .post(
+            "/explanations/refresh-language-stats",
+            async ({ store }) => {
+              const bibleService = store.getBibleService();
+              return await bibleService.refreshLanguageStats();
+            },
+            {
+              response: {
+                200: StatsSchema,
+                ...StandardErrorResponses,
+              },
+            },
+          )
+          .get(
+            "/users",
+            async ({ store: { db } }) => {
+              const users = await db
+                .getOrCreateConnection()
+                .selectFrom("user")
+                .select([
+                  "id",
+                  "email",
+                  "firstName",
+                  "lastName",
+                  "is_admin",
+                  "createdAt",
+                ])
+                .execute();
+
+              // Serialize Date objects to ISO strings
+              return users.map((user) => ({
+                ...user,
+                createdAt: user.createdAt.toISOString(),
+              }));
+            },
+            {
+              response: {
+                200: UsersArraySchema,
+                ...StandardErrorResponses,
+              },
+            },
+          ),
       ),
   )
   .guard(authGuard, (app) => {
@@ -104,20 +176,35 @@ const plugin = new Elysia()
       .guard(adminGuard)
       .group("/admin", (app) => {
         return app
-          .get("/users", async ({ store: { db } }) => {
-            return await db
-              .getOrCreateConnection()
-              .selectFrom("user")
-              .select([
-                "id",
-                "email",
-                "firstName",
-                "lastName",
-                "is_admin",
-                "createdAt",
-              ])
-              .execute();
-          })
+          .get(
+            "/users",
+            async ({ store: { db } }) => {
+              const users = await db
+                .getOrCreateConnection()
+                .selectFrom("user")
+                .select([
+                  "id",
+                  "email",
+                  "firstName",
+                  "lastName",
+                  "is_admin",
+                  "createdAt",
+                ])
+                .execute();
+
+              // Serialize Date objects to ISO strings
+              return users.map((user) => ({
+                ...user,
+                createdAt: user.createdAt.toISOString(),
+              }));
+            },
+            {
+              response: {
+                200: UsersArraySchema,
+                ...StandardErrorResponses,
+              },
+            },
+          )
           .patch(
             "/user/:id/admin-status",
             async ({ params, body, store: { db } }) => {
@@ -141,6 +228,10 @@ const plugin = new Elysia()
               body: t.Object({
                 is_admin: t.Boolean(),
               }),
+              response: {
+                200: AdminStatusUpdateSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
 
@@ -215,6 +306,10 @@ const plugin = new Elysia()
                   ]),
                 ),
               }),
+              response: {
+                200: BatchOperationSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -305,6 +400,10 @@ const plugin = new Elysia()
                 ),
                 bibleVersion: t.String(),
               }),
+              response: {
+                200: BatchOperationSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -387,6 +486,10 @@ const plugin = new Elysia()
                 explanationTypes: t.Array(t.String()),
                 skipExisting: t.Optional(t.Boolean()),
               }),
+              response: {
+                200: BatchOperationSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .get(
@@ -411,6 +514,10 @@ const plugin = new Elysia()
               params: t.Object({
                 batchJobId: t.String(),
               }),
+              response: {
+                200: BatchStatusSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .delete(
@@ -433,6 +540,10 @@ const plugin = new Elysia()
               params: t.Object({
                 batchJobId: t.String(),
               }),
+              response: {
+                200: BatchCancelSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .get(
@@ -453,6 +564,10 @@ const plugin = new Elysia()
                 offset: t.Optional(t.String()),
                 adminOnly: t.Optional(t.String()),
               }),
+              response: {
+                200: BatchHistorySchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .get(
@@ -467,6 +582,10 @@ const plugin = new Elysia()
               params: t.Object({
                 parentId: t.String(),
               }),
+              response: {
+                200: BatchChildrenSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -481,12 +600,25 @@ const plugin = new Elysia()
               params: t.Object({
                 parentId: t.String(),
               }),
+              response: {
+                200: BatchOperationSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
-          .post("/batches/monitor-all", async ({ store }) => {
-            const batchOperationService = store.getBatchOperationService();
-            return await batchOperationService.monitorAllActiveBatches();
-          })
+          .post(
+            "/batches/monitor-all",
+            async ({ store }) => {
+              const batchOperationService = store.getBatchOperationService();
+              return await batchOperationService.monitorAllActiveBatches();
+            },
+            {
+              response: {
+                200: BatchOperationSchema,
+                ...StandardErrorResponses,
+              },
+            },
+          )
           .get(
             "/batch-summary/:parentId",
             async ({ params, store }) => {
@@ -499,6 +631,10 @@ const plugin = new Elysia()
               params: t.Object({
                 parentId: t.String(),
               }),
+              response: {
+                200: BatchSummarySchema,
+                ...StandardErrorResponses,
+              },
             },
           )
 
@@ -512,6 +648,10 @@ const plugin = new Elysia()
               params: t.Object({
                 id: t.String(),
               }),
+              response: {
+                200: ExplanationDeleteSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -536,6 +676,10 @@ const plugin = new Elysia()
                 explanationType: t.String(),
                 bibleVersion: t.String(),
               }),
+              response: {
+                200: ExplanationRegenerateSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -565,6 +709,10 @@ const plugin = new Elysia()
                 bibleVersion: t.String(),
                 model: t.String(),
               }),
+              response: {
+                200: ExplanationGenerateSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .get(
@@ -579,6 +727,10 @@ const plugin = new Elysia()
               params: t.Object({
                 regenerationId: t.String(),
               }),
+              response: {
+                200: ExplanationComparisonSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -601,6 +753,10 @@ const plugin = new Elysia()
               body: t.Object({
                 chosenExplanationId: t.Number(),
               }),
+              response: {
+                200: ExplanationChooseSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .delete(
@@ -621,6 +777,10 @@ const plugin = new Elysia()
                   }),
                 ),
               }),
+              response: {
+                200: ExplanationsBulkDeleteSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -639,6 +799,10 @@ const plugin = new Elysia()
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
+              response: {
+                200: ExplanationsSetActiveSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -657,6 +821,10 @@ const plugin = new Elysia()
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
+              response: {
+                200: ExplanationsSetActiveSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -676,6 +844,10 @@ const plugin = new Elysia()
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
                 version: t.Number(),
               }),
+              response: {
+                200: ExplanationsSetActiveSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .delete(
@@ -694,6 +866,10 @@ const plugin = new Elysia()
                 bookName: t.Optional(t.String()),
                 chapter: t.Optional(t.Union([t.Number(), t.Literal("all")])),
               }),
+              response: {
+                200: ExplanationsBulkDeleteSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .get(
@@ -708,6 +884,10 @@ const plugin = new Elysia()
               params: t.Object({
                 id: t.String(),
               }),
+              response: {
+                200: ExplanationHistorySchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .get(
@@ -732,27 +912,67 @@ const plugin = new Elysia()
                 limit: t.Optional(t.String()),
                 offset: t.Optional(t.String()),
               }),
+              response: {
+                200: ExplanationsFilterSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
-          .get("/stats", async ({ store }) => {
-            const adminDatabaseService = store.getAdminDatabaseService();
-            return await adminDatabaseService.getExplanationStats();
-          })
+          .get(
+            "/stats",
+            async ({ store }) => {
+              const adminDatabaseService = store.getAdminDatabaseService();
+              return await adminDatabaseService.getExplanationStats();
+            },
+            {
+              response: {
+                200: StatsSchema,
+                ...StandardErrorResponses,
+              },
+            },
+          )
           .group("/prompts", (app) =>
             app
               // GET all prompts
-              .get("/system", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.getAllSystemPrompts();
-              })
-              .get("/user", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.getAllUserPrompts();
-              })
-              .get("/explanation-types", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.getAllExplanationTypes();
-              })
+              .get(
+                "/system",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.getAllSystemPrompts();
+                },
+                {
+                  response: {
+                    200: SystemPromptsSchema,
+                    ...StandardErrorResponses,
+                  },
+                },
+              )
+              .get(
+                "/user",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.getAllUserPrompts();
+                },
+                {
+                  response: {
+                    200: UserPromptsSchema,
+                    ...StandardErrorResponses,
+                  },
+                },
+              )
+              .get(
+                "/explanation-types",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.getAllExplanationTypes();
+                },
+                {
+                  response: {
+                    200: ExplanationTypesSchema,
+                    ...StandardErrorResponses,
+                  },
+                },
+              )
               // CREATE prompts
               .post(
                 "/system",
@@ -762,6 +982,10 @@ const plugin = new Elysia()
                 },
                 {
                   body: t.Object({ prompt: t.String() }),
+                  response: {
+                    200: PromptCreateSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               .post(
@@ -784,6 +1008,10 @@ const plugin = new Elysia()
                     ]),
                     prompt_template: t.String(),
                   }),
+                  response: {
+                    200: PromptCreateSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               // UPDATE prompts
@@ -799,6 +1027,10 @@ const plugin = new Elysia()
                 {
                   body: t.Object({ prompt: t.String() }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: PromptUpdateSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               .put(
@@ -813,6 +1045,10 @@ const plugin = new Elysia()
                 {
                   body: t.Object({ prompt_template: t.String() }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: PromptUpdateSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               // DELETE prompts
@@ -828,6 +1064,10 @@ const plugin = new Elysia()
                   params: t.Object({
                     id: t.String(),
                   }),
+                  response: {
+                    200: PromptDeleteSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               .delete(
@@ -840,6 +1080,10 @@ const plugin = new Elysia()
                   params: t.Object({
                     id: t.String(),
                   }),
+                  response: {
+                    200: PromptDeleteSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               // SET STATUS of prompts
@@ -855,6 +1099,10 @@ const plugin = new Elysia()
                 {
                   body: t.Object({ status: t.Enum(PromptStatusEnum) }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: PromptStatusUpdateSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               .put(
@@ -874,13 +1122,26 @@ const plugin = new Elysia()
                     ]),
                   }),
                   params: t.Object({ id: t.String() }),
+                  response: {
+                    200: PromptStatusUpdateSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               // RESTORE defaults
-              .post("/restore-defaults", async ({ store }) => {
-                const adminPromptService = store.getAdminPromptService();
-                return adminPromptService.restoreDefaults();
-              })
+              .post(
+                "/restore-defaults",
+                async ({ store }) => {
+                  const adminPromptService = store.getAdminPromptService();
+                  return adminPromptService.restoreDefaults();
+                },
+                {
+                  response: {
+                    200: RestoreDefaultsSchema,
+                    ...StandardErrorResponses,
+                  },
+                },
+              )
               // PLAYGROUND
               .post(
                 "/playground",
@@ -903,6 +1164,10 @@ const plugin = new Elysia()
                     ]),
                     send_chapter_context: t.Boolean(),
                   }),
+                  response: {
+                    200: PlaygroundSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               )
               .get(
@@ -923,22 +1188,35 @@ const plugin = new Elysia()
                     bible_version: t.String(),
                     explanation_type: t.String(),
                   }),
+                  response: {
+                    200: ExistingExplanationSchema,
+                    ...StandardErrorResponses,
+                  },
                 },
               ),
           )
 
           .use(adminTopicPlugin)
-          .get("/commentary/grades", async ({ store: { db: _db } }) => {
-            return {
-              message: "Commentary grading feature - to be implemented",
-              grades: [],
-              stats: {
-                total: 0,
-                averageGrade: 0,
-                gradingCriteria: [],
+          .get(
+            "/commentary/grades",
+            async ({ store: { db: _db } }) => {
+              return {
+                message: "Commentary grading feature - to be implemented",
+                grades: [],
+                stats: {
+                  total: 0,
+                  averageGrade: 0,
+                  gradingCriteria: [],
+                },
+              };
+            },
+            {
+              response: {
+                200: CommentaryGradesSchema,
+                ...StandardErrorResponses,
               },
-            };
-          })
+            },
+          )
           .post(
             "/commentary/grade",
             async ({ body: _body, store: { db: _db } }) => {
@@ -953,6 +1231,10 @@ const plugin = new Elysia()
                 explanationId: t.String(),
                 criteria: t.Array(t.String()),
               }),
+              response: {
+                200: CommentaryGradeSchema,
+                ...StandardErrorResponses,
+              },
             },
           );
       });

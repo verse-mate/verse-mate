@@ -23,7 +23,6 @@ type Props = {
   topicDetails: any;
   leftPanelIsOpen: boolean;
   leftPanelSetIsOpen: (value: boolean) => void;
-  leftPanelSelectedBook: string | null;
   book?: string;
   verseIdToString: string;
   leftPanelSelectedVerse: string | null;
@@ -55,8 +54,6 @@ type Props = {
     verseId: string,
     testament: TestamentEnum,
   ) => void;
-  bibleVersionSelected: string;
-  handleBibleVersionSelected: (version: string) => void;
   setActiveTab: Dispatch<SetStateAction<string>>;
   explanationType: string;
   handleValueChange: (value: ExplanationTypeEnum) => void;
@@ -102,7 +99,6 @@ export const Nav = ({
   topicDetails,
   leftPanelIsOpen,
   leftPanelSetIsOpen,
-  leftPanelSelectedBook,
   book,
   leftPanelSelectedVerse,
   verseIdToString,
@@ -117,8 +113,6 @@ export const Nav = ({
   bookId,
   verseId,
   leftPanelHandleVerseSelect,
-  bibleVersionSelected,
-  handleBibleVersionSelected,
   setActiveTab,
   explanationType,
   explanation,

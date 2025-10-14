@@ -1,4 +1,3 @@
-import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useEffect, useRef, useState } from "react";
 import type { SwipeableHandlers } from "react-swipeable";
 import { DesktopTopicView } from "../../../Main/Content/DesktopTopicView";
@@ -14,7 +13,7 @@ type Props = {
     | {
         bookId: number;
         name: string;
-        testament: TestamentEnum;
+        testament: "OT" | "NT";
         genre: {
           g: number;
           n: string | null;

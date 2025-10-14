@@ -2,6 +2,11 @@ import { Elysia, t } from "elysia";
 
 import { createErrorHandler } from "../common/error-handler";
 import { UnauthorizedError } from "../common/errors";
+import {
+  BooleanResponse,
+  StandardErrorResponses,
+  SuccessResponse,
+} from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
 import { authDerive, authGuard } from "./auth.utils";
@@ -12,6 +17,11 @@ import { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import { AuthSignupInput } from "./dto/auth-signup.input";
 import { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
+import {
+  AuthPayloadSchema,
+  UserIdResponseSchema,
+  UserSchema,
+} from "./schemas/auth-response.schema";
 
 const plugin = new Elysia()
   .use(shared)
@@ -34,6 +44,12 @@ const plugin = new Elysia()
                 id: currentUserId,
               };
             },
+            {
+              response: {
+                200: UserIdResponseSchema,
+                ...StandardErrorResponses,
+              },
+            },
           )
           .post(
             "/change-password",
@@ -49,6 +65,10 @@ const plugin = new Elysia()
             },
             {
               body: AuthChangePasswordInput,
+              response: {
+                200: BooleanResponse,
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -64,6 +84,12 @@ const plugin = new Elysia()
 
               return authService.logout(bearer, jwt);
             },
+            {
+              response: {
+                200: BooleanResponse,
+                ...StandardErrorResponses,
+              },
+            },
           )
           .post(
             "/logout-all",
@@ -76,6 +102,12 @@ const plugin = new Elysia()
               }
               return authService.logoutAll(currentUserId);
             },
+            {
+              response: {
+                200: BooleanResponse,
+                ...StandardErrorResponses,
+              },
+            },
           )
           .post(
             "/send-email-verification",
@@ -86,6 +118,12 @@ const plugin = new Elysia()
               await authService.sendVerifyEmail(currentUserId);
               set.status = 204;
               return undefined;
+            },
+            {
+              response: {
+                204: t.Undefined(),
+                ...StandardErrorResponses,
+              },
             },
           )
           .post(
@@ -109,6 +147,10 @@ const plugin = new Elysia()
               body: t.Object({
                 token: t.String(),
               }),
+              response: {
+                200: AuthPayloadSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .get(
@@ -122,6 +164,12 @@ const plugin = new Elysia()
                 throw new UnauthorizedError("User not found");
               }
               return user;
+            },
+            {
+              response: {
+                200: UserSchema,
+                ...StandardErrorResponses,
+              },
             },
           )
           .put(
@@ -138,6 +186,10 @@ const plugin = new Elysia()
             },
             {
               body: AuthUpdateProfileInput,
+              response: {
+                200: UserSchema,
+                ...StandardErrorResponses,
+              },
             },
           ),
       )
@@ -148,6 +200,10 @@ const plugin = new Elysia()
         },
         {
           body: AuthSignupInput,
+          response: {
+            200: AuthPayloadSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -157,6 +213,10 @@ const plugin = new Elysia()
         },
         {
           body: AuthLoginInput,
+          response: {
+            200: AuthPayloadSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -167,6 +227,10 @@ const plugin = new Elysia()
         },
         {
           body: AuthForgotPasswordInput,
+          response: {
+            200: SuccessResponse,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -177,6 +241,10 @@ const plugin = new Elysia()
         },
         {
           body: AuthResetPasswordInput,
+          response: {
+            200: SuccessResponse,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -189,6 +257,10 @@ const plugin = new Elysia()
           query: t.Object({
             token: t.String(),
           }),
+          response: {
+            200: SuccessResponse,
+            ...StandardErrorResponses,
+          },
         },
       ),
   );

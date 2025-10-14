@@ -13,6 +13,18 @@ export interface Bookmark {
   type: "bookmark";
 }
 
+// Backend API response types
+interface BookmarkApiResponse {
+  favorite_id: string;
+  book_id: number;
+  chapter_number: number;
+  book_name: string;
+}
+
+interface BookmarksApiResponse {
+  favorites: BookmarkApiResponse[];
+}
+
 // Local storage key for pending bookmarks
 const PENDING_BOOKMARKS_KEY = "verse-mate-pending-bookmarks";
 
@@ -126,7 +138,7 @@ export const useBookmarks = () => {
           body: JSON.stringify(bookmarkData),
         });
 
-        let result: any;
+        let result: { success: boolean };
         try {
           // Try to parse as JSON if possible
           result = JSON.parse(await response.text());
@@ -200,7 +212,7 @@ export const useBookmarks = () => {
         // Try to get response text even if not JSON
         const responseText = await response.text();
 
-        let result: any = { success: false };
+        let result: { success: boolean } = { success: false };
         try {
           // Try to parse as JSON if possible
           result = JSON.parse(responseText);
@@ -261,10 +273,10 @@ export const useBookmarks = () => {
         throw new Error(`Error fetching bookmarks: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: BookmarksApiResponse = await response.json();
 
       // Transform the response data to match our Bookmark interface
-      const fetchedBookmarks = data.favorites.map((fav: any) => ({
+      const fetchedBookmarks: Bookmark[] = data.favorites.map((fav) => ({
         id: fav.favorite_id,
         user_id: session.id,
         book_id: fav.book_id,

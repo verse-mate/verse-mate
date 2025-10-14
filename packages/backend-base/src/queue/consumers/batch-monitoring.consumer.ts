@@ -347,7 +347,6 @@ export const batchMonitoringConsumer = async (job: Job) => {
 
               // Parse the numbers
               const chapterNumber = Number.parseInt(chapterNumberStr);
-              const chapterId = Number.parseInt(chapterIdStr);
 
               // Validate that chapterNumber is a valid number
               if (Number.isNaN(chapterNumber)) {

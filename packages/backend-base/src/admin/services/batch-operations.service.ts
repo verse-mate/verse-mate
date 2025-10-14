@@ -1497,8 +1497,6 @@ export class BatchOperationService {
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
       );
       const children = await this.getBatchChildren(Number(batchId));
-      let cancelledCount = 0;
-      let failedToCancelCount = 0;
 
       for (const child of children) {
         if (
@@ -1521,7 +1519,6 @@ export class BatchOperationService {
               .set({ status: openaiBatch.status }) // Use the status from OpenAI API response
               .where("id", "=", Number(child.id))
               .execute();
-            cancelledCount++;
           } catch (error) {
             if (
               error instanceof APIError &&
@@ -1553,7 +1550,6 @@ export class BatchOperationService {
                 .where("id", "=", Number(child.id))
                 .execute();
             }
-            failedToCancelCount++;
           }
         }
       }
@@ -2432,18 +2428,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: rephrase|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format rephrase custom_id: ${parsedLine.custom_id}`,
             );
@@ -2711,18 +2700,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: translate|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format translate custom_id: ${parsedLine.custom_id}`,
             );
@@ -3262,7 +3244,6 @@ export class BatchOperationService {
 
     for (const error of batchStatus.errors.data) {
       const errorMessage = error.message || "";
-      const errorCode = error.code || "";
 
       // Detect duplicate custom_id errors
       if (

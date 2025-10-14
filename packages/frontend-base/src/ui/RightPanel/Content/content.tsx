@@ -37,11 +37,10 @@ type Props = {
       }
     | null
     | undefined;
-  chapters: number | undefined;
   conversationsHistory:
     | never[]
     | {
-        [x: string]: {
+        today: {
           title: string;
           conversation_id: number;
           chapter_number: number | null;
@@ -58,7 +57,64 @@ type Props = {
           };
           user_id: string;
           status: StatusEnum;
-          updated_at: Date;
+          updated_at: string;
+        }[];
+        yesterday: {
+          title: string;
+          conversation_id: number;
+          chapter_number: number | null;
+          messages: {
+            role: RoleEnum;
+            content: string;
+            message_id: number;
+          }[];
+          book: {
+            book_id: number | null;
+            testament: TestamentEnum | null;
+            name: string | null;
+            genre_id: number | null;
+          };
+          user_id: string;
+          status: StatusEnum;
+          updated_at: string;
+        }[];
+        lastSevenDays: {
+          title: string;
+          conversation_id: number;
+          chapter_number: number | null;
+          messages: {
+            role: RoleEnum;
+            content: string;
+            message_id: number;
+          }[];
+          book: {
+            book_id: number | null;
+            testament: TestamentEnum | null;
+            name: string | null;
+            genre_id: number | null;
+          };
+          user_id: string;
+          status: StatusEnum;
+          updated_at: string;
+        }[];
+        older: {
+          title: string;
+          conversation_id: number;
+          chapter_number: number | null;
+          messages: {
+            role: RoleEnum;
+            content: string;
+            message_id: number;
+          }[];
+          book: {
+            book_id: number | null;
+            testament: TestamentEnum | null;
+            name: string | null;
+            genre_id: number | null;
+          };
+          user_id: string;
+          status: StatusEnum;
+          updated_at: string;
         }[];
       }
     | undefined;
@@ -86,7 +142,6 @@ export const Content = ({
   topicId,
   session,
   explanation,
-  chapters,
   conversationsHistory,
   selectConversation,
   askVerseMate,
@@ -224,10 +279,7 @@ export const Content = ({
               />
             ) : (
               <>
-                <ProfileButton
-                  link="/"
-                  setRightPanelContent={setRightPanelContent}
-                />
+                <ProfileButton setRightPanelContent={setRightPanelContent} />
                 <div className={styles.menuOptions}>
                   <Accordion.Root type="multiple">
                     {homeOptions.map((option) => (

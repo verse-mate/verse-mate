@@ -16,7 +16,6 @@ export const Default: Story = () => {
           {textActions.map((action) => {
             return (
               <Popover.Item
-                id={action.name}
                 key={action.name}
                 icon={action.icon}
                 label={action.label}

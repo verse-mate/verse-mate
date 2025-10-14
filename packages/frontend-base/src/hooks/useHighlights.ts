@@ -1,4 +1,5 @@
 import { api } from "backend-api";
+import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import { useCallback, useEffect, useState } from "react";
 import type { HighlightColor } from "../ui/HighlightColorPicker";
 import { getChapterId } from "../utils/chapter-utils";
@@ -16,6 +17,37 @@ export interface Highlight {
   color: HighlightColor;
   created_at: string;
   updated_at: string;
+}
+
+// Backend API response types
+interface HighlightApiResponse {
+  highlight_id: number;
+  user_id: string;
+  chapter_id: number;
+  start_verse: number;
+  end_verse: number;
+  start_char: number | null;
+  end_char: number | null;
+  selected_text: string | null;
+  color: HighlightColorEnum;
+  created_at: string;
+  updated_at: string;
+}
+
+interface HighlightsApiResponse {
+  highlights: HighlightApiResponse[];
+}
+
+interface CreateHighlightData {
+  user_id: string;
+  book_id: number;
+  chapter_number: number;
+  start_verse: number;
+  end_verse: number;
+  color: HighlightColorEnum;
+  start_char?: number;
+  end_char?: number;
+  selected_text?: string;
 }
 
 // Create a singleton state that can be shared across components
@@ -53,14 +85,16 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
     setError(null);
 
     try {
-      let response: any;
+      let response: { data?: HighlightsApiResponse; error?: unknown };
       if (bookId && chapterNumber) {
         // Fetch highlights for specific chapter
+        // Note: Using type assertion for dynamic path - Eden Treaty limitation
         response = await (api.bible.highlights as any)[session.id][bookId][
           chapterNumber
         ].get();
       } else {
         // Fetch all user highlights
+        // Note: Using type assertion for dynamic path - Eden Treaty limitation
         response = await (api.bible.highlights as any)[session.id].get();
       }
 
@@ -69,7 +103,16 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
       }
 
       if (response.data) {
-        const fetchedHighlights = response.data.highlights || [];
+        // Transform API response to match internal Highlight type
+        const fetchedHighlights: Highlight[] = (
+          response.data.highlights || []
+        ).map((h) => ({
+          ...h,
+          start_char: h.start_char ?? undefined,
+          end_char: h.end_char ?? undefined,
+          selected_text: h.selected_text ?? undefined,
+          color: h.color as HighlightColor,
+        }));
         globalHighlights = fetchedHighlights;
         notifyListeners();
       }
@@ -158,21 +201,19 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
       setError(null);
 
       try {
-        const highlightData: any = {
+        const highlightData: CreateHighlightData = {
           user_id: session.id,
           book_id: bookId,
           chapter_number: chapterNumber,
           start_verse: startVerse,
           end_verse: endVerse,
-          color,
+          color: color as HighlightColorEnum,
+          ...(validatedStartChar !== undefined && {
+            start_char: validatedStartChar,
+          }),
+          ...(validatedEndChar !== undefined && { end_char: validatedEndChar }),
+          ...(selectedText && { selected_text: selectedText }),
         };
-
-        // Add character positions if available (for future backend support)
-        if (validatedStartChar !== undefined)
-          highlightData.start_char = validatedStartChar;
-        if (validatedEndChar !== undefined)
-          highlightData.end_char = validatedEndChar;
-        if (selectedText) highlightData.selected_text = selectedText;
 
         const response = await api.bible.highlight.add.post(highlightData);
 
@@ -251,7 +292,7 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
           .highlight({ highlight_id: highlightId })
           .put({
             user_id: session.id,
-            color,
+            color: color as HighlightColorEnum,
           });
 
         if (response.error) {

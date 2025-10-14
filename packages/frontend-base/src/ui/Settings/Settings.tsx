@@ -88,22 +88,18 @@ export const Settings = ({
     }
   }, [session]);
 
-  const { mutateAsync: updateProfile, isLoading: isUpdatingProfile } =
-    useMutation({
-      mutationFn: api.auth.profile.put,
-      onSuccess: async () => {
-        // Don't handle success here - will be handled by global save
-      },
-      onError: (_error: any) => {
-        // Don't handle error here - will be handled by global save
-      },
-    });
+  const { mutateAsync: updateProfile } = useMutation({
+    mutationFn: api.auth.profile.put,
+    onSuccess: async () => {
+      // Don't handle success here - will be handled by global save
+    },
+    onError: (_error: any) => {
+      // Don't handle error here - will be handled by global save
+    },
+  });
 
   // Language preferences API integration
-  const {
-    mutateAsync: updateLanguagePreference,
-    isLoading: isUpdatingLanguage,
-  } = useMutation({
+  const { mutateAsync: updateLanguagePreference } = useMutation({
     mutationFn: (language: string | null) =>
       api.user.preferences.patch({
         preferred_language: language ?? undefined,

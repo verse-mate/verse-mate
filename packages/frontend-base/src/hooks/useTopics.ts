@@ -33,7 +33,6 @@ export const fetchTopicExplanation = (
   const {
     data: explanation,
     error,
-    isPending,
     isFetching,
     isLoading,
   } = useQuery({

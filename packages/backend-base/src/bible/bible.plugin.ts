@@ -1,4 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import OpenAI from "openai";
@@ -9,10 +10,10 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";
-import { LastChapterReadDto } from "./dto/book/last-chapter-read.dto";
 import { RatingDto } from "./dto/book/rating.dto";
 import { AddMessageDto } from "./dto/chat/add-message.dto";
 import { ChatHistoryDto } from "./dto/chat/chat-history.dto";
@@ -21,6 +22,34 @@ import { NewChatDto } from "./dto/chat/new-chat.dto";
 import { BibleRepository } from "./repository/bible.repository";
 import { ChatRepository } from "./repository/chat.repository";
 import { PromptRepository } from "./repository/prompt.repository";
+import {
+  BookSchema,
+  BookmarkActionSchema,
+  BookmarksSchema,
+  ChapterIdSchema,
+  ChapterSchema,
+  ChatExistsSchema,
+  DisabledChatSchema,
+  ExplanationSchema,
+  HighlightAddSchema,
+  HighlightDeleteSchema,
+  HighlightUpdateSchema,
+  HighlightsSchema,
+  LanguagesSchema,
+  LastChapterReadSaveSchema,
+  LastChapterReadSchema,
+  MessagesHistorySchema,
+  NewConversationSchema,
+  NoteAddSchema,
+  NoteDeleteSchema,
+  NoteUpdateSchema,
+  NotesSchema,
+  RatingSaveSchema,
+  RatingsSchema,
+  SavedMessageSchema,
+  TestamentsSchema,
+  UserChatHistorySchema,
+} from "./schemas/bible-response.schema";
 import { BibleService } from "./services/bible.service";
 import { ChatService } from "./services/chat.service";
 import { PromptService } from "./services/prompt.service";
@@ -67,18 +96,36 @@ const plugin = new Elysia()
   })
   .group("/bible", (app) =>
     app
-      .get("/books", async () => {
-        const metadataFile = Bun.file(
-          `${import.meta.dir}/data/key_english.json`,
-        );
-        const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
-        const bible = await parseBibleData(bibleFile, metadataFile);
+      .get(
+        "/books",
+        async () => {
+          const metadataFile = Bun.file(
+            `${import.meta.dir}/data/key_english.json`,
+          );
+          const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
+          const bible = await parseBibleData(bibleFile, metadataFile);
 
-        return { books: bible.books };
-      })
-      .get("/languages", async ({ store: { bibleService } }) => {
-        return await bibleService.getAvailableExplanationLanguages();
-      })
+          return { books: bible.books };
+        },
+        {
+          response: {
+            200: BookSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/languages",
+        async ({ store: { bibleService } }) => {
+          return await bibleService.getAvailableExplanationLanguages();
+        },
+        {
+          response: {
+            200: LanguagesSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {
@@ -96,13 +143,13 @@ const plugin = new Elysia()
             throw new NotFoundError("Invalid bible version");
           }
 
-          const book = await bibleService.getBook({
+          const result = await bibleService.getBook({
             book_id: bookId,
             chapter_number: chapterNumber,
             version_id: version.id,
           });
 
-          return book;
+          return result;
         },
         {
           params: t.Object({
@@ -112,6 +159,10 @@ const plugin = new Elysia()
           query: t.Object({
             versionKey: t.Optional(t.String()),
           }),
+          response: {
+            200: ChapterSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .resolve({ as: "scoped" }, authDerive)
@@ -156,12 +207,25 @@ const plugin = new Elysia()
             versionKey: t.Optional(t.String()),
             explanationType: t.Optional(t.String()),
           }),
+          response: {
+            200: ExplanationSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
-      .get("/testaments", async ({ store: { bibleService } }) => {
-        const { testaments } = await bibleService.getTestaments();
-        return { testaments: testaments.keys };
-      })
+      .get(
+        "/testaments",
+        async ({ store: { bibleService } }) => {
+          const { testaments } = await bibleService.getTestaments();
+          return { testaments: testaments.keys };
+        },
+        {
+          response: {
+            200: TestamentsSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/chapter-id/:bookId/:chapterNumber",
         async ({ params, store: { db } }) => {
@@ -186,6 +250,10 @@ const plugin = new Elysia()
             bookId: t.Numeric(),
             chapterNumber: t.Numeric(),
           }),
+          response: {
+            200: ChapterIdSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -198,19 +266,43 @@ const plugin = new Elysia()
         },
         {
           body: ChatHistoryDto,
+          response: {
+            200: UserChatHistorySchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
         "/book/messages-history",
         async ({ body, store: { chatService } }) => {
-          const messagesHistory = await chatService.getUserChatMessageHistory({
-            conversation_id: body.conversation_id,
-            user_id: body.session.id,
-          });
+          const chatMessageHistory =
+            await chatService.getUserChatMessageHistory({
+              conversation_id: body.conversation_id,
+              user_id: body.session.id,
+            });
+
+          // Transform to message format and serialize dates
+          const messagesHistory = chatMessageHistory
+            .filter((msg) => msg.message_id && msg.content && msg.role)
+            .map((msg) => ({
+              conversation_id: msg.conversation_id,
+              message_id: msg.message_id as number,
+              content: msg.content as string,
+              role: msg.role as RoleEnum,
+              created_at:
+                msg.created_at instanceof Date
+                  ? msg.created_at.toISOString()
+                  : msg.created_at || new Date().toISOString(),
+            }));
+
           return { messagesHistory };
         },
         {
           body: MessageHistoryDto,
+          response: {
+            200: MessagesHistorySchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -229,6 +321,10 @@ const plugin = new Elysia()
           body: t.Intersect([
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
           ]),
+          response: {
+            200: ChatExistsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -306,8 +402,19 @@ const plugin = new Elysia()
             chapter_number: body.chapter_number,
           });
 
+          // Ensure chat_id is present
+          if ("message" in newConversation && !("chat_id" in newConversation)) {
+            throw new Error(newConversation.message);
+          }
+          if (!newConversation.chat_id) {
+            throw new Error("Failed to create conversation");
+          }
+
           return {
-            newConversation,
+            newConversation: {
+              chat_id: newConversation.chat_id,
+              message: newConversation.message,
+            },
             generatedTitle: generatedTitleText,
           };
         },
@@ -316,6 +423,10 @@ const plugin = new Elysia()
             t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
             t.Pick(AddMessageDto, ["content"]),
           ]),
+          response: {
+            200: NewConversationSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -332,6 +443,10 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
+          response: {
+            200: RatingSaveSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .put(
@@ -350,6 +465,10 @@ const plugin = new Elysia()
         },
         {
           body: RatingDto,
+          response: {
+            200: RatingSaveSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -382,6 +501,10 @@ const plugin = new Elysia()
         },
         {
           body: t.Omit(RatingDto, ["rating"]),
+          response: {
+            200: RatingsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -396,10 +519,15 @@ const plugin = new Elysia()
           return { result: saveLastChapterRead };
         },
         {
-          body: t.Intersect([
-            t.Pick(LastChapterReadDto, ["book_id", "chapter_number"]),
-            t.Object({ user_id: t.String({ format: "uuid" }) }),
-          ]),
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+            book_id: t.Number(),
+            chapter_number: t.Number(),
+          }),
+          response: {
+            200: LastChapterReadSaveSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -412,9 +540,13 @@ const plugin = new Elysia()
           return { result: lastChapterReadByUser };
         },
         {
-          body: t.Intersect([
-            t.Object({ user_id: t.String({ format: "uuid" }) }),
-          ]),
+          body: t.Object({
+            user_id: t.String({ format: "uuid" }),
+          }),
+          response: {
+            200: LastChapterReadSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -426,10 +558,30 @@ const plugin = new Elysia()
             content: body.content,
           });
 
-          return { result: saveUserMessage.newMessage };
+          // Serialize Date to ISO string and return only required fields
+          const message = saveUserMessage.newMessage;
+          if (!message) {
+            throw new Error("Failed to save message");
+          }
+          return {
+            result: {
+              message_id: message.message_id,
+              conversation_id: message.conversation_id,
+              content: message.content,
+              role: message.role,
+              created_at:
+                message.generated_at instanceof Date
+                  ? message.generated_at.toISOString()
+                  : message.generated_at || new Date().toISOString(),
+            },
+          };
         },
         {
           body: t.Pick(AddMessageDto, ["chat_id", "content"]),
+          response: {
+            200: SavedMessageSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -494,13 +646,33 @@ const plugin = new Elysia()
             content: chatText || "",
           });
 
-          return { result: saveAiMessage.newMessage };
+          // Serialize Date to ISO string and return only required fields
+          const message = saveAiMessage.newMessage;
+          if (!message) {
+            throw new Error("Failed to save AI message");
+          }
+          return {
+            result: {
+              message_id: message.message_id,
+              conversation_id: message.conversation_id,
+              content: message.content,
+              role: message.role,
+              created_at:
+                message.generated_at instanceof Date
+                  ? message.generated_at.toISOString()
+                  : message.generated_at || new Date().toISOString(),
+            },
+          };
         },
         {
           body: t.Intersect([
             t.Pick(AddMessageDto, ["chat_id", "content"]),
             t.Pick(ChapterDto, ["book_id", "chapter_number"]),
           ]),
+          response: {
+            200: SavedMessageSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -516,6 +688,10 @@ const plugin = new Elysia()
           params: t.Object({
             conversation_id: t.Numeric(),
           }),
+          response: {
+            200: DisabledChatSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -544,6 +720,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+          response: {
+            200: BookmarksSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -562,6 +742,10 @@ const plugin = new Elysia()
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
+          response: {
+            200: NotesSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -603,6 +787,10 @@ const plugin = new Elysia()
             verse_id: t.Optional(t.Number()),
             content: t.String(),
           }),
+          response: {
+            200: NoteAddSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .put(
@@ -627,6 +815,10 @@ const plugin = new Elysia()
             note_id: t.String({ format: "uuid" }),
             content: t.String(),
           }),
+          response: {
+            200: NoteUpdateSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -647,6 +839,10 @@ const plugin = new Elysia()
           query: t.Object({
             note_id: t.String({ format: "uuid" }),
           }),
+          response: {
+            200: NoteDeleteSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -677,6 +873,10 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: BookmarkActionSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -713,6 +913,10 @@ const plugin = new Elysia()
             book_id: t.String(),
             chapter_number: t.String(),
           }),
+          response: {
+            200: BookmarkActionSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -750,6 +954,10 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
           }),
+          response: {
+            200: BookmarkActionSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       // Highlight endpoints
@@ -767,12 +975,30 @@ const plugin = new Elysia()
             "Successfully retrieved highlights, count:",
             highlights.length,
           );
-          return { highlights };
+
+          // Serialize Date fields to ISO strings with fallback for null
+          const serializedHighlights = highlights.map((h) => ({
+            ...h,
+            created_at:
+              h.created_at instanceof Date
+                ? h.created_at.toISOString()
+                : h.created_at || new Date().toISOString(),
+            updated_at:
+              h.updated_at instanceof Date
+                ? h.updated_at.toISOString()
+                : h.updated_at || new Date().toISOString(),
+          }));
+
+          return { highlights: serializedHighlights };
         },
         {
           params: t.Object({
             user_id: t.String({ format: "uuid" }),
           }),
+          response: {
+            200: HighlightsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .get(
@@ -800,7 +1026,21 @@ const plugin = new Elysia()
             "Successfully retrieved chapter highlights, count:",
             highlights.length,
           );
-          return { highlights };
+
+          // Serialize Date fields to ISO strings with fallback for null
+          const serializedHighlights = highlights.map((h) => ({
+            ...h,
+            created_at:
+              h.created_at instanceof Date
+                ? h.created_at.toISOString()
+                : h.created_at || new Date().toISOString(),
+            updated_at:
+              h.updated_at instanceof Date
+                ? h.updated_at.toISOString()
+                : h.updated_at || new Date().toISOString(),
+          }));
+
+          return { highlights: serializedHighlights };
         },
         {
           params: t.Object({
@@ -808,6 +1048,10 @@ const plugin = new Elysia()
             book_id: t.Numeric(),
             chapter_number: t.Numeric(),
           }),
+          response: {
+            200: HighlightsSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
@@ -832,13 +1076,36 @@ const plugin = new Elysia()
             chapter_number: body.chapter_number,
             start_verse: body.start_verse,
             end_verse: body.end_verse,
-            color: body.color as any,
+            color: body.color,
             start_char: body.start_char,
             end_char: body.end_char,
             selected_text: body.selected_text,
           });
 
-          return result;
+          // Serialize dates if successful
+          if (result.success && result.highlight) {
+            return {
+              success: true as const,
+              highlight: {
+                ...result.highlight,
+                created_at:
+                  result.highlight.created_at instanceof Date
+                    ? result.highlight.created_at.toISOString()
+                    : result.highlight.created_at || new Date().toISOString(),
+                updated_at:
+                  result.highlight.updated_at instanceof Date
+                    ? result.highlight.updated_at.toISOString()
+                    : result.highlight.updated_at || new Date().toISOString(),
+              },
+            };
+          }
+
+          // Return error response with proper literal type
+          return {
+            success: false as const,
+            error: result.error || "Failed to create highlight",
+            overlaps: result.overlaps,
+          };
         },
         {
           body: t.Object({
@@ -847,11 +1114,15 @@ const plugin = new Elysia()
             chapter_number: t.Number(),
             start_verse: t.Number(),
             end_verse: t.Number(),
-            color: t.Optional(t.String()),
+            color: t.Optional(t.Enum(HighlightColorEnum)),
             start_char: t.Optional(t.Number()),
             end_char: t.Optional(t.Number()),
             selected_text: t.Optional(t.String()),
           }),
+          response: {
+            200: HighlightAddSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .put(
@@ -868,10 +1139,28 @@ const plugin = new Elysia()
             await bibleService.updateHighlightColor({
               highlight_id: params.highlight_id,
               user_id: body.user_id,
-              color: body.color as any,
+              color: body.color,
             });
 
-          return { highlight, success };
+          // Serialize dates if highlight exists
+          if (highlight) {
+            return {
+              success,
+              highlight: {
+                ...highlight,
+                created_at:
+                  highlight.created_at instanceof Date
+                    ? highlight.created_at.toISOString()
+                    : highlight.created_at || new Date().toISOString(),
+                updated_at:
+                  highlight.updated_at instanceof Date
+                    ? highlight.updated_at.toISOString()
+                    : highlight.updated_at || new Date().toISOString(),
+              },
+            };
+          }
+
+          return { success, highlight: null };
         },
         {
           params: t.Object({
@@ -879,8 +1168,12 @@ const plugin = new Elysia()
           }),
           body: t.Object({
             user_id: t.String({ format: "uuid" }),
-            color: t.String(),
+            color: t.Enum(HighlightColorEnum),
           }),
+          response: {
+            200: HighlightUpdateSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .delete(
@@ -903,6 +1196,10 @@ const plugin = new Elysia()
           params: t.Object({
             highlight_id: t.Number(),
           }),
+          response: {
+            200: HighlightDeleteSchema,
+            ...StandardErrorResponses,
+          },
         },
       ),
   );

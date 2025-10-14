@@ -9,7 +9,7 @@ export const ChatEntity = t.Object({
   user_id: UUIDField,
   title: t.String({ maxLength: 250 }),
   status: t.Enum(StatusEnum),
-  updated_at: t.Date(),
+  updated_at: t.String(), // ISO date string (serialized from Date for API response)
   book: t.Omit(BookDto, ["genre_name"]),
   chapter_number: t.Nullable(t.Number()),
   messages: t.Array(MessageDto),

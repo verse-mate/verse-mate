@@ -32,7 +32,6 @@ type NotesModalProps = {
   bookId: number;
   chapterNumber: number;
   bookName: string;
-  testament: string;
   onClose: () => void;
 };
 
@@ -40,7 +39,6 @@ export const NotesModal = ({
   bookId,
   chapterNumber,
   bookName,
-  testament,
   onClose,
 }: NotesModalProps) => {
   const { notes, addNote, updateNote, deleteNote } = useNotesContext();

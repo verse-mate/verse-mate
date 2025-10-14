@@ -12,11 +12,11 @@ import styles from "./content.module.css";
 
 type ContentProps = {
   setRightPanelContent?: (value: string) => void;
-} & React.HTMLAttributes<HTMLDivElement>;
+};
 
 import { useGetSearchParams } from "../../../hooks/useSearchParams";
 
-export const Content = ({ setRightPanelContent, ...rest }: ContentProps) => {
+export const Content = ({ setRightPanelContent }: ContentProps) => {
   const { bookId, verseId } = useGetSearchParams();
 
   const handleSignInClick = (e: React.MouseEvent) => {

@@ -219,7 +219,6 @@ export const MainContent = () => {
   const {
     isOpen: leftPanelIsOpen,
     setIsOpen: leftPanelSetIsOpen,
-    selectedBook: leftPanelSelectedBook,
     selectedVerse: leftPanelSelectedVerse,
     selectedTab: leftPanelSelectedTab,
     setSelectedTab,
@@ -288,11 +287,8 @@ export const MainContent = () => {
     [testaments],
   );
 
-  const {
-    isOpen: isDropdownOpenVersion,
-    toggleDropdown: toggleMobileDropdownVersion,
-    closeDropdown: closeDropdownVersion,
-  } = useDropdownToggle();
+  const { isOpen: isDropdownOpenVersion, closeDropdown: closeDropdownVersion } =
+    useDropdownToggle();
 
   const { filteredArray: filteredMobileArray } = useArrayFilter(bibleVersions);
 
@@ -1896,7 +1892,6 @@ export const MainContent = () => {
                 ) : session?.id ? (
                   <>
                     <ProfileButton
-                      link="/"
                       setRightPanelContent={setRightPanelContent}
                     />
                     <div className={styles.menuOptions}>
@@ -1968,13 +1963,11 @@ export const MainContent = () => {
               isViewingTopic={isViewingTopic}
               topicDetails={topicDetails}
               averageRating={averageRating}
-              bibleVersionSelected={bibleVersionSelected}
               bookId={Number(bookId)}
               verseId={verseId}
               explanation={explanation}
               currentRating={currentRating}
               explanationType={explanationType}
-              handleBibleVersionSelected={handleBibleVersionSelected}
               handleValueChange={handleValueChange}
               maxRating={maxRating}
               totalRatings={totalRatings}
@@ -1986,7 +1979,6 @@ export const MainContent = () => {
               leftPanelHandleTabChange={leftPanelHandleTabChange}
               leftPanelHandleVerseSelect={leftPanelHandleVerseSelect}
               leftPanelIsOpen={leftPanelIsOpen}
-              leftPanelSelectedBook={leftPanelSelectedBook}
               leftPanelSelectedTab={leftPanelSelectedTab}
               leftPanelSelectedVerse={leftPanelSelectedVerse}
               leftPanelSetIsOpen={leftPanelSetIsOpen}
@@ -2029,9 +2021,7 @@ export const MainContent = () => {
           >
             <RightPanel.Nav
               activeTab={activeTab}
-              askVerseMate={askVerseMate}
               setActiveTab={setActiveTab}
-              rightPanelContent={rightPanelContent}
               setRightPanelContent={setRightPanelContent}
             />
             <RightPanel.Content
@@ -2039,7 +2029,6 @@ export const MainContent = () => {
               topicId={String(bookId)}
               session={session}
               explanation={explanation}
-              chapters={chapters}
               conversationsHistory={conversationsHistory}
               selectConversation={selectConversation}
               askVerseMate={askVerseMate}

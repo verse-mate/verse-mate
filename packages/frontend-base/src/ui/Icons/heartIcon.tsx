@@ -1,9 +1,5 @@
 import type { SVGProps } from "react";
 
-interface HeartIcon extends SVGProps<SVGSVGElement> {
-  isSelected: boolean;
-}
-
 export const HeartIcon = (props: SVGProps<SVGSVGElement>) => {
   return (
     // <svg

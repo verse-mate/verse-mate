@@ -1312,6 +1312,7 @@ export class BibleRepository {
 
       const connection = this.db.getOrCreateConnection();
 
+      // TODO: Remove 'as any' once notes table is added to database schema types
       const notes = await (connection as any)
         .selectFrom("notes as n")
         .innerJoin("chapters as c", "n.chapter_id", "c.chapter_id")
@@ -1349,6 +1350,7 @@ export class BibleRepository {
       const connection = this.db.getOrCreateConnection();
       const now = new Date().toISOString();
 
+      // TODO: Remove 'as any' once notes table is added to database schema types
       const result = await (connection as any)
         .insertInto("notes")
         .values({
@@ -1383,6 +1385,7 @@ export class BibleRepository {
       const connection = this.db.getOrCreateConnection();
       const now = new Date().toISOString();
 
+      // TODO: Remove 'as any' once notes table is added to database schema types
       const result = await (connection as any)
         .updateTable("notes")
         .set({ content, updated_at: now })
@@ -1402,6 +1405,7 @@ export class BibleRepository {
       console.log("=== BibleRepository.deleteNote ===");
       const connection = this.db.getOrCreateConnection();
 
+      // TODO: Remove 'as any' once notes table is added to database schema types
       const result = await (connection as any)
         .deleteFrom("notes")
         .where("note_id", "=", noteId)

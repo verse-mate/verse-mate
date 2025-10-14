@@ -61,7 +61,7 @@ export class ChatService {
 
     await this.chatRepository.updateChatDate({
       conversation_id: chat_id,
-      updated_at: currentDate(),
+      updated_at: currentDate().toISOString(),
     });
 
     return { newMessage };
@@ -120,12 +120,14 @@ export class ChatService {
         );
 
         if (!chat) {
+          const updatedAt = rawChatRow.updated_at as Date;
           chat = {
             conversation_id: rawChatRow.conversation_id,
             title: rawChatRow.title,
             user_id: rawChatRow.user_id,
             status: rawChatRow.status,
-            updated_at: rawChatRow.updated_at as Date,
+            // Serialize Date to ISO string for API response
+            updated_at: updatedAt?.toISOString() || new Date().toISOString(),
             book: {
               book_id: rawChatRow.book_id,
               name: rawChatRow.bookName,

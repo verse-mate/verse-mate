@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "backend-api";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UserSession } from "./session";
 
@@ -10,7 +9,7 @@ type LastRead = {
     book_id: number;
     chapterNumber: number;
     bookName: string;
-    testament: TestamentEnum;
+    testament: "OT" | "NT";
     explanation: {
       book_id: number;
       chapter_number: number;

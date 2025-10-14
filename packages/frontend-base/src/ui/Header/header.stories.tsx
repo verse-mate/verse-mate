@@ -28,7 +28,7 @@ export const Default: Story = () => {
         {(!isSmallScreen || !isFocused) && <Header.Logo link="/" />}
         <Header.InputBar setIsFocused={setIsFocusedState} />
         {(!isSmallScreen || !isFocused) && (
-          <Header.ProfileButton link="/" setRightPanelContent={() => {}} />
+          <Header.ProfileButton setRightPanelContent={() => {}} />
         )}
       </Header.Content>
     </Header.Root>

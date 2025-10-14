@@ -1,11 +1,10 @@
 import styles from "./verse-number.module.css";
 
 type VerseNumberProps = {
-  bookName: string;
   number: string;
 };
 
-export const VerseNumber = ({ number, bookName }: VerseNumberProps) => {
+export const VerseNumber = ({ number }: VerseNumberProps) => {
   return (
     <span className={styles.verseNumber}>
       {/* <Popover.Root>

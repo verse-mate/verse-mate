@@ -5,7 +5,6 @@ type ContentProps = {
   children: React.ReactNode;
   sideOffset?: number;
   align?: "start" | "center" | "end";
-  bookVerse?: string;
   style?: React.CSSProperties;
   className?: string;
   side?: "top" | "right" | "bottom" | "left";
@@ -15,7 +14,6 @@ export const Content = ({
   children,
   sideOffset,
   align,
-  bookVerse,
   style,
   className,
   side,

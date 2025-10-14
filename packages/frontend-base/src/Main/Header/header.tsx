@@ -19,10 +19,7 @@ export const Header = ({ setRightPanelContent }: HeaderProps) => {
         {(!isSmallScreen || !isFocused) && <HeaderComponent.Logo link="/" />}
         <HeaderComponent.InputBar setIsFocused={setIsFocusedState} />
         {(!isSmallScreen || !isFocused) && (
-          <ProfileButton
-            link="/settings"
-            setRightPanelContent={setRightPanelContent}
-          />
+          <ProfileButton setRightPanelContent={setRightPanelContent} />
         )}
       </HeaderComponent.Content>
     </HeaderComponent.Root>
