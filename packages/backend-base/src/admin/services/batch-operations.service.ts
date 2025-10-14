@@ -3072,7 +3072,8 @@ export class BatchOperationService {
               if (parts.length >= 9) {
                 const topicId = `${parts[2]}-${parts[3]}-${parts[4]}-${parts[5]}-${parts[6]}`;
                 const explanationType = parts[7];
-                const languageCode = parts[8];
+                const timestampIndex = parts.length - 1;
+                const languageCode = parts.slice(8, timestampIndex).join("-");
 
                 console.log(
                   `[BATCH_TOPIC_EXPLANATIONS] Parsing custom ID: ${customId}`,
