@@ -4,6 +4,7 @@ import {
   createTopic,
   deleteTopic,
   getTopics,
+  sortTopicsChronologically,
   updateTopic,
 } from "./topicsAdminApi";
 
@@ -57,6 +58,17 @@ export const TopicsAdmin = () => {
     mutationFn: deleteTopic,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-topics"] });
+    },
+  });
+
+  const sortChronologicallyMutation = useMutation({
+    mutationFn: sortTopicsChronologically,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-topics"] });
+      alert("Topics sorted chronologically successfully!");
+    },
+    onError: (error: any) => {
+      alert(`Error sorting topics: ${error.message}`);
     },
   });
 
@@ -115,6 +127,16 @@ export const TopicsAdmin = () => {
     }
   };
 
+  const handleSortChronologically = (category: string) => {
+    if (
+      window.confirm(
+        `Sort all ${category.toLowerCase()} topics chronologically?`,
+      )
+    ) {
+      sortChronologicallyMutation.mutate({ category });
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isEditing) {
@@ -153,6 +175,19 @@ export const TopicsAdmin = () => {
 
   if (isLoading) return <div>Loading topics...</div>;
   if (error) return <div>Error loading topics: {(error as Error).message}</div>;
+
+  // Group topics by category for easier management
+  const topicsByCategory =
+    topics?.reduce(
+      (acc: Record<string, Topic[]>, topic) => {
+        if (!acc[topic.category]) {
+          acc[topic.category] = [];
+        }
+        acc[topic.category].push(topic);
+        return acc;
+      },
+      {} as Record<string, Topic[]>,
+    ) || {};
 
   return (
     <div className="admin-topics">
@@ -239,40 +274,73 @@ export const TopicsAdmin = () => {
 
       <div className="topics-list">
         <h3>Existing Topics</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Sort Order</th>
-              <th>Active</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topics?.map((topic) => (
-              <tr key={topic.topic_id}>
-                <td>{topic.name}</td>
-                <td>{topic.category}</td>
-                <td>{topic.description}</td>
-                <td>{topic.sort_order}</td>
-                <td>{topic.is_active ? "Yes" : "No"}</td>
-                <td>
-                  <button type="button" onClick={() => handleEdit(topic)}>
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(topic.topic_id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+        {/* Add sort buttons for each category */}
+        <div className="category-sort-actions">
+          <h4>Sort by Chronological Order</h4>
+          <div>
+            <button
+              type="button"
+              onClick={() => handleSortChronologically("EVENT")}
+              disabled={sortChronologicallyMutation.isPending}
+            >
+              Sort Events Chronologically
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSortChronologically("PROPHECY")}
+              disabled={sortChronologicallyMutation.isPending}
+            >
+              Sort Prophecies Chronologically
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSortChronologically("PARABLE")}
+              disabled={sortChronologicallyMutation.isPending}
+            >
+              Sort Parables Chronologically
+            </button>
+          </div>
+        </div>
+
+        {/* Display topics grouped by category */}
+        {Object.entries(topicsByCategory).map(([category, categoryTopics]) => (
+          <div key={category} className="category-section">
+            <h4>{category} Topics</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Sort Order</th>
+                  <th>Active</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryTopics.map((topic) => (
+                  <tr key={topic.topic_id}>
+                    <td>{topic.name}</td>
+                    <td>{topic.description}</td>
+                    <td>{topic.sort_order}</td>
+                    <td>{topic.is_active ? "Yes" : "No"}</td>
+                    <td>
+                      <button type="button" onClick={() => handleEdit(topic)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(topic.topic_id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
       </div>
     </div>
   );
