@@ -62,13 +62,20 @@ export class TopicRepository {
   }
 
   async updateTopic(topicId: string, topic: Updateable<Topics>) {
-    return await this.db
-      .getOrCreateConnection()
-      .updateTable("topics")
-      .set(topic)
-      .where("topic_id", "=", topicId)
-      .returningAll()
-      .executeTakeFirstOrThrow();
+    try {
+      const result = await this.db
+        .getOrCreateConnection()
+        .updateTable("topics")
+        .set(topic)
+        .where("topic_id", "=", topicId)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      return result;
+    } catch (error) {
+      console.error(`Error updating topic ${topicId}:`, error);
+      throw error;
+    }
   }
 
   async deleteTopic(topicId: string) {

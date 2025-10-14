@@ -7,6 +7,7 @@ import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationR
 import { Explanations } from "../Explanations/Explanations";
 import { Playground } from "../Playground/Playground";
 import { PromptManagement } from "../PromptManagement/PromptManagement";
+import { TopicsAdmin } from "../Topics";
 import { UserManagement } from "../UserManagement/UserManagement";
 import styles from "./AdminDashboard.module.css";
 
@@ -16,7 +17,8 @@ type AdminSection =
   | "users"
   | "prompts"
   | "playground"
-  | "explanations";
+  | "explanations"
+  | "topics";
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("batch");
@@ -35,6 +37,8 @@ export const AdminDashboard = () => {
         return <Playground />;
       case "explanations":
         return <Explanations />;
+      case "topics":
+        return <TopicsAdmin />;
       default:
         return <BatchOperations />;
     }
@@ -69,6 +73,12 @@ export const AdminDashboard = () => {
               onClick={() => setActiveSection("explanations")}
             >
               Explanations
+            </Button>
+            <Button
+              variant={activeSection === "topics" ? "contained" : "outlined"}
+              onClick={() => setActiveSection("topics")}
+            >
+              Topics
             </Button>
             <Button
               variant={activeSection === "users" ? "contained" : "outlined"}

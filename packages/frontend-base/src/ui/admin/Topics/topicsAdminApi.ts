@@ -80,3 +80,18 @@ export const deleteTopic = async (topicId: string): Promise<void> => {
     throw error;
   }
 };
+
+// New function for chronological sorting
+export const sortTopicsChronologically = async (params: {
+  category: string;
+}): Promise<any> => {
+  try {
+    const response = await (api.admin as any).topics[
+      "sort-chronologically"
+    ].post(params);
+    return response.data;
+  } catch (error) {
+    console.error("Error sorting topics chronologically:", error);
+    throw error;
+  }
+};

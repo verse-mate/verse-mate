@@ -46,6 +46,22 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
           id: t.String({ format: "uuid" }),
         }),
       },
+    )
+    // New endpoint for chronological sorting
+    .post(
+      "/sort-chronologically",
+      async ({ body, store }: any) => {
+        const result =
+          await store.topicService.sortTopicsChronologicallyByCategory(
+            body.category,
+          );
+        return result;
+      },
+      {
+        body: t.Object({
+          category: t.String(),
+        }),
+      },
     ),
 );
 
