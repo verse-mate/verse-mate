@@ -405,6 +405,14 @@ export class BatchOperationService {
       throw new Error("No active topic-system prompt found.");
     }
 
+    // Fetch topic references once per topic
+    const topicReference = await this.db
+      .getOrCreateConnection()
+      .selectFrom("topic_references")
+      .where("topic_id", "=", topic.topic_id)
+      .select("content")
+      .executeTakeFirst();
+
     for (const type of explanationTypes) {
       const prompt = await new UserPromptRepository(
         this.db,
@@ -412,6 +420,23 @@ export class BatchOperationService {
       if (!prompt) {
         console.warn(`No active prompt found for type: topic-${type}`);
         continue;
+      }
+
+      let finalInput = prompt.prompt_template
+        .replace("{topic_name}", topic.name)
+        .replace("{topic_description}", topic.description || "");
+
+      // For byline, inject references. If not found, placeholder is replaced with empty string.
+      if (type === "byline") {
+        finalInput = finalInput.replace(
+          "{references}",
+          topicReference?.content || "",
+        );
+        if (!topicReference?.content) {
+          console.warn(
+            `[BATCH] No references found for byline topic "${topic.name}". The {references} placeholder was replaced with an empty string.`,
+          );
+        }
       }
 
       batchRequests.push({
@@ -422,9 +447,7 @@ export class BatchOperationService {
           model,
           reasoning: { effort },
           instructions: systemPrompt.prompt,
-          input: prompt.prompt_template
-            .replace("{topic_name}", topic.name)
-            .replace("{topic_description}", topic.description || ""),
+          input: finalInput,
           max_output_tokens: 25000,
         },
       });
