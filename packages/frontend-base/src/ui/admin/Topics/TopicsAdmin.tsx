@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Button } from "../../Button/Button";
+import { Dialog } from "../../Dialog";
+import styles from "./TopicsAdmin.module.css";
 import {
   createTopic,
   deleteTopic,
@@ -29,6 +32,16 @@ export const TopicsAdmin = () => {
     is_active: true,
   });
 
+  // State for confirmation dialogs
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTopicId, setDeleteTopicId] = useState<string | null>(null);
+  const [sortConfirmOpen, setSortConfirmOpen] = useState(false);
+  const [sortCategory, setSortCategory] = useState<string | null>(null);
+
+  // State for success/error messages
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     data: topics,
     isLoading,
@@ -43,6 +56,12 @@ export const TopicsAdmin = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-topics"] });
       resetForm();
+      setSuccessMessage("Topic created successfully!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (error: any) => {
+      setErrorMessage(`Error creating topic: ${error.message}`);
+      setTimeout(() => setErrorMessage(null), 5000);
     },
   });
 
@@ -51,6 +70,12 @@ export const TopicsAdmin = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-topics"] });
       resetForm();
+      setSuccessMessage("Topic updated successfully!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (error: any) => {
+      setErrorMessage(`Error updating topic: ${error.message}`);
+      setTimeout(() => setErrorMessage(null), 5000);
     },
   });
 
@@ -58,31 +83,37 @@ export const TopicsAdmin = () => {
     mutationFn: deleteTopic,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-topics"] });
+      setDeleteConfirmOpen(false);
+      setDeleteTopicId(null);
+      setSuccessMessage("Topic deleted successfully!");
+      setTimeout(() => setSuccessMessage(null), 3000);
+    },
+    onError: (error: any) => {
+      setDeleteConfirmOpen(false);
+      setDeleteTopicId(null);
+      setErrorMessage(`Error deleting topic: ${error.message}`);
+      setTimeout(() => setErrorMessage(null), 5000);
     },
   });
 
   const sortChronologicallyMutation = useMutation({
     mutationFn: sortTopicsChronologically,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-topics"] });
-      alert("Topics sorted chronologically successfully!");
+      setSortConfirmOpen(false);
+      setSortCategory(null);
+      setSuccessMessage(
+        `Topics sorted chronologically successfully! ${data.sortedCount} topics reordered.`,
+      );
+      setTimeout(() => setSuccessMessage(null), 5000);
     },
     onError: (error: any) => {
-      alert(`Error sorting topics: ${error.message}`);
+      setSortConfirmOpen(false);
+      setSortCategory(null);
+      setErrorMessage(`Error sorting topics: ${error.message}`);
+      setTimeout(() => setErrorMessage(null), 5000);
     },
   });
-
-  useEffect(() => {
-    if (currentTopic) {
-      setFormData({
-        name: currentTopic.name,
-        description: currentTopic.description || "",
-        category: currentTopic.category,
-        sort_order: currentTopic.sort_order,
-        is_active: currentTopic.is_active ?? true,
-      });
-    }
-  }, [currentTopic]);
 
   const resetForm = () => {
     setIsEditing(false);
@@ -121,19 +152,25 @@ export const TopicsAdmin = () => {
     updateMutation.mutate(updatedTopic);
   };
 
-  const handleDelete = (topicId: string) => {
-    if (window.confirm("Are you sure you want to delete this topic?")) {
-      deleteMutation.mutate(topicId);
+  const handleDeleteClick = (topicId: string) => {
+    setDeleteTopicId(topicId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteTopicId) {
+      deleteMutation.mutate(deleteTopicId);
     }
   };
 
-  const handleSortChronologically = (category: string) => {
-    if (
-      window.confirm(
-        `Sort all ${category.toLowerCase()} topics chronologically?`,
-      )
-    ) {
-      sortChronologicallyMutation.mutate({ category });
+  const handleSortClick = (category: string) => {
+    setSortCategory(category);
+    setSortConfirmOpen(true);
+  };
+
+  const handleSortConfirm = () => {
+    if (sortCategory) {
+      sortChronologicallyMutation.mutate({ category: sortCategory });
     }
   };
 
@@ -190,13 +227,23 @@ export const TopicsAdmin = () => {
     ) || {};
 
   return (
-    <div className="admin-topics">
-      <h2>Topics Management</h2>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h2>Topics Management</h2>
+      </div>
 
-      <div className="topics-form">
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className={styles.successMessage}>{successMessage}</div>
+      )}
+      {errorMessage && (
+        <div className={styles.errorMessage}>{errorMessage}</div>
+      )}
+
+      <div className={styles.topicsForm}>
         <h3>{isEditing ? "Edit Topic" : "Create New Topic"}</h3>
         <form onSubmit={handleSubmit}>
-          <div>
+          <div className={styles.formGroup}>
             <label htmlFor="name">Name:</label>
             <input
               type="text"
@@ -208,7 +255,7 @@ export const TopicsAdmin = () => {
             />
           </div>
 
-          <div>
+          <div className={styles.formGroup}>
             <label htmlFor="description">Description:</label>
             <textarea
               id="description"
@@ -219,7 +266,7 @@ export const TopicsAdmin = () => {
             />
           </div>
 
-          <div>
+          <div className={styles.formGroup}>
             <label htmlFor="category">Category:</label>
             <select
               id="category"
@@ -233,7 +280,7 @@ export const TopicsAdmin = () => {
             </select>
           </div>
 
-          <div>
+          <div className={styles.formGroup}>
             <label htmlFor="sort_order">Sort Order:</label>
             <input
               type="number"
@@ -244,7 +291,7 @@ export const TopicsAdmin = () => {
             />
           </div>
 
-          <div>
+          <div className={styles.formGroup}>
             <label>
               <input
                 type="checkbox"
@@ -256,56 +303,62 @@ export const TopicsAdmin = () => {
             </label>
           </div>
 
-          <div className="form-actions">
-            <button
+          <div className={styles.formActions}>
+            <Button
               type="submit"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
               {isEditing ? "Update" : "Create"} Topic
-            </button>
+            </Button>
             {isEditing && (
-              <button type="button" onClick={resetForm}>
+              <Button type="button" onClick={resetForm} variant="outlined">
                 Cancel
-              </button>
+              </Button>
             )}
           </div>
         </form>
       </div>
 
-      <div className="topics-list">
+      <div className={styles.topicsList}>
         <h3>Existing Topics</h3>
 
         {/* Add sort buttons for each category */}
-        <div className="category-sort-actions">
+        <div className={styles.categorySortActions}>
           <h4>Sort by Chronological Order</h4>
           <div>
-            <button
+            <Button
               type="button"
-              onClick={() => handleSortChronologically("EVENT")}
+              onClick={() => handleSortClick("EVENT")}
               disabled={sortChronologicallyMutation.isPending}
+              variant="outlined"
+              className={styles.actionButton}
             >
               Sort Events Chronologically
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              onClick={() => handleSortChronologically("PROPHECY")}
+              onClick={() => handleSortClick("PROPHECY")}
               disabled={sortChronologicallyMutation.isPending}
+              variant="outlined"
+              className={styles.actionButton}
             >
               Sort Prophecies Chronologically
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              onClick={() => handleSortChronologically("PARABLE")}
+              onClick={() => handleSortClick("PARABLE")}
               disabled={sortChronologicallyMutation.isPending}
+              variant="outlined"
+              className={styles.actionButton}
             >
               Sort Parables Chronologically
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Display topics grouped by category */}
         {Object.entries(topicsByCategory).map(([category, categoryTopics]) => (
-          <div key={category} className="category-section">
+          <div key={category} className={styles.categorySection}>
             <h4>{category} Topics</h4>
             <table>
               <thead>
@@ -325,15 +378,22 @@ export const TopicsAdmin = () => {
                     <td>{topic.sort_order}</td>
                     <td>{topic.is_active ? "Yes" : "No"}</td>
                     <td>
-                      <button type="button" onClick={() => handleEdit(topic)}>
-                        Edit
-                      </button>
-                      <button
+                      <Button
                         type="button"
-                        onClick={() => handleDelete(topic.topic_id)}
+                        onClick={() => handleEdit(topic)}
+                        variant="outlined"
+                        className={styles.smallButton}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => handleDeleteClick(topic.topic_id)}
+                        variant="outlined"
+                        className={styles.smallButton}
                       >
                         Delete
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -342,6 +402,75 @@ export const TopicsAdmin = () => {
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          setDeleteConfirmOpen(open);
+          if (!open) setDeleteTopicId(null);
+        }}
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Delete</Dialog.Head>
+          <Dialog.Description>
+            Are you sure you want to delete this topic? This action cannot be
+            undone.
+          </Dialog.Description>
+          <Dialog.Footer>
+            <Button
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setDeleteTopicId(null);
+              }}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Sort Confirmation Dialog */}
+      <Dialog
+        open={sortConfirmOpen}
+        onOpenChange={(open) => {
+          setSortConfirmOpen(open);
+          if (!open) setSortCategory(null);
+        }}
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Sort</Dialog.Head>
+          <Dialog.Description>
+            {sortCategory
+              ? `Sort all ${sortCategory.toLowerCase()} topics chronologically?`
+              : "Sort topics chronologically?"}
+          </Dialog.Description>
+          <Dialog.Footer>
+            <Button
+              onClick={() => {
+                setSortConfirmOpen(false);
+                setSortCategory(null);
+              }}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSortConfirm}
+              disabled={sortChronologicallyMutation.isPending}
+            >
+              {sortChronologicallyMutation.isPending ? "Sorting..." : "Sort"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
     </div>
   );
 };

@@ -1,7 +1,5 @@
 import type { Static } from "elysia";
-import OpenAI from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
-import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { SubtitleService } from "../../bible/services/subtitle.service";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
@@ -12,13 +10,11 @@ export class TopicService {
   private topicRepository: TopicRepository;
   private bibleRepository: BibleRepository;
   private subtitleService: SubtitleService;
-  private promptRepository: PromptRepository;
 
   constructor(private readonly db: db) {
     this.topicRepository = new TopicRepository(this.db);
     this.bibleRepository = new BibleRepository(this.db);
     this.subtitleService = new SubtitleService(this.bibleRepository);
-    this.promptRepository = new PromptRepository(this.db);
   }
 
   async getCategories() {
@@ -295,85 +291,14 @@ export class TopicService {
     }
   }
 
-  // New method for chronological sorting
-  async sortTopicsChronologicallyByCategory(category: string) {
+  async sortTopicsByCategory(category: string) {
     try {
-      // Get all topics in the category
-      const topics = await this.topicRepository.getTopicsByCategory(category);
-
-      if (topics.length === 0) {
-        return { success: true, message: "No topics found in category" };
-      }
-
-      // Get the prompt for chronological sorting from the database
-      const prompt =
-        await this.promptRepository.getUserPromptByType("topic-order");
-      if (!prompt) {
-        throw new Error(
-          "No active topic-order prompt found in user_prompt_templates table.",
-        );
-      }
-
-      // Format the topics data for the prompt (name and description only)
-      const topicsData = topics
-        .map(
-          (topic, index) =>
-            `${index + 1}. ${topic.name} - ${topic.description || "No description"}`,
-        )
-        .join("\n");
-
-      // Call GPT-5 synchronously using the same pattern as bible.plugin.ts
-      const openai = new OpenAI({
-        apiKey: process.env.OPEN_AI_KEY,
-      });
-
-      const response = await openai.responses.create({
-        model: "gpt-5",
-        reasoning: { effort: "medium" },
-        instructions: "", // We leave instructions empty as requested
-        input: prompt.prompt_template
-          .replace("{category_name}", category.toLowerCase())
-          .replace("{topics_list}", topicsData),
-        max_output_tokens: 4000,
-      });
-
-      // Parse the response - expect format: "1. Topic Name\n2. Topic Name\n..."
-      const sortedLines = (response.output_text || "")
-        .split("\n")
-        .filter((line) => line.trim() !== "");
-      const sortedTopicNames = sortedLines.map((line) => {
-        // Extract topic name after the index (e.g., "1. Topic Name" -> "Topic Name")
-        const match = line.match(/^\d+\.\s*(.+)$/);
-        return match ? match[1].trim() : line.trim();
-      });
-
-      // Create a map of topic names to topic IDs for lookup
-      const topicNameToIdMap = topics.reduce(
-        (map, topic) => {
-          map[topic.name] = topic.topic_id;
-          return map;
-        },
-        {} as Record<string, string>,
+      const topics = await this.getTopicsByCategory(category);
+      const sortedTopicNames = topics.sort((a, b) =>
+        a.name.localeCompare(b.name),
       );
-
-      // Update sort_order for each topic based on chronological position
-      const updates = sortedTopicNames
-        .map(async (topicName, index) => {
-          const topicId = topicNameToIdMap[topicName];
-          if (topicId) {
-            return await this.topicRepository.updateTopic(topicId, {
-              sort_order: index + 1,
-            });
-          }
-          return null;
-        })
-        .filter(Boolean); // Remove null values
-
-      await Promise.all(updates);
-
       return {
-        success: true,
-        message: `Successfully sorted ${sortedTopicNames.length} topics chronologically`,
+        topics: sortedTopicNames,
         sortedCount: sortedTopicNames.length,
       };
     } catch (error: unknown) {
