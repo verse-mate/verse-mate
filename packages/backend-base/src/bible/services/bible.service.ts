@@ -220,7 +220,7 @@ export class BibleService {
     user,
     explanation_id,
     rating,
-  }: RatingDto): Promise<{ success: string } | { error: string }> {
+  }: RatingDto): Promise<{ message: string }> {
     const { exists } = await this.bibleRepository.ratingExists({
       user,
       explanation_id,
@@ -232,12 +232,12 @@ export class BibleService {
         explanation_id,
         rating,
       });
-      if (!updated) return { success: "Error updating rating" };
+      if (!updated) return { message: "Error updating rating" };
 
-      return { error: "Rating updated" };
+      return { message: "Rating updated" };
     }
 
-    return { success: "Rating updated" };
+    return { message: "Rating not found" };
   }
 
   async ratingByUser({

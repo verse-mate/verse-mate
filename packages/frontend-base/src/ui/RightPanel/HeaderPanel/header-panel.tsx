@@ -11,15 +11,12 @@ import styles from "./header-panel.module.css";
 
 type Props = {
   activeTab: string;
-  askVerseMate: boolean;
   setActiveTab: (value: string) => void;
-  rightPanelContent: string;
   setRightPanelContent: (value: string) => void;
 };
 
 export const Nav = ({
   activeTab,
-  askVerseMate,
   setActiveTab,
   setRightPanelContent,
 }: Props) => {

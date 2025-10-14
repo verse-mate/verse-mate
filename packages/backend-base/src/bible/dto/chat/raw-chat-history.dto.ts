@@ -13,6 +13,7 @@ export const RawChatHistoryEntity = t.Object({
   message_id: t.Nullable(t.Number()),
   content: t.Nullable(t.String()),
   role: t.Nullable(t.Enum(RoleEnum)),
+  created_at: t.Nullable(t.Date()),
   chapter_number: t.Nullable(t.Number()),
   book_id: t.Nullable(t.Number()),
   bookName: t.Nullable(t.String()),

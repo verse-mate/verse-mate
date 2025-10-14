@@ -21,16 +21,19 @@ export class ChatHistoryGrouper {
       date: subDays(today, period.daysAgo),
     }));
 
-    const groupedHistory: GroupedChatHistoryDto = {};
+    const groupedHistory: GroupedChatHistoryDto = {
+      today: [],
+      yesterday: [],
+      lastSevenDays: [],
+      older: [],
+    };
 
     chatHistory.forEach((chat) => {
       const updatedAtDate = new Date(chat.updated_at);
       for (const period of periodDates) {
         if (updatedAtDate >= period.date) {
-          if (!groupedHistory[period.label]) {
-            groupedHistory[period.label] = [];
-          }
-          groupedHistory[period.label].push(chat);
+          const key = period.label as keyof GroupedChatHistoryDto;
+          groupedHistory[key].push(chat);
           break;
         }
       }

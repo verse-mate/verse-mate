@@ -19,7 +19,24 @@ export const getBookVerse = async (
   if (response.error) {
     throw response.error;
   }
-  return response.data?.book;
+
+  // Transform backend response to match frontend types
+  // Backend uses chapterId/verseId but frontend expects chapterNumber/verseNumber
+  // Handle union type: response could be { book: ... } or { message: string }
+  const book = "book" in response.data ? response.data.book : null;
+  if (!book) return book;
+
+  return {
+    ...book,
+    chapters: book.chapters.map((chapter) => ({
+      chapterNumber: chapter.chapterNumber,
+      subtitles: chapter.subtitles,
+      verses: chapter.verses.map((verse) => ({
+        verseNumber: verse.verseNumber,
+        text: verse.text,
+      })),
+    })),
+  };
 };
 
 export const getExplanation = async (

@@ -22,7 +22,10 @@ export const Content = ({ bookId, verseId, book }: ContentProps) => {
     if (!book?.chapters || !bookId) return;
 
     const loadChapterIds = async () => {
-      const chapterNumbers = book.chapters.map((ch) => ch.chapterNumber);
+      const chapterNumbers = book.chapters
+        .map((ch) => ch.chapterNumber)
+        .filter((num): num is number => num !== undefined && num !== null);
+
       const promises = chapterNumbers.map(async (chapterNumber) => {
         try {
           const chapterId = await getChapterId(Number(bookId), chapterNumber);
@@ -89,21 +92,25 @@ export const Content = ({ bookId, verseId, book }: ContentProps) => {
 
   return (
     <section className={styles.content}>
-      {book.chapters?.map((chapter) => (
-        <div key={chapter.chapterNumber}>
-          <MainText.Text
-            text={chapter}
-            bookName={book.name}
-            testament={book.testament}
-            bookId={Number(bookId)}
-            chapterId={chapterIds[chapter.chapterNumber] || undefined}
-            highlights={highlights}
-            onHighlightCreate={createHighlightCreator(chapter.chapterNumber)}
-            onHighlightDelete={handleHighlightDelete}
-            onHighlightUpdate={handleHighlightUpdate}
-          />
-        </div>
-      ))}
+      {book.chapters?.map((chapter, index) => {
+        // Use chapterNumber if available, otherwise use index as fallback
+        const chapterNum = chapter.chapterNumber ?? index + 1;
+        return (
+          <div key={`chapter-${chapterNum}`}>
+            <MainText.Text
+              text={chapter}
+              bookName={book.name}
+              testament={book.testament}
+              bookId={Number(bookId)}
+              chapterId={chapterIds[chapterNum] || undefined}
+              highlights={highlights}
+              onHighlightCreate={createHighlightCreator(chapterNum)}
+              onHighlightDelete={handleHighlightDelete}
+              onHighlightUpdate={handleHighlightUpdate}
+            />
+          </div>
+        );
+      })}
     </section>
   );
 };

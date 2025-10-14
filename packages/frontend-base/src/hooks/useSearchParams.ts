@@ -16,7 +16,7 @@ export const useSaveSearchParams = () => {
   }: {
     bookId?: string;
     verseId?: string;
-    testament?: TestamentEnum;
+    testament?: "OT" | "NT" | string; // Allow string for "TOPIC" as well
     conversationId?: string;
     explanationId?: string;
     explanationType?: ExplanationTypeEnum;

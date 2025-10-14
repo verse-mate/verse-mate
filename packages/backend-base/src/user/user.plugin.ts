@@ -7,8 +7,13 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import {
+  BooleanResponse,
+  StandardErrorResponses,
+} from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import type { User } from "./entities/user.entity";
+import { UserSchema, UsersArraySchema } from "./schemas/user-response.schema";
 import { UserService } from "./user.service";
 
 const plugin = new Elysia()
@@ -32,6 +37,10 @@ const plugin = new Elysia()
               description: "Retrieve a list of all registered users",
               tags: ["User"],
             },
+            response: {
+              200: UsersArraySchema,
+              ...StandardErrorResponses,
+            },
           },
         )
         .get(
@@ -46,6 +55,12 @@ const plugin = new Elysia()
             } catch {
               throw new NotFoundError("User not found");
             }
+          },
+          {
+            response: {
+              200: UserSchema,
+              ...StandardErrorResponses,
+            },
           },
         )
         .post(
@@ -106,6 +121,10 @@ const plugin = new Elysia()
                 description: "User's last name",
               }),
             }),
+            response: {
+              200: BooleanResponse,
+              ...StandardErrorResponses,
+            },
           },
         );
     });
