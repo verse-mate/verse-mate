@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import * as Icon from "../../../Icons"; // Import icons
 import styles from "./grouped-trigger.module.css";
 
 type GroupedTriggerProps = {
@@ -61,15 +62,24 @@ export const GroupedTrigger = ({
     toggleDropdown();
   };
 
+  // Type assertion to include the new CSS classes
+  const extendedStyles = styles as typeof styles & {
+    text: string;
+    iconWrapper: string;
+  };
+
   return (
     <button
       ref={buttonRef}
       type="button"
       onClick={handleToggleClick}
-      className={styles.trigger}
+      className={extendedStyles.trigger}
       data-state={isOpen ? "open" : "closed"}
     >
-      {displayText}
+      <span className={extendedStyles.text}>{displayText}</span>
+      <span className={extendedStyles.iconWrapper}>
+        <Icon.ChevronDownIcon className={extendedStyles.icon} />
+      </span>
     </button>
   );
 };
