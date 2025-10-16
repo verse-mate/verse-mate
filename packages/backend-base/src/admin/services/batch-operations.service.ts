@@ -110,7 +110,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: "",
           input: prompt.prompt_template,
-          max_output_tokens: 25000,
+          max_output_tokens: 50000,
         },
       },
     ];
@@ -219,7 +219,7 @@ export class BatchOperationService {
         input: prompt.prompt_template
           .replace("{topic_name}", topic.name)
           .replace("{topic_description}", topic.description || ""),
-        max_output_tokens: 25000,
+        max_output_tokens: 50000,
       },
     }));
 
@@ -448,7 +448,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: systemPrompt.prompt,
           input: finalInput,
-          max_output_tokens: 25000,
+          max_output_tokens: 50000,
         },
       });
     }
@@ -1023,7 +1023,7 @@ export class BatchOperationService {
             reasoning: { effort },
             instructions: rephrasePrompt.prompt,
             input: explanation.explanation,
-            max_output_tokens: 25000,
+            max_output_tokens: 50000,
           },
         };
       },
@@ -1234,7 +1234,7 @@ export class BatchOperationService {
               reasoning: { effort },
               instructions: finalPrompt,
               input: explanation.explanation,
-              max_output_tokens: 25000,
+              max_output_tokens: 50000,
             },
           });
         }
@@ -1253,7 +1253,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: finalPrompt,
           input: explanation.explanation,
-          max_output_tokens: 25000,
+          max_output_tokens: 50000,
         },
       }));
     }
@@ -2075,7 +2075,7 @@ export class BatchOperationService {
             reasoning: { effort },
             instructions: sanitizedSystemPrompt,
             input: sanitizedUserPrompt,
-            max_output_tokens: 25000,
+            max_output_tokens: 50000,
           },
         });
       }
@@ -3744,7 +3744,7 @@ export class BatchOperationService {
               reasoning: { effort },
               instructions: finalPrompt,
               input: `Name: ${topic.name}\nDescription: ${topic.description || ""}`,
-              max_output_tokens: 500,
+              max_output_tokens: 5000,
             },
           });
         }
@@ -3763,7 +3763,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: finalPrompt,
           input: `Name: ${topic.name}\nDescription: ${topic.description || ""}`,
-          max_output_tokens: 500,
+          max_output_tokens: 5000,
         },
       }));
     }
@@ -3960,7 +3960,7 @@ export class BatchOperationService {
               reasoning: { effort },
               instructions: finalPrompt,
               input: exp.explanation,
-              max_output_tokens: 25000,
+              max_output_tokens: 50000,
             },
           });
         }
@@ -3981,7 +3981,7 @@ export class BatchOperationService {
             reasoning: { effort },
             instructions: finalPrompt,
             input: exp.explanation,
-            max_output_tokens: 25000,
+            max_output_tokens: 50000,
           },
         };
       });

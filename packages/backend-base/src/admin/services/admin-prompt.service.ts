@@ -266,7 +266,7 @@ export class AdminPromptService {
       reasoning: { effort },
       instructions,
       input,
-      max_output_tokens: 20000,
+      max_output_tokens: 50000,
     });
     return response.output_text || "";
   }
