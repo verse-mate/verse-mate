@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { authDerive } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import shared from "../shared/shared.plugin";
@@ -89,13 +90,40 @@ const plugin = new Elysia()
           response: CategoryResponseSchema,
         },
       )
+      .resolve({ as: "scoped" }, authDerive)
       .get(
         "/search",
-        async ({ query, store: { topicService } }) => {
+        async ({ query, store: { topicService, db }, currentUserId }) => {
           const { category, bible_version } = query;
+
+          // Determine language: user preference overrides Bible version language
+          let finalBibleVersion = bible_version;
+          if (currentUserId && bible_version) {
+            const user = await db
+              .getOrCreateConnection()
+              .selectFrom("user")
+              .where("id", "=", currentUserId)
+              .select("preferred_language")
+              .executeTakeFirst();
+
+            // If user has a preferred language, look up a Bible version with that language
+            if (user?.preferred_language) {
+              const versionWithPreferredLang = await db
+                .getOrCreateConnection()
+                .selectFrom("bible_versions")
+                .where("language_code", "=", user.preferred_language)
+                .select("version_key")
+                .executeTakeFirst();
+
+              if (versionWithPreferredLang) {
+                finalBibleVersion = versionWithPreferredLang.version_key;
+              }
+            }
+          }
+
           const topics = await topicService.getTopicsByCategory(
             category,
-            bible_version,
+            finalBibleVersion,
           );
           return { topics };
         },
@@ -109,15 +137,15 @@ const plugin = new Elysia()
       )
       .get(
         "/:id",
-        async ({ params, query, store }) => {
+        async ({ params, query, store, currentUserId }) => {
           const { id } = params;
           const { bible_version } = query;
           const { topicService, db } = store;
-          const topic = await topicService.getTopic(id, bible_version);
-          const references = await topicService.getTopicReferences(id);
 
-          // Look up language code from bible version for explanations
+          // Determine language: user preference overrides Bible version language
+          let finalBibleVersion = bible_version;
           let languageCode = "en-US"; // Default fallback
+
           if (bible_version) {
             const version = await db
               .getOrCreateConnection()
@@ -131,6 +159,36 @@ const plugin = new Elysia()
             }
           }
 
+          // If user is logged in, check for preferred language override
+          if (currentUserId) {
+            const user = await db
+              .getOrCreateConnection()
+              .selectFrom("user")
+              .where("id", "=", currentUserId)
+              .select("preferred_language")
+              .executeTakeFirst();
+
+            // Override language if user has a preference
+            if (user?.preferred_language) {
+              languageCode = user.preferred_language;
+
+              // Update finalBibleVersion to match user's preferred language
+              const versionWithPreferredLang = await db
+                .getOrCreateConnection()
+                .selectFrom("bible_versions")
+                .where("language_code", "=", user.preferred_language)
+                .select("version_key")
+                .executeTakeFirst();
+
+              if (versionWithPreferredLang) {
+                finalBibleVersion = versionWithPreferredLang.version_key;
+              }
+            }
+          }
+
+          const topic = await topicService.getTopic(id, finalBibleVersion);
+          const references = await topicService.getTopicReferences(id);
+
           // Fetch real explanations for all types in the requested language
           const [summaryExplanation, bylineExplanation, detailedExplanation] =
             await Promise.all([
@@ -139,10 +197,10 @@ const plugin = new Elysia()
               topicService.getTopicExplanation(id, languageCode, "detailed"),
             ]);
 
-          if (bylineExplanation?.explanation && bible_version) {
+          if (bylineExplanation?.explanation && finalBibleVersion) {
             bylineExplanation.explanation = await parseAndInjectVerses(
               bylineExplanation.explanation,
-              bible_version,
+              finalBibleVersion,
               db,
               { includeVerseNumbers: false }, // Don't include verse numbers in byline
             );
