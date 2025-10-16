@@ -200,11 +200,23 @@ export class TopicService {
         );
       }
 
-      return await this.topicRepository.getTopicExplanation(
+      // First, try to get explanation in the requested language
+      let explanation = await this.topicRepository.getTopicExplanation(
         topicId,
         languageCode,
         type,
       );
+
+      // If no explanation found in requested language and it's not English, try English as fallback
+      if (!explanation && languageCode !== "en-US") {
+        explanation = await this.topicRepository.getTopicExplanation(
+          topicId,
+          "en-US",
+          type,
+        );
+      }
+
+      return explanation;
     } catch (error: unknown) {
       console.error(
         `Error fetching topic explanation for topic ${topicId}, language ${languageCode}, type ${type}:`,
