@@ -66,7 +66,7 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
     // Topic translation endpoints
     .post(
       "/translate-names",
-      async ({ body, store }: any) => {
+      async ({ body, store, currentUserId }: any) => {
         const {
           model,
           source_language_code = "en-US",
@@ -77,10 +77,11 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
           topic_id,
         } = body;
 
+        const batchOperationService = store.getBatchOperationService();
         const batch =
-          await store.batchOperationService.generateTopicNameTranslationBatch(
+          await batchOperationService.generateTopicNameTranslationBatch(
             model,
-            store.currentUserId,
+            currentUserId,
             source_language_code,
             target_language_code,
             skip_existing,
@@ -111,7 +112,7 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
     )
     .post(
       "/translate-explanations",
-      async ({ body, store }: any) => {
+      async ({ body, store, currentUserId }: any) => {
         const {
           model,
           source_language_code = "en-US",
@@ -123,10 +124,11 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
           topic_id,
         } = body;
 
+        const batchOperationService = store.getBatchOperationService();
         const batch =
-          await store.batchOperationService.generateTopicExplanationTranslationBatch(
+          await batchOperationService.generateTopicExplanationTranslationBatch(
             model,
-            store.currentUserId,
+            currentUserId,
             source_language_code,
             target_language_code,
             explanation_types,
@@ -159,7 +161,7 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
     )
     .post(
       "/translate-all",
-      async ({ body, store }: any) => {
+      async ({ body, store, currentUserId }: any) => {
         const {
           model,
           source_language_code = "en-US",
@@ -171,10 +173,11 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
           topic_id,
         } = body;
 
+        const batchOperationService = store.getBatchOperationService();
         const result =
-          await store.batchOperationService.generateTopicCompleteTranslationBatch(
+          await batchOperationService.generateTopicCompleteTranslationBatch(
             model,
-            store.currentUserId,
+            currentUserId,
             source_language_code,
             target_language_code,
             explanation_types,

@@ -87,6 +87,15 @@ export const batchMonitoringConsumer = async (job: Job) => {
     (typeof batchId === "string" && batchId.startsWith("parent-"))
   ) {
     const parentId = Number(batchId.replace("parent-", ""));
+
+    // Handle invalid parent IDs (e.g., old batches with incorrect format)
+    if (Number.isNaN(parentId)) {
+      console.error(
+        `[BATCH_MONITORING] Invalid parent batch ID format: ${batchId}. Skipping monitoring.`,
+      );
+      return;
+    }
+
     console.log(`[BATCH_MONITORING] Monitoring parent batch ID: ${parentId}`);
 
     try {

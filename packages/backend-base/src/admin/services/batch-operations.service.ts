@@ -1491,7 +1491,8 @@ export class BatchOperationService {
       batchJob.batch_type === "bible" ||
       batchJob.batch_type === "rephrase-bible" ||
       batchJob.batch_type === "translate-bible" ||
-      batchJob.batch_type === "topic-explanations-parent"
+      batchJob.batch_type === "topic-explanations-parent" ||
+      batchJob.batch_type === "topic-translate-all"
     ) {
       console.log(
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
@@ -1790,7 +1791,9 @@ export class BatchOperationService {
       const isParent =
         batch.batch_type === "bible" ||
         batch.batch_type === "rephrase-bible" ||
-        batch.batch_type === "translate-bible";
+        batch.batch_type === "translate-bible" ||
+        batch.batch_type === "topic-explanations-parent" ||
+        batch.batch_type === "topic-translate-all";
       const batchId = isParent ? `parent-${batch.id}` : batch.openai_batch_id;
 
       if (batchId) {
@@ -3232,7 +3235,25 @@ export class BatchOperationService {
 
         if (responseBody?.output && Array.isArray(responseBody.output)) {
           for (const item of responseBody.output) {
+            // Check for message type with content array
             if (
+              item.type === "message" &&
+              item.content &&
+              Array.isArray(item.content)
+            ) {
+              for (const contentItem of item.content) {
+                if (
+                  contentItem.type === "output_text" &&
+                  typeof contentItem.text === "string"
+                ) {
+                  extractedText = contentItem.text;
+                  break;
+                }
+              }
+              if (extractedText) break;
+            }
+            // Legacy format: direct content array
+            else if (
               item.content &&
               Array.isArray(item.content) &&
               typeof item.content[0]?.text === "string"
@@ -3389,7 +3410,25 @@ export class BatchOperationService {
 
         if (responseBody?.output && Array.isArray(responseBody.output)) {
           for (const item of responseBody.output) {
+            // Check for message type with content array
             if (
+              item.type === "message" &&
+              item.content &&
+              Array.isArray(item.content)
+            ) {
+              for (const contentItem of item.content) {
+                if (
+                  contentItem.type === "output_text" &&
+                  typeof contentItem.text === "string"
+                ) {
+                  extractedText = contentItem.text;
+                  break;
+                }
+              }
+              if (extractedText) break;
+            }
+            // Legacy format: direct content array
+            else if (
               item.content &&
               Array.isArray(item.content) &&
               typeof item.content[0]?.text === "string"
@@ -3703,16 +3742,16 @@ export class BatchOperationService {
       throw new Error("No topics found to translate");
     }
 
-    // Get translate prompt
+    // Get topic-translate prompt
     const translatePrompt = await connection
       .selectFrom("prompts")
-      .where("prompt_type", "=", "translate")
+      .where("prompt_type", "=", "topic-translate")
       .where("status", "=", PromptStatusEnum.active)
       .select("prompt")
       .executeTakeFirst();
 
     if (!translatePrompt) {
-      throw new Error("No active translate prompt found");
+      throw new Error("No active topic-translate prompt found");
     }
 
     const language = getLanguageName(target_language_code);
@@ -3911,16 +3950,16 @@ export class BatchOperationService {
       );
     }
 
-    // Get translate prompt
+    // Get topic-translate prompt
     const translatePrompt = await connection
       .selectFrom("prompts")
-      .where("prompt_type", "=", "translate")
+      .where("prompt_type", "=", "topic-translate")
       .where("status", "=", PromptStatusEnum.active)
       .select("prompt")
       .executeTakeFirst();
 
     if (!translatePrompt) {
-      throw new Error("No active translate prompt found");
+      throw new Error("No active topic-translate prompt found");
     }
 
     const language = getLanguageName(target_language_code);
@@ -4099,6 +4138,17 @@ export class BatchOperationService {
     }
 
     console.log(`[BATCH] Created parent batch with ID: ${parentBatch.id}`);
+
+    // Add parent batch to monitoring queue
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: `parent-${parentBatch.id}`, model, isParent: true },
+      {
+        jobId: `parent-${parentBatch.id}`,
+        removeOnComplete: true,
+        removeOnFail: 100,
+      },
+    );
 
     const childBatches: any[] = [];
     let totalRequests = 0;
