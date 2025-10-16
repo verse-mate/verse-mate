@@ -62,6 +62,150 @@ const adminTopicPlugin = new Elysia().group("/topics", (app) =>
           category: t.String(),
         }),
       },
+    )
+    // Topic translation endpoints
+    .post(
+      "/translate-names",
+      async ({ body, store }: any) => {
+        const {
+          model,
+          source_language_code = "en-US",
+          target_language_code,
+          skip_existing = false,
+          effort = "low",
+          category,
+          topic_id,
+        } = body;
+
+        const batch =
+          await store.batchOperationService.generateTopicNameTranslationBatch(
+            model,
+            store.currentUserId,
+            source_language_code,
+            target_language_code,
+            skip_existing,
+            effort,
+            category,
+            topic_id,
+          );
+
+        return {
+          success: true,
+          batchId: batch?.id,
+          message: "Topic name translation batch created successfully",
+        };
+      },
+      {
+        body: t.Object({
+          model: t.String(),
+          source_language_code: t.Optional(t.String()),
+          target_language_code: t.String(),
+          skip_existing: t.Optional(t.Boolean()),
+          effort: t.Optional(
+            t.Union([t.Literal("low"), t.Literal("medium"), t.Literal("high")]),
+          ),
+          category: t.Optional(t.String()),
+          topic_id: t.Optional(t.String()),
+        }),
+      },
+    )
+    .post(
+      "/translate-explanations",
+      async ({ body, store }: any) => {
+        const {
+          model,
+          source_language_code = "en-US",
+          target_language_code,
+          explanation_types = ["summary", "byline", "detailed"],
+          skip_existing = false,
+          effort = "medium",
+          category,
+          topic_id,
+        } = body;
+
+        const batch =
+          await store.batchOperationService.generateTopicExplanationTranslationBatch(
+            model,
+            store.currentUserId,
+            source_language_code,
+            target_language_code,
+            explanation_types,
+            skip_existing,
+            effort,
+            category,
+            topic_id,
+          );
+
+        return {
+          success: true,
+          batchId: batch?.id,
+          message: "Topic explanation translation batch created successfully",
+        };
+      },
+      {
+        body: t.Object({
+          model: t.String(),
+          source_language_code: t.Optional(t.String()),
+          target_language_code: t.String(),
+          explanation_types: t.Optional(t.Array(t.String())),
+          skip_existing: t.Optional(t.Boolean()),
+          effort: t.Optional(
+            t.Union([t.Literal("low"), t.Literal("medium"), t.Literal("high")]),
+          ),
+          category: t.Optional(t.String()),
+          topic_id: t.Optional(t.String()),
+        }),
+      },
+    )
+    .post(
+      "/translate-all",
+      async ({ body, store }: any) => {
+        const {
+          model,
+          source_language_code = "en-US",
+          target_language_code,
+          explanation_types = ["summary", "byline", "detailed"],
+          skip_existing = false,
+          effort = "medium",
+          category,
+          topic_id,
+        } = body;
+
+        const result =
+          await store.batchOperationService.generateTopicCompleteTranslationBatch(
+            model,
+            store.currentUserId,
+            source_language_code,
+            target_language_code,
+            explanation_types,
+            skip_existing,
+            effort,
+            category,
+            topic_id,
+          );
+
+        return {
+          success: true,
+          parentBatchId: result.parentBatchId,
+          childBatches: result.childBatches,
+          totalRequests: result.totalRequests,
+          message: "Complete topic translation batch created successfully",
+        };
+      },
+      {
+        body: t.Object({
+          model: t.String(),
+          source_language_code: t.Optional(t.String()),
+          target_language_code: t.String(),
+          explanation_types: t.Optional(t.Array(t.String())),
+          skip_existing: t.Optional(t.Boolean()),
+          effort: t.Optional(
+            t.Union([t.Literal("low"), t.Literal("medium"), t.Literal("high")]),
+          ),
+          category: t.Optional(t.String()),
+          topic_id: t.Optional(t.String()),
+        }),
+      },
     ),
 );
 

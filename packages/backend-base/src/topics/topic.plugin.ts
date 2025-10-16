@@ -16,6 +16,7 @@ const TopicSearchItemSchema = t.Object({
   name: t.String(),
   description: t.Union([t.String(), t.Null()]),
   sort_order: t.Union([t.Number(), t.Null()]),
+  is_translated: t.Optional(t.Boolean()),
 });
 
 const TopicSearchResponseSchema = t.Object({
@@ -32,6 +33,7 @@ const TopicSchema = t.Object({
   is_active: t.Union([t.Boolean(), t.Null()]),
   created_at: t.Union([t.Date(), t.Null()]),
   updated_at: t.Union([t.Date(), t.Null()]),
+  is_translated: t.Optional(t.Boolean()),
 });
 
 // Schema for topic references (only content field from repository)
@@ -90,30 +92,35 @@ const plugin = new Elysia()
       .get(
         "/search",
         async ({ query, store: { topicService } }) => {
-          const { category } = query;
-          const topics = await topicService.getTopicsByCategory(category);
+          const { category, language_code = "en-US" } = query;
+          const topics = await topicService.getTopicsByCategory(
+            category,
+            language_code,
+          );
           return { topics };
         },
         {
           query: t.Object({
             category: t.String(),
+            language_code: t.Optional(t.String()),
           }),
           response: TopicSearchResponseSchema,
         },
       )
       .get(
         "/:id",
-        async ({ params, store }) => {
+        async ({ params, query, store }) => {
           const { id } = params;
+          const { language_code = "en-US" } = query;
           const { topicService, db } = store;
-          const topic = await topicService.getTopic(id);
+          const topic = await topicService.getTopic(id, language_code);
           const references = await topicService.getTopicReferences(id);
-          // Fetch real explanations for all types
+          // Fetch real explanations for all types in the requested language
           const [summaryExplanation, bylineExplanation, detailedExplanation] =
             await Promise.all([
-              topicService.getTopicExplanation(id, "en-US", "summary"),
-              topicService.getTopicExplanation(id, "en-US", "byline"),
-              topicService.getTopicExplanation(id, "en-US", "detailed"),
+              topicService.getTopicExplanation(id, language_code, "summary"),
+              topicService.getTopicExplanation(id, language_code, "byline"),
+              topicService.getTopicExplanation(id, language_code, "detailed"),
             ]);
 
           if (bylineExplanation?.explanation) {
@@ -146,6 +153,9 @@ const plugin = new Elysia()
         {
           params: t.Object({
             id: t.String({ format: "uuid" }),
+          }),
+          query: t.Object({
+            language_code: t.Optional(t.String()),
           }),
           response: TopicDetailsResponseSchema,
         },

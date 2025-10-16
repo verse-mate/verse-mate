@@ -32,9 +32,12 @@ export class TopicService {
     }
   }
 
-  async getTopicsByCategory(category: string) {
+  async getTopicsByCategory(category: string, languageCode = "en-US") {
     try {
-      return await this.topicRepository.getTopicsByCategory(category);
+      return await this.topicRepository.getTopicsByCategory(
+        category,
+        languageCode,
+      );
     } catch (error: unknown) {
       console.error(`Error fetching topics for category ${category}:`, error);
       const errorMessage =
@@ -56,9 +59,9 @@ export class TopicService {
     }
   }
 
-  async getTopic(topicId: string) {
+  async getTopic(topicId: string, languageCode = "en-US") {
     try {
-      return await this.topicRepository.getTopic(topicId);
+      return await this.topicRepository.getTopic(topicId, languageCode);
     } catch (error: unknown) {
       console.error(`Error fetching topic ${topicId}:`, error);
       const errorMessage =
