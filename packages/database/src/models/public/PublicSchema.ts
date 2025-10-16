@@ -18,6 +18,7 @@ import type { default as PromptsTable } from "./Prompts";
 import type { default as SubtitlesTable } from "./Subtitles";
 import type { default as TopicExplanationsTable } from "./TopicExplanations";
 import type { default as TopicReferencesTable } from "./TopicReferences";
+import type { default as TopicTranslationsTable } from "./TopicTranslations";
 import type { default as TopicsTable } from "./Topics";
 import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
@@ -71,4 +72,6 @@ export default interface PublicSchema {
   topic_references: TopicReferencesTable;
 
   topic_explanations: TopicExplanationsTable;
+
+  topic_translations: TopicTranslationsTable;
 }
