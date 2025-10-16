@@ -92,17 +92,17 @@ const plugin = new Elysia()
       .get(
         "/search",
         async ({ query, store: { topicService } }) => {
-          const { category, language_code = "en-US" } = query;
+          const { category, bible_version } = query;
           const topics = await topicService.getTopicsByCategory(
             category,
-            language_code,
+            bible_version,
           );
           return { topics };
         },
         {
           query: t.Object({
             category: t.String(),
-            language_code: t.Optional(t.String()),
+            bible_version: t.Optional(t.String()),
           }),
           response: TopicSearchResponseSchema,
         },
@@ -111,22 +111,38 @@ const plugin = new Elysia()
         "/:id",
         async ({ params, query, store }) => {
           const { id } = params;
-          const { language_code = "en-US" } = query;
+          const { bible_version } = query;
           const { topicService, db } = store;
-          const topic = await topicService.getTopic(id, language_code);
+          const topic = await topicService.getTopic(id, bible_version);
           const references = await topicService.getTopicReferences(id);
+
+          // Look up language code from bible version for explanations
+          let languageCode = "en-US"; // Default fallback
+          if (bible_version) {
+            const version = await db
+              .getOrCreateConnection()
+              .selectFrom("bible_versions")
+              .where("version_key", "=", bible_version)
+              .select("language_code")
+              .executeTakeFirst();
+
+            if (version) {
+              languageCode = version.language_code;
+            }
+          }
+
           // Fetch real explanations for all types in the requested language
           const [summaryExplanation, bylineExplanation, detailedExplanation] =
             await Promise.all([
-              topicService.getTopicExplanation(id, language_code, "summary"),
-              topicService.getTopicExplanation(id, language_code, "byline"),
-              topicService.getTopicExplanation(id, language_code, "detailed"),
+              topicService.getTopicExplanation(id, languageCode, "summary"),
+              topicService.getTopicExplanation(id, languageCode, "byline"),
+              topicService.getTopicExplanation(id, languageCode, "detailed"),
             ]);
 
-          if (bylineExplanation?.explanation) {
+          if (bylineExplanation?.explanation && bible_version) {
             bylineExplanation.explanation = await parseAndInjectVerses(
               bylineExplanation.explanation,
-              "NASB1995", // Assuming a default version, or get from query
+              bible_version,
               db,
               { includeVerseNumbers: false }, // Don't include verse numbers in byline
             );
@@ -155,7 +171,7 @@ const plugin = new Elysia()
             id: t.String({ format: "uuid" }),
           }),
           query: t.Object({
-            language_code: t.Optional(t.String()),
+            bible_version: t.Optional(t.String()),
           }),
           response: TopicDetailsResponseSchema,
         },

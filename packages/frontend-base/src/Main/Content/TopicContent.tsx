@@ -1,4 +1,7 @@
-import { useSaveSearchParams } from "../../hooks/useSearchParams";
+import {
+  useGetSearchParams,
+  useSaveSearchParams,
+} from "../../hooks/useSearchParams";
 import { useTopicsByCategory } from "../../hooks/useTopics";
 import { Accordion } from "../../ui/Accordion";
 
@@ -23,7 +26,11 @@ export const TopicContent: React.FC<TopicContentProps> = ({
           ? "PARABLE"
           : category;
 
-  const { topics, isLoading, error } = useTopicsByCategory(backendCategory);
+  const { bibleVersion } = useGetSearchParams();
+  const { topics, isLoading, error } = useTopicsByCategory(
+    backendCategory,
+    bibleVersion,
+  );
   const { saveSearchParams } = useSaveSearchParams();
 
   const handleTopicClick = (topicId: string) => {

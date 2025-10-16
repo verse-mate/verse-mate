@@ -19,8 +19,8 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
     isLoading: isTopicLoading,
     error: topicError,
   } = useQuery({
-    queryKey: ["topic-details", topicId],
-    queryFn: () => getTopicDetails(topicId),
+    queryKey: ["topic-details", topicId, bibleVersion],
+    queryFn: () => getTopicDetails(topicId, bibleVersion),
     enabled: !!topicId,
   });
 

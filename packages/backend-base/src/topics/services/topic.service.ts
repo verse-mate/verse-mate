@@ -32,11 +32,11 @@ export class TopicService {
     }
   }
 
-  async getTopicsByCategory(category: string, languageCode = "en-US") {
+  async getTopicsByCategory(category: string, bibleVersion?: string) {
     try {
       return await this.topicRepository.getTopicsByCategory(
         category,
-        languageCode,
+        bibleVersion,
       );
     } catch (error: unknown) {
       console.error(`Error fetching topics for category ${category}:`, error);
@@ -59,9 +59,9 @@ export class TopicService {
     }
   }
 
-  async getTopic(topicId: string, languageCode = "en-US") {
+  async getTopic(topicId: string, bibleVersion?: string) {
     try {
-      return await this.topicRepository.getTopic(topicId, languageCode);
+      return await this.topicRepository.getTopic(topicId, bibleVersion);
     } catch (error: unknown) {
       console.error(`Error fetching topic ${topicId}:`, error);
       const errorMessage =

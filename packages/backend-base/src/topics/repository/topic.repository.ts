@@ -17,8 +17,22 @@ export class TopicRepository {
     return categories.map((row) => row.category);
   }
 
-  async getTopicsByCategory(category: string, languageCode = "en-US") {
+  async getTopicsByCategory(category: string, bibleVersion?: string) {
     const connection = this.db.getOrCreateConnection();
+
+    // Look up language code from Bible version
+    let languageCode = "en-US"; // Default fallback
+    if (bibleVersion) {
+      const version = await connection
+        .selectFrom("bible_versions")
+        .where("version_key", "=", bibleVersion)
+        .select("language_code")
+        .executeTakeFirst();
+
+      if (version) {
+        languageCode = version.language_code;
+      }
+    }
 
     const topics = await connection
       .selectFrom("topics")
@@ -62,8 +76,22 @@ export class TopicRepository {
       .execute();
   }
 
-  async getTopic(topicId: string, languageCode = "en-US") {
+  async getTopic(topicId: string, bibleVersion?: string) {
     const connection = this.db.getOrCreateConnection();
+
+    // Look up language code from Bible version
+    let languageCode = "en-US"; // Default fallback
+    if (bibleVersion) {
+      const version = await connection
+        .selectFrom("bible_versions")
+        .where("version_key", "=", bibleVersion)
+        .select("language_code")
+        .executeTakeFirst();
+
+      if (version) {
+        languageCode = version.language_code;
+      }
+    }
 
     const topic = await connection
       .selectFrom("topics")
