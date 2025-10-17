@@ -1,6 +1,10 @@
+.container main {
+  padding-bottom: 128px;
+}
+
 .container {
   position: absolute;
   inset: 56px 0 0 30px;
   overflow-y: auto;
-  padding: 24px 24px 128px; /* Added more bottom padding */
+  padding: 24px;
 }

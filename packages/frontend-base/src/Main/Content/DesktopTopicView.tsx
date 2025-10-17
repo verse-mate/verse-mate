@@ -55,6 +55,7 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
         ) : (
           <p>No content available.</p>
         )}
+        <div style={{ height: "30px" }} />
       </MainText.Root>
     </div>
   );

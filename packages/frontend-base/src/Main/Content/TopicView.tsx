@@ -75,6 +75,7 @@ export const TopicView: React.FC<TopicViewProps> = ({ topicId }) => {
         ) : (
           <p>No content available.</p>
         )}
+        <div style={{ height: "20px" }} />
       </MainText.Root>
     </div>
   );
