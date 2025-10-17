@@ -69,7 +69,7 @@ export const TopicView: React.FC<TopicViewProps> = ({ topicId }) => {
   return (
     <div className={mainContentStyles.bookContent}>
       <MainText.Root>
-        <h1>{topicDetails?.topic?.name}</h1>
+        <Renderer markdownContent={`# ${topicDetails?.topic?.name}`} />
         {topicReferences?.references?.content ? (
           <Renderer markdownContent={topicReferences.references.content} />
         ) : (
