@@ -17,8 +17,8 @@ export const TopicView: React.FC<TopicViewProps> = ({ topicId }) => {
     isLoading: isTopicLoading,
     error: topicError,
   } = useQuery({
-    queryKey: ["topic-details", topicId],
-    queryFn: () => getTopicDetails(topicId),
+    queryKey: ["topic-details", topicId, bibleVersion],
+    queryFn: () => getTopicDetails(topicId, bibleVersion),
     enabled: !!topicId,
   });
 
@@ -69,12 +69,13 @@ export const TopicView: React.FC<TopicViewProps> = ({ topicId }) => {
   return (
     <div className={mainContentStyles.bookContent}>
       <MainText.Root>
-        <h1>{topicDetails?.topic?.name}</h1>
+        <Renderer markdownContent={`# ${topicDetails?.topic?.name}`} />
         {topicReferences?.references?.content ? (
           <Renderer markdownContent={topicReferences.references.content} />
         ) : (
           <p>No content available.</p>
         )}
+        <div style={{ height: "20px" }} />
       </MainText.Root>
     </div>
   );

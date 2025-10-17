@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { authDerive } from "../auth/auth.utils";
 import { BibleRepository } from "../bible/repository/bible.repository";
 import { BibleService } from "../bible/services/bible.service";
 import shared from "../shared/shared.plugin";
@@ -16,6 +17,7 @@ const TopicSearchItemSchema = t.Object({
   name: t.String(),
   description: t.Union([t.String(), t.Null()]),
   sort_order: t.Union([t.Number(), t.Null()]),
+  is_translated: t.Optional(t.Boolean()),
 });
 
 const TopicSearchResponseSchema = t.Object({
@@ -32,6 +34,7 @@ const TopicSchema = t.Object({
   is_active: t.Union([t.Boolean(), t.Null()]),
   created_at: t.Union([t.Date(), t.Null()]),
   updated_at: t.Union([t.Date(), t.Null()]),
+  is_translated: t.Optional(t.Boolean()),
 });
 
 // Schema for topic references (only content field from repository)
@@ -87,42 +90,132 @@ const plugin = new Elysia()
           response: CategoryResponseSchema,
         },
       )
+      .resolve({ as: "scoped" }, authDerive)
       .get(
         "/search",
-        async ({ query, store: { topicService } }) => {
-          const { category } = query;
-          const topics = await topicService.getTopicsByCategory(category);
+        async ({ query, store: { topicService, db }, currentUserId }) => {
+          const { category, bible_version } = query;
+
+          // Determine language: user preference overrides Bible version language
+          let languageCode = "en-US"; // Default fallback
+
+          if (bible_version) {
+            const version = await db
+              .getOrCreateConnection()
+              .selectFrom("bible_versions")
+              .where("version_key", "=", bible_version)
+              .select("language_code")
+              .executeTakeFirst();
+
+            if (version?.language_code) {
+              languageCode = version.language_code;
+            }
+          }
+
+          // If user is logged in, check for preferred language override
+          if (currentUserId) {
+            const user = await db
+              .getOrCreateConnection()
+              .selectFrom("user")
+              .where("id", "=", currentUserId)
+              .select("preferred_language")
+              .executeTakeFirst();
+
+            // Override language if user has a preference
+            if (user?.preferred_language) {
+              languageCode = user.preferred_language;
+            }
+          }
+
+          const topics = await topicService.getTopicsByCategory(
+            category,
+            languageCode,
+          );
           return { topics };
         },
         {
           query: t.Object({
             category: t.String(),
+            bible_version: t.Optional(t.String()),
           }),
           response: TopicSearchResponseSchema,
         },
       )
       .get(
         "/:id",
-        async ({ params, store }) => {
+        async ({ params, query, store, currentUserId }) => {
           const { id } = params;
+          const { bible_version } = query;
           const { topicService, db } = store;
-          const topic = await topicService.getTopic(id);
+
+          // Determine language: user preference overrides Bible version language
+          let languageCode = "en-US"; // Default fallback
+
+          if (bible_version) {
+            const version = await db
+              .getOrCreateConnection()
+              .selectFrom("bible_versions")
+              .where("version_key", "=", bible_version)
+              .select("language_code")
+              .executeTakeFirst();
+
+            if (version?.language_code) {
+              languageCode = version.language_code;
+            }
+          }
+
+          // If user is logged in, check for preferred language override
+          if (currentUserId) {
+            const user = await db
+              .getOrCreateConnection()
+              .selectFrom("user")
+              .where("id", "=", currentUserId)
+              .select("preferred_language")
+              .executeTakeFirst();
+
+            // Override language if user has a preference
+            if (user?.preferred_language) {
+              languageCode = user.preferred_language;
+            }
+          }
+
+          const topic = await topicService.getTopic(id, languageCode);
           const references = await topicService.getTopicReferences(id);
-          // Fetch real explanations for all types
+
+          // Fetch real explanations for all types in the requested language
           const [summaryExplanation, bylineExplanation, detailedExplanation] =
             await Promise.all([
-              topicService.getTopicExplanation(id, "en-US", "summary"),
-              topicService.getTopicExplanation(id, "en-US", "byline"),
-              topicService.getTopicExplanation(id, "en-US", "detailed"),
+              topicService.getTopicExplanation(id, languageCode, "summary"),
+              topicService.getTopicExplanation(id, languageCode, "byline"),
+              topicService.getTopicExplanation(id, languageCode, "detailed"),
             ]);
 
-          if (bylineExplanation?.explanation) {
-            bylineExplanation.explanation = await parseAndInjectVerses(
-              bylineExplanation.explanation,
-              "NASB1995", // Assuming a default version, or get from query
-              db,
-              { includeVerseNumbers: false }, // Don't include verse numbers in byline
-            );
+          // Process verse placeholders for all explanation types
+          if (bible_version) {
+            if (summaryExplanation?.explanation) {
+              summaryExplanation.explanation = await parseAndInjectVerses(
+                summaryExplanation.explanation,
+                bible_version,
+                db,
+                { includeVerseNumbers: false },
+              );
+            }
+            if (bylineExplanation?.explanation) {
+              bylineExplanation.explanation = await parseAndInjectVerses(
+                bylineExplanation.explanation,
+                bible_version,
+                db,
+                { includeVerseNumbers: false },
+              );
+            }
+            if (detailedExplanation?.explanation) {
+              detailedExplanation.explanation = await parseAndInjectVerses(
+                detailedExplanation.explanation,
+                bible_version,
+                db,
+                { includeVerseNumbers: false },
+              );
+            }
           }
 
           const explanation = {
@@ -146,6 +239,9 @@ const plugin = new Elysia()
         {
           params: t.Object({
             id: t.String({ format: "uuid" }),
+          }),
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
           }),
           response: TopicDetailsResponseSchema,
         },

@@ -480,7 +480,7 @@ export const Nav = ({
           <SelectDropdown.Content
             align="start"
             style={{
-              width: "390px",
+              width: "420px",
               marginTop: "16px",
             }}
           >
@@ -512,7 +512,11 @@ export const Nav = ({
               </Tabs.List>
 
               <FilterInput
-                placeholder="Filter Books..."
+                placeholder={
+                  leftPanelSelectedTab === "TOPICS"
+                    ? "Search all topics..."
+                    : "Filter Books..."
+                }
                 debouncedFilter={leftPanelDebouncedFilter}
                 handleChange={leftPanelHandleChange}
                 filterable

@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
 import Link from "next/link";
 import { destroyCookie } from "nookies";
@@ -31,6 +32,7 @@ export const Settings = ({
   setRightPanelContent,
 }: SettingsProps) => {
   const { session, fetchSession } = userSession();
+  const queryClient = useQueryClient();
   const selectedVersionData = bibleVersions.find(
     (version) => version.key === selectedBibleVersion,
   );
@@ -67,7 +69,11 @@ export const Settings = ({
             name: lang.name,
             nativeName: lang.native_name,
           }));
-          setAvailableLanguages(mappedLanguages);
+          // Sort languages alphabetically by native name
+          const sortedLanguages = mappedLanguages.sort((a, b) =>
+            a.nativeName.localeCompare(b.nativeName),
+          );
+          setAvailableLanguages(sortedLanguages);
         }
       } catch (error) {
         console.error("Failed to fetch available languages:", error);
@@ -130,17 +136,42 @@ export const Settings = ({
     window.location.reload();
   };
 
-  const handleLanguageChange = (val: any) => {
-    setSelectedLanguage(val as string);
+  const handleLanguageChange = async (val: any) => {
+    const newLanguage = val as string;
+    setSelectedLanguage(newLanguage);
+
+    // Auto-save language preference immediately
+    try {
+      const languageToSave = newLanguage === "automatic" ? null : newLanguage;
+      await updateLanguagePreference(languageToSave);
+      await fetchSession(true);
+
+      // Invalidate topic-related queries to refresh with new language
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown as (string | undefined)[];
+          return (
+            Array.isArray(k) &&
+            (k[0] === "topic-details" ||
+              k[0] === "topic-references" ||
+              k[0] === "topic-details-explanation" ||
+              k[0] === "topic-explanation" ||
+              k[0] === "topics")
+          );
+        },
+      });
+    } catch (error) {
+      console.error("Failed to save language preference:", error);
+      // Optionally show an error message to the user
+    }
   };
 
-  // Global change detection
+  // Global change detection (excluding language since it auto-saves)
   const hasChanges = () => {
     return (
       firstName !== (session?.firstName || "") ||
       lastName !== (session?.lastName || "") ||
-      email !== (session?.email || "") ||
-      selectedLanguage !== (session?.preferred_language || "automatic")
+      email !== (session?.email || "")
     );
   };
 
@@ -150,13 +181,6 @@ export const Settings = ({
       lastName !== (session?.lastName || "") ||
       email !== (session?.email || "")
     );
-  };
-
-  const hasLanguageChanges = () => {
-    const currentStoredLanguage = session?.preferred_language || null;
-    const languageToSave =
-      selectedLanguage === "automatic" ? null : selectedLanguage;
-    return languageToSave !== currentStoredLanguage;
   };
 
   // Global save handler
@@ -173,34 +197,18 @@ export const Settings = ({
     }
 
     try {
-      const updates: Array<Promise<any>> = [];
-
-      // Profile updates if changed
-      if (hasProfileChanges()) {
-        updates.push(
-          updateProfile({
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            email: email.trim(),
-          }),
-        );
-      }
-
-      // Language preference updates if changed
-      if (hasLanguageChanges()) {
-        const languageToSave =
-          selectedLanguage === "automatic" ? null : selectedLanguage;
-        updates.push(updateLanguagePreference(languageToSave));
-      }
-
-      if (updates.length === 0) {
+      // Only save profile changes (language is auto-saved)
+      if (!hasProfileChanges()) {
         setGlobalError("No changes detected.");
         setIsSaving(false);
         return;
       }
 
-      // Execute all updates concurrently
-      await Promise.all(updates);
+      await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+      });
 
       // Refresh session data
       await fetchSession(true);
@@ -338,13 +346,6 @@ export const Settings = ({
                       overflowY: "auto",
                     }}
                   >
-                    <SelectDropdown.Item
-                      key="automatic"
-                      value="automatic"
-                      icon={<CheckIcon />}
-                    >
-                      Automatic (Based on Bible Version)
-                    </SelectDropdown.Item>
                     {availableLanguages.map((language) => (
                       <SelectDropdown.Item
                         key={`lang-${language.code}`}
