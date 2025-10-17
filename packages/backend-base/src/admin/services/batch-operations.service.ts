@@ -3292,7 +3292,7 @@ export class BatchOperationService {
           // Description: {translated description}
           const nameMatch = extractedText.match(/Name:\s*(.+?)(?:\n|$)/i);
           const descMatch = extractedText.match(
-            /Description:\s*(.+?)(?:\n|$)/is,
+            /Description:\s*([\s\S]+?)(?:\n|$)/i,
           );
 
           const translatedName = nameMatch?.[1]?.trim();
