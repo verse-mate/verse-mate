@@ -480,7 +480,7 @@ export const Nav = ({
           <SelectDropdown.Content
             align="start"
             style={{
-              width: "390px",
+              width: "420px",
               marginTop: "16px",
             }}
           >

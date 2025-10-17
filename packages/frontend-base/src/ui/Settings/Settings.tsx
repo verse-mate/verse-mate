@@ -69,7 +69,11 @@ export const Settings = ({
             name: lang.name,
             nativeName: lang.native_name,
           }));
-          setAvailableLanguages(mappedLanguages);
+          // Sort languages alphabetically by native name
+          const sortedLanguages = mappedLanguages.sort((a, b) =>
+            a.nativeName.localeCompare(b.nativeName),
+          );
+          setAvailableLanguages(sortedLanguages);
         }
       } catch (error) {
         console.error("Failed to fetch available languages:", error);
@@ -342,13 +346,6 @@ export const Settings = ({
                       overflowY: "auto",
                     }}
                   >
-                    <SelectDropdown.Item
-                      key="automatic"
-                      value="automatic"
-                      icon={<CheckIcon />}
-                    >
-                      Automatic (Based on Bible Version)
-                    </SelectDropdown.Item>
                     {availableLanguages.map((language) => (
                       <SelectDropdown.Item
                         key={`lang-${language.code}`}

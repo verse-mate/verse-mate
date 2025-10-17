@@ -4050,7 +4050,7 @@ export class BatchOperationService {
       for (const exp of sourceExplanations) {
         const key = `${exp.topic_id}|${exp.type}`;
         if (!existingSet.has(key)) {
-          const topic = topics.find((t) => t.topic_id === exp.topic_id);
+          const _topic = topics.find((t) => t.topic_id === exp.topic_id);
           batchRequests.push({
             custom_id: `translate-topic|${exp.topic_id}|${exp.type}|${target_language_code}|${exp.explanation_id}`,
             method: "POST",
