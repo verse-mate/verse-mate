@@ -78,7 +78,7 @@ export const GroupedTrigger = ({
     >
       <span className={extendedStyles.text}>{displayText}</span>
       <span className={extendedStyles.iconWrapper}>
-        <Icon.ChevronDownIcon className={extendedStyles.icon} />
+        <Icon.ChevronDownIcon className={extendedStyles.trigger} />
       </span>
     </button>
   );

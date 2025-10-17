@@ -22,14 +22,10 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("updated_at", "timestamp", (col) =>
       col.defaultTo(sql`CURRENT_TIMESTAMP`),
     )
-    .execute();
-
-  // Unique constraint: one translation per topic per language
-  await db.schema
-    .createIndex("unique_topic_translation")
-    .on("topic_translations")
-    .columns(["topic_id", "language_code"])
-    .unique()
+    .addUniqueConstraint("unique_topic_translation", [
+      "topic_id",
+      "language_code",
+    ])
     .execute();
 
   // Index for language_code lookups

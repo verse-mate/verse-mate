@@ -107,7 +107,7 @@ const plugin = new Elysia()
               .select("language_code")
               .executeTakeFirst();
 
-            if (version) {
+            if (version?.language_code) {
               languageCode = version.language_code;
             }
           }
@@ -159,7 +159,7 @@ const plugin = new Elysia()
               .select("language_code")
               .executeTakeFirst();
 
-            if (version) {
+            if (version?.language_code) {
               languageCode = version.language_code;
             }
           }

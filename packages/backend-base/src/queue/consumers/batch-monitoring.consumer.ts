@@ -91,8 +91,9 @@ export const batchMonitoringConsumer = async (job: Job) => {
     // Handle invalid parent IDs (e.g., old batches with incorrect format)
     if (Number.isNaN(parentId)) {
       console.error(
-        `[BATCH_MONITORING] Invalid parent batch ID format: ${batchId}. Skipping monitoring.`,
+        `[BATCH_MONITORING] Invalid parent batch ID format: ${batchId}. Skipping update.`,
       );
+      // Do not attempt to update DB with an invalid key; just exit gracefully
       return;
     }
 

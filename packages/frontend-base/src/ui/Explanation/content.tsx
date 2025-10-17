@@ -52,12 +52,16 @@ export const Content = ({
     <>
       {error && (
         <div>
-          Error:{" "}
-          {typeof error === "object" && error && "message" in error
-            ? String((error as any).message)
-            : typeof error === "string"
-              ? error
-              : "An unexpected error occurred"}
+          Error: An unexpected error occurred.
+          {process.env.NODE_ENV !== "production" && (
+            <span style={{ display: "block", marginTop: 4 }}>
+              {typeof error === "object" && error && "message" in error
+                ? String((error as any).message)
+                : typeof error === "string"
+                  ? error
+                  : ""}
+            </span>
+          )}
         </div>
       )}
 

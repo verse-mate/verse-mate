@@ -2390,8 +2390,15 @@ export class BatchOperationService {
     batchJob: { model: string },
   ) {
     const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
 
     let processedCount = 0;
     let errorCount = 0;
@@ -2662,8 +2669,15 @@ export class BatchOperationService {
     },
   ) {
     const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
 
     let processedCount = 0;
     let errorCount = 0;
@@ -3208,8 +3222,15 @@ export class BatchOperationService {
     );
 
     const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
 
     let processedCount = 0;
     let errorCount = 0;
@@ -3290,13 +3311,46 @@ export class BatchOperationService {
           // Parse AI response - expect format:
           // Name: {translated name}
           // Description: {translated description}
-          const nameMatch = extractedText.match(/Name:\s*(.+?)(?:\n|$)/i);
-          const descMatch = extractedText.match(
-            /Description:\s*([\s\S]+?)(?:\n|$)/i,
-          );
+          let translatedName: string | null = null;
+          let translatedDescription: string | null = null;
 
-          const translatedName = nameMatch?.[1]?.trim();
-          const translatedDescription = descMatch?.[1]?.trim() || null;
+          // Try JSON first
+          try {
+            const asJson = JSON.parse(extractedText);
+            if (asJson && typeof asJson === "object") {
+              if (typeof asJson.name === "string")
+                translatedName = asJson.name.trim();
+              if (typeof asJson.description === "string")
+                translatedDescription = asJson.description.trim();
+            }
+          } catch {}
+
+          // Fallback to "Name:" / "Description:" format
+          if (!translatedName) {
+            const nameMatch = extractedText.match(
+              /^\s*Name\s*:\s*(.+?)\s*(?:\r?\n|$)/i,
+            );
+            const descMatch = extractedText.match(
+              /^\s*Description\s*:\s*([\s\S]*?)$/im,
+            );
+            translatedName = nameMatch?.[1]?.trim() || null;
+            translatedDescription =
+              descMatch?.[1]?.trim() || translatedDescription;
+          }
+
+          // Final fallback: first line as name, rest as description
+          if (!translatedName) {
+            const [first, ...rest] = extractedText
+              .split(/\r?\n/)
+              .map((s) => s.trim())
+              .filter(Boolean);
+            if (first) {
+              translatedName = first;
+              translatedDescription = rest.length
+                ? rest.join("\n")
+                : translatedDescription;
+            }
+          }
 
           if (!translatedName) {
             console.error(
@@ -3383,8 +3437,15 @@ export class BatchOperationService {
     );
 
     const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
 
     let processedCount = 0;
     let errorCount = 0;
@@ -3449,7 +3510,7 @@ export class BatchOperationService {
           typeof extractedText === "string" &&
           extractedText.length > 0
         ) {
-          // Parse custom_id: translate-topic|{topic_name}|{type}|{target_lang}|{explanation_id}
+          // Parse custom_id: translate-topic|{topic_id}|{type}|{target_lang}|{explanation_id}
           const parts = parsedLine.custom_id.split("|");
 
           if (parts.length !== 5) {
@@ -3462,21 +3523,21 @@ export class BatchOperationService {
 
           const [
             ,
-            topicName,
+            topicId,
             explanationType,
             targetLanguage,
             sourceExplanationId,
           ] = parts;
 
-          // Find topic by name
+          // Find topic by ID
           const topic = await connection
             .selectFrom("topics")
-            .where("name", "=", topicName)
+            .where("topic_id", "=", topicId)
             .select("topic_id")
             .executeTakeFirst();
 
           if (!topic) {
-            console.error(`[BATCH] Topic not found: ${topicName}`);
+            console.error(`[BATCH] Topic not found: ${topicId}`);
             errorCount++;
             continue;
           }
@@ -3505,7 +3566,7 @@ export class BatchOperationService {
           const parentExplanationId = sourceExplanation?.explanation_id || null;
 
           console.log(
-            `[BATCH] Processing translation for topic ${topicName}, type ${explanationType}, version: ${nextVersion}`,
+            `[BATCH] Processing translation for topic ${topicId}, type ${explanationType}, version: ${nextVersion}`,
           );
 
           // Use transaction to deactivate old and insert new
@@ -3538,7 +3599,7 @@ export class BatchOperationService {
 
           processedCount++;
           console.log(
-            `[BATCH] Saved translation for ${topicName} - ${explanationType}`,
+            `[BATCH] Saved translation for ${topicId} - ${explanationType}`,
           );
         } else {
           errorCount++;
@@ -3991,7 +4052,7 @@ export class BatchOperationService {
         if (!existingSet.has(key)) {
           const topic = topics.find((t) => t.topic_id === exp.topic_id);
           batchRequests.push({
-            custom_id: `translate-topic|${topic?.name}|${exp.type}|${target_language_code}|${exp.explanation_id}`,
+            custom_id: `translate-topic|${exp.topic_id}|${exp.type}|${target_language_code}|${exp.explanation_id}`,
             method: "POST",
             url: "/v1/responses",
             body: {
@@ -4009,21 +4070,18 @@ export class BatchOperationService {
         `[BATCH] After skipping existing, ${batchRequests.length} translations needed`,
       );
     } else {
-      batchRequests = sourceExplanations.map((exp) => {
-        const topic = topics.find((t) => t.topic_id === exp.topic_id);
-        return {
-          custom_id: `translate-topic|${topic?.name}|${exp.type}|${target_language_code}|${exp.explanation_id}`,
-          method: "POST",
-          url: "/v1/responses",
-          body: {
-            model,
-            reasoning: { effort },
-            instructions: finalPrompt,
-            input: exp.explanation,
-            max_output_tokens: 50000,
-          },
-        };
-      });
+      batchRequests = sourceExplanations.map((exp) => ({
+        custom_id: `translate-topic|${exp.topic_id}|${exp.type}|${target_language_code}|${exp.explanation_id}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: finalPrompt,
+          input: exp.explanation,
+          max_output_tokens: 50000,
+        },
+      }));
     }
 
     if (batchRequests.length === 0) {

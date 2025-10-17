@@ -143,12 +143,19 @@ export const Settings = ({
       await fetchSession(true);
 
       // Invalidate topic-related queries to refresh with new language
-      queryClient.invalidateQueries({ queryKey: ["topic-details"] });
-      queryClient.invalidateQueries({ queryKey: ["topic-references"] });
       queryClient.invalidateQueries({
-        queryKey: ["topic-details-explanation"],
+        predicate: (q) => {
+          const k = q.queryKey as unknown as (string | undefined)[];
+          return (
+            Array.isArray(k) &&
+            (k[0] === "topic-details" ||
+              k[0] === "topic-references" ||
+              k[0] === "topic-details-explanation" ||
+              k[0] === "topic-explanation" ||
+              k[0] === "topics")
+          );
+        },
       });
-      queryClient.invalidateQueries({ queryKey: ["topic-explanation"] });
     } catch (error) {
       console.error("Failed to save language preference:", error);
       // Optionally show an error message to the user
