@@ -190,13 +190,32 @@ const plugin = new Elysia()
               topicService.getTopicExplanation(id, languageCode, "detailed"),
             ]);
 
-          if (bylineExplanation?.explanation && bible_version) {
-            bylineExplanation.explanation = await parseAndInjectVerses(
-              bylineExplanation.explanation,
-              bible_version,
-              db,
-              { includeVerseNumbers: false }, // Don't include verse numbers in byline
-            );
+          // Process verse placeholders for all explanation types
+          if (bible_version) {
+            if (summaryExplanation?.explanation) {
+              summaryExplanation.explanation = await parseAndInjectVerses(
+                summaryExplanation.explanation,
+                bible_version,
+                db,
+                { includeVerseNumbers: false },
+              );
+            }
+            if (bylineExplanation?.explanation) {
+              bylineExplanation.explanation = await parseAndInjectVerses(
+                bylineExplanation.explanation,
+                bible_version,
+                db,
+                { includeVerseNumbers: false },
+              );
+            }
+            if (detailedExplanation?.explanation) {
+              detailedExplanation.explanation = await parseAndInjectVerses(
+                detailedExplanation.explanation,
+                bible_version,
+                db,
+                { includeVerseNumbers: false },
+              );
+            }
           }
 
           const explanation = {

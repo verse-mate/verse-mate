@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { getTopicsByCategory } from "../../api/topics";
 import {
   useGetSearchParams,
   useSaveSearchParams,
@@ -27,10 +29,55 @@ export const TopicContent: React.FC<TopicContentProps> = ({
           : category;
 
   const { bibleVersion } = useGetSearchParams();
-  const { topics, isLoading, error } = useTopicsByCategory(
-    backendCategory,
-    bibleVersion,
-  );
+
+  // When there's a filter, fetch all topics from all categories
+  const hasFilter = filter.trim().length > 0;
+
+  // Fetch topics for the current category
+  const {
+    topics: currentCategoryTopics,
+    isLoading: isLoadingCurrent,
+    error: errorCurrent,
+  } = useTopicsByCategory(backendCategory, bibleVersion);
+
+  // Fetch all other categories when filtering
+  const { data: eventsTopics, isLoading: isLoadingEvents } = useQuery({
+    queryKey: ["topics", "EVENT", bibleVersion],
+    queryFn: () => getTopicsByCategory("EVENT", bibleVersion),
+    enabled: hasFilter && backendCategory !== "EVENT",
+  });
+
+  const { data: propheciesTopics, isLoading: isLoadingProphecies } = useQuery({
+    queryKey: ["topics", "PROPHECY", bibleVersion],
+    queryFn: () => getTopicsByCategory("PROPHECY", bibleVersion),
+    enabled: hasFilter && backendCategory !== "PROPHECY",
+  });
+
+  const { data: parablesTopics, isLoading: isLoadingParables } = useQuery({
+    queryKey: ["topics", "PARABLE", bibleVersion],
+    queryFn: () => getTopicsByCategory("PARABLE", bibleVersion),
+    enabled: hasFilter && backendCategory !== "PARABLE",
+  });
+
+  // Combine all topics when filtering
+  const allTopics = hasFilter
+    ? [
+        ...(currentCategoryTopics || []),
+        ...(eventsTopics || []),
+        ...(propheciesTopics || []),
+        ...(parablesTopics || []),
+      ]
+    : currentCategoryTopics || [];
+
+  const isLoading = hasFilter
+    ? isLoadingCurrent ||
+      isLoadingEvents ||
+      isLoadingProphecies ||
+      isLoadingParables
+    : isLoadingCurrent;
+
+  const error = errorCurrent;
+
   const { saveSearchParams } = useSaveSearchParams();
 
   const handleTopicClick = (topicId: string) => {
@@ -63,12 +110,12 @@ export const TopicContent: React.FC<TopicContentProps> = ({
   }
 
   // Handle empty state
-  if (!topics || topics.length === 0) {
+  if (!allTopics || allTopics.length === 0) {
     return <p style={{ padding: "16px" }}>No topics found in this category.</p>;
   }
 
   // Remove duplicate topics by name and apply the filter
-  const filteredTopics = topics
+  const filteredTopics = allTopics
     .reduce((acc: any[], current: any) => {
       const duplicate = acc.find((topic) => topic.name === current.name);
       if (!duplicate) {
