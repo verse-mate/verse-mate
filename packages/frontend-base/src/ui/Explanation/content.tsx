@@ -15,8 +15,8 @@ export const Content = ({
     useGetSearchParams();
   const {
     explanation: explanationFromFetch,
-    error,
-    isLoading,
+    error: fetchError,
+    isLoading: fetchIsLoading,
   } = fetchExplanation(
     Number(bookId),
     Number(verseId),
@@ -25,6 +25,12 @@ export const Content = ({
   );
 
   const explanation = explanationFromProp || explanationFromFetch;
+
+  // Only use fetch error/loading state if explanation is not provided as prop
+  const error = explanationFromProp ? explanationFromProp.error : fetchError;
+  const isLoading = explanationFromProp
+    ? explanationFromProp.isLoading
+    : fetchIsLoading;
 
   const {
     maxRating,
@@ -46,10 +52,16 @@ export const Content = ({
     <>
       {error && (
         <div>
-          Error:{" "}
-          {typeof error === "object" && error && "message" in error
-            ? (error as any).message
-            : "An unexpected error occurred"}
+          Error: An unexpected error occurred.
+          {process.env.NODE_ENV !== "production" && (
+            <span style={{ display: "block", marginTop: 4 }}>
+              {typeof error === "object" && error && "message" in error
+                ? String((error as any).message)
+                : typeof error === "string"
+                  ? error
+                  : ""}
+            </span>
+          )}
         </div>
       )}
 

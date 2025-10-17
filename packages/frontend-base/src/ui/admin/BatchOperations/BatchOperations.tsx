@@ -160,7 +160,8 @@ const ActionsMenu = ({
           {job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
           job.batch_type === "translate-bible" ||
-          job.batch_type === "topic-explanations-parent" ? (
+          job.batch_type === "topic-explanations-parent" ||
+          job.batch_type === "topic-translate-all" ? (
             <>
               <Button
                 variant="outlined"
@@ -294,7 +295,7 @@ export const BatchOperations = () => {
   // Topic batch state
   const [topicBatchModalOpen, setTopicBatchModalOpen] = useState(false);
   const [topicBatchType, setTopicBatchType] = useState<
-    "discovery" | "references" | "explanations" | null
+    "discovery" | "references" | "explanations" | "translate" | null
   >(null);
   const [topicCategory, setTopicCategory] = useState("EVENT");
   const [topicLanguageCode, setTopicLanguageCode] = useState("en");
@@ -304,6 +305,12 @@ export const BatchOperations = () => {
     "detailed",
   ]);
   const [creatingTopicBatch, setCreatingTopicBatch] = useState(false);
+  const [topicTranslationType, setTopicTranslationType] = useState<
+    "names" | "explanations" | "all"
+  >("all");
+  const [topicSourceLanguage, setTopicSourceLanguage] = useState("en-US");
+  const [topicTargetLanguage, setTopicTargetLanguage] = useState("");
+  const [topicSkipExisting, setTopicSkipExisting] = useState(false);
   const [topicsForCategory, setTopicsForCategory] = useState<
     {
       topic_id: string;
@@ -323,7 +330,9 @@ export const BatchOperations = () => {
     const fetchTopicsForCategory = async () => {
       if (
         topicCategory &&
-        (topicBatchType === "references" || topicBatchType === "explanations")
+        (topicBatchType === "references" ||
+          topicBatchType === "explanations" ||
+          topicBatchType === "translate")
       ) {
         try {
           setLoadingTopics(true);
@@ -441,10 +450,13 @@ export const BatchOperations = () => {
 
         const parentBatches = jobs.filter(
           (job) =>
-            job.batch_type === "bible" ||
-            job.batch_type === "rephrase-bible" ||
-            job.batch_type === "translate-bible" ||
-            job.batch_type === "topic-explanations-parent",
+            (job.batch_type === "bible" ||
+              job.batch_type === "rephrase-bible" ||
+              job.batch_type === "translate-bible" ||
+              job.batch_type === "topic-explanations-parent" ||
+              job.batch_type === "topic-translate-all") &&
+            // Skip failed batches to avoid unnecessary API calls
+            job.status !== "failed",
         );
         const newSummaries: Record<string, any> = {};
         for (const batch of parentBatches) {
@@ -525,6 +537,23 @@ export const BatchOperations = () => {
       return;
     }
 
+    // Validate translation inputs
+    if (topicBatchType === "translate") {
+      if (!topicTargetLanguage.trim()) {
+        setError("Please enter a target language code");
+        return;
+      }
+      if (
+        topicTranslationType === "explanations" ||
+        topicTranslationType === "all"
+      ) {
+        if (topicExplanationTypes.length === 0) {
+          setError("Please select at least one explanation type");
+          return;
+        }
+      }
+    }
+
     try {
       setCreatingTopicBatch(true);
       setError(null);
@@ -558,6 +587,33 @@ export const BatchOperations = () => {
             ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }),
           });
           break;
+        case "translate": {
+          // Call the appropriate translation endpoint based on translation type
+          const translationPayload = {
+            model: selectedModel,
+            source_language_code: topicSourceLanguage,
+            target_language_code: topicTargetLanguage.trim(),
+            skip_existing: topicSkipExisting,
+            effort: selectedEffort as "low" | "medium" | "high",
+            category: topicCategory,
+            ...(selectedTopicForBatch && { topic_id: selectedTopicForBatch }),
+          };
+
+          if (topicTranslationType === "names") {
+            await api.admin.topics["translate-names"].post(translationPayload);
+          } else if (topicTranslationType === "explanations") {
+            await api.admin.topics["translate-explanations"].post({
+              ...translationPayload,
+              explanation_types: topicExplanationTypes,
+            });
+          } else if (topicTranslationType === "all") {
+            await api.admin.topics["translate-all"].post({
+              ...translationPayload,
+              explanation_types: topicExplanationTypes,
+            });
+          }
+          break;
+        }
       }
 
       await fetchBatchJobs();
@@ -702,7 +758,8 @@ export const BatchOperations = () => {
       if (
         job?.batch_type === "bible" ||
         job?.batch_type === "rephrase-bible" ||
-        job?.batch_type === "translate-bible"
+        job?.batch_type === "translate-bible" ||
+        job?.batch_type === "topic-translate-all"
       ) {
         await handleMonitorBibleBatch(batchId);
       } else if (job?.openai_batch_id) {
@@ -808,7 +865,8 @@ export const BatchOperations = () => {
             job.batch_type === "bible" ||
             job.batch_type === "rephrase-bible" ||
             job.batch_type === "translate-bible" ||
-            job.batch_type === "topic-explanations-parent"
+            job.batch_type === "topic-explanations-parent" ||
+            job.batch_type === "topic-translate-all"
           ) {
             handleViewBibleDetails(job.id);
           } else if (job.openai_batch_id) {
@@ -873,6 +931,15 @@ export const BatchOperations = () => {
                 displayText += " (All)";
               }
               break;
+            case "topic-translate-all":
+              displayText = "Topic Translation";
+              if (job.topic_category) {
+                displayText += ` (${job.topic_category})`;
+              }
+              if (job.target_language_code) {
+                displayText += ` → ${job.target_language_code}`;
+              }
+              break;
             default:
               displayText = job.book_name || "N/A";
           }
@@ -921,7 +988,8 @@ export const BatchOperations = () => {
           job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
           job.batch_type === "translate-bible" ||
-          job.batch_type === "topic-explanations-parent";
+          job.batch_type === "topic-explanations-parent" ||
+          job.batch_type === "topic-translate-all";
         const status =
           isParentBatch && summary ? summary.aggregate_status : job.status;
         const statusText =
@@ -953,7 +1021,8 @@ export const BatchOperations = () => {
         const isParentBatch =
           job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
-          job.batch_type === "translate-bible";
+          job.batch_type === "translate-bible" ||
+          job.batch_type === "topic-translate-all";
         const cost =
           isParentBatch && summary ? summary.total_cost : job.actual_cost;
         return (
@@ -1655,11 +1724,20 @@ export const BatchOperations = () => {
               >
                 Explanations
               </Button>
+              <Button
+                variant={
+                  topicBatchType === "translate" ? "contained" : "outlined"
+                }
+                onClick={() => setTopicBatchType("translate")}
+              >
+                Translate
+              </Button>
             </div>
           </div>
 
           {(topicBatchType === "references" ||
-            topicBatchType === "explanations") && (
+            topicBatchType === "explanations" ||
+            topicBatchType === "translate") && (
             <div style={{ marginBottom: "20px" }}>
               <label
                 style={{
@@ -1700,7 +1778,8 @@ export const BatchOperations = () => {
           )}
 
           {(topicBatchType === "references" ||
-            topicBatchType === "explanations") && (
+            topicBatchType === "explanations" ||
+            topicBatchType === "translate") && (
             <div style={{ marginBottom: "20px" }}>
               <label
                 style={{
@@ -1840,6 +1919,160 @@ export const BatchOperations = () => {
             </>
           )}
 
+          {topicBatchType === "translate" && (
+            <>
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Translation Type:
+                </label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <Button
+                    variant={
+                      topicTranslationType === "names"
+                        ? "contained"
+                        : "outlined"
+                    }
+                    onClick={() => setTopicTranslationType("names")}
+                  >
+                    Names Only
+                  </Button>
+                  <Button
+                    variant={
+                      topicTranslationType === "explanations"
+                        ? "contained"
+                        : "outlined"
+                    }
+                    onClick={() => setTopicTranslationType("explanations")}
+                  >
+                    Explanations Only
+                  </Button>
+                  <Button
+                    variant={
+                      topicTranslationType === "all" ? "contained" : "outlined"
+                    }
+                    onClick={() => setTopicTranslationType("all")}
+                  >
+                    All (Names + Explanations)
+                  </Button>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Source Language Code:
+                </label>
+                <Input
+                  value={topicSourceLanguage}
+                  onChange={(e) => setTopicSourceLanguage(e.target.value)}
+                  placeholder="e.g., en-US"
+                />
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Target Language Code:
+                </label>
+                <Input
+                  value={topicTargetLanguage}
+                  onChange={(e) => setTopicTargetLanguage(e.target.value)}
+                  placeholder="e.g., es-ES, fr-FR"
+                />
+              </div>
+
+              {(topicTranslationType === "explanations" ||
+                topicTranslationType === "all") && (
+                <div style={{ marginBottom: "20px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Explanation Types:
+                  </label>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    {["summary", "detailed", "byline"].map((type) => (
+                      <label
+                        key={type}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "5px",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={topicExplanationTypes.includes(type)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setTopicExplanationTypes([
+                                ...topicExplanationTypes,
+                                type,
+                              ]);
+                            } else {
+                              setTopicExplanationTypes(
+                                topicExplanationTypes.filter((t) => t !== type),
+                              );
+                            }
+                          }}
+                        />
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={topicSkipExisting}
+                    onChange={(e) => setTopicSkipExisting(e.target.checked)}
+                  />
+                  Skip existing translations
+                </label>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#666",
+                    marginTop: "4px",
+                    marginLeft: "24px",
+                  }}
+                >
+                  When checked, only translates topics that don't already have
+                  translations in the target language.
+                </p>
+              </div>
+            </>
+          )}
+
           <Dialog.Footer>
             <Button
               onClick={() => setTopicBatchModalOpen(false)}
@@ -1853,6 +2086,12 @@ export const BatchOperations = () => {
               disabled={
                 !topicBatchType ||
                 (topicBatchType === "explanations" &&
+                  topicExplanationTypes.length === 0) ||
+                (topicBatchType === "translate" &&
+                  !topicTargetLanguage.trim()) ||
+                (topicBatchType === "translate" &&
+                  (topicTranslationType === "explanations" ||
+                    topicTranslationType === "all") &&
                   topicExplanationTypes.length === 0)
               }
             >

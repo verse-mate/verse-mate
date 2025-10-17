@@ -154,8 +154,8 @@ export const Content = ({
   const { explanationType } = useGetSearchParams();
 
   const { data: topicDetails } = useQuery({
-    queryKey: ["topic-details-explanation", topicId],
-    queryFn: () => getTopicDetails(topicId),
+    queryKey: ["topic-details-explanation", topicId, selectedBibleVersion],
+    queryFn: () => getTopicDetails(topicId, selectedBibleVersion),
     enabled: isViewingTopic && !!topicId,
   });
 

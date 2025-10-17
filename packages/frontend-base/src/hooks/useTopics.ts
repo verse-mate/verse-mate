@@ -14,10 +14,13 @@ export const useTopicCategories = () => {
   return { categories: data, isLoading, error };
 };
 
-export const useTopicsByCategory = (category: string) => {
+export const useTopicsByCategory = (
+  category: string,
+  bibleVersion?: string,
+) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["topics", category],
-    queryFn: () => getTopicsByCategory(category),
+    queryKey: ["topics", category, bibleVersion],
+    queryFn: () => getTopicsByCategory(category, bibleVersion),
     enabled: !!category,
   });
 

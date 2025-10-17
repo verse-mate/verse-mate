@@ -19,8 +19,8 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
     isLoading: isTopicLoading,
     error: topicError,
   } = useQuery({
-    queryKey: ["topic-details", topicId],
-    queryFn: () => getTopicDetails(topicId),
+    queryKey: ["topic-details", topicId, bibleVersion],
+    queryFn: () => getTopicDetails(topicId, bibleVersion),
     enabled: !!topicId,
   });
 
@@ -49,12 +49,13 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   return (
     <div className={styles.container}>
       <MainText.Root>
-        <h1>{topicDetails?.topic?.name}</h1>
+        <Renderer markdownContent={`# ${topicDetails?.topic?.name}`} />
         {topicReferences?.references?.content ? (
           <Renderer markdownContent={topicReferences.references.content} />
         ) : (
           <p>No content available.</p>
         )}
+        <div style={{ height: "30px" }} />
       </MainText.Root>
     </div>
   );

@@ -1190,7 +1190,11 @@ export const MainContent = () => {
                           </Tabs.List>
 
                           <FilterInput
-                            placeholder="Filter..."
+                            placeholder={
+                              leftPanelSelectedTab === "TOPICS"
+                                ? "Search all topics..."
+                                : "Filter Books..."
+                            }
                             debouncedFilter={leftPanelDebouncedFilter}
                             handleChange={leftPanelHandleChange}
                             filterable

@@ -1,5 +1,6 @@
 import type { Topics } from "database/src/models/public/Topics";
 import type { Insertable, Updateable } from "kysely";
+import { sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 
 export class TopicRepository {
@@ -17,18 +18,39 @@ export class TopicRepository {
     return categories.map((row) => row.category);
   }
 
-  async getTopicsByCategory(category: string) {
-    const topics = await this.db
-      .getOrCreateConnection()
+  async getTopicsByCategory(category: string, languageCode = "en-US") {
+    const connection = this.db.getOrCreateConnection();
+
+    const topics = await connection
       .selectFrom("topics")
-      .where("category", "=", category)
-      .where("is_active", "=", true)
-      .select(["topic_id", "name", "description", "sort_order"])
-      .orderBy("sort_order")
-      .orderBy("name")
+      .leftJoin("topic_translations", (join) =>
+        join
+          .onRef("topics.topic_id", "=", "topic_translations.topic_id")
+          .on("topic_translations.language_code", "=", sql.lit(languageCode))
+          .on("topic_translations.is_active", "=", true),
+      )
+      .where("topics.category", "=", category)
+      .where("topics.is_active", "=", true)
+      .select([
+        "topics.topic_id",
+        "topics.name as original_name",
+        "topics.description as original_description",
+        "topics.sort_order",
+        "topic_translations.translated_name",
+        "topic_translations.translated_description",
+      ])
+      .orderBy("topics.sort_order")
+      .orderBy("topics.name")
       .execute();
 
-    return topics;
+    return topics.map((topic) => ({
+      topic_id: topic.topic_id,
+      name: topic.translated_name || topic.original_name,
+      description:
+        topic.translated_description || topic.original_description || null,
+      sort_order: topic.sort_order,
+      is_translated: !!topic.translated_name,
+    }));
   }
 
   async getAllTopics() {
@@ -41,15 +63,48 @@ export class TopicRepository {
       .execute();
   }
 
-  async getTopic(topicId: string) {
-    const topic = await this.db
-      .getOrCreateConnection()
+  async getTopic(topicId: string, languageCode = "en-US") {
+    const connection = this.db.getOrCreateConnection();
+
+    const topic = await connection
       .selectFrom("topics")
-      .where("topic_id", "=", topicId)
-      .selectAll()
+      .leftJoin("topic_translations", (join) =>
+        join
+          .onRef("topics.topic_id", "=", "topic_translations.topic_id")
+          .on("topic_translations.language_code", "=", sql.lit(languageCode))
+          .on("topic_translations.is_active", "=", true),
+      )
+      .where("topics.topic_id", "=", topicId)
+      .select([
+        "topics.topic_id",
+        "topics.name as original_name",
+        "topics.description as original_description",
+        "topics.category",
+        "topics.sort_order",
+        "topics.is_active",
+        "topics.created_at",
+        "topics.updated_at",
+        "topic_translations.translated_name",
+        "topic_translations.translated_description",
+      ])
       .executeTakeFirst();
 
-    return topic;
+    if (!topic) {
+      return null;
+    }
+
+    return {
+      topic_id: topic.topic_id,
+      name: topic.translated_name || topic.original_name,
+      description:
+        topic.translated_description || topic.original_description || null,
+      category: topic.category,
+      sort_order: topic.sort_order,
+      is_active: topic.is_active,
+      created_at: topic.created_at,
+      updated_at: topic.updated_at,
+      is_translated: !!topic.translated_name,
+    };
   }
 
   async createTopic(topic: Omit<Insertable<Topics>, "topic_id">) {

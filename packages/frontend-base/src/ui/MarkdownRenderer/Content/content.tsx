@@ -55,11 +55,34 @@ export const Renderer = ({
         className={`${styles.markdown} ${className}`}
         components={{
           h2: ({ node, ...props }) => (
-            <h2 style={{ marginTop: "2em" }} {...props} />
+            <h2 style={{ marginTop: "32px", marginBottom: "4px" }} {...props} />
           ),
           h3: ({ node, ...props }) => (
             <h3 style={{ marginTop: "1em" }} {...props} />
           ),
+          p: ({ node, children, ...props }) => {
+            // Check if this paragraph is a reference line (starts with '(' and ends with ')')
+            const textContent = node?.children
+              ?.map((child: any) => child.value || "")
+              .join("")
+              .trim();
+            const isReference =
+              textContent?.startsWith("(") && textContent.endsWith(")");
+
+            // Filter out empty paragraphs (they're from blank lines used for markdown spacing)
+            if (!textContent) {
+              return null;
+            }
+
+            return (
+              <p
+                className={isReference ? (styles as any).reference : undefined}
+                {...props}
+              >
+                {children}
+              </p>
+            );
+          },
         }}
       >
         {content}

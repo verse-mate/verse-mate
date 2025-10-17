@@ -5,17 +5,28 @@ export const getTopicCategories = async () => {
   return response.data?.categories;
 };
 
-export const getTopicsByCategory = async (category: string) => {
+export const getTopicsByCategory = async (
+  category: string,
+  bibleVersion?: string,
+) => {
   const response = await api.topics.search.get({
     query: {
       category,
+      bible_version: bibleVersion,
     },
   });
   return response.data?.topics;
 };
 
-export const getTopicDetails = async (topicId: string) => {
-  const response = await api.topics({ id: topicId }).get();
+export const getTopicDetails = async (
+  topicId: string,
+  bibleVersion?: string,
+) => {
+  const response = await api.topics({ id: topicId }).get({
+    query: {
+      bible_version: bibleVersion,
+    },
+  });
   return response.data;
 };
 

@@ -27,6 +27,99 @@ function normalizeBookName(bookName: string): string {
   return bookNameMap[normalized] || normalized;
 }
 
+/**
+ * Add reference summaries under markdown section headers (##)
+ * Groups all verse/chapter references under each section and displays them
+ * in a format like: (Genesis 1:1-3, Genesis 2:7, Exodus 20:8-11)
+ */
+function addReferenceSummariesToSections(
+  text: string,
+  versePlaceholders: RegExpMatchArray[],
+  chapterPlaceholders: RegExpMatchArray[],
+): string {
+  const lines = text.split("\n");
+  const result: string[] = [];
+
+  // Create a map of line index to placeholders that appear on/after that line
+  const allPlaceholders = [
+    ...versePlaceholders.map((m) => ({
+      match: m[0],
+      index: m.index || 0,
+      bookName: m[1].trim(),
+      chapter: Number.parseInt(m[2], 10),
+      startVerse: Number.parseInt(m[3], 10),
+      endVerse: m[4] ? Number.parseInt(m[4], 10) : Number.parseInt(m[3], 10),
+      type: "verse" as const,
+    })),
+    ...chapterPlaceholders.map((m) => ({
+      match: m[0],
+      index: m.index || 0,
+      bookName: m[1].trim(),
+      startChapter: Number.parseInt(m[2], 10),
+      endChapter: m[3] ? Number.parseInt(m[3], 10) : Number.parseInt(m[2], 10),
+      type: "chapter" as const,
+    })),
+  ].sort((a, b) => a.index - b.index);
+
+  let currentPosition = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    result.push(line);
+
+    // Check if this is a section header (## Something)
+    if (line.trim().startsWith("##") && !line.trim().startsWith("###")) {
+      // Find all placeholders between this header and the next header (or end of text)
+      const headerEndPosition = currentPosition + line.length + 1; // +1 for newline
+
+      // Find the next section header position
+      let nextHeaderPosition = text.length;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (
+          lines[j].trim().startsWith("##") &&
+          !lines[j].trim().startsWith("###")
+        ) {
+          // Calculate position of this next header
+          const linesUpToNext = lines.slice(0, j);
+          nextHeaderPosition = linesUpToNext.join("\n").length + 1;
+          break;
+        }
+      }
+
+      // Collect placeholders in this section
+      const sectionPlaceholders = allPlaceholders.filter(
+        (p) => p.index >= headerEndPosition && p.index < nextHeaderPosition,
+      );
+
+      if (sectionPlaceholders.length > 0) {
+        // Format references
+        const references = sectionPlaceholders.map((p) => {
+          if (p.type === "verse") {
+            const verseRange =
+              p.startVerse === p.endVerse
+                ? `${p.startVerse}`
+                : `${p.startVerse}-${p.endVerse}`;
+            return `${p.bookName} ${p.chapter}:${verseRange}`;
+          }
+          // chapter type
+          const chapterRange =
+            p.startChapter === p.endChapter
+              ? `${p.startChapter}`
+              : `${p.startChapter}-${p.endChapter}`;
+          return `${p.bookName} ${chapterRange}`;
+        });
+
+        // Add reference summary line with blank line after for proper markdown separation
+        result.push(`(${references.join(", ")})`);
+        result.push(""); // Add blank line to separate from content
+      }
+    }
+
+    currentPosition += line.length + 1; // +1 for newline
+  }
+
+  return result.join("\n");
+}
+
 export async function parseAndInjectVerses(
   text: string,
   bibleVersion: string,
@@ -47,6 +140,16 @@ export async function parseAndInjectVerses(
     return text;
   }
 
+  // If includeReference is true, add reference summaries under section headers
+  let textWithHeaders = text;
+  if (options?.includeReference) {
+    textWithHeaders = addReferenceSummariesToSections(
+      text,
+      versePlaceholders,
+      chapterPlaceholders,
+    );
+  }
+
   // Process verse placeholders
   const verseRefs = versePlaceholders.map((match) => {
     const startVerse = Number.parseInt(match[3], 10);
@@ -61,7 +164,7 @@ export async function parseAndInjectVerses(
     };
   });
 
-  let processedText = text;
+  let processedText = textWithHeaders;
 
   // Process verse placeholders - we need to handle each original placeholder separately
   // because a range like {verse:Joel 2:28-32} needs to be replaced with the concatenated text of all verses in that range
