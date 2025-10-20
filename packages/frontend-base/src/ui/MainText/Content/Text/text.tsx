@@ -12,6 +12,7 @@ import { CopyLinkButton } from "../../../CopyLinkButton";
 import type { HighlightColor } from "../../../HighlightColorPicker/types";
 import { HighlightMenu } from "../../../HighlightMenu";
 import { NotesButton } from "../../../Notes/NotesButton";
+import { NotesModal } from "../../../Notes/NotesModal";
 import { ShareButton } from "../../../ShareButton";
 import { showSignInRequiredModal } from "../../../SignInRequiredModal";
 import { VerseActionsMenu } from "../../../VerseActionsMenu";
@@ -61,6 +62,7 @@ export const Text = ({
   );
   const [showHighlightMenu, setShowHighlightMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [showNotesModal, setShowNotesModal] = useState(false);
   const versesContainerRef = useRef<HTMLDivElement>(null);
 
   const isBookmarked =
@@ -562,14 +564,20 @@ export const Text = ({
   ]);
 
   const handleVerseNote = useCallback(async () => {
-    if (!selectedVerses || !bookId) return;
+    if (!selectedVerses || !bookId || !chapterId) return;
 
-    // TODO: Open note modal with verse context pre-filled
-    notify({
-      content: "Note feature coming soon",
-      color: "var(--info)",
-    });
-  }, [selectedVerses, bookId]);
+    // Check if user is authenticated
+    if (!session) {
+      showSignInRequiredModal(
+        "Notes",
+        "Notes are available only for signed-in accounts. Please sign in to add, view, or edit notes for verses.",
+      );
+      return;
+    }
+
+    // Open notes modal
+    setShowNotesModal(true);
+  }, [selectedVerses, bookId, chapterId, session]);
 
   const handleVerseCopy = useCallback(async () => {
     if (!selectedVerses) return;
@@ -909,6 +917,15 @@ export const Text = ({
             setSelectedHighlight(null);
           }}
           position={menuPosition}
+        />
+      )}
+
+      {showNotesModal && bookId && chapterId && (
+        <NotesModal
+          bookId={bookId}
+          chapterNumber={chapterId}
+          bookName={bookName}
+          onClose={() => setShowNotesModal(false)}
         />
       )}
     </section>

@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  MENU_PADDING,
+  MENU_VERTICAL_OFFSET,
+} from "../../constants/highlightColors";
 import { useClickOutside } from "../../hooks/useClickOutside";
+import { notify } from "../../notification";
 import type { HighlightColor } from "../HighlightColorPicker/types";
 import { BookmarkIcon } from "../Icons/bookmarkIcon";
 import { CopyIcon } from "../Icons/copyIcon";
@@ -52,15 +57,15 @@ export const VerseActionsMenu = ({
 
       // Adjust horizontal position if menu goes off screen
       if (rect.right > viewportWidth) {
-        adjustedX = viewportWidth - rect.width - 10;
+        adjustedX = viewportWidth - rect.width - MENU_PADDING;
       }
       if (rect.left < 0) {
-        adjustedX = 10;
+        adjustedX = MENU_PADDING;
       }
 
       // Adjust vertical position if menu goes off screen
       if (rect.bottom > viewportHeight) {
-        adjustedY = position.y - rect.height - 20;
+        adjustedY = position.y - rect.height - MENU_VERTICAL_OFFSET;
       }
 
       if (adjustedX !== position.x || adjustedY !== position.y) {
@@ -79,6 +84,10 @@ export const VerseActionsMenu = ({
         onClose();
       } catch (error) {
         console.error("Failed to highlight:", error);
+        notify({
+          content: "Failed to create highlight",
+          color: "var(--error)",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -90,8 +99,13 @@ export const VerseActionsMenu = ({
       setIsLoading(true);
       try {
         await onBookmark();
+        onClose();
       } catch (error) {
         console.error("Failed to bookmark:", error);
+        notify({
+          content: "Failed to update bookmark",
+          color: "var(--error)",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -106,6 +120,10 @@ export const VerseActionsMenu = ({
         onClose();
       } catch (error) {
         console.error("Failed to open note:", error);
+        notify({
+          content: "Failed to open notes",
+          color: "var(--error)",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -120,6 +138,10 @@ export const VerseActionsMenu = ({
         onClose();
       } catch (error) {
         console.error("Failed to copy:", error);
+        notify({
+          content: "Failed to copy verse",
+          color: "var(--error)",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -134,6 +156,10 @@ export const VerseActionsMenu = ({
         onClose();
       } catch (error) {
         console.error("Failed to share:", error);
+        notify({
+          content: "Failed to share verse",
+          color: "var(--error)",
+        });
       } finally {
         setIsLoading(false);
       }
