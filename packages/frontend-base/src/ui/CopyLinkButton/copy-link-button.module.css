@@ -1,0 +1,19 @@
+.copyLinkButton {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--night-light);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.copyLinkButton:hover {
+  color: var(--night);
+}
+
+.copyLinkButton:active {
+  transform: scale(0.9);
+}

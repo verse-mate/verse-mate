@@ -11,6 +11,7 @@ type MarkdownRendererProps = {
     | string;
   className?: string;
   language?: string;
+  variant?: "default" | "bible-text"; // default = grayish text, bible-text = white text
 };
 
 const isRtlLang = (lang?: string) => {
@@ -23,6 +24,7 @@ export const Renderer = ({
   markdownContent,
   className,
   language,
+  variant = "default",
 }: MarkdownRendererProps) => {
   const [content, setContent] = useState<string>("");
 
@@ -48,11 +50,12 @@ export const Renderer = ({
   }, [markdownContent]);
 
   const direction = isRtlLang(language) ? "rtl" : "ltr";
+  const variantClass = variant === "bible-text" ? styles.bibleText : "";
 
   return (
     <div dir={direction} lang={language}>
       <ReactMarkdown
-        className={`${styles.markdown} ${className}`}
+        className={`${styles.markdown} ${variantClass} ${className}`}
         components={{
           h2: ({ node, ...props }) => (
             <h2 style={{ marginTop: "32px", marginBottom: "4px" }} {...props} />
@@ -60,28 +63,26 @@ export const Renderer = ({
           h3: ({ node, ...props }) => (
             <h3 style={{ marginTop: "1em" }} {...props} />
           ),
-          p: ({ node, children, ...props }) => {
-            // Check if this paragraph is a reference line (starts with '(' and ends with ')')
-            const textContent = node?.children
-              ?.map((child: any) => child.value || "")
+          p: ({ node, ...props }) => {
+            const childrenArray = Array.isArray((node as any)?.children)
+              ? (node as any).children
+              : [];
+            const textContent = childrenArray
+              .map((child: any) =>
+                child?.type === "text" ? String(child.value ?? "") : "",
+              )
               .join("")
               .trim();
-            const isReference =
-              textContent?.startsWith("(") && textContent.endsWith(")");
 
-            // Filter out empty paragraphs (they're from blank lines used for markdown spacing)
             if (!textContent) {
               return null;
             }
 
-            return (
-              <p
-                className={isReference ? (styles as any).reference : undefined}
-                {...props}
-              >
-                {children}
-              </p>
-            );
+            if (textContent.startsWith("(") && textContent.endsWith(")")) {
+              return <p className={styles.referenceText} {...props} />;
+            }
+
+            return <p {...props} />;
           },
         }}
       >

@@ -100,7 +100,7 @@ export const TopicDetail: React.FC<TopicDetailProps> = ({
       <div>
         <h3>References</h3>
         {parsedContent ? (
-          <Renderer markdownContent={parsedContent} />
+          <Renderer markdownContent={parsedContent} variant="bible-text" />
         ) : (
           <p>Parsing...</p>
         )}

@@ -23,6 +23,7 @@ import type { default as TopicsTable } from "./Topics";
 import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
 import type { default as UserPromptTemplatesTable } from "./UserPromptTemplates";
+import type { default as UserRecentlyViewedBooksTable } from "./UserRecentlyViewedBooks";
 import type { default as VerseHighlightsTable } from "./VerseHighlights";
 import type { default as VersesTable } from "./Verses";
 
@@ -74,4 +75,6 @@ export default interface PublicSchema {
   topic_explanations: TopicExplanationsTable;
 
   topic_translations: TopicTranslationsTable;
+
+  user_recently_viewed_books: UserRecentlyViewedBooksTable;
 }

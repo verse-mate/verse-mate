@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { notify } from "../../notification";
 import { Button } from "../Button/Button";
-import { CopyIcon } from "../Icons/copyIcon";
 import { ShareIcon } from "../Icons/shareIcon";
+import styles from "./share-button.module.css";
 import type { ShareButtonProps } from "./types";
 
 export function ShareButton({
@@ -60,21 +60,17 @@ export function ShareButton({
       <button
         type="button"
         onClick={handleShare}
-        className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${className}`}
+        className={`${styles.shareButton} ${className}`}
         aria-label="Share passage"
       >
-        {canShare ? <ShareIcon /> : <CopyIcon />}
+        <ShareIcon />
       </button>
     );
   }
 
   return (
     <Button onClick={handleShare} className={className} variant="outlined">
-      {canShare ? (
-        <ShareIcon className="w-4 h-4 mr-2" />
-      ) : (
-        <CopyIcon className="w-4 h-4 mr-2" />
-      )}
+      <ShareIcon className="w-4 h-4 mr-2" />
     </Button>
   );
 }
