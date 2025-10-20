@@ -8,13 +8,14 @@ datasource db {
 }
 
 model books {
-  book_id       Int             @id @default(autoincrement())
-  name          String          @unique @db.VarChar(50)
-  testament     testament_enum
-  genre_id      Int
-  genres        genres          @relation(fields: [genre_id], references: [genre_id], onDelete: Cascade, onUpdate: NoAction)
-  chapters      chapters[]
-  user_progress user_progress[]
+  book_id                    Int                          @id @default(autoincrement())
+  name                       String                       @unique @db.VarChar(50)
+  testament                  testament_enum
+  genre_id                   Int
+  genres                     genres                       @relation(fields: [genre_id], references: [genre_id], onDelete: Cascade, onUpdate: NoAction)
+  chapters                   chapters[]
+  user_progress              user_progress[]
+  user_recently_viewed_books user_recently_viewed_books[]
 }
 
 model chapters {
@@ -121,21 +122,22 @@ model subtitles {
 }
 
 model user {
-  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email                   String                @unique @db.VarChar(250)
-  emailVerified           Boolean               @default(false)
-  password                String                @db.VarChar(250)
-  firstName               String                @db.VarChar(100)
-  lastName                String                @db.VarChar(100)
-  imageSrc                String?               @db.VarChar(2000)
-  createdAt               DateTime              @default(now()) @db.Timestamp(6)
-  preferred_language      String?               @default("en") @db.VarChar(5)
-  preferred_bible_version String?               @default("NASB1995") @db.VarChar(20)
-  conversations           conversations[]
-  explanation_ratings     explanation_ratings[]
-  favorites               favorites[]
-  bible_versions          bible_versions?       @relation(fields: [preferred_bible_version], references: [version_key], onDelete: NoAction, onUpdate: NoAction)
-  user_progress           user_progress[]
+  id                         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                      String                       @unique @db.VarChar(250)
+  emailVerified              Boolean                      @default(false)
+  password                   String                       @db.VarChar(250)
+  firstName                  String                       @db.VarChar(100)
+  lastName                   String                       @db.VarChar(100)
+  imageSrc                   String?                      @db.VarChar(2000)
+  createdAt                  DateTime                     @default(now()) @db.Timestamp(6)
+  preferred_language         String?                      @default("en") @db.VarChar(5)
+  preferred_bible_version    String?                      @default("NASB1995") @db.VarChar(20)
+  conversations              conversations[]
+  explanation_ratings        explanation_ratings[]
+  favorites                  favorites[]
+  bible_versions             bible_versions?              @relation(fields: [preferred_bible_version], references: [version_key], onDelete: NoAction, onUpdate: NoAction)
+  user_progress              user_progress[]
+  user_recently_viewed_books user_recently_viewed_books[]
 
   @@index([preferred_language], map: "idx_user_language")
 }
@@ -208,4 +210,16 @@ enum status_enum {
 enum testament_enum {
   OT
   NT
+}
+
+model user_recently_viewed_books {
+  id             Int      @id @default(autoincrement())
+  user_id        String   @db.Uuid
+  book_id        Int
+  last_viewed_at DateTime @default(now()) @db.Timestamp(6)
+  user           user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  books          books    @relation(fields: [book_id], references: [book_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, book_id], map: "idx_user_recently_viewed_books_user_book")
+  @@index([user_id, last_viewed_at], map: "idx_user_recently_viewed_books_user_time")
 }

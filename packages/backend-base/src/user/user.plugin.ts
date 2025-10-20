@@ -13,6 +13,10 @@ import {
 } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import type { User } from "./entities/user.entity";
+import {
+  RecentlyViewedBooksSchema,
+  SyncRecentlyViewedBooksRequestSchema,
+} from "./schemas/recently-viewed-books.schema";
 import { UserSchema, UsersArraySchema } from "./schemas/user-response.schema";
 import { UserService } from "./user.service";
 
@@ -123,6 +127,57 @@ const plugin = new Elysia()
             }),
             response: {
               200: BooleanResponse,
+              ...StandardErrorResponses,
+            },
+          },
+        )
+        .get(
+          "/recently-viewed-books",
+          async ({ currentUserId, store: { userService } }) => {
+            if (!currentUserId) {
+              throw new UnauthorizedError("Authentication required");
+            }
+
+            const bookIds =
+              await userService.getRecentlyViewedBooks(currentUserId);
+            return { bookIds };
+          },
+          {
+            detail: {
+              summary: "Get recently viewed books",
+              description:
+                "Retrieve the list of recently viewed books for the authenticated user",
+              tags: ["User"],
+            },
+            response: {
+              200: RecentlyViewedBooksSchema,
+              ...StandardErrorResponses,
+            },
+          },
+        )
+        .post(
+          "/recently-viewed-books/sync",
+          async ({ currentUserId, body, store: { userService } }) => {
+            if (!currentUserId) {
+              throw new UnauthorizedError("Authentication required");
+            }
+
+            const bookIds = await userService.syncRecentlyViewedBooks(
+              currentUserId,
+              body.books,
+            );
+            return { bookIds };
+          },
+          {
+            detail: {
+              summary: "Sync recently viewed books",
+              description:
+                "Sync recently viewed books from localStorage with the database",
+              tags: ["User"],
+            },
+            body: SyncRecentlyViewedBooksRequestSchema,
+            response: {
+              200: RecentlyViewedBooksSchema,
               ...StandardErrorResponses,
             },
           },
