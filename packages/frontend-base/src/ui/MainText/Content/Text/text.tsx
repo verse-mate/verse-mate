@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useBookmarks } from "../../../../hooks/useBookmarks";
 import { useGetSearchParams } from "../../../../hooks/useSearchParams";
+import { userSession } from "../../../../hooks/userSession";
 import { notify } from "../../../../notification";
 import {
   generateShareableUrl,
@@ -11,6 +13,7 @@ import type { HighlightColor } from "../../../HighlightColorPicker/types";
 import { HighlightMenu } from "../../../HighlightMenu";
 import { NotesButton } from "../../../Notes/NotesButton";
 import { ShareButton } from "../../../ShareButton";
+import { showSignInRequiredModal } from "../../../SignInRequiredModal";
 import { VerseActionsMenu } from "../../../VerseActionsMenu";
 import styles from "./text.module.css";
 import type { Highlight, TextProps } from "./types";
@@ -33,6 +36,14 @@ export const Text = ({
   onHighlightUpdate,
 }: TextProps) => {
   const searchParams = useGetSearchParams();
+  const { session } = userSession();
+  const {
+    isBookmarked: checkIfBookmarked,
+    addBookmark,
+    removeBookmark,
+    savePendingBookmark,
+  } = useBookmarks();
+
   const [selectedVerses, setSelectedVerses] = useState<{
     start: number;
     end: number;
@@ -50,8 +61,10 @@ export const Text = ({
   );
   const [showHighlightMenu, setShowHighlightMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const versesContainerRef = useRef<HTMLDivElement>(null);
+
+  const isBookmarked =
+    bookId && chapterId ? checkIfBookmarked(bookId, chapterId) : false;
 
   const shareUrl = useMemo(
     () =>
@@ -500,14 +513,53 @@ export const Text = ({
 
   // Verse Actions Menu handlers
   const handleVerseBookmark = useCallback(async () => {
-    // For now, this toggles chapter-level bookmark
-    // TODO: Implement verse-level bookmarking in future
-    setIsBookmarked(!isBookmarked);
-    notify({
-      content: isBookmarked ? "Bookmark removed" : "Bookmark added",
-      color: "var(--success)",
-    });
-  }, [isBookmarked]);
+    if (!bookId || !chapterId) return;
+
+    // If user is not logged in, show login required modal and save bookmark intention
+    if (!session) {
+      // Save this chapter as a pending bookmark in localStorage
+      savePendingBookmark(bookId, chapterId, bookName, testament || "");
+
+      // Show login modal
+      showSignInRequiredModal(
+        "Bookmarks",
+        "Bookmarking is only available for signed-in accounts. We've saved this chapter for you and will add it to your bookmarks as soon as you log in.",
+      );
+      return;
+    }
+
+    // User is logged in, toggle bookmark
+    try {
+      if (isBookmarked) {
+        await removeBookmark(bookId, chapterId);
+        notify({
+          content: "Bookmark removed",
+          color: "var(--success)",
+        });
+      } else {
+        await addBookmark(bookId, chapterId, bookName, testament || "");
+        notify({
+          content: "Bookmark added",
+          color: "var(--success)",
+        });
+      }
+    } catch (error) {
+      notify({
+        content: "Failed to update bookmark",
+        color: "var(--error)",
+      });
+    }
+  }, [
+    bookId,
+    chapterId,
+    bookName,
+    testament,
+    session,
+    isBookmarked,
+    addBookmark,
+    removeBookmark,
+    savePendingBookmark,
+  ]);
 
   const handleVerseNote = useCallback(async () => {
     if (!selectedVerses || !bookId) return;
