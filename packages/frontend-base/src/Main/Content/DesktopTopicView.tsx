@@ -49,9 +49,15 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   return (
     <div className={styles.container}>
       <MainText.Root>
-        <Renderer markdownContent={`# ${topicDetails?.topic?.name}`} />
+        <Renderer
+          markdownContent={`# ${topicDetails?.topic?.name}`}
+          variant="bible-text"
+        />
         {topicReferences?.references?.content ? (
-          <Renderer markdownContent={topicReferences.references.content} />
+          <Renderer
+            markdownContent={topicReferences.references.content}
+            variant="bible-text"
+          />
         ) : (
           <p>No content available.</p>
         )}
