@@ -64,19 +64,21 @@ export const Renderer = ({
             <h3 style={{ marginTop: "1em" }} {...props} />
           ),
           p: ({ node, ...props }) => {
-            if (!node) {
-              return <p {...props} />;
-            }
-            const textContent = node.children
-              .map((child) => {
-                if (child.type === "text") {
-                  return child.value;
-                }
-                return "";
-              })
-              .join("");
+            const childrenArray = Array.isArray((node as any)?.children)
+              ? (node as any).children
+              : [];
+            const textContent = childrenArray
+              .map((child: any) =>
+                child?.type === "text" ? String(child.value ?? "") : "",
+              )
+              .join("")
+              .trim();
 
-            if (textContent.trim().startsWith("(")) {
+            if (!textContent) {
+              return null;
+            }
+
+            if (textContent.startsWith("(") && textContent.endsWith(")")) {
               return <p className={styles.referenceText} {...props} />;
             }
 

@@ -33,70 +33,64 @@ export const useSelectDropdown = (testaments?: Testaments) => {
   useEffect(() => {
     const loadAndSyncRecentlyViewed = async () => {
       // Load from localStorage first (instant display)
-      const storedBooksRaw =
-        localStorage.getItem("recentlyViewedBooks") || "[]";
+      const storedBooksRaw = localStorage.getItem("recentlyViewedBooks");
       let localBooks: RecentlyViewedBook[] = [];
+      if (storedBooksRaw) {
+        try {
+          const parsed = JSON.parse(storedBooksRaw);
+          if (Array.isArray(parsed)) {
+            if (parsed.length > 0 && typeof parsed[0] === "string") {
+              localBooks = parsed.map((bookId: string) => ({
+                bookId,
+                timestamp: Date.now(),
+              }));
+            } else if (
+              parsed.length === 0 ||
+              (typeof parsed[0] === "object" &&
+                parsed[0] !== null &&
+                "bookId" in parsed[0] &&
+                "timestamp" in parsed[0])
+            ) {
+              localBooks = parsed as RecentlyViewedBook[];
+            }
+          }
+        } catch {
+          // ignore and fall back to []
+        }
+      }
+      setRecentlyViewedBooks(localBooks.map((b) => b.bookId));
 
-      try {
-        const parsed = JSON.parse(storedBooksRaw);
+      // If user is authenticated, sync with backend
+      if (session?.id) {
+        try {
+          const response = await api.user["recently-viewed-books"].sync.post({
+            books: localBooks,
+          });
 
-        // Handle old format (array of strings) - migrate to new format
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          if (typeof parsed[0] === "string") {
-            // Old format: convert to new format with current timestamp
-            localBooks = parsed.map((bookId: string) => ({
-              bookId,
-              timestamp: Date.now(),
-            }));
-            // Save back in new format
+          if (response.data && !response.error) {
+            const mergedBookIds = response.data.bookIds;
+
+            // Preserve local timestamps when available, fallback only if missing
+            const localMap = new Map(
+              localBooks.map((b) => [b.bookId, b.timestamp]),
+            );
+            const mergedBooks: RecentlyViewedBook[] = mergedBookIds.map(
+              (bookId) => ({
+                bookId,
+                timestamp: localMap.get(bookId) ?? Date.now(),
+              }),
+            );
+
             localStorage.setItem(
               "recentlyViewedBooks",
-              JSON.stringify(localBooks),
+              JSON.stringify(mergedBooks),
             );
-          } else {
-            // New format already
-            localBooks = parsed;
+            setRecentlyViewedBooks(mergedBookIds);
           }
+        } catch (error) {
+          console.error("Failed to sync recently viewed books:", error);
+          // Continue with local data on error
         }
-
-        // Set state immediately for instant display
-        setRecentlyViewedBooks(localBooks.map((b) => b.bookId));
-
-        // If user is authenticated, sync with backend
-        if (session?.id) {
-          try {
-            const response = await api.user["recently-viewed-books"].sync.post({
-              books: localBooks,
-            });
-
-            if (response.data && !response.error) {
-              const mergedBookIds = response.data.bookIds;
-
-              // Update localStorage with merged data
-              const mergedBooks: RecentlyViewedBook[] = mergedBookIds.map(
-                (bookId) => {
-                  const localBook = localBooks.find((b) => b.bookId === bookId);
-                  return {
-                    bookId,
-                    timestamp: localBook?.timestamp || Date.now(),
-                  };
-                },
-              );
-
-              localStorage.setItem(
-                "recentlyViewedBooks",
-                JSON.stringify(mergedBooks),
-              );
-              setRecentlyViewedBooks(mergedBookIds);
-            }
-          } catch (error) {
-            console.error("Failed to sync recently viewed books:", error);
-            // Continue with local data on error
-          }
-        }
-      } catch (error) {
-        console.error("Failed to parse recently viewed books:", error);
-        setRecentlyViewedBooks([]);
       }
     };
 

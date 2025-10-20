@@ -1,4 +1,5 @@
 import type { NewUserRecentlyViewedBooks } from "database/src/models/public/UserRecentlyViewedBooks";
+import { sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 
 export class RecentlyViewedBooksRepository {
@@ -32,12 +33,11 @@ export class RecentlyViewedBooksRepository {
       .values({
         user_id: userId,
         book_id: bookId,
-        last_viewed_at: new Date(),
       })
       .onConflict((oc) =>
-        oc.columns(["user_id", "book_id"]).doUpdateSet({
-          last_viewed_at: new Date(),
-        }),
+        oc.columns(["user_id", "book_id"]).doUpdateSet(() => ({
+          last_viewed_at: sql`NOW()`,
+        })),
       )
       .returningAll()
       .executeTakeFirst();
@@ -68,12 +68,8 @@ export class RecentlyViewedBooksRepository {
       .insertInto("user_recently_viewed_books")
       .values(values)
       .onConflict((oc) =>
-        oc.columns(["user_id", "book_id"]).doUpdateSet((eb) => ({
-          // Only update if the new timestamp is more recent
-          last_viewed_at: eb.fn("GREATEST", [
-            eb.ref("user_recently_viewed_books.last_viewed_at"),
-            eb.ref("excluded.last_viewed_at"),
-          ]),
+        oc.columns(["user_id", "book_id"]).doUpdateSet(() => ({
+          last_viewed_at: sql`GREATEST(excluded.last_viewed_at, user_recently_viewed_books.last_viewed_at)`,
         })),
       )
       .returningAll()
