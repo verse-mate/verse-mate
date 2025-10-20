@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGetSearchParams } from "../../../../hooks/useSearchParams";
-import { generateShareableUrl } from "../../../../utils/sharing";
+import { notify } from "../../../../notification";
+import {
+  generateShareableUrl,
+  getPassageTitle,
+} from "../../../../utils/sharing";
 import { BookmarkButton } from "../../../Bookmarks";
 import { CopyLinkButton } from "../../../CopyLinkButton";
-import { HighlightColorPicker } from "../../../HighlightColorPicker";
 import type { HighlightColor } from "../../../HighlightColorPicker/types";
 import { HighlightMenu } from "../../../HighlightMenu";
 import { NotesButton } from "../../../Notes/NotesButton";
 import { ShareButton } from "../../../ShareButton";
+import { VerseActionsMenu } from "../../../VerseActionsMenu";
 import styles from "./text.module.css";
 import type { Highlight, TextProps } from "./types";
 
@@ -36,13 +40,17 @@ export const Text = ({
     endChar?: number;
     selectedText?: string;
   } | null>(null);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 });
+  const [showVerseActionsMenu, setShowVerseActionsMenu] = useState(false);
+  const [verseActionsPosition, setVerseActionsPosition] = useState({
+    x: 0,
+    y: 0,
+  });
   const [selectedHighlight, setSelectedHighlight] = useState<Highlight | null>(
     null,
   );
   const [showHighlightMenu, setShowHighlightMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const versesContainerRef = useRef<HTMLDivElement>(null);
 
   const shareUrl = useMemo(
@@ -417,13 +425,13 @@ export const Text = ({
         selectedText,
       });
 
-      // Position color picker near selection
+      // Position verse actions menu near selection
       const rect = range.getBoundingClientRect();
-      setPickerPosition({
+      setVerseActionsPosition({
         x: rect.left + window.scrollX,
         y: rect.bottom + window.scrollY + 10,
       });
-      setShowColorPicker(true);
+      setShowVerseActionsMenu(true);
     }
   }, []);
 
@@ -444,7 +452,7 @@ export const Text = ({
       // Clear selection
       window.getSelection()?.removeAllRanges();
       setSelectedVerses(null);
-      setShowColorPicker(false);
+      setShowVerseActionsMenu(false);
     },
     [selectedVerses, onHighlightCreate],
   );
@@ -457,8 +465,8 @@ export const Text = ({
       // Clear any text selection
       window.getSelection()?.removeAllRanges();
 
-      // Close color picker if open
-      setShowColorPicker(false);
+      // Close verse actions menu if open
+      setShowVerseActionsMenu(false);
       setSelectedVerses(null);
 
       // Show menu for the clicked highlight
@@ -489,6 +497,107 @@ export const Text = ({
     await onHighlightDelete(selectedHighlight.highlight_id);
     // Don't close menu here - let HighlightMenu handle it
   }, [selectedHighlight, onHighlightDelete]);
+
+  // Verse Actions Menu handlers
+  const handleVerseBookmark = useCallback(async () => {
+    // For now, this toggles chapter-level bookmark
+    // TODO: Implement verse-level bookmarking in future
+    setIsBookmarked(!isBookmarked);
+    notify({
+      content: isBookmarked ? "Bookmark removed" : "Bookmark added",
+      color: "var(--success)",
+    });
+  }, [isBookmarked]);
+
+  const handleVerseNote = useCallback(async () => {
+    if (!selectedVerses || !bookId) return;
+
+    // TODO: Open note modal with verse context pre-filled
+    notify({
+      content: "Note feature coming soon",
+      color: "var(--info)",
+    });
+  }, [selectedVerses, bookId]);
+
+  const handleVerseCopy = useCallback(async () => {
+    if (!selectedVerses) return;
+
+    try {
+      await navigator.clipboard.writeText(selectedVerses.selectedText || "");
+      notify({
+        content: "Verse copied to clipboard",
+        color: "var(--success)",
+      });
+    } catch (error) {
+      console.error("Failed to copy verse:", error);
+      notify({
+        content: "Failed to copy verse",
+        color: "var(--error)",
+      });
+    }
+  }, [selectedVerses]);
+
+  const handleVerseShare = useCallback(async () => {
+    if (!selectedVerses || !bookId) return;
+
+    const shareUrl = generateShareableUrl({
+      bookId: String(bookId),
+      chapterNumber: text.chapterNumber,
+      startVerse: selectedVerses.start,
+      endVerse: selectedVerses.end,
+      testament: testament ?? null,
+      explanationType: searchParams.explanationType ?? null,
+      bibleVersion: searchParams.bibleVersion ?? null,
+    });
+
+    const title = getPassageTitle(
+      {
+        chapterNumber: text.chapterNumber,
+        startVerse: selectedVerses.start,
+        endVerse: selectedVerses.end,
+      },
+      bookName,
+    );
+
+    try {
+      // Check if Web Share API is available (typically on mobile)
+      if (navigator.share) {
+        await navigator.share({
+          title,
+          text: selectedVerses.selectedText || "",
+          url: shareUrl,
+        });
+        notify({
+          content: "Shared successfully",
+          color: "var(--success)",
+        });
+      } else {
+        // Fallback to clipboard copy (typically on desktop)
+        await navigator.clipboard.writeText(shareUrl);
+        notify({
+          content: "Share link copied to clipboard",
+          color: "var(--success)",
+        });
+      }
+    } catch (error) {
+      // Handle AbortError (user cancelled) silently
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+      console.error("Error sharing:", error);
+      notify({
+        content: "Failed to share verse",
+        color: "var(--error)",
+      });
+    }
+  }, [
+    selectedVerses,
+    bookId,
+    text.chapterNumber,
+    testament,
+    searchParams,
+    bookName,
+  ]);
 
   const getVerseHighlights = useCallback(
     (verseNumber: number) => {
@@ -719,12 +828,18 @@ export const Text = ({
         </div>
       )}
 
-      {showColorPicker && (
-        <HighlightColorPicker
-          position={pickerPosition}
-          onColorSelect={handleHighlightCreate}
-          onCancel={() => {
-            setShowColorPicker(false);
+      {showVerseActionsMenu && selectedVerses && (
+        <VerseActionsMenu
+          position={verseActionsPosition}
+          selection={selectedVerses}
+          isBookmarked={isBookmarked}
+          onHighlight={handleHighlightCreate}
+          onBookmark={handleVerseBookmark}
+          onNote={handleVerseNote}
+          onCopy={handleVerseCopy}
+          onShare={handleVerseShare}
+          onClose={() => {
+            setShowVerseActionsMenu(false);
             setSelectedVerses(null);
             window.getSelection()?.removeAllRanges();
           }}

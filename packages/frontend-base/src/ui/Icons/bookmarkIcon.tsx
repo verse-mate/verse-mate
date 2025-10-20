@@ -1,11 +1,15 @@
 import type { SVGProps } from "react";
 
+export interface BookmarkIconProps extends SVGProps<SVGSVGElement> {
+  filled?: boolean;
+}
+
 export const BookmarkIcon = ({
   className,
+  filled,
   ...props
-}: SVGProps<SVGSVGElement>) => {
-  // Check if the bookmarkedIcon class is present
-  const isFilled = className?.includes("bookmarkedIcon");
+}: BookmarkIconProps) => {
+  const isFilled = filled || className?.includes("bookmarkedIcon");
 
   return (
     <svg
