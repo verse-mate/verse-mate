@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback } from "react";
-import { notify } from "../../notification";
 import { CopyIcon } from "../Icons/copyIcon";
 import type { CopyLinkButtonProps } from "./types";
 
@@ -18,10 +17,6 @@ export function CopyLinkButton({
       }
 
       await navigator.clipboard.writeText(url);
-      notify({
-        content: "Link copied to clipboard",
-        color: "var(--success)",
-      });
     } catch (error) {
       // Handle AbortError (user cancelled) silently
       if (error instanceof Error && error.name === "AbortError") {
@@ -29,10 +24,6 @@ export function CopyLinkButton({
       }
 
       console.error("Error copying to clipboard:", error);
-      notify({
-        content: "Failed to copy link. Please try again.",
-        color: "var(--error)",
-      });
     }
   }, [url]);
 

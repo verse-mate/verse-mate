@@ -7,7 +7,6 @@ import Backend from "./user.plugin";
 
 describe("Recently Viewed Books", () => {
   let accessToken: string;
-  let userId: string;
   const authSignupInput = {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
@@ -23,16 +22,6 @@ describe("Recently Viewed Books", () => {
     if (error) throw error;
 
     accessToken = data?.accessToken ?? "";
-
-    // Get user ID
-    const userResponse = await testClient.user.me.get({
-      headers: {
-        authorization: `Bearer ${accessToken}`,
-      },
-    });
-    if (userResponse.data && !(userResponse.data instanceof Error)) {
-      userId = userResponse.data.id;
-    }
   });
 
   afterAll(() => {
