@@ -1,6 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
+import { NotFoundError } from "../../common/errors";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
@@ -49,17 +50,25 @@ export class ExplanationRegenerationService {
     return `${explanationPrompt}\n\nThe response should be in ${language} using Markdown format only.`;
   }
 
-  async generateNewExplanation(
-    regenerationId: string,
-    bookId: number,
-    chapterNumber: number,
-    explanationType: ExplanationTypeEnum,
-    bibleVersion: string,
-    model: string,
-    adminUserId: string,
-    effort: "low" | "medium" | "high" = "medium",
+  async generateNewExplanation({
+    regenerationId,
+    bookId,
+    chapterNumber,
+    explanationType,
+    bibleVersion,
+    model,
+    effort = "medium",
     sendChapterContext = false,
-  ) {
+  }: {
+    regenerationId: string;
+    bookId: number;
+    chapterNumber: number;
+    explanationType: ExplanationTypeEnum;
+    bibleVersion: string;
+    model: string;
+    effort?: "low" | "medium" | "high";
+    sendChapterContext?: boolean;
+  }) {
     try {
       const connection = this.db.getOrCreateConnection();
 
@@ -71,7 +80,7 @@ export class ExplanationRegenerationService {
         .executeTakeFirst()) || { chapter_id: null };
 
       if (!chapter_id) {
-        throw new Error(
+        throw new NotFoundError(
           `Chapter ${chapterNumber} not found for book ${bookId}`,
         );
       }
@@ -83,12 +92,12 @@ export class ExplanationRegenerationService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookId} not found`);
+        throw new NotFoundError(`Book ${bookId} not found`);
       }
 
       const systemPrompt = await this.promptRepository.getActivePrompt();
       if (!systemPrompt) {
-        throw new Error("No active system prompt found");
+        throw new NotFoundError("No active system prompt found");
       }
 
       const version = await connection
@@ -98,7 +107,7 @@ export class ExplanationRegenerationService {
         .executeTakeFirst();
 
       if (!version) {
-        throw new Error(`Bible version ${bibleVersion} not found`);
+        throw new NotFoundError(`Bible version ${bibleVersion} not found`);
       }
 
       const language = this.getLanguageName(version.language_code);
@@ -123,7 +132,7 @@ export class ExplanationRegenerationService {
           .execute();
 
         if (!verses || verses.length === 0) {
-          throw new Error(
+          throw new NotFoundError(
             `No verses found for chapter ${chapterNumber} in version ${bibleVersion}`,
           );
         }
@@ -163,7 +172,7 @@ export class ExplanationRegenerationService {
         .executeTakeFirst();
 
       if (!originalExplanation) {
-        throw new Error("No active explanation found to regenerate");
+        throw new NotFoundError("No active explanation found to regenerate");
       }
 
       console.log(`Saving regenerated explanation for ${regenerationId}`);

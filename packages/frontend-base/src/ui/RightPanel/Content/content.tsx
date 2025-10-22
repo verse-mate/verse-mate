@@ -1,11 +1,14 @@
 import * as RadixTabs from "@radix-ui/react-tabs";
+import { useQuery } from "@tanstack/react-query";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import type RoleEnum from "database/src/models/public/RoleEnum";
 import type StatusEnum from "database/src/models/public/StatusEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import { getTopicDetails } from "../../../api/topics";
 import { SignIn } from "../../../auth/SignIn";
 import { SignUp } from "../../../auth/SignUp";
 import type { UserSession } from "../../../hooks/session";
+import { useGetSearchParams } from "../../../hooks/useSearchParams";
 import { History } from "../../../ui/ConversationHistory";
 import { homeOptions } from "../../../utils/home-options";
 import { Accordion } from "../../Accordion";
@@ -21,6 +24,8 @@ import styles from "./content.module.css";
 import type { useSwipeable } from "react-swipeable";
 
 type Props = {
+  isViewingTopic: boolean;
+  topicId: string;
   session: UserSession | null;
   explanation:
     | {
@@ -32,11 +37,10 @@ type Props = {
       }
     | null
     | undefined;
-  chapters: number | undefined;
   conversationsHistory:
     | never[]
     | {
-        [x: string]: {
+        today: {
           title: string;
           conversation_id: number;
           chapter_number: number | null;
@@ -53,7 +57,64 @@ type Props = {
           };
           user_id: string;
           status: StatusEnum;
-          updated_at: Date;
+          updated_at: string;
+        }[];
+        yesterday: {
+          title: string;
+          conversation_id: number;
+          chapter_number: number | null;
+          messages: {
+            role: RoleEnum;
+            content: string;
+            message_id: number;
+          }[];
+          book: {
+            book_id: number | null;
+            testament: TestamentEnum | null;
+            name: string | null;
+            genre_id: number | null;
+          };
+          user_id: string;
+          status: StatusEnum;
+          updated_at: string;
+        }[];
+        lastSevenDays: {
+          title: string;
+          conversation_id: number;
+          chapter_number: number | null;
+          messages: {
+            role: RoleEnum;
+            content: string;
+            message_id: number;
+          }[];
+          book: {
+            book_id: number | null;
+            testament: TestamentEnum | null;
+            name: string | null;
+            genre_id: number | null;
+          };
+          user_id: string;
+          status: StatusEnum;
+          updated_at: string;
+        }[];
+        older: {
+          title: string;
+          conversation_id: number;
+          chapter_number: number | null;
+          messages: {
+            role: RoleEnum;
+            content: string;
+            message_id: number;
+          }[];
+          book: {
+            book_id: number | null;
+            testament: TestamentEnum | null;
+            name: string | null;
+            genre_id: number | null;
+          };
+          user_id: string;
+          status: StatusEnum;
+          updated_at: string;
         }[];
       }
     | undefined;
@@ -77,9 +138,10 @@ type Props = {
 };
 
 export const Content = ({
+  isViewingTopic,
+  topicId,
   session,
   explanation,
-  chapters,
   conversationsHistory,
   selectConversation,
   askVerseMate,
@@ -89,6 +151,23 @@ export const Content = ({
   handleBibleVersionSelected,
   handleDesktopSwipe,
 }: Props) => {
+  const { explanationType } = useGetSearchParams();
+
+  const { data: topicDetails } = useQuery({
+    queryKey: ["topic-details-explanation", topicId, selectedBibleVersion],
+    queryFn: () => getTopicDetails(topicId, selectedBibleVersion),
+    enabled: isViewingTopic && !!topicId,
+  });
+
+  const topicExplanation = isViewingTopic
+    ? {
+        explanation:
+          topicDetails?.explanation?.[explanationType || "summary"] ||
+          "**Topic Explanation Coming Soon**...",
+        explanation_id: `topic-${topicId}`,
+      }
+    : explanation;
+
   return (
     <>
       <RadixTabs.Content className={styles.content} value="explanation">
@@ -97,7 +176,7 @@ export const Content = ({
           className={explanationStyles.explanationContent}
         >
           <Explanation.DesktopContainer>
-            <Explanation.Content />
+            <Explanation.Content explanation={topicExplanation} />
           </Explanation.DesktopContainer>
         </div>
       </RadixTabs.Content>
@@ -200,10 +279,7 @@ export const Content = ({
               />
             ) : (
               <>
-                <ProfileButton
-                  link="/"
-                  setRightPanelContent={setRightPanelContent}
-                />
+                <ProfileButton setRightPanelContent={setRightPanelContent} />
                 <div className={styles.menuOptions}>
                   <Accordion.Root type="multiple">
                     {homeOptions.map((option) => (

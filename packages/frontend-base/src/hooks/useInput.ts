@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import { useConversationManager } from "./useConversationManager";
-import { useGetSearchParams, useSaveSearchParams } from "./useSearchParams";
+import { useGetSearchParams } from "./useSearchParams";
 import { userSession } from "./userSession";
 
 export type Message = {
@@ -15,7 +15,6 @@ export type Message = {
 export const useInput = () => {
   const queryClient = useQueryClient();
   const { bookId, verseId, conversationId } = useGetSearchParams();
-  const { saveSearchParams } = useSaveSearchParams();
   const [inputValue, setInputValue] = useState("");
   const [lastSendMessage, setLastSentMessage] = useState("");
   const [isFocused, setIsFocusedState] = useState(false);
@@ -41,18 +40,16 @@ export const useInput = () => {
       // then create a new chat
       const newChat = await api.bible.book["new-conversation"].post({
         user_id: session.id,
-        book_id: bookId,
+        book_id: Number(bookId),
         chapter_number: verseId,
         content: inputValue,
       });
-      // save the chat_id on URL
-      const saveChatIdOnURL = saveSearchParams({
-        conversationId: String(newChat.data?.newConversation?.chat_id),
-      });
+
+      if (newChat.error) {
+        throw newChat.error;
+      }
 
       try {
-        // save user message
-        // send user message to get a response
         const userMessageSaved = await saveUserMessage({
           message: inputValue,
           chat_id: Number(newChat.data?.newConversation?.chat_id),
@@ -75,7 +72,7 @@ export const useInput = () => {
             });
           }
         }
-      } catch (error) {
+      } catch {
         const errorMessage = {
           role: "error",
           content: "Error processing request",
@@ -119,7 +116,7 @@ export const useInput = () => {
             });
           }
         }
-      } catch (error) {
+      } catch {
         const errorMessage = {
           role: "error",
           content: "Error processing request",

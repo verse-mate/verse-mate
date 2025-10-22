@@ -13,6 +13,18 @@ export interface Bookmark {
   type: "bookmark";
 }
 
+// Backend API response types
+interface BookmarkApiResponse {
+  favorite_id: string;
+  book_id: number;
+  chapter_number: number;
+  book_name: string;
+}
+
+interface BookmarksApiResponse {
+  favorites: BookmarkApiResponse[];
+}
+
 // Local storage key for pending bookmarks
 const PENDING_BOOKMARKS_KEY = "verse-mate-pending-bookmarks";
 
@@ -35,7 +47,7 @@ const getPendingBookmarks = (): Array<{
   try {
     const stored = localStorage.getItem(PENDING_BOOKMARKS_KEY);
     return stored ? JSON.parse(stored) : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -50,7 +62,7 @@ const savePendingBookmarks = (
 ): void => {
   try {
     localStorage.setItem(PENDING_BOOKMARKS_KEY, JSON.stringify(bookmarks));
-  } catch (error) {}
+  } catch {}
 };
 
 // Add a chapter to pending bookmarks
@@ -126,11 +138,11 @@ export const useBookmarks = () => {
           body: JSON.stringify(bookmarkData),
         });
 
-        let result: any;
+        let result: { success: boolean };
         try {
           // Try to parse as JSON if possible
           result = JSON.parse(await response.text());
-        } catch (e) {
+        } catch {
           throw new Error(
             `Error adding bookmark: ${response.status} - ${await response.text()}`,
           );
@@ -166,7 +178,7 @@ export const useBookmarks = () => {
           return newBookmark;
         }
         throw new Error("Server returned success: false");
-      } catch (err) {
+      } catch {
         setError("Failed to add bookmark");
         return null;
       }
@@ -200,11 +212,11 @@ export const useBookmarks = () => {
         // Try to get response text even if not JSON
         const responseText = await response.text();
 
-        let result: any = { success: false };
+        let result: { success: boolean } = { success: false };
         try {
           // Try to parse as JSON if possible
           result = JSON.parse(responseText);
-        } catch (e) {
+        } catch {
           // If we couldn't parse as JSON but response was ok, assume success
           if (response.ok) {
             result = { success: true };
@@ -232,7 +244,7 @@ export const useBookmarks = () => {
         notifyListeners();
 
         return result.success;
-      } catch (err) {
+      } catch {
         setError("Failed to remove bookmark");
         return false;
       }
@@ -244,7 +256,6 @@ export const useBookmarks = () => {
   const fetchBookmarks = useCallback(async () => {
     if (!session) {
       // For non-logged in users, use only pending bookmarks from localStorage
-      const storedPendingBookmarks = getPendingBookmarks();
       setBookmarks([]);
       setIsLoading(false);
       return;
@@ -259,26 +270,13 @@ export const useBookmarks = () => {
 
       // For debugging production issues - capture detailed error info
       if (!response.ok) {
-        try {
-          const errorText = await response.text();
-
-          // Try parsing as JSON if possible
-          try {
-            const errorJson = JSON.parse(errorText);
-          } catch (e) {
-            // Not JSON, that's fine
-          }
-        } catch (e) {
-          // Could not read error response body
-        }
-
         throw new Error(`Error fetching bookmarks: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: BookmarksApiResponse = await response.json();
 
       // Transform the response data to match our Bookmark interface
-      const fetchedBookmarks = data.favorites.map((fav: any) => ({
+      const fetchedBookmarks: Bookmark[] = data.favorites.map((fav) => ({
         id: fav.favorite_id,
         user_id: session.id,
         book_id: fav.book_id,
@@ -294,7 +292,7 @@ export const useBookmarks = () => {
 
       // Update local state
       setBookmarks(globalBookmarks);
-    } catch (err) {
+    } catch {
       setError("Failed to fetch bookmarks");
     } finally {
       setIsLoading(false);
@@ -318,7 +316,7 @@ export const useBookmarks = () => {
                 bookmark.book_name,
                 bookmark.testament,
               );
-            } catch (error) {
+            } catch {
               // Error syncing pending bookmark
             }
           }

@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "backend-api";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./Playground.module.css";
 
 import ReactMarkdown from "react-markdown";

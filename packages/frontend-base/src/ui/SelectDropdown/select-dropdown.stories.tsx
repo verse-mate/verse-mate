@@ -50,7 +50,6 @@ export const AccordionSelectWithFilter: Story = () => {
     handleChange: leftPanelHandleChange,
     handleTabChange: leftPanelHandleTabChange,
     handleVerseSelect: leftPanelHandleVerseSelect,
-    resetFilter: leftPanelResetFilter,
   } = useSelectDropdown(testaments);
 
   const book = testaments?.find((testament) => testament.b === bookId)?.n;
@@ -350,7 +349,7 @@ export const NormalSelectWithFilter: Story = () => {
             overflowY: "auto",
           }}
         >
-          {filteredArray.map((version, index) => (
+          {filteredArray.map((version, _index) => (
             <SelectDropdown.Item
               key={version.key}
               icon={<CheckIcon />}
@@ -413,7 +412,7 @@ export const GroupedSelect: Story = () => {
     ? testamentLabelMap[selectedMobileTestament]
     : "";
 
-  const contentRef = useRef<HTMLDivElement>(null);
+  const _contentRef = useRef<HTMLDivElement>(null);
 
   return (
     <div
@@ -459,7 +458,7 @@ export const GroupedSelect: Story = () => {
                       overflowY: "auto",
                     }}
                   >
-                    {filteredMobileArray.map((bibleVersion, index) => (
+                    {filteredMobileArray.map((bibleVersion, _index) => (
                       <SelectDropdown.GroupedSelect.GroupedItem
                         key={bibleVersion.key}
                         value={bibleVersion.key}

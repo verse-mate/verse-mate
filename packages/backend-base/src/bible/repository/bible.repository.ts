@@ -1,13 +1,10 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import FavoriteTypeEnum from "database/src/models/public/FavoriteTypeEnum";
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
-import type {
-  NewVerseHighlights,
-  VerseHighlights,
-} from "database/src/models/public/VerseHighlights";
+import type { NewVerseHighlights } from "database/src/models/public/VerseHighlights";
 import { sql } from "kysely";
+import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
-import type { BookDto } from "../dto/book/book.dto";
 import type { ChapterDto } from "../dto/book/chapter.dto";
 import type { LastChapterReadDto } from "../dto/book/last-chapter-read.dto";
 import type { RatingDto } from "../dto/book/rating.dto";
@@ -43,7 +40,7 @@ export class BibleRepository {
     return { testaments: testaments ?? null };
   }
 
-  async getBook({ book_id }: Pick<BookDto, "book_id">) {
+  async getBook({ book_id }: { book_id: number }) {
     const book = await this.db
       .getOrCreateConnection()
       .selectFrom("books")
@@ -82,14 +79,22 @@ export class BibleRepository {
     return { chapter: chapter ?? null };
   }
 
-  async getSubtitles({ chapter_id }: Pick<ChapterDto, "chapter_id">) {
-    const subtitles = await this.db
+  async getSubtitles({
+    chapter_id,
+    version_id,
+  }: Pick<ChapterDto, "chapter_id"> & { version_id?: string }) {
+    let query = this.db
       .getOrCreateConnection()
       .selectFrom("subtitles")
       .where("chapter_id", "=", chapter_id)
-      .select(["subtitle", "start_verse", "end_verse"])
-      .orderBy("start_verse", "asc")
-      .execute();
+      .select(["subtitle", "start_verse", "end_verse"]);
+
+    // If version_id is provided, filter by it
+    if (version_id) {
+      query = query.where("version_id", "=", version_id);
+    }
+
+    const subtitles = await query.orderBy("start_verse", "asc").execute();
 
     return { subtitles: subtitles ?? null };
   }
@@ -110,6 +115,15 @@ export class BibleRepository {
       .execute();
 
     return { verses: verses ?? null };
+  }
+
+  async getVersionBykey(versionKey: string) {
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", versionKey)
+      .selectAll()
+      .executeTakeFirst();
   }
 
   async getSpecificVersesByBookNameAndChapter(
@@ -228,6 +242,102 @@ export class BibleRepository {
     }
   }
 
+  /**
+   * Get chapter by book name and chapter number
+   * @param bookName The name of the book
+   * @param chapterNumber The chapter number
+   * @returns The chapter object or null if not found
+   */
+  async getChapterByBookNameAndNumber(bookName: string, chapterNumber: number) {
+    try {
+      console.log(
+        "Repository: Getting chapter for bookName:",
+        bookName,
+        "chapterNumber:",
+        chapterNumber,
+      );
+
+      const connection = this.db.getOrCreateConnection();
+
+      const chapter = await connection
+        .selectFrom("chapters")
+        .innerJoin("books", "chapters.book_id", "books.book_id")
+        .where("books.name", "=", bookName)
+        .where("chapters.chapter_number", "=", chapterNumber)
+        .select(["chapters.chapter_id", "chapters.chapter_number"])
+        .executeTakeFirst();
+
+      console.log("Repository: getChapterByBookNameAndNumber result:", chapter);
+
+      if (!chapter?.chapter_id) {
+        console.log(
+          "Repository: No chapter found for bookName:",
+          bookName,
+          "chapterNumber:",
+          chapterNumber,
+        );
+      }
+
+      return { chapter: chapter ?? null };
+    } catch (error) {
+      console.error("Repository: Error getting chapter:", error);
+      if (error instanceof Error) {
+        console.error("Repository: Error details:", error.message);
+        console.error("Repository: Error stack:", error.stack);
+      }
+      return { chapter: null };
+    }
+  }
+
+  /**
+   * Get all verses for a chapter by book name and chapter number
+   * @param bookName The name of the book
+   * @param chapterNumber The chapter number
+   * @param versionId The Bible version ID
+   * @returns Array of verses for the chapter
+   */
+  async getChapterVersesByBookNameAndChapter(
+    bookName: string,
+    chapterNumber: number,
+    versionId: string,
+  ) {
+    try {
+      console.log(
+        "Repository: Getting chapter verses for bookName:",
+        bookName,
+        "chapterNumber:",
+        chapterNumber,
+      );
+
+      const connection = this.db.getOrCreateConnection();
+
+      const verses = await connection
+        .selectFrom("verses")
+        .innerJoin("chapters", "verses.chapter_id", "chapters.chapter_id")
+        .innerJoin("books", "chapters.book_id", "books.book_id")
+        .where("books.name", "=", bookName)
+        .where("chapters.chapter_number", "=", chapterNumber)
+        .where("verses.version_id", "=", versionId)
+        .select(["verses.verse_number as verseNumber", "verses.text"])
+        .orderBy("verseNumber", "asc")
+        .execute();
+
+      console.log(
+        "Repository: getChapterVersesByBookNameAndChapter result count:",
+        verses.length,
+      );
+
+      return { verses: verses ?? null };
+    } catch (error) {
+      console.error("Repository: Error getting chapter verses:", error);
+      if (error instanceof Error) {
+        console.error("Repository: Error details:", error.message);
+        console.error("Repository: Error stack:", error.stack);
+      }
+      return { verses: [] };
+    }
+  }
+
   async getExplanation({
     book_id,
     chapter_number,
@@ -281,10 +391,10 @@ export class BibleRepository {
         ]),
       )
       .orderBy(
-        sql`CASE 
-          WHEN LOWER(explanations.language_code) = ${normalizedLanguageCode} THEN 0 
+        sql`CASE
+          WHEN LOWER(explanations.language_code) = ${normalizedLanguageCode} THEN 0
           WHEN LOWER(explanations.language_code) = ${base_language_code} THEN 1
-          ELSE 2 
+          ELSE 2
         END`,
       )
       .orderBy("explanations.version", "desc")
@@ -303,7 +413,7 @@ export class BibleRepository {
     chapter_id,
   }: Pick<LastChapterReadDto, "id" | "book_id" | "chapter_id">) {
     try {
-      const savedLastChapterRead = await this.db
+      await this.db
         .getOrCreateConnection()
         .insertInto("user_progress")
         .values({
@@ -313,7 +423,7 @@ export class BibleRepository {
         })
         .execute();
       return { success: true };
-    } catch (error) {
+    } catch {
       return { success: false };
     }
   }
@@ -338,7 +448,7 @@ export class BibleRepository {
     user_progress_id,
   }: Pick<LastChapterReadDto, "chapter_id" | "user_progress_id">) {
     try {
-      const updateLastChapterRead = await this.db
+      await this.db
         .getOrCreateConnection()
         .updateTable("user_progress")
         .set({
@@ -348,7 +458,7 @@ export class BibleRepository {
         .where("user_progress_id", "=", user_progress_id)
         .execute();
       return { success: true };
-    } catch (error) {
+    } catch {
       return { success: false };
     }
   }
@@ -382,7 +492,7 @@ export class BibleRepository {
     explanation_id,
   }: Pick<RatingDto, "user" | "rating" | "explanation_id">) {
     try {
-      const saveRating = await this.db
+      await this.db
         .getOrCreateConnection()
         .insertInto("explanation_ratings")
         .values({
@@ -393,7 +503,7 @@ export class BibleRepository {
         .execute();
 
       return { success: true };
-    } catch (error) {
+    } catch {
       return { success: false };
     }
   }
@@ -413,7 +523,7 @@ export class BibleRepository {
       if (ratingExists) return { exists: true };
 
       return { exists: false };
-    } catch (error) {
+    } catch {
       return { exists: false };
     }
   }
@@ -424,7 +534,7 @@ export class BibleRepository {
     rating,
   }: Pick<RatingDto, "user" | "rating" | "explanation_id">) {
     try {
-      const updateRating = await this.db
+      await this.db
         .getOrCreateConnection()
         .updateTable("explanation_ratings")
         .where("explanation_id", "=", explanation_id)
@@ -434,7 +544,7 @@ export class BibleRepository {
         })
         .execute();
       return { updated: true };
-    } catch (error) {
+    } catch {
       return { updated: false };
     }
   }
@@ -703,7 +813,7 @@ export class BibleRepository {
 
         if (!book) {
           console.error(`[Admin Deletion] Book ${bookName} not found.`);
-          throw new Error(`Book ${bookName} not found.`);
+          throw new NotFoundError(`Book ${bookName} not found`);
         }
         console.log(`[Admin Deletion] Found book_id: ${book.book_id}`);
 
@@ -962,6 +1072,51 @@ export class BibleRepository {
     selected_text,
   }: CreateHighlightDto) {
     try {
+      // FIX: Add validation to ensure start_char <= end_char before database insertion
+      // This provides better error handling and prevents constraint violations
+      if (
+        start_char !== undefined &&
+        end_char !== undefined &&
+        start_char > end_char
+      ) {
+        console.warn(
+          "Invalid character range detected in addHighlight: start_char > end_char. Swapping values.",
+          {
+            start_char,
+            end_char,
+            start_verse,
+            end_verse,
+          },
+        );
+        // Swap the values to ensure valid range
+        [start_char, end_char] = [end_char, start_char];
+      }
+
+      // FIX: Add bounds validation for character positions
+      if (
+        selected_text !== undefined &&
+        start_char !== undefined &&
+        end_char !== undefined
+      ) {
+        const expectedLength = selected_text.length;
+        const actualLength = end_char - start_char;
+
+        // If there's a significant discrepancy, log a warning
+        if (Math.abs(actualLength - expectedLength) > 5) {
+          console.warn("Character range length mismatch detected in backend", {
+            expectedLength,
+            actualLength,
+            start_char,
+            end_char,
+            selected_text,
+          });
+        }
+
+        // Ensure character positions are non-negative
+        if (start_char < 0) start_char = 0;
+        if (end_char < 0) end_char = 0;
+      }
+
       const newHighlight: NewVerseHighlights = {
         user_id,
         chapter_id,
@@ -983,7 +1138,38 @@ export class BibleRepository {
       return { highlight: result, success: true };
     } catch (error) {
       console.error("Error adding highlight:", error);
-      return { highlight: null, success: false };
+      // Enhanced error handling with specific messages for constraint violations
+      if (error instanceof Error) {
+        if (error.message.includes("check_valid_char_range")) {
+          return {
+            highlight: null,
+            success: false,
+            error:
+              "Invalid character range: start position must be less than or equal to end position.",
+          };
+        }
+        if (error.message.includes("check_valid_verse_range")) {
+          return {
+            highlight: null,
+            success: false,
+            error:
+              "Invalid verse range: start verse must be less than or equal to end verse.",
+          };
+        }
+        if (error.message.includes("check_non_negative_chars")) {
+          return {
+            highlight: null,
+            success: false,
+            error:
+              "Invalid character positions: positions must be non-negative.",
+          };
+        }
+      }
+      return {
+        highlight: null,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
     }
   }
 
@@ -1026,19 +1212,58 @@ export class BibleRepository {
     chapter_id,
     start_verse,
     end_verse,
+    start_char,
+    end_char,
   }: {
     user_id: string;
     chapter_id: number;
     start_verse: number;
     end_verse: number;
+    start_char?: number;
+    end_char?: number;
   }) {
     try {
-      const overlaps = await this.db
+      let query = this.db
         .getOrCreateConnection()
         .selectFrom("verse_highlights")
         .where("user_id", "=", user_id)
-        .where("chapter_id", "=", chapter_id)
-        .where((eb) =>
+        .where("chapter_id", "=", chapter_id);
+
+      // If character positions are provided and it's a single verse highlight, do precise overlap checking
+      if (
+        start_char !== undefined &&
+        end_char !== undefined &&
+        start_verse === end_verse
+      ) {
+        query = query.where((eb) =>
+          eb.and([
+            // Same verse range
+            eb("start_verse", "=", start_verse),
+            eb("end_verse", "=", end_verse),
+            // And character overlap
+            eb.or([
+              // New highlight starts within existing highlight
+              eb.and([
+                eb("start_char", "<=", start_char),
+                eb("end_char", ">=", start_char),
+              ]),
+              // New highlight ends within existing highlight
+              eb.and([
+                eb("start_char", "<=", end_char),
+                eb("end_char", ">=", end_char),
+              ]),
+              // New highlight completely contains existing highlight
+              eb.and([
+                eb("start_char", ">=", start_char),
+                eb("end_char", "<=", end_char),
+              ]),
+            ]),
+          ]),
+        );
+      } else {
+        // For multi-verse highlights or when character positions are not provided,
+        // use verse-based overlap checking
+        query = query.where((eb) =>
           eb.or([
             // New highlight starts within existing highlight
             eb.and([
@@ -1055,15 +1280,142 @@ export class BibleRepository {
               eb("start_verse", ">=", start_verse),
               eb("end_verse", "<=", end_verse),
             ]),
+            // Existing highlight starts within new highlight
+            eb.and([
+              eb("start_verse", ">=", start_verse),
+              eb("start_verse", "<=", end_verse),
+            ]),
+            // Existing highlight ends within new highlight
+            eb.and([
+              eb("end_verse", ">=", start_verse),
+              eb("end_verse", "<=", end_verse),
+            ]),
           ]),
-        )
-        .selectAll()
-        .execute();
+        );
+      }
 
+      const overlaps = await query.selectAll().execute();
       return { overlaps, hasOverlap: overlaps.length > 0 };
     } catch (error) {
       console.error("Error checking highlight overlap:", error);
       return { overlaps: [], hasOverlap: false };
+    }
+  }
+
+  /**
+   * Notes
+   */
+  async getNotes({ user_id }: { user_id: string }) {
+    try {
+      console.log("=== BibleRepository.getNotes ===");
+      console.log("DATABASE DEBUG: getNotes for user_id:", user_id);
+
+      const connection = this.db.getOrCreateConnection();
+
+      // TODO: Remove 'as any' once notes table is added to database schema types
+      const notes = await (connection as any)
+        .selectFrom("notes as n")
+        .innerJoin("chapters as c", "n.chapter_id", "c.chapter_id")
+        .innerJoin("books as b", "c.book_id", "b.book_id")
+        .leftJoin("verses as v", "n.verse_id", "v.verse_id")
+        .where("n.user_id", "=", user_id)
+        .select([
+          "n.note_id",
+          "n.content",
+          "n.created_at",
+          "n.updated_at",
+          "c.chapter_number",
+          "c.book_id",
+          "b.name as book_name",
+          "v.verse_number",
+        ])
+        .orderBy("n.created_at", "desc")
+        .execute();
+
+      return { notes };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.getNotes:", error);
+      throw error;
+    }
+  }
+
+  async addNote(noteData: {
+    user_id: string;
+    chapter_id: number;
+    verse_id?: number;
+    content: string;
+  }) {
+    try {
+      console.log("=== BibleRepository.addNote ===");
+      const connection = this.db.getOrCreateConnection();
+      const now = new Date().toISOString();
+
+      // TODO: Remove 'as any' once notes table is added to database schema types
+      const result = await (connection as any)
+        .insertInto("notes")
+        .values({
+          user_id: noteData.user_id,
+          chapter_id: noteData.chapter_id,
+          verse_id: noteData.verse_id || null,
+          content: noteData.content,
+          created_at: now,
+          updated_at: now,
+        })
+        .returning([
+          "note_id",
+          "user_id",
+          "chapter_id",
+          "verse_id",
+          "content",
+          "created_at",
+          "updated_at",
+        ])
+        .executeTakeFirstOrThrow();
+
+      return { note: result };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.addNote:", error);
+      throw error;
+    }
+  }
+
+  async updateNote(noteId: string, content: string) {
+    try {
+      console.log("=== BibleRepository.updateNote ===");
+      const connection = this.db.getOrCreateConnection();
+      const now = new Date().toISOString();
+
+      // TODO: Remove 'as any' once notes table is added to database schema types
+      const result = await (connection as any)
+        .updateTable("notes")
+        .set({ content, updated_at: now })
+        .where("note_id", "=", noteId)
+        .executeTakeFirst();
+
+      const success = Number(result.numUpdatedRows) > 0;
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.updateNote:", error);
+      throw error;
+    }
+  }
+
+  async deleteNote(noteId: string) {
+    try {
+      console.log("=== BibleRepository.deleteNote ===");
+      const connection = this.db.getOrCreateConnection();
+
+      // TODO: Remove 'as any' once notes table is added to database schema types
+      const result = await (connection as any)
+        .deleteFrom("notes")
+        .where("note_id", "=", noteId)
+        .executeTakeFirst();
+
+      const success = Number(result.numDeletedRows) > 0;
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleRepository.deleteNote:", error);
+      throw error;
     }
   }
 }

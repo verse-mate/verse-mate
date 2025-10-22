@@ -20,6 +20,9 @@ export const useConversationManager = (session: UserSession | null) => {
       const response = await api.bible.book["conversations-history"].post({
         session: { id: session.id },
       });
+      if (response.error) {
+        throw response.error;
+      }
       return response.data?.userChatHistory;
     },
     enabled: !!session,
@@ -33,6 +36,9 @@ export const useConversationManager = (session: UserSession | null) => {
         conversation_id: Number(selectedConversation),
         session: { id: session?.id },
       });
+      if (response.error) {
+        throw response.error;
+      }
       return response.data?.messagesHistory;
     },
     enabled:
@@ -46,15 +52,17 @@ export const useConversationManager = (session: UserSession | null) => {
     }: { book_id: number; chapter_number: number }) => {
       if (!session?.id) return;
 
-      const { data } = await api.bible.book["conversation-exists"].post({
+      const { data, error } = await api.bible.book["conversation-exists"].post({
         user_id: session?.id,
         book_id,
         chapter_number,
       });
 
-      if (data?.chatExists.length === 0) return { chatExists: null };
+      if (error) return { chatExists: null };
+      if (!Array.isArray(data?.chatExists) || data.chatExists.length === 0)
+        return { chatExists: null };
 
-      return { chatExists: data?.chatExists };
+      return { chatExists: data.chatExists };
     },
     [session],
   );
@@ -94,6 +102,10 @@ export const useConversationManager = (session: UserSession | null) => {
         content: message,
       });
 
+      if (saveUserMessage.error) {
+        throw saveUserMessage.error;
+      }
+
       queryClient.invalidateQueries({ queryKey: ["conversationMessages"] });
       queryClient.invalidateQueries({ queryKey: ["conversationsHistory"] });
 
@@ -118,6 +130,9 @@ export const useConversationManager = (session: UserSession | null) => {
         book_id: Number(bookId),
         chapter_number: Number(chapterId),
       });
+      if (saveAiMessage.error) {
+        throw saveAiMessage.error;
+      }
       return saveAiMessage.data?.result?.message_id;
     },
     onSuccess: () => {

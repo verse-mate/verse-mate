@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "backend-api";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { UserSession } from "./session";
 
@@ -10,7 +9,7 @@ type LastRead = {
     book_id: number;
     chapterNumber: number;
     bookName: string;
-    testament: TestamentEnum;
+    testament: "OT" | "NT";
     explanation: {
       book_id: number;
       chapter_number: number;
@@ -21,10 +20,7 @@ type LastRead = {
   } | null;
 };
 
-export const useLastRead = (
-  session: UserSession | null,
-  explanation_id?: number | null,
-) => {
+export const useLastRead = (session: UserSession | null) => {
   const [lastRead, setLastRead] = useState<LastRead | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -35,6 +31,9 @@ export const useLastRead = (
       const response = await api.bible.book.chapter["last-read"].post({
         user_id: session.id,
       });
+      if (response.error) {
+        throw response.error;
+      }
       return response.data;
     },
     enabled: !!session,
@@ -49,11 +48,14 @@ export const useLastRead = (
   const saveLastRead = useCallback(
     async (bookId: number, chapterId: number) => {
       if (!session) return;
-      await api.bible.book.chapter["save-last-read"].post({
+      const response = await api.bible.book.chapter["save-last-read"].post({
         book_id: bookId,
         chapter_number: chapterId,
         user_id: session.id,
       });
+      if (response.error) {
+        throw response.error;
+      }
       refetch();
     },
     [session, refetch],

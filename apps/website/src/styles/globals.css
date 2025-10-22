@@ -98,6 +98,11 @@ body {
   box-sizing: border-box;
 }
 
+/* Smooth transitions for adaptive components */
+.adaptive-component > div {
+  transition: opacity 0.15s ease-in-out;
+}
+
 /* Make all layout headers responsive and viewport-safe */
 .adaptive-component header {
   width: 100%;
@@ -115,11 +120,6 @@ body {
   white-space: nowrap !important;
   position: relative !important;
   z-index: 999 !important;
-}
-
-/* Smooth transitions for adaptive components */
-.adaptive-component > div {
-  transition: opacity 0.15s ease-in-out;
 }
 
 /* Ensure components always have proper positioning */

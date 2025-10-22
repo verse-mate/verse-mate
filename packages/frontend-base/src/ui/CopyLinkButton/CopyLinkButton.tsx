@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { notify } from "../../notification";
 import { CopyIcon } from "../Icons/copyIcon";
+import styles from "./copy-link-button.module.css";
 import type { CopyLinkButtonProps } from "./types";
 
 export function CopyLinkButton({
@@ -18,10 +18,6 @@ export function CopyLinkButton({
       }
 
       await navigator.clipboard.writeText(url);
-      notify({
-        content: "Link copied to clipboard",
-        color: "var(--success)",
-      });
     } catch (error) {
       // Handle AbortError (user cancelled) silently
       if (error instanceof Error && error.name === "AbortError") {
@@ -29,10 +25,6 @@ export function CopyLinkButton({
       }
 
       console.error("Error copying to clipboard:", error);
-      notify({
-        content: "Failed to copy link. Please try again.",
-        color: "var(--error)",
-      });
     }
   }, [url]);
 
@@ -41,7 +33,7 @@ export function CopyLinkButton({
       <button
         type="button"
         onClick={handleCopy}
-        className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${className}`}
+        className={`${styles.copyLinkButton} ${className}`}
         aria-label="Copy link"
         title="Copy link"
       >

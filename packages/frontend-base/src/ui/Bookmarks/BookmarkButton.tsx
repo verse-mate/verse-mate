@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useBookmarks } from "../../hooks/useBookmarks";
 import { userSession } from "../../hooks/userSession";
-import { addModal } from "../../modal/store";
 import * as Icon from "../Icons";
+import { showSignInRequiredModal } from "../SignInRequiredModal";
 import styles from "./bookmarks.module.css";
 
 type BookmarkButtonProps = {
@@ -38,23 +38,10 @@ export const BookmarkButton = ({
       savePendingBookmark(bookId, chapterNumber, bookName, testament);
 
       // Show login modal
-      addModal({
-        content: (
-          <div className={styles.loginModal}>
-            <h3>Sign in Required to Use Bookmarks</h3>
-            <p>
-              Bookmarking is available only for signed-in accounts. We've saved
-              this chapter for you and will add it to your bookmarks as soon as
-              you log in.
-            </p>
-            <div className={styles.loginModalButtons}>
-              <a href="/login" className={styles.loginButton}>
-                Sign In
-              </a>
-            </div>
-          </div>
-        ),
-      });
+      showSignInRequiredModal(
+        "Bookmarks",
+        "Bookmarking is only available for signed-in accounts. We've saved this chapter for you and will add it to your bookmarks as soon as you log in.",
+      );
       return;
     }
 
@@ -66,7 +53,7 @@ export const BookmarkButton = ({
       } else {
         await addBookmark(bookId, chapterNumber, bookName, testament);
       }
-    } catch (error) {
+    } catch {
       // Silently handle bookmark toggle errors
     } finally {
       setIsLoading(false);

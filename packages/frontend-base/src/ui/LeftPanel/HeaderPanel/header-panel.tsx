@@ -4,13 +4,12 @@ import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import Image from "next/image";
 import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TopicContent } from "../../../Main/Content/TopicContent";
 import { selectedBookStore } from "../../../store/book-selection";
 import * as Icon from "../../../ui/Icons";
-import { bibleVersions } from "../../../utils/bible-versions";
 import { explanationTypes } from "../../../utils/commentary-options";
 import { Accordion } from "../../Accordion";
 import { TestamentControl } from "../../Control";
-import { VersionDropdown } from "../../Dropdown";
 import { MarkdownRenderer } from "../../MarkdownRenderer";
 import { Rating } from "../../Rating";
 import { SelectDropdown } from "../../SelectDropdown";
@@ -20,9 +19,10 @@ import { VerseGrid } from "../../VerseGrid/verse-grid";
 import styles from "./header-panel.module.css";
 
 type Props = {
+  isViewingTopic: boolean;
+  topicDetails: any;
   leftPanelIsOpen: boolean;
   leftPanelSetIsOpen: (value: boolean) => void;
-  leftPanelSelectedBook: string | null;
   book?: string;
   verseIdToString: string;
   leftPanelSelectedVerse: string | null;
@@ -54,8 +54,6 @@ type Props = {
     verseId: string,
     testament: TestamentEnum,
   ) => void;
-  bibleVersionSelected: string;
-  handleBibleVersionSelected: (version: string) => void;
   setActiveTab: Dispatch<SetStateAction<string>>;
   explanationType: string;
   handleValueChange: (value: ExplanationTypeEnum) => void;
@@ -97,9 +95,10 @@ type Props = {
 };
 
 export const Nav = ({
+  isViewingTopic,
+  topicDetails,
   leftPanelIsOpen,
   leftPanelSetIsOpen,
-  leftPanelSelectedBook,
   book,
   leftPanelSelectedVerse,
   verseIdToString,
@@ -114,8 +113,6 @@ export const Nav = ({
   bookId,
   verseId,
   leftPanelHandleVerseSelect,
-  bibleVersionSelected,
-  handleBibleVersionSelected,
   setActiveTab,
   explanationType,
   explanation,
@@ -130,7 +127,22 @@ export const Nav = ({
   handleValueChange,
   recentlyViewedBooks,
 }: Props) => {
+  const [activeTopicTab, setActiveTopicTab] = useState("EVENTS");
   const selectedBook = selectedBookStore.get();
+
+  useEffect(() => {
+    if (isViewingTopic && topicDetails?.topic?.category_name) {
+      const categoryMap: { [key: string]: string } = {
+        EVENT: "EVENTS",
+        PROPHECY: "PROPHECIES",
+        PARABLE: "PARABLES",
+      };
+      const frontendCategory = categoryMap[topicDetails.topic.category_name];
+      if (frontendCategory) {
+        setActiveTopicTab(frontendCategory);
+      }
+    }
+  }, [isViewingTopic, topicDetails]);
 
   // Updated fixedItem logic
   const fixedItem = leftPanelFilteredBooks.some(
@@ -280,60 +292,6 @@ export const Nav = ({
     [fixedItem],
   );
 
-  const renderRecentlyViewed = () => {
-    const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
-    return recentlyViewedBooks
-      .filter((id) => Number(id) !== bookId)
-      .map((bookId) => {
-        const book = allBooks.find((b) => b.b === Number(bookId));
-        if (!book) return null;
-        return (
-          <Accordion.Item value={book.n} key={`recently-${book.n}`}>
-            <div
-              data-accordion-trigger={book.n}
-              onClick={() => handleAccordionTriggerClick(book.n)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ")
-                  handleAccordionTriggerClick(book.n);
-              }}
-              role="button"
-              tabIndex={0}
-            >
-              <Accordion.Trigger
-                label={book.n}
-                highlightBook={false}
-                icon={
-                  <Icon.HistoryIcon
-                    style={{
-                      width: "16px",
-                      height: "16px",
-                      marginRight: "8px",
-                      fill: "var(--charcoal-grey)",
-                    }}
-                  />
-                }
-                iconPosition="right"
-              />
-            </div>
-            <Accordion.Content>
-              <VerseGrid
-                testament={book.t}
-                bookId={String(book.b)}
-                bookName={book.n}
-                verses={Array.from({ length: book.c }, (_, i) =>
-                  (i + 1).toString(),
-                )}
-                onVerseSelect={leftPanelHandleVerseSelect}
-                selectedVerse={String(verseId)}
-                selectedBook={String(bookId)}
-              />
-            </Accordion.Content>
-          </Accordion.Item>
-        );
-      })
-      .filter(Boolean);
-  };
-
   const renderSelectedBook = () => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
     const selectedBook = allBooks.find((book) => book.b === bookId);
@@ -370,10 +328,7 @@ export const Nav = ({
     );
   };
 
-  const renderAccordionItems = (
-    books: typeof oldTestamentBooks,
-    testament: "OT" | "NT",
-  ) => {
+  const renderAccordionItems = (testament: "OT" | "NT") => {
     const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
     const filteredBooksWithData = leftPanelFilteredBooks
       .map((bookName) => allBooks.find((t) => t.n === bookName))
@@ -499,13 +454,21 @@ export const Nav = ({
           onOpenChange={leftPanelSetIsOpen}
           resetFilter={leftPanelResetFilter}
         >
-          {!book ? (
+          {!book && !isViewingTopic ? (
             <SelectDropdown.GroupedSelect.Skeleton />
           ) : (
             <>
               <SelectDropdown.Trigger
-                selectedBook={selectedBook}
-                selectedVerse={verseIdToString || leftPanelSelectedVerse}
+                selectedBook={
+                  isViewingTopic
+                    ? topicDetails?.topic?.name ?? "Topic"
+                    : selectedBook
+                }
+                selectedVerse={
+                  isViewingTopic
+                    ? ""
+                    : verseIdToString || leftPanelSelectedVerse
+                }
                 icon={<Icon.ChevronDownIcon />}
                 defaultPlaceholder="Book"
                 theme="dark" // Explicitly set dark theme for header context
@@ -517,13 +480,18 @@ export const Nav = ({
           <SelectDropdown.Content
             align="start"
             style={{
-              width: "390px",
+              width: "420px",
               marginTop: "16px",
             }}
           >
             <Tabs.Root
               value={leftPanelSelectedTab}
-              onValueChange={leftPanelHandleTabChange}
+              onValueChange={(value) => {
+                leftPanelHandleTabChange(value);
+                if (value === "TOPICS") {
+                  setActiveTopicTab("EVENTS");
+                }
+              }}
             >
               <Tabs.List>
                 <Tabs.Trigger
@@ -536,10 +504,19 @@ export const Nav = ({
                   label="New Testament"
                   resetFilter={leftPanelResetFilter}
                 />
+                <Tabs.Trigger
+                  value="TOPICS"
+                  label="Topics"
+                  resetFilter={leftPanelResetFilter}
+                />
               </Tabs.List>
 
               <FilterInput
-                placeholder="Filter Books..."
+                placeholder={
+                  leftPanelSelectedTab === "TOPICS"
+                    ? "Search all topics..."
+                    : "Filter Books..."
+                }
                 debouncedFilter={leftPanelDebouncedFilter}
                 handleChange={leftPanelHandleChange}
                 filterable
@@ -548,6 +525,7 @@ export const Nav = ({
 
               <div
                 ref={scrollContainerRef}
+                className={styles.contentGroupedTrigger}
                 style={{
                   marginTop: "127px",
                   maxHeight: "min(calc(100vh - 230px), 512px)",
@@ -556,26 +534,49 @@ export const Nav = ({
                   paddingBottom: "16px",
                 }}
               >
-                <div
-                  className={styles.selectedBook}
-                  style={
-                    fixedItem ? { position: "relative", marginTop: 48 } : {}
-                  }
-                >
-                  <Accordion.Root type="multiple">
-                    {renderSelectedBook()}
-                  </Accordion.Root>
-                </div>
+                {leftPanelSelectedTab !== "TOPICS" && (
+                  <div
+                    className={styles.selectedBook}
+                    style={
+                      fixedItem ? { position: "relative", marginTop: 48 } : {}
+                    }
+                  >
+                    <Accordion.Root type="multiple">
+                      {renderSelectedBook()}
+                    </Accordion.Root>
+                  </div>
+                )}
                 <Tabs.Content value="OT">
-                  <Accordion.Root>
-                    {renderAccordionItems(oldTestamentBooks, "OT")}
-                  </Accordion.Root>
+                  <Accordion.Root>{renderAccordionItems("OT")}</Accordion.Root>
                 </Tabs.Content>
 
                 <Tabs.Content value="NT">
-                  <Accordion.Root>
-                    {renderAccordionItems(newTestamentBooks, "NT")}
-                  </Accordion.Root>
+                  <Accordion.Root>{renderAccordionItems("NT")}</Accordion.Root>
+                </Tabs.Content>
+                <Tabs.Content value="TOPICS">
+                  <button
+                    type="button"
+                    onClick={() => leftPanelHandleTabChange("NT")}
+                    className={styles.backButton}
+                  >
+                    <Icon.ChevronBackward className={styles.backButtonIcon} />
+                    <span>Back to Books</span>
+                  </button>
+                  <Tabs.Root
+                    value={activeTopicTab}
+                    onValueChange={setActiveTopicTab}
+                  >
+                    <Tabs.List>
+                      <Tabs.Trigger value="EVENTS" label="Events" />
+                      <Tabs.Trigger value="PROPHECIES" label="Prophecies" />
+                      <Tabs.Trigger value="PARABLES" label="Parables" />
+                    </Tabs.List>
+                    <TopicContent
+                      category={activeTopicTab}
+                      filter={leftPanelDebouncedFilter}
+                      onTopicClick={() => leftPanelSetIsOpen(false)}
+                    />
+                  </Tabs.Root>
                 </Tabs.Content>
               </div>
             </Tabs.Root>

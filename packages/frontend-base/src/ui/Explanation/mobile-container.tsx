@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import animationStyles from "../../Main/Content/main-content.module.css";
 import { useChapter } from "../../hooks/useChapter";
@@ -127,7 +127,7 @@ export const MobileContainer = ({ chapters, explanation }: Props) => {
         {visibleExplanations.map((exp, index) => (
           <div
             key={exp.key}
-            className={exp.className}
+            className={`${exp.className} ${styles.explanationContent} ${styles.mobileExplanationContent}`}
             style={{
               position: "absolute",
               top: 0,

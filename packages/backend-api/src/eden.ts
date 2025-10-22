@@ -46,7 +46,7 @@ const fetcher = async (url: string | URL | Request, init?: RequestInit) => {
 };
 
 export const api = treaty<App>($env.get().apiUrl, {
-  fetcher,
+  fetcher: fetcher as typeof fetch,
   onResponse(response) {
     if (response.status === 401) {
       window.location.href = "/logout";

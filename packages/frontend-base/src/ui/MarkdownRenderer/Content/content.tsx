@@ -11,6 +11,7 @@ type MarkdownRendererProps = {
     | string;
   className?: string;
   language?: string;
+  variant?: "default" | "bible-text"; // default = grayish text, bible-text = white text
 };
 
 const isRtlLang = (lang?: string) => {
@@ -23,6 +24,7 @@ export const Renderer = ({
   markdownContent,
   className,
   language,
+  variant = "default",
 }: MarkdownRendererProps) => {
   const [content, setContent] = useState<string>("");
 
@@ -48,18 +50,40 @@ export const Renderer = ({
   }, [markdownContent]);
 
   const direction = isRtlLang(language) ? "rtl" : "ltr";
+  const variantClass = variant === "bible-text" ? styles.bibleText : "";
 
   return (
     <div dir={direction} lang={language}>
       <ReactMarkdown
-        className={`${styles.markdown} ${className}`}
+        className={`${styles.markdown} ${variantClass} ${className}`}
         components={{
           h2: ({ node, ...props }) => (
-            <h2 style={{ marginTop: "2em" }} {...props} />
+            <h2 style={{ marginTop: "32px", marginBottom: "4px" }} {...props} />
           ),
           h3: ({ node, ...props }) => (
             <h3 style={{ marginTop: "1em" }} {...props} />
           ),
+          p: ({ node, ...props }) => {
+            const childrenArray = Array.isArray((node as any)?.children)
+              ? (node as any).children
+              : [];
+            const textContent = childrenArray
+              .map((child: any) =>
+                child?.type === "text" ? String(child.value ?? "") : "",
+              )
+              .join("")
+              .trim();
+
+            if (!textContent) {
+              return null;
+            }
+
+            if (textContent.startsWith("(") && textContent.endsWith(")")) {
+              return <p className={styles.referenceText} {...props} />;
+            }
+
+            return <p {...props} />;
+          },
         }}
       >
         {content}

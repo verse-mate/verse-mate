@@ -1,16 +1,11 @@
-import { Readable } from "node:stream";
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import OpenAI, { APIError } from "openai";
-import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
+import { ValidationError } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
-import {
-  BATCH_PROCESSING_QUEUE,
-  batchProcessingQueue,
-} from "../../queue/batch-processing.queue";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
@@ -91,6 +86,435 @@ export class BatchOperationService {
     this.promptRepository = new PromptRepository(this.db);
   }
 
+  async generateTopicDiscoveryBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high" = "medium",
+    category?: string,
+  ) {
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-discovery");
+    if (!prompt) {
+      throw new Error("No active topic-discovery prompt found.");
+    }
+
+    const discoveryTopicType = category || "all";
+
+    const batchRequests: BatchJobRequest[] = [
+      {
+        custom_id: `topic-discovery-${discoveryTopicType}-${Date.now()}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: "",
+          input: prompt.prompt_template,
+          max_output_tokens: 50000,
+        },
+      },
+    ];
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    // Check if the content exceeds OpenAI's file size limit (100MB)
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      // 100MB limit
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit. Please reduce the number of requests in this batch.`,
+      );
+    }
+
+    // Create a proper File object for OpenAI API
+    const file = await openai.files.create({
+      file: new File(
+        [buffer],
+        `topic_discovery_${discoveryTopicType}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-discovery",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: 1,
+        created_by: adminUserId,
+        bible_version: "N/A",
+        explanation_types: [],
+        topic_category: discoveryTopicType,
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return [batch];
+  }
+
+  async generateTopicReferencesBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high" = "medium",
+    category?: string,
+    topicId?: string,
+  ) {
+    // Modify the query to filter by category if provided
+    let query = this.db
+      .getOrCreateConnection()
+      .selectFrom("topics")
+      .leftJoin(
+        "topic_references",
+        "topics.topic_id",
+        "topic_references.topic_id",
+      )
+      .where("topic_references.reference_id", "is", null);
+
+    // Filter by category if provided
+    if (category) {
+      query = query.where("topics.category", "=", category);
+    }
+
+    // Filter by specific topic if provided
+    if (topicId) {
+      query = query.where("topics.topic_id", "=", topicId);
+    }
+
+    const topics = await query.selectAll("topics").execute();
+
+    if (topics.length === 0) {
+      throw new Error("No topics found that need references.");
+    }
+
+    const prompt =
+      await this.promptRepository.getUserPromptByType("topic-references");
+    if (!prompt) {
+      throw new Error("No active topic-references prompt found.");
+    }
+
+    const batchRequests: BatchJobRequest[] = topics.map((topic) => ({
+      custom_id: `topic-references-${topic.topic_id}`,
+      method: "POST",
+      url: "/v1/responses",
+      body: {
+        model,
+        reasoning: { effort },
+        instructions: "",
+        input: prompt.prompt_template
+          .replace("{topic_name}", topic.name)
+          .replace("{topic_description}", topic.description || ""),
+        max_output_tokens: 50000,
+      },
+    }));
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    // Check if the content exceeds OpenAI's file size limit (100MB)
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      // 100MB limit
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit. Please reduce the number of requests in this batch.`,
+      );
+    }
+
+    // Create a proper File object for OpenAI API
+    const file = await openai.files.create({
+      file: new File([buffer], `topic_references_${Date.now()}.jsonl`),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-references",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        bible_version: "N/A",
+        explanation_types: [],
+        topic_category: category || null, // Store category if provided
+        topic_id: topicId || null, // Store topic_id if provided
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
+  }
+
+  async generateTopicExplanationsBatch(
+    model: string,
+    adminUserId: string,
+    languageCode: string,
+    explanationTypes: string[] = ["summary", "byline", "detailed"],
+    effort: "low" | "medium" | "high" = "medium",
+    category?: string,
+    topicId?: string,
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    // 1. Create the Parent Batch Job
+    const parentBatch = await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-explanations-parent",
+        status: "in_progress",
+        model,
+        created_by: adminUserId,
+        bible_version: languageCode,
+        explanation_types: explanationTypes,
+        topic_category: category || null,
+        topic_id: topicId || null,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    const parentBatchId = parentBatch.id;
+
+    // 2. Find all topics that need explanations
+    let query = connection
+      .selectFrom("topics")
+      .innerJoin(
+        "topic_references",
+        "topics.topic_id",
+        "topic_references.topic_id",
+      )
+      .where("topic_references.is_active", "=", true)
+      .where(({ eb, not, exists }) =>
+        not(
+          exists(
+            eb
+              .selectFrom("topic_explanations")
+              .select("topic_explanations.topic_id")
+              .whereRef("topic_explanations.topic_id", "=", "topics.topic_id")
+              .where("topic_explanations.language_code", "=", languageCode)
+              .where("topic_explanations.type", "in", explanationTypes)
+              .where("topic_explanations.is_active", "=", true),
+          ),
+        ),
+      );
+
+    if (category) {
+      query = query.where("topics.category", "=", category);
+    }
+    if (topicId) {
+      query = query.where("topics.topic_id", "=", topicId);
+    }
+
+    const topics = await query.selectAll("topics").execute();
+
+    if (topics.length === 0) {
+      // Throw an error to provide clear feedback to the frontend.
+      console.error(
+        "[BATCH] No topics found that need explanations. Throwing error.",
+      );
+      throw new Error(
+        "No topics found that need new explanations. Ensure that the 'References' batch has been run and that explanations do not already exist for the selected topics.",
+      );
+    }
+
+    // Update the parent batch with the total number of child batches to be created.
+    await connection
+      .updateTable("batch_jobs")
+      .set({ total_requests: topics.length })
+      .where("id", "=", parentBatchId)
+      .execute();
+
+    // 3. Loop through topics and create a child batch for each one
+    const batchResults = [];
+    for (const topic of topics) {
+      try {
+        const childBatch = await this.createSingleTopicExplanationBatch(
+          topic,
+          model,
+          adminUserId,
+          languageCode,
+          explanationTypes,
+          effort,
+          parentBatchId,
+        );
+        batchResults.push({ success: true, ...childBatch });
+      } catch (error) {
+        console.error(
+          `[BATCH] Error processing topic ${topic.name} for explanations:`,
+          error,
+        );
+        batchResults.push({
+          success: false,
+          topicId: topic.topic_id,
+          topicName: topic.name,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+
+    return {
+      success: true,
+      message: `Topic explanations batch creation started for ${topics.length} topics under parent batch ${parentBatchId}.`,
+      results: batchResults,
+      parentBatchId,
+    };
+  }
+
+  private async createSingleTopicExplanationBatch(
+    topic: any,
+    model: string,
+    adminUserId: string,
+    languageCode: string,
+    explanationTypes: string[],
+    effort: "low" | "medium" | "high",
+    parentBatchId: number,
+  ) {
+    const batchRequests: BatchJobRequest[] = [];
+
+    const systemPrompt =
+      await this.promptRepository.getActivePromptByType("topic-system");
+    if (!systemPrompt) {
+      throw new Error("No active topic-system prompt found.");
+    }
+
+    // Fetch topic references once per topic
+    const topicReference = await this.db
+      .getOrCreateConnection()
+      .selectFrom("topic_references")
+      .where("topic_id", "=", topic.topic_id)
+      .select("content")
+      .executeTakeFirst();
+
+    for (const type of explanationTypes) {
+      const prompt = await new UserPromptRepository(
+        this.db,
+      ).getActivePromptByType(`topic-${type}`);
+      if (!prompt) {
+        console.warn(`No active prompt found for type: topic-${type}`);
+        continue;
+      }
+
+      let finalInput = prompt.prompt_template
+        .replace("{topic_name}", topic.name)
+        .replace("{topic_description}", topic.description || "");
+
+      // For byline, inject references. If not found, placeholder is replaced with empty string.
+      if (type === "byline") {
+        finalInput = finalInput.replace(
+          "{references}",
+          topicReference?.content || "",
+        );
+        if (!topicReference?.content) {
+          console.warn(
+            `[BATCH] No references found for byline topic "${topic.name}". The {references} placeholder was replaced with an empty string.`,
+          );
+        }
+      }
+
+      batchRequests.push({
+        custom_id: `topic-explanations-${topic.topic_id}-${type}-${languageCode}-${Date.now()}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: systemPrompt.prompt,
+          input: finalInput,
+          max_output_tokens: 50000,
+        },
+      });
+    }
+
+    if (batchRequests.length === 0) {
+      console.log(
+        `[BATCH] No prompts found for topic ${topic.name}. Skipping batch creation.`,
+      );
+      return;
+    }
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    // Check if the content exceeds OpenAI's file size limit (100MB)
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      // 100MB limit
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit. Please reduce the number of requests in this batch.`,
+      );
+    }
+
+    // Create a proper File object for OpenAI API
+    const file = await openai.files.create({
+      file: new File(
+        [buffer],
+        `topic_explanations_${topic.topic_id}_${languageCode}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-explanations",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        bible_version: languageCode,
+        explanation_types: explanationTypes,
+        target_language_code: languageCode,
+        topic_category: topic.category,
+        topic_id: topic.topic_id,
+        parent_batch_id: parentBatchId,
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
+  }
   async generateBookBatchByName(
     bookName: string,
     bibleVersion: string,
@@ -157,10 +581,19 @@ export class BatchOperationService {
       effort,
     );
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    // Check if the content exceeds OpenAI's file size limit (100MB)
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      // 100MB limit
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit. Please reduce the number of requests in this batch.`,
+      );
+    }
+
+    // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [blob],
+        [buffer],
         `batch_${bookId}_${bibleVersion}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -590,7 +1023,7 @@ export class BatchOperationService {
             reasoning: { effort },
             instructions: rephrasePrompt.prompt,
             input: explanation.explanation,
-            max_output_tokens: 25000,
+            max_output_tokens: 50000,
           },
         };
       },
@@ -608,10 +1041,19 @@ export class BatchOperationService {
       .map((request) => JSON.stringify(request))
       .join("\n");
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    // Check if the content exceeds OpenAI's file size limit (100MB)
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      // 100MB limit
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit. Please reduce the number of requests in this batch.`,
+      );
+    }
+
+    // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [blob],
+        [buffer],
         `rephrase_batch_${book.book_id}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -792,7 +1234,7 @@ export class BatchOperationService {
               reasoning: { effort },
               instructions: finalPrompt,
               input: explanation.explanation,
-              max_output_tokens: 25000,
+              max_output_tokens: 50000,
             },
           });
         }
@@ -811,7 +1253,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: finalPrompt,
           input: explanation.explanation,
-          max_output_tokens: 25000,
+          max_output_tokens: 50000,
         },
       }));
     }
@@ -843,10 +1285,19 @@ export class BatchOperationService {
       `[BATCH] Generated JSONL content with ${batchRequests.length} requests`,
     );
 
-    const blob = new Blob([jsonlContent], { type: "application/jsonl" });
+    // Check if the content exceeds OpenAI's file size limit (100MB)
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      // 100MB limit
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit. Please reduce the number of requests in this batch.`,
+      );
+    }
+
+    // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [blob],
+        [buffer],
         `translate_batch_${book.book_id}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -926,6 +1377,7 @@ export class BatchOperationService {
         "completed_requests",
         "failed_requests",
         "explanations_processed",
+        "actual_cost",
       ])
       .executeTakeFirst();
 
@@ -963,11 +1415,15 @@ export class BatchOperationService {
           .execute();
       }
 
+      const isFinished =
+        correctStatus === "completed" ||
+        correctStatus === "partial_failure" ||
+        correctStatus === "failed";
       const needsProcessing =
-        (correctStatus === "completed" ||
-          correctStatus === "partial_failure") &&
-        completed > 0 &&
-        !currentBatchJob.explanations_processed;
+        isFinished &&
+        (!currentBatchJob.explanations_processed ||
+          currentBatchJob.actual_cost === null ||
+          currentBatchJob.actual_cost === 0);
 
       if (needsProcessing) {
         console.log(
@@ -1012,7 +1468,9 @@ export class BatchOperationService {
       }
     }
 
-    await this.processOutputFile(batchId, outputFileId);
+    if (outputFileId) {
+      await this.processOutputFile(batchId, outputFileId);
+    }
   }
 
   async cancelBatch(batchId: string) {
@@ -1032,14 +1490,14 @@ export class BatchOperationService {
     if (
       batchJob.batch_type === "bible" ||
       batchJob.batch_type === "rephrase-bible" ||
-      batchJob.batch_type === "translate-bible"
+      batchJob.batch_type === "translate-bible" ||
+      batchJob.batch_type === "topic-explanations-parent" ||
+      batchJob.batch_type === "topic-translate-all"
     ) {
       console.log(
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
       );
       const children = await this.getBatchChildren(Number(batchId));
-      let cancelledCount = 0;
-      let failedToCancelCount = 0;
 
       for (const child of children) {
         if (
@@ -1062,7 +1520,6 @@ export class BatchOperationService {
               .set({ status: openaiBatch.status }) // Use the status from OpenAI API response
               .where("id", "=", Number(child.id))
               .execute();
-            cancelledCount++;
           } catch (error) {
             if (
               error instanceof APIError &&
@@ -1094,7 +1551,6 @@ export class BatchOperationService {
                 .where("id", "=", Number(child.id))
                 .execute();
             }
-            failedToCancelCount++;
           }
         }
       }
@@ -1183,9 +1639,11 @@ export class BatchOperationService {
       .selectFrom("batch_jobs")
       .where("parent_batch_id", "=", parentBatchId)
       .leftJoin("books", "batch_jobs.book_id", "books.book_id")
+      .leftJoin("topics", "batch_jobs.topic_id", "topics.topic_id") // Join with topics table
       .selectAll("batch_jobs")
-      .select("books.name as book_name")
+      .select(["books.name as book_name", "topics.name as topic_name"]) // Select topic_name
       .orderBy("batch_jobs.book_id", "asc")
+      .orderBy("batch_jobs.topic_id", "asc")
       .execute();
   }
 
@@ -1333,7 +1791,9 @@ export class BatchOperationService {
       const isParent =
         batch.batch_type === "bible" ||
         batch.batch_type === "rephrase-bible" ||
-        batch.batch_type === "translate-bible";
+        batch.batch_type === "translate-bible" ||
+        batch.batch_type === "topic-explanations-parent" ||
+        batch.batch_type === "topic-translate-all";
       const batchId = isParent ? `parent-${batch.id}` : batch.openai_batch_id;
 
       if (batchId) {
@@ -1618,7 +2078,7 @@ export class BatchOperationService {
             reasoning: { effort },
             instructions: sanitizedSystemPrompt,
             input: sanitizedUserPrompt,
-            max_output_tokens: 25000,
+            max_output_tokens: 50000,
           },
         });
       }
@@ -1664,6 +2124,41 @@ export class BatchOperationService {
       }
       if (batchJob.batch_type === "translate") {
         return this.processTranslateOutputFile(batchId, outputFileId, batchJob);
+      }
+      if (batchJob.batch_type === "topic-discovery") {
+        return this.processTopicDiscoveryOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
+      if (batchJob.batch_type === "topic-references") {
+        return this.processTopicReferencesOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
+      if (batchJob.batch_type === "topic-explanations") {
+        return this.processTopicExplanationsOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
+      if (batchJob.batch_type === "topic-translate-names") {
+        return this.processTopicNameTranslateOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
+      if (batchJob.batch_type === "topic-translate") {
+        return this.processTopicExplanationTranslateOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
       }
 
       const version = await this.db
@@ -1895,8 +2390,15 @@ export class BatchOperationService {
     batchJob: { model: string },
   ) {
     const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
 
     let processedCount = 0;
     let errorCount = 0;
@@ -1950,18 +2452,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: rephrase|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format rephrase custom_id: ${parsedLine.custom_id}`,
             );
@@ -2174,8 +2669,15 @@ export class BatchOperationService {
     },
   ) {
     const fileContent = await openai.files.content(outputFileId);
-    const jsonl = await fileContent.text();
-    const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
 
     let processedCount = 0;
     let errorCount = 0;
@@ -2229,18 +2731,11 @@ export class BatchOperationService {
           let chapterNumberStr: string;
           let explanationType: string;
           let bibleVersion: string;
-          let explanationId: string;
 
           if (parts.length === 6) {
             // New format: translate|book|chapter|type|version|explanation_id
-            [
-              ,
-              bookName,
-              chapterNumberStr,
-              explanationType,
-              bibleVersion,
-              explanationId,
-            ] = parts;
+            [, bookName, chapterNumberStr, explanationType, bibleVersion] =
+              parts;
             console.log(
               `[BATCH] Processing new format translate custom_id: ${parsedLine.custom_id}`,
             );
@@ -2384,6 +2879,767 @@ export class BatchOperationService {
     );
   }
 
+  private async processTopicDiscoveryOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    console.log(
+      `[BATCH_TOPIC_DISCOVERY] Processing output file for batch ${batchId}`,
+    );
+
+    try {
+      const fileContent = await openai.files.content(outputFileId);
+      const jsonl = await fileContent.text();
+      const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+      let processedCount = 0;
+      let errorCount = 0;
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
+
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+
+          if (data.response?.body?.usage) {
+            totalPromptTokens += data.response.body.usage.input_tokens || 0;
+            totalCompletionTokens +=
+              data.response.body.usage.output_tokens || 0;
+          }
+
+          const content = data.response.body.output[1].content[0].text;
+          const topics = JSON.parse(content);
+
+          if (Array.isArray(topics)) {
+            for (const topic of topics) {
+              await this.db
+                .getOrCreateConnection()
+                .insertInto("topics")
+                .values({
+                  name: topic.name,
+                  description: topic.description,
+                  category: topic.category,
+                })
+                .onConflict((oc) => oc.column("topic_id").doNothing())
+                .execute();
+              processedCount++;
+            }
+          }
+        } catch (error) {
+          console.error(
+            `[BATCH] Error processing line for topic discovery batch ${batchId}:`,
+            error,
+          );
+          errorCount++;
+        }
+      }
+
+      const actualCost = await calculateActualCost(
+        totalPromptTokens,
+        totalCompletionTokens,
+        batchJob.model,
+      );
+
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({
+          explanations_processed: true,
+          status: errorCount > 0 ? "partial_failure" : "completed",
+          actual_cost: actualCost,
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          total_tokens: totalPromptTokens + totalCompletionTokens,
+        })
+        .where("openai_batch_id", "=", batchId)
+        .execute();
+
+      console.log(
+        `[BATCH] Processed ${processedCount} topics for batch ${batchId}. Errors: ${errorCount}. Cost: $${actualCost.toFixed(4)}`,
+      );
+    } catch (error) {
+      console.error(
+        `[BATCH_TOPIC_DISCOVERY] Error processing output file for batch ${batchId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  private async processTopicReferencesOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    console.log(
+      `[BATCH_TOPIC_REFERENCES] Processing output file for batch ${batchId}`,
+    );
+
+    try {
+      const fileContent = await openai.files.content(outputFileId);
+      const jsonl = await fileContent.text();
+      const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+      let processedCount = 0;
+      let errorCount = 0;
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
+
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+
+          if (data.response?.body?.usage) {
+            totalPromptTokens += data.response.body.usage.input_tokens || 0;
+            totalCompletionTokens +=
+              data.response.body.usage.output_tokens || 0;
+          }
+
+          const content = data.response.body.output[1].content[0].text;
+          const customId = data.custom_id;
+
+          if (content && customId) {
+            try {
+              const topicId = customId.replace("topic-references-", "");
+              await this.db
+                .getOrCreateConnection()
+                .insertInto("topic_references")
+                .values({
+                  topic_id: topicId,
+                  content: content,
+                })
+                .onConflict((oc) =>
+                  oc.column("topic_id").doUpdateSet({ content: content }),
+                )
+                .execute();
+
+              processedCount++;
+            } catch (dbError) {
+              errorCount++;
+              console.error(
+                `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
+                dbError,
+              );
+            }
+          } else {
+            errorCount++;
+            console.warn(
+              `[BATCH_TOPIC_REFERENCES] Missing output text or custom ID in line for batch ${batchId}`,
+            );
+          }
+        } catch (lineError) {
+          errorCount++;
+          console.error(
+            `[BATCH_TOPIC_REFERENCES] Error processing line in batch ${batchId}:`,
+            lineError,
+          );
+        }
+      }
+
+      const actualCost = await calculateActualCost(
+        totalPromptTokens,
+        totalCompletionTokens,
+        batchJob.model,
+      );
+
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({
+          explanations_processed: true,
+          status: errorCount > 0 ? "partial_failure" : "completed",
+          actual_cost: actualCost,
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          total_tokens: totalPromptTokens + totalCompletionTokens,
+        })
+        .where("openai_batch_id", "=", batchId)
+        .execute();
+
+      console.log(
+        `[BATCH_TOPIC_REFERENCES] Batch ${batchId} completed: ${processedCount} references added, ${errorCount} errors. Cost: $${actualCost.toFixed(4)}`,
+      );
+    } catch (error) {
+      console.error(
+        `[BATCH_TOPIC_REFERENCES] Error processing output file for batch ${batchId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  private async processTopicExplanationsOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    console.log(
+      `[BATCH_TOPIC_EXPLANATIONS] Processing output file for batch ${batchId}`,
+    );
+
+    try {
+      const fileContent = await openai.files.content(outputFileId);
+      const jsonl = await fileContent.text();
+      const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+      let processedCount = 0;
+      let errorCount = 0;
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
+
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+
+          if (data.response?.body?.usage) {
+            totalPromptTokens += data.response.body.usage.input_tokens || 0;
+            totalCompletionTokens +=
+              data.response.body.usage.output_tokens || 0;
+          }
+
+          const content = data.response.body.output[1].content[0].text;
+          const customId = data.custom_id;
+
+          if (content && customId) {
+            try {
+              // Parse custom ID to extract topic_id, explanation_type, and language_code
+              const parts = customId.split("-");
+              if (parts.length >= 9) {
+                const topicId = `${parts[2]}-${parts[3]}-${parts[4]}-${parts[5]}-${parts[6]}`;
+                const explanationType = parts[7];
+                const timestampIndex = parts.length - 1;
+                const languageCode = parts.slice(8, timestampIndex).join("-");
+
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Parsing custom ID: ${customId}`,
+                );
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Extracted topicId: ${topicId}`,
+                );
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Extracted explanationType: ${explanationType}`,
+                );
+                console.log(
+                  `[BATCH_TOPIC_EXPLANATIONS] Extracted languageCode: ${languageCode}`,
+                );
+
+                await this.db
+                  .getOrCreateConnection()
+                  .insertInto("topic_explanations")
+                  .values({
+                    topic_id: topicId,
+                    type: explanationType,
+                    explanation: content,
+                    language_code: languageCode,
+                    is_active: true,
+                    default: false,
+                    version: 1,
+                  })
+                  .onConflict((oc) =>
+                    oc
+                      .columns(["topic_id", "language_code", "type"])
+                      .doUpdateSet({
+                        explanation: content,
+                        is_active: true,
+                        default: false,
+                        updated_at: new Date(),
+                      }),
+                  )
+                  .execute();
+
+                processedCount++;
+              } else {
+                errorCount++;
+                console.warn(
+                  `[BATCH_TOPIC_EXPLANATIONS] Invalid custom ID format in batch ${batchId}: ${customId}`,
+                );
+              }
+            } catch (dbError) {
+              errorCount++;
+              console.error(
+                `[BATCH_TOPIC_EXPLANATIONS] Database error for explanation in batch ${batchId}:`,
+                dbError,
+              );
+            }
+          } else {
+            errorCount++;
+            console.warn(
+              `[BATCH_TOPIC_EXPLANATIONS] Missing output text or custom ID in line for batch ${batchId}`,
+            );
+          }
+        } catch (lineError) {
+          errorCount++;
+          console.error(
+            `[BATCH_TOPIC_EXPLANATIONS] Error processing line in batch ${batchId}:`,
+            lineError,
+          );
+        }
+      }
+
+      const actualCost = await calculateActualCost(
+        totalPromptTokens,
+        totalCompletionTokens,
+        batchJob.model,
+      );
+
+      await this.db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({
+          explanations_processed: true,
+          status: errorCount > 0 ? "partial_failure" : "completed",
+          actual_cost: actualCost,
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          total_tokens: totalPromptTokens + totalCompletionTokens,
+        })
+        .where("openai_batch_id", "=", batchId)
+        .execute();
+
+      console.log(
+        `[BATCH_TOPIC_EXPLANATIONS] Batch ${batchId} completed: ${processedCount} explanations added, ${errorCount} errors. Cost: $${actualCost.toFixed(4)}`,
+      );
+    } catch (error) {
+      console.error(
+        `[BATCH_TOPIC_EXPLANATIONS] Error processing output file for batch ${batchId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Process topic name translation output file
+   */
+  private async processTopicNameTranslateOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    console.log(
+      `[BATCH] Processing topic name translation output for batch ${batchId}`,
+    );
+
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
+
+    let processedCount = 0;
+    let errorCount = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+
+    const connection = this.db.getOrCreateConnection();
+
+    for (const line of lines) {
+      let customId = "unknown";
+      try {
+        const parsedLine = JSON.parse(line);
+        customId = parsedLine.custom_id || "unknown";
+
+        if (parsedLine.response?.body?.usage) {
+          totalPromptTokens += parsedLine.response.body.usage.input_tokens || 0;
+          totalCompletionTokens +=
+            parsedLine.response.body.usage.output_tokens || 0;
+        }
+
+        const responseBody = parsedLine.response?.body;
+        let extractedText: string | undefined;
+
+        if (responseBody?.output && Array.isArray(responseBody.output)) {
+          for (const item of responseBody.output) {
+            // Check for message type with content array
+            if (
+              item.type === "message" &&
+              item.content &&
+              Array.isArray(item.content)
+            ) {
+              for (const contentItem of item.content) {
+                if (
+                  contentItem.type === "output_text" &&
+                  typeof contentItem.text === "string"
+                ) {
+                  extractedText = contentItem.text;
+                  break;
+                }
+              }
+              if (extractedText) break;
+            }
+            // Legacy format: direct content array
+            else if (
+              item.content &&
+              Array.isArray(item.content) &&
+              typeof item.content[0]?.text === "string"
+            ) {
+              extractedText = item.content[0].text;
+              break;
+            }
+          }
+        }
+
+        if (!extractedText) {
+          extractedText = responseBody?.output_text;
+        }
+
+        if (
+          parsedLine.custom_id?.startsWith("translate-topic-name|") &&
+          parsedLine.response?.status_code === 200 &&
+          typeof extractedText === "string" &&
+          extractedText.length > 0
+        ) {
+          // Parse custom_id: translate-topic-name|{topic_id}|{target_lang}
+          const parts = parsedLine.custom_id.split("|");
+
+          if (parts.length !== 3) {
+            console.error(
+              `[BATCH] Invalid custom_id format: ${parsedLine.custom_id}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          const [, topicId, targetLanguage] = parts;
+
+          // Parse AI response - expect format:
+          // Name: {translated name}
+          // Description: {translated description}
+          let translatedName: string | null = null;
+          let translatedDescription: string | null = null;
+
+          // Try JSON first
+          try {
+            const asJson = JSON.parse(extractedText);
+            if (asJson && typeof asJson === "object") {
+              if (typeof asJson.name === "string")
+                translatedName = asJson.name.trim();
+              if (typeof asJson.description === "string")
+                translatedDescription = asJson.description.trim();
+            }
+          } catch {}
+
+          // Fallback to "Name:" / "Description:" format
+          if (!translatedName) {
+            const nameMatch = extractedText.match(
+              /^\s*Name\s*:\s*(.+?)\s*(?:\r?\n|$)/i,
+            );
+            const descMatch = extractedText.match(
+              /^\s*Description\s*:\s*([\s\S]*?)$/im,
+            );
+            translatedName = nameMatch?.[1]?.trim() || null;
+            translatedDescription =
+              descMatch?.[1]?.trim() || translatedDescription;
+          }
+
+          // Final fallback: first line as name, rest as description
+          if (!translatedName) {
+            const [first, ...rest] = extractedText
+              .split(/\r?\n/)
+              .map((s) => s.trim())
+              .filter(Boolean);
+            if (first) {
+              translatedName = first;
+              translatedDescription = rest.length
+                ? rest.join("\n")
+                : translatedDescription;
+            }
+          }
+
+          if (!translatedName) {
+            console.error(
+              `[BATCH] Could not extract translated name from response for ${customId}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          // Insert/update translation
+          await connection
+            .insertInto("topic_translations")
+            .values({
+              topic_id: topicId,
+              language_code: targetLanguage,
+              translated_name: translatedName,
+              translated_description: translatedDescription,
+              is_active: true,
+              created_at: new Date(),
+              updated_at: new Date(),
+            })
+            .onConflict((oc) =>
+              oc.columns(["topic_id", "language_code"]).doUpdateSet({
+                translated_name: translatedName,
+                translated_description: translatedDescription,
+                updated_at: new Date(),
+              }),
+            )
+            .execute();
+
+          processedCount++;
+          console.log(
+            `[BATCH] Saved translation for topic ${topicId}: ${translatedName}`,
+          );
+        } else {
+          errorCount++;
+          console.error(
+            `[BATCH] Failed to process line for custom_id: ${customId}`,
+          );
+        }
+      } catch (error) {
+        errorCount++;
+        console.error(
+          `[BATCH] Error processing line for custom_id: ${customId}:`,
+          error,
+        );
+      }
+    }
+
+    const actualCost = await calculateActualCost(
+      totalPromptTokens,
+      totalCompletionTokens,
+      batchJob.model,
+    );
+
+    await connection
+      .updateTable("batch_jobs")
+      .set({
+        explanations_processed: true,
+        actual_cost: actualCost,
+        prompt_tokens: totalPromptTokens,
+        completion_tokens: totalCompletionTokens,
+        total_tokens: totalPromptTokens + totalCompletionTokens,
+        status: errorCount > 0 ? "partial_failure" : "completed",
+      })
+      .where("openai_batch_id", "=", batchId)
+      .execute();
+
+    console.log(
+      `[BATCH] Topic name translation batch ${batchId} processed: ${processedCount} saved, ${errorCount} errors. Cost: $${actualCost.toFixed(4)}`,
+    );
+  }
+
+  /**
+   * Process topic explanation translation output file
+   */
+  private async processTopicExplanationTranslateOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    console.log(
+      `[BATCH] Processing topic explanation translation output for batch ${batchId}`,
+    );
+
+    const fileContent = await openai.files.content(outputFileId);
+    const jsonData =
+      typeof (fileContent as any).text === "function"
+        ? await (fileContent as any).text()
+        : typeof (fileContent as any).arrayBuffer === "function"
+          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+          : String(fileContent);
+    const lines = jsonData
+      .split("\n")
+      .filter((line: string) => line.trim() !== "");
+
+    let processedCount = 0;
+    let errorCount = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+
+    const connection = this.db.getOrCreateConnection();
+
+    for (const line of lines) {
+      let customId = "unknown";
+      try {
+        const parsedLine = JSON.parse(line);
+        customId = parsedLine.custom_id || "unknown";
+
+        if (parsedLine.response?.body?.usage) {
+          totalPromptTokens += parsedLine.response.body.usage.input_tokens || 0;
+          totalCompletionTokens +=
+            parsedLine.response.body.usage.output_tokens || 0;
+        }
+
+        const responseBody = parsedLine.response?.body;
+        let extractedText: string | undefined;
+
+        if (responseBody?.output && Array.isArray(responseBody.output)) {
+          for (const item of responseBody.output) {
+            // Check for message type with content array
+            if (
+              item.type === "message" &&
+              item.content &&
+              Array.isArray(item.content)
+            ) {
+              for (const contentItem of item.content) {
+                if (
+                  contentItem.type === "output_text" &&
+                  typeof contentItem.text === "string"
+                ) {
+                  extractedText = contentItem.text;
+                  break;
+                }
+              }
+              if (extractedText) break;
+            }
+            // Legacy format: direct content array
+            else if (
+              item.content &&
+              Array.isArray(item.content) &&
+              typeof item.content[0]?.text === "string"
+            ) {
+              extractedText = item.content[0].text;
+              break;
+            }
+          }
+        }
+
+        if (!extractedText) {
+          extractedText = responseBody?.output_text;
+        }
+
+        if (
+          parsedLine.custom_id?.startsWith("translate-topic|") &&
+          parsedLine.response?.status_code === 200 &&
+          typeof extractedText === "string" &&
+          extractedText.length > 0
+        ) {
+          // Parse custom_id: translate-topic|{topic_id}|{type}|{target_lang}|{explanation_id}
+          const parts = parsedLine.custom_id.split("|");
+
+          if (parts.length !== 5) {
+            console.error(
+              `[BATCH] Invalid custom_id format: ${parsedLine.custom_id}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          const [
+            ,
+            topicId,
+            explanationType,
+            targetLanguage,
+            sourceExplanationId,
+          ] = parts;
+
+          // Find topic by ID
+          const topic = await connection
+            .selectFrom("topics")
+            .where("topic_id", "=", topicId)
+            .select("topic_id")
+            .executeTakeFirst();
+
+          if (!topic) {
+            console.error(`[BATCH] Topic not found: ${topicId}`);
+            errorCount++;
+            continue;
+          }
+
+          // Find existing explanation in target language
+          const existingExplanation = await connection
+            .selectFrom("topic_explanations")
+            .where("topic_id", "=", topic.topic_id)
+            .where("type", "=", explanationType)
+            .where("language_code", "=", targetLanguage)
+            .orderBy("version", "desc")
+            .selectAll()
+            .executeTakeFirst();
+
+          const nextVersion = existingExplanation
+            ? (existingExplanation.version || 0) + 1
+            : 1;
+
+          // Get source explanation for parent tracking
+          const sourceExplanation = await connection
+            .selectFrom("topic_explanations")
+            .where("explanation_id", "=", sourceExplanationId)
+            .select("explanation_id")
+            .executeTakeFirst();
+
+          const parentExplanationId = sourceExplanation?.explanation_id || null;
+
+          console.log(
+            `[BATCH] Processing translation for topic ${topicId}, type ${explanationType}, version: ${nextVersion}`,
+          );
+
+          // Use transaction to deactivate old and insert new
+          await connection.transaction().execute(async (trx) => {
+            // Deactivate existing translations
+            await trx
+              .updateTable("topic_explanations")
+              .set({ is_active: false })
+              .where("topic_id", "=", topic.topic_id)
+              .where("type", "=", explanationType)
+              .where("language_code", "=", targetLanguage)
+              .execute();
+
+            // Insert new translation
+            await trx
+              .insertInto("topic_explanations")
+              .values({
+                topic_id: topic.topic_id,
+                type: explanationType,
+                explanation: extractedText,
+                language_code: targetLanguage,
+                version: nextVersion,
+                is_active: true,
+                parent_explanation_id: parentExplanationId,
+                created_at: new Date(),
+                updated_at: new Date(),
+              })
+              .execute();
+          });
+
+          processedCount++;
+          console.log(
+            `[BATCH] Saved translation for ${topicId} - ${explanationType}`,
+          );
+        } else {
+          errorCount++;
+          console.error(
+            `[BATCH] Failed to process line for custom_id: ${customId}`,
+          );
+        }
+      } catch (error) {
+        errorCount++;
+        console.error(
+          `[BATCH] Error processing line for custom_id: ${customId}:`,
+          error,
+        );
+      }
+    }
+
+    const actualCost = await calculateActualCost(
+      totalPromptTokens,
+      totalCompletionTokens,
+      batchJob.model,
+    );
+
+    await connection
+      .updateTable("batch_jobs")
+      .set({
+        explanations_processed: true,
+        actual_cost: actualCost,
+        prompt_tokens: totalPromptTokens,
+        completion_tokens: totalCompletionTokens,
+        total_tokens: totalPromptTokens + totalCompletionTokens,
+        status: errorCount > 0 ? "partial_failure" : "completed",
+      })
+      .where("openai_batch_id", "=", batchId)
+      .execute();
+
+    console.log(
+      `[BATCH] Topic explanation translation batch ${batchId} processed: ${processedCount} saved, ${errorCount} errors. Cost: $${actualCost.toFixed(4)}`,
+    );
+  }
+
   /**
    * Validates custom ID uniqueness within a batch and ensures no collisions
    * @param batchRequests Array of batch requests to validate
@@ -2450,7 +3706,6 @@ export class BatchOperationService {
 
     for (const error of batchStatus.errors.data) {
       const errorMessage = error.message || "";
-      const errorCode = error.code || "";
 
       // Detect duplicate custom_id errors
       if (
@@ -2506,5 +3761,559 @@ export class BatchOperationService {
     }
 
     return result;
+  }
+
+  /**
+   * Generate batch for translating topic names
+   */
+  async generateTopicNameTranslationBatch(
+    model: string,
+    adminUserId: string,
+    source_language_code: string,
+    target_language_code: string,
+    skipExisting = false,
+    effort: "low" | "medium" | "high" = "low",
+    category?: string,
+    topicId?: string,
+  ) {
+    console.log(
+      `[BATCH] Creating topic name translation batch: ${source_language_code} -> ${target_language_code}`,
+    );
+
+    const connection = this.db.getOrCreateConnection();
+
+    // Query topics to translate
+    let query = connection.selectFrom("topics").where("is_active", "=", true);
+
+    if (category) {
+      query = query.where("category", "=", category);
+    }
+
+    if (topicId) {
+      query = query.where("topic_id", "=", topicId);
+    }
+
+    const topics = await query
+      .select(["topic_id", "name", "description"])
+      .execute();
+
+    console.log(`[BATCH] Found ${topics.length} topics to translate`);
+
+    if (topics.length === 0) {
+      throw new Error("No topics found to translate");
+    }
+
+    // Get topic-translate prompt
+    const translatePrompt = await connection
+      .selectFrom("prompts")
+      .where("prompt_type", "=", "topic-translate")
+      .where("status", "=", PromptStatusEnum.active)
+      .select("prompt")
+      .executeTakeFirst();
+
+    if (!translatePrompt) {
+      throw new Error("No active topic-translate prompt found");
+    }
+
+    const language = getLanguageName(target_language_code);
+    const finalPrompt = translatePrompt.prompt.replace("{language}", language);
+
+    let batchRequests: BatchJobRequest[] = [];
+
+    if (skipExisting) {
+      // Check existing translations
+      const existingTranslations = await connection
+        .selectFrom("topic_translations")
+        .where("language_code", "=", target_language_code)
+        .where("is_active", "=", true)
+        .select("topic_id")
+        .execute();
+
+      const existingTopicIds = new Set(
+        existingTranslations.map((t) => t.topic_id),
+      );
+
+      for (const topic of topics) {
+        if (!existingTopicIds.has(topic.topic_id)) {
+          batchRequests.push({
+            custom_id: `translate-topic-name|${topic.topic_id}|${target_language_code}`,
+            method: "POST",
+            url: "/v1/responses",
+            body: {
+              model,
+              reasoning: { effort },
+              instructions: finalPrompt,
+              input: `Name: ${topic.name}\nDescription: ${topic.description || ""}`,
+              max_output_tokens: 5000,
+            },
+          });
+        }
+      }
+
+      console.log(
+        `[BATCH] After skipping existing, ${batchRequests.length} translations needed`,
+      );
+    } else {
+      batchRequests = topics.map((topic) => ({
+        custom_id: `translate-topic-name|${topic.topic_id}|${target_language_code}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: finalPrompt,
+          input: `Name: ${topic.name}\nDescription: ${topic.description || ""}`,
+          max_output_tokens: 5000,
+        },
+      }));
+    }
+
+    if (batchRequests.length === 0) {
+      console.log("[BATCH] No new topic names to translate. Skipping.");
+      return;
+    }
+
+    // Validate custom ID uniqueness
+    const validation = this.validateCustomIdUniqueness(batchRequests);
+    if (!validation.isValid) {
+      throw new Error(
+        `Custom ID validation failed: ${validation.summary}. Duplicates: ${validation.duplicates.join(", ")}`,
+      );
+    }
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    // Check file size limit
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit`,
+      );
+    }
+
+    // Create OpenAI file
+    const file = await openai.files.create({
+      file: new File(
+        [buffer],
+        `translate_topic_names_${target_language_code}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    console.log(`[BATCH] Created OpenAI file: ${file.id}`);
+
+    // Create OpenAI batch
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    console.log(`[BATCH] Created OpenAI batch: ${batch.id}`);
+
+    // Save to database
+    await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-translate-names",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        topic_category: category || null,
+        topic_id: topicId || null,
+        source_language_code,
+        target_language_code,
+        bible_version: "N/A",
+        explanation_types: [],
+      })
+      .execute();
+
+    console.log("[BATCH] Saved batch job to database");
+
+    // Add to monitoring queue
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    console.log(`[BATCH] Added batch ${batch.id} to monitoring queue`);
+
+    return batch;
+  }
+
+  /**
+   * Generate batch for translating topic explanations
+   */
+  async generateTopicExplanationTranslationBatch(
+    model: string,
+    adminUserId: string,
+    source_language_code: string,
+    target_language_code: string,
+    explanationTypes: string[] = ["summary", "byline", "detailed"],
+    skipExisting = false,
+    effort: "low" | "medium" | "high" = "medium",
+    category?: string,
+    topicId?: string,
+  ) {
+    console.log(
+      `[BATCH] Creating topic explanation translation batch: ${source_language_code} -> ${target_language_code}`,
+    );
+
+    const connection = this.db.getOrCreateConnection();
+
+    // Query topics
+    let topicsQuery = connection
+      .selectFrom("topics")
+      .where("is_active", "=", true);
+
+    if (category) {
+      topicsQuery = topicsQuery.where("category", "=", category);
+    }
+
+    if (topicId) {
+      topicsQuery = topicsQuery.where("topic_id", "=", topicId);
+    }
+
+    const topics = await topicsQuery.select(["topic_id", "name"]).execute();
+
+    console.log(`[BATCH] Found ${topics.length} topics`);
+
+    if (topics.length === 0) {
+      throw new Error("No topics found to translate");
+    }
+
+    // Get source explanations
+    const sourceExplanations = await connection
+      .selectFrom("topic_explanations")
+      .where("language_code", "=", source_language_code)
+      .where("is_active", "=", true)
+      .where(
+        "topic_id",
+        "in",
+        topics.map((t) => t.topic_id),
+      )
+      .where("type", "in", explanationTypes as any)
+      .select(["explanation_id", "topic_id", "type", "explanation"])
+      .execute();
+
+    console.log(
+      `[BATCH] Found ${sourceExplanations.length} source explanations`,
+    );
+
+    if (sourceExplanations.length === 0) {
+      throw new Error(
+        `No source explanations found in ${source_language_code}`,
+      );
+    }
+
+    // Get topic-translate prompt
+    const translatePrompt = await connection
+      .selectFrom("prompts")
+      .where("prompt_type", "=", "topic-translate")
+      .where("status", "=", PromptStatusEnum.active)
+      .select("prompt")
+      .executeTakeFirst();
+
+    if (!translatePrompt) {
+      throw new Error("No active topic-translate prompt found");
+    }
+
+    const language = getLanguageName(target_language_code);
+    const finalPrompt = translatePrompt.prompt.replace("{language}", language);
+
+    let batchRequests: BatchJobRequest[] = [];
+
+    if (skipExisting) {
+      // Get existing translations
+      const existingTranslations = await connection
+        .selectFrom("topic_explanations")
+        .where("language_code", "=", target_language_code)
+        .where("is_active", "=", true)
+        .where(
+          "topic_id",
+          "in",
+          topics.map((t) => t.topic_id),
+        )
+        .where("type", "in", explanationTypes as any)
+        .select(["topic_id", "type"])
+        .execute();
+
+      const existingSet = new Set(
+        existingTranslations.map((e) => `${e.topic_id}|${e.type}`),
+      );
+
+      for (const exp of sourceExplanations) {
+        const key = `${exp.topic_id}|${exp.type}`;
+        if (!existingSet.has(key)) {
+          const _topic = topics.find((t) => t.topic_id === exp.topic_id);
+          batchRequests.push({
+            custom_id: `translate-topic|${exp.topic_id}|${exp.type}|${target_language_code}|${exp.explanation_id}`,
+            method: "POST",
+            url: "/v1/responses",
+            body: {
+              model,
+              reasoning: { effort },
+              instructions: finalPrompt,
+              input: exp.explanation,
+              max_output_tokens: 50000,
+            },
+          });
+        }
+      }
+
+      console.log(
+        `[BATCH] After skipping existing, ${batchRequests.length} translations needed`,
+      );
+    } else {
+      batchRequests = sourceExplanations.map((exp) => ({
+        custom_id: `translate-topic|${exp.topic_id}|${exp.type}|${target_language_code}|${exp.explanation_id}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: finalPrompt,
+          input: exp.explanation,
+          max_output_tokens: 50000,
+        },
+      }));
+    }
+
+    if (batchRequests.length === 0) {
+      console.log("[BATCH] No new explanations to translate. Skipping.");
+      return;
+    }
+
+    // Validate uniqueness
+    const validation = this.validateCustomIdUniqueness(batchRequests);
+    if (!validation.isValid) {
+      throw new Error(`Custom ID validation failed: ${validation.summary}`);
+    }
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      throw new ValidationError("Batch file size exceeds OpenAI's 100MB limit");
+    }
+
+    const file = await openai.files.create({
+      file: new File(
+        [buffer],
+        `translate_topic_explanations_${target_language_code}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    console.log(`[BATCH] Created OpenAI file: ${file.id}`);
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    console.log(`[BATCH] Created OpenAI batch: ${batch.id}`);
+
+    await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-translate",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        topic_category: category || null,
+        topic_id: topicId || null,
+        source_language_code,
+        target_language_code,
+        explanation_types: explanationTypes,
+        bible_version: "N/A",
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    console.log(`[BATCH] Batch ${batch.id} added to monitoring queue`);
+
+    return batch;
+  }
+
+  /**
+   * Generate parent batch for translating all topics (names + explanations)
+   */
+  async generateTopicCompleteTranslationBatch(
+    model: string,
+    adminUserId: string,
+    source_language_code: string,
+    target_language_code: string,
+    explanationTypes: string[] = ["summary", "byline", "detailed"],
+    skipExisting = false,
+    effort: "low" | "medium" | "high" = "medium",
+    category?: string,
+    topicId?: string,
+  ) {
+    console.log(
+      `[BATCH] Creating complete topic translation parent batch: ${source_language_code} -> ${target_language_code}`,
+    );
+
+    const connection = this.db.getOrCreateConnection();
+
+    // Create parent batch record
+    const parentBatch = await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-translate-all",
+        openai_batch_id: `parent-topic-translate-${Date.now()}`,
+        status: "validating",
+        model,
+        total_requests: 0,
+        created_by: adminUserId,
+        topic_category: category || null,
+        topic_id: topicId || null,
+        source_language_code,
+        target_language_code,
+        explanation_types: explanationTypes,
+        bible_version: "N/A",
+      })
+      .returning("id")
+      .executeTakeFirst();
+
+    if (!parentBatch) {
+      throw new Error("Failed to create parent batch");
+    }
+
+    console.log(`[BATCH] Created parent batch with ID: ${parentBatch.id}`);
+
+    // Add parent batch to monitoring queue
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: `parent-${parentBatch.id}`, model, isParent: true },
+      {
+        jobId: `parent-${parentBatch.id}`,
+        removeOnComplete: true,
+        removeOnFail: 100,
+      },
+    );
+
+    const childBatches: any[] = [];
+    let totalRequests = 0;
+
+    try {
+      // Create child batch 1: Topic names
+      console.log("[BATCH] Creating child batch for topic names...");
+      const namesBatch = await this.generateTopicNameTranslationBatch(
+        model,
+        adminUserId,
+        source_language_code,
+        target_language_code,
+        skipExisting,
+        "low", // Low effort for names
+        category,
+        topicId,
+      );
+
+      if (namesBatch) {
+        childBatches.push({
+          type: "names",
+          batch_id: namesBatch.id,
+        });
+
+        // Get request count
+        const nameBatchJob = await connection
+          .selectFrom("batch_jobs")
+          .where("openai_batch_id", "=", namesBatch.id)
+          .select("total_requests")
+          .executeTakeFirst();
+
+        totalRequests += nameBatchJob?.total_requests || 0;
+
+        // Update child batch to link to parent
+        await connection
+          .updateTable("batch_jobs")
+          .set({ parent_batch_id: parentBatch.id })
+          .where("openai_batch_id", "=", namesBatch.id)
+          .execute();
+      }
+
+      // Create child batch 2: Topic explanations
+      console.log("[BATCH] Creating child batch for topic explanations...");
+      const explanationsBatch =
+        await this.generateTopicExplanationTranslationBatch(
+          model,
+          adminUserId,
+          source_language_code,
+          target_language_code,
+          explanationTypes,
+          skipExisting,
+          effort,
+          category,
+          topicId,
+        );
+
+      if (explanationsBatch) {
+        childBatches.push({
+          type: "explanations",
+          batch_id: explanationsBatch.id,
+        });
+
+        const expBatchJob = await connection
+          .selectFrom("batch_jobs")
+          .where("openai_batch_id", "=", explanationsBatch.id)
+          .select("total_requests")
+          .executeTakeFirst();
+
+        totalRequests += expBatchJob?.total_requests || 0;
+
+        await connection
+          .updateTable("batch_jobs")
+          .set({ parent_batch_id: parentBatch.id })
+          .where("openai_batch_id", "=", explanationsBatch.id)
+          .execute();
+      }
+
+      // Update parent with total
+      await connection
+        .updateTable("batch_jobs")
+        .set({
+          total_requests: totalRequests,
+          status: "in_progress",
+        })
+        .where("id", "=", parentBatch.id)
+        .execute();
+
+      console.log(
+        `[BATCH] Parent batch created with ${childBatches.length} child batches, ${totalRequests} total requests`,
+      );
+
+      return {
+        parentBatchId: parentBatch.id,
+        childBatches,
+        totalRequests,
+      };
+    } catch (error) {
+      console.error("[BATCH] Error creating child batches:", error);
+
+      // Mark parent as failed
+      await connection
+        .updateTable("batch_jobs")
+        .set({ status: "failed" })
+        .where("id", "=", parentBatch.id)
+        .execute();
+
+      throw error;
+    }
   }
 }

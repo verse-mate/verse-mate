@@ -50,6 +50,28 @@
     fill: var(--dust);
 }
 
+/* Light theme styles */
+.trigger[data-theme="light"] {
+    color: var(--oil);
+    fill: var(--oil);
+}
+
+.trigger[data-theme="light"]:hover, .trigger[data-theme="light"]:hover svg {
+    color: var(--dust);
+    fill: var(--dust);
+}
+
+.trigger[data-theme="light"][data-state="open"], .trigger[data-theme="light"][data-state="open"] svg {
+    color: var(--dust);
+    fill: var(--dust); 
+}
+
+.trigger[data-theme="light"][data-state="closed"], .trigger[data-theme="light"][data-state="closed"] svg {
+    color: var(--oil);
+    fill: var(--oil); 
+}
+
+
 @media screen and (max-width: 834px) {
     .trigger {
         display: none;

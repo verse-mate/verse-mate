@@ -9,7 +9,6 @@ import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { useCallback, useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { fetchAllChaptersByBook, fetchBookVerse } from "../../hooks/useBible";
-import { useConversationManager } from "../../hooks/useConversationManager";
 import type { Message } from "../../hooks/useInput";
 import { useProgressBar } from "../../hooks/useProgressBar";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
@@ -18,7 +17,6 @@ import {
   useSelectDropdown,
 } from "../../hooks/useSelectDropdown";
 import { useSidebar } from "../../hooks/useSidebar";
-import { userSession } from "../../hooks/userSession";
 import { bibleVersions } from "../../utils/bible-versions";
 import { options } from "../../utils/menu-options";
 import { testaments } from "../../utils/testaments";
@@ -64,8 +62,8 @@ export const Main: Story = () => {
   };
 
   const { bookId, verseId } = useGetSearchParams();
-  const { chapters } = fetchAllChaptersByBook(bookId);
-  const { bookVerseData } = fetchBookVerse(bookId, verseId, "NASB1995");
+  const { chapters } = fetchAllChaptersByBook(Number(bookId));
+  const { bookVerseData } = fetchBookVerse(Number(bookId), verseId, "NASB1995");
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
   const {
@@ -370,14 +368,13 @@ export const AskVerseMate: Story = () => {
   const queryClient = useQueryClient();
   const { bookId, verseId } = useGetSearchParams();
   const [isRightPanelOpen, setIsRightPanelOpen] = useState<boolean>(false);
-  const [isPending, setIsPending] = useState<boolean>(false);
+  const [_isPending, _setIsPending] = useState<boolean>(false);
   const [initialMessageHandled, setInitialMessageHandled] =
     useState<boolean>(false);
-  const [userMessage, setUserMessage] = useState<string | null>(null);
-  const { session } = userSession();
-  const [processedMessage, setProcessedMessage] = useState<string | null>(null);
-  const { saveUserMessage, saveAiMessage } = useConversationManager(session);
-
+  const [_userMessage, setUserMessage] = useState<string | null>(null);
+  const [_processedMessage, _setProcessedMessage] = useState<string | null>(
+    null,
+  );
   const toggleRightPanel = () => {
     setIsRightPanelOpen(!isRightPanelOpen);
   };
@@ -385,13 +382,13 @@ export const AskVerseMate: Story = () => {
   const searchParams = new URLSearchParams(window.location.search);
   const ask = searchParams.get("ask");
 
-  const { data: conversation = [] } = useQuery({
+  useQuery({
     queryKey: ["conversation"],
     queryFn: () => queryClient.getQueryData<Message[]>(["conversation"]),
     initialData: [],
   });
 
-  const addUserMessage = useCallback(
+  const _addUserMessage = useCallback(
     (message: string) => {
       const newMessage = { role: "user", content: message };
       queryClient.setQueryData(["conversation"], (oldData: Message[]) => [
@@ -404,8 +401,8 @@ export const AskVerseMate: Story = () => {
 
   // if (!bookId && !verseId) return;
 
-  const parsedBookId = String(bookId).padStart(2, "0");
-  const parsedVerseId = String(verseId).padStart(2, "0");
+  const _parsedBookId = String(bookId).padStart(2, "0");
+  const _parsedVerseId = String(verseId).padStart(2, "0");
 
   useEffect(() => {
     if (ask && !initialMessageHandled) {

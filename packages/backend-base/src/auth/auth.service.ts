@@ -4,9 +4,14 @@ import type { User } from "database/src/models/public/User";
 
 import { VerifyEmail, render } from "../../../emails";
 import ResetPassword from "../../../emails/src/ResetPassword";
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../common/errors";
 import type { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import cacheConstants from "../shared/cache.constants";
-import { ErrorCode } from "../shared/error-code.enum";
 import type { JWT, cache, db } from "../shared/shared.plugin";
 import type { AuthChangePasswordInput } from "./dto/auth-change-password.input";
 import type { AuthForgotPasswordInput } from "./dto/auth-forgot-password.input";
@@ -50,7 +55,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error("INVALID_USER");
+      throw new NotFoundError("User not found");
     }
 
     // if (!user.isActive) {
@@ -66,8 +71,8 @@ export class AuthService {
         "bcrypt",
       ));
 
-    if (!validCredentials || !user) {
-      throw new Error("INVALID_USER");
+    if (!validCredentials) {
+      throw new UnauthorizedError("Invalid credentials");
     }
 
     return user;
@@ -185,7 +190,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error(ErrorCode.USER_NOT_FOUND);
+      throw new NotFoundError("User not found");
     }
 
     const uuid = randomUUID();
@@ -226,7 +231,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (userByEmail) {
-      throw new Error("ALREADY_EXISTS");
+      throw new ConflictError("Email already exists");
     }
 
     const user = await this.db
@@ -264,7 +269,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error("INVALID_USER");
+      throw new UnauthorizedError("Invalid credentials");
     }
 
     await this.validateUser({
@@ -306,7 +311,7 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error("USER_NOT_FOUND");
+      throw new NotFoundError("User not found");
     }
 
     const uuid = randomUUID();
@@ -400,22 +405,22 @@ export class AuthService {
       .executeTakeFirst();
 
     if (!user) {
-      throw new Error(ErrorCode.USER_NOT_FOUND);
+      throw new NotFoundError("User not found");
     }
 
     if (user.emailVerified) {
-      throw new Error(ErrorCode.USER_ALREADY_VERIFIED);
+      throw new ConflictError("User already verified");
     }
 
     const cacheKey = cacheConstants.verifyEmail(token);
     const payload = await this.cache.get<{ id: string }>(cacheKey);
 
     if (!payload) {
-      throw new Error(ErrorCode.INVALID_VERIFICATION_TOKEN);
+      throw new ValidationError("Invalid verification token");
     }
 
     if (user.id !== currentUserId) {
-      throw new Error(ErrorCode.VERIFICATION_LINK_ALREADY_USED);
+      throw new ConflictError("Verification link already used");
     }
 
     await this.cache.delete(cacheKey);
@@ -437,7 +442,12 @@ export class AuthService {
     authUpdateProfileInput: AuthUpdateProfileInput,
   ): Promise<Pick<
     User,
-    "id" | "email" | "firstName" | "lastName" | "is_admin"
+    | "id"
+    | "email"
+    | "firstName"
+    | "lastName"
+    | "is_admin"
+    | "preferred_language"
   > | null> {
     const { firstName, lastName, email } = authUpdateProfileInput;
 
@@ -457,7 +467,7 @@ export class AuthService {
         .executeTakeFirst();
 
       if (existingUser) {
-        throw new Error("EMAIL_ALREADY_EXISTS");
+        throw new ConflictError("Email already exists");
       }
     }
 

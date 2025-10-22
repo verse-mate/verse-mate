@@ -1,6 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import { NotFoundError, ValidationError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { BookDto } from "../dto/book/book.dto";
@@ -42,6 +43,7 @@ export class BibleService {
 
     const { subtitles } = await this.bibleRepository.getSubtitles({
       chapter_id: chapter.chapter_id,
+      version_id,
     });
 
     const { verses } = await this.bibleRepository.getVerses({
@@ -118,6 +120,10 @@ export class BibleService {
     return { success };
   }
 
+  /**
+   * Notes
+   */
+
   async getExplanation({
     book_id,
     chapter_number,
@@ -172,6 +178,7 @@ export class BibleService {
         explanation.explanation,
         version.version_key,
         this.db,
+        { includeVerseNumbers: false }, // Don't include verse numbers in Bible explanations
       );
     }
 
@@ -213,7 +220,7 @@ export class BibleService {
     user,
     explanation_id,
     rating,
-  }: RatingDto): Promise<{ success: string } | { error: string }> {
+  }: RatingDto): Promise<{ message: string }> {
     const { exists } = await this.bibleRepository.ratingExists({
       user,
       explanation_id,
@@ -225,18 +232,16 @@ export class BibleService {
         explanation_id,
         rating,
       });
-      if (!updated) return { success: "Error updating rating" };
+      if (!updated) return { message: "Error updating rating" };
 
-      return { error: "Rating updated" };
+      return { message: "Rating updated" };
     }
 
-    return { success: "Rating updated" };
+    return { message: "Rating not found" };
   }
 
   async ratingByUser({
     user,
-    book_id,
-    chapter_number,
     explanation_id,
   }: Omit<RatingDto, "rating">): Promise<{
     userRating: {
@@ -274,8 +279,6 @@ export class BibleService {
   }
 
   async averageRating({
-    book_id,
-    chapter_number,
     explanation_id,
   }: Pick<
     RatingDto,
@@ -328,7 +331,7 @@ export class BibleService {
       book_id,
       chapter_id: chapter.chapter_id,
     });
-    if (success) return { message: "Error saving last chapter read" };
+    if (!success) return { message: "Error saving last chapter read" };
 
     return { message: "Last chapter read saved" };
   }
@@ -416,13 +419,16 @@ export class BibleService {
       chapter_number,
     });
 
-    // Use either real or synthetic chapter_id
-    const finalChapterId = chapter_id || book_id * 1000 + chapter_number;
+    // Validate that the chapter exists in the database
+    if (!chapter_id) {
+      console.error("Service: Chapter not found in database");
+      return { success: false };
+    }
 
     // Check if favorite already exists
     const { favorite } = await this.bibleRepository.checkFavoriteExists({
       user_id,
-      chapter_id: finalChapterId,
+      chapter_id: chapter_id,
     });
 
     // If favorite already exists, return success
@@ -434,7 +440,7 @@ export class BibleService {
     // Add the favorite
     const { success } = await this.bibleRepository.addFavorite({
       user_id,
-      chapter_id: finalChapterId,
+      chapter_id: chapter_id,
     });
 
     return { success };
@@ -528,6 +534,8 @@ export class BibleService {
         chapter_id,
         start_verse,
         end_verse,
+        start_char,
+        end_char,
       });
 
     if (hasOverlap) {
@@ -669,22 +677,6 @@ export class BibleService {
     };
   }
 
-  private explanationExists({
-    explanation,
-  }: {
-    explanation: {
-      book_id: number;
-      chapter_number: number;
-      explanation_id: number | null;
-      type: ExplanationTypeEnum | null;
-      explanation: string | null;
-    }[];
-  }) {
-    return explanation.some(
-      (bookExplanation) => bookExplanation.explanation_id === null,
-    );
-  }
-
   async deleteInactiveExplanations(options: {
     isBibleBatch: boolean;
     language_code: string;
@@ -694,7 +686,9 @@ export class BibleService {
     const { isBibleBatch, language_code, bookName, chapter } = options;
 
     if (!isBibleBatch && !bookName) {
-      throw new Error("Book name is required for non-bible batch deletions.");
+      throw new ValidationError(
+        "Book name is required for non-bible batch deletions.",
+      );
     }
 
     const result = await this.bibleRepository.deleteInactiveExplanations({
@@ -724,8 +718,8 @@ export class BibleService {
 
     if (!isBibleBatch) {
       if (!bookName) {
-        throw new Error(
-          "Book name is required for non-bible batch operations.",
+        throw new ValidationError(
+          "Book name is required for non-bible batch operations",
         );
       }
       const book = await this.db
@@ -736,7 +730,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
@@ -782,8 +776,8 @@ export class BibleService {
 
     if (!isBibleBatch) {
       if (!bookName) {
-        throw new Error(
-          "Book name is required for non-bible batch operations.",
+        throw new ValidationError(
+          "Book name is required for non-bible batch operations",
         );
       }
       const book = await this.db
@@ -794,7 +788,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
@@ -841,8 +835,8 @@ export class BibleService {
 
     if (!isBibleBatch) {
       if (!bookName) {
-        throw new Error(
-          "Book name is required for non-bible batch operations.",
+        throw new ValidationError(
+          "Book name is required for non-bible batch operations",
         );
       }
       const book = await this.db
@@ -853,7 +847,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);
@@ -886,6 +880,101 @@ export class BibleService {
     };
   }
 
+  async getNotes({ id: user_id }: Pick<UserDto, "id">) {
+    console.log("=== BibleService.getNotes ===");
+    console.log("Getting notes for user ID:", user_id);
+
+    try {
+      console.log("Calling bibleRepository.getNotes with user_id:", user_id);
+      const { notes } = await this.bibleRepository.getNotes({
+        user_id: user_id,
+      });
+
+      console.log("Repository returned notes count:", notes.length);
+      return { notes };
+    } catch (error) {
+      console.error("ERROR in BibleService.getNotes:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      throw error;
+    }
+  }
+
+  async addNote(noteData: {
+    user_id: string;
+    book_id: number;
+    chapter_number: number;
+    verse_id?: number;
+    content: string;
+  }) {
+    console.log("=== BibleService.addNote ===");
+    console.log("Adding note:", noteData);
+
+    try {
+      // Resolve a real chapter_id and fail fast if not found
+      const { chapter_id } = await this.bibleRepository.getChapterId({
+        book_id: noteData.book_id,
+        chapter_number: noteData.chapter_number,
+      });
+
+      if (!chapter_id) {
+        throw new NotFoundError(
+          `Chapter not found for book_id=${noteData.book_id} chapter_number=${noteData.chapter_number}`,
+        );
+      }
+
+      const { note } = await this.bibleRepository.addNote({
+        user_id: noteData.user_id,
+        chapter_id,
+        verse_id: noteData.verse_id,
+        content: noteData.content,
+      });
+      console.log("Successfully added note with ID:", note.note_id);
+      return { note };
+    } catch (error) {
+      console.error("ERROR in BibleService.addNote:", error);
+      throw error;
+    }
+  }
+
+  async updateNote(noteId: string, content: string) {
+    console.log("=== BibleService.updateNote ===");
+    console.log(
+      "Updating note ID:",
+      noteId,
+      "with content length:",
+      content.length,
+    );
+
+    try {
+      const { success } = await this.bibleRepository.updateNote(
+        noteId,
+        content,
+      );
+      console.log("Note update success:", success);
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleService.updateNote:", error);
+      throw error;
+    }
+  }
+
+  async deleteNote(noteId: string) {
+    console.log("=== BibleService.deleteNote ===");
+    console.log("Deleting note ID:", noteId);
+
+    try {
+      const { success } = await this.bibleRepository.deleteNote(noteId);
+      console.log("Note deletion success:", success);
+      return { success };
+    } catch (error) {
+      console.error("ERROR in BibleService.deleteNote:", error);
+      throw error;
+    }
+  }
+
   async getExplanationsByFilter(options: {
     isBibleBatch: boolean;
     language_code: string;
@@ -916,7 +1005,7 @@ export class BibleService {
         .executeTakeFirst();
 
       if (!book) {
-        throw new Error(`Book ${bookName} not found.`);
+        throw new NotFoundError(`Book ${bookName} not found`);
       }
 
       chapterIdsQuery = chapterIdsQuery.where("book_id", "=", book.book_id);

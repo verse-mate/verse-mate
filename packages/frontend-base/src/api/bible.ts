@@ -16,7 +16,27 @@ export const getBookVerse = async (
         versionKey,
       },
     });
-  return response.data?.book;
+  if (response.error) {
+    throw response.error;
+  }
+
+  // Transform backend response to match frontend types
+  // Backend uses chapterId/verseId but frontend expects chapterNumber/verseNumber
+  // Handle union type: response could be { book: ... } or { message: string }
+  const book = "book" in response.data ? response.data.book : null;
+  if (!book) return book;
+
+  return {
+    ...book,
+    chapters: book.chapters.map((chapter) => ({
+      chapterNumber: chapter.chapterNumber,
+      subtitles: chapter.subtitles,
+      verses: chapter.verses.map((verse) => ({
+        verseNumber: verse.verseNumber,
+        text: verse.text,
+      })),
+    })),
+  };
 };
 
 export const getExplanation = async (
@@ -40,6 +60,10 @@ export const getExplanation = async (
       },
     });
 
+  if (response.error) {
+    throw response.error;
+  }
+
   const explanation = response.data?.explanation;
 
   try {
@@ -48,7 +72,7 @@ export const getExplanation = async (
     }
 
     return explanation;
-  } catch (err) {
+  } catch {
     return {
       book_id: bookId,
       chapter_number: chapterId,

@@ -1,4 +1,5 @@
 import { api } from "backend-api";
+import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import { useCallback, useEffect, useState } from "react";
 import type { HighlightColor } from "../ui/HighlightColorPicker";
 import { getChapterId } from "../utils/chapter-utils";
@@ -16,6 +17,37 @@ export interface Highlight {
   color: HighlightColor;
   created_at: string;
   updated_at: string;
+}
+
+// Backend API response types
+interface HighlightApiResponse {
+  highlight_id: number;
+  user_id: string;
+  chapter_id: number;
+  start_verse: number;
+  end_verse: number;
+  start_char: number | null;
+  end_char: number | null;
+  selected_text: string | null;
+  color: HighlightColorEnum;
+  created_at: string;
+  updated_at: string;
+}
+
+interface HighlightsApiResponse {
+  highlights: HighlightApiResponse[];
+}
+
+interface CreateHighlightData {
+  user_id: string;
+  book_id: number;
+  chapter_number: number;
+  start_verse: number;
+  end_verse: number;
+  color: HighlightColorEnum;
+  start_char?: number;
+  end_char?: number;
+  selected_text?: string;
 }
 
 // Create a singleton state that can be shared across components
@@ -53,19 +85,34 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
     setError(null);
 
     try {
-      let response: any;
+      let response: { data?: HighlightsApiResponse; error?: unknown };
       if (bookId && chapterNumber) {
         // Fetch highlights for specific chapter
+        // Note: Using type assertion for dynamic path - Eden Treaty limitation
         response = await (api.bible.highlights as any)[session.id][bookId][
           chapterNumber
         ].get();
       } else {
         // Fetch all user highlights
+        // Note: Using type assertion for dynamic path - Eden Treaty limitation
         response = await (api.bible.highlights as any)[session.id].get();
       }
 
+      if (response.error) {
+        throw response.error;
+      }
+
       if (response.data) {
-        const fetchedHighlights = response.data.highlights || [];
+        // Transform API response to match internal Highlight type
+        const fetchedHighlights: Highlight[] = (
+          response.data.highlights || []
+        ).map((h) => ({
+          ...h,
+          start_char: h.start_char ?? undefined,
+          end_char: h.end_char ?? undefined,
+          selected_text: h.selected_text ?? undefined,
+          color: h.color as HighlightColor,
+        }));
         globalHighlights = fetchedHighlights;
         notifyListeners();
       }
@@ -99,25 +146,80 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
         return false;
       }
 
+      // FIX: Add validation to ensure startChar <= endChar before sending to backend
+      // This prevents database constraint violations
+      let validatedStartChar = startChar;
+      let validatedEndChar = endChar;
+
+      if (
+        validatedStartChar !== undefined &&
+        validatedEndChar !== undefined &&
+        validatedStartChar > validatedEndChar
+      ) {
+        console.warn(
+          "Invalid character range detected in createHighlight: startChar > endChar. Swapping values.",
+          {
+            startChar: validatedStartChar,
+            endChar: validatedEndChar,
+            startVerse,
+            endVerse,
+          },
+        );
+        // Swap the values to ensure valid range
+        [validatedStartChar, validatedEndChar] = [
+          validatedEndChar,
+          validatedStartChar,
+        ];
+      }
+
+      // FIX: Add bounds validation for character positions
+      if (
+        selectedText !== undefined &&
+        validatedStartChar !== undefined &&
+        validatedEndChar !== undefined
+      ) {
+        const expectedLength = selectedText.length;
+        const actualLength = validatedEndChar - validatedStartChar;
+
+        // If there's a significant discrepancy, log a warning
+        if (Math.abs(actualLength - expectedLength) > 5) {
+          console.warn("Character range length mismatch detected", {
+            expectedLength,
+            actualLength,
+            startChar: validatedStartChar,
+            endChar: validatedEndChar,
+            selectedText,
+          });
+        }
+
+        // Ensure character positions are non-negative
+        if (validatedStartChar < 0) validatedStartChar = 0;
+        if (validatedEndChar < 0) validatedEndChar = 0;
+      }
+
       setLoading(true);
       setError(null);
 
       try {
-        const highlightData: any = {
+        const highlightData: CreateHighlightData = {
           user_id: session.id,
           book_id: bookId,
           chapter_number: chapterNumber,
           start_verse: startVerse,
           end_verse: endVerse,
-          color,
+          color: color as HighlightColorEnum,
+          ...(validatedStartChar !== undefined && {
+            start_char: validatedStartChar,
+          }),
+          ...(validatedEndChar !== undefined && { end_char: validatedEndChar }),
+          ...(selectedText && { selected_text: selectedText }),
         };
 
-        // Add character positions if available (for future backend support)
-        if (startChar !== undefined) highlightData.start_char = startChar;
-        if (endChar !== undefined) highlightData.end_char = endChar;
-        if (selectedText) highlightData.selected_text = selectedText;
-
         const response = await api.bible.highlight.add.post(highlightData);
+
+        if (response.error) {
+          throw response.error;
+        }
 
         if (response.data?.success) {
           if ("highlight" in response.data && response.data.highlight) {
@@ -142,7 +244,14 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
         return false;
       } catch (err) {
         console.error("Error creating highlight:", err);
-        setError("Failed to create highlight");
+        // Enhanced error handling with specific messages from backend
+        if (err && typeof err === "object" && "error" in err) {
+          setError(
+            (err as { error: string }).error || "Failed to create highlight",
+          );
+        } else {
+          setError("Failed to create highlight");
+        }
         return false;
       } finally {
         setLoading(false);
@@ -183,8 +292,12 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
           .highlight({ highlight_id: highlightId })
           .put({
             user_id: session.id,
-            color,
+            color: color as HighlightColorEnum,
           });
+
+        if (response.error) {
+          throw response.error;
+        }
 
         if (response.data?.success) {
           if ("highlight" in response.data && response.data.highlight) {
@@ -249,6 +362,10 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
           .delete(undefined, {
             query: { user_id: session.id },
           });
+
+        if (response.error) {
+          throw response.error;
+        }
 
         if (response.data?.success) {
           return true;

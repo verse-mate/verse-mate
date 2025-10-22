@@ -1,4 +1,3 @@
-import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { HighlightColor } from "../../../HighlightColorPicker/types";
 
 export type Verse = {
@@ -35,7 +34,7 @@ export type Highlight = {
 export interface TextProps {
   text: Chapter;
   bookName: string;
-  testament?: TestamentEnum;
+  testament?: "OT" | "NT";
   bookId?: number;
   chapterId?: number;
   highlights?: Highlight[];

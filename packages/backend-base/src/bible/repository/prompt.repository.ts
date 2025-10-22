@@ -1,4 +1,5 @@
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
+import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
 export class PromptRepository {
@@ -24,7 +25,7 @@ export class PromptRepository {
       .executeTakeFirst();
 
     if (!prompt) {
-      throw new Error("Active System Prompt not found");
+      throw new NotFoundError("Active System Prompt not found");
     }
 
     return {
@@ -33,6 +34,47 @@ export class PromptRepository {
       prompt: prompt.prompt,
       prompt_type: prompt.prompt_type,
     };
+  }
+
+  async getActivePromptByType(type: string): Promise<{
+    prompt_id: number;
+    status: PromptStatusEnum;
+    prompt: string;
+    prompt_type: string;
+  }> {
+    const prompt = await this.db
+      .getOrCreateConnection()
+      .selectFrom("prompts")
+      .select([
+        "prompts.prompt_id",
+        "prompts.prompt",
+        "prompts.status",
+        "prompts.prompt_type",
+      ])
+      .where("prompts.status", "=", PromptStatusEnum.active)
+      .where("prompts.prompt_type", "=", type)
+      .executeTakeFirst();
+
+    if (!prompt) {
+      throw new Error(`Active prompt of type '${type}' not found`);
+    }
+
+    return {
+      prompt_id: prompt.prompt_id,
+      status: prompt.status,
+      prompt: prompt.prompt,
+      prompt_type: prompt.prompt_type,
+    };
+  }
+
+  async getUserPromptByType(type: string) {
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("user_prompt_templates")
+      .where("explanation_type", "=", type)
+      .where("status", "=", "active")
+      .selectAll()
+      .executeTakeFirst();
   }
 
   async getAll() {
