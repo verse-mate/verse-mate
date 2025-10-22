@@ -161,8 +161,8 @@ export default function MobileHero() {
           </button>
 
           {/* Secondary Button */}
-          <a
-            href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
+          <Link
+            href="/volunteer"
             style={{
               boxSizing: "border-box",
               display: "flex",
@@ -198,7 +198,7 @@ export default function MobileHero() {
             >
               Join as a Volunteer
             </span>
-          </a>
+          </Link>
         </div>
       </div>
 
