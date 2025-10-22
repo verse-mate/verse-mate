@@ -4,6 +4,9 @@ interface ShareablePassageParams {
   testament?: string | null;
   explanationType?: string | null;
   bibleVersion?: string | null;
+  chapterNumber?: string | number | null;
+  startVerse?: string | number | null;
+  endVerse?: string | number | null;
 }
 
 // Allowed hosts for security validation
@@ -100,14 +103,54 @@ export function generateShareableUrl(params: ShareablePassageParams): string {
   if (params.bibleVersion) {
     url.searchParams.set("bibleVersion", sanitizeParam(params.bibleVersion));
   }
+  if (params.chapterNumber) {
+    url.searchParams.set(
+      "chapter",
+      sanitizeParam(String(params.chapterNumber)),
+    );
+  }
+  // Support verse ranges (e.g., verses=1-5 or verses=1)
+  if (params.startVerse !== null && params.startVerse !== undefined) {
+    const startVerse = sanitizeParam(String(params.startVerse));
+    if (params.endVerse && params.endVerse !== params.startVerse) {
+      const endVerse = sanitizeParam(String(params.endVerse));
+      url.searchParams.set("verses", `${startVerse}-${endVerse}`);
+    } else {
+      url.searchParams.set("verses", startVerse);
+    }
+  }
 
   return url.toString();
 }
 
-export function getPassageTitle(params: ShareablePassageParams): string {
+export function getPassageTitle(
+  params: ShareablePassageParams,
+  bookName?: string,
+): string {
   // Sanitize parameters to prevent XSS in titles
   const bookId = params.bookId ? sanitizeParam(params.bookId) : null;
   const verseId = params.verseId ? sanitizeParam(params.verseId) : null;
+  const chapter = params.chapterNumber
+    ? sanitizeParam(String(params.chapterNumber))
+    : null;
+  const startVerse = params.startVerse
+    ? sanitizeParam(String(params.startVerse))
+    : null;
+  const endVerse = params.endVerse
+    ? sanitizeParam(String(params.endVerse))
+    : null;
+  const name = bookName ? sanitizeParam(bookName) : null;
+
+  // Build title based on available parameters
+  if (name && chapter) {
+    if (startVerse && endVerse && startVerse !== endVerse) {
+      return `${name} ${chapter}:${startVerse}-${endVerse}`;
+    }
+    if (startVerse) {
+      return `${name} ${chapter}:${startVerse}`;
+    }
+    return `${name} ${chapter}`;
+  }
 
   if (bookId && verseId) {
     return `Bible Passage - Book ${bookId}, Verse ${verseId}`;
@@ -115,7 +158,10 @@ export function getPassageTitle(params: ShareablePassageParams): string {
   return "Bible Passage";
 }
 
-export function getPassageDescription(params: ShareablePassageParams): string {
+export function getPassageDescription(
+  params: ShareablePassageParams,
+  bookName?: string,
+): string {
   const version = params.bibleVersion
     ? sanitizeParam(params.bibleVersion)
     : "NASB1995";
@@ -124,6 +170,27 @@ export function getPassageDescription(params: ShareablePassageParams): string {
     : "standard";
   const bookId = params.bookId ? sanitizeParam(params.bookId) : null;
   const verseId = params.verseId ? sanitizeParam(params.verseId) : null;
+  const name = bookName ? sanitizeParam(bookName) : null;
+  const chapter = params.chapterNumber
+    ? sanitizeParam(String(params.chapterNumber))
+    : null;
+  const startVerse = params.startVerse
+    ? sanitizeParam(String(params.startVerse))
+    : null;
+  const endVerse = params.endVerse
+    ? sanitizeParam(String(params.endVerse))
+    : null;
+
+  // Build description based on available parameters
+  if (name && chapter) {
+    if (startVerse && endVerse && startVerse !== endVerse) {
+      return `Read ${name} ${chapter}:${startVerse}-${endVerse} from the ${version} Bible on VerseMate`;
+    }
+    if (startVerse) {
+      return `Read ${name} ${chapter}:${startVerse} from the ${version} Bible on VerseMate`;
+    }
+    return `Read ${name} chapter ${chapter} from the ${version} Bible on VerseMate`;
+  }
 
   if (bookId && verseId) {
     return `Read this passage from the ${version} Bible with ${explanation} explanation on VerseMate`;
