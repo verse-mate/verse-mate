@@ -45,6 +45,36 @@ body {
   width: 100%;
 }
 
+/* Custom scrollbar styling to prevent white squares */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 10%);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 20%);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 10%) transparent;
+}
+
 /* Additional mobile-specific overrides */
 .adaptive-component {
   width: 100%;
@@ -117,7 +147,7 @@ body {
 }
 
 /* Tablet breakpoint: show tablet, hide mobile and desktop */
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) and (max-width: 1279px) {
   .adaptive-component:not(.hydrated) .adaptive-component--mobile {
     display: none;
   }
@@ -132,7 +162,7 @@ body {
 }
 
 /* Desktop breakpoint: show desktop, hide mobile and tablet */
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .adaptive-component:not(.hydrated) .adaptive-component--mobile {
     display: none;
   }
