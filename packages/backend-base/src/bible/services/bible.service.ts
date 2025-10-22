@@ -419,13 +419,16 @@ export class BibleService {
       chapter_number,
     });
 
-    // Use either real or synthetic chapter_id
-    const finalChapterId = chapter_id || book_id * 1000 + chapter_number;
+    // Validate that the chapter exists in the database
+    if (!chapter_id) {
+      console.error("Service: Chapter not found in database");
+      return { success: false };
+    }
 
     // Check if favorite already exists
     const { favorite } = await this.bibleRepository.checkFavoriteExists({
       user_id,
-      chapter_id: finalChapterId,
+      chapter_id: chapter_id,
     });
 
     // If favorite already exists, return success
@@ -437,7 +440,7 @@ export class BibleService {
     // Add the favorite
     const { success } = await this.bibleRepository.addFavorite({
       user_id,
-      chapter_id: finalChapterId,
+      chapter_id: chapter_id,
     });
 
     return { success };

@@ -14,6 +14,8 @@ declare const styles: {
   readonly actions: string;
   readonly actionButton: string;
   readonly actionIcon: string;
+  readonly bookmarkedIcon: string;
+  readonly bookmarked: string;
   readonly actionLabel: string;
 };
 

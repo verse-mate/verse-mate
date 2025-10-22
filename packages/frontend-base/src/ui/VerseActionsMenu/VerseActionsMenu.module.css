@@ -179,12 +179,32 @@
   height: 18px;
   color: #6b7280;
   flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.bookmarkedIcon {
+  color: #3b82f6;
+  fill: #3b82f6;
+}
+
+.actionButton.bookmarked {
+  background: #eff6ff;
+}
+
+.actionButton.bookmarked:hover {
+  background: #dbeafe;
+}
+
+.actionButton.bookmarked .actionLabel {
+  color: #3b82f6;
+  font-weight: 600;
 }
 
 .actionLabel {
   font-size: 14px;
   color: #374151;
   font-weight: 500;
+  transition: color 0.15s ease;
 }
 
 /* Dark mode support removed - app uses light theme only */

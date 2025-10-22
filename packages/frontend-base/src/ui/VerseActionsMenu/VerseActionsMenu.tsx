@@ -235,14 +235,17 @@ export const VerseActionsMenu = ({
       <div className={styles.actions}>
         <button
           type="button"
-          className={`${styles.actionButton} ${isLoading ? styles.disabled : ""}`}
+          className={`${styles.actionButton} ${isBookmarked ? styles.bookmarked : ""} ${isLoading ? styles.disabled : ""}`}
           onClick={handleBookmark}
           disabled={isLoading}
-          aria-label={isBookmarked ? "Remove bookmark" : "Add to favorites"}
+          aria-label={isBookmarked ? "Remove bookmark" : "Add to Bookmarks"}
         >
-          <BookmarkIcon className={styles.actionIcon} filled={isBookmarked} />
+          <BookmarkIcon
+            className={`${styles.actionIcon} ${isBookmarked ? styles.bookmarkedIcon : ""}`}
+            filled={isBookmarked}
+          />
           <span className={styles.actionLabel}>
-            {isBookmarked ? "Remove Bookmark" : "Add to Favorites"}
+            {isBookmarked ? "Bookmarked" : "Add to Bookmarks"}
           </span>
         </button>
 

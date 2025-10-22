@@ -13,11 +13,11 @@ export interface VerseActionsMenuProps {
   position: { x: number; y: number };
   selection: VerseSelection;
   isBookmarked?: boolean;
-  onHighlight: (color: HighlightColor) => void;
-  onBookmark: () => void;
-  onNote: () => void;
-  onCopy: () => void;
-  onShare: () => void;
+  onHighlight: (color: HighlightColor) => Promise<void> | void;
+  onBookmark: () => Promise<void> | void;
+  onNote: () => Promise<void> | void;
+  onCopy: () => Promise<void> | void;
+  onShare: () => Promise<void> | void;
   onClose: () => void;
 }
 
