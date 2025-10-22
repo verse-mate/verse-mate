@@ -1,14 +1,14 @@
 "use client";
 
-import About1 from "@/sections/desktop/About1";
-import About2 from "@/sections/desktop/About2";
-import Footer from "@/sections/desktop/Footer";
-import GetInvolved from "@/sections/desktop/GetInvolved";
-import Global from "@/sections/desktop/Global";
-import Header from "@/sections/desktop/Header";
-import Hero from "@/sections/desktop/Hero";
-import HowItWorks from "@/sections/desktop/HowItWorks";
-import WhyVersemate from "@/sections/desktop/WhyVersemate";
+import About1 from "@/sections/tablet/About1";
+import About2 from "@/sections/tablet/About2";
+import Footer from "@/sections/tablet/Footer";
+import GetInvolved from "@/sections/tablet/GetInvolved";
+import Global from "@/sections/tablet/Global";
+import Header from "@/sections/tablet/Header";
+import Hero from "@/sections/tablet/Hero";
+import HowItWorks from "@/sections/tablet/HowItWorks";
+import WhyVersemate from "@/sections/tablet/WhyVersemate";
 
 export default function TabletHomePage() {
   return (

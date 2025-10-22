@@ -23,8 +23,8 @@ export interface DeviceInfo {
 
 export const BREAKPOINTS = {
   mobile: { min: 0, max: 767 },
-  tablet: { min: 768, max: 1023 },
-  desktop: { min: 1024, max: Number.POSITIVE_INFINITY },
+  tablet: { min: 768, max: 1279 },
+  desktop: { min: 1280, max: Number.POSITIVE_INFINITY },
 } as const;
 
 export function useDevice(): DeviceInfo {
