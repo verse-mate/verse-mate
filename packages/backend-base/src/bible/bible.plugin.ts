@@ -42,6 +42,7 @@ import {
   NewConversationSchema,
   NoteAddSchema,
   NoteDeleteSchema,
+  type NoteFromDatabase,
   NoteUpdateSchema,
   NotesSchema,
   RatingSaveSchema,
@@ -736,9 +737,19 @@ const plugin = new Elysia()
           const { notes } = await bibleService.getNotes({
             id: params.user_id,
           });
+          const serializedNotes = notes.map((n: NoteFromDatabase) => ({
+            ...n,
+            created_at:
+              n.created_at instanceof Date
+                ? n.created_at.toISOString()
+                : n.created_at || new Date().toISOString(),
+            updated_at:
+              n.updated_at instanceof Date
+                ? n.updated_at.toISOString()
+                : n.updated_at || new Date().toISOString(),
+          }));
 
-          console.log("Successfully retrieved notes, count:", notes.length);
-          return { notes };
+          return { notes: serializedNotes };
         },
         {
           params: t.Object({ user_id: t.String({ format: "uuid" }) }),
@@ -777,7 +788,20 @@ const plugin = new Elysia()
             content,
           });
 
-          return { success: true, note };
+          // Serialize Date fields to ISO strings
+          const serializedNote = {
+            ...note,
+            created_at:
+              note.created_at instanceof Date
+                ? note.created_at.toISOString()
+                : note.created_at || new Date().toISOString(),
+            updated_at:
+              note.updated_at instanceof Date
+                ? note.updated_at.toISOString()
+                : note.updated_at || new Date().toISOString(),
+          };
+
+          return { success: true, note: serializedNote };
         },
         {
           body: t.Object({

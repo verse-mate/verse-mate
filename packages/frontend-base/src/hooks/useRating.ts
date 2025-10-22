@@ -32,7 +32,13 @@ export const useRating = (
   const { data: ratings } = useQuery({
     queryKey: ["ratings", bookId, chapterId, explanation_id],
     queryFn: async () => {
-      if (!session || !explanation_id) return;
+      if (!session || !explanation_id) {
+        return {
+          userRating: 0,
+          totalUsersWhoRated: 0,
+          averageRating: 0,
+        };
+      }
       const response = await api.bible.book.explanation.ratings.post({
         book_id: bookId,
         chapter_number: chapterId,

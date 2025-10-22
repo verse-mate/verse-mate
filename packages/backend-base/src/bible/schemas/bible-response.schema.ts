@@ -265,6 +265,21 @@ export const NoteDeleteSchema = t.Object({
 });
 
 /**
+ * TypeScript interface for note before serialization (from database)
+ * Used in the plugin layer for type safety when serializing dates
+ */
+export interface NoteFromDatabase {
+  note_id: string;
+  content: string;
+  created_at: Date | string;
+  updated_at: Date | string;
+  chapter_number: number;
+  book_id: number;
+  book_name: string;
+  verse_number: number | null;
+}
+
+/**
  * Highlight schemas
  */
 // Highlight response from repository - has chapter_id and Date objects

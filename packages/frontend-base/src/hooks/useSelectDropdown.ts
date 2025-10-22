@@ -129,7 +129,9 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     return filterBibleBooks(testaments, debouncedFilter);
   }, [testaments, debouncedFilter]);
   // Just the names, for backwards compatibility
-  const filteredBooks: string[] = filteredTestaments.map((t) => t.n);
+  const filteredBooks: string[] = Array.isArray(filteredTestaments)
+    ? filteredTestaments.map((t) => t.n)
+    : [];
 
   return {
     isOpen,

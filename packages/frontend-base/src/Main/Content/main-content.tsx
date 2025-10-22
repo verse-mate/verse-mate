@@ -245,9 +245,11 @@ export const MainContent = () => {
     };
   }, [closeDropdownBook]);
 
-  const book = testaments?.find((item) => {
-    return item.b === Number(bookId);
-  })?.n;
+  const book = Array.isArray(testaments)
+    ? testaments.find((item) => {
+        return item.b === Number(bookId);
+      })?.n
+    : undefined;
 
   useEffect(() => {
     if (book) {
@@ -278,12 +280,16 @@ export const MainContent = () => {
 
   const oldTestamentBooks = useMemo(
     () =>
-      testaments?.filter((testament) => testament.t === TestamentEnum.OT) || [],
+      (testaments || []).filter(
+        (testament) => testament.t === TestamentEnum.OT,
+      ),
     [testaments],
   );
   const newTestamentBooks = useMemo(
     () =>
-      testaments?.filter((testament) => testament.t === TestamentEnum.NT) || [],
+      (testaments || []).filter(
+        (testament) => testament.t === TestamentEnum.NT,
+      ),
     [testaments],
   );
 
