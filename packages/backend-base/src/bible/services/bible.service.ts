@@ -331,7 +331,7 @@ export class BibleService {
       book_id,
       chapter_id: chapter.chapter_id,
     });
-    if (success) return { message: "Error saving last chapter read" };
+    if (!success) return { message: "Error saving last chapter read" };
 
     return { message: "Last chapter read saved" };
   }
