@@ -271,6 +271,19 @@ describe("Recently Viewed Books", () => {
   });
 
   it("should get recently viewed books after syncing", async () => {
+    // Create a fresh user for this test to avoid state pollution from previous tests
+    const freshUserSignup = {
+      email: faker.internet.email().toLocaleLowerCase(),
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
+      password: faker.internet.password(),
+    };
+    const { data: signupData, error: signupError } =
+      await testClient.auth.signup.post(freshUserSignup);
+    if (signupError) throw signupError;
+
+    const freshAccessToken = signupData?.accessToken ?? "";
+
     const now = Date.now();
     const books = [
       { bookId: "40", timestamp: now },
@@ -284,7 +297,7 @@ describe("Recently Viewed Books", () => {
       },
       {
         headers: {
-          authorization: `Bearer ${accessToken}`,
+          authorization: `Bearer ${freshAccessToken}`,
         },
       },
     );
@@ -292,7 +305,7 @@ describe("Recently Viewed Books", () => {
     // Get books
     const { data } = await testClient.user["recently-viewed-books"].get({
       headers: {
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Bearer ${freshAccessToken}`,
       },
     });
 
