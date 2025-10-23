@@ -94,7 +94,12 @@ export const TopicView: React.FC<TopicViewProps> = ({
 
   // Update visible topics when data is loaded
   useEffect(() => {
-    if (currentTopic && topicDetails && topicReferences) {
+    if (
+      currentTopic &&
+      topicDetails &&
+      topicReferences &&
+      !isAnimating.current
+    ) {
       const content =
         topicReferences?.references?.content || "No content available.";
       const name = topicDetails?.topic?.name || currentTopic.name;
@@ -195,15 +200,12 @@ export const TopicView: React.FC<TopicViewProps> = ({
 
   // Animation end handler
   const handleAnimationEnd = useCallback(() => {
-    // Small delay to ensure animation has fully completed
-    setTimeout(() => {
-      isAnimating.current = false;
-      setVisibleTopics((prev) => {
-        if (!prev || prev.length === 0) return prev;
-        if (prev.length >= 2) return [prev[prev.length - 1]];
-        return prev;
-      });
-    }, 50);
+    isAnimating.current = false;
+    setVisibleTopics((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      if (prev.length >= 2) return [prev[prev.length - 1]];
+      return prev;
+    });
   }, []);
 
   // Swipe handlers
@@ -259,13 +261,7 @@ export const TopicView: React.FC<TopicViewProps> = ({
         return [outgoingTopic, incomingTopic];
       });
 
-      setTimeout(() => {
-        handlePreviousTopic();
-        // Reset animation flag after navigation completes (300ms animation + buffer)
-        setTimeout(() => {
-          isAnimating.current = false;
-        }, 350);
-      }, 100);
+      setTimeout(() => handlePreviousTopic(), 50);
     },
     onSwipedLeft: async () => {
       if (isAnimating.current) return;
@@ -314,13 +310,7 @@ export const TopicView: React.FC<TopicViewProps> = ({
         return [outgoingTopic, incomingTopic];
       });
 
-      setTimeout(() => {
-        handleNextTopic();
-        // Reset animation flag after navigation completes (300ms animation + buffer)
-        setTimeout(() => {
-          isAnimating.current = false;
-        }, 350);
-      }, 100);
+      setTimeout(() => handleNextTopic(), 50);
     },
     delta: 30,
     swipeDuration: 500,
@@ -377,13 +367,7 @@ export const TopicView: React.FC<TopicViewProps> = ({
         return [outgoingTopic, incomingTopic];
       });
 
-      setTimeout(() => {
-        handleNextTopic();
-        // Reset animation flag after navigation completes (300ms animation + buffer)
-        setTimeout(() => {
-          isAnimating.current = false;
-        }, 350);
-      }, 100);
+      setTimeout(() => handleNextTopic(), 50);
     } else {
       // Desktop: direct navigation
       handleNextTopic();
@@ -441,13 +425,7 @@ export const TopicView: React.FC<TopicViewProps> = ({
         return [outgoingTopic, incomingTopic];
       });
 
-      setTimeout(() => {
-        handlePreviousTopic();
-        // Reset animation flag after navigation completes (300ms animation + buffer)
-        setTimeout(() => {
-          isAnimating.current = false;
-        }, 350);
-      }, 100);
+      setTimeout(() => handlePreviousTopic(), 50);
     } else {
       // Desktop: direct navigation
       handlePreviousTopic();

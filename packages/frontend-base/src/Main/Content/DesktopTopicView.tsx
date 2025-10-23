@@ -1,11 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getTopicDetails, getTopicReferences } from "../../api/topics";
 import {
   useGetSearchParams,
   useSaveSearchParams,
 } from "../../hooks/useSearchParams";
 import * as Icon from "../../ui/Icons";
+import contentStyles from "../../ui/LeftPanel/Content/content.module.css";
 import { MainText } from "../../ui/MainText";
 import { Renderer } from "../../ui/MarkdownRenderer/Content/content";
 import {
@@ -14,8 +15,6 @@ import {
   getTopicBySortOrder,
   getTopicCount,
 } from "../../utils/topic-utils";
-import styles from "./desktop-topic-view.module.css";
-import mainContentStyles from "./main-content.module.css";
 
 interface DesktopTopicViewProps {
   category: string;
@@ -36,6 +35,11 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   const [topicCount, setTopicCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isNearNext, setIsNearNext] = useState(false);
+  const [isNearPrev, setIsNearPrev] = useState(false);
+
+  const nextTopicButtonRef = useRef<HTMLButtonElement>(null);
+  const prevTopicButtonRef = useRef<HTMLButtonElement>(null);
 
   // Fetch current topic data
   useEffect(() => {
@@ -155,46 +159,81 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
     }
   }, [category, sortOrder, bibleVersion, saveSearchParams]);
 
+  // Proximity detection for buttons
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 1024) return;
+
+      const checkProximity = (
+        buttonRef: React.RefObject<HTMLButtonElement>,
+        setIsNear: React.Dispatch<React.SetStateAction<boolean>>,
+      ) => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const distance = Math.sqrt(
+            (e.clientX - centerX) ** 2 + (e.clientY - centerY) ** 2,
+          );
+          setIsNear(distance < 150);
+        } else {
+          setIsNear(false);
+        }
+      };
+
+      checkProximity(nextTopicButtonRef, setIsNearNext);
+      checkProximity(prevTopicButtonRef, setIsNearPrev);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
   const hasNextTopic = sortOrder < topicCount;
   const hasPreviousTopic = sortOrder > 1;
 
   if (isLoading) {
-    return <div className={styles.container}>Loading topic...</div>;
+    return <div className={contentStyles.bookContent}>Loading topic...</div>;
   }
 
   if (error) {
-    return <div className={styles.container}>Error: {error.message}</div>;
+    return (
+      <div className={contentStyles.bookContent}>Error: {error.message}</div>
+    );
   }
 
   return (
-    <div className={styles.container} style={{ position: "relative" }}>
+    <div className={contentStyles.bookContent}>
       <MainText.Root>
         <Renderer markdownContent={`# ${topicName}`} variant="bible-text" />
         <Renderer markdownContent={topicContent} variant="bible-text" />
         <div style={{ height: "30px" }} />
       </MainText.Root>
 
-      {/* Next topic button */}
-      {hasNextTopic && (
-        <button
-          type="button"
-          className={mainContentStyles.nextChapterBtn}
-          onClick={handleNextTopic}
-          style={{ zIndex: 10 }}
-        >
-          <Icon.ChevronForward className={mainContentStyles.chevronForward} />
-        </button>
-      )}
-
       {/* Previous topic button */}
       {hasPreviousTopic && (
         <button
+          ref={prevTopicButtonRef}
           type="button"
-          className={mainContentStyles.previousChapterBtn}
+          className={`${contentStyles.previousChapterBtn} ${!isNearPrev ? contentStyles.hidden : ""}`}
           onClick={handlePreviousTopic}
-          style={{ zIndex: 10 }}
         >
-          <Icon.ChevronBackward className={mainContentStyles.chevronBackward} />
+          <Icon.ChevronBackward className={contentStyles.chevronBackward} />
+        </button>
+      )}
+
+      {/* Next topic button */}
+      {hasNextTopic && (
+        <button
+          ref={nextTopicButtonRef}
+          type="button"
+          className={`${contentStyles.nextChapterBtn} ${!isNearNext ? contentStyles.hidden : ""}`}
+          onClick={handleNextTopic}
+        >
+          <Icon.ChevronForward className={contentStyles.chevronForward} />
         </button>
       )}
     </div>
