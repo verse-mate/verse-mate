@@ -19,11 +19,15 @@ import {
 interface DesktopTopicViewProps {
   category: string;
   sortOrder: number;
+  buttonsVisible?: boolean;
+  scrollableCallbackRef?: (node: HTMLElement | null) => void;
 }
 
 export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   category,
   sortOrder,
+  buttonsVisible = true,
+  scrollableCallbackRef,
 }) => {
   const { bibleVersion } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
@@ -206,7 +210,7 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   }
 
   return (
-    <div className={contentStyles.bookContent}>
+    <div className={contentStyles.bookContent} ref={scrollableCallbackRef}>
       <MainText.Root>
         <Renderer markdownContent={`# ${topicName}`} variant="bible-text" />
         <Renderer markdownContent={topicContent} variant="bible-text" />
@@ -218,7 +222,7 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
         <button
           ref={prevTopicButtonRef}
           type="button"
-          className={`${contentStyles.previousChapterBtn} ${!isNearPrev ? contentStyles.hidden : ""}`}
+          className={`${contentStyles.previousChapterBtn} ${!buttonsVisible && !isNearPrev ? contentStyles.hidden : ""}`}
           onClick={handlePreviousTopic}
         >
           <Icon.ChevronBackward className={contentStyles.chevronBackward} />
@@ -230,7 +234,7 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
         <button
           ref={nextTopicButtonRef}
           type="button"
-          className={`${contentStyles.nextChapterBtn} ${!isNearNext ? contentStyles.hidden : ""}`}
+          className={`${contentStyles.nextChapterBtn} ${!buttonsVisible && !isNearNext ? contentStyles.hidden : ""}`}
           onClick={handleNextTopic}
         >
           <Icon.ChevronForward className={contentStyles.chevronForward} />

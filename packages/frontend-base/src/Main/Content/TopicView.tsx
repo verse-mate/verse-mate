@@ -463,7 +463,7 @@ export const TopicView: React.FC<TopicViewProps> = ({
                 variant="bible-text"
               />
               <Renderer markdownContent={topic.content} variant="bible-text" />
-              <div style={{ height: "20px" }} />
+              <div style={{ height: "80px" }} />
             </MainText.Root>
           </div>
         );

@@ -99,7 +99,14 @@ export const Content = ({
   if (isViewingTopic) {
     // topicId is actually the category (EVENTS, PROPHECIES, PARABLES)
     // verseId is the sort_order (1, 2, 3...)
-    return <DesktopTopicView category={topicId} sortOrder={verseId} />;
+    return (
+      <DesktopTopicView
+        category={topicId}
+        sortOrder={verseId}
+        buttonsVisible={buttonsVisible}
+        scrollableCallbackRef={scrollableCallbackRef}
+      />
+    );
   }
 
   return (
