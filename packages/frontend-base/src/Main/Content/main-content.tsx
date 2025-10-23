@@ -55,6 +55,7 @@ import { Tabs } from "../../ui/Tabs";
 import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
 import { homeOptions } from "../../utils/home-options";
+import { getTopicBySortOrder } from "../../utils/topic-utils";
 import { TopicContent } from "./TopicContent";
 import { TopicExplanationContainer } from "./TopicExplanationContainer";
 import { TopicView } from "./TopicView";
@@ -80,22 +81,45 @@ export const MainContent = () => {
   const isAnimating = useRef(false);
   const verseIdToString = verseId !== 0 ? verseId.toString() : "";
 
+  // Fetch current topic info (name, id) quickly from cache
+  const { data: currentTopicInfo } = useQuery({
+    queryKey: ["topic-by-category-order", bookId, verseId, bibleVersion],
+    queryFn: async () => {
+      const topic = await getTopicBySortOrder(
+        String(bookId),
+        Number(verseId),
+        bibleVersion,
+      );
+      return topic;
+    },
+    enabled: isViewingTopic && typeof bookId === "string" && !!verseId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+
+  // Fetch full topic details (explanations, etc.) - this is slower but less critical for UI
   const { data: topicDetails, isLoading: isTopicDetailsLoading } = useQuery({
-    queryKey: ["topic-details", bookId],
-    queryFn: () => getTopicDetails(bookId as string),
-    enabled: isViewingTopic && typeof bookId === "string",
+    queryKey: ["topic-details", currentTopicInfo?.topic_id, bibleVersion],
+    queryFn: () => getTopicDetails(currentTopicInfo?.topic_id, bibleVersion),
+    enabled: isViewingTopic && !!currentTopicInfo?.topic_id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const { testaments } = fetchAllTestaments();
-  const { chapters } = fetchAllChaptersByBook(Number(bookId));
+
+  // Only fetch Bible data when NOT viewing topics (to avoid NaN errors)
+  const { chapters } = fetchAllChaptersByBook(
+    isViewingTopic ? 0 : Number(bookId),
+  );
   const { bookVerseData } = fetchBookVerse(
-    Number(bookId),
-    Number(verseId),
+    isViewingTopic ? 0 : Number(bookId),
+    isViewingTopic ? 0 : Number(verseId),
     bibleVersion,
   );
   const { explanation } = fetchExplanation(
-    Number(bookId),
-    Number(verseId),
+    isViewingTopic ? 0 : Number(bookId),
+    isViewingTopic ? 0 : Number(verseId),
     explanationType,
     bibleVersion,
   );
@@ -210,11 +234,12 @@ export const MainContent = () => {
   }, [saveSearchParams, lastRead, bookId, verseId, testament]);
 
   useEffect(() => {
-    if (bookId && verseId) {
+    // Only save last read for Bible chapters, not for topics
+    if (bookId && verseId && !isViewingTopic) {
       // restart the timer whenever `bookId` or `verseId` changes
       startTimer(Number(bookId), Number(verseId));
     }
-  }, [bookId, verseId, startTimer]);
+  }, [bookId, verseId, isViewingTopic, startTimer]);
 
   const {
     isOpen: leftPanelIsOpen,
@@ -1138,7 +1163,9 @@ export const MainContent = () => {
                   <SelectDropdown.GroupedSelect.GroupedTrigger
                     selectedBook={
                       isViewingTopic
-                        ? topicDetails?.topic?.name ?? "Topic"
+                        ? currentTopicInfo?.name ??
+                          topicDetails?.topic?.name ??
+                          "Topic"
                         : book ?? null
                     }
                     selectedVerse={isViewingTopic ? "" : verseIdToString}
@@ -1750,7 +1777,14 @@ export const MainContent = () => {
               <div className={`${styles.bookContainer}`} {...swipeHandlers}>
                 {isViewingTopic ? (
                   // Show topic view when viewing a topic
-                  <TopicView topicId={String(bookId)} />
+                  // bookId = category (EVENTS, PROPHECIES, PARABLES)
+                  // verseId = sort_order (1, 2, 3...)
+                  <TopicView
+                    category={String(bookId)}
+                    sortOrder={Number(verseId)}
+                    buttonsVisible={buttonsVisible}
+                    scrollableCallbackRef={scrollableCallbackRef}
+                  />
                 ) : (
                   // Show normal Bible content
                   <>
@@ -1848,7 +1882,12 @@ export const MainContent = () => {
             <RadixTabs.Content value="explanation">
               {isViewingTopic ? (
                 // Show topic explanation using the same system as Bible chapters
-                <TopicExplanationContainer topicId={String(bookId)} />
+                // bookId = category (EVENTS, PROPHECIES, PARABLES)
+                // verseId = sort_order (1, 2, 3...)
+                <TopicExplanationContainer
+                  category={String(bookId)}
+                  sortOrder={Number(verseId)}
+                />
               ) : (
                 // Show normal Bible explanation
                 <Explanation.MobileContainer

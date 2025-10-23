@@ -19,9 +19,10 @@ export const getTopicsByCategory = async (
 };
 
 export const getTopicDetails = async (
-  topicId: string,
+  topicId: string | undefined,
   bibleVersion?: string,
 ) => {
+  if (!topicId) return null;
   const response = await api.topics({ id: topicId }).get({
     query: {
       bible_version: bibleVersion,
@@ -31,9 +32,10 @@ export const getTopicDetails = async (
 };
 
 export const getTopicReferences = async (
-  topicId: string,
+  topicId: string | undefined,
   version = "NASB1995",
 ) => {
+  if (!topicId) return null;
   const response = await api.topics({ id: topicId }).references.get({
     query: { version },
   });

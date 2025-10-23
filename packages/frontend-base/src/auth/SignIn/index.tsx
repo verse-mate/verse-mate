@@ -26,6 +26,33 @@ export function SignIn({ onSwitch }: { onSwitch?: (mode: "signup") => void }) {
     emailInputRef.current?.focus();
   }, []);
 
+  // Capture URL parameters on mount and store them for post-login redirect
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      const bookId = currentUrl.searchParams.get("bookId");
+      const verseId = currentUrl.searchParams.get("verseId");
+      const testament = currentUrl.searchParams.get("testament");
+      const explanationType = currentUrl.searchParams.get("explanationType");
+
+      // Only store if we have bookId and verseId, and redirectTo isn't already set
+      if (bookId && verseId && !localStorage.getItem("redirectTo")) {
+        const redirectParams = new URLSearchParams();
+        redirectParams.set("bookId", bookId);
+        redirectParams.set("verseId", verseId);
+
+        if (testament) {
+          redirectParams.set("testament", testament);
+        }
+        if (explanationType) {
+          redirectParams.set("explanationType", explanationType);
+        }
+
+        localStorage.setItem("redirectTo", `/?${redirectParams.toString()}`);
+      }
+    }
+  }, []);
+
   return (
     <div className={sharedStyles.wrapper}>
       <div className={sharedStyles.head}>
