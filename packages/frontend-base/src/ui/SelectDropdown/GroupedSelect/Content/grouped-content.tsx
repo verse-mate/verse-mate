@@ -18,9 +18,10 @@ export const GroupedContent = ({
   onClose,
 }: GroupedContentProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const passiveOptsRef = useRef<AddEventListenerOptions>({ passive: true });
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node) &&
@@ -29,16 +30,31 @@ export const GroupedContent = ({
         onClose();
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
 
     if (isOpen) {
       // Small delay to prevent immediate closing when opening
       const timer = setTimeout(() => {
-        document.addEventListener("mousedown", handleClickOutside);
+        document.addEventListener("mousedown", handlePointerDown);
+        document.addEventListener(
+          "touchstart",
+          handlePointerDown,
+          passiveOptsRef.current,
+        );
+        document.addEventListener("keydown", handleKeyDown);
       }, 100);
 
       return () => {
         clearTimeout(timer);
-        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("mousedown", handlePointerDown);
+        document.removeEventListener(
+          "touchstart",
+          handlePointerDown,
+          passiveOptsRef.current,
+        );
+        document.removeEventListener("keydown", handleKeyDown);
       };
     }
   }, [isOpen, onClose]);
@@ -71,6 +87,8 @@ export const GroupedContent = ({
         ref={containerRef}
         className={`${styles.container} ${className} ${isOpen ? styles.open : styles.hidden}`}
         style={style}
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         {children}
       </div>

@@ -47,8 +47,9 @@ export const TopicView: React.FC<TopicViewProps> = ({
 
   const [visibleTopics, setVisibleTopics] = useState<VisibleTopic[]>([]);
   const [topicCount, setTopicCount] = useState<number>(0);
-  const [isNearNext, _setIsNearNext] = useState(false);
-  const [isNearPrev, _setIsNearPrev] = useState(false);
+  // Proximity state not yet implemented, always rely on buttonsVisible
+  const isNearNext = false;
+  const isNearPrev = false;
 
   const isAnimating = useRef(false);
   const nextTopicButtonRef = useRef<HTMLButtonElement>(null);
@@ -69,25 +70,31 @@ export const TopicView: React.FC<TopicViewProps> = ({
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
+  // Use effective version to ensure queries run even when bibleVersion is undefined
+  const effectiveVersion = bibleVersion || "NASB1995";
+
   // Fetch topic details with React Query for caching
   const { data: topicDetails } = useQuery({
-    queryKey: ["topic-details", currentTopic?.topic_id, bibleVersion],
-    queryFn: () => getTopicDetails(currentTopic?.topic_id, bibleVersion),
+    queryKey: ["topic-details", currentTopic?.topic_id, effectiveVersion],
+    queryFn: () =>
+      currentTopic?.topic_id
+        ? getTopicDetails(currentTopic.topic_id, effectiveVersion)
+        : Promise.resolve(null),
     enabled: !!currentTopic?.topic_id,
+    placeholderData: undefined,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 
   // Fetch topic references with React Query for caching
   const { data: topicReferences } = useQuery({
-    queryKey: [
-      "topic-references",
-      currentTopic?.topic_id,
-      bibleVersion || "NASB1995",
-    ],
+    queryKey: ["topic-references", currentTopic?.topic_id, effectiveVersion],
     queryFn: () =>
-      getTopicReferences(currentTopic?.topic_id, bibleVersion || "NASB1995"),
+      currentTopic?.topic_id
+        ? getTopicReferences(currentTopic.topic_id, effectiveVersion)
+        : Promise.resolve(null),
     enabled: !!currentTopic?.topic_id,
+    placeholderData: undefined,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });

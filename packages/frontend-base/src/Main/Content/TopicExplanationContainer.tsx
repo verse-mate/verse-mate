@@ -50,7 +50,10 @@ export const TopicExplanationContainer: React.FC<
     isLoading,
   } = useQuery({
     queryKey: ["topic-details-explanation", topicId, bibleVersion],
-    queryFn: () => getTopicDetails(topicId as string, bibleVersion),
+    queryFn: () => {
+      if (!topicId) return Promise.resolve(null);
+      return getTopicDetails(topicId, bibleVersion);
+    },
     enabled: !!topicId,
   });
 

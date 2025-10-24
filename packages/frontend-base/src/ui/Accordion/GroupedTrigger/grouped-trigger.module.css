@@ -9,12 +9,25 @@
   padding: 8px 16px 8px 24px;
   background-color: transparent;
   transition: all 0.3s ease, fill 0.3s ease;
-  pointer-events: none; /* Disable clicking on mobile/tablet */
+  cursor: default;
+  user-select: none;
+}
+
+/* Overlay to intercept taps on mobile/tablet without breaking focusability */
+.trigger::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
 }
 
 @media screen and (min-width: 1024px) {
   .trigger {
-    pointer-events: auto; /* Re-enable clicking on desktop */
+    cursor: pointer;
+  }
+
+  .trigger::after {
+    display: none; /* restore interactions on desktop */
   }
 }
 
