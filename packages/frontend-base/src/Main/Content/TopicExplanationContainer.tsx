@@ -4,14 +4,44 @@ import { getTopicDetails } from "../../api/topics";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
 import { Explanation } from "../../ui/Explanation";
 
+import { useEffect, useState } from "react";
+import { getTopicBySortOrder, getTopicCount } from "../../utils/topic-utils";
+
 interface TopicExplanationContainerProps {
-  topicId: string;
+  category: string;
+  sortOrder: number;
 }
 
 export const TopicExplanationContainer: React.FC<
   TopicExplanationContainerProps
-> = ({ topicId }) => {
+> = ({ category, sortOrder }) => {
   const { explanationType, bibleVersion } = useGetSearchParams();
+  const [topicId, setTopicId] = useState<string | null>(null);
+  const [topicCount, setTopicCount] = useState<number | undefined>(undefined);
+
+  // Fetch current topic's topicId from category and sortOrder
+  useEffect(() => {
+    const fetchTopic = async () => {
+      const topic = await getTopicBySortOrder(
+        category,
+        sortOrder,
+        bibleVersion,
+      );
+      if (topic) {
+        setTopicId(topic.topic_id);
+      }
+    };
+    fetchTopic();
+  }, [category, sortOrder, bibleVersion]);
+
+  // Fetch topic count for navigation
+  useEffect(() => {
+    const fetchCount = async () => {
+      const count = await getTopicCount(category, bibleVersion);
+      setTopicCount(count);
+    };
+    fetchCount();
+  }, [category, bibleVersion]);
 
   // Use the main topic details endpoint which fetches all explanation types at once
   const {
@@ -20,7 +50,10 @@ export const TopicExplanationContainer: React.FC<
     isLoading,
   } = useQuery({
     queryKey: ["topic-details-explanation", topicId, bibleVersion],
-    queryFn: () => getTopicDetails(topicId, bibleVersion),
+    queryFn: () => {
+      if (!topicId) return Promise.resolve(null);
+      return getTopicDetails(topicId, bibleVersion);
+    },
     enabled: !!topicId,
   });
 
@@ -28,18 +61,18 @@ export const TopicExplanationContainer: React.FC<
   const explanation = topicDetails?.explanation?.[explanationType || "summary"];
 
   // Handle loading state
-  if (isLoading) {
+  if (isLoading || !topicId) {
     // Create a mock explanation object with loading state for the Explanation components
     const loadingExplanation = {
       explanation: null,
-      explanation_id: `topic-${topicId}`,
+      explanation_id: `topic-${topicId || `${category}-${sortOrder}`}`,
       language_code: bibleVersion || "en-US",
       isLoading: true,
     };
 
     return (
       <Explanation.MobileContainer
-        chapters={undefined} // Topics don't have sequential chapters
+        chapters={topicCount} // Pass topic count for navigation
         explanation={loadingExplanation}
       />
     );
@@ -57,7 +90,7 @@ export const TopicExplanationContainer: React.FC<
 
     return (
       <Explanation.MobileContainer
-        chapters={undefined} // Topics don't have sequential chapters
+        chapters={topicCount} // Pass topic count for navigation
         explanation={errorExplanation}
       />
     );
@@ -75,7 +108,7 @@ export const TopicExplanationContainer: React.FC<
 
     return (
       <Explanation.MobileContainer
-        chapters={undefined} // Topics don't have sequential chapters
+        chapters={topicCount} // Pass topic count for navigation
         explanation={emptyExplanation}
       />
     );
@@ -89,10 +122,10 @@ export const TopicExplanationContainer: React.FC<
     language_code: bibleVersion || "en",
   };
 
-  // For topics, we don't have chapters like Bible books, so we pass undefined for chapters
+  // Pass topic count to enable navigation between topics via swiping
   return (
     <Explanation.MobileContainer
-      chapters={undefined} // Topics don't have sequential chapters
+      chapters={topicCount} // Pass topic count for navigation
       explanation={topicExplanation}
     />
   );

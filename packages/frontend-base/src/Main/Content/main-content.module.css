@@ -55,7 +55,7 @@
 
 .contentGroupedTrigger {
     margin-top: 128px;
-    max-height: calc(100dvh - 248px);
+    max-height: calc(100dvh - 184px);
     overflow-y: auto;
 
     /* Hide scrollbar for WebKit browsers */
