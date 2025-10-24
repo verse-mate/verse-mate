@@ -85,7 +85,7 @@
   ) {
   .fixedItem {
     position: fixed;
-    top: 128px;
+    top: 192px;
     left: 0;
     z-index: 10;
   }
