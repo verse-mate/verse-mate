@@ -57,7 +57,12 @@ export const useRating = (
       totalUsersWhoRated: 0,
       averageRating: 0,
     },
-    enabled: !!session,
+    enabled:
+      !!session &&
+      !!bookId &&
+      !!chapterId &&
+      !Number.isNaN(bookId) &&
+      !Number.isNaN(chapterId),
   });
 
   useEffect(() => {

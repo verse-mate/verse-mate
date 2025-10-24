@@ -545,7 +545,7 @@ export const Text = ({
           color: "var(--success)",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       notify({
         content: "Failed to update bookmark",
         color: "var(--error)",

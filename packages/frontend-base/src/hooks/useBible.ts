@@ -78,6 +78,11 @@ export const fetchExplanation = (
     queryKey: ["explanation", bookId, chapterId, explanationType, bibleVersion],
     queryFn: () =>
       getExplanation(bookId, chapterId, explanationType, bibleVersion),
+    enabled:
+      !!bookId &&
+      !!chapterId &&
+      !Number.isNaN(bookId) &&
+      !Number.isNaN(chapterId),
     retry: 2,
     retryDelay: 3000,
   });

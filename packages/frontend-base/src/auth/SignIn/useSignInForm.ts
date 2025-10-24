@@ -69,30 +69,39 @@ export function useSignInForm() {
   });
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
-    // Always store the current location, even if bookId and verseId are not present
-    // This will ensure we return to the same location after login
+    // Only store redirect location if it hasn't already been set
+    // This prevents overwriting the redirect set by the /login page or hamburger menu
     if (typeof window !== "undefined") {
-      const currentUrl = new URL(window.location.href);
-      const currentBookId = currentUrl.searchParams.get("bookId");
-      const currentVerseId = currentUrl.searchParams.get("verseId");
-      const currentExplanationType =
-        currentUrl.searchParams.get("explanationType");
+      const existingRedirect = localStorage.getItem("redirectTo");
 
-      // Store current location in localStorage
-      if (currentBookId && currentVerseId) {
-        localStorage.setItem(
-          "redirectTo",
-          `/?bookId=${currentBookId}&verseId=${currentVerseId}`,
-        );
-      } else {
-        // If no specific location, store the current path
-        localStorage.setItem(
-          "redirectTo",
-          window.location.pathname + window.location.search,
-        );
+      // Only set redirectTo if it doesn't exist yet
+      if (!existingRedirect) {
+        const currentUrl = new URL(window.location.href);
+        const currentBookId = currentUrl.searchParams.get("bookId");
+        const currentVerseId = currentUrl.searchParams.get("verseId");
+
+        // Store current location in localStorage
+        if (currentBookId && currentVerseId) {
+          localStorage.setItem(
+            "redirectTo",
+            `/?bookId=${currentBookId}&verseId=${currentVerseId}`,
+          );
+        } else {
+          // If no specific location, store the current path (unless it's the login page)
+          const pathname = window.location.pathname;
+          if (pathname !== "/login" && pathname !== "/signup") {
+            localStorage.setItem(
+              "redirectTo",
+              pathname + window.location.search,
+            );
+          }
+        }
       }
 
-      // Store current explanation type
+      // Store current explanation type if present
+      const currentExplanationType = new URL(
+        window.location.href,
+      ).searchParams.get("explanationType");
       if (currentExplanationType) {
         localStorage.setItem(
           "postLoginExplanationType",

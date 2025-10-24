@@ -80,12 +80,14 @@ export const TopicContent: React.FC<TopicContentProps> = ({
 
   const { saveSearchParams } = useSaveSearchParams();
 
-  const handleTopicClick = (topicId: string) => {
-    // Navigate to topic view using the same system as Bible chapters
-    // We use a special bookId format and testament to indicate this is a topic
+  const handleTopicClick = (topic: any) => {
+    // Navigate to topic view using the new URL structure:
+    // - bookId = category (EVENTS, PROPHECIES, PARABLES)
+    // - verseId = sort_order (1, 2, 3...)
+    // - testament = TOPIC
     saveSearchParams({
-      bookId: topicId, // Use the actual topic ID
-      verseId: "1",
+      bookId: category, // Use the current category
+      verseId: String(topic.sort_order), // Use the topic's sort_order as verseId
       testament: "TOPIC" as any, // Special value to indicate topic view
     });
 
@@ -132,10 +134,10 @@ export const TopicContent: React.FC<TopicContentProps> = ({
       {filteredTopics.map((topic: any) => (
         <Accordion.Item value={topic.topic_id} key={topic.topic_id}>
           <div
-            onClick={() => handleTopicClick(topic.topic_id)}
+            onClick={() => handleTopicClick(topic)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
-                handleTopicClick(topic.topic_id);
+                handleTopicClick(topic);
               }
             }}
             style={{ cursor: "pointer" }}
