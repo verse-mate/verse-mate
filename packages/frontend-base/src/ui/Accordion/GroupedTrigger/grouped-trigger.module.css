@@ -9,6 +9,13 @@
   padding: 8px 16px 8px 24px;
   background-color: transparent;
   transition: all 0.3s ease, fill 0.3s ease;
+  pointer-events: none; /* Disable clicking on mobile/tablet */
+}
+
+@media screen and (min-width: 1024px) {
+  .trigger {
+    pointer-events: auto; /* Re-enable clicking on desktop */
+  }
 }
 
 .selectedContent {
@@ -25,6 +32,13 @@
   transform: translateY(-50%);
   fill: var(--charcoal-grey);
   transition: transform 300ms cubic-bezier(0.87, 0, 0.13, 1);
+  display: none; /* Hide chevron on mobile/tablet */
+}
+
+@media screen and (min-width: 1024px) {
+  .accordionChevron {
+    display: block; /* Show chevron on desktop */
+  }
 }
 
 .trigger[data-state="open"] > .accordionChevron {

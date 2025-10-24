@@ -1185,6 +1185,7 @@ export const MainContent = () => {
               <SelectDropdown.GroupedSelect.GroupedRoot>
                 <SelectDropdown.GroupedSelect.GroupedContent
                   isOpen={isDropdownOpenBook}
+                  onClose={closeDropdownBook}
                 >
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="book">
@@ -1672,6 +1673,7 @@ export const MainContent = () => {
               <SelectDropdown.GroupedSelect.GroupedRoot>
                 <SelectDropdown.GroupedSelect.GroupedContent
                   isOpen={isDropdownOpenVersion}
+                  onClose={closeDropdownVersion}
                 >
                   <Accordion.Root type="multiple">
                     <Accordion.Item value="bibleVersion">

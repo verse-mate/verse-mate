@@ -49,7 +49,7 @@
 
 .fixedItem {
   position: fixed;
-  top: 248px;
+  top: 192px;
   left: 0;
   z-index: 10;
 }
@@ -63,7 +63,7 @@
 @media screen and (min-width: 834px) {
   .fixedItem {
     position: fixed;
-    top: 248px;
+    top: 128px;
     left: 0;
     z-index: 10;
   }
@@ -74,7 +74,7 @@
   ) {
   .fixedItem {
     position: fixed;
-    top: 248px;
+    top: 128px;
     left: 0;
     z-index: 10;
   }
@@ -85,7 +85,7 @@
   ) {
   .fixedItem {
     position: fixed;
-    top: 248px;
+    top: 128px;
     left: 0;
     z-index: 10;
   }
