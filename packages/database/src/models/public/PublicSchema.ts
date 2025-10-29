@@ -16,6 +16,7 @@ import type { default as KyselyMigrationLockTable } from "./KyselyMigrationLock"
 import type { default as MessagesTable } from "./Messages";
 import type { default as NotesTable } from "./Notes";
 import type { default as PromptsTable } from "./Prompts";
+import type { default as RefreshTokensTable } from "./RefreshTokens";
 import type { default as SubtitlesTable } from "./Subtitles";
 import type { default as TopicExplanationsTable } from "./TopicExplanations";
 import type { default as TopicReferencesTable } from "./TopicReferences";
@@ -80,4 +81,6 @@ export default interface PublicSchema {
   user_recently_viewed_books: UserRecentlyViewedBooksTable;
 
   notes: NotesTable;
+
+  refresh_tokens: RefreshTokensTable;
 }

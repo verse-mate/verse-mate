@@ -20,6 +20,7 @@ import type { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import type { AuthSignupInput } from "./dto/auth-signup.input";
 import type { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
+import { RefreshTokenRepository } from "./refresh-token.repository";
 
 function resetPasswordURL(key: string): string {
   return `${process.env.APP_URL ?? ""}/reset-password?key=${key}`;
@@ -33,6 +34,7 @@ export class AuthService {
   private readonly jwtConstants: {
     readonly hashSalt: number;
   };
+  private readonly refreshTokenRepository: RefreshTokenRepository;
 
   public constructor(
     private readonly db: db,
@@ -44,6 +46,7 @@ export class AuthService {
     this.jwtConstants = {
       hashSalt: Number(hashSalt),
     };
+    this.refreshTokenRepository = new RefreshTokenRepository(db);
   }
 
   private async validateUser(authLoginInput: AuthLoginInput): Promise<User> {
@@ -78,11 +81,18 @@ export class AuthService {
     return user;
   }
 
-  private async loginUser(user: User, jwt: JWT): Promise<AuthPayload> {
+  private async loginUser(
+    user: User,
+    jwt: JWT,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<AuthPayload> {
+    // Create short-lived access token (15 minutes)
     const accessToken = await jwt.sign({
       sub: user.id,
     });
 
+    // Store access token in Redis
     const allAccessToken =
       (await this.cache.get<string[]>(cacheConstants.accessToken(user.id))) ||
       [];
@@ -91,11 +101,25 @@ export class AuthService {
     await this.cache.set(
       cacheConstants.accessToken(user.id),
       allAccessToken,
-      process.env.AUTH_ACCESS_TOKEN_LIFETIME ?? "1h",
+      "15m", // Short-lived access token
     );
+
+    // Create long-lived refresh token (90 days) stored in database
+    const refreshToken = randomUUID();
+    const refreshTokenLifetime = 90 * 24 * 60 * 60 * 1000; // 90 days in ms
+    const expiresAt = new Date(Date.now() + refreshTokenLifetime);
+
+    await this.refreshTokenRepository.create({
+      user_id: user.id,
+      token: refreshToken,
+      user_agent: userAgent || null,
+      ip_address: ipAddress || null,
+      expires_at: expiresAt,
+    });
 
     return {
       accessToken,
+      refreshToken,
       verified: user.emailVerified,
     };
   }
@@ -103,9 +127,64 @@ export class AuthService {
   public async login(
     authLoginInput: AuthLoginInput,
     jwt: JWT,
+    userAgent?: string,
+    ipAddress?: string,
   ): Promise<AuthPayload> {
     const user = await this.validateUser(authLoginInput);
-    return this.loginUser(user, jwt);
+    return this.loginUser(user, jwt, userAgent, ipAddress);
+  }
+
+  public async refresh(refreshToken: string, jwt: JWT): Promise<AuthPayload> {
+    // Find and validate refresh token
+    const storedToken =
+      await this.refreshTokenRepository.findByToken(refreshToken);
+
+    if (!storedToken) {
+      throw new UnauthorizedError("Invalid or expired refresh token");
+    }
+
+    // Get user
+    const user = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .where("id", "=", storedToken.user_id)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    // Create new access token
+    const accessToken = await jwt.sign({
+      sub: user.id,
+    });
+
+    // Store access token in Redis
+    const allAccessToken =
+      (await this.cache.get<string[]>(cacheConstants.accessToken(user.id))) ||
+      [];
+    allAccessToken.push(accessToken);
+
+    await this.cache.set(
+      cacheConstants.accessToken(user.id),
+      allAccessToken,
+      "15m",
+    );
+
+    // Extend refresh token expiration (rolling window - 90 days from now)
+    const refreshTokenLifetime = 90 * 24 * 60 * 60 * 1000;
+    const newExpiresAt = new Date(Date.now() + refreshTokenLifetime);
+    await this.refreshTokenRepository.updateLastUsed(
+      storedToken.id,
+      newExpiresAt,
+    );
+
+    return {
+      accessToken,
+      refreshToken, // Return same refresh token
+      verified: user.emailVerified,
+    };
   }
 
   public async saveUserSession(
@@ -150,7 +229,11 @@ export class AuthService {
     return user;
   }
 
-  public async logout(accessToken: string, jwt: JWT): Promise<boolean> {
+  public async logout(
+    accessToken: string,
+    refreshToken: string | null,
+    jwt: JWT,
+  ): Promise<boolean> {
     const validBearer = await jwt.verify(accessToken);
     if (!validBearer || !validBearer.sub) {
       // TODO: return Error?
@@ -159,24 +242,27 @@ export class AuthService {
 
     const cacheKey = cacheConstants.accessToken(validBearer.sub);
     const allAccessTokens = await this.cache.get<string[]>(cacheKey);
-    if (!allAccessTokens || !allAccessTokens.includes(accessToken)) {
-      return false;
+    if (allAccessTokens?.includes(accessToken)) {
+      const index = allAccessTokens.findIndex((t) => t === accessToken);
+      allAccessTokens.splice(index, 1);
+
+      await this.cache.set(cacheKey, allAccessTokens, "15m");
     }
 
-    const index = allAccessTokens.findIndex((t) => t === accessToken);
-    allAccessTokens.splice(index, 1);
-
-    await this.cache.set(
-      cacheKey,
-      allAccessTokens,
-      process.env.AUTH_ACCESS_TOKEN_LIFETIME ?? "1h",
-    );
+    // Delete refresh token from database
+    if (refreshToken) {
+      await this.refreshTokenRepository.deleteByToken(refreshToken);
+    }
 
     return true;
   }
 
   public async logoutAll(userId: string): Promise<boolean> {
+    // Delete all access tokens from Redis
     await this.cache.delete(cacheConstants.accessToken(userId));
+
+    // Delete all refresh tokens from database
+    await this.refreshTokenRepository.deleteAllByUserId(userId);
 
     return true;
   }
@@ -295,8 +381,8 @@ export class AuthService {
       .where("id", "=", userId)
       .execute();
 
-    // TODO: Logout all, but the current one
-    // await this.logoutAll(userId);
+    // Revoke all tokens on password change for security
+    await this.logoutAll(userId);
     return true;
   }
 
