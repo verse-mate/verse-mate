@@ -6,14 +6,17 @@ import styles from "./grouped-trigger.module.css";
 type TriggerProps = {
   description?: string;
   selectedContent: string;
+  disabled?: boolean;
 };
 
 export const GroupedTrigger = forwardRef<HTMLButtonElement, TriggerProps>(
-  ({ description, selectedContent }, ref) => {
+  ({ description, selectedContent, disabled = false }, ref) => {
     return (
       <RadixAccordion.Trigger
         ref={ref}
         className={`${styles.trigger} accordionTrigger`}
+        disabled={disabled}
+        style={disabled ? { pointerEvents: "none", cursor: "default" } : {}}
       >
         <div className={styles.content}>
           <span className={styles.description}>{description}</span>

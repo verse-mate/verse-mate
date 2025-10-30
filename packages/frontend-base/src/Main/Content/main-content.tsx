@@ -1190,7 +1190,7 @@ export const MainContent = () => {
                   isOpen={isDropdownOpenBook}
                   onClose={closeDropdownBook}
                 >
-                  <Accordion.Root type="multiple">
+                  <Accordion.Root type="multiple" defaultValue={["book"]}>
                     <Accordion.Item value="book">
                       <Accordion.GroupedTrigger
                         ref={accordionRef}
@@ -1201,6 +1201,7 @@ export const MainContent = () => {
                             ? `${selectedTestamentLabel}, ${selectedBookName}, ${chapterSelected}`
                             : "Select a book"
                         }
+                        disabled={true}
                       />
 
                       <Accordion.Content>

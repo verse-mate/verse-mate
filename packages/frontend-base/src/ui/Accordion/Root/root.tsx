@@ -6,15 +6,23 @@ type RootProps = {
   style?: React.CSSProperties;
   type?: "single" | "multiple";
   onValueChange?: (value: string | string[]) => void;
+  defaultValue?: string | string[];
 };
 
-export const Root = ({ style, children, type, onValueChange }: RootProps) => {
+export const Root = ({
+  style,
+  children,
+  type = "multiple",
+  onValueChange,
+  defaultValue,
+}: RootProps) => {
   return (
     <RadixAccordion.Root
       className={styles.root}
-      type={type || "multiple"}
+      type={type}
       style={style}
       onValueChange={onValueChange}
+      defaultValue={defaultValue as any}
     >
       {children}
     </RadixAccordion.Root>
