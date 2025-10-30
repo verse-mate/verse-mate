@@ -698,4 +698,8 @@
         transform: translateY(-5px);
         pointer-events: none;
     }
+    
+    .selectedBook {
+        margin-top: 0 !important;
+    }
 }
