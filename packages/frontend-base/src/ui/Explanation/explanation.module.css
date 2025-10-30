@@ -174,3 +174,14 @@
 }
 
 /* end desktop */
+
+/* Hide NavLinks buttons and separator on tablet when they appear in header */
+@media screen and (min-width: 834px) and (max-width: 1023px) {
+    .wrapper {
+        display: none;
+    }
+
+    .separator {
+        display: none;
+    }
+}

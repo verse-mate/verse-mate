@@ -128,6 +128,7 @@ export const Nav = ({
   recentlyViewedBooks,
 }: Props) => {
   const [activeTopicTab, setActiveTopicTab] = useState("EVENTS");
+  const [currentTab, setCurrentTab] = useState("tab1");
   const selectedBook = selectedBookStore.get();
 
   useEffect(() => {
@@ -583,10 +584,40 @@ export const Nav = ({
           </SelectDropdown.Content>
         </SelectDropdown.Root>
       </div>
+      {/* Tablet-only commentary type buttons in header */}
+      {currentTab === "tab1" && (
+        <div className={styles.headerCommentaryButtons}>
+          {explanationTypes.map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              className={styles.headerCommentaryButton}
+              style={{
+                backgroundColor:
+                  option.value === explanationType
+                    ? "var(--dust)"
+                    : "#FFFFFF33",
+                color:
+                  option.value === explanationType
+                    ? "var(--night)"
+                    : "var(--snow)",
+              }}
+              onClick={() =>
+                handleValueChange(option.value as ExplanationTypeEnum)
+              }
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
       <RadixTabs.Root
         className={styles.responsiveLayout}
         defaultValue="tab1"
-        onValueChange={setActiveTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setCurrentTab(value);
+        }}
       >
         <RadixTabs.List>
           <RadixTabs.Trigger className={`${styles.trigger}`} value="tab1">

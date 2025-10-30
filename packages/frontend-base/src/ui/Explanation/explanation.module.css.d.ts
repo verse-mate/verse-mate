@@ -1,16 +1,16 @@
 declare const styles: {
-  readonly separator: string;
-  readonly wrapper: string;
-  readonly button: string;
-  readonly selectedButton: string;
-  readonly explanationContent: string;
-  readonly loadingCard: string;
-  readonly textFade: string;
-  readonly "fade-left-to-right": string;
   readonly animateSpin: string;
-  readonly spin: string;
+  readonly button: string;
+  readonly explanationContent: string;
+  readonly "fade-left-to-right": string;
+  readonly loadingCard: string;
   readonly markdown: string;
-  readonly rating: string;
   readonly mobileExplanationContent: string;
+  readonly rating: string;
+  readonly selectedButton: string;
+  readonly separator: string;
+  readonly spin: string;
+  readonly textFade: string;
+  readonly wrapper: string;
 };
 export = styles;

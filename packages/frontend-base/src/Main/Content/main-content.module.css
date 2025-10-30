@@ -67,6 +67,11 @@
     display: none; /* Chrome, Safari, Opera */
 }
 
+.selectedBook {
+    /* Wrapper for selected book accordion */
+    position: relative;
+}
+
 .bookContainer {
     width: 100%;
     height: calc(100dvh - 56px);
@@ -605,4 +610,96 @@
     width: 20px;
     height: 20px;
     fill: var(--night);
+}
+
+/* Tablet-only commentary type buttons in header */
+.headerCommentaryButtons {
+    display: none; /* Hidden by default (mobile and desktop) */
+}
+
+.headerCommentaryButton {
+    border-radius: 100px;
+    padding: 2px 8px;
+    border: none;
+    font-family: Inter, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.headerCommentaryButton:hover {
+    opacity: 0.9;
+}
+
+.showingCommentaryButtons {
+    /* Class applied when commentary buttons are visible */
+    position: relative;
+}
+
+.visible {
+    /* Class applied when buttons should be visible */
+    position: relative;
+}
+
+.hidden {
+    /* Class applied when buttons should be hidden */
+    position: relative;
+}
+
+/* Show ONLY on tablet (834px - 1023px) */
+@media screen and (min-width: 834px) and (max-width: 1023px) {
+    .headerWrapper {
+        justify-content: space-between;
+        position: relative;
+    }
+
+    /* Position dropdown absolutely and center it, then animate with transform only */
+    .mobileTriggersWrapper {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+
+        /* Center it horizontally and vertically by default using transform */
+        transform: translate(-50%, -50%);
+        transition: transform 0.3s ease-out;
+    }
+
+    /* Slide dropdown to the left when showing commentary buttons */
+    .headerWrapper.showingCommentaryButtons .mobileTriggersWrapper {
+        /* Move it from center to left: keep vertical center, move horizontally */
+        transform: translate(calc(-50% - 190px), -50%);
+    }
+
+    .headerCommentaryButtons {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+
+        /* Position buttons slightly to the left */
+        margin-right: -105px;
+
+        /* Smooth opacity and transform transitions for fade in/out */
+        transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    }
+
+    /* Visible state - fade in */
+    .headerCommentaryButtons.visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    /* Hidden state - fade out */
+    .headerCommentaryButtons.hidden {
+        opacity: 0;
+        transform: translateY(-5px);
+        pointer-events: none;
+    }
+    
+    .selectedBook {
+        margin-top: 0 !important;
+    }
 }

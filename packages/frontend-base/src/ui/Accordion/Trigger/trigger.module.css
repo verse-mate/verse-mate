@@ -60,34 +60,13 @@
 
 /* star tablet portrait */
 
-@media screen and (min-width: 834px) {
+/* Tablet mode: disable fixed positioning to avoid conflicts with absolute positioning in header */
+@media screen and (min-width: 834px) and (max-width: 1023px) {
   .fixedItem {
-    position: fixed;
-    top: 128px;
-    left: 0;
-    z-index: 10;
-  }
-}
-
-@media screen and (min-width: 834px) and (max-width: 1024px) and (
-    orientation: portrait
-  ) {
-  .fixedItem {
-    position: fixed;
-    top: 128px;
-    left: 0;
-    z-index: 10;
-  }
-}
-
-@media screen and (min-width: 834px) and (max-width: 1024px) and (
-    orientation: landscape
-  ) {
-  .fixedItem {
-    position: fixed;
-    top: 192px;
-    left: 0;
-    z-index: 10;
+    position: relative;
+    top: auto;
+    left: auto;
+    z-index: auto;
   }
 }
 
@@ -105,16 +84,3 @@
 }
 
 /* end table landscape */
-
-/* start desktop */
-
-@media screen and (min-width: 1025px) and (max-width: 1994px) {
-  .fixedItem {
-    position: fixed;
-    top: 144px;
-    left: 0;
-    z-index: 10;
-  }
-}
-
-/* end desktop */

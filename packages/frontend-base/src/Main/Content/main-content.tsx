@@ -54,6 +54,7 @@ import { Settings } from "../../ui/Settings/Settings";
 import { Tabs } from "../../ui/Tabs";
 import { VerseGrid, useSelectedVerse } from "../../ui/VerseGrid/verse-grid";
 import { bibleVersions } from "../../utils/bible-versions";
+import { explanationTypes } from "../../utils/commentary-options";
 import { homeOptions } from "../../utils/home-options";
 import { getTopicBySortOrder } from "../../utils/topic-utils";
 import { TopicContent } from "./TopicContent";
@@ -1150,7 +1151,9 @@ export const MainContent = () => {
         onValueChange={setActiveTab}
       >
         <div className={`${styles.mobileContent}`}>
-          <div className={`${styles.headerWrapper}`}>
+          <div
+            className={`${styles.headerWrapper} ${activeTab === "explanation" ? styles.showingCommentaryButtons : ""}`}
+          >
             <Icon.VerseMateLogoExtended className={styles.verseMateLogo} />
 
             <div className={styles.mobileTriggersWrapper}>
@@ -1187,7 +1190,7 @@ export const MainContent = () => {
                   isOpen={isDropdownOpenBook}
                   onClose={closeDropdownBook}
                 >
-                  <Accordion.Root type="multiple">
+                  <Accordion.Root type="multiple" defaultValue={["book"]}>
                     <Accordion.Item value="book">
                       <Accordion.GroupedTrigger
                         ref={accordionRef}
@@ -1198,6 +1201,7 @@ export const MainContent = () => {
                             ? `${selectedTestamentLabel}, ${selectedBookName}, ${chapterSelected}`
                             : "Select a book"
                         }
+                        disabled={true}
                       />
 
                       <Accordion.Content>
@@ -1709,6 +1713,34 @@ export const MainContent = () => {
                   </Accordion.Root>
                 </SelectDropdown.GroupedSelect.GroupedContent>
               </SelectDropdown.GroupedSelect.GroupedRoot>
+            </div>
+
+            {/* Tablet-only commentary type buttons in header */}
+            <div
+              className={`${styles.headerCommentaryButtons} ${activeTab === "explanation" ? styles.visible : styles.hidden}`}
+            >
+              {explanationTypes.map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={styles.headerCommentaryButton}
+                  style={{
+                    backgroundColor:
+                      option.value === explanationType
+                        ? "var(--dust)"
+                        : "#FFFFFF33",
+                    color:
+                      option.value === explanationType
+                        ? "var(--night)"
+                        : "var(--snow)",
+                  }}
+                  onClick={() =>
+                    handleValueChange(option.value as ExplanationTypeEnum)
+                  }
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
 
             <RadixTabs.List className={`${styles.buttonList}`}>

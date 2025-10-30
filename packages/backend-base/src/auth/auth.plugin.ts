@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 
 import { createErrorHandler } from "../common/error-handler";
 import { UnauthorizedError } from "../common/errors";
+import { authRateLimiters } from "../common/rate-limit.middleware";
 import {
   BooleanResponse,
   StandardErrorResponses,
@@ -75,6 +76,7 @@ const plugin = new Elysia()
             "/logout",
             async ({
               bearer,
+              body,
               store: { authService },
               jwt,
             }): Promise<boolean> => {
@@ -82,9 +84,18 @@ const plugin = new Elysia()
                 return false;
               }
 
-              return authService.logout(bearer, jwt);
+              return authService.logout(
+                bearer,
+                body?.refreshToken || null,
+                jwt,
+              );
             },
             {
+              body: t.Optional(
+                t.Object({
+                  refreshToken: t.Optional(t.String()),
+                }),
+              ),
               response: {
                 200: BooleanResponse,
                 ...StandardErrorResponses,
@@ -200,6 +211,7 @@ const plugin = new Elysia()
         },
         {
           body: AuthSignupInput,
+          beforeHandle: authRateLimiters.signup,
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,
@@ -208,11 +220,38 @@ const plugin = new Elysia()
       )
       .post(
         "/login",
-        async ({ body, store: { authService }, jwt }): Promise<AuthPayload> => {
-          return authService.login(body, jwt);
+        async ({
+          body,
+          store: { authService },
+          jwt,
+          request,
+        }): Promise<AuthPayload> => {
+          const userAgent = request.headers.get("user-agent") || undefined;
+          const ipAddress =
+            request.headers.get("x-forwarded-for") ||
+            request.headers.get("x-real-ip") ||
+            undefined;
+          return authService.login(body, jwt, userAgent, ipAddress);
         },
         {
           body: AuthLoginInput,
+          beforeHandle: authRateLimiters.login,
+          response: {
+            200: AuthPayloadSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/refresh",
+        async ({ body, store: { authService }, jwt }): Promise<AuthPayload> => {
+          return authService.refresh(body.refreshToken, jwt);
+        },
+        {
+          body: t.Object({
+            refreshToken: t.String(),
+          }),
+          beforeHandle: authRateLimiters.refresh,
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,
@@ -227,6 +266,7 @@ const plugin = new Elysia()
         },
         {
           body: AuthForgotPasswordInput,
+          beforeHandle: authRateLimiters.forgotPassword,
           response: {
             200: SuccessResponse,
             ...StandardErrorResponses,
