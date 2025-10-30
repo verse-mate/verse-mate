@@ -35,10 +35,10 @@
     display: none;
 }
 
-@media screen and (min-width: 834px) {
+@media screen and (min-width: 834px) and (max-width: 1023px) {
     .container {
-        width: 70%;
-        max-width: 600px;
+        width: min(520px, 90vw);
+        max-width: 520px;
     }
 }
 
