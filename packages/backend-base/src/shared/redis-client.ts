@@ -117,6 +117,16 @@ class RedisClient {
       throw error;
     }
   }
+
+  async ttl(key: string): Promise<number> {
+    await this.connect();
+    try {
+      return await this.client.ttl(key);
+    } catch (error) {
+      console.error("Error getting TTL from Redis:", error);
+      throw error;
+    }
+  }
 }
 
 const redisUrl = process.env.REDIS_URL ?? "redis://:abcd1234@localhost:6379/0";
