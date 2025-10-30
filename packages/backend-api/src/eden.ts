@@ -16,14 +16,21 @@ const getRefreshToken = (): string | null => {
 
 const setAccessToken = (token: string) => {
   if (typeof document === "undefined") return;
+  const isSecure =
+    typeof window !== "undefined" && window.location.protocol === "https:";
+  const secureAttr = isSecure ? "; Secure" : "";
   // Set cookie for 15 minutes (matching backend)
-  document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Strict`;
+  document.cookie = `accessToken=${encodeURIComponent(token)}; path=/; max-age=${15 * 60}; SameSite=Lax${secureAttr}`;
 };
 
 const setRefreshToken = (token: string) => {
   if (typeof document === "undefined") return;
+  const isSecure =
+    typeof window !== "undefined" && window.location.protocol === "https:";
+  const secureAttr = isSecure ? "; Secure" : "";
   // Set cookie for 90 days (matching backend)
-  document.cookie = `refreshToken=${encodeURIComponent(token)}; path=/; max-age=${90 * 24 * 60 * 60}; SameSite=Strict`;
+  // Use SameSite=Strict for refresh token as it's more sensitive and doesn't need to be sent on navigation
+  document.cookie = `refreshToken=${encodeURIComponent(token)}; path=/; max-age=${90 * 24 * 60 * 60}; SameSite=Strict${secureAttr}`;
 };
 
 let isRefreshing = false;
@@ -114,13 +121,21 @@ const fetcher = async (
     finalHeaders.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${$env.get().apiUrl}${pathWithQuery}`, {
+  const apiBase = new URL($env.get().apiUrl);
+  const targetUrl = new URL(`${$env.get().apiUrl}${pathWithQuery}`);
+
+  const response = await fetch(targetUrl.toString(), {
     ...init,
     headers: finalHeaders,
   });
 
   // If 401 and not already retrying, attempt token refresh
-  if (response.status === 401 && retryCount === 0) {
+  // Only refresh for our API host to prevent cross-origin refresh attempts
+  if (
+    response.status === 401 &&
+    retryCount === 0 &&
+    targetUrl.host === apiBase.host
+  ) {
     // Don't refresh on auth endpoints themselves
     if (
       !pathWithQuery.includes("/auth/login") &&
@@ -130,12 +145,12 @@ const fetcher = async (
       const newToken = await refreshAccessToken();
 
       if (newToken) {
-        // Retry the request with the new token
-        finalHeaders.Authorization = `Bearer ${newToken}`;
-        return fetch(`${$env.get().apiUrl}${pathWithQuery}`, {
-          ...init,
-          headers: finalHeaders,
-        });
+        // Retry the request with the new token using fetcher to track retry count
+        const retryHeaders = {
+          ...finalHeaders,
+          Authorization: `Bearer ${newToken}`,
+        };
+        return fetcher(url, { ...init, headers: retryHeaders }, retryCount + 1);
       }
     }
   }
@@ -146,9 +161,21 @@ const fetcher = async (
 export const api = treaty<App>($env.get().apiUrl, {
   fetcher: fetcher as typeof fetch,
   onResponse(response) {
+    // Skip redirect for auth endpoints to avoid loops
+    const url = response.url || "";
+    const isAuthEndpoint =
+      url.includes("/auth/login") ||
+      url.includes("/auth/signup") ||
+      url.includes("/auth/refresh") ||
+      url.includes("/auth/forgot-password");
+
     // Only redirect to logout if refresh also failed (fetcher already tried refresh)
-    if (response.status === 401 && !getRefreshToken()) {
-      window.location.href = "/logout";
+    if (response.status === 401 && !getRefreshToken() && !isAuthEndpoint) {
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      if (currentPath !== "/logout") {
+        window.location.href = "/logout";
+      }
     }
   },
 });

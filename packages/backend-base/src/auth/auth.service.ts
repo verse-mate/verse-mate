@@ -243,10 +243,21 @@ export class AuthService {
     const cacheKey = cacheConstants.accessToken(validBearer.sub);
     const allAccessTokens = await this.cache.get<string[]>(cacheKey);
     if (allAccessTokens?.includes(accessToken)) {
-      const index = allAccessTokens.findIndex((t) => t === accessToken);
-      allAccessTokens.splice(index, 1);
+      const updated = allAccessTokens.filter((t) => t !== accessToken);
 
-      await this.cache.set(cacheKey, allAccessTokens, "15m");
+      if (updated.length === 0) {
+        // Delete the key when empty to avoid extending TTL unnecessarily
+        await this.cache.delete(cacheKey);
+      } else {
+        // Preserve original TTL to avoid extending other tokens' validity
+        const ttlSeconds = await this.cache.ttl(cacheKey).catch(() => -1);
+        if (ttlSeconds && ttlSeconds > 0) {
+          await this.cache.set(cacheKey, updated, `${ttlSeconds}s`);
+        } else {
+          // If TTL unavailable or expired, delete to force re-auth on next check
+          await this.cache.delete(cacheKey);
+        }
+      }
     }
 
     // Delete refresh token from database

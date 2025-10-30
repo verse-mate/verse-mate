@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { cache } from "../shared/shared.plugin";
 
 interface RateLimitOptions {
@@ -38,12 +39,25 @@ export const createRateLimit = (options: RateLimitOptions) => {
 
     if (current >= max) {
       context.set.status = 429;
-      throw new Error(message);
+      // Use a lightweight structured error that your global error handler can recognize
+      throw { status: 429, message };
     }
 
-    // Increment counter
+    // Increment counter with fixed window TTL
     const newCount = current + 1;
-    await cache.set(cacheKey, { count: newCount }, `${windowSeconds}s`);
+    if (current === 0) {
+      // First request in window - set full TTL
+      await cache.set(cacheKey, { count: newCount }, `${windowSeconds}s`);
+    } else {
+      // Preserve remaining TTL to avoid extending window on each hit (sliding window bug)
+      const ttlSeconds = await cache.ttl(cacheKey).catch(() => -1);
+      if (ttlSeconds > 0) {
+        await cache.set(cacheKey, { count: newCount }, `${ttlSeconds}s`);
+      } else {
+        // If TTL missing or expired, reset a fresh window
+        await cache.set(cacheKey, { count: newCount }, `${windowSeconds}s`);
+      }
+    }
   };
 };
 
@@ -93,9 +107,10 @@ export const authRateLimiters = {
     max: 20,
     keyGenerator: (context) => {
       // Use refresh token as key (unique per session)
-      const token = context.body.refreshToken || "unknown";
-      // Hash to avoid storing full token in cache key
-      return `refresh:${token.substring(0, 10)}`;
+      const token: string = context.body.refreshToken || "unknown";
+      // Hash to avoid storing full token in cache key and prevent token leakage
+      const digest = createHash("sha256").update(token).digest("hex");
+      return `refresh:${digest}`;
     },
     message: "Too many refresh attempts, please try again later",
   }),
