@@ -7,7 +7,7 @@ import { ApiError } from "./errors";
  * Note: Return type is intentionally loose to work across different plugin contexts
  */
 export const createErrorHandler = (pluginName: string) => {
-  return (context: any) => {
+  return async (context: any) => {
     const { code, error, set } = context;
     // Handle custom API errors
     if (error instanceof ApiError) {
@@ -30,6 +30,51 @@ export const createErrorHandler = (pluginName: string) => {
           message: "Route not found",
         };
       default:
+        // Detect rate limit errors (plain objects with status: 429)
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "status" in error &&
+          error.status === 429
+        ) {
+          set.status = 429;
+
+          // Calculate retryAfter from cache TTL if cacheKey is available
+          let retryAfter: number | undefined;
+          if ("cacheKey" in error && typeof error.cacheKey === "string") {
+            try {
+              const cache = context.store?.cache;
+              if (cache && typeof cache.ttl === "function") {
+                const ttlSeconds = await cache.ttl(error.cacheKey);
+                if (ttlSeconds > 0) {
+                  retryAfter = ttlSeconds;
+                }
+              }
+            } catch (ttlError) {
+              // If TTL query fails, continue without retryAfter
+              console.info(
+                `Failed to query TTL for rate limit key ${error.cacheKey}:`,
+                ttlError,
+              );
+            }
+          }
+
+          // Log rate limit hit at info level
+          console.info(
+            `Rate limit hit in ${pluginName}: ${error.message}${retryAfter ? ` (retry after ${retryAfter}s)` : ""}`,
+          );
+
+          return {
+            error: "TOO_MANY_REQUESTS",
+            message:
+              typeof error.message === "string"
+                ? error.message
+                : "Too many requests",
+            ...(retryAfter !== undefined && { retryAfter }),
+          };
+        }
+
+        // Handle other unexpected errors
         console.error(`Unhandled error in ${pluginName}:`, error);
         set.status = 500;
         return {

@@ -39,8 +39,8 @@ export const createRateLimit = (options: RateLimitOptions) => {
 
     if (current >= max) {
       context.set.status = 429;
-      // Use a lightweight structured error that your global error handler can recognize
-      throw { status: 429, message };
+      // Include cacheKey in error object for error handler to calculate retryAfter
+      throw { status: 429, message, cacheKey };
     }
 
     // Increment counter with fixed window TTL

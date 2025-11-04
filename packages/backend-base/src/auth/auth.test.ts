@@ -295,3 +295,187 @@ describe("Auth", () => {
     expect(secondIsValid.data?.success).toBe(false);
   });
 });
+
+describe("Auth - Rate Limiting", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  const cacheService = Backend.store.cache;
+
+  it("signup rate limit - returns 429 after 3 attempts", async () => {
+    const signupInput = {
+      email: faker.internet.email().toLocaleLowerCase(),
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
+      password: faker.internet.password(),
+    };
+
+    // Mock sendEmail for all signup attempts
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
+      Promise.resolve(),
+    );
+
+    // Make 3 successful signup attempts (rate limit max)
+    for (let i = 0; i < 3; i++) {
+      const uniqueEmail = `${i}-${signupInput.email}`;
+      const { data, error } = await client.auth.signup.post({
+        ...signupInput,
+        email: uniqueEmail,
+      });
+      // These should succeed
+      if (error) throw error;
+      expect(data?.accessToken).toBeDefined();
+    }
+
+    // 4th attempt should hit rate limit
+    const { data, error } = await client.auth.signup.post({
+      ...signupInput,
+      email: `4-${signupInput.email}`,
+    });
+
+    expect(data).toBeUndefined();
+    expect(error).toBeTruthy();
+    expect((error as any)?.status).toBe(429);
+    expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
+    expect((error as any)?.value?.message).toBe(
+      "Too many signup attempts, please try again later",
+    );
+    expect((error as any)?.value?.retryAfter).toBeDefined();
+    expect((error as any)?.value?.retryAfter).toBeGreaterThan(0);
+    expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(3600);
+
+    // Clean up rate limit cache key
+    await cacheService.delete("rate-limit:signup:unknown");
+  });
+
+  it("login rate limit - returns 429 after 5 attempts", async () => {
+    const loginEmail = faker.internet.email().toLocaleLowerCase();
+
+    // Make 5 failed login attempts (rate limit max)
+    for (let i = 0; i < 5; i++) {
+      const { error } = await client.auth.login.post({
+        email: loginEmail,
+        password: "wrongpassword",
+      });
+      // These should fail with NOT_FOUND or UNAUTHORIZED, not rate limit
+      expect(error).toBeTruthy();
+      expect((error as any)?.status).not.toBe(429);
+    }
+
+    // 6th attempt should hit rate limit
+    const { data, error } = await client.auth.login.post({
+      email: loginEmail,
+      password: "wrongpassword",
+    });
+
+    expect(data).toBeUndefined();
+    expect(error).toBeTruthy();
+    expect((error as any)?.status).toBe(429);
+    expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
+    expect((error as any)?.value?.message).toBe(
+      "Too many login attempts, please try again in a minute",
+    );
+    expect((error as any)?.value?.retryAfter).toBeDefined();
+    expect((error as any)?.value?.retryAfter).toBeGreaterThan(0);
+    expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(60);
+
+    // Clean up rate limit cache key
+    await cacheService.delete(`rate-limit:login:${loginEmail}`);
+  });
+
+  it("refresh rate limit - returns 429 after 20 attempts", async () => {
+    const fakeRefreshToken = "fake-refresh-token-for-rate-limit-test";
+
+    // Make 20 failed refresh attempts (rate limit max)
+    for (let i = 0; i < 20; i++) {
+      const { error } = await client.auth.refresh.post({
+        refreshToken: fakeRefreshToken,
+      });
+      // These should fail with UNAUTHORIZED, not rate limit
+      expect(error).toBeTruthy();
+      expect((error as any)?.status).not.toBe(429);
+    }
+
+    // 21st attempt should hit rate limit
+    const { data, error } = await client.auth.refresh.post({
+      refreshToken: fakeRefreshToken,
+    });
+
+    expect(data).toBeUndefined();
+    expect(error).toBeTruthy();
+    expect((error as any)?.status).toBe(429);
+    expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
+    expect((error as any)?.value?.message).toBe(
+      "Too many refresh attempts, please try again later",
+    );
+    expect((error as any)?.value?.retryAfter).toBeDefined();
+    expect((error as any)?.value?.retryAfter).toBeGreaterThan(0);
+    expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(60);
+
+    // Clean up rate limit cache key (hashed token)
+    const { createHash } = await import("node:crypto");
+    const digest = createHash("sha256").update(fakeRefreshToken).digest("hex");
+    await cacheService.delete(`rate-limit:refresh:${digest}`);
+  });
+
+  it("forgot-password rate limit - returns 429 after 3 attempts", async () => {
+    const testEmail = faker.internet.email().toLocaleLowerCase();
+
+    // Mock sendEmail for forgot password attempts
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
+      Promise.resolve(),
+    );
+
+    // Make 3 forgot password attempts (rate limit max)
+    for (let i = 0; i < 3; i++) {
+      const { data, error } = await client.auth["forgot-password"].post({
+        email: testEmail,
+      });
+      // These should succeed
+      if (error) throw error;
+      expect(data?.success).toBe(true);
+    }
+
+    // 4th attempt should hit rate limit
+    const { data, error } = await client.auth["forgot-password"].post({
+      email: testEmail,
+    });
+
+    expect(data).toBeUndefined();
+    expect(error).toBeTruthy();
+    expect((error as any)?.status).toBe(429);
+    expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
+    expect((error as any)?.value?.message).toBe(
+      "Too many password reset requests, please try again later",
+    );
+    expect((error as any)?.value?.retryAfter).toBeDefined();
+    expect((error as any)?.value?.retryAfter).toBeGreaterThan(0);
+    expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(3600);
+
+    // Clean up rate limit cache key
+    await cacheService.delete(`rate-limit:forgot-password:${testEmail}`);
+  });
+
+  it("should still return 401 for unauthorized errors", async () => {
+    const { data, error } = await client.auth.user.get({
+      headers: {
+        authorization: "Bearer invalid-token",
+      },
+    });
+
+    expect(data).toBeUndefined();
+    expect(error).toBeTruthy();
+    expect((error as any)?.status).toBe(401);
+    expect((error as any)?.value?.error).toBe("UNAUTHORIZED");
+  });
+
+  it("should still return 404 for not found errors", async () => {
+    const { data, error } = await client.auth.login.post({
+      email: "nonexistent@example.com",
+      password: "somepassword",
+    });
+
+    expect(data).toBeUndefined();
+    expect(error).toBeTruthy();
+    expect((error as any)?.status).toBe(404);
+    expect((error as any)?.value?.error).toBe("NOT_FOUND");
+  });
+});

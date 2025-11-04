@@ -11,10 +11,11 @@ export const ErrorResponse = t.Object({
 
 /**
  * Standard error responses object for spreading into response definitions
- * Provides consistent 400 and 500 error response schemas
+ * Provides consistent 400, 429, and 500 error response schemas
  */
 export const StandardErrorResponses = {
   400: ErrorResponse,
+  429: ErrorResponse,
   500: ErrorResponse,
 };
 

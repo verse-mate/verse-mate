@@ -7,7 +7,8 @@
     "lint:watch": "bunx onchange . -- biome check --write --no-errors-on-unmatched {{changed}}",
     "prepare": "husky install",
     "stylelint": "stylelint \"{apps,packages}/**/*.css\"",
-    "tsc": "bunx tsc"
+    "tsc": "bunx tsc",
+    "validate": "bun run lint && bun run tsc && bun run test"
   },
   "workspaces": ["apps/*", "packages/*"],
   "devDependencies": {
