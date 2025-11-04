@@ -1,4 +1,4 @@
-import { describe, expect, it, spyOn } from "bun:test";
+import { beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import cacheConstants from "../shared/cache.constants";
@@ -8,9 +8,17 @@ import type { AuthPayload } from "./entities/auth.entity";
 
 describe("Auth", () => {
   const client = getTestClient<AuthPlugin>(Backend);
+  const cacheService = Backend.store.cache;
 
   let signupAuthPayload: AuthPayload | null;
   let loginAuthPayload: AuthPayload | null;
+
+  // Clear all rate limit cache keys before running auth tests
+  beforeAll(async () => {
+    await cacheService.delete("rate-limit:signup:unknown");
+    // Wait a moment for Redis to process the delete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
 
   const authSignupInput = {
     email: faker.internet.email().toLocaleLowerCase(),
@@ -422,10 +430,19 @@ describe("Auth - Rate Limiting", () => {
   it("forgot-password rate limit - returns 429 after 3 attempts", async () => {
     const testEmail = faker.internet.email().toLocaleLowerCase();
 
-    // Mock sendEmail for forgot password attempts
+    // Mock sendEmail for all attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
       Promise.resolve(),
     );
+
+    // First, create a user so forgot-password can find them
+    const { error: signupError } = await client.auth.signup.post({
+      email: testEmail,
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
+      password: faker.internet.password(),
+    });
+    if (signupError) throw signupError;
 
     // Make 3 forgot password attempts (rate limit max)
     for (let i = 0; i < 3; i++) {
@@ -442,7 +459,7 @@ describe("Auth - Rate Limiting", () => {
       email: testEmail,
     });
 
-    expect(data).toBeUndefined();
+    expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(429);
     expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
@@ -467,7 +484,8 @@ describe("Auth - Rate Limiting", () => {
     expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(401);
-    expect((error as any)?.value?.error).toBe("UNAUTHORIZED");
+    // 401 errors have a different structure with 'message' instead of 'error'
+    expect((error as any)?.value?.message).toContain("Invalid bearer token");
   });
 
   it("should still return 404 for not found errors", async () => {
