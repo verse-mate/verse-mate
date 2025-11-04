@@ -308,6 +308,9 @@ describe("Auth - Rate Limiting", () => {
       password: faker.internet.password(),
     };
 
+    // Clear any existing rate limit cache for signup
+    await cacheService.delete("rate-limit:signup:unknown");
+
     // Mock sendEmail for all signup attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
       Promise.resolve(),
@@ -331,7 +334,7 @@ describe("Auth - Rate Limiting", () => {
       email: `4-${signupInput.email}`,
     });
 
-    expect(data).toBeUndefined();
+    expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(429);
     expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
@@ -366,7 +369,7 @@ describe("Auth - Rate Limiting", () => {
       password: "wrongpassword",
     });
 
-    expect(data).toBeUndefined();
+    expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(429);
     expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
@@ -399,7 +402,7 @@ describe("Auth - Rate Limiting", () => {
       refreshToken: fakeRefreshToken,
     });
 
-    expect(data).toBeUndefined();
+    expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(429);
     expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
@@ -461,7 +464,7 @@ describe("Auth - Rate Limiting", () => {
       },
     });
 
-    expect(data).toBeUndefined();
+    expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(401);
     expect((error as any)?.value?.error).toBe("UNAUTHORIZED");
@@ -473,7 +476,7 @@ describe("Auth - Rate Limiting", () => {
       password: "somepassword",
     });
 
-    expect(data).toBeUndefined();
+    expect(data).toBeNull();
     expect(error).toBeTruthy();
     expect((error as any)?.status).toBe(404);
     expect((error as any)?.value?.error).toBe("NOT_FOUND");
