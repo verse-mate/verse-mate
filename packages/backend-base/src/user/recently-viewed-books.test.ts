@@ -18,6 +18,10 @@ describe("Recently Viewed Books", () => {
   const testClient = getTestClient<typeof plugin>(plugin);
 
   beforeAll(async () => {
+    // Clear rate limit cache to allow signup (auth tests may have used up the limit)
+    await Backend.store.cache.delete("rate-limit:signup:unknown");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const { data, error } = await testClient.auth.signup.post(authSignupInput);
     if (error) throw error;
 

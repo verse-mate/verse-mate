@@ -13,10 +13,12 @@ describe("Auth", () => {
   let signupAuthPayload: AuthPayload | null;
   let loginAuthPayload: AuthPayload | null;
 
-  // Clear all rate limit cache keys before running auth tests
+  // Clear all cache before running auth tests to ensure clean state
   beforeAll(async () => {
+    // Clear rate limit cache
     await cacheService.delete("rate-limit:signup:unknown");
-    // Wait a moment for Redis to process the delete
+    // Note: We don't flush all Redis keys because other test files might be running
+    // The logout tests will naturally create their own tokens during the test flow
     await new Promise((resolve) => setTimeout(resolve, 100));
   });
 
