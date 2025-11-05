@@ -208,7 +208,7 @@ describe("Auth", () => {
     // After logging out one token, we should have fewer tokens
     expect(tokens.length).toBeGreaterThanOrEqual(0);
 
-    const { data: logoutLogin } = await client.auth.logout.post(
+    const { data: logoutLogin, error: logoutLoginError } = await client.auth.logout.post(
       {},
       {
         headers: {
@@ -216,6 +216,12 @@ describe("Auth", () => {
         },
       },
     );
+    // If there's an error, log it for debugging
+    if (logoutLoginError) {
+      console.error("Logout login error:", logoutLoginError);
+    }
+    // Logout should return true or at least not have an error
+    expect(logoutLoginError).toBeFalsy();
     expect(logoutLogin).toBeTruthy();
 
     tokens =
