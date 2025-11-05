@@ -14,11 +14,10 @@ export const UserSchema = t.Object({
 });
 
 /**
- * Auth payload schema for login/signup/refresh responses
+ * Auth payload schema for login/signup responses
  */
 export const AuthPayloadSchema = t.Object({
   accessToken: t.String(),
-  refreshToken: t.Optional(t.String()),
   verified: t.Boolean(),
 });
 
