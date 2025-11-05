@@ -1,0 +1,9 @@
+# Ignore all spec folders to keep git repo size small
+# Specs are local-only working directories
+
+# Ignore everything in this directory
+*
+
+# Except this .gitignore file and .gitkeep
+!.gitignore
+!.gitkeep

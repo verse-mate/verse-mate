@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import authPlugin from "../auth/auth.plugin";
@@ -18,6 +18,10 @@ describe("Recently Viewed Books", () => {
   const testClient = getTestClient<typeof plugin>(plugin);
 
   beforeAll(async () => {
+    // Clear rate limit cache to allow signup (auth tests may have used up the limit)
+    await Backend.store.cache.delete("rate-limit:signup:unknown");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const { data, error } = await testClient.auth.signup.post(authSignupInput);
     if (error) throw error;
 
@@ -271,6 +275,15 @@ describe("Recently Viewed Books", () => {
   });
 
   it("should get recently viewed books after syncing", async () => {
+    // Clear rate limit cache and mock email for this fresh signup
+    await Backend.store.cache.delete("rate-limit:signup:unknown");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Mock email sending for this signup
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
+      Promise.resolve(),
+    );
+
     // Create a fresh user for this test to avoid state pollution from previous tests
     const freshUserSignup = {
       email: faker.internet.email().toLocaleLowerCase(),
