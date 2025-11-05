@@ -220,11 +220,6 @@ describe("Auth", () => {
           },
         },
       );
-    // If there's an error, log it for debugging
-    if (logoutLoginError) {
-      console.error("Logout login error:", logoutLoginError);
-    }
-    // Logout should return true or at least not have an error
     expect(logoutLoginError).toBeFalsy();
     expect(logoutLogin).toBeTruthy();
 

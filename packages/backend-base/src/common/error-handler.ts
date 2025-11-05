@@ -35,42 +35,45 @@ export const createErrorHandler = (pluginName: string) => {
           typeof error === "object" &&
           error !== null &&
           "status" in error &&
-          error.status === 429
+          (error as any).status === 429
         ) {
           set.status = 429;
 
-          // Calculate retryAfter from cache TTL if cacheKey is available
           let retryAfter: number | undefined;
-          if ("cacheKey" in error && typeof error.cacheKey === "string") {
+          const cacheKey = (error as any).cacheKey;
+          if (typeof cacheKey === "string") {
             try {
-              const cache = context.store?.cache;
+              const cache = context?.store?.cache;
               if (cache && typeof cache.ttl === "function") {
-                const ttlSeconds = await cache.ttl(error.cacheKey);
-                if (ttlSeconds > 0) {
-                  retryAfter = ttlSeconds;
+                const ttlSeconds = await cache.ttl(cacheKey);
+                if (typeof ttlSeconds === "number" && ttlSeconds > 0) {
+                  // Clamp to a max of 24h to avoid unreasonable values
+                  const MAX_RETRY_AFTER = 24 * 60 * 60;
+                  retryAfter = Math.min(ttlSeconds, MAX_RETRY_AFTER);
                 }
               }
-            } catch (ttlError) {
-              // If TTL query fails, continue without retryAfter
-              console.info(
-                `Failed to query TTL for rate limit key ${error.cacheKey}:`,
-                ttlError,
-              );
+            } catch {
+              // swallow TTL errors
             }
           }
 
-          // Log rate limit hit at info level
-          console.info(
-            `Rate limit hit in ${pluginName}: ${error.message}${retryAfter ? ` (retry after ${retryAfter}s)` : ""}`,
-          );
+          if (process.env.NODE_ENV !== "production") {
+            const msg =
+              typeof (error as any).message === "string"
+                ? (error as any).message
+                : "Too many requests";
+            console.debug(
+              `Rate limit hit in ${pluginName}${retryAfter ? ` (retry after ${retryAfter}s)` : ""}: ${msg}`,
+            );
+          }
 
           return {
             error: "TOO_MANY_REQUESTS",
             message:
-              typeof error.message === "string"
-                ? error.message
+              typeof (error as any).message === "string"
+                ? (error as any).message
                 : "Too many requests",
-            ...(retryAfter !== undefined && { retryAfter }),
+            ...(typeof retryAfter === "number" ? { retryAfter } : {}),
           };
         }
 
