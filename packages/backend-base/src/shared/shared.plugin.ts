@@ -2,8 +2,8 @@ import { bearer } from "@elysiajs/bearer";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
-import { UserService } from "../user/user.service";
 
+import { AuthService } from "../auth/auth.service";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
@@ -31,10 +31,15 @@ const setup = new Elysia({ name: "shared" })
   .state("cache", redisClient)
   .state("notification", new EmailNotificationConsumer())
   .state("batchMonitoringQueue", batchMonitoringQueue)
-  .derive(async ({ jwt, cookie: { auth }, store }) => {
+  .derive(async ({ jwt, cookie: { auth }, store, set }) => {
+    const token = auth?.value as string | undefined;
+    if (!token) {
+      return { user: null };
+    }
+
     let payload: any;
     try {
-      payload = await jwt.verify(auth?.value as string | undefined);
+      payload = await jwt.verify(token);
     } catch {
       console.warn("JWT verification failed");
       return { user: null };
@@ -43,19 +48,53 @@ const setup = new Elysia({ name: "shared" })
     if (
       !payload ||
       typeof payload !== "object" ||
-      typeof (payload as any).id !== "string" ||
-      !(payload as any).id
+      typeof (payload as any).sub !== "string" ||
+      !(payload as any).sub
     ) {
       return { user: null };
     }
 
+    // Sliding session logic
+    const now = Math.floor(Date.now() / 1000);
+    const exp = payload.exp as number;
+    const iat = payload.iat as number;
+    const lifetime = exp - iat;
+    const timeRemaining = exp - now;
+
+    // If token is more than halfway through its life, refresh it
+    if (timeRemaining < lifetime / 2) {
+      const authService = new AuthService(
+        store.db,
+        store.cache,
+        store.notification,
+        jwt,
+      );
+      try {
+        const newToken = await authService.refreshAccessToken(
+          token,
+          payload.sub,
+        );
+        if (newToken) {
+          set.headers["X-Access-Token-Refreshed"] = newToken;
+        }
+      } catch (error) {
+        // Don't block the request if refresh fails, the old token is still valid for now
+        console.error("Failed to refresh access token:", error);
+      }
+    }
+
     try {
-      const userService = new UserService(store.db);
-      const user = await userService.findOne((payload as any).id);
+      const authService = new AuthService(
+        store.db,
+        store.cache,
+        store.notification,
+        jwt,
+      );
+      const user = await authService.getUserById(payload.sub);
       if (!user) return { user: null };
       return { user };
-    } catch {
-      console.error("Failed to load user from store");
+    } catch (error) {
+      console.error("Failed to load user from store:", error);
       return { user: null };
     }
   })

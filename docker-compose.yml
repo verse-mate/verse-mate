@@ -7,7 +7,7 @@ services:
       - "6379:6379"
     volumes:
       - ./.docker/redis_data:/data
-    command: redis-server --requirepass abcd1234
+    command: redis-server --save 60 1 --requirepass abcd1234
 
   postgres:
     container_name: postgres

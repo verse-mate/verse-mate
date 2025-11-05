@@ -38,6 +38,7 @@ export class AuthService {
     private readonly db: db,
     private readonly cache: cache,
     private readonly notification: EmailNotificationConsumer,
+    private readonly jwt: JWT,
   ) {
     const hashSalt = process.env.AUTH_HASH_SALT ?? "10";
 
@@ -495,4 +496,42 @@ export class AuthService {
   }
 
   // TODO: Implement refresh accessToken (keep alive)
+
+  /**
+   * Refreshes an access token for a user, implementing a sliding session.
+   * It generates a new token and replaces the old one in the cache.
+   * @param oldToken The expired or expiring token.
+   * @param userId The ID of the user.
+   * @returns The new access token, or null if the old token was not found.
+   */
+  public async refreshAccessToken(
+    oldToken: string,
+    userId: string,
+  ): Promise<string | null> {
+    const cacheKey = cacheConstants.accessToken(userId);
+    const allAccessTokens = await this.cache.get<string[]>(cacheKey);
+
+    if (!allAccessTokens || !allAccessTokens.includes(oldToken)) {
+      // If the token isn't in the list, we can't refresh it.
+      // This could happen if the user was logged out from another device.
+      return null;
+    }
+
+    // Generate a new token
+    const newToken = await this.jwt.sign({
+      sub: userId,
+    });
+
+    // Atomically replace the old token with the new one
+    const index = allAccessTokens.findIndex((t) => t === oldToken);
+    allAccessTokens.splice(index, 1, newToken);
+
+    await this.cache.set(
+      cacheKey,
+      allAccessTokens,
+      process.env.AUTH_ACCESS_TOKEN_LIFETIME ?? "1h",
+    );
+
+    return newToken;
+  }
 }

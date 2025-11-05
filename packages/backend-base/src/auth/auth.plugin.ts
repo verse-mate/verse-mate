@@ -26,12 +26,6 @@ import {
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("auth plugin"))
-  .state((state) => {
-    return {
-      ...state,
-      authService: new AuthService(state.db, state.cache, state.notification),
-    };
-  })
   .group("/auth", (app) =>
     app
       .guard(authGuard, (app) =>
@@ -53,14 +47,16 @@ const plugin = new Elysia()
           )
           .post(
             "/change-password",
-            async ({
-              body,
-              currentUserId,
-              store: { authService },
-            }): Promise<boolean> => {
+            async ({ body, currentUserId, store, jwt }): Promise<boolean> => {
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
+              const authService = new AuthService(
+                store.db,
+                store.cache,
+                store.notification,
+                jwt,
+              );
               return authService.changePassword(currentUserId, body);
             },
             {
@@ -73,15 +69,16 @@ const plugin = new Elysia()
           )
           .post(
             "/logout",
-            async ({
-              bearer,
-              store: { authService },
-              jwt,
-            }): Promise<boolean> => {
+            async ({ bearer, store, jwt }): Promise<boolean> => {
               if (!bearer) {
                 return false;
               }
-
+              const authService = new AuthService(
+                store.db,
+                store.cache,
+                store.notification,
+                jwt,
+              );
               return authService.logout(bearer, jwt);
             },
             {
@@ -93,13 +90,16 @@ const plugin = new Elysia()
           )
           .post(
             "/logout-all",
-            async ({
-              currentUserId,
-              store: { authService },
-            }): Promise<boolean> => {
+            async ({ currentUserId, store, jwt }): Promise<boolean> => {
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
+              const authService = new AuthService(
+                store.db,
+                store.cache,
+                store.notification,
+                jwt,
+              );
               return authService.logoutAll(currentUserId);
             },
             {
@@ -111,10 +111,16 @@ const plugin = new Elysia()
           )
           .post(
             "/send-email-verification",
-            async ({ currentUserId, store: { authService }, set }) => {
+            async ({ currentUserId, store, jwt, set }) => {
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
+              const authService = new AuthService(
+                store.db,
+                store.cache,
+                store.notification,
+                jwt,
+              );
               await authService.sendVerifyEmail(currentUserId);
               set.status = 204;
               return undefined;
@@ -131,12 +137,18 @@ const plugin = new Elysia()
             async ({
               currentUserId,
               body,
-              store: { authService },
+              store,
               jwt,
             }): Promise<AuthPayload> => {
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
+              const authService = new AuthService(
+                store.db,
+                store.cache,
+                store.notification,
+                jwt,
+              );
               return authService.verifyEmail({
                 currentUserId,
                 token: body.token,
@@ -155,10 +167,16 @@ const plugin = new Elysia()
           )
           .get(
             "/session",
-            async ({ currentUserId, store: { authService } }) => {
+            async ({ currentUserId, store, jwt }) => {
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
+              const authService = new AuthService(
+                store.db,
+                store.cache,
+                store.notification,
+                jwt,
+              );
               const user = await authService.getUserById(currentUserId);
               if (!user) {
                 throw new UnauthorizedError("User not found");
@@ -174,10 +192,16 @@ const plugin = new Elysia()
           )
           .put(
             "/profile",
-            async ({ currentUserId, body, store: { authService } }) => {
+            async ({ currentUserId, body, store, jwt }) => {
               if (!currentUserId) {
                 throw new UnauthorizedError("Unauthorized");
               }
+              const authService = new AuthService(
+                store.db,
+                store.cache,
+                store.notification,
+                jwt,
+              );
               const user = await authService.updateProfile(currentUserId, body);
               if (!user) {
                 throw new UnauthorizedError("User not found");
@@ -195,7 +219,13 @@ const plugin = new Elysia()
       )
       .post(
         "/signup",
-        async ({ body, store: { authService }, jwt }): Promise<AuthPayload> => {
+        async ({ body, store, jwt }): Promise<AuthPayload> => {
+          const authService = new AuthService(
+            store.db,
+            store.cache,
+            store.notification,
+            jwt,
+          );
           return authService.signup(body, jwt);
         },
         {
@@ -208,7 +238,13 @@ const plugin = new Elysia()
       )
       .post(
         "/login",
-        async ({ body, store: { authService }, jwt }): Promise<AuthPayload> => {
+        async ({ body, store, jwt }): Promise<AuthPayload> => {
+          const authService = new AuthService(
+            store.db,
+            store.cache,
+            store.notification,
+            jwt,
+          );
           return authService.login(body, jwt);
         },
         {
@@ -221,7 +257,13 @@ const plugin = new Elysia()
       )
       .post(
         "/forgot-password",
-        async ({ body, store: { authService } }) => {
+        async ({ body, store, jwt }) => {
+          const authService = new AuthService(
+            store.db,
+            store.cache,
+            store.notification,
+            jwt,
+          );
           const success = await authService.forgotPassword(body);
           return { success };
         },
@@ -235,7 +277,13 @@ const plugin = new Elysia()
       )
       .post(
         "/reset-password",
-        async ({ body, store: { authService } }) => {
+        async ({ body, store, jwt }) => {
+          const authService = new AuthService(
+            store.db,
+            store.cache,
+            store.notification,
+            jwt,
+          );
           const success = await authService.resetPassword(body);
           return { success };
         },
@@ -249,7 +297,13 @@ const plugin = new Elysia()
       )
       .get(
         "/reset-password-verify",
-        async ({ query, store: { authService } }) => {
+        async ({ query, store, jwt }) => {
+          const authService = new AuthService(
+            store.db,
+            store.cache,
+            store.notification,
+            jwt,
+          );
           const success = await authService.resetPasswordVerify(query.token);
           return { success };
         },
