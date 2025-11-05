@@ -48,7 +48,37 @@ const fetcher = async (url: string | URL | Request, init?: RequestInit) => {
 export const api = treaty<App>($env.get().apiUrl, {
   fetcher: fetcher as typeof fetch,
   onResponse(response) {
-    if (response.status === 401) {
+    if (typeof window === "undefined") return;
+    if (response.status !== 401) return;
+
+    const urlStr = response.url || "";
+    const isCurrentAuthRoute = [
+      "/login",
+      "/signup",
+      "/forgot-password",
+      "/logout",
+    ].some((p) => window.location.pathname.startsWith(p));
+
+    const isAuthEndpoint =
+      urlStr.includes("/auth/login") ||
+      urlStr.includes("/auth/signup") ||
+      urlStr.includes("/auth/forgot-password");
+
+    let sameOrigin = false;
+    try {
+      const apiOrigin = new URL($env.get().apiUrl).origin;
+      const respOrigin = new URL(urlStr).origin;
+      sameOrigin = respOrigin === apiOrigin;
+    } catch {
+      sameOrigin = false;
+    }
+
+    if (
+      !isAuthEndpoint &&
+      sameOrigin &&
+      !isCurrentAuthRoute &&
+      window.location.pathname !== "/logout"
+    ) {
       window.location.href = "/logout";
     }
   },

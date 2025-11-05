@@ -31,8 +31,10 @@ const setup = new Elysia({ name: "shared" })
   .state("cache", redisClient)
   .state("notification", new EmailNotificationConsumer())
   .state("batchMonitoringQueue", batchMonitoringQueue)
-  .derive(async ({ jwt, cookie: { auth }, store, set }) => {
-    const token = auth?.value as string | undefined;
+  .derive(async ({ jwt, cookie: { auth }, bearer, store, set }) => {
+    const token =
+      (auth?.value as string | undefined) ||
+      (typeof bearer === "string" && bearer ? bearer : undefined);
     if (!token) {
       return { user: null };
     }
@@ -54,32 +56,36 @@ const setup = new Elysia({ name: "shared" })
       return { user: null };
     }
 
-    // Sliding session logic
+    // Sliding session logic with safety checks
     const now = Math.floor(Date.now() / 1000);
-    const exp = payload.exp as number;
-    const iat = payload.iat as number;
-    const lifetime = exp - iat;
-    const timeRemaining = exp - now;
+    const exp = Number((payload as any).exp);
+    const iat = Number((payload as any).iat);
+    if (Number.isFinite(exp) && Number.isFinite(iat) && exp > iat) {
+      const lifetime = exp - iat;
+      const timeRemaining = exp - now;
 
-    // If token is more than halfway through its life, refresh it
-    if (timeRemaining < lifetime / 2) {
-      const authService = new AuthService(
-        store.db,
-        store.cache,
-        store.notification,
-        jwt,
-      );
-      try {
-        const newToken = await authService.refreshAccessToken(
-          token,
-          payload.sub,
+      // If token is more than halfway through its life, refresh it
+      if (timeRemaining < lifetime / 2) {
+        const authService = new AuthService(
+          store.db,
+          store.cache,
+          store.notification,
+          jwt,
         );
-        if (newToken) {
-          set.headers["X-Access-Token-Refreshed"] = newToken;
+        try {
+          const newToken = await authService.refreshAccessToken(
+            token,
+            (payload as any).sub,
+          );
+          if (newToken) {
+            // Use a conventional header and expose it for browsers
+            set.headers["Authorization"] = `Bearer ${newToken}`;
+            set.headers["Access-Control-Expose-Headers"] = "Authorization";
+          }
+        } catch (error) {
+          // Don't block the request if refresh fails, the old token is still valid for now
+          console.error("Failed to refresh access token:", error);
         }
-      } catch (error) {
-        // Don't block the request if refresh fails, the old token is still valid for now
-        console.error("Failed to refresh access token:", error);
       }
     }
 

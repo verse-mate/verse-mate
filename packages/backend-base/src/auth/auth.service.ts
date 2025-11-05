@@ -167,11 +167,15 @@ export class AuthService {
     const index = allAccessTokens.findIndex((t) => t === accessToken);
     allAccessTokens.splice(index, 1);
 
-    await this.cache.set(
-      cacheKey,
-      allAccessTokens,
-      process.env.AUTH_ACCESS_TOKEN_LIFETIME ?? "1h",
-    );
+    if (allAccessTokens.length === 0) {
+      await this.cache.delete(cacheKey);
+    } else {
+      await this.cache.set(
+        cacheKey,
+        allAccessTokens,
+        process.env.AUTH_ACCESS_TOKEN_LIFETIME ?? "1h",
+      );
+    }
 
     return true;
   }
