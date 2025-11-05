@@ -166,15 +166,18 @@ describe("Auth", () => {
     );
     if (errorLogin) throw errorLogin;
     expect(dataLogin?.accessToken).toBeDefined();
+    // Update loginAuthPayload with the fresh token after password change
+    loginAuthPayload = dataLogin;
   });
 
   it("Logout", async () => {
     // It should have 2 sessions
     const cacheService = Backend.store.cache;
 
+    // Use loginAuthPayload which has the most recent token from Change Password test
     const { data, error } = await client.auth.user.get({
       headers: {
-        authorization: `Bearer ${signupAuthPayload?.accessToken}`,
+        authorization: `Bearer ${loginAuthPayload?.accessToken}`,
       },
     });
     if (error) throw error;
@@ -208,14 +211,15 @@ describe("Auth", () => {
     // After logging out one token, we should have fewer tokens
     expect(tokens.length).toBeGreaterThanOrEqual(0);
 
-    const { data: logoutLogin, error: logoutLoginError } = await client.auth.logout.post(
-      {},
-      {
-        headers: {
-          authorization: `Bearer ${loginAuthPayload?.accessToken}`,
+    const { data: logoutLogin, error: logoutLoginError } =
+      await client.auth.logout.post(
+        {},
+        {
+          headers: {
+            authorization: `Bearer ${loginAuthPayload?.accessToken}`,
+          },
         },
-      },
-    );
+      );
     // If there's an error, log it for debugging
     if (logoutLoginError) {
       console.error("Logout login error:", logoutLoginError);
