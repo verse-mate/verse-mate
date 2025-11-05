@@ -85,6 +85,18 @@ export class ConflictError extends ApiError {
 }
 
 /**
+ * 429 Too Many Requests - Rate limit exceeded
+ */
+export class TooManyRequestsError extends ApiError {
+  status = 429;
+  code = "TOO_MANY_REQUESTS";
+
+  constructor(message = "Too many requests", details?: any) {
+    super(message, details);
+  }
+}
+
+/**
  * 500 Internal Server Error - Unexpected server error
  */
 export class InternalServerError extends ApiError {

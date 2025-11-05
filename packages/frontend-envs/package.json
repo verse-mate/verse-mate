@@ -3,7 +3,10 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
-    "nanostores": "0.11.2"
+    "nanostores": "0.11.2",
+    "react": "^18.3.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/react": "^18.3.3"
+  }
 }

@@ -2,19 +2,22 @@ import { t } from "elysia";
 
 /**
  * Standard error response schema for API errors
- * Used for 400 and 500 status codes
+ * Used for 400, 429, and 500 status codes
  */
 export const ErrorResponse = t.Object({
+  error: t.String(),
   message: t.String(),
-  data: t.Any(),
+  retryAfter: t.Optional(t.Number()),
+  data: t.Optional(t.Any()),
 });
 
 /**
  * Standard error responses object for spreading into response definitions
- * Provides consistent 400 and 500 error response schemas
+ * Provides consistent 400, 429, and 500 error response schemas
  */
 export const StandardErrorResponses = {
   400: ErrorResponse,
+  429: ErrorResponse,
   500: ErrorResponse,
 };
 

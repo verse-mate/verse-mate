@@ -25,6 +25,10 @@ export async function createTestUser(options?: {
     password: faker.internet.password(),
   };
 
+  // Clear rate limit cache to allow signup (other tests may have used up the limit)
+  await plugin.store.cache.delete("rate-limit:signup:unknown");
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
   // Mock email sending
   spyOn(plugin.store.notification, "sendEmail").mockImplementation(() =>
     Promise.resolve(),
