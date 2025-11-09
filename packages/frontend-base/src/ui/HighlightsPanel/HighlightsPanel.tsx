@@ -36,9 +36,9 @@ interface HighlightsPanelProps {
  */
 export function HighlightsPanel({
   highlights,
-  onNavigate,
-  onDelete,
-  onColorChange,
+  onNavigate: _onNavigate,
+  onDelete: _onDelete,
+  onColorChange: _onColorChange,
 }: HighlightsPanelProps) {
   // Placeholder implementation - will be replaced in Phase 3.4
   return (

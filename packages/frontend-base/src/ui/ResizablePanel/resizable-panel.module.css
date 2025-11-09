@@ -1,0 +1,56 @@
+/* ResizablePanel styles - Phase 2.1 */
+
+.resizeHandle {
+  position: relative;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.resizeHandle:hover {
+  background: var(--border-primary);
+}
+
+.resizeHandle[data-resize-handle-active] {
+  background: var(--brand);
+}
+
+/* Horizontal handle (vertical divider) */
+.resizeHandle[data-resize-handle-state="hover"][data-panel-group-direction="horizontal"],
+.resizeHandle[data-resize-handle-state="drag"][data-panel-group-direction="horizontal"] {
+  background: var(--border-primary);
+}
+
+/* Vertical handle (horizontal divider) */
+.resizeHandle[data-resize-handle-state="hover"][data-panel-group-direction="vertical"],
+.resizeHandle[data-resize-handle-state="drag"][data-panel-group-direction="vertical"] {
+  background: var(--border-primary);
+}
+
+.resizeHandleInner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 16px;
+  background: var(--text-tertiary);
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.resizeHandle:hover .resizeHandleInner,
+.resizeHandle[data-resize-handle-active] .resizeHandleInner {
+  background: var(--brand);
+}
+
+/* Horizontal handle inner (vertical grip) */
+[data-panel-group-direction="horizontal"] .resizeHandleInner {
+  width: 3px;
+  height: 16px;
+}
+
+/* Vertical handle inner (horizontal grip) */
+[data-panel-group-direction="vertical"] .resizeHandleInner {
+  width: 16px;
+  height: 3px;
+}

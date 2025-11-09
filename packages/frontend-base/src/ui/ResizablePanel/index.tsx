@@ -1,9 +1,10 @@
 import type React from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import styles from "./resizable-panel.module.css";
 
 /**
- * ResizablePanel components - From Figma shadcn/ui
- * TODO: Implement in Phase 2.1
- * Wraps react-resizable-panels library
+ * ResizablePanel components - Wraps react-resizable-panels library
+ * Phase 2.1 - Implemented
  */
 
 interface ResizablePanelGroupProps {
@@ -17,11 +18,10 @@ export function ResizablePanelGroup({
   children,
   className,
 }: ResizablePanelGroupProps) {
-  // Placeholder - will use react-resizable-panels in Phase 2.1
   return (
-    <div className={className} data-direction={direction}>
+    <PanelGroup direction={direction} className={className}>
       {children}
-    </div>
+    </PanelGroup>
   );
 }
 
@@ -33,16 +33,37 @@ interface ResizablePanelProps {
   className?: string;
 }
 
-export function ResizablePanel({ children, className }: ResizablePanelProps) {
-  // Placeholder - will use react-resizable-panels in Phase 2.1
-  return <div className={className}>{children}</div>;
+export function ResizablePanel({
+  defaultSize,
+  minSize,
+  maxSize,
+  children,
+  className,
+}: ResizablePanelProps) {
+  return (
+    <Panel
+      defaultSize={defaultSize}
+      minSize={minSize}
+      maxSize={maxSize}
+      className={className}
+    >
+      {children}
+    </Panel>
+  );
 }
 
 interface ResizableHandleProps {
   className?: string;
+  withHandle?: boolean;
 }
 
-export function ResizableHandle({ className }: ResizableHandleProps) {
-  // Placeholder - will use react-resizable-panels in Phase 2.1
-  return <div className={className}>||</div>;
+export function ResizableHandle({
+  className,
+  withHandle = true,
+}: ResizableHandleProps) {
+  return (
+    <PanelResizeHandle className={`${styles.resizeHandle} ${className || ""}`}>
+      {withHandle && <div className={styles.resizeHandleInner} />}
+    </PanelResizeHandle>
+  );
 }

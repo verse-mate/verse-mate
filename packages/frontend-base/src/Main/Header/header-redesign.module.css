@@ -1,25 +1,54 @@
 /* HeaderRedesign styles - Phase 2.3 */
 
 .header {
+  position: relative;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-primary);
+  height: 60px;
+}
+
+.container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
-  height: 60px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-primary);
+  height: 100%;
+  padding: 0 1.5rem;
 }
 
 .leftSection {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 2rem;
 }
 
-.centerSection {
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: -0.02em;
+}
+
+.selectors {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.selector {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.selector:hover {
+  background: var(--surface-tertiary);
+  border-color: var(--brand);
 }
 
 .rightSection {
@@ -28,10 +57,47 @@
   gap: 0.75rem;
 }
 
+.themeToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+}
+
+.themeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.themeButton:hover {
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+}
+
+.themeButton.active {
+  background: var(--brand);
+  color: #fff;
+}
+
 .progressBar {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   height: 2px;
+  background: var(--brand);
+  transform-origin: left;
+  transition: transform 0.3s ease-out;
 }
