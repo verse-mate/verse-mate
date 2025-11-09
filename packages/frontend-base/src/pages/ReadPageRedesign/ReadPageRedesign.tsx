@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { fetchBookVerse } from "../../hooks/useBible";
+import { useBookmarks } from "../../hooks/useBookmarks";
 import { useHighlights, type Highlight } from "../../hooks/useHighlights";
+import { useNotes } from "../../hooks/useNotes";
+import {
+  useGetSearchParams,
+  useSaveSearchParams,
+} from "../../hooks/useSearchParams";
 import { userSession } from "../../hooks/userSession";
 import { DesktopLayout } from "../../Main/Layout/DesktopLayout";
 import { HeaderRedesign } from "../../Main/Header/HeaderRedesign";
@@ -23,6 +29,12 @@ import styles from "./read-page-redesign.module.css";
  */
 export function ReadPageRedesign() {
   const { session } = userSession();
+
+  // Get URL params for navigation
+  const { bookId, verseId, bibleVersion } = useGetSearchParams();
+  const { saveSearchParams } = useSaveSearchParams();
+
+  // Hooks for data
   const {
     highlights,
     createHighlight,
@@ -30,11 +42,14 @@ export function ReadPageRedesign() {
     deleteHighlight,
     getChapterHighlightsSync,
   } = useHighlights();
+  const { bookmarks, addBookmark, removeBookmark, isBookmarked } =
+    useBookmarks();
+  const { notes, addNote, updateNote, deleteNote } = useNotes();
 
-  // State for current book/chapter (would come from URL params in real implementation)
-  const [currentBook] = useState({ id: 1, name: "Genesis" });
-  const [currentChapter] = useState(1);
-  const [currentVersion] = useState("NASB1995");
+  // Use URL params for current state (fallback to defaults)
+  const currentBook = { id: Number(bookId) || 1, name: "Genesis" }; // Would look up name from bookId
+  const currentChapter = Number(verseId) || 1;
+  const currentVersion = bibleVersion || "NASB1995";
 
   // Fetch Bible data from API
   const { bookVerseData, isLoading: isBibleLoading } = fetchBookVerse(
@@ -130,22 +145,81 @@ export function ReadPageRedesign() {
   };
 
   // Handle navigation to highlighted verse
-  const handleNavigateToVerse = (
-    bookId: number,
-    chapter: number,
-    verse: number,
-    highlightId: string,
-  ) => {
-    // In real implementation:
-    // 1. Update URL params to navigate to book/chapter/verse
-    // 2. Scroll to verse
-    // 3. Flash highlight
-    console.log("Navigate to:", { bookId, chapter, verse, highlightId });
+  const handleNavigateToVerse = useCallback(
+    (bookId: number, chapter: number, verse: number, highlightId: string) => {
+      // Update URL to navigate to the verse
+      saveSearchParams({
+        bookId: bookId.toString(),
+        verseId: chapter.toString(),
+        bibleVersion: currentVersion,
+      });
 
-    // Flash the highlight
-    setGlowingHighlightId(highlightId);
-    setTimeout(() => setGlowingHighlightId(null), 4500); // 3 pulses * 1.5s
-  };
+      // Flash the highlight
+      setGlowingHighlightId(highlightId);
+      setTimeout(() => setGlowingHighlightId(null), 4500); // 3 pulses * 1.5s
+
+      // Scroll to verse (would be implemented with ref in real version)
+      console.log("Navigated to:", { bookId, chapter, verse });
+    },
+    [saveSearchParams, currentVersion],
+  );
+
+  // Handle bookmark toggle
+  const handleBookmarkToggle = useCallback(() => {
+    if (isBookmarked(currentBook.id, currentChapter)) {
+      removeBookmark(currentBook.id, currentChapter);
+    } else {
+      addBookmark(currentBook.id, currentChapter, currentBook.name, "OT");
+    }
+  }, [
+    isBookmarked,
+    addBookmark,
+    removeBookmark,
+    currentBook.id,
+    currentBook.name,
+    currentChapter,
+  ]);
+
+  // Handle note operations
+  const handleAddNote = useCallback(
+    (verseNumber?: number) => {
+      const noteContent = prompt("Enter your note:");
+      if (noteContent) {
+        addNote({
+          bookName: currentBook.name,
+          bookId: currentBook.id,
+          chapterNumber: currentChapter,
+          verseNumber,
+          content: noteContent,
+        });
+      }
+    },
+    [addNote, currentBook.id, currentBook.name, currentChapter],
+  );
+
+  // Navigate to different chapter
+  const handleChapterChange = useCallback(
+    (newChapter: number) => {
+      saveSearchParams({
+        bookId: currentBook.id.toString(),
+        verseId: newChapter.toString(),
+        bibleVersion: currentVersion,
+      });
+    },
+    [saveSearchParams, currentBook.id, currentVersion],
+  );
+
+  // Navigate to different book
+  const handleBookChange = useCallback(
+    (newBookId: number) => {
+      saveSearchParams({
+        bookId: newBookId.toString(),
+        verseId: "1", // Reset to chapter 1
+        bibleVersion: currentVersion,
+      });
+    },
+    [saveSearchParams, currentVersion],
+  );
 
   // Handle delete highlight
   const handleDeleteHighlight = async (highlightId: string) => {
@@ -175,13 +249,72 @@ export function ReadPageRedesign() {
         currentBook={currentBook.name}
         currentChapter={currentChapter}
         currentVersion={currentVersion}
+        onBookChange={(book) => console.log("Book change:", book)}
+        onChapterChange={(chapter) => handleChapterChange(chapter)}
+        onVersionChange={(version) =>
+          saveSearchParams({ bibleVersion: version })
+        }
       />
 
       <DesktopLayout
         leftPanel={
           <div className={styles.leftPanelContent}>
             <h2>Navigation</h2>
-            <p>Book selection will go here</p>
+
+            <div className={styles.navigationSection}>
+              <h3>Quick Navigation</h3>
+              <div className={styles.navigationButtons}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleChapterChange(Math.max(1, currentChapter - 1))
+                  }
+                  disabled={currentChapter <= 1}
+                  className={styles.navButton}
+                >
+                  ← Previous Chapter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChapterChange(currentChapter + 1)}
+                  className={styles.navButton}
+                >
+                  Next Chapter →
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.navigationSection}>
+              <h3>Info</h3>
+              <p className={styles.infoText}>
+                Current: {currentBook.name} {currentChapter}
+              </p>
+              <p className={styles.infoText}>
+                Bookmarked:{" "}
+                {isBookmarked(currentBook.id, currentChapter) ? "Yes" : "No"}
+              </p>
+              <p className={styles.infoText}>
+                Notes:{" "}
+                {
+                  notes.filter(
+                    (n) =>
+                      n.bookId === currentBook.id &&
+                      n.chapterNumber === currentChapter,
+                  ).length
+                }
+              </p>
+              <p className={styles.infoText}>
+                Highlights:{" "}
+                {
+                  highlights.filter((h) =>
+                    getChapterHighlightsSync(
+                      currentBook.id,
+                      currentChapter,
+                    ).includes(h),
+                  ).length
+                }
+              </p>
+            </div>
           </div>
         }
         centerPanel={
@@ -213,6 +346,8 @@ export function ReadPageRedesign() {
                           verse.number,
                         )
                       }
+                      onBookmark={handleBookmarkToggle}
+                      onNote={() => handleAddNote(verse.number)}
                       onWordClick={(word, position) =>
                         setDefinitionPopover({ word, position })
                       }

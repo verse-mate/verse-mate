@@ -21,6 +21,55 @@
   margin-bottom: 1rem;
 }
 
+.navigationSection {
+  margin-bottom: 2rem;
+}
+
+.navigationSection h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.navigationButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.navButton {
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.navButton:hover:not(:disabled) {
+  background: var(--surface-tertiary);
+  border-color: var(--brand);
+}
+
+.navButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.infoText {
+  font-size: 0.813rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
 /* Center Panel Content */
 .centerPanelContent {
   padding: 2rem 3rem;
