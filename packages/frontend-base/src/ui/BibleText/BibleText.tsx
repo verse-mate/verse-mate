@@ -10,11 +10,12 @@ export type HighlightColor =
   | "orange"
   | null;
 
-interface HighlightData {
+export interface HighlightData {
   color: HighlightColor;
   startOffset?: number;
   endOffset?: number;
   isGlowing?: boolean;
+  id?: string;
 }
 
 interface BibleTextProps {
