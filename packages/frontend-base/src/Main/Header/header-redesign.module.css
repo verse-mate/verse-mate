@@ -1,0 +1,37 @@
+/* HeaderRedesign styles - Phase 2.3 */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  height: 60px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.centerSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progressBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
