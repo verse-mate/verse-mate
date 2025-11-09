@@ -1,0 +1,108 @@
+/* HighlightsPanel styles - Phase 3.4 */
+
+.panel {
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.colorFilters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.colorFilter {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.colorFilter:hover,
+.colorFilter.active {
+  border-color: var(--border-primary);
+}
+
+.highlightList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.highlightItem {
+  padding: 0.75rem;
+  background: var(--surface-secondary);
+  border-radius: 8px;
+  border-left: 4px solid transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.highlightItem:hover {
+  background: var(--surface-tertiary);
+}
+
+.highlightItemBlue {
+  border-left-color: var(--highlight-blue);
+}
+
+.highlightItemGreen {
+  border-left-color: var(--highlight-green);
+}
+
+.highlightItemYellow {
+  border-left-color: var(--highlight-yellow);
+}
+
+.highlightItemPink {
+  border-left-color: var(--highlight-pink);
+}
+
+.highlightItemPurple {
+  border-left-color: var(--highlight-purple);
+}
+
+.highlightItemOrange {
+  border-left-color: var(--highlight-orange);
+}
+
+.reference {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}

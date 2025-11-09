@@ -1,0 +1,152 @@
+/* BibleText styles - Phase 3.1 */
+
+.verse {
+  display: inline;
+  line-height: 1.7;
+}
+
+.verseNumber {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  margin-right: 0.375rem;
+}
+
+/* Highlight colors */
+.highlightBlue {
+  background: var(--highlight-blue);
+  border-radius: 2px;
+}
+
+.highlightGreen {
+  background: var(--highlight-green);
+  border-radius: 2px;
+}
+
+.highlightYellow {
+  background: var(--highlight-yellow);
+  border-radius: 2px;
+}
+
+.highlightPink {
+  background: var(--highlight-pink);
+  border-radius: 2px;
+}
+
+.highlightPurple {
+  background: var(--highlight-purple);
+  border-radius: 2px;
+}
+
+.highlightOrange {
+  background: var(--highlight-orange);
+  border-radius: 2px;
+}
+
+/* Word with definition */
+.wordWithDefinition {
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.wordWithDefinition:hover {
+  background: var(--surface-secondary);
+}
+
+/* Glow animations for highlight navigation */
+.glowBlue {
+  animation: highlight-pulse-blue 1.5s ease-in-out 3;
+}
+
+.glowGreen {
+  animation: highlight-pulse-green 1.5s ease-in-out 3;
+}
+
+.glowYellow {
+  animation: highlight-pulse-yellow 1.5s ease-in-out 3;
+}
+
+.glowPink {
+  animation: highlight-pulse-pink 1.5s ease-in-out 3;
+}
+
+.glowPurple {
+  animation: highlight-pulse-purple 1.5s ease-in-out 3;
+}
+
+.glowOrange {
+  animation: highlight-pulse-orange 1.5s ease-in-out 3;
+}
+
+@keyframes highlight-pulse-blue {
+  0%,
+  100% {
+    background: var(--highlight-blue);
+  }
+
+  50% {
+    background: var(--highlight-blue);
+    opacity: 0.5;
+  }
+}
+
+@keyframes highlight-pulse-green {
+  0%,
+  100% {
+    background: var(--highlight-green);
+  }
+
+  50% {
+    background: var(--highlight-green);
+    opacity: 0.5;
+  }
+}
+
+@keyframes highlight-pulse-yellow {
+  0%,
+  100% {
+    background: var(--highlight-yellow);
+  }
+
+  50% {
+    background: var(--highlight-yellow);
+    opacity: 0.5;
+  }
+}
+
+@keyframes highlight-pulse-pink {
+  0%,
+  100% {
+    background: var(--highlight-pink);
+  }
+
+  50% {
+    background: var(--highlight-pink);
+    opacity: 0.5;
+  }
+}
+
+@keyframes highlight-pulse-purple {
+  0%,
+  100% {
+    background: var(--highlight-purple);
+  }
+
+  50% {
+    background: var(--highlight-purple);
+    opacity: 0.5;
+  }
+}
+
+@keyframes highlight-pulse-orange {
+  0%,
+  100% {
+    background: var(--highlight-orange);
+  }
+
+  50% {
+    background: var(--highlight-orange);
+    opacity: 0.5;
+  }
+}

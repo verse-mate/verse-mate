@@ -1,0 +1,1 @@
+export { HighlightsPanel } from "./HighlightsPanel";

@@ -1,0 +1,11 @@
+/* DesktopLayout styles - Phase 2.2 */
+
+.container {
+  height: calc(100vh - var(--header-height, 60px));
+  width: 100%;
+  background: var(--background);
+}
+
+.panelGroup {
+  height: 100%;
+}
