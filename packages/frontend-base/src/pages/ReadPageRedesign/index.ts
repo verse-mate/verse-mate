@@ -1,0 +1,1 @@
+export { ReadPageRedesign } from "./ReadPageRedesign";
