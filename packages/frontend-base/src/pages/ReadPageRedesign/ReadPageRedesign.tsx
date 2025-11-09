@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { HeaderRedesign } from "../../Main/Header/HeaderRedesign";
 import { DesktopLayout } from "../../Main/Layout/DesktopLayout";
@@ -23,10 +23,28 @@ import styles from "./read-page-redesign.module.css";
 
 /**
  * ReadPageRedesign - New read page using Figma redesign components
- * Phase 4.1 - Integration
+ * Phases 4.1-4.7 - Complete Integration
  *
- * This component integrates all Phase 3 components with the existing
- * backend API via useHighlights hook
+ * This component serves as a fully integrated demonstration of the Figma redesign,
+ * combining all Phase 1-3 components with backend API integration.
+ *
+ * Features:
+ * - Three-panel resizable layout (DesktopLayout)
+ * - Real Bible text from API (fetchBookVerse)
+ * - Full highlights CRUD with character-level precision
+ * - Bookmarks and notes integration
+ * - URL-driven navigation (bookId, verseId, bibleVersion)
+ * - Toast notifications for user feedback (sonner)
+ * - Word definition popover
+ * - Optimized state management with useMemo/useCallback
+ * - Loading states for async operations
+ * - Theme support via HeaderRedesign
+ *
+ * Performance Optimizations:
+ * - Memoized derived data (verses, highlightsPanelData)
+ * - Memoized callbacks (getHighlightsForVerse, convertToHighlightsPanelData)
+ * - Loading indicators for all async operations
+ * - Optimistic updates via existing hooks
  */
 export function ReadPageRedesign() {
   const { session } = userSession();
@@ -69,51 +87,72 @@ export function ReadPageRedesign() {
     null,
   );
 
-  // Extract verses from API data
-  const verses =
-    bookVerseData?.chapters?.[0]?.verses?.map((v) => ({
-      number: v.verseNumber,
-      text: v.text,
-    })) || [];
+  // State for loading indicators
+  const [isCreatingHighlight, setIsCreatingHighlight] = useState(false);
+  const [isDeletingHighlight, setIsDeletingHighlight] = useState(false);
+  const [isUpdatingHighlight, setIsUpdatingHighlight] = useState(false);
+
+  // Extract verses from API data (memoized to prevent re-creation on every render)
+  const verses = useMemo(
+    () =>
+      bookVerseData?.chapters?.[0]?.verses?.map((v) => ({
+        number: v.verseNumber,
+        text: v.text,
+      })) || [],
+    [bookVerseData],
+  );
 
   // Convert Highlight (from useHighlights) to HighlightData (for BibleText)
-  const getHighlightsForVerse = (verseNumber: number): HighlightData[] => {
-    const chapterHighlights = getChapterHighlightsSync(
+  // Memoized to prevent re-creation on every render
+  const getHighlightsForVerse = useCallback(
+    (verseNumber: number): HighlightData[] => {
+      const chapterHighlights = getChapterHighlightsSync(
+        currentBook.id,
+        currentChapter,
+      );
+
+      return chapterHighlights
+        .filter(
+          (h) => h.start_verse <= verseNumber && h.end_verse >= verseNumber,
+        )
+        .map((h) => ({
+          id: h.highlight_id.toString(),
+          color: h.color,
+          startOffset: h.start_char,
+          endOffset: h.end_char,
+          isGlowing: glowingHighlightId === h.highlight_id.toString(),
+        }));
+    },
+    [
       currentBook.id,
       currentChapter,
-    );
-
-    return chapterHighlights
-      .filter((h) => h.start_verse <= verseNumber && h.end_verse >= verseNumber)
-      .map((h) => ({
-        id: h.highlight_id.toString(),
-        color: h.color,
-        startOffset: h.start_char,
-        endOffset: h.end_char,
-        isGlowing: glowingHighlightId === h.highlight_id.toString(),
-      }));
-  };
+      getChapterHighlightsSync,
+      glowingHighlightId,
+    ],
+  );
 
   // Convert Highlight (from useHighlights) to HighlightsPanelData
-  const convertToHighlightsPanelData = (
-    highlight: Highlight,
-  ): HighlightsPanelData => {
-    // For now, use placeholder book/chapter - in real implementation,
-    // we'd look up the chapter to get book name
-    return {
-      id: highlight.highlight_id.toString(),
-      reference: `${currentBook.name} ${currentChapter}:${highlight.start_verse}${highlight.start_verse !== highlight.end_verse ? `-${highlight.end_verse}` : ""}`,
-      text:
-        highlight.selected_text ||
-        `Verses ${highlight.start_verse}-${highlight.end_verse}`,
-      color: highlight.color,
-      book: currentBook.name,
-      chapter: currentChapter,
-      verse: highlight.start_verse,
-      startOffset: highlight.start_char,
-      endOffset: highlight.end_char,
-    };
-  };
+  // Memoized to prevent re-creation on every render
+  const convertToHighlightsPanelData = useCallback(
+    (highlight: Highlight): HighlightsPanelData => {
+      // For now, use placeholder book/chapter - in real implementation,
+      // we'd look up the chapter to get book name
+      return {
+        id: highlight.highlight_id.toString(),
+        reference: `${currentBook.name} ${currentChapter}:${highlight.start_verse}${highlight.start_verse !== highlight.end_verse ? `-${highlight.end_verse}` : ""}`,
+        text:
+          highlight.selected_text ||
+          `Verses ${highlight.start_verse}-${highlight.end_verse}`,
+        color: highlight.color,
+        book: currentBook.name,
+        chapter: currentChapter,
+        verse: highlight.start_verse,
+        startOffset: highlight.start_char,
+        endOffset: highlight.end_char,
+      };
+    },
+    [currentBook.name, currentChapter],
+  );
 
   // Handle highlight creation from BibleText component
   const handleHighlight = async (
@@ -127,21 +166,26 @@ export function ReadPageRedesign() {
     const verse = verses.find((v) => v.number === verseNumber);
     const selectedText = verse?.text.slice(startOffset, endOffset);
 
-    const success = await createHighlight(
-      currentBook.id,
-      currentChapter,
-      verseNumber,
-      verseNumber,
-      color,
-      startOffset,
-      endOffset,
-      selectedText,
-    );
+    setIsCreatingHighlight(true);
+    try {
+      const success = await createHighlight(
+        currentBook.id,
+        currentChapter,
+        verseNumber,
+        verseNumber,
+        color,
+        startOffset,
+        endOffset,
+        selectedText,
+      );
 
-    if (success) {
-      toast.success("Highlight created");
-    } else {
-      toast.error("Failed to create highlight");
+      if (success) {
+        toast.success("Highlight created");
+      } else {
+        toast.error("Failed to create highlight");
+      }
+    } finally {
+      setIsCreatingHighlight(false);
     }
   };
 
@@ -215,11 +259,16 @@ export function ReadPageRedesign() {
 
   // Handle delete highlight
   const handleDeleteHighlight = async (highlightId: string) => {
-    const success = await deleteHighlight(Number(highlightId));
-    if (success) {
-      toast.success("Highlight deleted");
-    } else {
-      toast.error("Failed to delete highlight");
+    setIsDeletingHighlight(true);
+    try {
+      const success = await deleteHighlight(Number(highlightId));
+      if (success) {
+        toast.success("Highlight deleted");
+      } else {
+        toast.error("Failed to delete highlight");
+      }
+    } finally {
+      setIsDeletingHighlight(false);
     }
   };
 
@@ -229,15 +278,28 @@ export function ReadPageRedesign() {
     newColor: "blue" | "green" | "yellow" | "pink" | "purple" | "orange" | null,
   ) => {
     if (!newColor) return;
-    const success = await updateHighlightColor(Number(highlightId), newColor);
-    if (success) {
-      toast.success("Highlight color updated");
-    } else {
-      toast.error("Failed to update highlight color");
+    setIsUpdatingHighlight(true);
+    try {
+      const success = await updateHighlightColor(Number(highlightId), newColor);
+      if (success) {
+        toast.success("Highlight color updated");
+      } else {
+        toast.error("Failed to update highlight color");
+      }
+    } finally {
+      setIsUpdatingHighlight(false);
     }
   };
 
-  const highlightsPanelData = highlights.map(convertToHighlightsPanelData);
+  // Memoize highlights panel data to prevent unnecessary re-renders
+  const highlightsPanelData = useMemo(
+    () => highlights.map(convertToHighlightsPanelData),
+    [highlights, convertToHighlightsPanelData],
+  );
+
+  // Show global loading state if any operation is in progress
+  const isAnyOperationLoading =
+    isCreatingHighlight || isDeletingHighlight || isUpdatingHighlight;
 
   return (
     <div className={styles.container}>
@@ -313,6 +375,13 @@ export function ReadPageRedesign() {
                   ).length
                 }
               </p>
+              {isAnyOperationLoading && (
+                <p className={styles.infoText}>
+                  <span className={styles.loadingIndicator}>
+                    ⏳ Processing...
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         }

@@ -70,6 +70,23 @@
   line-height: 1.5;
 }
 
+.loadingIndicator {
+  color: var(--brand);
+  font-weight: 500;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* Center Panel Content */
 .centerPanelContent {
   padding: 2rem 3rem;
