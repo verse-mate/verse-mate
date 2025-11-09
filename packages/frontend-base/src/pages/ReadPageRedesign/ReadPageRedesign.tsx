@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { fetchBookVerse } from "../../hooks/useBible";
+import { useHighlights, type Highlight } from "../../hooks/useHighlights";
+import { userSession } from "../../hooks/userSession";
 import { DesktopLayout } from "../../Main/Layout/DesktopLayout";
 import { HeaderRedesign } from "../../Main/Header/HeaderRedesign";
 import { BibleText, type HighlightData } from "../../ui/BibleText";
@@ -9,8 +12,6 @@ import {
   type Highlight as HighlightsPanelData,
 } from "../../ui/HighlightsPanel";
 import { WordDefinitionPopover } from "../../ui/WordDefinition";
-import { useHighlights, type Highlight } from "../../hooks/useHighlights";
-import { userSession } from "../../hooks/userSession";
 import styles from "./read-page-redesign.module.css";
 
 /**
@@ -33,7 +34,14 @@ export function ReadPageRedesign() {
   // State for current book/chapter (would come from URL params in real implementation)
   const [currentBook] = useState({ id: 1, name: "Genesis" });
   const [currentChapter] = useState(1);
-  const [currentVersion] = useState("KJV");
+  const [currentVersion] = useState("NASB1995");
+
+  // Fetch Bible data from API
+  const { bookVerseData, isLoading: isBibleLoading } = fetchBookVerse(
+    currentBook.id,
+    currentChapter,
+    currentVersion,
+  );
 
   // State for word definition popover
   const [definitionPopover, setDefinitionPopover] = useState<{
@@ -46,21 +54,12 @@ export function ReadPageRedesign() {
     null,
   );
 
-  // Mock verse data (in real implementation, this would come from API)
-  const verses = [
-    {
-      number: 1,
-      text: "In the beginning God created the heaven and the earth.",
-    },
-    {
-      number: 2,
-      text: "And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
-    },
-    {
-      number: 3,
-      text: "And God said, Let there be light: and there was light.",
-    },
-  ];
+  // Extract verses from API data
+  const verses =
+    bookVerseData?.chapters?.[0]?.verses?.map((v) => ({
+      number: v.verseNumber,
+      text: v.text,
+    })) || [];
 
   // Convert Highlight (from useHighlights) to HighlightData (for BibleText)
   const getHighlightsForVerse = (verseNumber: number): HighlightData[] => {
@@ -193,29 +192,35 @@ export function ReadPageRedesign() {
               </h1>
             </div>
 
-            <div className={styles.verseContainer}>
-              {verses.map((verse) => (
-                <div key={verse.number} className={styles.verse}>
-                  <BibleText
-                    text={verse.text}
-                    verseNumber={verse.number}
-                    verseReference={`${currentBook.name} ${currentChapter}:${verse.number}`}
-                    highlight={getHighlightsForVerse(verse.number)}
-                    onHighlight={(color, startOffset, endOffset) =>
-                      handleHighlight(
-                        color,
-                        startOffset,
-                        endOffset,
-                        verse.number,
-                      )
-                    }
-                    onWordClick={(word, position) =>
-                      setDefinitionPopover({ word, position })
-                    }
-                  />
-                </div>
-              ))}
-            </div>
+            {isBibleLoading ? (
+              <div className={styles.loading}>Loading verses...</div>
+            ) : verses.length === 0 ? (
+              <div className={styles.empty}>No verses found</div>
+            ) : (
+              <div className={styles.verseContainer}>
+                {verses.map((verse) => (
+                  <div key={verse.number} className={styles.verse}>
+                    <BibleText
+                      text={verse.text}
+                      verseNumber={verse.number}
+                      verseReference={`${currentBook.name} ${currentChapter}:${verse.number}`}
+                      highlight={getHighlightsForVerse(verse.number)}
+                      onHighlight={(color, startOffset, endOffset) =>
+                        handleHighlight(
+                          color,
+                          startOffset,
+                          endOffset,
+                          verse.number,
+                        )
+                      }
+                      onWordClick={(word, position) =>
+                        setDefinitionPopover({ word, position })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {definitionPopover && (
               <WordDefinitionPopover
