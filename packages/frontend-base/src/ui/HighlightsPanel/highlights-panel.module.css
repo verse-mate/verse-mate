@@ -101,8 +101,28 @@
   margin-top: 0.5rem;
 }
 
+.deleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+}
+
 .emptyState {
   text-align: center;
   padding: 2rem;
   color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
