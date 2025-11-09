@@ -1,0 +1,37 @@
+/* CircularNavigation styles - Phase 3 - Matches Figma circular buttons */
+
+.navigation {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4rem;
+	padding: 2rem 1.5rem;
+}
+
+.navButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	background: var(--surface);
+	border: 1px solid var(--border-primary);
+	border-radius: 50%;
+	cursor: pointer;
+	transition: all 0.2s;
+	box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+	color: var(--text-primary);
+}
+
+.navButton:hover:not(:disabled) {
+	background: var(--surface-secondary);
+	border-color: var(--brand);
+	box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+	transform: scale(1.05);
+}
+
+.navButton:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+	box-shadow: none;
+}

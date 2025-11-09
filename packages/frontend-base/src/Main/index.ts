@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadPageRedesign } from "../pages/ReadPageRedesign";
 import { MainContent } from "./Content/main-content";
 import { Footer } from "./Footer/footer";
 import { Header } from "./Header/header";
@@ -12,4 +13,5 @@ export const MainPage = {
   Header,
   Footer,
   MainContent,
+  ReadPageRedesign,
 };

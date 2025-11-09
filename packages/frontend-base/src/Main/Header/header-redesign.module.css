@@ -13,6 +13,7 @@
   justify-content: space-between;
   height: 100%;
   padding: 0 1.5rem;
+  gap: 2rem;
 }
 
 .leftSection {
@@ -51,9 +52,43 @@
   border-color: var(--brand);
 }
 
+.viewModeToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+}
+
+.viewModeButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.viewModeButton:hover {
+  background: var(--surface-tertiary);
+  color: var(--text-primary);
+}
+
+.viewModeButton.active {
+  background: var(--brand);
+  color: #fff;
+}
+
 .rightSection {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.75rem;
 }
 
@@ -89,6 +124,24 @@
 .themeButton.active {
   background: var(--brand);
   color: #fff;
+}
+
+.hamburgerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hamburgerButton:hover {
+  background: var(--surface-secondary);
 }
 
 .progressBar {

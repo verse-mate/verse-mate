@@ -13,6 +13,7 @@ export const useSaveSearchParams = () => {
     explanationId,
     explanationType,
     bibleVersion,
+    viewMode,
   }: {
     bookId?: string;
     verseId?: string;
@@ -21,6 +22,7 @@ export const useSaveSearchParams = () => {
     explanationId?: string;
     explanationType?: ExplanationTypeEnum;
     bibleVersion?: string;
+    viewMode?: string;
   }) => {
     const searchParams = new URLSearchParams(window.location.search);
 
@@ -31,6 +33,7 @@ export const useSaveSearchParams = () => {
     if (explanationId) searchParams.set("explanationId", explanationId);
     if (explanationType) searchParams.set("explanationType", explanationType);
     if (bibleVersion) searchParams.set("bibleVersion", bibleVersion);
+    if (viewMode) searchParams.set("viewMode", viewMode);
 
     const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
 
@@ -71,6 +74,7 @@ export const useGetSearchParams = () => {
   const explanationType =
     (searchParams?.get("explanationType") as ExplanationTypeEnum) ||
     ExplanationTypeEnum.summary;
+  const viewMode = searchParams?.get("viewMode");
 
   return {
     bookId,
@@ -81,6 +85,7 @@ export const useGetSearchParams = () => {
     explanationId,
     explanationType,
     isViewingTopic,
+    viewMode,
     // chapters is intentionally omitted here
   };
 };

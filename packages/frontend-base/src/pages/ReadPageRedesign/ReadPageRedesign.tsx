@@ -19,6 +19,9 @@ import {
   type Highlight as HighlightsPanelData,
 } from "../../ui/HighlightsPanel";
 import { WordDefinitionPopover } from "../../ui/WordDefinition";
+import { ChapterInfo } from "./components/ChapterInfo";
+import { CircularNavigation } from "./components/CircularNavigation";
+import { useViewMode } from "./hooks/useViewMode";
 import styles from "./read-page-redesign.module.css";
 
 /**
@@ -48,6 +51,9 @@ import styles from "./read-page-redesign.module.css";
  */
 export function ReadPageRedesign() {
   const { session } = userSession();
+
+  // View mode state (summary, by-line, detailed)
+  const { viewMode, setViewMode } = useViewMode();
 
   // Get URL params for navigation
   const { bookId, verseId, bibleVersion } = useGetSearchParams();
@@ -301,6 +307,45 @@ export function ReadPageRedesign() {
   const isAnyOperationLoading =
     isCreatingHighlight || isDeletingHighlight || isUpdatingHighlight;
 
+  // Render right panel based on view mode
+  const renderRightPanel = () => {
+    switch (viewMode) {
+      case "summary":
+        return (
+          <div className={styles.rightPanelContent}>
+            <h2>
+              Summary of {currentBook.name} {currentChapter}
+            </h2>
+            <p>AI-generated summary will appear here</p>
+            {/* TODO: Replace with SummaryPanel component in Phase 5 */}
+          </div>
+        );
+      case "by-line":
+        return (
+          <div className={styles.rightPanelContent}>
+            <h2>Verse-by-Verse Analysis</h2>
+            <p>By-line analysis will appear here</p>
+            {/* TODO: Replace with ByLinePanel component in Phase 5 */}
+          </div>
+        );
+      case "detailed":
+        return (
+          <div className={styles.rightPanelContent}>
+            <h2>Detailed View</h2>
+            <HighlightsPanel
+              highlights={highlightsPanelData}
+              onNavigate={handleNavigateToVerse}
+              onDelete={handleDeleteHighlight}
+              onColorChange={handleColorChange}
+            />
+            {/* TODO: Add more detailed content in Phase 5 */}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className={styles.container}>
       <Toaster position="bottom-right" />
@@ -308,6 +353,8 @@ export function ReadPageRedesign() {
         currentBook={currentBook.name}
         currentChapter={currentChapter}
         currentVersion={currentVersion}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         onBookChange={() => {
           // Book change handling would be implemented when wired to actual routes
         }}
@@ -320,69 +367,23 @@ export function ReadPageRedesign() {
       <DesktopLayout
         leftPanel={
           <div className={styles.leftPanelContent}>
-            <h2>Navigation</h2>
+            <ChapterInfo
+              bookName={currentBook.name}
+              chapter={currentChapter}
+              subtitle="The Creation"
+              verseRange={`(${currentBook.name} ${currentChapter}:1 - ${verses.length})`}
+            />
 
-            <div className={styles.navigationSection}>
-              <h3>Quick Navigation</h3>
-              <div className={styles.navigationButtons}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleChapterChange(Math.max(1, currentChapter - 1))
-                  }
-                  disabled={currentChapter <= 1}
-                  className={styles.navButton}
-                >
-                  ← Previous Chapter
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleChapterChange(currentChapter + 1)}
-                  className={styles.navButton}
-                >
-                  Next Chapter →
-                </button>
-              </div>
-            </div>
+            <div className={styles.spacer} />
 
-            <div className={styles.navigationSection}>
-              <h3>Info</h3>
-              <p className={styles.infoText}>
-                Current: {currentBook.name} {currentChapter}
-              </p>
-              <p className={styles.infoText}>
-                Bookmarked:{" "}
-                {isBookmarked(currentBook.id, currentChapter) ? "Yes" : "No"}
-              </p>
-              <p className={styles.infoText}>
-                Notes:{" "}
-                {
-                  notes.filter(
-                    (n) =>
-                      n.bookId === currentBook.id &&
-                      n.chapterNumber === currentChapter,
-                  ).length
-                }
-              </p>
-              <p className={styles.infoText}>
-                Highlights:{" "}
-                {
-                  highlights.filter((h) =>
-                    getChapterHighlightsSync(
-                      currentBook.id,
-                      currentChapter,
-                    ).includes(h),
-                  ).length
-                }
-              </p>
-              {isAnyOperationLoading && (
-                <p className={styles.infoText}>
-                  <span className={styles.loadingIndicator}>
-                    ⏳ Processing...
-                  </span>
-                </p>
-              )}
-            </div>
+            <CircularNavigation
+              onPrevious={() =>
+                handleChapterChange(Math.max(1, currentChapter - 1))
+              }
+              onNext={() => handleChapterChange(currentChapter + 1)}
+              hasPrevious={currentChapter > 1}
+              hasNext={true}
+            />
           </div>
         }
         centerPanel={
@@ -434,16 +435,7 @@ export function ReadPageRedesign() {
             )}
           </div>
         }
-        rightPanel={
-          <div className={styles.rightPanelContent}>
-            <HighlightsPanel
-              highlights={highlightsPanelData}
-              onNavigate={handleNavigateToVerse}
-              onDelete={handleDeleteHighlight}
-              onColorChange={handleColorChange}
-            />
-          </div>
-        }
+        rightPanel={renderRightPanel()}
       />
 
       {!session && (
