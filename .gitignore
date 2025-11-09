@@ -188,3 +188,8 @@ bugs.txt
 test-opennext
 .mcp/
 apps/backend/batch_files/
+
+# Figma generated code (design reference only)
+VerseMate/
+FIGMA_MIGRATION_PROGRESS.md
+FIGMA_MIGRATION_SPEC.md
