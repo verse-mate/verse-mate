@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+import { Toaster, toast } from "sonner";
+import { HeaderRedesign } from "../../Main/Header/HeaderRedesign";
+import { DesktopLayout } from "../../Main/Layout/DesktopLayout";
 import { fetchBookVerse } from "../../hooks/useBible";
 import { useBookmarks } from "../../hooks/useBookmarks";
-import { useHighlights, type Highlight } from "../../hooks/useHighlights";
+import { type Highlight, useHighlights } from "../../hooks/useHighlights";
 import { useNotes } from "../../hooks/useNotes";
 import {
   useGetSearchParams,
   useSaveSearchParams,
 } from "../../hooks/useSearchParams";
 import { userSession } from "../../hooks/userSession";
-import { DesktopLayout } from "../../Main/Layout/DesktopLayout";
-import { HeaderRedesign } from "../../Main/Header/HeaderRedesign";
 import { BibleText, type HighlightData } from "../../ui/BibleText";
 import {
   HighlightsPanel,
@@ -42,9 +43,8 @@ export function ReadPageRedesign() {
     deleteHighlight,
     getChapterHighlightsSync,
   } = useHighlights();
-  const { bookmarks, addBookmark, removeBookmark, isBookmarked } =
-    useBookmarks();
-  const { notes, addNote, updateNote, deleteNote } = useNotes();
+  const { addBookmark, removeBookmark, isBookmarked } = useBookmarks();
+  const { notes, addNote } = useNotes();
 
   // Use URL params for current state (fallback to defaults)
   const currentBook = { id: Number(bookId) || 1, name: "Genesis" }; // Would look up name from bookId
@@ -139,8 +139,9 @@ export function ReadPageRedesign() {
     );
 
     if (success) {
-      // Show success toast (would use sonner in real implementation)
-      console.log("Highlight created successfully");
+      toast.success("Highlight created");
+    } else {
+      toast.error("Failed to create highlight");
     }
   };
 
@@ -158,18 +159,20 @@ export function ReadPageRedesign() {
       setGlowingHighlightId(highlightId);
       setTimeout(() => setGlowingHighlightId(null), 4500); // 3 pulses * 1.5s
 
-      // Scroll to verse (would be implemented with ref in real version)
-      console.log("Navigated to:", { bookId, chapter, verse });
+      // Show navigation toast
+      toast.success(`Navigated to ${currentBook.name} ${chapter}:${verse}`);
     },
-    [saveSearchParams, currentVersion],
+    [saveSearchParams, currentVersion, currentBook.name],
   );
 
   // Handle bookmark toggle
   const handleBookmarkToggle = useCallback(() => {
     if (isBookmarked(currentBook.id, currentChapter)) {
       removeBookmark(currentBook.id, currentChapter);
+      toast.success("Bookmark removed");
     } else {
       addBookmark(currentBook.id, currentChapter, currentBook.name, "OT");
+      toast.success("Bookmark added");
     }
   }, [
     isBookmarked,
@@ -192,6 +195,7 @@ export function ReadPageRedesign() {
           verseNumber,
           content: noteContent,
         });
+        toast.success("Note added");
       }
     },
     [addNote, currentBook.id, currentBook.name, currentChapter],
@@ -209,23 +213,13 @@ export function ReadPageRedesign() {
     [saveSearchParams, currentBook.id, currentVersion],
   );
 
-  // Navigate to different book
-  const handleBookChange = useCallback(
-    (newBookId: number) => {
-      saveSearchParams({
-        bookId: newBookId.toString(),
-        verseId: "1", // Reset to chapter 1
-        bibleVersion: currentVersion,
-      });
-    },
-    [saveSearchParams, currentVersion],
-  );
-
   // Handle delete highlight
   const handleDeleteHighlight = async (highlightId: string) => {
     const success = await deleteHighlight(Number(highlightId));
     if (success) {
-      console.log("Highlight deleted successfully");
+      toast.success("Highlight deleted");
+    } else {
+      toast.error("Failed to delete highlight");
     }
   };
 
@@ -237,7 +231,9 @@ export function ReadPageRedesign() {
     if (!newColor) return;
     const success = await updateHighlightColor(Number(highlightId), newColor);
     if (success) {
-      console.log("Highlight color updated successfully");
+      toast.success("Highlight color updated");
+    } else {
+      toast.error("Failed to update highlight color");
     }
   };
 
@@ -245,11 +241,14 @@ export function ReadPageRedesign() {
 
   return (
     <div className={styles.container}>
+      <Toaster position="bottom-right" />
       <HeaderRedesign
         currentBook={currentBook.name}
         currentChapter={currentChapter}
         currentVersion={currentVersion}
-        onBookChange={(book) => console.log("Book change:", book)}
+        onBookChange={() => {
+          // Book change handling would be implemented when wired to actual routes
+        }}
         onChapterChange={(chapter) => handleChapterChange(chapter)}
         onVersionChange={(version) =>
           saveSearchParams({ bibleVersion: version })
