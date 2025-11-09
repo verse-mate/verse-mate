@@ -1,11 +1,59 @@
 /* DesktopLayout styles - Phase 2.2 */
 
 .container {
-  height: calc(100vh - var(--header-height, 60px));
+  display: flex;
   width: 100%;
+  height: calc(100vh - var(--header-height, 60px));
+  overflow: hidden;
   background: var(--background);
 }
 
-.panelGroup {
+.leftPanel,
+.centerPanel,
+.rightPanel {
   height: 100%;
+  overflow: hidden auto;
+}
+
+.leftPanel {
+  background: var(--surface);
+  border-right: 1px solid var(--border-primary);
+  padding: 1rem;
+}
+
+.centerPanel {
+  background: var(--background);
+  padding: 2rem;
+}
+
+.rightPanel {
+  background: var(--surface-panel-right);
+  border-left: 1px solid var(--border-primary);
+  padding: 1rem;
+}
+
+/* Custom scrollbar styling */
+.leftPanel::-webkit-scrollbar,
+.centerPanel::-webkit-scrollbar,
+.rightPanel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.leftPanel::-webkit-scrollbar-track,
+.centerPanel::-webkit-scrollbar-track,
+.rightPanel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.leftPanel::-webkit-scrollbar-thumb,
+.centerPanel::-webkit-scrollbar-thumb,
+.rightPanel::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 4px;
+}
+
+.leftPanel::-webkit-scrollbar-thumb:hover,
+.centerPanel::-webkit-scrollbar-thumb:hover,
+.rightPanel::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }

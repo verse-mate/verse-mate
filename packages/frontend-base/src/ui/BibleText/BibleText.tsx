@@ -43,13 +43,13 @@ interface BibleTextProps {
 export function BibleText({
   text,
   verseNumber,
-  verseReference,
-  highlight,
-  onHighlight,
-  onBookmark,
-  onNote,
-  disableSelection = false,
-  commandHighlightMode = false,
+  verseReference: _verseReference,
+  highlight: _highlight,
+  onHighlight: _onHighlight,
+  onBookmark: _onBookmark,
+  onNote: _onNote,
+  disableSelection: _disableSelection = false,
+  commandHighlightMode: _commandHighlightMode = false,
 }: BibleTextProps) {
   // Placeholder implementation - will be replaced in Phase 3.1
   return (
