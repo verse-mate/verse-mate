@@ -1,5 +1,7 @@
-import { Monitor, Moon, Sun } from "lucide-react";
+import { Menu, Monitor, Moon, Sun } from "lucide-react";
 import { useState } from "react";
+import { BookSelector } from "../../pages/ReadPageRedesign/components/BookSelector";
+import type { ViewMode } from "../../pages/ReadPageRedesign/types/view-mode";
 import styles from "./header-redesign.module.css";
 
 type ThemeMode = "light" | "dark" | "auto";
@@ -8,6 +10,8 @@ interface HeaderRedesignProps {
   currentBook?: string;
   currentChapter?: number;
   currentVersion?: string;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
   onBookChange?: (book: string) => void;
   onChapterChange?: (chapter: number) => void;
   onVersionChange?: (version: string) => void;
@@ -26,10 +30,9 @@ interface HeaderRedesignProps {
 export function HeaderRedesign({
   currentBook = "Genesis",
   currentChapter = 1,
-  currentVersion = "KJV",
+  viewMode = "summary",
+  onViewModeChange,
   onBookChange,
-  onChapterChange,
-  onVersionChange,
   onThemeChange,
   className,
 }: HeaderRedesignProps) {
@@ -61,42 +64,45 @@ export function HeaderRedesign({
   return (
     <header className={`${styles.header} ${className || ""}`}>
       <div className={styles.container}>
-        {/* Left: Logo and Selectors */}
+        {/* Left: Logo and Book Selector */}
         <div className={styles.leftSection}>
           <div className={styles.logo}>VerseMate</div>
 
-          <div className={styles.selectors}>
-            {/* Book Selector - Placeholder */}
-            <button
-              type="button"
-              className={styles.selector}
-              onClick={() => onBookChange?.("Genesis")}
-            >
-              {currentBook}
-            </button>
-
-            {/* Chapter Selector - Placeholder */}
-            <button
-              type="button"
-              className={styles.selector}
-              onClick={() => onChapterChange?.(1)}
-            >
-              Chapter {currentChapter}
-            </button>
-
-            {/* Version Selector - Placeholder */}
-            <button
-              type="button"
-              className={styles.selector}
-              onClick={() => onVersionChange?.("KJV")}
-            >
-              {currentVersion}
-            </button>
-          </div>
+          <BookSelector
+            bookName={currentBook}
+            chapter={currentChapter}
+            onClick={() => onBookChange?.(currentBook)}
+          />
         </div>
 
-        {/* Right: Theme Toggle */}
+        {/* Right: View Mode Toggle + Theme Toggle + Hamburger */}
         <div className={styles.rightSection}>
+          {/* View Mode Toggle */}
+          <div className={styles.viewModeToggle}>
+            <button
+              type="button"
+              className={`${styles.viewModeButton} ${viewMode === "summary" ? styles.active : ""}`}
+              onClick={() => onViewModeChange?.("summary")}
+            >
+              Summary
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewModeButton} ${viewMode === "by-line" ? styles.active : ""}`}
+              onClick={() => onViewModeChange?.("by-line")}
+            >
+              By Line
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewModeButton} ${viewMode === "detailed" ? styles.active : ""}`}
+              onClick={() => onViewModeChange?.("detailed")}
+            >
+              Detailed
+            </button>
+          </div>
+
+          {/* Theme Toggle */}
           <div className={styles.themeToggle}>
             <button
               type="button"
@@ -123,6 +129,15 @@ export function HeaderRedesign({
               <Moon size={18} />
             </button>
           </div>
+
+          {/* Hamburger Menu Button - Placeholder */}
+          <button
+            type="button"
+            className={styles.hamburgerButton}
+            title="Open menu"
+          >
+            <Menu size={20} />
+          </button>
         </div>
       </div>
     </header>

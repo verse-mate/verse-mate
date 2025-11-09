@@ -11,7 +11,14 @@
 
 /* Left Panel Content */
 .leftPanelContent {
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+}
+
+.spacer {
+  flex: 1;
 }
 
 .leftPanelContent h2 {

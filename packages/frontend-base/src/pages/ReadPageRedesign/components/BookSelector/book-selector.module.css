@@ -1,0 +1,29 @@
+/* BookSelector styles - Phase 2 */
+
+.bookSelector {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1rem;
+	font-size: 1rem;
+	font-weight: 500;
+	color: var(--text-primary);
+	background: transparent;
+	border: none;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.bookSelector:hover {
+	background: var(--surface-secondary);
+}
+
+.icon {
+	flex-shrink: 0;
+	color: var(--text-secondary);
+}
+
+.text {
+	white-space: nowrap;
+}
