@@ -1,6 +1,7 @@
 /* BibleText styles - Phase 3.1 */
 
 .verse {
+  position: relative;
   display: inline;
   line-height: 1.7;
 }
@@ -9,6 +10,77 @@
   color: var(--text-tertiary);
   font-size: 0.75rem;
   margin-right: 0.375rem;
+}
+
+.segment {
+  cursor: text;
+  transition: background-color 0.15s;
+}
+
+/* Color picker popup */
+.colorPicker {
+  position: absolute;
+  top: -45px;
+  left: 0;
+  display: flex;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  background: var(--popover);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  animation: fade-in 0.15s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.colorButton {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.colorButton:hover {
+  border-color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.colorBlue {
+  background: var(--highlight-blue);
+}
+
+.colorGreen {
+  background: var(--highlight-green);
+}
+
+.colorYellow {
+  background: var(--highlight-yellow);
+}
+
+.colorPink {
+  background: var(--highlight-pink);
+}
+
+.colorPurple {
+  background: var(--highlight-purple);
+}
+
+.colorOrange {
+  background: var(--highlight-orange);
 }
 
 /* Highlight colors */
