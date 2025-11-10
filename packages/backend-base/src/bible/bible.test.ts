@@ -426,4 +426,166 @@ describe("Bible Plugin", () => {
       expect(data?.totalUsersWhoRated).toBeDefined();
     });
   });
+
+  describe("Auto-Highlights", () => {
+    let testThemeId: number;
+
+    it("GET /bible/highlight-themes - get active themes", async () => {
+      const { data, error } = await testClient.bible["highlight-themes"].get();
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
+      expect(Array.isArray(data?.data)).toBe(true);
+      expect(data?.data.length).toBeGreaterThanOrEqual(6); // 6 default themes
+
+      if (data?.data && data.data.length > 0) {
+        expect(data.data[0]).toHaveProperty("theme_id");
+        expect(data.data[0]).toHaveProperty("name");
+        expect(data.data[0]).toHaveProperty("color");
+        expect(data.data[0]).toHaveProperty("is_active");
+        expect(data.data[0].is_active).toBe(true);
+        testThemeId = data.data[0].theme_id;
+      }
+    });
+
+    it("GET /bible/auto-highlights/:book_id/:chapter_number - get auto-highlights", async () => {
+      // @ts-expect-error - Dynamic path parameter
+      const { data, error } = await testClient.bible["auto-highlights"][1][1].get();
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(Array.isArray(data)).toBe(true);
+
+      // Data may be empty if no highlights have been generated yet
+      if (data && data.length > 0) {
+        expect(data[0]).toHaveProperty("auto_highlight_id");
+        expect(data[0]).toHaveProperty("theme_id");
+        expect(data[0]).toHaveProperty("book_id");
+        expect(data[0]).toHaveProperty("chapter_number");
+        expect(data[0]).toHaveProperty("start_verse");
+        expect(data[0]).toHaveProperty("end_verse");
+        expect(data[0]).toHaveProperty("relevance_score");
+        expect(data[0]).toHaveProperty("theme_name");
+        expect(data[0]).toHaveProperty("theme_color");
+      }
+    });
+
+    it("GET /bible/auto-highlights/:book_id/:chapter_number - filter by themes", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { data, error } = await testClient.bible[
+        "auto-highlights"
+      ][1][1].get({
+        query: {
+          themes: `${testThemeId}`,
+        },
+      });
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(Array.isArray(data)).toBe(true);
+
+      if (data && data.length > 0) {
+        expect(data.every((h: any) => h.theme_id === testThemeId)).toBe(true);
+      }
+    });
+
+    it("GET /bible/auto-highlights/:book_id/:chapter_number - filter by relevance", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { data, error } = await testClient.bible[
+        "auto-highlights"
+      ][1][1].get({
+        query: {
+          min_relevance: 3,
+        },
+      });
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(Array.isArray(data)).toBe(true);
+
+      if (data && data.length > 0) {
+        expect(data.every((h: any) => h.relevance_score <= 3)).toBe(true);
+      }
+    });
+
+    it("GET /bible/user/theme-preferences - get user theme preferences (auth required)", async () => {
+      const { data, error } = await testClient.bible.user[
+        "theme-preferences"
+      ].get({
+        headers: {
+          authorization: `Bearer ${testUser.accessToken}`,
+        },
+      });
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
+      expect(Array.isArray(data?.data)).toBe(true);
+      expect(data?.data.length).toBeGreaterThanOrEqual(6);
+
+      if (data?.data && data.data.length > 0) {
+        expect(data.data[0]).toHaveProperty("theme_id");
+        expect(data.data[0]).toHaveProperty("theme_name");
+        expect(data.data[0]).toHaveProperty("theme_color");
+        expect(data.data[0]).toHaveProperty("is_enabled");
+        expect(data.data[0]).toHaveProperty("relevance_threshold");
+      }
+    });
+
+    it("PATCH /bible/user/theme-preferences/:theme_id - update user preference (auth required)", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { data, error } = await testClient.bible.user["theme-preferences"][
+        testThemeId
+      ].patch(
+        {
+          is_enabled: false,
+          relevance_threshold: 2,
+        },
+        {
+          headers: {
+            authorization: `Bearer ${testUser.accessToken}`,
+          },
+        },
+      );
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data?.success).toBe(true);
+
+      // Verify the update
+      const { data: updatedPrefs } = await testClient.bible.user[
+        "theme-preferences"
+      ].get({
+        headers: {
+          authorization: `Bearer ${testUser.accessToken}`,
+        },
+      });
+
+      const updatedPref = updatedPrefs?.data?.find(
+        (p: any) => p.theme_id === testThemeId,
+      );
+      expect(updatedPref?.is_enabled).toBe(false);
+      expect(updatedPref?.relevance_threshold).toBe(2);
+    });
+
+    it("GET /bible/user/theme-preferences - should require authentication", async () => {
+      const { error } = await testClient.bible.user["theme-preferences"].get();
+
+      expect(error).toBeTruthy();
+      expect([401, 422]).toContain(error?.status);
+    });
+
+    it("PATCH /bible/user/theme-preferences/:theme_id - should require authentication", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { error } = await testClient.bible.user["theme-preferences"][
+        testThemeId
+      ].patch({
+        is_enabled: true,
+      });
+
+      expect(error).toBeTruthy();
+      expect([401, 422]).toContain(error?.status);
+    });
+  });
 });
