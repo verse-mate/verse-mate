@@ -1,44 +1,13 @@
-/* Fix spotlight positioning for tour elements */
-
-/* Ensure John book accordion trigger is properly positioned for spotlight */
-[data-tour-john] {
-  position: relative;
-  z-index: 1;
+/* Create proper rendering context for tour targets */
+[data-tour-john],
+[data-tour-chapter],
+[data-tour="book-selector"] {
+  position: relative !important;
+  transform: translate3d(0, 0, 0) !important;
 }
 
-/* Ensure chapter buttons are properly positioned for spotlight */
-[data-tour-chapter] {
-  position: relative;
-  z-index: 1;
-}
-
-/* Override Joyride spotlight styles to ensure proper overlay behavior */
-[class~="__floater__open"] {
-  pointer-events: auto !important;
-}
-
-/* Ensure spotlight hole allows clicks through */
-[class~="react-joyride__spotlight"] {
-  pointer-events: none !important;
-}
-
-/* Ensure tooltip is clickable */
-[class~="react-joyride__tooltip"] {
-  pointer-events: auto !important;
-}
-
-/* Fix for spotlight positioning in scrollable containers */
-[data-radix-select-content] {
-  /* Ensure proper stacking context */
-  isolation: isolate;
-}
-
-/* Prevent overlay from blocking clicks when disableOverlay is true */
-[class~="react-joyride__overlay"] {
-  pointer-events: none !important;
-}
-
-/* Ensure spotlight target area allows clicks */
-[class~="react-joyride__spotlight"][data-spotlight-clicks="true"] {
-  pointer-events: auto !important;
+/* FIX: Disable overflow on scrollable containers during tour to fix spotlight positioning
+   See: https://github.com/gilbarbara/react-joyride/issues/376 */
+body:has(#react-joyride-portal) [class*="contentGroupedTrigger"] {
+  overflow: visible !important;
 }

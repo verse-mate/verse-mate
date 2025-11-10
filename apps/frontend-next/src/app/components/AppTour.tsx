@@ -179,7 +179,13 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
 
   // Attach click handlers for guided tour steps
   useEffect(() => {
-    if (!showGuidedTour || !tourRun) return;
+    if (!showGuidedTour || !tourRun) {
+      // Clear the tour flag when not in guided tour
+      if (typeof window !== "undefined") {
+        (window as any).__tourKeepDropdownOpen = false;
+      }
+      return;
+    }
 
     // Clean up any existing handler
     if (clickCleanupRef.current) {
@@ -193,6 +199,10 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     if (stepIndex === 1) {
       attachDelegatedClick('[data-tour="book-selector"]', () => {
         console.log("Book selector clicked, advancing to step 2");
+        // Set flag to keep dropdown open after click
+        if (typeof window !== "undefined") {
+          (window as any).__tourKeepDropdownOpen = true;
+        }
         setTimeout(() => setStepIndex(2), 200);
       });
     }
@@ -217,6 +227,10 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     else if (stepIndex === 4) {
       attachDelegatedClick('[data-tour-chapter="1"]', () => {
         console.log("Chapter 1 clicked, advancing to step 5");
+        // Clear flag after last interactive step
+        if (typeof window !== "undefined") {
+          (window as any).__tourKeepDropdownOpen = false;
+        }
         setTimeout(() => setStepIndex(5), 200);
       });
     }
@@ -258,6 +272,14 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
           console.log("Guided tour: Moving from intro to step 1");
           setStepIndex(1);
         }
+        // For guided tour last step (5), clicking "Finish Tour" should end the tour
+        else if (showGuidedTour && index === 5 && action === "next") {
+          console.log("Guided tour: Finish Tour clicked");
+          setTourRun(false);
+          setStepIndex(0);
+          setShowGuidedTour(false);
+          onComplete?.();
+        }
         // For other guided tour steps, clicks handle advancement (not Next/Back buttons)
       } else if (type === EVENTS.TARGET_NOT_FOUND) {
         // Don't auto-skip on target not found - wait for element to appear
@@ -266,9 +288,9 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
           index,
           "- waiting for element",
         );
-      } else if (status === STATUS.FINISHED) {
-        // Tour completed
-        if (!showGuidedTour) {
+      } else if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+        // Tour completed or skipped
+        if (!showGuidedTour && status === STATUS.FINISHED) {
           // Just finished basic tour, start guided tour
           console.log("Basic tour finished, starting guided tour");
           setTourRun(false);
@@ -278,18 +300,17 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
             setTourRun(true);
           }, 300);
         } else {
-          // Guided tour finished
-          console.log("Guided tour finished");
+          // Guided tour finished or any tour skipped
+          console.log(
+            status === STATUS.FINISHED
+              ? "Guided tour finished"
+              : "Tour skipped",
+          );
           setTourRun(false);
           setStepIndex(0);
+          setShowGuidedTour(false);
           onComplete?.();
         }
-      } else if (status === STATUS.SKIPPED) {
-        // Tour skipped
-        console.log("Tour skipped");
-        setTourRun(false);
-        setStepIndex(0);
-        onComplete?.();
       }
     },
     [showGuidedTour, stepIndex, onComplete],
@@ -314,10 +335,15 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       showSkipButton
       // Hide Next/Back buttons for guided tour, show them for basic tour
       hideBackButton={showGuidedTour}
-      disableCloseOnEsc={showGuidedTour}
-      disableOverlayClose={showGuidedTour}
-      disableScrolling={showGuidedTour} // Disable auto-scroll for guided tour
+      disableCloseOnEsc={true} // Prevent closing with ESC on both tours
+      disableOverlayClose={true} // Prevent clicking outside on both tours
+      disableScrolling={false} // Always allow scrolling for proper positioning
+      scrollToFirstStep={true}
+      scrollOffset={200} // Larger offset to account for scrollable containers
       callback={handleJoyrideCallback}
+      floaterProps={{
+        disableAnimation: true, // Disable animation for more accurate positioning
+      }}
       styles={{
         options: {
           primaryColor: "#1a365d",
@@ -335,8 +361,12 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
           textAlign: "left",
         },
         buttonNext: {
-          // Show Next button for basic tour and guided tour step 0, hide for other guided steps
-          display: showGuidedTour && stepIndex !== 0 ? "none" : "inline-block",
+          // Show Next button for basic tour, guided tour step 0, and guided tour last step (5)
+          // Hide for guided tour steps 1-4 (interactive click-to-advance steps)
+          display:
+            showGuidedTour && stepIndex !== 0 && stepIndex !== 5
+              ? "none"
+              : "inline-block",
           backgroundColor: "#1a365d",
           borderRadius: "6px",
           padding: "8px 16px",
@@ -352,7 +382,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       locale={{
         back: "Back",
         close: "Close",
-        last: "Finish",
+        last: "Finish Tour",
         next: "Next",
         skip: showGuidedTour ? "Skip Tutorial" : "Skip Tour",
       }}

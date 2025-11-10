@@ -454,7 +454,12 @@ export const Nav = ({
       {/* Desktop buttons */}
       <div className={styles.leftPanelDropdown} data-tour="book-selector">
         <SelectDropdown.Root
-          open={forceDropdownOpen || leftPanelIsOpen}
+          open={
+            (typeof window !== "undefined" &&
+              (window as any).__tourKeepDropdownOpen) ||
+            forceDropdownOpen ||
+            leftPanelIsOpen
+          }
           onOpenChange={leftPanelSetIsOpen}
           resetFilter={leftPanelResetFilter}
         >
