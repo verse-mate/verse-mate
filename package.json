@@ -44,6 +44,7 @@
   ],
   "dependencies": {
     "dotenv": "^17.2.3",
+    "react-joyride": "^2.9.3",
     "typescript": "^5.5.4"
   },
   "packageManager": "bun@1.2.23"

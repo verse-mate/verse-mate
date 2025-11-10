@@ -92,6 +92,7 @@ type Props = {
     bibleVersion?: string;
   }) => void;
   recentlyViewedBooks: string[];
+  forceDropdownOpen?: boolean; // TEMPORARY: For tour development/inspection
 };
 
 export const Nav = ({
@@ -126,6 +127,7 @@ export const Nav = ({
   saveSearchParams,
   handleValueChange,
   recentlyViewedBooks,
+  forceDropdownOpen = false, // TEMPORARY: For tour development/inspection
 }: Props) => {
   const [activeTopicTab, setActiveTopicTab] = useState("EVENTS");
   const [currentTab, setCurrentTab] = useState("tab1");
@@ -406,6 +408,7 @@ export const Nav = ({
         <Accordion.Item value={book.n} key={book.n}>
           <div
             data-accordion-trigger={book.n}
+            data-tour-john={book.n === "John" ? "" : undefined}
             onClick={() => handleAccordionTriggerClick(book.n)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ")
@@ -449,9 +452,9 @@ export const Nav = ({
         />
       </div>
       {/* Desktop buttons */}
-      <div className={styles.leftPanelDropdown}>
+      <div className={styles.leftPanelDropdown} data-tour="book-selector">
         <SelectDropdown.Root
-          open={leftPanelIsOpen}
+          open={forceDropdownOpen || leftPanelIsOpen}
           onOpenChange={leftPanelSetIsOpen}
           resetFilter={leftPanelResetFilter}
         >
@@ -586,7 +589,10 @@ export const Nav = ({
       </div>
       {/* Tablet-only commentary type buttons in header */}
       {currentTab === "tab1" && (
-        <div className={styles.headerCommentaryButtons}>
+        <div
+          className={styles.headerCommentaryButtons}
+          data-tour="explanation-types"
+        >
           {explanationTypes.map((option) => (
             <button
               type="button"
@@ -626,14 +632,21 @@ export const Nav = ({
           <RadixTabs.Trigger className={`${styles.trigger}`} value="tab2">
             <Icon.ChatIcon className={` ${styles.active}`} />
           </RadixTabs.Trigger>
-          <RadixTabs.Trigger className={styles.trigger} value="tab3">
+          <RadixTabs.Trigger
+            className={styles.trigger}
+            value="tab3"
+            data-tour="menu-button"
+          >
             <Icon.HamburgerIcon className={` ${styles.active}`} />
           </RadixTabs.Trigger>
         </RadixTabs.List>
 
         <RadixTabs.Content value="tab1">
           <RadixTabs.List>
-            <div className={styles.explanationTypesButton}>
+            <div
+              className={styles.explanationTypesButton}
+              data-tour="explanation-types"
+            >
               {explanationTypes.map((option, index) => (
                 <button
                   className={`${styles.trigger} ${styles.active}`}
@@ -713,7 +726,11 @@ export const Nav = ({
             <div className={styles.askVerseMateText}>
               <p>Ask VerseMate</p>
             </div>
-            <RadixTabs.Trigger className={styles.trigger} value="tab5">
+            <RadixTabs.Trigger
+              className={styles.trigger}
+              value="tab5"
+              data-tour="menu-button"
+            >
               <Icon.HistoryIcon className={` ${styles.active}`} />
             </RadixTabs.Trigger>
           </RadixTabs.List>
