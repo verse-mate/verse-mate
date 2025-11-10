@@ -13,7 +13,8 @@
       "./packages/backend-base/src/bible/data/t_asv.json",
       "./packages/backend-base/src/bible/data/NASB1995.json",
       "./apps/frontend-next/public/*",
-      "./apps/website/*"
+      "./apps/website/*",
+      "./VerseMate/*"
     ],
     "maxSize": 6000000
   },

@@ -1492,7 +1492,8 @@ export class BatchOperationService {
       batchJob.batch_type === "rephrase-bible" ||
       batchJob.batch_type === "translate-bible" ||
       batchJob.batch_type === "topic-explanations-parent" ||
-      batchJob.batch_type === "topic-translate-all"
+      batchJob.batch_type === "topic-translate-all" ||
+      batchJob.batch_type === "auto-highlight-bible"
     ) {
       console.log(
         `[BATCH] Cancelling parent batch ${batchId} and its children.`,
@@ -2155,6 +2156,13 @@ export class BatchOperationService {
       }
       if (batchJob.batch_type === "topic-translate") {
         return this.processTopicExplanationTranslateOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
+      }
+      if (batchJob.batch_type === "auto-highlight") {
+        return this.processAutoHighlightOutputFile(
           batchId,
           outputFileId,
           batchJob,
@@ -3640,6 +3648,125 @@ export class BatchOperationService {
     );
   }
 
+  private async processAutoHighlightOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string; book_id: number | null },
+  ) {
+    try {
+      const connection = this.db.getOrCreateConnection();
+
+      // Parse custom_id to get book name: "auto-highlight-Genesis-1234567890"
+      const fileContent = await openai.files.content(outputFileId);
+      const jsonl = await fileContent.text();
+      const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
+
+      if (lines.length === 0) {
+        console.warn(
+          `[BATCH] No lines found in output file for batch ${batchId}`,
+        );
+        return;
+      }
+
+      // Get book name from custom_id in first line
+      const firstResponse = JSON.parse(lines[0]);
+      const customIdParts = firstResponse.custom_id.split("-");
+      const timestampIndex = customIdParts.length - 1;
+      const bookName = customIdParts.slice(2, timestampIndex).join("-");
+
+      const book = await connection
+        .selectFrom("books")
+        .where("name", "=", bookName)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (!book) {
+        console.error(
+          `[BATCH] Book not found for custom_id: ${firstResponse.custom_id}`,
+        );
+        return;
+      }
+
+      // Import services
+      const { BibleRepository } = await import(
+        "../../bible/repository/bible.repository"
+      );
+      const { AutoHighlightService } = await import(
+        "../../bible/services/auto-highlight.service"
+      );
+      const { AutoHighlightRepository } = await import(
+        "../../bible/repository/auto-highlight.repository"
+      );
+
+      const bibleRepository = new BibleRepository(this.db);
+      const autoHighlightService = new AutoHighlightService(
+        this.db,
+        bibleRepository,
+      );
+      const autoHighlightRepo = new AutoHighlightRepository(this.db);
+
+      // Delete existing auto-highlights for this book (regenerating)
+      await autoHighlightRepo.deleteHighlightsByBook(book.book_id);
+
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
+
+      // Process all lines to get AI content and calculate tokens
+      for (const line of lines) {
+        const response = JSON.parse(line);
+
+        if (response.response?.body?.usage) {
+          totalPromptTokens += response.response.body.usage.input_tokens || 0;
+          totalCompletionTokens +=
+            response.response.body.usage.output_tokens || 0;
+        }
+
+        // Only process the AI content from the first successful response
+        if (
+          response.response?.status_code === 200 &&
+          response.response?.body?.output
+        ) {
+          const aiContent = response.response.body.output;
+          const highlightCount = await autoHighlightService.processAIResponse(
+            book.book_id,
+            aiContent,
+          );
+
+          console.log(
+            `[BATCH] Processed ${highlightCount} auto-highlights for ${bookName}`,
+          );
+        }
+      }
+
+      const actualCost = await calculateActualCost(
+        totalPromptTokens,
+        totalCompletionTokens,
+        batchJob.model,
+      );
+
+      await connection
+        .updateTable("batch_jobs")
+        .set({
+          explanations_processed: true,
+          actual_cost: actualCost,
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          total_tokens: totalPromptTokens + totalCompletionTokens,
+        } as any)
+        .where("openai_batch_id", "=", batchId)
+        .execute();
+
+      console.log(
+        `[BATCH] Marked auto-highlight batch ${batchId} as processed with cost $${actualCost.toFixed(4)}`,
+      );
+    } catch (error) {
+      console.error(
+        `[BATCH] Error processing auto-highlight output file for batch ${batchId}:`,
+        error,
+      );
+    }
+  }
+
   /**
    * Validates custom ID uniqueness within a batch and ensures no collisions
    * @param batchRequests Array of batch requests to validate
@@ -4315,5 +4442,177 @@ export class BatchOperationService {
 
       throw error;
     }
+  }
+
+  async generateHighlightBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high" = "medium",
+    bookName?: string,
+  ): Promise<any> {
+    const isBibleBatch = !bookName;
+
+    if (isBibleBatch) {
+      const connection = this.db.getOrCreateConnection();
+
+      const parentBatch = await connection
+        .insertInto("batch_jobs")
+        .values({
+          batch_type: "auto-highlight-bible",
+          status: "in_progress",
+          model,
+          created_by: adminUserId,
+          total_requests: 66,
+          bible_version: "N/A",
+          explanation_types: [],
+        } as any)
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      const parentBatchId = parentBatch.id;
+
+      const books = await connection
+        .selectFrom("books")
+        .select(["book_id", "name"])
+        .orderBy("book_id", "asc")
+        .execute();
+
+      const batchResults = [];
+
+      for (const book of books) {
+        try {
+          const bookBatch = await this.generateHighlightBookBatch(
+            book.name,
+            model,
+            adminUserId,
+            effort,
+            parentBatchId,
+          );
+          batchResults.push({ success: true, ...bookBatch });
+        } catch (error) {
+          console.error(`[BATCH] Error processing book ${book.name}:`, error);
+          batchResults.push({
+            success: false,
+            bookId: book.book_id,
+            bookName: book.name,
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      }
+
+      return {
+        success: true,
+        message: `Auto-highlight batch creation started for ${books.length} books under parent batch ${parentBatchId}.`,
+        results: batchResults,
+        parentBatchId,
+      };
+    }
+
+    // bookName is required for single book batch
+    if (!bookName) {
+      throw new Error("Book name is required for single book batch");
+    }
+
+    return this.generateHighlightBookBatch(
+      bookName,
+      model,
+      adminUserId,
+      effort,
+    );
+  }
+
+  private async generateHighlightBookBatch(
+    bookName: string,
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high",
+    parentBatchId?: number,
+  ): Promise<any> {
+    const connection = this.db.getOrCreateConnection();
+
+    const book = await connection
+      .selectFrom("books")
+      .where("name", "=", bookName)
+      .select("book_id")
+      .executeTakeFirst();
+
+    if (!book) {
+      throw new Error(`Book "${bookName}" not found.`);
+    }
+
+    const highlightPrompt = await connection
+      .selectFrom("prompts")
+      .where("prompt_type", "=", "auto-highlight")
+      .where("status", "=", PromptStatusEnum.active)
+      .select("prompt")
+      .executeTakeFirst();
+
+    if (!highlightPrompt) {
+      throw new Error("No active auto-highlight prompt found.");
+    }
+
+    const batchRequests: BatchJobRequest[] = [
+      {
+        custom_id: `auto-highlight-${bookName}-${Date.now()}`,
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model,
+          reasoning: { effort },
+          instructions: highlightPrompt.prompt.replace("{book_name}", bookName),
+          input: "",
+          max_output_tokens: 50000,
+        },
+      },
+    ];
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      throw new ValidationError(
+        `Batch file size (${Math.round(buffer.length / (1024 * 1024))}MB) exceeds OpenAI's 100MB limit.`,
+      );
+    }
+
+    const file = await openai.files.create({
+      file: new File(
+        [buffer],
+        `auto_highlight_${book.book_id}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    const batch = await openai.batches.create({
+      input_file_id: file.id,
+      endpoint: "/v1/responses",
+      completion_window: "24h",
+    });
+
+    await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "auto-highlight",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: 1,
+        created_by: adminUserId,
+        book_id: book.book_id,
+        parent_batch_id: parentBatchId ?? null,
+        bible_version: "N/A",
+        explanation_types: [],
+      } as any)
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    return batch;
   }
 }
