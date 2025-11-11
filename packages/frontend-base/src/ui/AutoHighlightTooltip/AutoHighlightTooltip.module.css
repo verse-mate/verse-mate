@@ -1,0 +1,109 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: transparent;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 999;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px rgb(0 0 0 / 10%),
+    0 2px 4px rgb(0 0 0 / 6%);
+  min-width: 260px;
+  max-width: 320px;
+  transform: translate(-50%, -100%);
+  margin-top: -12px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: var(--background-secondary, #f5f5f5);
+}
+
+.content {
+  padding: 0.875rem 1rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.infoRow:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary, #666);
+}
+
+.value {
+  font-size: 0.8125rem;
+  color: var(--text-primary, #333);
+}
+
+.actions {
+  padding: 0.875rem 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.saveButton {
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.loginPrompt {
+  text-align: center;
+}
+
+.loginPrompt p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #666);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .tooltip {
+    min-width: 240px;
+    max-width: 280px;
+  }
+}

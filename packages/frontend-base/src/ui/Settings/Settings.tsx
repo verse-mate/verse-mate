@@ -17,6 +17,7 @@ import {
 } from "../Icons";
 import { Input } from "../Input";
 import { SelectDropdown } from "../SelectDropdown";
+import { AutoHighlightSettings } from "./AutoHighlightSettings";
 import { formatLanguageDisplay } from "./languageFormatting";
 import styles from "./settings.module.css";
 
@@ -362,6 +363,9 @@ export const Settings = ({
           </div>
         </div>
       )}
+
+      {/* Auto-Highlight Settings Section */}
+      <AutoHighlightSettings isLoggedIn={!!session?.id} />
 
       {/* User Profile Section */}
       {session?.id && (
