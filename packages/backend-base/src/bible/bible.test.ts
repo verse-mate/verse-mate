@@ -450,32 +450,34 @@ describe("Bible Plugin", () => {
     });
 
     it("GET /bible/auto-highlights/:book_id/:chapter_number - get auto-highlights", async () => {
-      // @ts-expect-error - Dynamic path parameter
-      const { data, error } = await testClient.bible["auto-highlights"][1][1].get();
+      const { data, error } = await testClient.bible["auto-highlights"]({
+        book_id: 1,
+      })({
+        chapter_number: 1,
+      }).get();
 
       expect(error).toBeFalsy();
       expect(data).toBeTruthy();
-      expect(Array.isArray(data)).toBe(true);
+      expect(Array.isArray(data?.data)).toBe(true);
 
       // Data may be empty if no highlights have been generated yet
-      if (data && data.length > 0) {
-        expect(data[0]).toHaveProperty("auto_highlight_id");
-        expect(data[0]).toHaveProperty("theme_id");
-        expect(data[0]).toHaveProperty("book_id");
-        expect(data[0]).toHaveProperty("chapter_number");
-        expect(data[0]).toHaveProperty("start_verse");
-        expect(data[0]).toHaveProperty("end_verse");
-        expect(data[0]).toHaveProperty("relevance_score");
-        expect(data[0]).toHaveProperty("theme_name");
-        expect(data[0]).toHaveProperty("theme_color");
+      if (data?.data && data.data.length > 0) {
+        expect(data.data[0]).toHaveProperty("auto_highlight_id");
+        expect(data.data[0]).toHaveProperty("theme_id");
+        expect(data.data[0]).toHaveProperty("book_id");
+        expect(data.data[0]).toHaveProperty("chapter_number");
+        expect(data.data[0]).toHaveProperty("start_verse");
+        expect(data.data[0]).toHaveProperty("end_verse");
+        expect(data.data[0]).toHaveProperty("relevance_score");
+        expect(data.data[0]).toHaveProperty("theme_name");
+        expect(data.data[0]).toHaveProperty("theme_color");
       }
     });
 
     it("GET /bible/auto-highlights/:book_id/:chapter_number - filter by themes", async () => {
-      // @ts-ignore - Dynamic path parameter
-      const { data, error } = await testClient.bible[
-        "auto-highlights"
-      ][1][1].get({
+      const { data, error } = await testClient.bible["auto-highlights"]({
+        book_id: 1,
+      })({ chapter_number: 1 }).get({
         query: {
           themes: `${testThemeId}`,
         },
@@ -483,18 +485,19 @@ describe("Bible Plugin", () => {
 
       expect(error).toBeFalsy();
       expect(data).toBeTruthy();
-      expect(Array.isArray(data)).toBe(true);
+      expect(Array.isArray(data?.data)).toBe(true);
 
-      if (data && data.length > 0) {
-        expect(data.every((h: any) => h.theme_id === testThemeId)).toBe(true);
+      if (data?.data && data.data.length > 0) {
+        expect(data.data.every((h: any) => h.theme_id === testThemeId)).toBe(
+          true,
+        );
       }
     });
 
     it("GET /bible/auto-highlights/:book_id/:chapter_number - filter by relevance", async () => {
-      // @ts-ignore - Dynamic path parameter
-      const { data, error } = await testClient.bible[
-        "auto-highlights"
-      ][1][1].get({
+      const { data, error } = await testClient.bible["auto-highlights"]({
+        book_id: 1,
+      })({ chapter_number: 1 }).get({
         query: {
           min_relevance: 3,
         },
@@ -502,10 +505,10 @@ describe("Bible Plugin", () => {
 
       expect(error).toBeFalsy();
       expect(data).toBeTruthy();
-      expect(Array.isArray(data)).toBe(true);
+      expect(Array.isArray(data?.data)).toBe(true);
 
-      if (data && data.length > 0) {
-        expect(data.every((h: any) => h.relevance_score <= 3)).toBe(true);
+      if (data?.data && data.data.length > 0) {
+        expect(data.data.every((h: any) => h.relevance_score <= 3)).toBe(true);
       }
     });
 

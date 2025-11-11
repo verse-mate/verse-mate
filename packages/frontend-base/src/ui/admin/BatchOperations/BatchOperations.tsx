@@ -866,7 +866,8 @@ export const BatchOperations = () => {
             job.batch_type === "rephrase-bible" ||
             job.batch_type === "translate-bible" ||
             job.batch_type === "topic-explanations-parent" ||
-            job.batch_type === "topic-translate-all"
+            job.batch_type === "topic-translate-all" ||
+            job.batch_type === "auto-highlights"
           ) {
             handleViewBibleDetails(job.id);
           } else if (job.openai_batch_id) {

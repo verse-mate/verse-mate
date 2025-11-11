@@ -94,8 +94,8 @@ export const AutoHighlights = () => {
       setLoadingThemes(true);
       setThemesError(null);
       const response = await api.admin["highlight-themes"].all.get();
-      if (response.data) {
-        const themesWithDates = response.data.map((theme: any) => ({
+      if (response.data?.data) {
+        const themesWithDates = response.data.data.map((theme: any) => ({
           ...theme,
           created_at: new Date(theme.created_at),
           updated_at: new Date(theme.updated_at),

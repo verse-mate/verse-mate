@@ -1,6 +1,6 @@
+import { Button } from "../Button/Button";
 import type { HighlightColor } from "../HighlightColorPicker/types";
 import type { AutoHighlight } from "../MainText/Content/Text/types";
-import { Button } from "../Button/Button";
 import styles from "./AutoHighlightTooltip.module.css";
 
 interface AutoHighlightTooltipProps {
@@ -37,18 +37,27 @@ export const AutoHighlightTooltip = ({
   return (
     <>
       {/* Backdrop to detect clicks outside */}
-      <div className={styles.backdrop} onClick={onClose} />
+      <button
+        type="button"
+        className={styles.backdrop}
+        onClick={onClose}
+        aria-label="Close tooltip"
+      />
 
       {/* Tooltip */}
       <div
         className={styles.tooltip}
+        role="tooltip"
+        aria-labelledby="auto-highlight-tooltip-title"
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
         }}
       >
         <div className={styles.header}>
-          <h4 className={styles.title}>{highlight.theme_name}</h4>
+          <h4 id="auto-highlight-tooltip-title" className={styles.title}>
+            {highlight.theme_name}
+          </h4>
           <button
             type="button"
             className={styles.closeButton}
