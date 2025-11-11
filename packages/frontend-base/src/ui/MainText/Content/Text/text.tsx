@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAutoHighlights } from "../../../../hooks/useAutoHighlights";
 import { useBookmarks } from "../../../../hooks/useBookmarks";
 import { useGetSearchParams } from "../../../../hooks/useSearchParams";
 import { userSession } from "../../../../hooks/userSession";
@@ -7,6 +8,7 @@ import {
   generateShareableUrl,
   getPassageTitle,
 } from "../../../../utils/sharing";
+import { AutoHighlightTooltip } from "../../../AutoHighlightTooltip";
 import { BookmarkButton } from "../../../Bookmarks";
 import { CopyLinkButton } from "../../../CopyLinkButton";
 import type { HighlightColor } from "../../../HighlightColorPicker/types";
@@ -17,7 +19,7 @@ import { ShareButton } from "../../../ShareButton";
 import { showSignInRequiredModal } from "../../../SignInRequiredModal";
 import { VerseActionsMenu } from "../../../VerseActionsMenu";
 import styles from "./text.module.css";
-import type { Highlight, TextProps } from "./types";
+import type { AutoHighlight, Highlight, TextProps } from "./types";
 
 const formatSubtitle = (subtitle: string) => {
   if (!subtitle) return "";
@@ -64,6 +66,23 @@ export const Text = ({
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showNotesModal, setShowNotesModal] = useState(false);
   const versesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-highlights state
+  const [selectedAutoHighlight, setSelectedAutoHighlight] =
+    useState<AutoHighlight | null>(null);
+  const [showAutoHighlightTooltip, setShowAutoHighlightTooltip] =
+    useState(false);
+  const [autoHighlightMenuPosition, setAutoHighlightMenuPosition] = useState({
+    x: 0,
+    y: 0,
+  });
+
+  // Fetch auto-highlights for this chapter
+  const { autoHighlights } = useAutoHighlights({
+    bookId,
+    chapterNumber: text.chapterNumber,
+    userId: session?.id,
+  });
 
   const isBookmarked =
     bookId && chapterId ? checkIfBookmarked(bookId, chapterId) : false;
@@ -671,14 +690,88 @@ export const Text = ({
     [highlights, chapterId],
   );
 
+  const getVerseAutoHighlights = useCallback(
+    (verseNumber: number) => {
+      return autoHighlights.filter(
+        (h) => verseNumber >= h.start_verse && verseNumber <= h.end_verse,
+      );
+    },
+    [autoHighlights],
+  );
+
+  const handleAutoHighlightClick = useCallback(
+    (e: React.MouseEvent, autoHighlight: AutoHighlight) => {
+      e.stopPropagation();
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      setAutoHighlightMenuPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+      });
+      setSelectedAutoHighlight(autoHighlight);
+      setShowAutoHighlightTooltip(true);
+    },
+    [],
+  );
+
+  const handleSaveAsUserHighlight = useCallback(
+    async (color: HighlightColor) => {
+      if (!selectedAutoHighlight || !onHighlightCreate) return;
+
+      try {
+        await onHighlightCreate(
+          selectedAutoHighlight.start_verse,
+          selectedAutoHighlight.end_verse,
+          color,
+          undefined, // No char positions for auto-highlights
+          undefined,
+          undefined,
+        );
+        setShowAutoHighlightTooltip(false);
+        setSelectedAutoHighlight(null);
+        notify({
+          content: "Highlight saved to your collection!",
+          color: "var(--success)",
+        });
+      } catch (error) {
+        console.error("Failed to save highlight:", error);
+        notify({
+          content: "Failed to save highlight",
+          color: "var(--error)",
+        });
+      }
+    },
+    [selectedAutoHighlight, onHighlightCreate],
+  );
+
   const renderHighlightedText = useCallback(
     (verseText: string, verseNumber: number) => {
       const verseHighlights = getVerseHighlights(verseNumber);
+      const verseAutoHighlights = getVerseAutoHighlights(verseNumber);
 
-      if (verseHighlights.length === 0) {
+      // User highlights take priority over auto-highlights
+      if (verseHighlights.length === 0 && verseAutoHighlights.length === 0) {
         return verseText;
       }
 
+      // If user has highlighted this verse, show user highlight only
+      if (verseHighlights.length > 0) {
+        // Existing user highlight logic (keep as is)
+        return renderUserHighlights(verseText, verseNumber, verseHighlights);
+      }
+
+      // Otherwise, show auto-highlight if available
+      if (verseAutoHighlights.length > 0) {
+        return renderAutoHighlights(verseText, verseAutoHighlights);
+      }
+
+      return verseText;
+    },
+    [getVerseHighlights, getVerseAutoHighlights],
+  );
+
+  // Helper function to render user highlights (existing logic)
+  const renderUserHighlights = useCallback(
+    (verseText: string, verseNumber: number, verseHighlights: Highlight[]) => {
       // Create segments with highlight info
       interface TextSegment {
         start: number;
@@ -775,7 +868,40 @@ export const Text = ({
         );
       });
     },
-    [getVerseHighlights, handleHighlightClick],
+    [handleHighlightClick],
+  );
+
+  // Helper function to render auto-highlights
+  const renderAutoHighlights = useCallback(
+    (verseText: string, autoHighlights: AutoHighlight[]) => {
+      // If multiple auto-highlights for the same verse, use highest priority (lowest theme_id)
+      const primaryAutoHighlight = autoHighlights.sort(
+        (a, b) => a.theme_id - b.theme_id,
+      )[0];
+
+      const capitalizedColor =
+        primaryAutoHighlight.theme_color.charAt(0).toUpperCase() +
+        primaryAutoHighlight.theme_color.slice(1);
+      const autoHighlightClass = `${(styles as any)[`autoHighlight${capitalizedColor}`]}`;
+
+      return (
+        <span
+          className={autoHighlightClass}
+          onClick={(e) => handleAutoHighlightClick(e, primaryAutoHighlight)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              handleAutoHighlightClick(e as any, primaryAutoHighlight);
+            }
+          }}
+          aria-label={`AI-generated highlight: ${primaryAutoHighlight.theme_name}`}
+        >
+          {verseText}
+        </span>
+      );
+    },
+    [handleAutoHighlightClick],
   );
 
   useEffect(() => {
@@ -917,6 +1043,19 @@ export const Text = ({
             setSelectedHighlight(null);
           }}
           position={menuPosition}
+        />
+      )}
+
+      {showAutoHighlightTooltip && selectedAutoHighlight && (
+        <AutoHighlightTooltip
+          highlight={selectedAutoHighlight}
+          position={autoHighlightMenuPosition}
+          onClose={() => {
+            setShowAutoHighlightTooltip(false);
+            setSelectedAutoHighlight(null);
+          }}
+          onSaveAsUserHighlight={handleSaveAsUserHighlight}
+          isLoggedIn={!!session?.id}
         />
       )}
 
