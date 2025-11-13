@@ -3722,19 +3722,40 @@ export class BatchOperationService {
         }
 
         // Only process the AI content from the first successful response
-        if (
-          response.response?.status_code === 200 &&
-          response.response?.body?.output
-        ) {
-          const aiContent = response.response.body.output;
-          const highlightCount = await autoHighlightService.processAIResponse(
-            book.book_id,
-            aiContent,
-          );
+        if (response.response?.status_code === 200) {
+          const responseBody = response.response.body;
 
-          console.log(
-            `[BATCH] Processed ${highlightCount} auto-highlights for ${bookName}`,
-          );
+          // Extract text content - handle both output_text and output array formats
+          let aiContent: string | undefined;
+
+          if (responseBody?.output_text) {
+            // Simple string format
+            aiContent = responseBody.output_text;
+          } else if (
+            responseBody?.output &&
+            responseBody.output.length > 1 &&
+            responseBody.output[1]?.content &&
+            responseBody.output[1].content.length > 0 &&
+            responseBody.output[1].content[0]?.text
+          ) {
+            // Array format (reasoning models)
+            aiContent = responseBody.output[1].content[0].text;
+          }
+
+          if (aiContent) {
+            const highlightCount = await autoHighlightService.processAIResponse(
+              book.book_id,
+              aiContent,
+            );
+
+            console.log(
+              `[BATCH] Processed ${highlightCount} auto-highlights for ${bookName}`,
+            );
+          } else {
+            console.warn(
+              `[BATCH] No AI content found in response for ${bookName}`,
+            );
+          }
         }
       }
 
