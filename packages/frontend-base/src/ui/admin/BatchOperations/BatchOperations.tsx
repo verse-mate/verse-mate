@@ -161,7 +161,8 @@ const ActionsMenu = ({
           job.batch_type === "rephrase-bible" ||
           job.batch_type === "translate-bible" ||
           job.batch_type === "topic-explanations-parent" ||
-          job.batch_type === "topic-translate-all" ? (
+          job.batch_type === "topic-translate-all" ||
+          job.batch_type === "auto-highlight-bible" ? (
             <>
               <Button
                 variant="outlined"
@@ -454,7 +455,8 @@ export const BatchOperations = () => {
               job.batch_type === "rephrase-bible" ||
               job.batch_type === "translate-bible" ||
               job.batch_type === "topic-explanations-parent" ||
-              job.batch_type === "topic-translate-all") &&
+              job.batch_type === "topic-translate-all" ||
+              job.batch_type === "auto-highlight-bible") &&
             // Skip failed batches to avoid unnecessary API calls
             job.status !== "failed",
         );
@@ -759,7 +761,8 @@ export const BatchOperations = () => {
         job?.batch_type === "bible" ||
         job?.batch_type === "rephrase-bible" ||
         job?.batch_type === "translate-bible" ||
-        job?.batch_type === "topic-translate-all"
+        job?.batch_type === "topic-translate-all" ||
+        job?.batch_type === "auto-highlight-bible"
       ) {
         await handleMonitorBibleBatch(batchId);
       } else if (job?.openai_batch_id) {
@@ -867,7 +870,7 @@ export const BatchOperations = () => {
             job.batch_type === "translate-bible" ||
             job.batch_type === "topic-explanations-parent" ||
             job.batch_type === "topic-translate-all" ||
-            job.batch_type === "auto-highlights"
+            job.batch_type === "auto-highlight-bible"
           ) {
             handleViewBibleDetails(job.id);
           } else if (job.openai_batch_id) {
@@ -990,7 +993,8 @@ export const BatchOperations = () => {
           job.batch_type === "rephrase-bible" ||
           job.batch_type === "translate-bible" ||
           job.batch_type === "topic-explanations-parent" ||
-          job.batch_type === "topic-translate-all";
+          job.batch_type === "topic-translate-all" ||
+          job.batch_type === "auto-highlight-bible";
         const status =
           isParentBatch && summary ? summary.aggregate_status : job.status;
         const statusText =
@@ -1023,7 +1027,8 @@ export const BatchOperations = () => {
           job.batch_type === "bible" ||
           job.batch_type === "rephrase-bible" ||
           job.batch_type === "translate-bible" ||
-          job.batch_type === "topic-translate-all";
+          job.batch_type === "topic-translate-all" ||
+          job.batch_type === "auto-highlight-bible";
         const cost =
           isParentBatch && summary ? summary.total_cost : job.actual_cost;
         return (

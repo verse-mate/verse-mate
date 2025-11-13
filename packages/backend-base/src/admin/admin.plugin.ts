@@ -624,6 +624,28 @@ const plugin = new Elysia()
                 },
               },
             )
+            .post(
+              "/batch-retrieve-errors/:batchId",
+              async ({ params, store }) => {
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.retrieveAndSaveBatchErrors(
+                  params.batchId,
+                );
+              },
+              {
+                params: t.Object({
+                  batchId: t.String(),
+                }),
+                response: {
+                  200: t.Object({
+                    success: t.Boolean(),
+                    message: t.String(),
+                    errorContent: t.Optional(t.String()),
+                  }),
+                  ...StandardErrorResponses,
+                },
+              },
+            )
             .get(
               "/batch-summary/:parentId",
               async ({ params, store }) => {

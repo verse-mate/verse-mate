@@ -186,26 +186,36 @@ export const AutoHighlights = () => {
   const fetchBatchJobsOnly = useCallback(async () => {
     try {
       const response = await api.admin["batch-history"].get({ query: {} });
+      console.log("[AutoHighlights] Fetched batch history:", response.data);
       if (response.data) {
-        const jobs = Array.isArray(response.data)
-          ? response.data
-              .filter((job: any) => job.batch_type === "auto-highlights")
-              .map((job: any) => ({
-                ...job,
-                id: String(job.id),
-                created_at: job.created_at
-                  ? new Date(job.created_at)
-                  : new Date(),
-              }))
-          : [];
+        const allJobs = Array.isArray(response.data) ? response.data : [];
+        console.log("[AutoHighlights] Total jobs:", allJobs.length);
 
+        const jobs = allJobs
+          .filter(
+            (job: any) =>
+              job.batch_type === "auto-highlight-bible" ||
+              job.batch_type === "auto-highlight",
+          )
+          .map((job: any) => ({
+            ...job,
+            id: String(job.id),
+            created_at: job.created_at ? new Date(job.created_at) : new Date(),
+          }));
+
+        console.log(
+          "[AutoHighlights] Filtered auto-highlights jobs:",
+          jobs.length,
+          jobs,
+        );
         jobs.sort((a: any, b: any) => Number(b.id) - Number(a.id));
         setBatchJobs(jobs);
 
-        // Fetch summaries for parent batches
+        // Fetch summaries for parent batches (only for Bible batches)
         const parentBatches = jobs.filter(
           (job: any) =>
-            job.batch_type === "auto-highlights" && job.status !== "failed",
+            job.batch_type === "auto-highlight-bible" &&
+            job.status !== "failed",
         );
         const newSummaries: Record<string, any> = {};
         for (const batch of parentBatches) {
@@ -268,7 +278,7 @@ export const AutoHighlights = () => {
   const handleMonitorBibleBatch = async (batchId: string) => {
     try {
       setMonitoringId(batchId);
-      await (api.admin as any)["batch-monitor"][batchId].get();
+      await (api.admin as any)["monitor-bible-batch"][batchId].post({});
       if (bibleDetailsModalOpen && selectedParentId) {
         await handleViewBibleDetails(selectedParentId);
       } else {
@@ -292,6 +302,32 @@ export const AutoHighlights = () => {
       console.error("Error cancelling batch job:", err);
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleRetrieveErrors = async (batchId: string) => {
+    try {
+      setMonitoringId(batchId);
+      const response = await (api.admin as any)["batch-retrieve-errors"][
+        batchId
+      ].post({});
+      console.log("[AutoHighlights] Error retrieval result:", response.data);
+      if (response.data?.success) {
+        alert(
+          `Success! ${response.data.message}\n\nError content saved to database. Refresh to see it in the batch details.`,
+        );
+        // Refresh the child jobs to show updated error content
+        if (selectedParentId) {
+          await handleViewBibleDetails(selectedParentId);
+        }
+      } else {
+        alert(`Failed: ${response.data?.message || "Unknown error"}`);
+      }
+    } catch (err) {
+      console.error("Error retrieving batch errors:", err);
+      alert("Failed to retrieve error file. Check console for details.");
+    } finally {
+      setMonitoringId(null);
     }
   };
 
@@ -609,7 +645,7 @@ export const AutoHighlights = () => {
       property: "id",
       className: styles.actionsColumn,
       render: (job) => (
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <Button
             variant="outlined"
             onClick={() => handleMonitorBibleBatch(job.id)}
@@ -617,6 +653,15 @@ export const AutoHighlights = () => {
           >
             Monitor
           </Button>
+          {(job.status === "failed" || job.status === "partial_failure") && (
+            <Button
+              variant="outlined"
+              onClick={() => handleRetrieveErrors(job.id)}
+              disabled={!!monitoringId && monitoringId === job.id}
+            >
+              Get Errors
+            </Button>
+          )}
           {(job.status === "validating" ||
             job.status === "in_progress" ||
             job.status === "finalizing") && (

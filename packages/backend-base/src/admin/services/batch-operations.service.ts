@@ -4559,8 +4559,8 @@ export class BatchOperationService {
         body: {
           model,
           reasoning: { effort },
-          instructions: highlightPrompt.prompt.replace("{book_name}", bookName),
-          input: "",
+          instructions: "",
+          input: highlightPrompt.prompt.replace("{book_name}", bookName),
           max_output_tokens: 50000,
         },
       },
@@ -4614,5 +4614,96 @@ export class BatchOperationService {
     );
 
     return batch;
+  }
+
+  async retrieveAndSaveBatchErrors(batchJobId: string): Promise<{
+    success: boolean;
+    message: string;
+    errorContent?: string;
+  }> {
+    const connection = this.db.getOrCreateConnection();
+
+    // First, get the batch job to find the openai_batch_id
+    const batchJob = await connection
+      .selectFrom("batch_jobs")
+      .where("id", "=", Number(batchJobId))
+      .select(["openai_batch_id", "status", "error_file_content"])
+      .executeTakeFirst();
+
+    if (!batchJob) {
+      return {
+        success: false,
+        message: `Batch job ${batchJobId} not found`,
+      };
+    }
+
+    if (!batchJob.openai_batch_id) {
+      return {
+        success: false,
+        message: `Batch job ${batchJobId} does not have an OpenAI batch ID`,
+      };
+    }
+
+    // Check if we already have the error content
+    if (batchJob.error_file_content) {
+      return {
+        success: true,
+        message: "Error content already retrieved",
+        errorContent: batchJob.error_file_content,
+      };
+    }
+
+    try {
+      // Retrieve batch status from OpenAI
+      const batchStatus = await openai.batches.retrieve(
+        batchJob.openai_batch_id,
+      );
+
+      console.log(
+        `[BATCH] Batch ${batchJob.openai_batch_id} status: ${batchStatus.status}, has error_file_id: ${!!batchStatus.error_file_id}`,
+      );
+
+      if (!batchStatus.error_file_id) {
+        return {
+          success: false,
+          message: `Batch ${batchJobId} (${batchJob.openai_batch_id}) does not have an error file. Status: ${batchStatus.status}`,
+        };
+      }
+
+      // Download the error file
+      console.log(
+        `[BATCH] Downloading error file ${batchStatus.error_file_id}...`,
+      );
+      const errorFileContent = await openai.files.content(
+        batchStatus.error_file_id,
+      );
+      const errorText = await errorFileContent.text();
+
+      // Save to database
+      await connection
+        .updateTable("batch_jobs")
+        .set({ error_file_content: errorText })
+        .where("id", "=", Number(batchJobId))
+        .execute();
+
+      console.log(
+        `[BATCH] Successfully saved error content for batch ${batchJobId}`,
+      );
+
+      return {
+        success: true,
+        message: `Successfully retrieved and saved error content for batch ${batchJobId}`,
+        errorContent: errorText,
+      };
+    } catch (error) {
+      console.error(
+        `[BATCH] Error retrieving error file for batch ${batchJobId}:`,
+        error,
+      );
+      return {
+        success: false,
+        message: `Failed to retrieve error file: ${error instanceof Error ? error.message : "Unknown error"}`,
+      };
+    }
   }
 }
