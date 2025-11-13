@@ -29,6 +29,7 @@ export const AutoHighlightSettings = ({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingChanges, setPendingChanges] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Fetch user theme preferences
   useEffect(() => {
@@ -232,8 +233,16 @@ export const AutoHighlightSettings = ({
   return (
     <div className={styles.sectionSpacing}>
       <label className={styles.sectionLabel}>Auto-Highlights:</label>
+      <Button
+        variant="outlined"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={autoHighlightStyles.toggleButton}
+      >
+        {isExpanded ? "Hide" : "Show"}
+      </Button>
 
-      <div className={autoHighlightStyles.container}>
+      {isExpanded && (
+        <div className={autoHighlightStyles.container}>
         {!isLoggedIn && (
           <div className={autoHighlightStyles.loginPrompt}>
             <p>
@@ -362,6 +371,7 @@ export const AutoHighlightSettings = ({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };
