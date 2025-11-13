@@ -86,6 +86,11 @@ export const AutoHighlightSettings = ({
       });
     },
     onSuccess: () => {
+      // Invalidate user preferences query
+      queryClient.invalidateQueries({
+        queryKey: ["user-theme-preferences"],
+      });
+
       // Invalidate auto-highlights queries to refresh
       queryClient.invalidateQueries({
         predicate: (q) => {

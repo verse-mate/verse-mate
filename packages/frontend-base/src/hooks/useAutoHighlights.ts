@@ -19,7 +19,7 @@ export const useAutoHighlights = ({
     queryFn: async () => {
       if (!userId) return null;
       const response = await api.bible.user["theme-preferences"].get();
-      return response.data;
+      return response.data?.data || response.data;
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
@@ -31,31 +31,35 @@ export const useAutoHighlights = ({
     queryFn: async () => {
       if (!bookId || !chapterNumber) return [];
 
-      // Get enabled theme IDs and minimum relevance
+      // Get enabled theme IDs and per-theme relevance thresholds
       let enabledThemes: number[] = [];
-      let minRelevance = 3;
+      const themeRelevanceMap: Record<number, number> = {};
 
       if (preferences && Array.isArray(preferences)) {
-        enabledThemes = preferences
-          .filter((p: any) => p.is_enabled)
-          .map((p: any) => p.theme_id);
+        const enabledPreferences = preferences.filter((p: any) => p.is_enabled);
 
-        const enabledRelevances = preferences
-          .filter((p: any) => p.is_enabled)
-          .map((p: any) => p.relevance_threshold);
+        enabledThemes = enabledPreferences.map((p: any) => p.theme_id);
 
-        if (enabledRelevances.length > 0) {
-          minRelevance = Math.min(...enabledRelevances);
-        }
+        // Build per-theme relevance map
+        enabledPreferences.forEach((p: any) => {
+          themeRelevanceMap[p.theme_id] = p.relevance_threshold;
+        });
       }
 
       // Build query params
-      const queryParams: any = {
-        min_relevance: minRelevance.toString(),
-      };
+      const queryParams: any = {};
 
       if (enabledThemes.length > 0) {
         queryParams.themes = enabledThemes.join(",");
+
+        // Build theme_relevance parameter: "theme_id:relevance,theme_id:relevance"
+        const themeRelevancePairs = Object.entries(themeRelevanceMap)
+          .map(([themeId, relevance]) => `${themeId}:${relevance}`)
+          .join(",");
+
+        if (themeRelevancePairs) {
+          queryParams.theme_relevance = themeRelevancePairs;
+        }
       }
 
       // @ts-expect-error - Dynamic path parameter
@@ -65,7 +69,8 @@ export const useAutoHighlights = ({
         query: queryParams,
       });
 
-      return (response.data || []) as AutoHighlight[];
+      // API returns {success: true, data: [...]} so we need response.data.data
+      return (response.data?.data || []) as AutoHighlight[];
     },
     enabled: !!bookId && !!chapterNumber,
     staleTime: 1000 * 60 * 10, // Cache for 10 minutes
