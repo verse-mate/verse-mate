@@ -953,6 +953,10 @@ export const BatchOperations = () => {
           job.batch_type === "translate-bible"
         ) {
           displayText = "Entire Bible";
+        } else if (job.batch_type === "auto-highlight-bible") {
+          displayText = "Auto-Highlights (All Books)";
+        } else if (job.batch_type === "auto-highlight") {
+          displayText = job.book_name || "Auto-Highlight";
         } else {
           displayText = job.book_name || "N/A";
         }
