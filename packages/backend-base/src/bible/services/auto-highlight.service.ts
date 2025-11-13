@@ -160,12 +160,27 @@ export class AutoHighlightService {
           }
 
           // For each chapter in the range, get verse count and add highlight
+          // Get default Bible version UUID
+          const defaultVersion = await this.db
+            .getOrCreateConnection()
+            .selectFrom("bible_versions")
+            .where("version_key", "=", "NASB1995")
+            .select("id")
+            .executeTakeFirst();
+
+          if (!defaultVersion) {
+            console.warn(
+              `[AUTO-HIGHLIGHT] Default version not found, skipping chapter placeholder`,
+            );
+            continue;
+          }
+
           for (let chNum = chapterStart; chNum <= chapterEnd; chNum++) {
             const { verses } =
               await this.bibleRepository.getChapterVersesByBookNameAndChapter(
                 book.name,
                 chNum,
-                "1", // version_id - using default, just need verse count
+                defaultVersion.id, // Use actual UUID
               );
 
             if (verses && verses.length > 0) {
