@@ -78,7 +78,7 @@ export const Text = ({
   });
 
   // Fetch auto-highlights for this chapter
-  const { autoHighlights } = useAutoHighlights({
+  const { autoHighlights = [] } = useAutoHighlights({
     bookId,
     chapterNumber: text.chapterNumber,
     userId: session?.id,
@@ -692,6 +692,9 @@ export const Text = ({
 
   const getVerseAutoHighlights = useCallback(
     (verseNumber: number) => {
+      if (!autoHighlights || !Array.isArray(autoHighlights)) {
+        return [];
+      }
       return autoHighlights.filter(
         (h) => verseNumber >= h.start_verse && verseNumber <= h.end_verse,
       );

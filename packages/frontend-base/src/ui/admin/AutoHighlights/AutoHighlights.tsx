@@ -1,8 +1,9 @@
 "use client";
 import { api } from "backend-api";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
+import { Dialog } from "../../Dialog";
 import { CheckIcon, ChevronDownIcon } from "../../Icons";
 import { SelectDropdown } from "../../SelectDropdown";
 import { Table, type TableColumn } from "../../Table/Table";
@@ -83,6 +84,19 @@ export const AutoHighlights = () => {
   const [updatingSettings, setUpdatingSettings] = useState(false);
   const [tempRelevance, setTempRelevance] = useState<number>(3);
 
+  // Batch listing state
+  const [batchJobs, setBatchJobs] = useState<any[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [summaries, setSummaries] = useState<Record<string, any>>({});
+
+  // Child batch modal state
+  const [bibleDetailsModalOpen, setBibleDetailsModalOpen] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+  const [childJobs, setChildJobs] = useState<any[]>([]);
+  const [childJobsLoading, setChildJobsLoading] = useState(false);
+  const [monitoringId, setMonitoringId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
   // Fetch themes on mount
   useEffect(() => {
     fetchThemes();
@@ -157,6 +171,9 @@ export const AutoHighlights = () => {
       // Reset form
       setProcessWholeBible(true);
       setSelectedBook("");
+
+      // Refresh batch list
+      await fetchBatchJobs();
     } catch (error) {
       setCreateError("Failed to create auto-highlight batch");
       console.error("Failed to create batch:", error);
@@ -164,6 +181,124 @@ export const AutoHighlights = () => {
       setCreating(false);
     }
   };
+
+  // Batch listing functions
+  const fetchBatchJobsOnly = useCallback(async () => {
+    try {
+      const response = await api.admin["batch-history"].get({ query: {} });
+      if (response.data) {
+        const jobs = Array.isArray(response.data)
+          ? response.data
+              .filter((job: any) => job.batch_type === "auto-highlights")
+              .map((job: any) => ({
+                ...job,
+                id: String(job.id),
+                created_at: job.created_at
+                  ? new Date(job.created_at)
+                  : new Date(),
+              }))
+          : [];
+
+        jobs.sort((a: any, b: any) => Number(b.id) - Number(a.id));
+        setBatchJobs(jobs);
+
+        // Fetch summaries for parent batches
+        const parentBatches = jobs.filter(
+          (job: any) =>
+            job.batch_type === "auto-highlights" && job.status !== "failed",
+        );
+        const newSummaries: Record<string, any> = {};
+        for (const batch of parentBatches) {
+          try {
+            const summaryResponse = await (api.admin as any)["batch-summary"][
+              batch.id
+            ].get();
+            if (summaryResponse.data?.data) {
+              newSummaries[batch.id] = summaryResponse.data.data;
+            }
+          } catch (err) {
+            console.error(
+              `Failed to fetch summary for batch ${batch.id}:`,
+              err,
+            );
+          }
+        }
+        setSummaries(newSummaries);
+      }
+    } catch (err) {
+      console.error("Error fetching batch jobs:", err);
+    }
+  }, []);
+
+  const fetchBatchJobs = useCallback(async () => {
+    try {
+      setListLoading(true);
+      await fetchBatchJobsOnly();
+    } catch (err) {
+      console.error("Error fetching batch jobs:", err);
+    } finally {
+      setListLoading(false);
+    }
+  }, [fetchBatchJobsOnly]);
+
+  const handleViewBibleDetails = async (parentId: string) => {
+    setSelectedParentId(parentId);
+    setBibleDetailsModalOpen(true);
+    setChildJobsLoading(true);
+    try {
+      const response = await (api.admin as any)["batch-children"][
+        parentId
+      ].get();
+      if (response.data) {
+        const jobs = response.data.map((job: any) => ({
+          ...job,
+          id: String(job.id),
+        }));
+        jobs.sort((a: any, b: any) => Number(b.id) - Number(a.id));
+        setChildJobs(jobs);
+      }
+    } catch (err) {
+      setCreateError("Failed to fetch child batch jobs");
+      console.error("Error fetching child batch jobs:", err);
+    } finally {
+      setChildJobsLoading(false);
+    }
+  };
+
+  const handleMonitorBibleBatch = async (batchId: string) => {
+    try {
+      setMonitoringId(batchId);
+      await (api.admin as any)["batch-monitor"][batchId].get();
+      if (bibleDetailsModalOpen && selectedParentId) {
+        await handleViewBibleDetails(selectedParentId);
+      } else {
+        await fetchBatchJobs();
+      }
+    } catch (err) {
+      setCreateError("Failed to monitor Bible batch");
+      console.error("Error monitoring Bible batch:", err);
+    } finally {
+      setMonitoringId(null);
+    }
+  };
+
+  const handleCancelBatch = async (batchId: string) => {
+    try {
+      setCancellingId(batchId);
+      await api.admin.batch({ batchJobId: batchId }).delete();
+      await handleMonitorBibleBatch(batchId);
+    } catch (err) {
+      setCreateError("Failed to cancel batch job");
+      console.error("Error cancelling batch job:", err);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  // Fetch batches on mount
+  useEffect(() => {
+    fetchBatchJobs();
+  }, [fetchBatchJobs]);
 
   const handleToggleTheme = async (themeId: number, currentStatus: boolean) => {
     try {
@@ -271,6 +406,229 @@ export const AutoHighlights = () => {
         >
           {theme.is_active ? "Deactivate" : "Activate"}
         </Button>
+      ),
+    },
+  ];
+
+  const batchColumns: TableColumn<any>[] = [
+    {
+      title: "ID",
+      property: "id",
+      className: styles.idColumn,
+      render: (job) => {
+        const handleClick = (e: React.MouseEvent) => {
+          e.preventDefault();
+          handleViewBibleDetails(job.id);
+        };
+        return (
+          <button
+            type="button"
+            onClick={handleClick}
+            className={styles.nowrapColumn}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--primary-color)",
+              cursor: "pointer",
+              textDecoration: "underline",
+              padding: 0,
+              font: "inherit",
+            }}
+          >
+            {job.id}
+          </button>
+        );
+      },
+    },
+    {
+      title: "Status",
+      property: "status",
+      className: styles.statusColumn,
+      render: (job) => {
+        const summary = summaries[job.id];
+        if (summary?.aggregate_status) {
+          return (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+            >
+              <span
+                className={`${styles.statusBadge} ${
+                  summary.aggregate_status === "completed"
+                    ? styles.completed
+                    : summary.aggregate_status === "failed"
+                      ? styles.failed
+                      : summary.aggregate_status === "in_progress"
+                        ? styles.inProgress
+                        : styles.pending
+                }`}
+              >
+                {summary.aggregate_status}
+              </span>
+              {summary.status_progress_text && (
+                <span style={{ fontSize: "0.85em", color: "#666" }}>
+                  {summary.status_progress_text}
+                </span>
+              )}
+            </div>
+          );
+        }
+        return (
+          <span
+            className={`${styles.statusBadge} ${
+              job.status === "completed"
+                ? styles.completed
+                : job.status === "failed"
+                  ? styles.failed
+                  : job.status === "in_progress"
+                    ? styles.inProgress
+                    : styles.pending
+            }`}
+          >
+            {job.status}
+          </span>
+        );
+      },
+    },
+    {
+      title: "Book",
+      property: "book_name",
+      className: styles.bookColumn,
+      render: (job) => job.book_name || "All Books",
+    },
+    {
+      title: "Model",
+      property: "model",
+      className: styles.modelColumn,
+    },
+    {
+      title: "Created",
+      property: "created_at",
+      className: styles.dateColumn,
+      render: (job) => new Date(job.created_at).toLocaleString(),
+    },
+    {
+      title: "Cost",
+      property: "actual_cost",
+      className: styles.costColumn,
+      render: (job) => {
+        const summary = summaries[job.id];
+        if (summary?.total_cost !== undefined) {
+          return `$${summary.total_cost.toFixed(4)}`;
+        }
+        return job.actual_cost ? `$${job.actual_cost.toFixed(4)}` : "-";
+      },
+    },
+    {
+      title: "Actions",
+      property: "id",
+      className: styles.actionsColumn,
+      render: (job) => (
+        <div style={{ display: "flex", gap: "8px" }}>
+          <Button
+            variant="outlined"
+            onClick={() => handleViewBibleDetails(job.id)}
+          >
+            View Details
+          </Button>
+          {(job.status === "validating" ||
+            job.status === "in_progress" ||
+            job.status === "finalizing") && (
+            <Button
+              variant="outlined"
+              onClick={() => handleCancelBatch(job.id)}
+              disabled={!!cancellingId && cancellingId === job.id}
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  const childColumns: TableColumn<any>[] = [
+    {
+      title: "ID",
+      property: "id",
+      className: styles.idColumn,
+    },
+    {
+      title: "OpenAI Batch ID",
+      property: "openai_batch_id",
+      className: styles.batchIdColumn,
+      render: (job) => job.openai_batch_id || "-",
+    },
+    {
+      title: "Status",
+      property: "status",
+      className: styles.statusColumn,
+      render: (job) => (
+        <span
+          className={`${styles.statusBadge} ${
+            job.status === "completed"
+              ? styles.completed
+              : job.status === "failed"
+                ? styles.failed
+                : job.status === "in_progress"
+                  ? styles.inProgress
+                  : styles.pending
+          }`}
+        >
+          {job.status}
+        </span>
+      ),
+    },
+    {
+      title: "Book",
+      property: "book_name",
+      className: styles.bookColumn,
+    },
+    {
+      title: "Progress",
+      property: "completed_requests",
+      className: styles.progressColumn,
+      render: (job) => {
+        if (job.total_requests) {
+          const completed = job.completed_requests || 0;
+          const failed = job.failed_requests || 0;
+          const total = job.total_requests;
+          return `${completed + failed}/${total}`;
+        }
+        return "-";
+      },
+    },
+    {
+      title: "Cost",
+      property: "actual_cost",
+      className: styles.costColumn,
+      render: (job) =>
+        job.actual_cost ? `$${job.actual_cost.toFixed(4)}` : "-",
+    },
+    {
+      title: "Actions",
+      property: "id",
+      className: styles.actionsColumn,
+      render: (job) => (
+        <div style={{ display: "flex", gap: "8px" }}>
+          <Button
+            variant="outlined"
+            onClick={() => handleMonitorBibleBatch(job.id)}
+            disabled={!!monitoringId && monitoringId === job.id}
+          >
+            Monitor
+          </Button>
+          {(job.status === "validating" ||
+            job.status === "in_progress" ||
+            job.status === "finalizing") && (
+            <Button
+              variant="outlined"
+              onClick={() => handleCancelBatch(job.id)}
+              disabled={!!cancellingId && cancellingId === job.id}
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       ),
     },
   ];
@@ -501,6 +859,59 @@ export const AutoHighlights = () => {
           </div>
         </div>
       </section>
+
+      {/* Recent Batches Section */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>Recent Auto-Highlight Batches</h3>
+        <p className={styles.sectionDescription}>
+          View and manage auto-highlight batch processing jobs
+        </p>
+
+        <div className={styles.tableContainer}>
+          <Table
+            columns={batchColumns}
+            data={batchJobs}
+            isLoading={listLoading}
+            zebra
+          />
+        </div>
+      </section>
+
+      {/* Child Batch Details Modal */}
+      <Dialog
+        open={bibleDetailsModalOpen}
+        onOpenChange={setBibleDetailsModalOpen}
+        maxWidth="1200px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Auto-Highlight Batch Details</Dialog.Head>
+          <Dialog.Description>
+            Showing all book batches for parent ID: {selectedParentId}
+          </Dialog.Description>
+          <Button
+            onClick={() =>
+              selectedParentId && handleMonitorBibleBatch(selectedParentId)
+            }
+            disabled={!!monitoringId}
+          >
+            Refresh Statuses
+          </Button>
+          <div style={{ marginTop: "20px" }}>
+            {childJobsLoading ? (
+              <div style={{ padding: "20px", textAlign: "center" }}>
+                Loading child batches...
+              </div>
+            ) : (
+              <Table columns={childColumns} data={childJobs} zebra />
+            )}
+          </div>
+          <Dialog.Footer>
+            <Button onClick={() => setBibleDetailsModalOpen(false)}>
+              Close
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
     </div>
   );
 };
