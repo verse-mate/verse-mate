@@ -51,6 +51,7 @@ import {
   TestamentsSchema,
   UserChatHistorySchema,
 } from "./schemas/bible-response.schema";
+import { AutoHighlightService } from "./services/auto-highlight.service";
 import { BibleService } from "./services/bible.service";
 import { ChatService } from "./services/chat.service";
 import { PromptService } from "./services/prompt.service";
@@ -82,17 +83,19 @@ const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("bible plugin"))
   .state((state) => {
+    const bibleRepository = new BibleRepository(state.db);
     return {
       ...state,
-      bibleService: new BibleService(state.db, new BibleRepository(state.db)),
+      bibleService: new BibleService(state.db, bibleRepository),
       chatService: new ChatService(
         new ChatRepository(state.db),
-        new BibleRepository(state.db),
+        bibleRepository,
       ),
       promptService: new PromptService(
-        new BibleService(state.db, new BibleRepository(state.db)),
+        new BibleService(state.db, bibleRepository),
         new PromptRepository(state.db),
       ),
+      autoHighlightService: new AutoHighlightService(state.db, bibleRepository),
     };
   })
   .group("/bible", (app) =>
@@ -1224,6 +1227,117 @@ const plugin = new Elysia()
             200: HighlightDeleteSchema,
             ...StandardErrorResponses,
           },
+        },
+      )
+      // Auto-highlights endpoints
+      .get(
+        "/auto-highlights/:book_id/:chapter_number",
+        async ({ params, query, store: { autoHighlightService } }) => {
+          const bookId = Number.parseInt(params.book_id, 10);
+          const chapterNumber = Number.parseInt(params.chapter_number, 10);
+
+          // Parse theme_ids if provided (comma-separated)
+          const themeIds = query.themes
+            ? query.themes
+                .split(",")
+                .map((id) => Number.parseInt(id.trim(), 10))
+            : undefined;
+
+          // Parse relevance parameters
+          // Format: "theme_id:relevance,theme_id:relevance" e.g., "1:2,3:4"
+          let themeRelevanceMap: Map<number, number> | undefined;
+          if (query.theme_relevance) {
+            themeRelevanceMap = new Map();
+            const pairs = query.theme_relevance.split(",");
+            for (const pair of pairs) {
+              const [themeIdStr, relevanceStr] = pair.split(":");
+              if (themeIdStr && relevanceStr) {
+                themeRelevanceMap.set(
+                  Number.parseInt(themeIdStr.trim(), 10),
+                  Number.parseInt(relevanceStr.trim(), 10),
+                );
+              }
+            }
+          }
+
+          // Global relevance fallback
+          let defaultRelevance: number | undefined;
+          if (query.min_relevance) {
+            defaultRelevance = Number.parseInt(query.min_relevance, 10);
+          } else {
+            defaultRelevance =
+              await autoHighlightService.getGlobalDefaultRelevance();
+          }
+
+          const highlights = await autoHighlightService.getHighlightsByChapter({
+            book_id: bookId,
+            chapter_number: chapterNumber,
+            theme_ids: themeIds,
+            theme_relevance_map: themeRelevanceMap,
+            default_relevance: defaultRelevance,
+          });
+
+          return { success: true, data: highlights };
+        },
+        {
+          params: t.Object({
+            book_id: t.String(),
+            chapter_number: t.String(),
+          }),
+          query: t.Object({
+            themes: t.Optional(t.String()),
+            theme_relevance: t.Optional(t.String()),
+            min_relevance: t.Optional(t.String()),
+          }),
+        },
+      )
+      .get("/highlight-themes", async ({ store: { autoHighlightService } }) => {
+        const themes = await autoHighlightService.getActiveThemes();
+        return { success: true, data: themes };
+      })
+      .get(
+        "/user/theme-preferences",
+        async ({ currentUserId, store: { autoHighlightService } }) => {
+          if (!currentUserId) {
+            throw new UnauthorizedError("Authentication required");
+          }
+
+          const preferences =
+            await autoHighlightService.getUserThemePreferences(currentUserId);
+          return { success: true, data: preferences };
+        },
+      )
+      .patch(
+        "/user/theme-preferences/:theme_id",
+        async ({
+          params,
+          body,
+          currentUserId,
+          store: { autoHighlightService },
+        }) => {
+          if (!currentUserId) {
+            throw new UnauthorizedError("Authentication required");
+          }
+
+          const themeId = Number.parseInt(params.theme_id, 10);
+
+          await autoHighlightService.updateUserThemePreference({
+            user_id: currentUserId,
+            theme_id: themeId,
+            ...body,
+          });
+
+          return { success: true };
+        },
+        {
+          params: t.Object({
+            theme_id: t.String(),
+          }),
+          body: t.Object({
+            is_enabled: t.Optional(t.Boolean()),
+            custom_color: t.Optional(t.String()),
+            relevance_threshold: t.Optional(t.Number()),
+          }),
         },
       ),
   );

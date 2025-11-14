@@ -175,6 +175,43 @@
     background-color: rgb(255 152 0 / 30%);
 }
 
+/* Auto-highlight styles - lighter background + underline for visual distinction */
+.autoHighlightYellow {
+    background-color: rgb(255 255 0 / 20%);
+    border-bottom: 2px solid rgb(255 255 0 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightBlue {
+    background-color: rgb(173 216 230 / 20%);
+    border-bottom: 2px solid rgb(173 216 230 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightGreen {
+    background-color: rgb(144 238 144 / 20%);
+    border-bottom: 2px solid rgb(144 238 144 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightOrange {
+    background-color: rgb(255 165 0 / 20%);
+    border-bottom: 2px solid rgb(255 165 0 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightPink {
+    background-color: rgb(255 192 203 / 20%);
+    border-bottom: 2px solid rgb(255 192 203 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightPurple {
+    background-color: rgb(221 160 221 / 20%);
+    border-bottom: 2px solid rgb(221 160 221 / 50%);
+    cursor: pointer;
+}
+
 /* Text selection styles */
 .versesContainer::selection,
 .verseText::selection {

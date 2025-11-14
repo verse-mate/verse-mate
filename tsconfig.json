@@ -32,5 +32,5 @@
       "@verse-mate/*": ["./packages/*"]
     }
   },
-  "exclude": ["./apps/website/*", "playwright.config.ts"]
+  "exclude": ["./apps/website/*", "playwright.config.ts", "VerseMate"]
 }
