@@ -33,7 +33,10 @@ async function getFileContent(fileId: string) {
       console.log("Has output array:", !!parsed.response?.body?.output);
 
       if (parsed.response?.body?.output_text) {
-        console.log("Output Text (first 200 chars):", parsed.response.body.output_text.substring(0, 200));
+        console.log(
+          "Output Text (first 200 chars):",
+          parsed.response.body.output_text.substring(0, 200),
+        );
       }
 
       if (parsed.response?.body?.output) {
@@ -43,7 +46,10 @@ async function getFileContent(fileId: string) {
           console.log("Output[1] type:", outputItem?.type);
           console.log("Output[1] content length:", outputItem?.content?.length);
           if (outputItem?.content?.[0]?.text) {
-            console.log("Output[1].content[0].text (first 200 chars):", outputItem.content[0].text.substring(0, 200));
+            console.log(
+              "Output[1].content[0].text (first 200 chars):",
+              outputItem.content[0].text.substring(0, 200),
+            );
           }
         }
       }

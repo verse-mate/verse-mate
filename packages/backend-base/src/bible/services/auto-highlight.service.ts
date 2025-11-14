@@ -147,7 +147,10 @@ export class AutoHighlightService {
           const { book } = await this.bibleRepository.getBook({
             book_id: bookId,
           });
-          if (!book || book.name.toLowerCase() !== parsedBookName.toLowerCase()) {
+          if (
+            !book ||
+            book.name.toLowerCase() !== parsedBookName.toLowerCase()
+          ) {
             console.warn(
               `[AUTO-HIGHLIGHT] Reference book mismatch: "${parsedBookName}" vs target bookId=${bookId}`,
             );

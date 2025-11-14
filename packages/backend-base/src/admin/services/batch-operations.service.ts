@@ -20,6 +20,9 @@ interface BatchJobRequest {
     input: string;
     max_output_tokens: number;
   };
+  metadata?: {
+    book_id: number;
+  };
 }
 
 const openai = new OpenAI({
@@ -3775,7 +3778,7 @@ export class BatchOperationService {
             processedContent = true;
           } else {
             console.warn(
-              `[BATCH] No AI content found in response for ${bookName}`,
+              `[BATCH] No AI content found in response for book_id=${bookRecord.book_id}`,
             );
           }
         }
@@ -4624,9 +4627,11 @@ export class BatchOperationService {
     }
 
     const file = await openai.files.create({
-      file: new Blob([buffer], { type: "application/jsonl" }),
+      file: new File(
+        [buffer],
+        `auto_highlight_${book.book_id}_${Date.now()}.jsonl`,
+      ),
       purpose: "batch",
-      filename: `auto_highlight_${book.book_id}_${Date.now()}.jsonl`,
     });
 
     const batch = await openai.batches.create({

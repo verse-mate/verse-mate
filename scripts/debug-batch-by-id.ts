@@ -24,7 +24,10 @@ async function debugBatchById(batchId: string) {
     console.log("Error File ID:", batch.error_file_id);
 
     if (!batch.output_file_id) {
-      console.log("\nNo output file available yet. Batch status:", batch.status);
+      console.log(
+        "\nNo output file available yet. Batch status:",
+        batch.status,
+      );
 
       // Check DB for more info
       const dbBatch = await db
@@ -74,7 +77,10 @@ async function debugBatchById(batchId: string) {
       }
 
       if (parsed.response?.body?.output) {
-        console.log("\nOutput array length:", parsed.response.body.output.length);
+        console.log(
+          "\nOutput array length:",
+          parsed.response.body.output.length,
+        );
         if (parsed.response.body.output.length > 1) {
           const outputItem = parsed.response.body.output[1];
           console.log("Output[1] type:", outputItem?.type);
@@ -89,7 +95,10 @@ async function debugBatchById(batchId: string) {
       }
 
       if (parsed.response?.body?.error) {
-        console.log("\n❌ ERROR:", JSON.stringify(parsed.response.body.error, null, 2));
+        console.log(
+          "\n❌ ERROR:",
+          JSON.stringify(parsed.response.body.error, null, 2),
+        );
       }
 
       console.log("\n--- Full response.body structure ---");

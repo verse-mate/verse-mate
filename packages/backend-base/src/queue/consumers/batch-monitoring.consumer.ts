@@ -216,7 +216,9 @@ export const batchMonitoringConsumer = async (job: Job) => {
     }
 
     // Check if batch is already in a final state
-    if (["completed", "failed", "cancelled", "expired"].includes(batchJob.status)) {
+    if (
+      ["completed", "failed", "cancelled", "expired"].includes(batchJob.status)
+    ) {
       console.log(
         `[BATCH_MONITORING] Batch ${batchId} already in final state (${batchJob.status}). Removing from queue.`,
       );
@@ -247,7 +249,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
       console.log(`[BATCH_MONITORING] Batch ${batchId} completed.`);
       const outputFileId = batch.output_file_id;
       if (outputFileId) {
-        let fileContent;
+        let fileContent: Response;
         try {
           fileContent = await openai.files.content(outputFileId);
         } catch (fileError) {
@@ -255,7 +257,10 @@ export const batchMonitoringConsumer = async (job: Job) => {
             `[BATCH_MONITORING] Failed to retrieve output file ${outputFileId} for batch ${batchId}:`,
             fileError,
           );
-          if (fileError instanceof Error && fileError.message?.includes("404")) {
+          if (
+            fileError instanceof Error &&
+            fileError.message?.includes("404")
+          ) {
             console.error(
               `[BATCH_MONITORING] Output file ${outputFileId} not found (404). This file may have expired or been deleted. Marking batch as failed.`,
             );

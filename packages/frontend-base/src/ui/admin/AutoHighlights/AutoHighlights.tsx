@@ -1,9 +1,8 @@
 "use client";
 import { api } from "backend-api";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
-import { Dialog } from "../../Dialog";
 import { CheckIcon, ChevronDownIcon } from "../../Icons";
 import { SelectDropdown } from "../../SelectDropdown";
 import { Table, type TableColumn } from "../../Table/Table";
@@ -165,7 +164,7 @@ export const AutoHighlights = () => {
       }
     } catch (error: any) {
       const message =
-        (error?.response?.data && error.response.data.message) ||
+        error?.response?.data?.message ||
         error?.message ||
         "Failed to create auto-highlight batch";
       setCreateError(message);
@@ -511,7 +510,6 @@ export const AutoHighlights = () => {
           </div>
         </div>
       </section>
-
     </div>
   );
 };
