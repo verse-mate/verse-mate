@@ -220,6 +220,14 @@ export const batchMonitoringConsumer = async (job: Job) => {
       console.log(
         `[BATCH_MONITORING] Batch ${batchId} already in final state (${batchJob.status}). Removing from queue.`,
       );
+      try {
+        await cleanupBatchFiles(batchId);
+      } catch (cleanupErr) {
+        console.warn(
+          `[BATCH_MONITORING] Cleanup skipped/failed for ${batchId}:`,
+          cleanupErr,
+        );
+      }
       return; // Don't re-queue if already finished
     }
 
@@ -654,9 +662,14 @@ export const batchMonitoringConsumer = async (job: Job) => {
     const currentAttempt = monitoringAttempt || 1;
 
     if (currentAttempt < maxAttempts) {
-      const delay = Math.min(initialDelay * 2 ** (currentAttempt - 1), maxDelay);
+      const baseDelay = Math.min(
+        initialDelay * 2 ** (currentAttempt - 1),
+        maxDelay,
+      );
+      const jitter = Math.floor(baseDelay * 0.2 * Math.random()); // up to 20% jitter
+      const delay = baseDelay + jitter;
       console.log(
-        `[BATCH_MONITORING] Re-queuing batch ${batchId} with delay of ${delay / 1000} seconds. Attempt ${currentAttempt}/${maxAttempts}`,
+        `[BATCH_MONITORING] Re-queuing batch ${batchId} with delay of ${Math.floor(delay / 1000)}s. Attempt ${currentAttempt}/${maxAttempts}`,
       );
       await batchMonitoringQueue.add(
         BATCH_MONITORING_QUEUE,

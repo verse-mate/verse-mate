@@ -98,8 +98,9 @@ export class AutoHighlightService {
   async processAIResponse(bookId: number, aiResponse: string): Promise<number> {
     const highlights: any[] = [];
 
+    // Capture theme name up to the " - Relevance:" delimiter and restrict relevance to 1-5
     const highlightRegex =
-      /{(verse|chapter):([^}]+)}\s*-\s*(.+?)\s*-\s*Relevance:\s*(\d)/gi;
+      /{(verse|chapter):([^}]+)}\s*-\s*(.*?)\s*-\s*Relevance:\s*([1-5])\b/gi;
 
     const matches = Array.from(aiResponse.matchAll(highlightRegex));
 
@@ -117,8 +118,10 @@ export class AutoHighlightService {
       }
 
       const theme = await this.repository.getThemeByName(themeName);
-      if (!theme) {
-        console.warn(`[AUTO-HIGHLIGHT] Theme not found: ${themeName}`);
+      if (!theme || theme.is_active === false) {
+        console.warn(
+          `[AUTO-HIGHLIGHT] Theme not found or inactive: ${themeName}`,
+        );
         continue;
       }
 
@@ -133,14 +136,37 @@ export class AutoHighlightService {
         // Parse: "Genesis 1:1" or "Genesis 1:1-3"
         const verseMatch = reference.match(/^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$/);
         if (verseMatch) {
-          parsedRef = {
-            bookName: verseMatch[1].trim(),
-            chapterNumber: Number.parseInt(verseMatch[2], 10),
-            startVerse: Number.parseInt(verseMatch[3], 10),
-            endVerse: verseMatch[4]
-              ? Number.parseInt(verseMatch[4], 10)
-              : Number.parseInt(verseMatch[3], 10),
-          };
+          const parsedBookName = verseMatch[1].trim();
+          const chapterNumber = Number.parseInt(verseMatch[2], 10);
+          const startVerse = Number.parseInt(verseMatch[3], 10);
+          const endVerse = verseMatch[4]
+            ? Number.parseInt(verseMatch[4], 10)
+            : startVerse;
+
+          // Ensure reference belongs to the requested bookId
+          const { book } = await this.bibleRepository.getBook({
+            book_id: bookId,
+          });
+          if (!book || book.name.toLowerCase() !== parsedBookName.toLowerCase()) {
+            console.warn(
+              `[AUTO-HIGHLIGHT] Reference book mismatch: "${parsedBookName}" vs target bookId=${bookId}`,
+            );
+          } else if (
+            !Number.isFinite(startVerse) ||
+            !Number.isFinite(endVerse) ||
+            startVerse <= 0 ||
+            endVerse <= 0 ||
+            endVerse < startVerse
+          ) {
+            console.warn(`[AUTO-HIGHLIGHT] Invalid verse range: ${reference}`);
+          } else {
+            parsedRef = {
+              bookName: parsedBookName,
+              chapterNumber,
+              startVerse,
+              endVerse,
+            };
+          }
         }
       } else if (placeholderType === "chapter") {
         // Parse: "Genesis 1" or "Genesis 1-3"
@@ -170,7 +196,7 @@ export class AutoHighlightService {
 
           if (!defaultVersion) {
             console.warn(
-              `[AUTO-HIGHLIGHT] Default version not found, skipping chapter placeholder`,
+              "[AUTO-HIGHLIGHT] Default version not found, skipping chapter placeholder",
             );
             continue;
           }

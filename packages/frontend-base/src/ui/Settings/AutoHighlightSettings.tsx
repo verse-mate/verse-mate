@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useMutation from "../../hooks/useMutation";
 import { Button } from "../Button/Button";
 import autoHighlightStyles from "./autoHighlightSettings.module.css";
@@ -30,6 +30,7 @@ export const AutoHighlightSettings = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingChanges, setPendingChanges] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const relevanceDebounceRef = useRef<Record<number, number | undefined>>({});
 
   // Fetch user theme preferences
   useEffect(() => {
@@ -146,25 +147,32 @@ export const AutoHighlightSettings = ({
       ),
     );
 
-    // Debounce the API call
     setPendingChanges(true);
-    const timeoutId = setTimeout(async () => {
+
+    // Clear any pending debounce for this theme
+    const existing = relevanceDebounceRef.current[themeId];
+    if (existing) {
+      clearTimeout(existing);
+    }
+
+    const timeoutId = window.setTimeout(async () => {
       try {
         await updatePreference({
           theme_id: themeId,
           relevance_threshold: newRelevance,
         });
-        setPendingChanges(false);
         setSuccessMessage("Relevance threshold updated");
         setTimeout(() => setSuccessMessage(null), 2000);
       } catch (err) {
         console.error("Failed to update relevance:", err);
         setError("Failed to update relevance threshold");
+      } finally {
         setPendingChanges(false);
+        relevanceDebounceRef.current[themeId] = undefined;
       }
     }, 500);
 
-    return () => clearTimeout(timeoutId);
+    relevanceDebounceRef.current[themeId] = timeoutId;
   };
 
   const handleEnableAll = async () => {
@@ -243,134 +251,137 @@ export const AutoHighlightSettings = ({
 
       {isExpanded && (
         <div className={autoHighlightStyles.container}>
-        {!isLoggedIn && (
-          <div className={autoHighlightStyles.loginPrompt}>
-            <p>
-              Sign in to customize which AI-generated highlight themes are
-              visible and set relevance preferences.
-            </p>
-          </div>
-        )}
-
-        <div className={autoHighlightStyles.description}>
-          <p>
-            AI-generated highlights help identify key verses, promises,
-            commands, and more throughout the Bible.
-          </p>
-          {isLoggedIn && (
-            <p>
-              Customize which themes are visible and set how relevant highlights
-              should be (1 = most relevant, 5 = all).
-            </p>
+          {!isLoggedIn && (
+            <div className={autoHighlightStyles.loginPrompt}>
+              <p>
+                Sign in to customize which AI-generated highlight themes are
+                visible and set relevance preferences.
+              </p>
+            </div>
           )}
-        </div>
 
-        {error && (
-          <div className={autoHighlightStyles.errorMessage}>{error}</div>
-        )}
-        {successMessage && (
-          <div className={autoHighlightStyles.successMessage}>
-            {successMessage}
+          <div className={autoHighlightStyles.description}>
+            <p>
+              AI-generated highlights help identify key verses, promises,
+              commands, and more throughout the Bible.
+            </p>
+            {isLoggedIn && (
+              <p>
+                Customize which themes are visible and set how relevant
+                highlights should be (1 = most relevant, 5 = all).
+              </p>
+            )}
           </div>
-        )}
 
-        {isLoggedIn && (
-          <div className={autoHighlightStyles.actions}>
-            <Button
-              variant="outlined"
-              onClick={handleEnableAll}
-              disabled={pendingChanges}
-            >
-              Enable All
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleDisableAll}
-              disabled={pendingChanges}
-            >
-              Disable All
-            </Button>
-          </div>
-        )}
+          {error && (
+            <div className={autoHighlightStyles.errorMessage}>{error}</div>
+          )}
+          {successMessage && (
+            <div className={autoHighlightStyles.successMessage}>
+              {successMessage}
+            </div>
+          )}
 
-        <div className={autoHighlightStyles.themeList}>
-          {themes.map((theme) => (
-            <div key={theme.theme_id} className={autoHighlightStyles.themeItem}>
-              <div className={autoHighlightStyles.themeHeader}>
-                <label className={autoHighlightStyles.themeToggle}>
-                  <input
-                    type="checkbox"
-                    checked={theme.is_enabled}
-                    onChange={() =>
-                      handleToggleTheme(theme.theme_id, theme.is_enabled)
-                    }
-                    disabled={!isLoggedIn}
-                    className={autoHighlightStyles.checkbox}
-                  />
-                  <span className={autoHighlightStyles.themeName}>
-                    <span
-                      className={autoHighlightStyles.colorBadge}
-                      style={getColorBadgeStyle(theme.theme_color)}
+          {isLoggedIn && (
+            <div className={autoHighlightStyles.actions}>
+              <Button
+                variant="outlined"
+                onClick={handleEnableAll}
+                disabled={pendingChanges}
+              >
+                Enable All
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handleDisableAll}
+                disabled={pendingChanges}
+              >
+                Disable All
+              </Button>
+            </div>
+          )}
+
+          <div className={autoHighlightStyles.themeList}>
+            {themes.map((theme) => (
+              <div
+                key={theme.theme_id}
+                className={autoHighlightStyles.themeItem}
+              >
+                <div className={autoHighlightStyles.themeHeader}>
+                  <label className={autoHighlightStyles.themeToggle}>
+                    <input
+                      type="checkbox"
+                      checked={theme.is_enabled}
+                      onChange={() =>
+                        handleToggleTheme(theme.theme_id, theme.is_enabled)
+                      }
+                      disabled={!isLoggedIn}
+                      className={autoHighlightStyles.checkbox}
                     />
-                    {theme.theme_name}
-                  </span>
-                </label>
-              </div>
+                    <span className={autoHighlightStyles.themeName}>
+                      <span
+                        className={autoHighlightStyles.colorBadge}
+                        style={getColorBadgeStyle(theme.theme_color)}
+                      />
+                      {theme.theme_name}
+                    </span>
+                  </label>
+                </div>
 
-              {theme.theme_description && (
-                <p className={autoHighlightStyles.themeDescription}>
-                  {theme.theme_description}
-                </p>
-              )}
+                {theme.theme_description && (
+                  <p className={autoHighlightStyles.themeDescription}>
+                    {theme.theme_description}
+                  </p>
+                )}
 
-              <div className={autoHighlightStyles.relevanceControl}>
-                <label className={autoHighlightStyles.relevanceLabel}>
-                  Relevance: {theme.relevance_threshold}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={theme.relevance_threshold}
-                  onChange={(e) =>
-                    handleRelevanceChange(
-                      theme.theme_id,
-                      Number(e.target.value),
-                    )
-                  }
-                  disabled={!isLoggedIn || !theme.is_enabled}
-                  className={autoHighlightStyles.slider}
-                />
-                <div className={autoHighlightStyles.relevanceLabels}>
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span>5</span>
+                <div className={autoHighlightStyles.relevanceControl}>
+                  <label className={autoHighlightStyles.relevanceLabel}>
+                    Relevance: {theme.relevance_threshold}
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={theme.relevance_threshold}
+                    onChange={(e) =>
+                      handleRelevanceChange(
+                        theme.theme_id,
+                        Number(e.target.value),
+                      )
+                    }
+                    disabled={!isLoggedIn || !theme.is_enabled}
+                    className={autoHighlightStyles.slider}
+                  />
+                  <div className={autoHighlightStyles.relevanceLabels}>
+                    <span>1</span>
+                    <span>2</span>
+                    <span>3</span>
+                    <span>4</span>
+                    <span>5</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className={autoHighlightStyles.legend}>
-          <h4>Visual Guide:</h4>
-          <div className={autoHighlightStyles.legendItems}>
-            <div className={autoHighlightStyles.legendItem}>
-              <span className={autoHighlightStyles.legendSwatch}>
-                <span className={autoHighlightStyles.userHighlight} />
-              </span>
-              <span>Your highlights (solid background)</span>
-            </div>
-            <div className={autoHighlightStyles.legendItem}>
-              <span className={autoHighlightStyles.legendSwatch}>
-                <span className={autoHighlightStyles.autoHighlight} />
-              </span>
-              <span>Auto-highlights (lighter background + underline)</span>
+          <div className={autoHighlightStyles.legend}>
+            <h4>Visual Guide:</h4>
+            <div className={autoHighlightStyles.legendItems}>
+              <div className={autoHighlightStyles.legendItem}>
+                <span className={autoHighlightStyles.legendSwatch}>
+                  <span className={autoHighlightStyles.userHighlight} />
+                </span>
+                <span>Your highlights (solid background)</span>
+              </div>
+              <div className={autoHighlightStyles.legendItem}>
+                <span className={autoHighlightStyles.legendSwatch}>
+                  <span className={autoHighlightStyles.autoHighlight} />
+                </span>
+                <span>Auto-highlights (lighter background + underline)</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );

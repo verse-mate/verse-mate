@@ -147,19 +147,28 @@ export const AutoHighlights = () => {
         ...(processWholeBible ? {} : { bookName: selectedBook }),
       };
 
-      await api.admin["batch-auto-highlights"].post(payload);
+      const response = await api.admin["batch-auto-highlights"].post(payload);
 
-      setCreateSuccess(
-        processWholeBible
-          ? "Auto-highlight batch creation started for entire Bible. View progress in Batch Operations page."
-          : `Auto-highlight batch creation started for ${selectedBook}. View progress in Batch Operations page.`,
-      );
-
-      // Reset form
-      setProcessWholeBible(true);
-      setSelectedBook("");
-    } catch (error) {
-      setCreateError("Failed to create auto-highlight batch");
+      if (response.data?.success) {
+        setCreateSuccess(
+          processWholeBible
+            ? "Auto-highlight batch creation started for entire Bible. View progress in Batch Operations page."
+            : `Auto-highlight batch creation started for ${selectedBook}. View progress in Batch Operations page.`,
+        );
+        setProcessWholeBible(true);
+        setSelectedBook("");
+      } else {
+        const message =
+          (response.data && (response.data as any).message) ||
+          "Failed to create auto-highlight batch";
+        setCreateError(message);
+      }
+    } catch (error: any) {
+      const message =
+        (error?.response?.data && error.response.data.message) ||
+        error?.message ||
+        "Failed to create auto-highlight batch";
+      setCreateError(message);
       console.error("Failed to create batch:", error);
     } finally {
       setCreating(false);

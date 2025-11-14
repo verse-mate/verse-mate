@@ -1234,10 +1234,44 @@ const plugin = new Elysia()
               async ({
                 body,
                 currentUserId,
-                store: { getBatchOperationService },
+                store: { getBatchOperationService, db },
+                set,
               }) => {
                 if (!currentUserId) {
                   throw new UnauthorizedError("Authentication required");
+                }
+
+                if (body.type === "book" && !body.bookName) {
+                  set.status = 400;
+                  return {
+                    success: false,
+                    message: "bookName is required when type is 'book'",
+                  };
+                }
+                if (body.type === "bible" && body.bookName) {
+                  set.status = 400;
+                  return {
+                    success: false,
+                    message:
+                      "bookName must not be provided when type is 'bible'",
+                  };
+                }
+
+                // Validate book existence when type is 'book'
+                if (body.type === "book" && body.bookName) {
+                  const book = await db
+                    .getOrCreateConnection()
+                    .selectFrom("books")
+                    .where("name", "=", body.bookName)
+                    .select("book_id")
+                    .executeTakeFirst();
+                  if (!book) {
+                    set.status = 400;
+                    return {
+                      success: false,
+                      message: `Unknown book: ${body.bookName}`,
+                    };
+                  }
                 }
 
                 const service = getBatchOperationService();
@@ -1245,7 +1279,7 @@ const plugin = new Elysia()
                   body.model,
                   currentUserId,
                   body.effort,
-                  body.bookName,
+                  body.type === "book" ? body.bookName : undefined,
                 );
 
                 return { success: true, data: result };
@@ -1283,16 +1317,18 @@ const plugin = new Elysia()
                 body,
                 currentUserId,
                 store: { getAutoHighlightService },
+                set,
               }) => {
                 if (!currentUserId) {
                   throw new UnauthorizedError("Authentication required");
                 }
-
                 const themeId = Number.parseInt(params.theme_id, 10);
+                if (!Number.isFinite(themeId)) {
+                  set.status = 400;
+                  return { success: false, message: "Invalid theme_id" };
+                }
                 const service = getAutoHighlightService();
-
                 await service.updateThemeActiveStatus(themeId, body.is_active);
-
                 return { success: true };
               },
               {

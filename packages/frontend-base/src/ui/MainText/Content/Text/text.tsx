@@ -705,11 +705,10 @@ export const Text = ({
   const handleAutoHighlightClick = useCallback(
     (e: React.MouseEvent, autoHighlight: AutoHighlight) => {
       e.stopPropagation();
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
-      setAutoHighlightMenuPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top,
-      });
+      const { clientX, clientY } = e;
+      const x = clientX;
+      const y = clientY + window.scrollY; // account for scroll to place tooltip at cursor
+      setAutoHighlightMenuPosition({ x, y });
       setSelectedAutoHighlight(autoHighlight);
       setShowAutoHighlightTooltip(true);
     },
@@ -878,7 +877,8 @@ export const Text = ({
   const renderAutoHighlights = useCallback(
     (verseText: string, autoHighlights: AutoHighlight[]) => {
       // If multiple auto-highlights for the same verse, use highest priority (lowest theme_id)
-      const primaryAutoHighlight = autoHighlights.sort(
+      // Use a copy to avoid mutating source array
+      const primaryAutoHighlight = [...autoHighlights].sort(
         (a, b) => a.theme_id - b.theme_id,
       )[0];
 

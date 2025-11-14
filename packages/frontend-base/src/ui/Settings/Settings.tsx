@@ -365,7 +365,7 @@ export const Settings = ({
       )}
 
       {/* Auto-Highlight Settings Section */}
-      <AutoHighlightSettings isLoggedIn={!!session?.id} />
+      {session?.id && <AutoHighlightSettings isLoggedIn={true} />}
 
       {/* User Profile Section */}
       {session?.id && (

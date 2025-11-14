@@ -3668,22 +3668,36 @@ export class BatchOperationService {
         return;
       }
 
-      // Get book name from custom_id in first line
-      const firstResponse = JSON.parse(lines[0]);
-      const customIdParts = firstResponse.custom_id.split("-");
-      const timestampIndex = customIdParts.length - 1;
-      const bookName = customIdParts.slice(2, timestampIndex).join("-");
+      let bookRecord: { book_id: number } | undefined;
 
-      const book = await connection
-        .selectFrom("books")
-        .where("name", "=", bookName)
-        .select("book_id")
-        .executeTakeFirst();
+      // Prefer DB book_id; if absent, try to read a trusted metadata.book_id from the output lines
+      let resolvedBookId: number | null = batchJob.book_id ?? null;
 
-      if (!book) {
-        console.error(
-          `[BATCH] Book not found for custom_id: ${firstResponse.custom_id}`,
-        );
+      if (!resolvedBookId) {
+        for (const line of lines) {
+          try {
+            const obj = JSON.parse(line);
+            const metaBookId = obj?.metadata?.book_id;
+            if (typeof metaBookId === "number" && Number.isFinite(metaBookId)) {
+              resolvedBookId = metaBookId;
+              break;
+            }
+          } catch {
+            // skip invalid lines
+          }
+        }
+      }
+
+      if (resolvedBookId) {
+        bookRecord = await connection
+          .selectFrom("books")
+          .where("book_id", "=", resolvedBookId)
+          .select("book_id")
+          .executeTakeFirst();
+      }
+
+      if (!bookRecord) {
+        console.error(`[BATCH] Could not resolve book_id for batch ${batchId}`);
         return;
       }
 
@@ -3706,51 +3720,59 @@ export class BatchOperationService {
       const autoHighlightRepo = new AutoHighlightRepository(this.db);
 
       // Delete existing auto-highlights for this book (regenerating)
-      await autoHighlightRepo.deleteHighlightsByBook(book.book_id);
+      await autoHighlightRepo.deleteHighlightsByBook(bookRecord.book_id);
 
       let totalPromptTokens = 0;
       let totalCompletionTokens = 0;
 
       // Process all lines to get AI content and calculate tokens
+      let processedContent = false;
       for (const line of lines) {
-        const response = JSON.parse(line);
+        let response: any;
+        try {
+          response = JSON.parse(line);
+        } catch (e) {
+          console.warn(
+            `[BATCH] Skipping invalid JSON line for batch ${batchId}:`,
+            e,
+          );
+          continue;
+        }
 
-        if (response.response?.body?.usage) {
+        if (response?.response?.body?.usage) {
           totalPromptTokens += response.response.body.usage.input_tokens || 0;
           totalCompletionTokens +=
             response.response.body.usage.output_tokens || 0;
         }
 
         // Only process the AI content from the first successful response
-        if (response.response?.status_code === 200) {
-          const responseBody = response.response.body;
+        if (!processedContent && response?.response?.status_code === 200) {
+          const body = response.response.body as any;
 
-          // Extract text content - handle both output_text and output array formats
           let aiContent: string | undefined;
 
-          if (responseBody?.output_text) {
-            // Simple string format
-            aiContent = responseBody.output_text;
-          } else if (
-            responseBody?.output &&
-            responseBody.output.length > 1 &&
-            responseBody.output[1]?.content &&
-            responseBody.output[1].content.length > 0 &&
-            responseBody.output[1].content[0]?.text
-          ) {
-            // Array format (reasoning models)
-            aiContent = responseBody.output[1].content[0].text;
+          if (typeof body?.output_text === "string") {
+            aiContent = body.output_text;
+          } else if (Array.isArray(body?.output)) {
+            for (const item of body.output) {
+              const text = item?.content?.[0]?.text;
+              if (typeof text === "string" && text.trim()) {
+                aiContent = text;
+                break;
+              }
+            }
           }
 
           if (aiContent) {
             const highlightCount = await autoHighlightService.processAIResponse(
-              book.book_id,
+              bookRecord.book_id,
               aiContent,
             );
 
             console.log(
-              `[BATCH] Processed ${highlightCount} auto-highlights for ${bookName}`,
+              `[BATCH] Processed ${highlightCount} auto-highlights for book_id=${bookRecord.book_id}`,
             );
+            processedContent = true;
           } else {
             console.warn(
               `[BATCH] No AI content found in response for ${bookName}`,
@@ -4584,6 +4606,9 @@ export class BatchOperationService {
           input: highlightPrompt.prompt.replace("{book_name}", bookName),
           max_output_tokens: 50000,
         },
+        metadata: {
+          book_id: book.book_id,
+        },
       },
     ];
 
@@ -4599,11 +4624,9 @@ export class BatchOperationService {
     }
 
     const file = await openai.files.create({
-      file: new File(
-        [buffer],
-        `auto_highlight_${book.book_id}_${Date.now()}.jsonl`,
-      ),
+      file: new Blob([buffer], { type: "application/jsonl" }),
       purpose: "batch",
+      filename: `auto_highlight_${book.book_id}_${Date.now()}.jsonl`,
     });
 
     const batch = await openai.batches.create({
@@ -4625,14 +4648,19 @@ export class BatchOperationService {
         parent_batch_id: parentBatchId ?? null,
         bible_version: "N/A",
         explanation_types: [],
+        input_file_id: file.id,
       } as any)
       .execute();
 
-    await this.batchMonitoringQueue.add(
-      BATCH_MONITORING_QUEUE,
-      { batchId: batch.id, model },
-      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
-    );
+    try {
+      await this.batchMonitoringQueue.add(
+        BATCH_MONITORING_QUEUE,
+        { batchId: batch.id, model },
+        { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+      );
+    } catch (e) {
+      console.warn(`[BATCH] Failed to enqueue monitor for ${batch.id}:`, e);
+    }
 
     return batch;
   }
