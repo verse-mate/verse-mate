@@ -24,3 +24,8 @@ body:has(#react-joyride-portal) [class*="grouped-content"] {
 [class~="react-joyride__tooltip"] {
   pointer-events: auto !important;
 }
+
+/* Fix: Allow clicks through overlay to reach spotlight targets */
+.react-joyride__overlay {
+  pointer-events: none !important;
+}

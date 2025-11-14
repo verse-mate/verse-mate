@@ -40,7 +40,6 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
         const node = e.target as HTMLElement | null;
         const matched = node?.closest?.(selector) as HTMLElement | null;
         if (matched) {
-          console.log(`Matched selector: ${selector}`);
           onMatch(matched);
           // Cleanup after first match
           if (clickCleanupRef.current) {
@@ -234,11 +233,11 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       placement: "bottom",
       spotlightClicks: true,
       disableOverlay: false,
-      ...(isSmallScreen && { spotlightPadding: 0 }), // Only apply custom padding on small screens
+      ...(isSmallScreen && { spotlightPadding: 0 }),
       styles: {
         spotlight: {
           borderRadius: "4px",
-          ...(isSmallScreen && { padding: "25px" }), // Custom padding only for screens ≤400px
+          ...(isSmallScreen && { padding: "25px" }),
         },
       },
     },
@@ -284,21 +283,20 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
 
   useEffect(() => {
     if (run) {
+      // Ensure mobile starts on the Bible tab at the very beginning
+      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+        // Defer to next tick so MainContent mounts and subscribes to the event
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("setActiveTab", { detail: "book" }),
+          );
+        }, 100);
+      }
       setTourRun(true);
       setStepIndex(0);
       setShowGuidedTour(false);
     }
   }, [run]);
-
-  // Debug: Log when showGuidedTour changes
-  useEffect(() => {
-    console.log(
-      "Tour mode changed:",
-      showGuidedTour ? "GUIDED" : "BASIC",
-      "Steps count:",
-      steps.length,
-    );
-  }, [showGuidedTour, steps.length]);
 
   // Attach click handlers for guided tour steps
   useEffect(() => {
@@ -314,7 +312,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       clickCleanupRef.current = null;
     }
 
-    console.log(`Setting up click handler for step ${stepIndex}`);
+    // Attach delegated click handlers per step
 
     // Step 1: Book selector (different selectors for mobile vs desktop)
     if (stepIndex === 1) {
@@ -323,39 +321,25 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
         : '[data-tour="book-selector"]';
 
       attachDelegatedClick(bookSelectorTarget, () => {
-        console.log("Book selector clicked, advancing to step 2");
-        setTimeout(() => setStepIndex(2), isMobileNow ? 600 : 400);
+        setTimeout(() => setStepIndex(2), isMobileNow ? 400 : 200);
       });
     }
     // Step 2: New Testament tab
     else if (stepIndex === 2) {
-      console.log(
-        "Attaching NT tab handler, checking element exists:",
-        document.querySelector('[data-tour="nt-tab"]'),
-      );
-      attachDelegatedClick('[data-tour="nt-tab"]', (el) => {
-        console.log("New Testament tab clicked!", el);
-        console.log("Element details:", {
-          tag: el.tagName,
-          classes: el.className,
-          dataTour: el.getAttribute("data-tour"),
-        });
-        // Longer delay on mobile to allow book list to render
-        setTimeout(() => setStepIndex(3), isMobileNow ? 800 : 500);
+      attachDelegatedClick('[data-tour="nt-tab"]', () => {
+        setTimeout(() => setStepIndex(3), isMobileNow ? 400 : 200);
       });
     }
     // Step 3: John book
     else if (stepIndex === 3) {
       attachDelegatedClick("[data-tour-john]", () => {
-        console.log("John book clicked, advancing to step 4");
-        setTimeout(() => setStepIndex(4), isMobileNow ? 600 : 400);
+        setTimeout(() => setStepIndex(4), isMobileNow ? 400 : 200);
       });
     }
     // Step 4: Chapter 1
     else if (stepIndex === 4) {
       attachDelegatedClick('[data-tour-chapter="1"]', () => {
-        console.log("Chapter 1 clicked, advancing to step 5");
-        setTimeout(() => setStepIndex(5), isMobileNow ? 600 : 400);
+        setTimeout(() => setStepIndex(5), isMobileNow ? 400 : 200);
       });
     }
 
@@ -371,54 +355,41 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     (data: CallBackProps) => {
       const { status, type, index, action } = data;
 
-      console.log("Joyride callback:", {
-        status,
-        type,
-        index,
-        action,
-        currentStep: stepIndex,
-      });
+      // Ensure mobile is on Bible tab at the start (works for basic and guided)
+      if (
+        (type === EVENTS.TOUR_START ||
+          (type === EVENTS.STEP_BEFORE && index === 0)) &&
+        typeof window !== "undefined" &&
+        window.innerWidth < 1024
+      ) {
+        window.dispatchEvent(
+          new CustomEvent("setActiveTab", { detail: "book" }),
+        );
+      }
 
       if (type === EVENTS.STEP_AFTER) {
         // For basic tour, allow Next/Back button navigation
         if (!showGuidedTour && (action === "next" || action === "prev")) {
           const nextIndex = index + (action === "prev" ? -1 : 1);
-          console.log(
-            "Basic tour: Moving from step",
-            index,
-            "to step",
-            nextIndex,
-          );
           setStepIndex(nextIndex);
         }
         // For guided tour step 0 (intro), allow Next button
         else if (showGuidedTour && index === 0 && action === "next") {
-          console.log("Guided tour: Moving from intro to step 1");
           setStepIndex(1);
         }
         // For guided tour last step (5), clicking "Finish Tour" should end the tour
         else if (showGuidedTour && index === 5 && action === "next") {
-          console.log("Guided tour: Finish Tour clicked");
           setTourRun(false);
           setStepIndex(0);
           setShowGuidedTour(false);
           onComplete?.();
         }
-        // For other guided tour steps, clicks handle advancement (not Next/Back buttons)
       } else if (type === EVENTS.TARGET_NOT_FOUND) {
-        // Don't auto-skip on target not found - wait for element to appear
-        console.log(
-          "Target not found for step",
-          index,
-          "- waiting for element. Will retry automatically.",
-        );
-        // Joyride will automatically retry finding the target
         return;
       } else if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
         // Tour completed or skipped
         if (!showGuidedTour && status === STATUS.FINISHED) {
           // Just finished basic tour (mobile or desktop), start guided tour
-          console.log("Basic tour finished, starting guided tour");
           setTourRun(false);
           setTimeout(() => {
             setShowGuidedTour(true);
@@ -427,11 +398,6 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
           }, 300);
         } else {
           // Guided tour finished or any tour skipped
-          console.log(
-            status === STATUS.FINISHED
-              ? "Guided tour finished"
-              : "Tour skipped",
-          );
           setTourRun(false);
           setStepIndex(0);
           setShowGuidedTour(false);
@@ -439,7 +405,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
         }
       }
     },
-    [showGuidedTour, stepIndex, onComplete],
+    [showGuidedTour, onComplete],
   );
 
   // Cleanup on unmount
@@ -459,22 +425,14 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       continuous
       showProgress
       showSkipButton
-      // Hide back button for guided tour (mobile or desktop), show for basic tour
+      hideCloseButton={true}
       hideBackButton={showGuidedTour}
-      disableCloseOnEsc={true} // Prevent closing with ESC on both tours
-      disableOverlayClose={true} // Prevent clicking outside on both tours
-      disableScrolling={false} // Always allow scrolling for proper positioning
+      disableCloseOnEsc={true}
+      disableOverlayClose={true}
+      disableScrolling={false}
       scrollToFirstStep={true}
-      scrollOffset={200} // Larger offset to account for scrollable containers
+      scrollOffset={200}
       callback={handleJoyrideCallback}
-      floaterProps={{
-        disableAnimation: false,
-        styles: {
-          floater: {
-            zIndex: 10100,
-          },
-        },
-      }}
       styles={{
         options: {
           primaryColor: "#1a365d",
@@ -492,10 +450,6 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
           textAlign: "left",
         },
         buttonNext: {
-          // Show Next button for:
-          // - Basic tour (mobile or desktop) - always
-          // - Guided tour step 0 and 5 (intro and completion) - mobile or desktop
-          // Hide for guided tour steps 1-4 (interactive click-to-advance)
           display:
             !showGuidedTour || stepIndex === 0 || stepIndex === 5
               ? "inline-block"
@@ -503,13 +457,6 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
           backgroundColor: "#1a365d",
           borderRadius: "6px",
           padding: "8px 16px",
-        },
-        buttonBack: {
-          color: "#666",
-          marginRight: "10px",
-        },
-        buttonSkip: {
-          color: "#999",
         },
       }}
       locale={{
