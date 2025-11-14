@@ -18,7 +18,20 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
   const [tourRun, setTourRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [showGuidedTour, setShowGuidedTour] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const clickCleanupRef = useRef<(() => void) | null>(null);
+
+  // Detect mobile vs desktop and small screens
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+      setIsSmallScreen(window.innerWidth <= 400);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Utility function to attach delegated click handlers
   const attachDelegatedClick = useCallback(
@@ -59,13 +72,19 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     {
       target: '[data-tour="chapter-title"]',
       content: "This shows the current book and chapter you're reading.",
-      placement: "bottom",
+      placement: "top",
     },
     {
       target: '[data-tour="chapter-content"]',
       content:
         "The main content displays Bible verses. Select text to highlight, bookmark, or add notes.",
-      placement: "top",
+      placement: "bottom",
+    },
+    {
+      target: '[data-tour="book-selector"]',
+      content:
+        "Browse and select books from Old Testament, New Testament, or Topics.",
+      placement: "bottom",
     },
     {
       target: '[data-tour="action-buttons"]',
@@ -83,12 +102,6 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       target: '[data-tour="menu-button-desktop"]',
       content: "Access your bookmarks, notes, highlights, and settings.",
       placement: "left",
-    },
-    {
-      target: '[data-tour="book-selector"]',
-      content:
-        "Browse and select books from Old Testament, New Testament, or Topics.",
-      placement: "bottom",
     },
   ];
 
@@ -114,7 +127,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       },
     },
     {
-      target: '.list-module__qLQ6aa__tabsList button[aria-controls*="NT"]',
+      target: '[data-tour="nt-tab"]',
       content: "Click on 'New Testament' tab.",
       placement: "bottom",
       spotlightClicks: true,
@@ -157,7 +170,117 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     },
   ];
 
-  const steps = showGuidedTour ? guidedSteps : basicSteps;
+  // Mobile tour steps (basic informational)
+  const mobileBasicSteps: Step[] = [
+    {
+      target: "body",
+      content: "Welcome to VerseMate! Let's take a quick tour.",
+      placement: "center",
+      disableBeacon: true,
+    },
+    {
+      target: '[data-tour="chapter-content"]',
+      content:
+        "This is where you read Bible verses. You can select text to highlight passages.",
+      placement: "bottom",
+    },
+    {
+      target: '[data-tour="mobile-book-selector"]',
+      content: "Tap here to browse and select different books and chapters.",
+      placement: "bottom",
+    },
+    {
+      target: '[data-tour="action-buttons"]',
+      content:
+        "Quick actions: Bookmark chapters, add notes, copy or share passages.",
+      placement: "bottom",
+    },
+    {
+      target: '[data-tour="mobile-explanation-tab"]',
+      content: "Tap this tab to view AI-powered explanations and commentary.",
+      placement: "left", // Left placement to avoid extending page
+    },
+    {
+      target: '[data-tour="mobile-menu-button"]',
+      content: "Access your bookmarks, notes, highlights, and settings here.",
+      placement: "left", // Left placement to avoid extending page
+    },
+  ];
+
+  // Mobile guided tour steps (interactive)
+  const mobileGuidedSteps: Step[] = [
+    {
+      target: "body",
+      content:
+        "Great! Now let's learn how to navigate between books. Tap Next to continue.",
+      placement: "center",
+      disableBeacon: true,
+    },
+    {
+      target: '[data-tour="mobile-book-selector"]',
+      content: "Tap on this book selector to open the navigation menu.",
+      placement: "bottom",
+      spotlightClicks: true,
+      disableOverlay: false,
+      styles: {
+        spotlight: {
+          borderRadius: "8px",
+        },
+      },
+    },
+    {
+      target: '[data-tour="nt-tab"]',
+      content: "Tap on 'New Testament' tab.",
+      placement: "bottom",
+      spotlightClicks: true,
+      disableOverlay: false,
+      ...(isSmallScreen && { spotlightPadding: 0 }), // Only apply custom padding on small screens
+      styles: {
+        spotlight: {
+          borderRadius: "4px",
+          ...(isSmallScreen && { padding: "25px" }), // Custom padding only for screens ≤400px
+        },
+      },
+    },
+    {
+      target: "[data-tour-john]",
+      content: "Tap on 'John' to expand its chapters.",
+      placement: "bottom",
+      spotlightClicks: true,
+      disableOverlay: false,
+      styles: {
+        spotlight: {
+          borderRadius: "4px",
+        },
+      },
+    },
+    {
+      target: '[data-tour-chapter="1"]',
+      content: "Tap on chapter 1.",
+      placement: "bottom",
+      spotlightClicks: true,
+      disableOverlay: false,
+      styles: {
+        spotlight: {
+          borderRadius: "4px",
+        },
+      },
+    },
+    {
+      target: "body",
+      content:
+        "Perfect! You now know how to navigate VerseMate. Enjoy reading!",
+      placement: "center",
+    },
+  ];
+
+  const steps = isMobile
+    ? showGuidedTour
+      ? mobileGuidedSteps
+      : mobileBasicSteps
+    : showGuidedTour
+      ? guidedSteps
+      : basicSteps;
 
   useEffect(() => {
     if (run) {
@@ -179,11 +302,9 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
 
   // Attach click handlers for guided tour steps
   useEffect(() => {
+    const isMobileNow =
+      typeof window !== "undefined" && window.innerWidth < 1024;
     if (!showGuidedTour || !tourRun) {
-      // Clear the tour flag when not in guided tour
-      if (typeof window !== "undefined") {
-        (window as any).__tourKeepDropdownOpen = false;
-      }
       return;
     }
 
@@ -195,43 +316,46 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
 
     console.log(`Setting up click handler for step ${stepIndex}`);
 
-    // Step 1: Book selector
+    // Step 1: Book selector (different selectors for mobile vs desktop)
     if (stepIndex === 1) {
-      attachDelegatedClick('[data-tour="book-selector"]', () => {
+      const bookSelectorTarget = isMobileNow
+        ? '[data-tour="mobile-book-selector"]'
+        : '[data-tour="book-selector"]';
+
+      attachDelegatedClick(bookSelectorTarget, () => {
         console.log("Book selector clicked, advancing to step 2");
-        // Set flag to keep dropdown open after click
-        if (typeof window !== "undefined") {
-          (window as any).__tourKeepDropdownOpen = true;
-        }
-        setTimeout(() => setStepIndex(2), 200);
+        setTimeout(() => setStepIndex(2), isMobileNow ? 600 : 400);
       });
     }
     // Step 2: New Testament tab
     else if (stepIndex === 2) {
-      attachDelegatedClick(
-        '.list-module__qLQ6aa__tabsList button[aria-controls*="NT"]',
-        () => {
-          console.log("New Testament tab clicked, advancing to step 3");
-          setTimeout(() => setStepIndex(3), 200);
-        },
+      console.log(
+        "Attaching NT tab handler, checking element exists:",
+        document.querySelector('[data-tour="nt-tab"]'),
       );
+      attachDelegatedClick('[data-tour="nt-tab"]', (el) => {
+        console.log("New Testament tab clicked!", el);
+        console.log("Element details:", {
+          tag: el.tagName,
+          classes: el.className,
+          dataTour: el.getAttribute("data-tour"),
+        });
+        // Longer delay on mobile to allow book list to render
+        setTimeout(() => setStepIndex(3), isMobileNow ? 800 : 500);
+      });
     }
     // Step 3: John book
     else if (stepIndex === 3) {
       attachDelegatedClick("[data-tour-john]", () => {
         console.log("John book clicked, advancing to step 4");
-        setTimeout(() => setStepIndex(4), 200);
+        setTimeout(() => setStepIndex(4), isMobileNow ? 600 : 400);
       });
     }
     // Step 4: Chapter 1
     else if (stepIndex === 4) {
       attachDelegatedClick('[data-tour-chapter="1"]', () => {
         console.log("Chapter 1 clicked, advancing to step 5");
-        // Clear flag after last interactive step
-        if (typeof window !== "undefined") {
-          (window as any).__tourKeepDropdownOpen = false;
-        }
-        setTimeout(() => setStepIndex(5), 200);
+        setTimeout(() => setStepIndex(5), isMobileNow ? 600 : 400);
       });
     }
 
@@ -286,12 +410,14 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
         console.log(
           "Target not found for step",
           index,
-          "- waiting for element",
+          "- waiting for element. Will retry automatically.",
         );
+        // Joyride will automatically retry finding the target
+        return;
       } else if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
         // Tour completed or skipped
         if (!showGuidedTour && status === STATUS.FINISHED) {
-          // Just finished basic tour, start guided tour
+          // Just finished basic tour (mobile or desktop), start guided tour
           console.log("Basic tour finished, starting guided tour");
           setTourRun(false);
           setTimeout(() => {
@@ -333,7 +459,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       continuous
       showProgress
       showSkipButton
-      // Hide Next/Back buttons for guided tour, show them for basic tour
+      // Hide back button for guided tour (mobile or desktop), show for basic tour
       hideBackButton={showGuidedTour}
       disableCloseOnEsc={true} // Prevent closing with ESC on both tours
       disableOverlayClose={true} // Prevent clicking outside on both tours
@@ -342,7 +468,12 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       scrollOffset={200} // Larger offset to account for scrollable containers
       callback={handleJoyrideCallback}
       floaterProps={{
-        disableAnimation: true, // Disable animation for more accurate positioning
+        disableAnimation: false,
+        styles: {
+          floater: {
+            zIndex: 10100,
+          },
+        },
       }}
       styles={{
         options: {
@@ -361,12 +492,14 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
           textAlign: "left",
         },
         buttonNext: {
-          // Show Next button for basic tour, guided tour step 0, and guided tour last step (5)
-          // Hide for guided tour steps 1-4 (interactive click-to-advance steps)
+          // Show Next button for:
+          // - Basic tour (mobile or desktop) - always
+          // - Guided tour step 0 and 5 (intro and completion) - mobile or desktop
+          // Hide for guided tour steps 1-4 (interactive click-to-advance)
           display:
-            showGuidedTour && stepIndex !== 0 && stepIndex !== 5
-              ? "none"
-              : "inline-block",
+            !showGuidedTour || stepIndex === 0 || stepIndex === 5
+              ? "inline-block"
+              : "none",
           backgroundColor: "#1a365d",
           borderRadius: "6px",
           padding: "8px 16px",

@@ -1,13 +1,26 @@
 /* Create proper rendering context for tour targets */
 [data-tour-john],
 [data-tour-chapter],
-[data-tour="book-selector"] {
+[data-tour="book-selector"],
+[data-tour="mobile-book-selector"],
+[data-tour="mobile-explanation-tab"],
+[data-tour="mobile-book-tab"],
+[data-tour="mobile-tabs"],
+[data-tour="mobile-menu-button"],
+[data-tour="nt-tab"] {
   position: relative !important;
   transform: translate3d(0, 0, 0) !important;
 }
 
 /* FIX: Disable overflow on scrollable containers during tour to fix spotlight positioning
    See: https://github.com/gilbarbara/react-joyride/issues/376 */
-body:has(#react-joyride-portal) [class*="contentGroupedTrigger"] {
+body:has(#react-joyride-portal) [class*="contentGroupedTrigger"],
+body:has(#react-joyride-portal) [class*="bookContent"],
+body:has(#react-joyride-portal) [class*="grouped-content"] {
   overflow: visible !important;
+}
+
+/* Ensure tooltip buttons (Skip Tutorial, Next, etc.) are clickable */
+[class~="react-joyride__tooltip"] {
+  pointer-events: auto !important;
 }

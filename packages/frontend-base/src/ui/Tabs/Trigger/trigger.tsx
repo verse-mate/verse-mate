@@ -6,9 +6,15 @@ type TriggerProps = {
   value: string;
   label: string;
   resetFilter?: () => void;
+  dataTour?: string;
 };
 
-export const Trigger = ({ value, label, resetFilter }: TriggerProps) => {
+export const Trigger = ({
+  value,
+  label,
+  resetFilter,
+  dataTour,
+}: TriggerProps) => {
   const handleClick = useCallback(() => {
     if (resetFilter) {
       resetFilter();
@@ -20,6 +26,7 @@ export const Trigger = ({ value, label, resetFilter }: TriggerProps) => {
       value={value}
       className={styles.tab}
       onClick={handleClick}
+      data-tour={dataTour}
     >
       {label}
     </RadixTabs.Trigger>

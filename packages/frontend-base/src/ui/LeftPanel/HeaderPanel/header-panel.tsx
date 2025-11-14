@@ -355,6 +355,7 @@ export const Nav = ({
               <Accordion.Item value={book.n} key={`recently-${book.n}`}>
                 <div
                   data-accordion-trigger={book.n}
+                  data-tour-john={book.n === "John" ? "" : undefined}
                   onClick={() => handleAccordionTriggerClick(book.n)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ")
@@ -454,12 +455,7 @@ export const Nav = ({
       {/* Desktop buttons */}
       <div className={styles.leftPanelDropdown} data-tour="book-selector">
         <SelectDropdown.Root
-          open={
-            (typeof window !== "undefined" &&
-              (window as any).__tourKeepDropdownOpen) ||
-            forceDropdownOpen ||
-            leftPanelIsOpen
-          }
+          open={forceDropdownOpen || leftPanelIsOpen}
           onOpenChange={leftPanelSetIsOpen}
           resetFilter={leftPanelResetFilter}
         >
@@ -512,6 +508,7 @@ export const Nav = ({
                   value="NT"
                   label="New Testament"
                   resetFilter={leftPanelResetFilter}
+                  dataTour="nt-tab"
                 />
                 <Tabs.Trigger
                   value="TOPICS"
