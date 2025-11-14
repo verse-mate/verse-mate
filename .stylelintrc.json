@@ -1,6 +1,6 @@
 {
   "extends": ["stylelint-config-standard"],
-  "ignoreFiles": ["**/dist/**/*.css"],
+  "ignoreFiles": ["**/dist/**/*.css", "VerseMate/**/*.css"],
   "rules": {
     "media-feature-range-notation": null,
     "at-rule-no-unknown": [
@@ -28,6 +28,12 @@
       }
     ],
     "no-duplicate-selectors": null,
-    "no-descending-specificity": null
+    "no-descending-specificity": null,
+    "value-keyword-case": [
+      "lower",
+      {
+        "ignoreProperties": ["/^--font/", "font-family", "font"]
+      }
+    ]
   }
 }

@@ -1,0 +1,1 @@
+export { AutoHighlights } from "./AutoHighlights";

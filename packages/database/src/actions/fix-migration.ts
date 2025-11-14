@@ -1,4 +1,4 @@
-import { db } from "database";
+import { db } from "../database";
 
 const MIGRATION_NAME = process.argv[2] || process.env.MIGRATION_NAME;
 

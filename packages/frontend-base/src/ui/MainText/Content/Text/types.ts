@@ -31,6 +31,19 @@ export type Highlight = {
   updated_at: string;
 };
 
+export type AutoHighlight = {
+  auto_highlight_id: number;
+  theme_id: number;
+  theme_name: string;
+  theme_color: string;
+  book_id: number;
+  chapter_number: number;
+  start_verse: number;
+  end_verse: number;
+  relevance_score: number;
+  created_at: string;
+};
+
 export interface TextProps {
   text: Chapter;
   bookName: string;
