@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "../../Button/Button";
 import { HomeIcon } from "../../Icons";
+import { AutoHighlights } from "../AutoHighlights";
 import { BatchOperations } from "../BatchOperations/BatchOperations";
 import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration";
 import { Explanations } from "../Explanations/Explanations";
@@ -18,7 +19,8 @@ type AdminSection =
   | "prompts"
   | "playground"
   | "explanations"
-  | "topics";
+  | "topics"
+  | "auto-highlights";
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("batch");
@@ -39,6 +41,8 @@ export const AdminDashboard = () => {
         return <Explanations />;
       case "topics":
         return <TopicsAdmin />;
+      case "auto-highlights":
+        return <AutoHighlights />;
       default:
         return <BatchOperations />;
     }
@@ -79,6 +83,14 @@ export const AdminDashboard = () => {
               onClick={() => setActiveSection("topics")}
             >
               Topics
+            </Button>
+            <Button
+              variant={
+                activeSection === "auto-highlights" ? "contained" : "outlined"
+              }
+              onClick={() => setActiveSection("auto-highlights")}
+            >
+              Auto-Highlights
             </Button>
             <Button
               variant={activeSection === "users" ? "contained" : "outlined"}

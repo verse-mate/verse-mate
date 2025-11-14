@@ -200,6 +200,39 @@ export const batchMonitoringConsumer = async (job: Job) => {
   }
 
   try {
+    // First check if batch exists in our database
+    const batchJob = await db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("openai_batch_id", "=", batchId)
+      .select(["id", "status"])
+      .executeTakeFirst();
+
+    if (!batchJob) {
+      console.error(
+        `[BATCH_MONITORING] Batch ${batchId} not found in database. Removing from queue.`,
+      );
+      return; // Don't re-queue if batch doesn't exist in DB
+    }
+
+    // Check if batch is already in a final state
+    if (
+      ["completed", "failed", "cancelled", "expired"].includes(batchJob.status)
+    ) {
+      console.log(
+        `[BATCH_MONITORING] Batch ${batchId} already in final state (${batchJob.status}). Removing from queue.`,
+      );
+      try {
+        await cleanupBatchFiles(batchId);
+      } catch (cleanupErr) {
+        console.warn(
+          `[BATCH_MONITORING] Cleanup skipped/failed for ${batchId}:`,
+          cleanupErr,
+        );
+      }
+      return; // Don't re-queue if already finished
+    }
+
     const batch = await openai.batches.retrieve(batchId);
 
     console.log(`[BATCH_MONITORING] Batch ${batchId} status: ${batch.status}`);
@@ -216,7 +249,32 @@ export const batchMonitoringConsumer = async (job: Job) => {
       console.log(`[BATCH_MONITORING] Batch ${batchId} completed.`);
       const outputFileId = batch.output_file_id;
       if (outputFileId) {
-        const fileContent = await openai.files.content(outputFileId);
+        let fileContent: Response;
+        try {
+          fileContent = await openai.files.content(outputFileId);
+        } catch (fileError) {
+          console.error(
+            `[BATCH_MONITORING] Failed to retrieve output file ${outputFileId} for batch ${batchId}:`,
+            fileError,
+          );
+          if (
+            fileError instanceof Error &&
+            fileError.message?.includes("404")
+          ) {
+            console.error(
+              `[BATCH_MONITORING] Output file ${outputFileId} not found (404). This file may have expired or been deleted. Marking batch as failed.`,
+            );
+            await db
+              .getOrCreateConnection()
+              .updateTable("batch_jobs")
+              .set({ status: "failed" })
+              .where("openai_batch_id", "=", batchId)
+              .execute();
+            return;
+          }
+          throw fileError; // Re-throw other errors to be caught by outer catch
+        }
+
         const jsonl = await fileContent.text();
         const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
@@ -573,20 +631,54 @@ export const batchMonitoringConsumer = async (job: Job) => {
       error,
     );
 
+    // Check if error is 404 (batch not found in OpenAI)
+    if (error instanceof Error && error.message?.includes("404")) {
+      console.error(
+        `[BATCH_MONITORING] Batch ${batchId} not found in OpenAI (404). This likely means the batch was deleted or never existed. Marking as failed and removing from queue.`,
+      );
+
+      // Check if batch exists in DB before updating
+      const batchJob = await db
+        .getOrCreateConnection()
+        .selectFrom("batch_jobs")
+        .where("openai_batch_id", "=", batchId)
+        .select(["id"])
+        .executeTakeFirst();
+
+      if (batchJob) {
+        await db
+          .getOrCreateConnection()
+          .updateTable("batch_jobs")
+          .set({ status: "failed" })
+          .where("openai_batch_id", "=", batchId)
+          .execute();
+
+        await cleanupBatchFiles(batchId);
+      }
+
+      return; // Don't re-queue 404 errors
+    }
+
     const initialDelay = 60 * 1000;
     const maxDelay = 60 * 60 * 1000;
     const maxAttempts = 10;
 
-    const attemptsMade = job.attemptsMade ?? 0;
+    // Use monitoringAttempt from job.data instead of job.attemptsMade
+    const currentAttempt = monitoringAttempt || 1;
 
-    if (attemptsMade < maxAttempts) {
-      const delay = Math.min(initialDelay * 2 ** attemptsMade, maxDelay);
+    if (currentAttempt < maxAttempts) {
+      const baseDelay = Math.min(
+        initialDelay * 2 ** (currentAttempt - 1),
+        maxDelay,
+      );
+      const jitter = Math.floor(baseDelay * 0.2 * Math.random()); // up to 20% jitter
+      const delay = baseDelay + jitter;
       console.log(
-        `[BATCH_MONITORING] Re-queuing batch ${batchId} with delay of ${delay / 1000} seconds. Attempt ${attemptsMade + 1}/${maxAttempts}`,
+        `[BATCH_MONITORING] Re-queuing batch ${batchId} with delay of ${Math.floor(delay / 1000)}s. Attempt ${currentAttempt}/${maxAttempts}`,
       );
       await batchMonitoringQueue.add(
         BATCH_MONITORING_QUEUE,
-        { batchId, model, monitoringAttempt: monitoringAttempt + 1 },
+        { batchId, model, monitoringAttempt: currentAttempt + 1 },
         {
           jobId: `${batchId}-${Date.now()}`,
           delay,
@@ -599,14 +691,25 @@ export const batchMonitoringConsumer = async (job: Job) => {
     console.error(
       `[BATCH_MONITORING] Batch ${batchId} failed after ${maxAttempts} attempts. Not re-queuing.`,
     );
-    await db
-      .getOrCreateConnection()
-      .updateTable("batch_jobs")
-      .set({ status: "failed" })
-      .where("openai_batch_id", "=", batchId)
-      .execute();
 
-    // Clean up JSONL file for permanently failed batches
-    await cleanupBatchFiles(batchId);
+    // Check if batch exists in DB before updating
+    const batchJob = await db
+      .getOrCreateConnection()
+      .selectFrom("batch_jobs")
+      .where("openai_batch_id", "=", batchId)
+      .select(["id"])
+      .executeTakeFirst();
+
+    if (batchJob) {
+      await db
+        .getOrCreateConnection()
+        .updateTable("batch_jobs")
+        .set({ status: "failed" })
+        .where("openai_batch_id", "=", batchId)
+        .execute();
+
+      // Clean up JSONL file for permanently failed batches
+      await cleanupBatchFiles(batchId);
+    }
   }
 };
