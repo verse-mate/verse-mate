@@ -147,14 +147,30 @@ export class AutoHighlightService {
           const { book } = await this.bibleRepository.getBook({
             book_id: bookId,
           });
-          if (
-            !book ||
-            book.name.toLowerCase() !== parsedBookName.toLowerCase()
-          ) {
+          if (!book) {
+            console.warn(`[AUTO-HIGHLIGHT] Book not found for ID: ${bookId}`);
+            continue;
+          }
+
+          // Check if parsed book name matches the target book
+          // Handle common variations (e.g., "Psalm" vs "Psalms")
+          const bookNameLower = book.name.toLowerCase();
+          const parsedNameLower = parsedBookName.toLowerCase();
+          const isMatch =
+            bookNameLower === parsedNameLower ||
+            bookNameLower === parsedNameLower + "s" || // "Psalm" -> "Psalms"
+            bookNameLower + "s" === parsedNameLower || // "Psalms" -> "Psalm"
+            bookNameLower.replace(/\s+/g, "") ===
+              parsedNameLower.replace(/\s+/g, ""); // Handle spacing differences
+
+          if (!isMatch) {
             console.warn(
-              `[AUTO-HIGHLIGHT] Reference book mismatch: "${parsedBookName}" vs target bookId=${bookId}`,
+              `[AUTO-HIGHLIGHT] Reference book mismatch: "${parsedBookName}" (parsed) vs "${book.name}" (expected for bookId=${bookId})`,
             );
-          } else if (
+            continue;
+          }
+
+          if (
             !Number.isFinite(startVerse) ||
             !Number.isFinite(endVerse) ||
             startVerse <= 0 ||
@@ -162,14 +178,15 @@ export class AutoHighlightService {
             endVerse < startVerse
           ) {
             console.warn(`[AUTO-HIGHLIGHT] Invalid verse range: ${reference}`);
-          } else {
-            parsedRef = {
-              bookName: parsedBookName,
-              chapterNumber,
-              startVerse,
-              endVerse,
-            };
+            continue;
           }
+
+          parsedRef = {
+            bookName: parsedBookName,
+            chapterNumber,
+            startVerse,
+            endVerse,
+          };
         }
       } else if (placeholderType === "chapter") {
         // Parse: "Genesis 1" or "Genesis 1-3"
