@@ -20,9 +20,6 @@ interface BatchJobRequest {
     input: string;
     max_output_tokens: number;
   };
-  metadata?: {
-    book_id: number;
-  };
 }
 
 const openai = new OpenAI({
@@ -3673,17 +3670,24 @@ export class BatchOperationService {
 
       let bookRecord: { book_id: number } | undefined;
 
-      // Prefer DB book_id; if absent, try to read a trusted metadata.book_id from the output lines
+      // Prefer DB book_id; if absent, try to parse from custom_id in output lines
       let resolvedBookId: number | null = batchJob.book_id ?? null;
 
       if (!resolvedBookId) {
         for (const line of lines) {
           try {
             const obj = JSON.parse(line);
-            const metaBookId = obj?.metadata?.book_id;
-            if (typeof metaBookId === "number" && Number.isFinite(metaBookId)) {
-              resolvedBookId = metaBookId;
-              break;
+            const customId = obj?.custom_id;
+            if (typeof customId === "string") {
+              // Parse: auto-highlight-{book_id}-{bookName}-{timestamp}
+              const match = customId.match(/^auto-highlight-(\d+)-/);
+              if (match) {
+                const bookId = Number.parseInt(match[1], 10);
+                if (Number.isFinite(bookId)) {
+                  resolvedBookId = bookId;
+                  break;
+                }
+              }
             }
           } catch {
             // skip invalid lines
@@ -4599,7 +4603,7 @@ export class BatchOperationService {
 
     const batchRequests: BatchJobRequest[] = [
       {
-        custom_id: `auto-highlight-${bookName}-${Date.now()}`,
+        custom_id: `auto-highlight-${book.book_id}-${bookName}-${Date.now()}`,
         method: "POST",
         url: "/v1/responses",
         body: {
@@ -4608,9 +4612,6 @@ export class BatchOperationService {
           instructions: "",
           input: highlightPrompt.prompt.replace("{book_name}", bookName),
           max_output_tokens: 50000,
-        },
-        metadata: {
-          book_id: book.book_id,
         },
       },
     ];
