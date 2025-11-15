@@ -63,10 +63,19 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
   const basicSteps: Step[] = [
     {
       target: "body",
-      content:
-        "Welcome to VerseMate! Let's take a quick tour of the main features.",
+      content: (
+        <>
+          <div>Welcome to VerseMate!</div>
+          <div>Let's take a quick tour of the main features.</div>
+        </>
+      ),
       placement: "center",
       disableBeacon: true,
+      styles: {
+        tooltipContainer: {
+          textAlign: "center",
+        },
+      },
     },
     {
       target: '[data-tour="chapter-title"]',
@@ -82,7 +91,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     {
       target: '[data-tour="book-selector"]',
       content:
-        "Browse and select books from Old Testament, New Testament, or Topics.",
+        "This is where we select books. Choose from Old Testament, New Testament, or Topics.",
       placement: "bottom",
     },
     {
@@ -99,7 +108,8 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     },
     {
       target: '[data-tour="menu-button-desktop"]',
-      content: "Access your bookmarks, notes, highlights, and settings.",
+      content:
+        "Open the menu to log in and access your bookmarks, notes, highlights, and settings.",
       placement: "left",
     },
   ];
@@ -127,10 +137,12 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     },
     {
       target: '[data-tour="nt-tab"]',
-      content: "Click on 'New Testament' tab.",
+      content:
+        "This is where you choose between Old/New Testament books or Topics. Let's start by selecting a book from the New Testament.",
       placement: "bottom",
       spotlightClicks: true,
       disableOverlay: false,
+      spotlightPadding: 0,
       styles: {
         spotlight: {
           borderRadius: "4px",
@@ -143,6 +155,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       placement: "right",
       spotlightClicks: true,
       disableOverlay: false,
+      spotlightPadding: 0,
       styles: {
         spotlight: {
           borderRadius: "4px",
@@ -155,6 +168,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       placement: "right",
       spotlightClicks: true,
       disableOverlay: false,
+      spotlightPadding: 0,
       styles: {
         spotlight: {
           borderRadius: "4px",
@@ -173,9 +187,19 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
   const mobileBasicSteps: Step[] = [
     {
       target: "body",
-      content: "Welcome to VerseMate! Let's take a quick tour.",
+      content: (
+        <>
+          <div>Welcome to VerseMate!</div>
+          <div>Let's take a tour of the main features.</div>
+        </>
+      ),
       placement: "center",
       disableBeacon: true,
+      styles: {
+        tooltipContainer: {
+          textAlign: "center",
+        },
+      },
     },
     {
       target: '[data-tour="chapter-content"]',
@@ -185,7 +209,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     },
     {
       target: '[data-tour="mobile-book-selector"]',
-      content: "Tap here to browse and select different books and chapters.",
+      content: "This is where we select books and chapters.",
       placement: "bottom",
     },
     {
@@ -196,7 +220,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     },
     {
       target: '[data-tour="mobile-explanation-tab"]',
-      content: "Tap this tab to view AI-powered explanations and commentary.",
+      content: "This is where we view AI-powered explanations and commentary.",
       placement: "left", // Left placement to avoid extending page
     },
     {
@@ -229,11 +253,12 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
     },
     {
       target: '[data-tour="nt-tab"]',
-      content: "Tap on 'New Testament' tab.",
+      content:
+        "This is where you choose between Old/New Testament books or Topics. Let's start by selecting a book from the New Testament.",
       placement: "bottom",
       spotlightClicks: true,
       disableOverlay: false,
-      ...(isSmallScreen && { spotlightPadding: 0 }),
+      spotlightPadding: 0,
       styles: {
         spotlight: {
           borderRadius: "4px",
@@ -247,6 +272,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       placement: "bottom",
       spotlightClicks: true,
       disableOverlay: false,
+      spotlightPadding: 0,
       styles: {
         spotlight: {
           borderRadius: "4px",
@@ -259,6 +285,7 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       placement: "bottom",
       spotlightClicks: true,
       disableOverlay: false,
+      spotlightPadding: 0,
       styles: {
         spotlight: {
           borderRadius: "4px",
@@ -350,6 +377,61 @@ export const AppTour = ({ run = false, onComplete }: AppTourProps) => {
       }
     };
   }, [showGuidedTour, tourRun, stepIndex, attachDelegatedClick]);
+
+  // During guided steps 2-4, block interactions outside the intended targets so the dropdown stays open
+  useEffect(() => {
+    if (!showGuidedTour || !tourRun) return;
+    if (!(stepIndex === 2 || stepIndex === 3 || stepIndex === 4)) return;
+
+    const allowedForStep =
+      stepIndex === 2
+        ? ['[data-tour="nt-tab"]']
+        : stepIndex === 3
+          ? ["[data-tour-john]"]
+          : ["[data-tour-chapter]"];
+
+    const alwaysAllowed = [
+      '[class~="react-joyride__tooltip"]',
+      '[class~="react-joyride__button"]',
+    ];
+
+    const guard = (e: Event) => {
+      const node = e.target as HTMLElement | null;
+      const isAllowed = [...allowedForStep, ...alwaysAllowed].some((sel) =>
+        node?.closest?.(sel),
+      );
+      if (!isAllowed) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    const eventNames: Array<keyof DocumentEventMap> = [
+      "pointerdown",
+      "mousedown",
+      "touchstart",
+      "click",
+      "focusin",
+    ];
+
+    const overlay = document.querySelector(
+      ".react-joyride__overlay",
+    ) as HTMLElement | null;
+
+    eventNames.forEach((evt) => {
+      window.addEventListener(evt as any, guard, true);
+      document.addEventListener(evt as any, guard, true);
+      overlay?.addEventListener(evt as any, guard, true);
+    });
+
+    return () => {
+      eventNames.forEach((evt) => {
+        window.removeEventListener(evt as any, guard, true);
+        document.removeEventListener(evt as any, guard, true);
+        overlay?.removeEventListener(evt as any, guard, true);
+      });
+    };
+  }, [showGuidedTour, tourRun, stepIndex]);
 
   const handleJoyrideCallback = useCallback(
     (data: CallBackProps) => {
