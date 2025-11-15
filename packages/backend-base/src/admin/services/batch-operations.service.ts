@@ -4653,7 +4653,6 @@ export class BatchOperationService {
         parent_batch_id: parentBatchId ?? null,
         bible_version: "N/A",
         explanation_types: [],
-        input_file_id: file.id,
       } as any)
       .execute();
 
