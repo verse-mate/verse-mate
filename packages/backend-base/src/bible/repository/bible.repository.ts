@@ -1064,6 +1064,8 @@ export class BibleRepository {
   async addHighlight({
     user_id,
     chapter_id,
+    book_id,
+    chapter_number,
     start_verse,
     end_verse,
     color = "yellow" as HighlightColorEnum,
@@ -1120,6 +1122,8 @@ export class BibleRepository {
       const newHighlight: NewVerseHighlights = {
         user_id,
         chapter_id,
+        book_id,
+        chapter_number,
         start_verse,
         end_verse,
         color,
