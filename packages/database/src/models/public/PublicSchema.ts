@@ -86,8 +86,6 @@ export default interface PublicSchema {
 
   notes: NotesTable;
 
-  refresh_tokens: RefreshTokensTable;
-
   highlight_themes: HighlightThemesTable;
 
   auto_highlights: AutoHighlightsTable;
@@ -95,4 +93,6 @@ export default interface PublicSchema {
   user_theme_preferences: UserThemePreferencesTable;
 
   auto_highlight_settings: AutoHighlightSettingsTable;
+
+  refresh_tokens: RefreshTokensTable;
 }
