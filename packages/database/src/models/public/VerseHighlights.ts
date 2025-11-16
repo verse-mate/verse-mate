@@ -51,6 +51,10 @@ export default interface VerseHighlightsTable {
     Date | string | null,
     Date | string | null
   >;
+
+  book_id: ColumnType<number, number, number>;
+
+  chapter_number: ColumnType<number, number, number>;
 }
 
 export type VerseHighlights = Selectable<VerseHighlightsTable>;

@@ -551,6 +551,8 @@ export class BibleService {
     const { highlight, success } = await this.bibleRepository.addHighlight({
       user_id,
       chapter_id,
+      book_id,
+      chapter_number,
       start_verse,
       end_verse,
       color,

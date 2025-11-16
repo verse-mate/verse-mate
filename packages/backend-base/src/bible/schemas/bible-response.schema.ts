@@ -287,6 +287,8 @@ const HighlightResponseType = t.Object({
   highlight_id: t.Number(),
   user_id: t.String(), // UUID
   chapter_id: t.Number(),
+  book_id: t.Number(),
+  chapter_number: t.Number(),
   start_verse: t.Number(),
   end_verse: t.Number(),
   color: HighlightColorEnum,
