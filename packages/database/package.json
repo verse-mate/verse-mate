@@ -8,7 +8,8 @@
     "migrate:down": "bun ./src/migrator.ts migrate-down",
     "model:generate": "kanel && biome check --write ./src/models",
     "dbml:generate": "prisma db pull && prisma generate",
-    "db:seed": "bun ./src/seeder.ts"
+    "db:seed": "bun ./src/seeder.ts",
+    "seed:themes": "bun ./src/seed-themes.ts"
   },
   "dependencies": {
     "kysely": "^0.27.4",
