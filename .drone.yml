@@ -43,7 +43,7 @@ steps:
     commands:
       - cp apps/backend/.env.example .env
       - cp apps/backend/.env.example packages/database/.env
-      - cd packages/database && bun migrate:deploy && bun db:seed
+      - cd packages/database && bun migrate:deploy && bun db:seed && bun seed:themes
       - cd ../../
       - bun test
       # This is required to fix a bug where the envs are set on buildtime

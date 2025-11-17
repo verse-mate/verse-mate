@@ -1659,6 +1659,7 @@ export const MainContent = () => {
                                     value="PARABLES"
                                     label="Parables"
                                   />
+                                  <Tabs.Trigger value="THEMES" label="Themes" />
                                 </Tabs.List>
                                 <TopicContent
                                   category={activeTopicTab}

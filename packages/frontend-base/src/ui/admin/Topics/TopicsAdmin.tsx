@@ -353,6 +353,15 @@ export const TopicsAdmin = () => {
             >
               Sort Parables Chronologically
             </Button>
+            <Button
+              type="button"
+              onClick={() => handleSortClick("THEME")}
+              disabled={sortChronologicallyMutation.isPending}
+              variant="outlined"
+              className={styles.actionButton}
+            >
+              Sort Themes Alphabetically
+            </Button>
           </div>
         </div>
 

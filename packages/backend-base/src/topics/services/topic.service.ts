@@ -73,7 +73,7 @@ export class TopicService {
   async createTopic(topic: Static<typeof TopicDto>) {
     try {
       // Validate that category is one of the allowed values
-      const validCategories = ["EVENT", "PROPHECY", "PARABLE"];
+      const validCategories = ["EVENT", "PROPHECY", "PARABLE", "THEME"];
       if (!validCategories.includes(topic.category)) {
         throw new Error(
           `Invalid category: ${topic.category}. Must be one of: ${validCategories.join(", ")}`,
@@ -93,7 +93,7 @@ export class TopicService {
     try {
       // Validate category if it's being updated
       if (topic.category) {
-        const validCategories = ["EVENT", "PROPHECY", "PARABLE"];
+        const validCategories = ["EVENT", "PROPHECY", "PARABLE", "THEME"];
         if (!validCategories.includes(topic.category)) {
           throw new Error(
             `Invalid category: ${topic.category}. Must be one of: ${validCategories.join(", ")}`,
