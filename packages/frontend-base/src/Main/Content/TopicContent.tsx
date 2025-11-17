@@ -6,6 +6,7 @@ import {
 } from "../../hooks/useSearchParams";
 import { useTopicsByCategory } from "../../hooks/useTopics";
 import { Accordion } from "../../ui/Accordion";
+import { mapCategoryToBackend } from "../../utils/topic-utils";
 
 interface TopicContentProps {
   category: string;
@@ -19,14 +20,7 @@ export const TopicContent: React.FC<TopicContentProps> = ({
   onTopicClick,
 }) => {
   // Map frontend category names to backend category names
-  const backendCategory =
-    category === "EVENTS"
-      ? "EVENT"
-      : category === "PROPHECIES"
-        ? "PROPHECY"
-        : category === "PARABLES"
-          ? "PARABLE"
-          : category;
+  const backendCategory = mapCategoryToBackend(category);
 
   const { bibleVersion } = useGetSearchParams();
 
