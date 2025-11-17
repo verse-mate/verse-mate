@@ -158,8 +158,8 @@ export class AutoHighlightService {
           const parsedNameLower = parsedBookName.toLowerCase();
           const isMatch =
             bookNameLower === parsedNameLower ||
-            bookNameLower === parsedNameLower + "s" || // "Psalm" -> "Psalms"
-            bookNameLower + "s" === parsedNameLower || // "Psalms" -> "Psalm"
+            bookNameLower === `${parsedNameLower}s` || // "Psalm" -> "Psalms"
+            `${bookNameLower}s` === parsedNameLower || // "Psalms" -> "Psalm"
             bookNameLower.replace(/\s+/g, "") ===
               parsedNameLower.replace(/\s+/g, ""); // Handle spacing differences
 
