@@ -1781,6 +1781,9 @@ export const BatchOperations = () => {
                     <SelectDropdown.Item value="PARABLE" icon={<CheckIcon />}>
                       Parables
                     </SelectDropdown.Item>
+                    <SelectDropdown.Item value="THEME" icon={<CheckIcon />}>
+                      Themes
+                    </SelectDropdown.Item>
                   </SelectDropdown.Content>
                 </SelectDropdown.Root>
               </div>

@@ -137,6 +137,7 @@ export const Nav = ({
         EVENT: "EVENTS",
         PROPHECY: "PROPHECIES",
         PARABLE: "PARABLES",
+        THEME: "THEMES",
       };
       const frontendCategory = categoryMap[topicDetails.topic.category_name];
       if (frontendCategory) {
@@ -571,6 +572,7 @@ export const Nav = ({
                       <Tabs.Trigger value="EVENTS" label="Events" />
                       <Tabs.Trigger value="PROPHECIES" label="Prophecies" />
                       <Tabs.Trigger value="PARABLES" label="Parables" />
+                      <Tabs.Trigger value="THEMES" label="Themes" />
                     </Tabs.List>
                     <TopicContent
                       category={activeTopicTab}

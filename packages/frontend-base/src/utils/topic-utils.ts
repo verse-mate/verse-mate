@@ -18,7 +18,7 @@ const topicCategoryCache = new Map<string, TopicData[]>();
  */
 export function mapCategoryToBackend(
   frontendCategory: string,
-): "EVENT" | "PROPHECY" | "PARABLE" {
+): "EVENT" | "PROPHECY" | "PARABLE" | "THEME" {
   switch (frontendCategory) {
     case "EVENTS":
       return "EVENT";
@@ -26,8 +26,10 @@ export function mapCategoryToBackend(
       return "PROPHECY";
     case "PARABLES":
       return "PARABLE";
+    case "THEMES":
+      return "THEME";
     default:
-      return frontendCategory as "EVENT" | "PROPHECY" | "PARABLE";
+      return frontendCategory as "EVENT" | "PROPHECY" | "PARABLE" | "THEME";
   }
 }
 
@@ -36,7 +38,7 @@ export function mapCategoryToBackend(
  */
 export function mapCategoryToFrontend(
   backendCategory: string,
-): "EVENTS" | "PROPHECIES" | "PARABLES" {
+): "EVENTS" | "PROPHECIES" | "PARABLES" | "THEMES" {
   switch (backendCategory) {
     case "EVENT":
       return "EVENTS";
@@ -44,8 +46,10 @@ export function mapCategoryToFrontend(
       return "PROPHECIES";
     case "PARABLE":
       return "PARABLES";
+    case "THEME":
+      return "THEMES";
     default:
-      return backendCategory as "EVENTS" | "PROPHECIES" | "PARABLES";
+      return backendCategory as "EVENTS" | "PROPHECIES" | "PARABLES" | "THEMES";
   }
 }
 
