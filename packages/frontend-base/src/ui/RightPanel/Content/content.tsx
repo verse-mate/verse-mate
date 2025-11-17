@@ -25,7 +25,7 @@ import type { useSwipeable } from "react-swipeable";
 
 type Props = {
   isViewingTopic: boolean;
-  topicId: string;
+  topicId?: string;
   session: UserSession | null;
   explanation:
     | {
