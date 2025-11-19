@@ -330,6 +330,12 @@ export const BatchOperations = () => {
   const [includeReferencesInDetailed, setIncludeReferencesInDetailed] =
     useState(false);
 
+  // Auto-highlight batch state
+  const [autoHighlightModalOpen, setAutoHighlightModalOpen] = useState(false);
+  const [autoHighlightSkipExisting, setAutoHighlightSkipExisting] =
+    useState(false);
+  const [creatingAutoHighlight, setCreatingAutoHighlight] = useState(false);
+
   // Fetch topics when category changes
   useEffect(() => {
     const fetchTopicsForCategory = async () => {
@@ -640,6 +646,38 @@ export const BatchOperations = () => {
       );
     } finally {
       setCreatingTopicBatch(false);
+    }
+  };
+
+  const handleCreateAutoHighlightBatch = async () => {
+    if (!isBibleBatch && !selectedBook) {
+      setError("Please select a book");
+      return;
+    }
+
+    try {
+      setCreatingAutoHighlight(true);
+      setError(null);
+
+      await api.admin["batch-auto-highlights"].post({
+        type: isBibleBatch ? "bible" : "book",
+        model: selectedModel,
+        effort: selectedEffort as "low" | "medium" | "high",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        skipExisting: autoHighlightSkipExisting,
+      });
+
+      await fetchBatchJobs();
+      setAutoHighlightModalOpen(false);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to create auto-highlight batch";
+      setError(errorMessage);
+      console.error("Error creating auto-highlight batch:", err);
+    } finally {
+      setCreatingAutoHighlight(false);
     }
   };
 
@@ -1403,8 +1441,77 @@ export const BatchOperations = () => {
           >
             Create Topic Batch
           </Button>
+          <Button
+            onClick={() => setAutoHighlightModalOpen(true)}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Create Auto-Highlight Batch
+          </Button>
         </div>
       </div>
+
+      {/* Auto-Highlight Batch Modal */}
+      <Dialog
+        open={autoHighlightModalOpen}
+        onOpenChange={setAutoHighlightModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Create Auto-Highlight Batch</Dialog.Head>
+          <Dialog.Description>
+            Generate AI-powered highlights for {isBibleBatch ? "the entire Bible" : selectedBook || "selected book"}.
+          </Dialog.Description>
+          
+          <div style={{ margin: "20px 0" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={autoHighlightSkipExisting}
+                onChange={(e) => setAutoHighlightSkipExisting(e.target.checked)}
+              />
+              Skip existing books (already generated)
+            </label>
+            <p style={{ fontSize: "12px", color: "#666", marginTop: "4px", marginLeft: "24px" }}>
+              If checked, books that already have auto-highlights will be skipped.
+            </p>
+          </div>
+
+          <div style={{ background: "#f9f9f9", padding: "15px", borderRadius: "4px", marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>Current Settings:</h4>
+            <ul style={{ margin: 0, paddingLeft: "20px", fontSize: "13px", color: "#555" }}>
+              <li>Model: <strong>{selectedModelData?.label || selectedModel}</strong></li>
+              <li>Effort: <strong>{selectedEffortData?.label || selectedEffort}</strong></li>
+              <li>Target: <strong>{isBibleBatch ? "Entire Bible" : selectedBook || "No book selected"}</strong></li>
+            </ul>
+            <p style={{ fontSize: "12px", marginTop: "10px", color: "#888" }}>
+              (Change these in the main form if needed)
+            </p>
+          </div>
+
+          <Dialog.Footer>
+            <Button
+              onClick={() => setAutoHighlightModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateAutoHighlightBatch} 
+              loading={creatingAutoHighlight}
+              disabled={!isBibleBatch && !selectedBook}
+            >
+              {creatingAutoHighlight ? "Creating..." : "Create Batch"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
 
       {/* Main Table */}
       <div className={styles.tableContainer}>
