@@ -174,17 +174,15 @@ export class BatchOperationService {
     effort: "low" | "medium" | "high" = "medium",
     category?: string,
     topicId?: string,
+    skipExisting = false,
   ) {
     // Modify the query to filter by category if provided
     let query = this.db
       .getOrCreateConnection()
       .selectFrom("topics")
-      .leftJoin(
-        "topic_references",
-        "topics.topic_id",
-        "topic_references.topic_id",
-      )
-      .where("topic_references.reference_id", "is", null);
+      .select("topics.topic_id")
+      .select("topics.name")
+      .select("topics.description");
 
     // Filter by category if provided
     if (category) {
@@ -196,7 +194,17 @@ export class BatchOperationService {
       query = query.where("topics.topic_id", "=", topicId);
     }
 
-    const topics = await query.selectAll("topics").execute();
+    if (skipExisting) {
+      query = query
+        .leftJoin(
+          "topic_references",
+          "topics.topic_id",
+          "topic_references.topic_id",
+        )
+        .where("topic_references.reference_id", "is", null);
+    }
+
+    const topics = await query.execute();
 
     if (topics.length === 0) {
       throw new Error("No topics found that need references.");
@@ -209,7 +217,7 @@ export class BatchOperationService {
     }
 
     const batchRequests: BatchJobRequest[] = topics.map((topic) => ({
-      custom_id: `topic-references-${topic.topic_id}`,
+      custom_id: `topic-references-${topic.topic_id}-${Date.now()}`,
       method: "POST",
       url: "/v1/responses",
       body: {
@@ -282,6 +290,8 @@ export class BatchOperationService {
     effort: "low" | "medium" | "high" = "medium",
     category?: string,
     topicId?: string,
+    includeReferencesInSummary = false,
+    includeReferencesInDetailed = false,
   ) {
     const connection = this.db.getOrCreateConnection();
 
@@ -364,6 +374,8 @@ export class BatchOperationService {
           explanationTypes,
           effort,
           parentBatchId,
+          includeReferencesInSummary,
+          includeReferencesInDetailed,
         );
         batchResults.push({ success: true, ...childBatch });
       } catch (error) {
@@ -396,6 +408,8 @@ export class BatchOperationService {
     explanationTypes: string[],
     effort: "low" | "medium" | "high",
     parentBatchId: number,
+    includeReferencesInSummary: boolean,
+    includeReferencesInDetailed: boolean,
   ) {
     const batchRequests: BatchJobRequest[] = [];
 
@@ -410,6 +424,7 @@ export class BatchOperationService {
       .getOrCreateConnection()
       .selectFrom("topic_references")
       .where("topic_id", "=", topic.topic_id)
+      .where("is_active", "=", true)
       .select("content")
       .executeTakeFirst();
 
@@ -426,17 +441,27 @@ export class BatchOperationService {
         .replace("{topic_name}", topic.name)
         .replace("{topic_description}", topic.description || "");
 
-      // For byline, inject references. If not found, placeholder is replaced with empty string.
-      if (type === "byline") {
+      // For byline, inject references (always).
+      // For summary and detailed, inject references based on flags.
+      // We assume the prompt template has {references} placeholder if intended to be used.
+      const shouldInjectReferences =
+        type === "byline" ||
+        (type === "summary" && includeReferencesInSummary) ||
+        (type === "detailed" && includeReferencesInDetailed);
+
+      if (shouldInjectReferences) {
         finalInput = finalInput.replace(
           "{references}",
           topicReference?.content || "",
         );
         if (!topicReference?.content) {
           console.warn(
-            `[BATCH] No references found for byline topic "${topic.name}". The {references} placeholder was replaced with an empty string.`,
+            `[BATCH] No active references found for topic "${topic.name}" (type: ${type}). The {references} placeholder was replaced with an empty string.`,
           );
         }
+      } else {
+        // If references are not included, remove the placeholder if it exists to avoid template issues
+        finalInput = finalInput.replace("{references}", "");
       }
 
       batchRequests.push({
@@ -2994,6 +3019,8 @@ export class BatchOperationService {
       let totalPromptTokens = 0;
       let totalCompletionTokens = 0;
 
+      const connection = this.db.getOrCreateConnection();
+
       for (const line of lines) {
         try {
           const data = JSON.parse(line);
@@ -3009,18 +3036,77 @@ export class BatchOperationService {
 
           if (content && customId) {
             try {
-              const topicId = customId.replace("topic-references-", "");
-              await this.db
-                .getOrCreateConnection()
-                .insertInto("topic_references")
-                .values({
-                  topic_id: topicId,
-                  content: content,
-                })
-                .onConflict((oc) =>
-                  oc.column("topic_id").doUpdateSet({ content: content }),
-                )
-                .execute();
+              // custom_id format: topic-references-{topicId}-{timestamp}
+              // or legacy: topic-references-{topicId}
+              let topicId: string;
+              const parts = customId
+                .replace("topic-references-", "")
+                .split("-");
+
+              // Heuristic: UUIDs usually have hyphens. Timestamp is usually at the end.
+              // If the last part is numeric and long, it's a timestamp.
+              // But UUIDs also have numeric parts.
+              // Let's assume standard UUID length if possible, or just use the logic that topicId is everything before the last hyphen IF the last part is a timestamp.
+              // Actually, simpler: We generated it as `topic-references-${topic.topic_id}-${Date.now()}`
+              // topic_id is a UUID (e.g. 123e4567-e89b-12d3-a456-426614174000)
+              // So we can try to reconstruct it.
+              // Or just strip the prefix and maybe the timestamp suffix.
+
+              const prefixRemoved = customId.replace("topic-references-", "");
+              const timestampRegex = /-\d{13}$/; // 13 digits for milliseconds timestamp
+              if (timestampRegex.test(prefixRemoved)) {
+                topicId = prefixRemoved.replace(timestampRegex, "");
+              } else {
+                topicId = prefixRemoved; // Legacy format
+              }
+
+              // Verify topic exists
+              const topic = await connection
+                .selectFrom("topics")
+                .where("topic_id", "=", topicId)
+                .select("topic_id")
+                .executeTakeFirst();
+
+              if (!topic) {
+                console.error(
+                  `[BATCH_TOPIC_REFERENCES] Topic not found for ID: ${topicId}`,
+                );
+                errorCount++;
+                continue;
+              }
+
+              // Find max version of existing references
+              const existingReference = await connection
+                .selectFrom("topic_references")
+                .where("topic_id", "=", topicId)
+                .orderBy("version", "desc")
+                .select("version")
+                .executeTakeFirst();
+
+              const nextVersion = existingReference
+                ? existingReference.version + 1
+                : 1;
+
+              await connection.transaction().execute(async (trx) => {
+                // Deactivate old references
+                await trx
+                  .updateTable("topic_references")
+                  .set({ is_active: false })
+                  .where("topic_id", "=", topicId)
+                  .execute();
+
+                // Insert new reference
+                await trx
+                  .insertInto("topic_references")
+                  .values({
+                    topic_id: topicId,
+                    content: content,
+                    version: nextVersion,
+                    is_active: true,
+                    created_by_admin: false,
+                  })
+                  .execute();
+              });
 
               processedCount++;
             } catch (dbError) {

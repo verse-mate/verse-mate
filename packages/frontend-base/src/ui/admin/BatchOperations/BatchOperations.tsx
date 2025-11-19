@@ -325,6 +325,10 @@ export const BatchOperations = () => {
   >(null);
   const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
   const [loadingTopics, setLoadingTopics] = useState(false);
+  const [includeReferencesInSummary, setIncludeReferencesInSummary] =
+    useState(false);
+  const [includeReferencesInDetailed, setIncludeReferencesInDetailed] =
+    useState(false);
 
   // Fetch topics when category changes
   useEffect(() => {
@@ -573,6 +577,7 @@ export const BatchOperations = () => {
             effort: selectedEffort as "low" | "medium" | "high",
             category: topicCategory, // Pass category
             ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }), // Pass topicId if selected
+            skipExisting: topicSkipExisting,
           });
           break;
         case "explanations":
@@ -587,6 +592,8 @@ export const BatchOperations = () => {
             effort: selectedEffort as "low" | "medium" | "high",
             category: topicCategory,
             ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }),
+            includeReferencesInSummary,
+            includeReferencesInDetailed,
           });
           break;
         case "translate": {
@@ -1869,6 +1876,31 @@ export const BatchOperations = () => {
             </div>
           )}
 
+          {topicBatchType === "references" && (
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={topicSkipExisting}
+                  onChange={(e) => setTopicSkipExisting(e.target.checked)}
+                />
+                Don't generate for existing references
+              </label>
+              <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                If checked, only topics without any references will be
+                processed. If unchecked, new versions will be created for
+                existing topics.
+              </p>
+            </div>
+          )}
+
           {topicBatchType === "explanations" && (
             <>
               <div style={{ marginBottom: "20px" }}>
@@ -1927,6 +1959,64 @@ export const BatchOperations = () => {
                       {type.charAt(0).toUpperCase() + type.slice(1)}
                     </label>
                   ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Include References (Context):
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!topicExplanationTypes.includes("summary")}
+                      checked={includeReferencesInSummary}
+                      onChange={(e) =>
+                        setIncludeReferencesInSummary(e.target.checked)
+                      }
+                    />
+                    Include References in Summary
+                  </label>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!topicExplanationTypes.includes("detailed")}
+                      checked={includeReferencesInDetailed}
+                      onChange={(e) =>
+                        setIncludeReferencesInDetailed(e.target.checked)
+                      }
+                    />
+                    Include References in Detailed
+                  </label>
+                  <p style={{ fontSize: "12px", color: "#666" }}>
+                    Note: Byline explanations always include references by
+                    default.
+                  </p>
                 </div>
               </div>
             </>
