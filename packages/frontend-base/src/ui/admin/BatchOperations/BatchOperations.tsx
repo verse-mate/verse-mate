@@ -600,6 +600,7 @@ export const BatchOperations = () => {
             ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }),
             includeReferencesInSummary,
             includeReferencesInDetailed,
+            skipExisting: topicSkipExisting,
           });
           break;
         case "translate": {
@@ -2133,6 +2134,28 @@ export const BatchOperations = () => {
                     default.
                   </p>
                 </div>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={topicSkipExisting}
+                    onChange={(e) => setTopicSkipExisting(e.target.checked)}
+                  />
+                  Skip existing explanations
+                </label>
+                <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                  If checked, only topics without explanations for the selected types/language will be processed.
+                  If unchecked, new versions will be generated even if explanations exist.
+                </p>
               </div>
             </>
           )}

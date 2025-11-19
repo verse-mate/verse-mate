@@ -432,6 +432,7 @@ const plugin = new Elysia()
                     body.topicId,
                     body.includeReferencesInSummary || false,
                     body.includeReferencesInDetailed || false,
+                    body.skipExisting ?? true, // Default to true to maintain behavior
                   );
                 } catch (error: any) {
                   console.error(
@@ -458,6 +459,7 @@ const plugin = new Elysia()
                   topicId: t.Optional(t.String()),
                   includeReferencesInSummary: t.Optional(t.Boolean()),
                   includeReferencesInDetailed: t.Optional(t.Boolean()),
+                  skipExisting: t.Optional(t.Boolean()),
                 }),
               },
             )

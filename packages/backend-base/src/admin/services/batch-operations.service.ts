@@ -292,6 +292,7 @@ export class BatchOperationService {
     topicId?: string,
     includeReferencesInSummary = false,
     includeReferencesInDetailed = false,
+    skipExisting = true,
   ) {
     const connection = this.db.getOrCreateConnection();
 
@@ -313,7 +314,7 @@ export class BatchOperationService {
 
     const parentBatchId = parentBatch.id;
 
-    // 2. Find all topics that need explanations
+    // 2. Find all topics that have active references
     let query = connection
       .selectFrom("topics")
       .innerJoin(
@@ -321,8 +322,11 @@ export class BatchOperationService {
         "topics.topic_id",
         "topic_references.topic_id",
       )
-      .where("topic_references.is_active", "=", true)
-      .where(({ eb, not, exists }) =>
+      .where("topic_references.is_active", "=", true);
+
+    // Only filter out existing explanations if skipExisting is true
+    if (skipExisting) {
+      query = query.where(({ eb, not, exists }) =>
         not(
           exists(
             eb
@@ -335,6 +339,7 @@ export class BatchOperationService {
           ),
         ),
       );
+    }
 
     if (category) {
       query = query.where("topics.category", "=", category);
@@ -351,7 +356,9 @@ export class BatchOperationService {
         "[BATCH] No topics found that need explanations. Throwing error.",
       );
       throw new Error(
-        "No topics found that need new explanations. Ensure that the 'References' batch has been run and that explanations do not already exist for the selected topics.",
+        skipExisting
+          ? "No topics found that need new explanations. Ensure that the 'References' batch has been run and that explanations do not already exist for the selected topics."
+          : "No topics found with active references to generate explanations for.",
       );
     }
 
