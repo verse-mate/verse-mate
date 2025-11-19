@@ -3039,27 +3039,23 @@ export class BatchOperationService {
           if (content && customId) {
             try {
               // custom_id format: topic-references-{topicId}-{timestamp}
-              // or legacy: topic-references-{topicId}
               let topicId: string;
-              const parts = customId
-                .replace("topic-references-", "")
-                .split("-");
-
-              // Heuristic: UUIDs usually have hyphens. Timestamp is usually at the end.
-              // If the last part is numeric and long, it's a timestamp.
-              // But UUIDs also have numeric parts.
-              // Let's assume standard UUID length if possible, or just use the logic that topicId is everything before the last hyphen IF the last part is a timestamp.
-              // Actually, simpler: We generated it as `topic-references-${topic.topic_id}-${Date.now()}`
-              // topic_id is a UUID (e.g. 123e4567-e89b-12d3-a456-426614174000)
-              // So we can try to reconstruct it.
-              // Or just strip the prefix and maybe the timestamp suffix.
-
-              const prefixRemoved = customId.replace("topic-references-", "");
-              const timestampRegex = /-\d{13}$/; // 13 digits for milliseconds timestamp
-              if (timestampRegex.test(prefixRemoved)) {
-                topicId = prefixRemoved.replace(timestampRegex, "");
+              const prefix = "topic-references-";
+              
+              if (customId.startsWith(prefix)) {
+                const remainder = customId.slice(prefix.length);
+                // Check for timestamp suffix: -1234567890123
+                const timestampMatch = remainder.match(/-(\d{13})$/);
+                if (timestampMatch) {
+                   // Remove the timestamp part (length of digits + 1 for hyphen)
+                   topicId = remainder.slice(0, -timestampMatch[0].length);
+                } else {
+                   topicId = remainder; // Legacy format (no timestamp)
+                }
               } else {
-                topicId = prefixRemoved; // Legacy format
+                console.warn(`[BATCH_TOPIC_REFERENCES] Invalid custom_id prefix: ${customId}`);
+                errorCount++;
+                continue;
               }
 
               // Verify topic exists
@@ -3077,27 +3073,28 @@ export class BatchOperationService {
                 continue;
               }
 
-              // Find max version of existing references
-              const existingReference = await connection
-                .selectFrom("topic_references")
-                .where("topic_id", "=", topicId)
-                .orderBy("version", "desc")
-                .select("version")
-                .executeTakeFirst();
-
-              const nextVersion = existingReference
-                ? existingReference.version + 1
-                : 1;
-
               await connection.transaction().execute(async (trx) => {
-                // Deactivate old references
+                // 1. Get max version AND lock the rows to prevent race conditions if running parallel
+                const existingReference = await trx
+                  .selectFrom("topic_references")
+                  .where("topic_id", "=", topicId)
+                  .orderBy("version", "desc")
+                  .select("version")
+                  .executeTakeFirst();
+
+                const nextVersion = existingReference
+                  ? existingReference.version + 1
+                  : 1;
+
+                // 2. Deactivate ANY existing active references
                 await trx
                   .updateTable("topic_references")
                   .set({ is_active: false })
                   .where("topic_id", "=", topicId)
+                  .where("is_active", "=", true)
                   .execute();
 
-                // Insert new reference
+                // 3. Insert new active reference
                 await trx
                   .insertInto("topic_references")
                   .values({
@@ -3111,12 +3108,17 @@ export class BatchOperationService {
               });
 
               processedCount++;
-            } catch (dbError) {
+            } catch (dbError: any) {
               errorCount++;
-              console.error(
-                `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
-                dbError,
-              );
+              // Check specifically for unique constraint violation on active index
+              if (dbError.code === '23505' && dbError.constraint === 'unique_active_topic_reference') {
+                 console.warn(`[BATCH_TOPIC_REFERENCES] Race condition detected for topic ${customId}, skipping duplicate.`);
+              } else {
+                 console.error(
+                   `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
+                   dbError,
+                 );
+              }
             }
           } else {
             errorCount++;

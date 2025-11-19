@@ -29,8 +29,8 @@ const setRefreshToken = (token: string) => {
     typeof window !== "undefined" && window.location.protocol === "https:";
   const secureAttr = isSecure ? "; Secure" : "";
   // Set cookie for 90 days (matching backend)
-  // Use SameSite=Strict for refresh token as it's more sensitive and doesn't need to be sent on navigation
-  document.cookie = `refreshToken=${encodeURIComponent(token)}; path=/; max-age=${90 * 24 * 60 * 60}; SameSite=Strict${secureAttr}`;
+  // Use SameSite=Lax to ensure token is available during navigation from external sites
+  document.cookie = `refreshToken=${encodeURIComponent(token)}; path=/; max-age=${90 * 24 * 60 * 60}; SameSite=Lax${secureAttr}`;
 };
 
 let isRefreshing = false;
@@ -60,6 +60,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
       if (!response.ok) {
         // Refresh token is invalid or expired
+        authHelpers.clearTokens();
         return null;
       }
 
