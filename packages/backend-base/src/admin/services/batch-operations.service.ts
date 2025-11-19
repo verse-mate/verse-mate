@@ -1806,6 +1806,7 @@ export class BatchOperationService {
       .getOrCreateConnection()
       .selectFrom("batch_jobs")
       .where("status", "not in", ["completed", "failed", "cancelled"])
+      .where("parent_batch_id", "is", null)
       .selectAll()
       .execute();
 
@@ -1819,7 +1820,8 @@ export class BatchOperationService {
         batch.batch_type === "rephrase-bible" ||
         batch.batch_type === "translate-bible" ||
         batch.batch_type === "topic-explanations-parent" ||
-        batch.batch_type === "topic-translate-all";
+        batch.batch_type === "topic-translate-all" ||
+        batch.batch_type === "auto-highlight-bible";
       const batchId = isParent ? `parent-${batch.id}` : batch.openai_batch_id;
 
       if (batchId) {
