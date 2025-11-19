@@ -61,6 +61,7 @@ export const AutoHighlights = () => {
   const [effort, setEffort] = useState<"low" | "medium" | "high">("medium");
   const [processWholeBible, setProcessWholeBible] = useState(true);
   const [selectedBook, setSelectedBook] = useState<string>("");
+  const [skipExisting, setSkipExisting] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
@@ -143,6 +144,7 @@ export const AutoHighlights = () => {
         type: processWholeBible ? ("bible" as const) : ("book" as const),
         model,
         effort,
+        skipExisting,
         ...(processWholeBible ? {} : { bookName: selectedBook }),
       };
 
@@ -384,6 +386,18 @@ export const AutoHighlights = () => {
                 className={styles.checkbox}
               />
               <span>Process Entire Bible</span>
+            </label>
+          </div>
+
+          <div className={styles.formField}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={skipExisting}
+                onChange={(e) => setSkipExisting(e.target.checked)}
+                className={styles.checkbox}
+              />
+              <span>Skip existing books (already generated)</span>
             </label>
           </div>
 

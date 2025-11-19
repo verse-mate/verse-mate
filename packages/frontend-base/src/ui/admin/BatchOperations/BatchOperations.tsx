@@ -1777,7 +1777,11 @@ export const BatchOperations = () => {
                   />
                   <SelectDropdown.Content
                     align="start"
-                    style={{ width: "300px" }}
+                    style={{
+                      width: "300px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                    }}
                   >
                     <SelectDropdown.Item value="EVENT" icon={<CheckIcon />}>
                       Events
@@ -1836,7 +1840,11 @@ export const BatchOperations = () => {
                   />
                   <SelectDropdown.Content
                     align="start"
-                    style={{ width: "300px" }}
+                    style={{
+                      width: "300px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                    }}
                   >
                     <SelectDropdown.Item value="all" icon={<CheckIcon />}>
                       All topics in category

@@ -4587,12 +4587,14 @@ export class BatchOperationService {
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
     bookName?: string,
+    skipExisting = false,
   ): Promise<any> {
     const isBibleBatch = !bookName;
 
     if (isBibleBatch) {
       const connection = this.db.getOrCreateConnection();
 
+      // Create parent batch first
       const parentBatch = await connection
         .insertInto("batch_jobs")
         .values({
@@ -4600,7 +4602,7 @@ export class BatchOperationService {
           status: "in_progress",
           model,
           created_by: adminUserId,
-          total_requests: 66,
+          total_requests: 66, // Will be updated if we skip books
           bible_version: "N/A",
           explanation_types: [],
         } as any)
@@ -4609,16 +4611,58 @@ export class BatchOperationService {
 
       const parentBatchId = parentBatch.id;
 
-      const books = await connection
+      let booksQuery = connection
         .selectFrom("books")
         .select(["book_id", "name"])
-        .orderBy("book_id", "asc")
-        .execute();
+        .orderBy("book_id", "asc");
+
+      if (skipExisting) {
+        // Filter out books that already have entries in auto_highlights
+        booksQuery = booksQuery.where(({ not, exists, selectFrom }) =>
+          not(
+            exists(
+              selectFrom("auto_highlights")
+                .select("auto_highlight_id")
+                .whereRef("auto_highlights.book_id", "=", "books.book_id"),
+            ),
+          ),
+        );
+      }
+
+      const books = await booksQuery.execute();
+
+      // Update total requests if we skipped some
+      if (books.length !== 66) {
+        await connection
+          .updateTable("batch_jobs")
+          .set({ total_requests: books.length })
+          .where("id", "=", parentBatchId)
+          .execute();
+      }
+
+      if (books.length === 0) {
+        // Mark parent as completed if nothing to do
+        await connection
+          .updateTable("batch_jobs")
+          .set({ status: "completed" })
+          .where("id", "=", parentBatchId)
+          .execute();
+
+        return {
+          success: true,
+          message:
+            "No books found that need auto-highlights (all skipped or none found).",
+          results: [],
+          parentBatchId,
+        };
+      }
 
       const batchResults = [];
 
       for (const book of books) {
         try {
+          // We already filtered via query, so no need to pass skipExisting to single batch here
+          // unless we want double safety. But query filter is better.
           const bookBatch = await this.generateHighlightBookBatch(
             book.name,
             model,
@@ -4651,11 +4695,14 @@ export class BatchOperationService {
       throw new Error("Book name is required for single book batch");
     }
 
+    // For single book, we check skipExisting inside the helper
     return this.generateHighlightBookBatch(
       bookName,
       model,
       adminUserId,
       effort,
+      undefined,
+      skipExisting,
     );
   }
 
@@ -4665,6 +4712,7 @@ export class BatchOperationService {
     adminUserId: string,
     effort: "low" | "medium" | "high",
     parentBatchId?: number,
+    skipExisting = false,
   ): Promise<any> {
     const connection = this.db.getOrCreateConnection();
 
@@ -4676,6 +4724,26 @@ export class BatchOperationService {
 
     if (!book) {
       throw new Error(`Book "${bookName}" not found.`);
+    }
+
+    if (skipExisting) {
+      const existing = await connection
+        .selectFrom("auto_highlights")
+        .where("book_id", "=", book.book_id)
+        .select("auto_highlight_id")
+        .limit(1)
+        .executeTakeFirst();
+
+      if (existing) {
+        console.log(
+          `[BATCH] Skipping auto-highlight for ${bookName} as it already exists.`,
+        );
+        return {
+          skipped: true,
+          message: "Skipped existing",
+          bookId: book.book_id,
+        };
+      }
     }
 
     const highlightPrompt = await connection

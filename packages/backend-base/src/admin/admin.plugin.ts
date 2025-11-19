@@ -1286,6 +1286,7 @@ const plugin = new Elysia()
                   currentUserId,
                   body.effort,
                   body.type === "book" ? body.bookName : undefined,
+                  body.skipExisting || false,
                 );
 
                 return { success: true, data: result };
@@ -1300,6 +1301,7 @@ const plugin = new Elysia()
                     t.Literal("high"),
                   ]),
                   bookName: t.Optional(t.String()),
+                  skipExisting: t.Optional(t.Boolean()),
                 }),
               },
             )
