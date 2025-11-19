@@ -9,7 +9,7 @@ import { api } from "backend-api";
 import useMutation from "../../hooks/useMutation";
 import { setCookie } from "../../utils/auth-utils";
 import { type ErrorState, processError } from "../../utils/error-handling";
-import { ACCESS_TOKEN_COOKIE, zodEmail } from "../lib";
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, zodEmail } from "../lib";
 
 export interface SignInData {
   email: string;
@@ -41,6 +41,10 @@ export function useSignInForm() {
         return console.error("Empty access token");
       }
       setCookie(ACCESS_TOKEN_COOKIE, data.accessToken, 7);
+      
+      if (data?.refreshToken) {
+        setCookie(REFRESH_TOKEN_COOKIE, data.refreshToken, 90);
+      }
 
       // Check device type for redirection
       const isDesktop =

@@ -9,9 +9,12 @@ const getAccessToken = (): string | null => {
 };
 
 const getRefreshToken = (): string | null => {
-  if (typeof document === "undefined") return null;
+  if (typeof document === "undefined") {
+    return null;
+  }
   const match = document.cookie.match(/(?:^|;\s*)refreshToken=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  const token = match ? decodeURIComponent(match[1]) : null;
+  return token;
 };
 
 const setAccessToken = (token: string) => {
