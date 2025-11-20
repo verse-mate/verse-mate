@@ -1,10 +1,7 @@
 "use client";
 import { api } from "backend-api";
 import { useEffect, useState } from "react";
-import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
-import { CheckIcon, ChevronDownIcon } from "../../Icons";
-import { SelectDropdown } from "../../SelectDropdown";
 import { Table, type TableColumn } from "../../Table/Table";
 import styles from "./AutoHighlights.module.css";
 
@@ -20,61 +17,13 @@ interface HighlightTheme {
   updated_at: Date;
 }
 
-interface ModelOption {
-  value: string;
-  label: string;
-}
-
-interface EffortOption {
-  value: string;
-  label: string;
-  description: string;
-}
-
-const modelOptions: ModelOption[] = [
-  { value: "gpt-5", label: "GPT-5 ($1.25/$10.00 per 1M tokens)" },
-  { value: "gpt-5-mini", label: "GPT-5 Mini ($0.25/$2.00 per 1M tokens)" },
-  { value: "gpt-5-nano", label: "GPT-5 Nano ($0.05/$0.40 per 1M tokens)" },
-];
-
-const effortOptions: EffortOption[] = [
-  {
-    value: "low",
-    label: "Low Effort",
-    description: "Faster, less reasoning",
-  },
-  {
-    value: "medium",
-    label: "Medium Effort",
-    description: "Balanced reasoning (default)",
-  },
-  {
-    value: "high",
-    label: "High Effort",
-    description: "Slower, more thorough reasoning",
-  },
-];
-
 export const AutoHighlights = () => {
-  // Batch creation form state
-  const [model, setModel] = useState<string>("gpt-5-mini");
-  const [effort, setEffort] = useState<"low" | "medium" | "high">("medium");
-  const [processWholeBible, setProcessWholeBible] = useState(true);
-  const [selectedBook, setSelectedBook] = useState<string>("");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
-
-  // Dropdown states
-  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
-  const [effortDropdownOpen, setEffortDropdownOpen] = useState(false);
-  const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
-
   // Theme management state
   const [themes, setThemes] = useState<HighlightTheme[]>([]);
   const [loadingThemes, setLoadingThemes] = useState(true);
   const [themesError, setThemesError] = useState<string | null>(null);
   const [updatingTheme, setUpdatingTheme] = useState<number | null>(null);
+  const [createSuccess, setCreateSuccess] = useState<string | null>(null); // Kept for global settings update success message
 
   // Global settings state
   const [defaultRelevance, setDefaultRelevance] = useState<number>(3);
@@ -125,52 +74,6 @@ export const AutoHighlights = () => {
       console.error("Failed to fetch settings:", error);
     } finally {
       setLoadingSettings(false);
-    }
-  };
-
-  const handleCreateBatch = async () => {
-    if (!processWholeBible && !selectedBook) {
-      setCreateError("Please select a book");
-      return;
-    }
-
-    try {
-      setCreating(true);
-      setCreateError(null);
-      setCreateSuccess(null);
-
-      const payload = {
-        type: processWholeBible ? ("bible" as const) : ("book" as const),
-        model,
-        effort,
-        ...(processWholeBible ? {} : { bookName: selectedBook }),
-      };
-
-      const response = await api.admin["batch-auto-highlights"].post(payload);
-
-      if (response.data?.success) {
-        setCreateSuccess(
-          processWholeBible
-            ? "Auto-highlight batch creation started for entire Bible. View progress in Batch Operations page."
-            : `Auto-highlight batch creation started for ${selectedBook}. View progress in Batch Operations page.`,
-        );
-        setProcessWholeBible(true);
-        setSelectedBook("");
-      } else {
-        const message =
-          (response.data && (response.data as any).message) ||
-          "Failed to create auto-highlight batch";
-        setCreateError(message);
-      }
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to create auto-highlight batch";
-      setCreateError(message);
-      console.error("Failed to create batch:", error);
-    } finally {
-      setCreating(false);
     }
   };
 
@@ -284,157 +187,11 @@ export const AutoHighlights = () => {
     },
   ];
 
-  const selectedModelData = modelOptions.find((m) => m.value === model);
-  const selectedEffortData = effortOptions.find((e) => e.value === effort);
-  const selectedBookData = testaments.find((book) => book.n === selectedBook);
-
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h2>Auto-Highlights Management</h2>
       </div>
-
-      {/* Batch Creation Section */}
-      <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Create Auto-Highlight Batch</h3>
-        <p className={styles.sectionDescription}>
-          Generate AI-powered highlights for Bible verses based on thematic
-          categories
-        </p>
-
-        {createError && <div className={styles.error}>{createError}</div>}
-        {createSuccess && <div className={styles.success}>{createSuccess}</div>}
-
-        <div className={styles.formGrid}>
-          <div className={styles.formField}>
-            <label className={styles.label}>Model</label>
-            <SelectDropdown.Root
-              open={modelDropdownOpen}
-              onOpenChange={setModelDropdownOpen}
-              onValueChange={(value) => setModel(value)}
-            >
-              <SelectDropdown.Trigger
-                selectedBook={null}
-                selectedVerse={null}
-                defaultPlaceholder={selectedModelData?.label || "Select Model"}
-                icon={<ChevronDownIcon />}
-              />
-              <SelectDropdown.Content
-                align="start"
-                style={{ width: "var(--radix-select-trigger-width)" }}
-              >
-                {modelOptions.map((option) => (
-                  <SelectDropdown.Item
-                    key={option.value}
-                    value={option.value}
-                    icon={<CheckIcon />}
-                  >
-                    {option.label}
-                  </SelectDropdown.Item>
-                ))}
-              </SelectDropdown.Content>
-            </SelectDropdown.Root>
-          </div>
-
-          <div className={styles.formField}>
-            <label className={styles.label}>Effort Level</label>
-            <SelectDropdown.Root
-              open={effortDropdownOpen}
-              onOpenChange={setEffortDropdownOpen}
-              onValueChange={(value) =>
-                setEffort(value as unknown as "low" | "medium" | "high")
-              }
-            >
-              <SelectDropdown.Trigger
-                selectedBook={null}
-                selectedVerse={null}
-                defaultPlaceholder={
-                  selectedEffortData?.label || "Select Effort"
-                }
-                icon={<ChevronDownIcon />}
-              />
-              <SelectDropdown.Content
-                align="start"
-                style={{ width: "var(--radix-select-trigger-width)" }}
-              >
-                {effortOptions.map((option) => (
-                  <SelectDropdown.Item
-                    key={option.value}
-                    value={option.value}
-                    icon={<CheckIcon />}
-                  >
-                    <div>
-                      <div>{option.label}</div>
-                      <div className={styles.optionDescription}>
-                        {option.description}
-                      </div>
-                    </div>
-                  </SelectDropdown.Item>
-                ))}
-              </SelectDropdown.Content>
-            </SelectDropdown.Root>
-          </div>
-
-          <div className={styles.formField}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={processWholeBible}
-                onChange={(e) => setProcessWholeBible(e.target.checked)}
-                className={styles.checkbox}
-              />
-              <span>Process Entire Bible</span>
-            </label>
-          </div>
-
-          {!processWholeBible && (
-            <div className={styles.formField}>
-              <label className={styles.label}>Select Book</label>
-              <SelectDropdown.Root
-                open={bookDropdownOpen}
-                onOpenChange={setBookDropdownOpen}
-                onValueChange={(value) => setSelectedBook(value)}
-              >
-                <SelectDropdown.Trigger
-                  selectedBook={null}
-                  selectedVerse={null}
-                  defaultPlaceholder={selectedBookData?.n || "Select Book"}
-                  icon={<ChevronDownIcon />}
-                />
-                <SelectDropdown.Content
-                  align="start"
-                  style={{
-                    width: "var(--radix-select-trigger-width)",
-                    maxHeight: "400px",
-                    overflowY: "auto",
-                  }}
-                >
-                  {testaments.map((book) => (
-                    <SelectDropdown.Item
-                      key={book.b}
-                      value={book.n}
-                      icon={<CheckIcon />}
-                    >
-                      {book.n} ({book.t})
-                    </SelectDropdown.Item>
-                  ))}
-                </SelectDropdown.Content>
-              </SelectDropdown.Root>
-            </div>
-          )}
-
-          <div className={styles.formActions}>
-            <Button
-              variant="contained"
-              onClick={handleCreateBatch}
-              loading={creating}
-              disabled={creating}
-            >
-              Create Batch
-            </Button>
-          </div>
-        </div>
-      </section>
 
       {/* Theme Management Section */}
       <section className={styles.section}>

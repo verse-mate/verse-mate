@@ -329,6 +329,7 @@ const plugin = new Elysia()
                   body.effort || "medium",
                   body.category,
                   body.topicId,
+                  body.skipExisting || false,
                 );
               },
               {
@@ -343,6 +344,7 @@ const plugin = new Elysia()
                   ),
                   category: t.Optional(t.String()), // Add optional category parameter
                   topicId: t.Optional(t.String()), // Add optional topicId parameter
+                  skipExisting: t.Optional(t.Boolean()),
                 }),
               },
             )
@@ -428,6 +430,9 @@ const plugin = new Elysia()
                     body.effort || "medium",
                     body.category,
                     body.topicId,
+                    body.includeReferencesInSummary || false,
+                    body.includeReferencesInDetailed || false,
+                    body.skipExisting ?? true, // Default to true to maintain behavior
                   );
                 } catch (error: any) {
                   console.error(
@@ -452,6 +457,9 @@ const plugin = new Elysia()
                   ),
                   category: t.Optional(t.String()),
                   topicId: t.Optional(t.String()),
+                  includeReferencesInSummary: t.Optional(t.Boolean()),
+                  includeReferencesInDetailed: t.Optional(t.Boolean()),
+                  skipExisting: t.Optional(t.Boolean()),
                 }),
               },
             )
@@ -1280,6 +1288,7 @@ const plugin = new Elysia()
                   currentUserId,
                   body.effort,
                   body.type === "book" ? body.bookName : undefined,
+                  body.skipExisting || false,
                 );
 
                 return { success: true, data: result };
@@ -1294,6 +1303,7 @@ const plugin = new Elysia()
                     t.Literal("high"),
                   ]),
                   bookName: t.Optional(t.String()),
+                  skipExisting: t.Optional(t.Boolean()),
                 }),
               },
             )
