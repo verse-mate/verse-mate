@@ -1,24 +1,32 @@
 import { api } from "backend-api";
 import { parseCookies } from "nookies";
 import { useCallback, useEffect, useState } from "react";
-import { ACCESS_TOKEN_COOKIE } from "../auth/lib";
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "../auth/lib";
 import { deleteCookie } from "../utils/auth-utils";
 import type { UserSession } from "./session";
 
 export const userSession = () => {
-  const { accessToken } = parseCookies();
+  const { accessToken, refreshToken } = parseCookies();
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSession = useCallback(
     async (forceRefresh = false) => {
-      if (accessToken && (!session || forceRefresh)) {
+      // Try to fetch if we have EITHER token.
+      // If only refreshToken exists, this request will 401, then eden.ts will refresh and retry.
+      if ((accessToken || refreshToken) && (!session || forceRefresh)) {
         try {
+          // We send Authorization header only if accessToken exists.
+          // If it doesn't, fetcher in eden.ts will handle the 401 flow using refreshToken.
+          const headers: Record<string, string> = {};
+          if (accessToken) {
+            headers.Authorization = `Bearer ${accessToken}`;
+          }
+
           const response = await api.auth.session.get({
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
+            headers,
           });
+
           if (response.error) {
             throw response.error;
           }
@@ -38,6 +46,9 @@ export const userSession = () => {
               try {
                 localStorage.removeItem("accessToken");
               } catch {}
+              // Only redirect if we REALLY failed (meaning refresh also failed/didn't happen)
+              // But wait, if refresh succeeded inside api.auth.session.get (via eden),
+              // we wouldn't be in this catch block unless the *retried* request also failed.
               Promise.resolve().then(() => window.location.replace("/login"));
             }
           } catch {}
@@ -48,7 +59,7 @@ export const userSession = () => {
         setLoading(false);
       }
     },
-    [accessToken, session],
+    [accessToken, refreshToken, session],
   );
 
   useEffect(() => {
