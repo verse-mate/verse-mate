@@ -20,6 +20,8 @@ COPY --chown=bunjs:bunjs packages/database/migrations ./migrations
 COPY --chown=bunjs:bunjs packages/backend-base/src/bible/data/key_english.json /app/dist/data/key_english.json
 COPY --chown=bunjs:bunjs packages/backend-base/src/bible/data/NASB1995.json /app/dist/data/NASB1995.json
 
+RUN bun install kysely@0.27.4
+
 EXPOSE 3000
 
 HEALTHCHECK CMD wget --spider -q http://localhost:3000/health || exit 1
