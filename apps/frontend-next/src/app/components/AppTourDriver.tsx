@@ -737,9 +737,10 @@ export default function AppTourDriver({
       }
     };
 
-    // Handle keyboard navigation - map keys to tour actions instead of blocking
+    // Handle keyboard during interactive steps (1-4)
+    // Note: This useEffect only runs for steps 1-4 due to early return above
     const keyGuard = (e: KeyboardEvent) => {
-      // Block Escape to prevent dropdown close during guided steps
+      // Block Escape to prevent dropdown close
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
@@ -747,22 +748,11 @@ export default function AppTourDriver({
         return;
       }
 
-      // Handle Enter/Space differently based on step type
+      // Block Enter/Space to prevent accidental advancement
+      // User must click the actual target element
       if (e.key === "Enter" || e.key === " ") {
-        const activeDriver = drvRef.current;
-        if (guidedStepIndex === 0 || guidedStepIndex === 5) {
-          // Non-interactive steps: map to moveNext
-          e.preventDefault();
-          e.stopPropagation();
-          if (activeDriver) {
-            activeDriver.moveNext();
-          }
-        } else if (guidedStepIndex >= 1 && guidedStepIndex <= 4) {
-          // Interactive steps: block to prevent accidental advancement
-          // User must click the actual target element
-          e.preventDefault();
-          e.stopPropagation();
-        }
+        e.preventDefault();
+        e.stopPropagation();
       }
     };
 
