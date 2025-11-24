@@ -3,9 +3,11 @@ import {
   MENU_PADDING,
   MENU_VERTICAL_OFFSET,
 } from "../../constants/highlightColors";
+import { getStrongsNumber } from "../../data/strongs-mapping";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { notify } from "../../notification";
 import type { HighlightColor } from "../HighlightColorPicker/types";
+import { BookIcon } from "../Icons/bookIcon";
 import { BookmarkIcon } from "../Icons/bookmarkIcon";
 import { CopyIcon } from "../Icons/copyIcon";
 import { NotesIcon } from "../Icons/notesIcon";
@@ -24,10 +26,16 @@ export const VerseActionsMenu = ({
   onCopy,
   onShare,
   onClose,
+  onDefine,
+  selectedWord,
 }: VerseActionsMenuProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedColor, setSelectedColor] = useState<HighlightColor>("yellow");
+
+  // Check if selected word has a Strong's number
+  const strongsNum = selectedWord ? getStrongsNumber(selectedWord) : null;
+  const showDefineButton = !!strongsNum && !!onDefine;
 
   useClickOutside(menuRef, onClose);
 
@@ -166,6 +174,13 @@ export const VerseActionsMenu = ({
     }
   };
 
+  const handleDefine = () => {
+    if (strongsNum && onDefine) {
+      onDefine(strongsNum);
+      // Don't close the menu - dictionary popover will show
+    }
+  };
+
   const verseReference =
     selection.start === selection.end
       ? `Verse ${selection.start}`
@@ -281,6 +296,19 @@ export const VerseActionsMenu = ({
           <ShareIcon className={styles.actionIcon} />
           <span className={styles.actionLabel}>Share Verse</span>
         </button>
+
+        {showDefineButton && (
+          <button
+            type="button"
+            className={`${styles.actionButton} ${isLoading ? styles.disabled : ""}`}
+            onClick={handleDefine}
+            disabled={isLoading}
+            aria-label="Define word"
+          >
+            <BookIcon className={styles.actionIcon} />
+            <span className={styles.actionLabel}>Define Word</span>
+          </button>
+        )}
       </div>
     </div>
   );
