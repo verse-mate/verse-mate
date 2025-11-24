@@ -325,6 +325,16 @@ export const BatchOperations = () => {
   >(null);
   const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
   const [loadingTopics, setLoadingTopics] = useState(false);
+  const [includeReferencesInSummary, setIncludeReferencesInSummary] =
+    useState(false);
+  const [includeReferencesInDetailed, setIncludeReferencesInDetailed] =
+    useState(false);
+
+  // Auto-highlight batch state
+  const [autoHighlightModalOpen, setAutoHighlightModalOpen] = useState(false);
+  const [autoHighlightSkipExisting, setAutoHighlightSkipExisting] =
+    useState(false);
+  const [creatingAutoHighlight, setCreatingAutoHighlight] = useState(false);
 
   // Fetch topics when category changes
   useEffect(() => {
@@ -573,6 +583,7 @@ export const BatchOperations = () => {
             effort: selectedEffort as "low" | "medium" | "high",
             category: topicCategory, // Pass category
             ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }), // Pass topicId if selected
+            skipExisting: topicSkipExisting,
           });
           break;
         case "explanations":
@@ -587,6 +598,9 @@ export const BatchOperations = () => {
             effort: selectedEffort as "low" | "medium" | "high",
             category: topicCategory,
             ...(selectedTopicForBatch && { topicId: selectedTopicForBatch }),
+            includeReferencesInSummary,
+            includeReferencesInDetailed,
+            skipExisting: topicSkipExisting,
           });
           break;
         case "translate": {
@@ -633,6 +647,38 @@ export const BatchOperations = () => {
       );
     } finally {
       setCreatingTopicBatch(false);
+    }
+  };
+
+  const handleCreateAutoHighlightBatch = async () => {
+    if (!isBibleBatch && !selectedBook) {
+      setError("Please select a book");
+      return;
+    }
+
+    try {
+      setCreatingAutoHighlight(true);
+      setError(null);
+
+      await api.admin["batch-auto-highlights"].post({
+        type: isBibleBatch ? "bible" : "book",
+        model: selectedModel,
+        effort: selectedEffort as "low" | "medium" | "high",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        skipExisting: autoHighlightSkipExisting,
+      });
+
+      await fetchBatchJobs();
+      setAutoHighlightModalOpen(false);
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to create auto-highlight batch";
+      setError(errorMessage);
+      console.error("Error creating auto-highlight batch:", err);
+    } finally {
+      setCreatingAutoHighlight(false);
     }
   };
 
@@ -1396,8 +1442,77 @@ export const BatchOperations = () => {
           >
             Create Topic Batch
           </Button>
+          <Button
+            onClick={() => setAutoHighlightModalOpen(true)}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Create Auto-Highlight Batch
+          </Button>
         </div>
       </div>
+
+      {/* Auto-Highlight Batch Modal */}
+      <Dialog
+        open={autoHighlightModalOpen}
+        onOpenChange={setAutoHighlightModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Create Auto-Highlight Batch</Dialog.Head>
+          <Dialog.Description>
+            Generate AI-powered highlights for {isBibleBatch ? "the entire Bible" : selectedBook || "selected book"}.
+          </Dialog.Description>
+          
+          <div style={{ margin: "20px 0" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={autoHighlightSkipExisting}
+                onChange={(e) => setAutoHighlightSkipExisting(e.target.checked)}
+              />
+              Skip existing books (already generated)
+            </label>
+            <p style={{ fontSize: "12px", color: "#666", marginTop: "4px", marginLeft: "24px" }}>
+              If checked, books that already have auto-highlights will be skipped.
+            </p>
+          </div>
+
+          <div style={{ background: "#f9f9f9", padding: "15px", borderRadius: "4px", marginBottom: "20px" }}>
+            <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>Current Settings:</h4>
+            <ul style={{ margin: 0, paddingLeft: "20px", fontSize: "13px", color: "#555" }}>
+              <li>Model: <strong>{selectedModelData?.label || selectedModel}</strong></li>
+              <li>Effort: <strong>{selectedEffortData?.label || selectedEffort}</strong></li>
+              <li>Target: <strong>{isBibleBatch ? "Entire Bible" : selectedBook || "No book selected"}</strong></li>
+            </ul>
+            <p style={{ fontSize: "12px", marginTop: "10px", color: "#888" }}>
+              (Change these in the main form if needed)
+            </p>
+          </div>
+
+          <Dialog.Footer>
+            <Button
+              onClick={() => setAutoHighlightModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateAutoHighlightBatch} 
+              loading={creatingAutoHighlight}
+              disabled={!isBibleBatch && !selectedBook}
+            >
+              {creatingAutoHighlight ? "Creating..." : "Create Batch"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
 
       {/* Main Table */}
       <div className={styles.tableContainer}>
@@ -1770,7 +1885,11 @@ export const BatchOperations = () => {
                   />
                   <SelectDropdown.Content
                     align="start"
-                    style={{ width: "300px" }}
+                    style={{
+                      width: "300px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                    }}
                   >
                     <SelectDropdown.Item value="EVENT" icon={<CheckIcon />}>
                       Events
@@ -1780,6 +1899,9 @@ export const BatchOperations = () => {
                     </SelectDropdown.Item>
                     <SelectDropdown.Item value="PARABLE" icon={<CheckIcon />}>
                       Parables
+                    </SelectDropdown.Item>
+                    <SelectDropdown.Item value="THEME" icon={<CheckIcon />}>
+                      Themes
                     </SelectDropdown.Item>
                   </SelectDropdown.Content>
                 </SelectDropdown.Root>
@@ -1826,7 +1948,11 @@ export const BatchOperations = () => {
                   />
                   <SelectDropdown.Content
                     align="start"
-                    style={{ width: "300px" }}
+                    style={{
+                      width: "300px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                    }}
                   >
                     <SelectDropdown.Item value="all" icon={<CheckIcon />}>
                       All topics in category
@@ -1862,6 +1988,31 @@ export const BatchOperations = () => {
                 Select a specific topic to process only that topic, or "All
                 topics in category" to process all topics in the selected
                 category.
+              </p>
+            </div>
+          )}
+
+          {topicBatchType === "references" && (
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={topicSkipExisting}
+                  onChange={(e) => setTopicSkipExisting(e.target.checked)}
+                />
+                Don't generate for existing references
+              </label>
+              <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                If checked, only topics without any references will be
+                processed. If unchecked, new versions will be created for
+                existing topics.
               </p>
             </div>
           )}
@@ -1925,6 +2076,86 @@ export const BatchOperations = () => {
                     </label>
                   ))}
                 </div>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Include References (Context):
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!topicExplanationTypes.includes("summary")}
+                      checked={includeReferencesInSummary}
+                      onChange={(e) =>
+                        setIncludeReferencesInSummary(e.target.checked)
+                      }
+                    />
+                    Include References in Summary
+                  </label>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      disabled={!topicExplanationTypes.includes("detailed")}
+                      checked={includeReferencesInDetailed}
+                      onChange={(e) =>
+                        setIncludeReferencesInDetailed(e.target.checked)
+                      }
+                    />
+                    Include References in Detailed
+                  </label>
+                  <p style={{ fontSize: "12px", color: "#666" }}>
+                    Note: Byline explanations always include references by
+                    default.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={topicSkipExisting}
+                    onChange={(e) => setTopicSkipExisting(e.target.checked)}
+                  />
+                  Skip existing explanations
+                </label>
+                <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
+                  If checked, only topics without explanations for the selected types/language will be processed.
+                  If unchecked, new versions will be generated even if explanations exist.
+                </p>
               </div>
             </>
           )}

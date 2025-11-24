@@ -1676,6 +1676,7 @@ export const MainContent = () => {
                                     value="PARABLES"
                                     label="Parables"
                                   />
+                                  <Tabs.Trigger value="THEMES" label="Themes" />
                                 </Tabs.List>
                                 <TopicContent
                                   category={activeTopicTab}
@@ -2132,7 +2133,7 @@ export const MainContent = () => {
             />
             <RightPanel.Content
               isViewingTopic={isViewingTopic}
-              topicId={String(bookId)}
+              topicId={currentTopicInfo?.topic_id}
               session={session}
               explanation={explanation}
               conversationsHistory={conversationsHistory}

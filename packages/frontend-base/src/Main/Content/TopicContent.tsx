@@ -6,6 +6,7 @@ import {
 } from "../../hooks/useSearchParams";
 import { useTopicsByCategory } from "../../hooks/useTopics";
 import { Accordion } from "../../ui/Accordion";
+import { mapCategoryToBackend } from "../../utils/topic-utils";
 
 interface TopicContentProps {
   category: string;
@@ -19,14 +20,7 @@ export const TopicContent: React.FC<TopicContentProps> = ({
   onTopicClick,
 }) => {
   // Map frontend category names to backend category names
-  const backendCategory =
-    category === "EVENTS"
-      ? "EVENT"
-      : category === "PROPHECIES"
-        ? "PROPHECY"
-        : category === "PARABLES"
-          ? "PARABLE"
-          : category;
+  const backendCategory = mapCategoryToBackend(category);
 
   const { bibleVersion } = useGetSearchParams();
 
@@ -59,6 +53,12 @@ export const TopicContent: React.FC<TopicContentProps> = ({
     enabled: hasFilter && backendCategory !== "PARABLE",
   });
 
+  const { data: themesTopics, isLoading: isLoadingThemes } = useQuery({
+    queryKey: ["topics", "THEME", bibleVersion],
+    queryFn: () => getTopicsByCategory("THEME", bibleVersion),
+    enabled: hasFilter && backendCategory !== "THEME",
+  });
+
   // Combine all topics when filtering
   const allTopics = hasFilter
     ? [
@@ -66,6 +66,7 @@ export const TopicContent: React.FC<TopicContentProps> = ({
         ...(eventsTopics || []),
         ...(propheciesTopics || []),
         ...(parablesTopics || []),
+        ...(themesTopics || []),
       ]
     : currentCategoryTopics || [];
 
@@ -73,7 +74,8 @@ export const TopicContent: React.FC<TopicContentProps> = ({
     ? isLoadingCurrent ||
       isLoadingEvents ||
       isLoadingProphecies ||
-      isLoadingParables
+      isLoadingParables ||
+      isLoadingThemes
     : isLoadingCurrent;
 
   const error = errorCurrent;

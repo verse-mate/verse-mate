@@ -20,9 +20,6 @@ interface BatchJobRequest {
     input: string;
     max_output_tokens: number;
   };
-  metadata?: {
-    book_id: number;
-  };
 }
 
 const openai = new OpenAI({
@@ -177,17 +174,15 @@ export class BatchOperationService {
     effort: "low" | "medium" | "high" = "medium",
     category?: string,
     topicId?: string,
+    skipExisting = false,
   ) {
     // Modify the query to filter by category if provided
     let query = this.db
       .getOrCreateConnection()
       .selectFrom("topics")
-      .leftJoin(
-        "topic_references",
-        "topics.topic_id",
-        "topic_references.topic_id",
-      )
-      .where("topic_references.reference_id", "is", null);
+      .select("topics.topic_id")
+      .select("topics.name")
+      .select("topics.description");
 
     // Filter by category if provided
     if (category) {
@@ -199,7 +194,17 @@ export class BatchOperationService {
       query = query.where("topics.topic_id", "=", topicId);
     }
 
-    const topics = await query.selectAll("topics").execute();
+    if (skipExisting) {
+      query = query
+        .leftJoin(
+          "topic_references",
+          "topics.topic_id",
+          "topic_references.topic_id",
+        )
+        .where("topic_references.reference_id", "is", null);
+    }
+
+    const topics = await query.execute();
 
     if (topics.length === 0) {
       throw new Error("No topics found that need references.");
@@ -212,7 +217,7 @@ export class BatchOperationService {
     }
 
     const batchRequests: BatchJobRequest[] = topics.map((topic) => ({
-      custom_id: `topic-references-${topic.topic_id}`,
+      custom_id: `topic-references-${topic.topic_id}-${Date.now()}`,
       method: "POST",
       url: "/v1/responses",
       body: {
@@ -285,6 +290,9 @@ export class BatchOperationService {
     effort: "low" | "medium" | "high" = "medium",
     category?: string,
     topicId?: string,
+    includeReferencesInSummary = false,
+    includeReferencesInDetailed = false,
+    skipExisting = true,
   ) {
     const connection = this.db.getOrCreateConnection();
 
@@ -306,7 +314,7 @@ export class BatchOperationService {
 
     const parentBatchId = parentBatch.id;
 
-    // 2. Find all topics that need explanations
+    // 2. Find all topics that have active references
     let query = connection
       .selectFrom("topics")
       .innerJoin(
@@ -314,8 +322,11 @@ export class BatchOperationService {
         "topics.topic_id",
         "topic_references.topic_id",
       )
-      .where("topic_references.is_active", "=", true)
-      .where(({ eb, not, exists }) =>
+      .where("topic_references.is_active", "=", true);
+
+    // Only filter out existing explanations if skipExisting is true
+    if (skipExisting) {
+      query = query.where(({ eb, not, exists }) =>
         not(
           exists(
             eb
@@ -328,6 +339,7 @@ export class BatchOperationService {
           ),
         ),
       );
+    }
 
     if (category) {
       query = query.where("topics.category", "=", category);
@@ -344,7 +356,9 @@ export class BatchOperationService {
         "[BATCH] No topics found that need explanations. Throwing error.",
       );
       throw new Error(
-        "No topics found that need new explanations. Ensure that the 'References' batch has been run and that explanations do not already exist for the selected topics.",
+        skipExisting
+          ? "No topics found that need new explanations. Ensure that the 'References' batch has been run and that explanations do not already exist for the selected topics."
+          : "No topics found with active references to generate explanations for.",
       );
     }
 
@@ -367,6 +381,8 @@ export class BatchOperationService {
           explanationTypes,
           effort,
           parentBatchId,
+          includeReferencesInSummary,
+          includeReferencesInDetailed,
         );
         batchResults.push({ success: true, ...childBatch });
       } catch (error) {
@@ -399,6 +415,8 @@ export class BatchOperationService {
     explanationTypes: string[],
     effort: "low" | "medium" | "high",
     parentBatchId: number,
+    includeReferencesInSummary: boolean,
+    includeReferencesInDetailed: boolean,
   ) {
     const batchRequests: BatchJobRequest[] = [];
 
@@ -413,6 +431,7 @@ export class BatchOperationService {
       .getOrCreateConnection()
       .selectFrom("topic_references")
       .where("topic_id", "=", topic.topic_id)
+      .where("is_active", "=", true)
       .select("content")
       .executeTakeFirst();
 
@@ -429,17 +448,27 @@ export class BatchOperationService {
         .replace("{topic_name}", topic.name)
         .replace("{topic_description}", topic.description || "");
 
-      // For byline, inject references. If not found, placeholder is replaced with empty string.
-      if (type === "byline") {
+      // For byline, inject references (always).
+      // For summary and detailed, inject references based on flags.
+      // We assume the prompt template has {references} placeholder if intended to be used.
+      const shouldInjectReferences =
+        type === "byline" ||
+        (type === "summary" && includeReferencesInSummary) ||
+        (type === "detailed" && includeReferencesInDetailed);
+
+      if (shouldInjectReferences) {
         finalInput = finalInput.replace(
           "{references}",
           topicReference?.content || "",
         );
         if (!topicReference?.content) {
           console.warn(
-            `[BATCH] No references found for byline topic "${topic.name}". The {references} placeholder was replaced with an empty string.`,
+            `[BATCH] No active references found for topic "${topic.name}" (type: ${type}). The {references} placeholder was replaced with an empty string.`,
           );
         }
+      } else {
+        // If references are not included, remove the placeholder if it exists to avoid template issues
+        finalInput = finalInput.replace("{references}", "");
       }
 
       batchRequests.push({
@@ -1784,6 +1813,7 @@ export class BatchOperationService {
       .getOrCreateConnection()
       .selectFrom("batch_jobs")
       .where("status", "not in", ["completed", "failed", "cancelled"])
+      .where("parent_batch_id", "is", null)
       .selectAll()
       .execute();
 
@@ -1797,7 +1827,8 @@ export class BatchOperationService {
         batch.batch_type === "rephrase-bible" ||
         batch.batch_type === "translate-bible" ||
         batch.batch_type === "topic-explanations-parent" ||
-        batch.batch_type === "topic-translate-all";
+        batch.batch_type === "topic-translate-all" ||
+        batch.batch_type === "auto-highlight-bible";
       const batchId = isParent ? `parent-${batch.id}` : batch.openai_batch_id;
 
       if (batchId) {
@@ -2997,6 +3028,8 @@ export class BatchOperationService {
       let totalPromptTokens = 0;
       let totalCompletionTokens = 0;
 
+      const connection = this.db.getOrCreateConnection();
+
       for (const line of lines) {
         try {
           const data = JSON.parse(line);
@@ -3012,26 +3045,87 @@ export class BatchOperationService {
 
           if (content && customId) {
             try {
-              const topicId = customId.replace("topic-references-", "");
-              await this.db
-                .getOrCreateConnection()
-                .insertInto("topic_references")
-                .values({
-                  topic_id: topicId,
-                  content: content,
-                })
-                .onConflict((oc) =>
-                  oc.column("topic_id").doUpdateSet({ content: content }),
-                )
-                .execute();
+              // custom_id format: topic-references-{topicId}-{timestamp}
+              let topicId: string;
+              const prefix = "topic-references-";
+              
+              if (customId.startsWith(prefix)) {
+                const remainder = customId.slice(prefix.length);
+                // Check for timestamp suffix: -1234567890123
+                const timestampMatch = remainder.match(/-(\d{13})$/);
+                if (timestampMatch) {
+                   // Remove the timestamp part (length of digits + 1 for hyphen)
+                   topicId = remainder.slice(0, -timestampMatch[0].length);
+                } else {
+                   topicId = remainder; // Legacy format (no timestamp)
+                }
+              } else {
+                console.warn(`[BATCH_TOPIC_REFERENCES] Invalid custom_id prefix: ${customId}`);
+                errorCount++;
+                continue;
+              }
+
+              // Verify topic exists
+              const topic = await connection
+                .selectFrom("topics")
+                .where("topic_id", "=", topicId)
+                .select("topic_id")
+                .executeTakeFirst();
+
+              if (!topic) {
+                console.error(
+                  `[BATCH_TOPIC_REFERENCES] Topic not found for ID: ${topicId}`,
+                );
+                errorCount++;
+                continue;
+              }
+
+              await connection.transaction().execute(async (trx) => {
+                // 1. Get max version AND lock the rows to prevent race conditions if running parallel
+                const existingReference = await trx
+                  .selectFrom("topic_references")
+                  .where("topic_id", "=", topicId)
+                  .orderBy("version", "desc")
+                  .select("version")
+                  .executeTakeFirst();
+
+                const nextVersion = existingReference
+                  ? existingReference.version + 1
+                  : 1;
+
+                // 2. Deactivate ANY existing active references
+                await trx
+                  .updateTable("topic_references")
+                  .set({ is_active: false })
+                  .where("topic_id", "=", topicId)
+                  .where("is_active", "=", true)
+                  .execute();
+
+                // 3. Insert new active reference
+                await trx
+                  .insertInto("topic_references")
+                  .values({
+                    topic_id: topicId,
+                    content: content,
+                    version: nextVersion,
+                    is_active: true,
+                    created_by_admin: false,
+                  })
+                  .execute();
+              });
 
               processedCount++;
-            } catch (dbError) {
+            } catch (dbError: any) {
               errorCount++;
-              console.error(
-                `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
-                dbError,
-              );
+              // Check specifically for unique constraint violation on active index
+              if (dbError.code === '23505' && dbError.constraint === 'unique_active_topic_reference') {
+                 console.warn(`[BATCH_TOPIC_REFERENCES] Race condition detected for topic ${customId}, skipping duplicate.`);
+              } else {
+                 console.error(
+                   `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
+                   dbError,
+                 );
+              }
             }
           } else {
             errorCount++;
@@ -3673,17 +3767,24 @@ export class BatchOperationService {
 
       let bookRecord: { book_id: number } | undefined;
 
-      // Prefer DB book_id; if absent, try to read a trusted metadata.book_id from the output lines
+      // Prefer DB book_id; if absent, try to parse from custom_id in output lines
       let resolvedBookId: number | null = batchJob.book_id ?? null;
 
       if (!resolvedBookId) {
         for (const line of lines) {
           try {
             const obj = JSON.parse(line);
-            const metaBookId = obj?.metadata?.book_id;
-            if (typeof metaBookId === "number" && Number.isFinite(metaBookId)) {
-              resolvedBookId = metaBookId;
-              break;
+            const customId = obj?.custom_id;
+            if (typeof customId === "string") {
+              // Parse: auto-highlight-{book_id}-{bookName}-{timestamp}
+              const match = customId.match(/^auto-highlight-(\d+)-/);
+              if (match) {
+                const bookId = Number.parseInt(match[1], 10);
+                if (Number.isFinite(bookId)) {
+                  resolvedBookId = bookId;
+                  break;
+                }
+              }
             }
           } catch {
             // skip invalid lines
@@ -4495,12 +4596,14 @@ export class BatchOperationService {
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
     bookName?: string,
+    skipExisting = false,
   ): Promise<any> {
     const isBibleBatch = !bookName;
 
     if (isBibleBatch) {
       const connection = this.db.getOrCreateConnection();
 
+      // Create parent batch first
       const parentBatch = await connection
         .insertInto("batch_jobs")
         .values({
@@ -4508,7 +4611,7 @@ export class BatchOperationService {
           status: "in_progress",
           model,
           created_by: adminUserId,
-          total_requests: 66,
+          total_requests: 66, // Will be updated if we skip books
           bible_version: "N/A",
           explanation_types: [],
         } as any)
@@ -4517,16 +4620,58 @@ export class BatchOperationService {
 
       const parentBatchId = parentBatch.id;
 
-      const books = await connection
+      let booksQuery = connection
         .selectFrom("books")
         .select(["book_id", "name"])
-        .orderBy("book_id", "asc")
-        .execute();
+        .orderBy("book_id", "asc");
+
+      if (skipExisting) {
+        // Filter out books that already have entries in auto_highlights
+        booksQuery = booksQuery.where(({ not, exists, selectFrom }) =>
+          not(
+            exists(
+              selectFrom("auto_highlights")
+                .select("auto_highlight_id")
+                .whereRef("auto_highlights.book_id", "=", "books.book_id"),
+            ),
+          ),
+        );
+      }
+
+      const books = await booksQuery.execute();
+
+      // Update total requests if we skipped some
+      if (books.length !== 66) {
+        await connection
+          .updateTable("batch_jobs")
+          .set({ total_requests: books.length })
+          .where("id", "=", parentBatchId)
+          .execute();
+      }
+
+      if (books.length === 0) {
+        // Mark parent as completed if nothing to do
+        await connection
+          .updateTable("batch_jobs")
+          .set({ status: "completed" })
+          .where("id", "=", parentBatchId)
+          .execute();
+
+        return {
+          success: true,
+          message:
+            "No books found that need auto-highlights (all skipped or none found).",
+          results: [],
+          parentBatchId,
+        };
+      }
 
       const batchResults = [];
 
       for (const book of books) {
         try {
+          // We already filtered via query, so no need to pass skipExisting to single batch here
+          // unless we want double safety. But query filter is better.
           const bookBatch = await this.generateHighlightBookBatch(
             book.name,
             model,
@@ -4559,11 +4704,14 @@ export class BatchOperationService {
       throw new Error("Book name is required for single book batch");
     }
 
+    // For single book, we check skipExisting inside the helper
     return this.generateHighlightBookBatch(
       bookName,
       model,
       adminUserId,
       effort,
+      undefined,
+      skipExisting,
     );
   }
 
@@ -4573,6 +4721,7 @@ export class BatchOperationService {
     adminUserId: string,
     effort: "low" | "medium" | "high",
     parentBatchId?: number,
+    skipExisting = false,
   ): Promise<any> {
     const connection = this.db.getOrCreateConnection();
 
@@ -4584,6 +4733,26 @@ export class BatchOperationService {
 
     if (!book) {
       throw new Error(`Book "${bookName}" not found.`);
+    }
+
+    if (skipExisting) {
+      const existing = await connection
+        .selectFrom("auto_highlights")
+        .where("book_id", "=", book.book_id)
+        .select("auto_highlight_id")
+        .limit(1)
+        .executeTakeFirst();
+
+      if (existing) {
+        console.log(
+          `[BATCH] Skipping auto-highlight for ${bookName} as it already exists.`,
+        );
+        return {
+          skipped: true,
+          message: "Skipped existing",
+          bookId: book.book_id,
+        };
+      }
     }
 
     const highlightPrompt = await connection
@@ -4599,7 +4768,7 @@ export class BatchOperationService {
 
     const batchRequests: BatchJobRequest[] = [
       {
-        custom_id: `auto-highlight-${bookName}-${Date.now()}`,
+        custom_id: `auto-highlight-${book.book_id}-${bookName}-${Date.now()}`,
         method: "POST",
         url: "/v1/responses",
         body: {
@@ -4608,9 +4777,6 @@ export class BatchOperationService {
           instructions: "",
           input: highlightPrompt.prompt.replace("{book_name}", bookName),
           max_output_tokens: 50000,
-        },
-        metadata: {
-          book_id: book.book_id,
         },
       },
     ];
@@ -4653,7 +4819,6 @@ export class BatchOperationService {
         parent_batch_id: parentBatchId ?? null,
         bible_version: "N/A",
         explanation_types: [],
-        input_file_id: file.id,
       } as any)
       .execute();
 

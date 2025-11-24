@@ -33,6 +33,8 @@ export default interface TopicReferencesTable {
     Date | string | null,
     Date | string | null
   >;
+
+  version: ColumnType<number, number | undefined, number>;
 }
 
 export type TopicReferences = Selectable<TopicReferencesTable>;

@@ -337,6 +337,7 @@ async function seedTopics() {
   }
 
   // Sample topics data
+  // NOTE: Theme topics are seeded separately via seed-themes.ts
   const topics = [
     {
       name: "The Resurrection of Jesus",

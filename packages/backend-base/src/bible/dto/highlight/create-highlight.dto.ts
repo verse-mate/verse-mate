@@ -4,6 +4,8 @@ import { type Static, t } from "elysia";
 export const CreateHighlightDto = t.Object({
   user_id: t.String(),
   chapter_id: t.Number(),
+  book_id: t.Number(),
+  chapter_number: t.Number(),
   start_verse: t.Number(),
   end_verse: t.Number(),
   color: t.Optional(t.Enum(HighlightColorEnum)),
