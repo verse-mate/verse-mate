@@ -14,11 +14,12 @@
     "preview": "opennextjs-cloudflare preview"
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@tanstack/react-query": "^5.59.15",
     "frontend-base": "workspace:*",
     "frontend-envs": "workspace:*",
     "next": "^15.4.6",
-    "@ducanh2912/next-pwa": "^10.2.9",
-    "@tanstack/react-query": "^5.59.15",
+    "posthog-js": "^1.298.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

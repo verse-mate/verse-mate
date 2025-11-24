@@ -8,6 +8,7 @@ import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
 import bullmqRedisConnection from "./bullmq-redis";
+import { type Logger, PosthogService } from "./posthog.service";
 import redisClient from "./redis-client";
 
 export type cache = typeof redisClient;
@@ -22,6 +23,49 @@ const jwt = ElysiaJwt({
 
 export type JWT = (typeof jwt)["decorator"]["jwt"];
 
+// Simple console-based logger that matches the Logger interface
+const logger: Logger = {
+  child: ({ component }: { component: string }) => ({
+    ...logger,
+    warn: (message: string, ...args: unknown[]) =>
+      console.warn(`[${component}]`, message, ...args),
+    error: (error: unknown) => console.error(`[${component}]`, error),
+  }),
+  warn: (message: string, ...args: unknown[]) =>
+    console.warn("[Logger]", message, ...args),
+  error: (error: unknown) => console.error("[Logger]", error),
+};
+
+// Initialize PostHog service
+const posthogService = new PosthogService({ logger });
+
+/**
+ * Helper to extract user ID from bearer token without requiring auth guard
+ * Used in global error handler to add user context to exceptions
+ */
+async function maybeCurrentUserId({
+  bearer: bearerToken,
+  query,
+  jwt: jwtVerifier,
+}: {
+  bearer: string | undefined;
+  query: { accessToken?: string };
+  jwt: JWT;
+}): Promise<string | null> {
+  const token = bearerToken ?? query?.accessToken;
+  if (!token) return null;
+
+  try {
+    const payload = await jwtVerifier.verify(token);
+    if (!payload || typeof payload !== "object" || !payload.sub) {
+      return null;
+    }
+    return payload.sub;
+  } catch {
+    return null;
+  }
+}
+
 // const storage = new ObjectStorageService();
 
 const setup = new Elysia({ name: "shared" })
@@ -31,6 +75,28 @@ const setup = new Elysia({ name: "shared" })
   .state("cache", redisClient)
   .state("notification", new EmailNotificationConsumer())
   .state("batchMonitoringQueue", batchMonitoringQueue)
+  .decorate("posthog", posthogService)
+  .onError(
+    { as: "global" },
+    async ({
+      bearer: bearerToken,
+      query,
+      jwt: jwtVerifier,
+      error,
+      code,
+      path,
+    }) => {
+      const distinctId = await maybeCurrentUserId({
+        bearer: bearerToken,
+        query: query as { accessToken?: string },
+        jwt: jwtVerifier,
+      });
+      posthogService.captureException(error, distinctId ?? "anonymous", {
+        code,
+        $current_url: path,
+      });
+    },
+  )
   .derive(async ({ jwt, cookie: { auth }, store }) => {
     let payload: any;
     try {
@@ -145,8 +211,9 @@ setup.onStart(async () => {
   }
 });
 
-setup.onStop(() => {
+setup.onStop(async () => {
   console.log("onStop on shared plugin");
+  await posthogService.disconnect();
   Database.closeConnection();
   redisClient.disconnect();
   bullmqRedisConnection.disconnect();
