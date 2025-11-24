@@ -694,6 +694,9 @@ export const MainContent = () => {
 
   const handleMobileAccordionTriggerClick = useCallback(
     (bookName: string) => {
+      // Skip scrolling if tour is active
+      if (document.body.classList.contains("tour-active")) return;
+
       const scrollContainer = mobileScrollContainerRef.current;
       if (!scrollContainer) return;
 

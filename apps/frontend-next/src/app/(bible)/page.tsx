@@ -2,7 +2,7 @@
 
 import { MainPage } from "frontend-base";
 import { useEffect, useState } from "react";
-import { AppTour } from "../components/AppTour";
+import AppTourDriver from "../components/AppTourDriver";
 
 export default function Home() {
   const [runTour, setRunTour] = useState(false);
@@ -20,7 +20,7 @@ export default function Home() {
 
   return (
     <>
-      <AppTour
+      <AppTourDriver
         run={runTour}
         onComplete={() => {
           setRunTour(false);
