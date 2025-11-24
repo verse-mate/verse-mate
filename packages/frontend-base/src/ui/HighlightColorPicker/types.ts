@@ -6,7 +6,10 @@ export type HighlightColor =
   | "blue"
   | "pink"
   | "purple"
-  | "orange";
+  | "orange"
+  | "red"
+  | "teal"
+  | "brown";
 
 export interface HighlightColorPickerProps {
   onColorSelect: (color: HighlightColor) => void;

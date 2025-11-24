@@ -16,6 +16,9 @@ export const HIGHLIGHT_COLORS: Array<{
   { color: "pink", label: "Pink", hex: "#FCE7F3" },
   { color: "purple", label: "Purple", hex: "#EDE9FE" },
   { color: "orange", label: "Orange", hex: "#FED7AA" },
+  { color: "red", label: "Red", hex: "#FEE2E2" },
+  { color: "teal", label: "Teal", hex: "#CCFBF1" },
+  { color: "brown", label: "Brown", hex: "#E7D7C9" },
 ];
 
 /**
