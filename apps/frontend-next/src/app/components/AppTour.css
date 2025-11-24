@@ -70,6 +70,13 @@
 /* ==========================
    Buttons
    ========================== */
+
+/* Ensure popover and all its contents allow pointer events for proper cursor display */
+.driver-popover,
+.driver-popover * {
+  pointer-events: auto !important;
+}
+
 .vm-tour-popover .driver-popover-footer button {
   border-radius: 6px !important;
   padding: 6px 14px !important;

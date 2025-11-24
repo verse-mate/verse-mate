@@ -329,6 +329,16 @@ export default function AppTourDriver({
     const startBasic = () => {
       drvRef.current?.destroy?.();
       const basicSteps = (isMobile ? mobileBasic : desktopBasic) as any;
+
+      // Handle keyboard navigation for basic tour
+      const basicKeyHandler = (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          drv.moveNext();
+        }
+      };
+      window.addEventListener("keydown", basicKeyHandler);
+
       const drv = driver({
         ...commonOpts,
         steps: basicSteps,
@@ -349,15 +359,25 @@ export default function AppTourDriver({
           if (spotlight) {
             spotlight.style.pointerEvents = "none";
           }
-          // Also disable clicks through the overlay
+          // Block clicks through the overlay but allow popover interactions
           const overlay = document.querySelector(
             ".driver-overlay",
           ) as HTMLElement;
           if (overlay) {
             overlay.style.pointerEvents = "auto";
           }
+          // Ensure popover and its buttons allow pointer events
+          const popover = document.querySelector(
+            ".driver-popover",
+          ) as HTMLElement;
+          if (popover) {
+            popover.style.pointerEvents = "auto";
+          }
         },
         onDestroyStarted: () => {
+          // Clean up keyboard handler
+          window.removeEventListener("keydown", basicKeyHandler);
+
           // Clean up overlay pointer events
           const overlay = document.querySelector(
             ".driver-overlay",
@@ -496,6 +516,18 @@ export default function AppTourDriver({
       let currentStepIdx = 0;
       let isAdvancing = false; // Prevent double-advance
 
+      // Handle keyboard navigation for guided tour
+      const guidedKeyHandler = (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          // Only allow keyboard advance on non-interactive steps (0 and 5)
+          if (currentStepIdx === 0 || currentStepIdx === 5) {
+            e.preventDefault();
+            drvG.moveNext();
+          }
+        }
+      };
+      window.addEventListener("keydown", guidedKeyHandler);
+
       const drvG = driver({
         ...commonOpts,
         steps,
@@ -533,6 +565,9 @@ export default function AppTourDriver({
           }
         },
         onDestroyStarted: () => {
+          // Clean up keyboard handler
+          window.removeEventListener("keydown", guidedKeyHandler);
+
           if (!userSkipped) {
             try {
               localStorage.setItem(TOUR_STORAGE_KEY, "1");
@@ -702,12 +737,32 @@ export default function AppTourDriver({
       }
     };
 
-    // Also block Escape key to prevent dropdown close
+    // Handle keyboard navigation - map keys to tour actions instead of blocking
     const keyGuard = (e: KeyboardEvent) => {
+      // Block Escape to prevent dropdown close during guided steps
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
+        return;
+      }
+
+      // Handle Enter/Space differently based on step type
+      if (e.key === "Enter" || e.key === " ") {
+        const activeDriver = drvRef.current;
+        if (guidedStepIndex === 0 || guidedStepIndex === 5) {
+          // Non-interactive steps: map to moveNext
+          e.preventDefault();
+          e.stopPropagation();
+          if (activeDriver) {
+            activeDriver.moveNext();
+          }
+        } else if (guidedStepIndex >= 1 && guidedStepIndex <= 4) {
+          // Interactive steps: block to prevent accidental advancement
+          // User must click the actual target element
+          e.preventDefault();
+          e.stopPropagation();
+        }
       }
     };
 
@@ -728,9 +783,8 @@ export default function AppTourDriver({
       overlay?.addEventListener(evt as any, guard, true);
     });
 
-    // Add keyboard event listener
+    // Add keyboard event listener on window only (not on document to avoid double-firing)
     window.addEventListener("keydown", keyGuard, true);
-    document.addEventListener("keydown", keyGuard, true);
 
     const cleanup = () => {
       eventNames.forEach((evt) => {
@@ -739,7 +793,6 @@ export default function AppTourDriver({
         overlay?.removeEventListener(evt as any, guard, true);
       });
       window.removeEventListener("keydown", keyGuard, true);
-      document.removeEventListener("keydown", keyGuard, true);
     };
 
     // Store cleanup for explicit calling
