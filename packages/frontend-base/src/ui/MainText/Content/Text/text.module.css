@@ -175,6 +175,18 @@
     background-color: rgb(255 152 0 / 30%);
 }
 
+.highlightRed {
+    background-color: rgb(244 67 54 / 30%);
+}
+
+.highlightTeal {
+    background-color: rgb(0 150 136 / 30%);
+}
+
+.highlightBrown {
+    background-color: rgb(121 85 72 / 30%);
+}
+
 /* Auto-highlight styles - lighter background + underline for visual distinction */
 .autoHighlightYellow {
     background-color: rgb(255 255 0 / 20%);
@@ -209,6 +221,24 @@
 .autoHighlightPurple {
     background-color: rgb(221 160 221 / 20%);
     border-bottom: 2px solid rgb(221 160 221 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightRed {
+    background-color: rgb(244 67 54 / 20%);
+    border-bottom: 2px solid rgb(244 67 54 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightTeal {
+    background-color: rgb(0 150 136 / 20%);
+    border-bottom: 2px solid rgb(0 150 136 / 50%);
+    cursor: pointer;
+}
+
+.autoHighlightBrown {
+    background-color: rgb(121 85 72 / 20%);
+    border-bottom: 2px solid rgb(121 85 72 / 50%);
     cursor: pointer;
 }
 

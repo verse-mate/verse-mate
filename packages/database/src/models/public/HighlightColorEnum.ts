@@ -9,6 +9,9 @@ enum HighlightColorEnum {
   pink = "pink",
   purple = "purple",
   orange = "orange",
+  red = "red",
+  teal = "teal",
+  brown = "brown",
 }
 
 export default HighlightColorEnum;

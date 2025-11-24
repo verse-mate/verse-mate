@@ -223,6 +223,9 @@ export const AutoHighlightSettings = ({
       orange: "#fed7aa",
       pink: "#fbcfe8",
       purple: "#e9d5ff",
+      red: "#fca5a5",
+      teal: "#5eead4",
+      brown: "#d7bfaa",
     };
     return { backgroundColor: colorMap[color] || "#e0e0e0" };
   };
