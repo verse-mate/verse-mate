@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
 import Link from "next/link";
 import { destroyCookie } from "nookies";
+import posthog from "posthog-js";
 import { useEffect, useState } from "react";
 import useMutation from "../../hooks/useMutation";
 import { userSession } from "../../hooks/userSession";
@@ -120,6 +121,14 @@ export const Settings = ({
   });
 
   const handleLogout = async () => {
+    // Reset PostHog identity before logout to start fresh anonymous tracking
+    try {
+      posthog.reset();
+    } catch (error) {
+      // PostHog may not be initialized (e.g., in development without API key)
+      console.debug("PostHog reset skipped:", error);
+    }
+
     destroyCookie(null, "accessToken");
 
     // Check device type for redirection

@@ -1,6 +1,8 @@
 import "frontend-base/styles/global.css";
+import { CookieConsent } from "frontend-base";
 import { $env, type Env, StoreInitializer } from "frontend-envs";
 import { PWAServiceWorkerRegistration } from "../components/PWAServiceWorkerRegistration";
+import { PostHogProvider } from "../providers/PostHogProvider";
 import MyMainPage from "./components/MainPage";
 
 export default function RootLayout({
@@ -50,8 +52,11 @@ export default function RootLayout({
       <StoreInitializer {...envValues} />
 
       <body>
-        <PWAServiceWorkerRegistration />
-        <MyMainPage>{children}</MyMainPage>
+        <PostHogProvider>
+          <PWAServiceWorkerRegistration />
+          <MyMainPage>{children}</MyMainPage>
+          <CookieConsent privacyPolicyUrl="/privacy" />
+        </PostHogProvider>
       </body>
     </html>
   );

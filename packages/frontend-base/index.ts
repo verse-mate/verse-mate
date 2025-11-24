@@ -17,6 +17,13 @@ export {
 } from "./src/ui/CheckboxList/CheckboxList";
 export { Combobox, type ComboboxProps } from "./src/ui/ComboBox/Combobox";
 export { Container } from "./src/ui/Container/Container";
+export {
+  CookieConsent,
+  CONSENT_STORAGE_KEY,
+  CONSENT_ACCEPTED,
+  CONSENT_DECLINED,
+  type CookieConsentProps,
+} from "./src/ui/CookieConsent";
 export * from "./src/ui/Dialog";
 export * from "./src/ui/Icons";
 export { Input } from "./src/ui/Input";
