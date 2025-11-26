@@ -18,6 +18,7 @@ declare const styles: {
   readonly "priorityColumn": string;
   readonly "relevanceCell": string;
   readonly "relevanceColumn": string;
+  readonly "relevanceControl": string;
   readonly "relevanceLabels": string;
   readonly "relevanceSlider": string;
   readonly "relevanceValue": string;
@@ -37,6 +38,11 @@ declare const styles: {
   readonly "success": string;
   readonly "tableContainer": string;
   readonly "themeNameCell": string;
+  readonly "userPrefControls": string;
+  readonly "userPrefHeader": string;
+  readonly "userPrefItem": string;
+  readonly "userPrefsContainer": string;
+  readonly "userSelect": string;
 };
 export = styles;
 

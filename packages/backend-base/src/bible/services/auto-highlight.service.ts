@@ -47,6 +47,8 @@ export class AutoHighlightService {
         is_enabled: pref?.is_enabled ?? false, // Default to disabled for new users
         custom_color: pref?.custom_color ?? null,
         relevance_threshold: pref?.relevance_threshold ?? 3,
+        admin_override: pref?.admin_override ?? false,
+        default_relevance_threshold: theme.default_relevance_threshold,
       };
     });
   }
@@ -57,6 +59,7 @@ export class AutoHighlightService {
     is_enabled?: boolean;
     custom_color?: string;
     relevance_threshold?: number;
+    admin_override?: boolean;
   }) {
     return this.repository.upsertUserThemePreference(params);
   }

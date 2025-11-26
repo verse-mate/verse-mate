@@ -32,6 +32,7 @@ export interface UserThemePreference {
   is_enabled: boolean;
   custom_color: string | null;
   relevance_threshold: number;
+  admin_override: boolean;
   updated_at: Date;
   theme_name?: string;
   theme_color?: string;
@@ -196,6 +197,7 @@ export class AutoHighlightRepository {
     is_enabled?: boolean;
     custom_color?: string;
     relevance_threshold?: number;
+    admin_override?: boolean;
   }): Promise<void> {
     const updateData: any = {
       updated_at: new Date(),
@@ -209,6 +211,9 @@ export class AutoHighlightRepository {
     }
     if (params.relevance_threshold !== undefined) {
       updateData.relevance_threshold = params.relevance_threshold;
+    }
+    if (params.admin_override !== undefined) {
+      updateData.admin_override = params.admin_override;
     }
 
     await this.db

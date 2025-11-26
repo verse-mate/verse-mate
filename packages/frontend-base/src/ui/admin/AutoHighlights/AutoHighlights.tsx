@@ -33,10 +33,22 @@ export const AutoHighlights = () => {
   const [updatingEnabled, setUpdatingEnabled] = useState(false);
   const [tempEnabled, setTempEnabled] = useState<boolean>(false);
 
+  // User management state
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [userPreferences, setUserPreferences] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingUserPrefs, setLoadingUserPrefs] = useState(false);
+  const [userManagementError, setUserManagementError] = useState<string | null>(
+    null,
+  );
+  const [updatingUserPref, setUpdatingUserPref] = useState<number | null>(null);
+
   // Fetch themes on mount
   useEffect(() => {
     fetchThemes();
     fetchSettings();
+    fetchUsers();
   }, []);
 
   const fetchThemes = async () => {
@@ -148,6 +160,83 @@ export const AutoHighlights = () => {
       console.error("Failed to update enabled setting:", error);
     } finally {
       setUpdatingEnabled(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await api.admin.users.get();
+      if (response.data) {
+        setUsers(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      setUserManagementError("Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const fetchUserPreferences = async (userId: string) => {
+    try {
+      setLoadingUserPrefs(true);
+      setUserManagementError(null);
+      // @ts-expect-error - Dynamic path parameter
+      const response = await api.admin["user-theme-preferences"][userId].get();
+      if (response.data?.data) {
+        setUserPreferences(response.data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch user preferences:", error);
+      setUserManagementError("Failed to load user preferences");
+    } finally {
+      setLoadingUserPrefs(false);
+    }
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserId(userId);
+    if (userId) {
+      fetchUserPreferences(userId);
+    } else {
+      setUserPreferences([]);
+    }
+  };
+
+  const handleUserPrefUpdate = async (
+    themeId: number,
+    updates: {
+      relevance_threshold?: number;
+      admin_override?: boolean;
+      is_enabled?: boolean;
+    },
+  ) => {
+    if (!selectedUserId) return;
+
+    try {
+      setUpdatingUserPref(themeId);
+      setUserManagementError(null);
+
+      // @ts-expect-error - Dynamic path parameter
+      await api.admin["user-theme-preferences"][selectedUserId][themeId].patch(
+        updates,
+      );
+
+      // Update local state
+      setUserPreferences((prev) =>
+        prev.map((pref) =>
+          pref.theme_id === themeId ? { ...pref, ...updates } : pref,
+        ),
+      );
+
+      setCreateSuccess("User preference updated successfully");
+      setTimeout(() => setCreateSuccess(null), 2000);
+    } catch (error) {
+      console.error("Failed to update user preference:", error);
+      setUserManagementError("Failed to update user preference");
+    } finally {
+      setUpdatingUserPref(null);
     }
   };
 
@@ -313,6 +402,138 @@ export const AutoHighlights = () => {
               </Button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* User Theme Management Section */}
+      <section className={styles.section}>
+        <h3 className={styles.sectionTitle}>User Theme Management</h3>
+        <p className={styles.sectionDescription}>
+          Manage theme preferences for specific users with custom relevance
+          thresholds
+        </p>
+
+        {userManagementError && (
+          <div className={styles.error}>{userManagementError}</div>
+        )}
+
+        <div className={styles.settingsCard}>
+          <div className={styles.formField}>
+            <label className={styles.label}>Select User</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => handleUserSelect(e.target.value)}
+              className={styles.userSelect}
+              disabled={loadingUsers}
+            >
+              <option value="">-- Select a user --</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.email} ({user.firstName} {user.lastName})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedUserId && (
+            <>
+              {loadingUserPrefs ? (
+                <p>Loading user preferences...</p>
+              ) : (
+                <div className={styles.userPrefsContainer}>
+                  {userPreferences.map((pref) => (
+                    <div key={pref.theme_id} className={styles.userPrefItem}>
+                      <div className={styles.userPrefHeader}>
+                        <span
+                          className={styles.colorBadge}
+                          style={{
+                            backgroundColor:
+                              pref.theme_color === "yellow"
+                                ? "#fef08a"
+                                : pref.theme_color === "blue"
+                                  ? "#bfdbfe"
+                                  : pref.theme_color === "green"
+                                    ? "#bbf7d0"
+                                    : pref.theme_color === "orange"
+                                      ? "#fed7aa"
+                                      : pref.theme_color === "pink"
+                                        ? "#fbcfe8"
+                                        : "#e9d5ff",
+                          }}
+                        />
+                        <strong>{pref.theme_name}</strong>
+                        <label className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={pref.is_enabled}
+                            onChange={(e) =>
+                              handleUserPrefUpdate(pref.theme_id, {
+                                is_enabled: e.target.checked,
+                              })
+                            }
+                            disabled={updatingUserPref === pref.theme_id}
+                            className={styles.checkbox}
+                          />
+                          Enabled
+                        </label>
+                      </div>
+
+                      <div className={styles.userPrefControls}>
+                        <div className={styles.relevanceControl}>
+                          <label className={styles.label}>
+                            Relevance:{" "}
+                            {pref.admin_override
+                              ? pref.relevance_threshold
+                              : pref.default_relevance_threshold}
+                            {pref.admin_override ? " (Custom)" : " (Default)"}
+                          </label>
+                          <input
+                            type="range"
+                            min="1"
+                            max="5"
+                            value={pref.relevance_threshold}
+                            onChange={(e) =>
+                              handleUserPrefUpdate(pref.theme_id, {
+                                relevance_threshold: Number(e.target.value),
+                                admin_override: true,
+                              })
+                            }
+                            disabled={
+                              updatingUserPref === pref.theme_id ||
+                              !pref.is_enabled
+                            }
+                            className={styles.slider}
+                          />
+                          <div className={styles.relevanceLabels}>
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                          </div>
+                        </div>
+
+                        <label className={styles.checkboxLabel}>
+                          <input
+                            type="checkbox"
+                            checked={pref.admin_override}
+                            onChange={(e) =>
+                              handleUserPrefUpdate(pref.theme_id, {
+                                admin_override: e.target.checked,
+                              })
+                            }
+                            disabled={updatingUserPref === pref.theme_id}
+                            className={styles.checkbox}
+                          />
+                          Use Custom Relevance
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
     </div>

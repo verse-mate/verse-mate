@@ -1448,6 +1448,68 @@ const plugin = new Elysia()
               },
             )
             .get(
+              "/user-theme-preferences/:user_id",
+              async ({
+                params,
+                currentUserId,
+                store: { getAutoHighlightService },
+              }) => {
+                if (!currentUserId) {
+                  throw new UnauthorizedError("Authentication required");
+                }
+
+                const service = getAutoHighlightService();
+                const preferences = await service.getUserThemePreferences(
+                  params.user_id,
+                );
+
+                return { success: true, data: preferences };
+              },
+              {
+                params: t.Object({
+                  user_id: t.String(),
+                }),
+              },
+            )
+            .patch(
+              "/user-theme-preferences/:user_id/:theme_id",
+              async ({
+                params,
+                body,
+                currentUserId,
+                store: { getAutoHighlightService },
+              }) => {
+                if (!currentUserId) {
+                  throw new UnauthorizedError("Authentication required");
+                }
+
+                const themeId = Number.parseInt(params.theme_id, 10);
+                if (!Number.isFinite(themeId)) {
+                  throw new ValidationError("Invalid theme_id");
+                }
+
+                const service = getAutoHighlightService();
+                await service.updateUserThemePreference({
+                  user_id: params.user_id,
+                  theme_id: themeId,
+                  ...body,
+                });
+
+                return { success: true };
+              },
+              {
+                params: t.Object({
+                  user_id: t.String(),
+                  theme_id: t.String(),
+                }),
+                body: t.Object({
+                  is_enabled: t.Optional(t.Boolean()),
+                  relevance_threshold: t.Optional(t.Number()),
+                  admin_override: t.Optional(t.Boolean()),
+                }),
+              },
+            )
+            .get(
               "/commentary/grades",
               async ({ store: { db: _db } }) => {
                 return {

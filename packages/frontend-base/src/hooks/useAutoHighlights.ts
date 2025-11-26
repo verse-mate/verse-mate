@@ -77,8 +77,11 @@ export const useAutoHighlights = ({
         enabledThemes = enabledPreferences.map((p: any) => p.theme_id);
 
         // Build per-theme relevance map
+        // Use custom relevance only if admin_override is true, otherwise use theme default
         enabledPreferences.forEach((p: any) => {
-          themeRelevanceMap[p.theme_id] = p.relevance_threshold;
+          themeRelevanceMap[p.theme_id] = p.admin_override
+            ? p.relevance_threshold
+            : p.default_relevance_threshold;
         });
       } else if (!userId && themes && Array.isArray(themes)) {
         // Logged-out user: use theme defaults

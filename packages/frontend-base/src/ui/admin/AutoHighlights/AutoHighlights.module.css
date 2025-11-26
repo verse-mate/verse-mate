@@ -287,6 +287,51 @@
   padding: 0 2px;
 }
 
+/* User Theme Management */
+.userSelect {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: var(--background-secondary, #fff);
+  cursor: pointer;
+}
+
+.userPrefsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.userPrefItem {
+  background: var(--background-tertiary, #f9f9f9);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.userPrefHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.userPrefControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.relevanceControl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .formGrid {
