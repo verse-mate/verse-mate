@@ -13,6 +13,7 @@ interface HighlightTheme {
   is_system: boolean;
   priority: number;
   is_active: boolean;
+  default_relevance_threshold: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -26,11 +27,11 @@ export const AutoHighlights = () => {
   const [createSuccess, setCreateSuccess] = useState<string | null>(null); // Kept for global settings update success message
 
   // Global settings state
-  const [defaultRelevance, setDefaultRelevance] = useState<number>(3);
+  const [defaultEnabled, setDefaultEnabled] = useState<boolean>(false);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [updatingSettings, setUpdatingSettings] = useState(false);
-  const [tempRelevance, setTempRelevance] = useState<number>(3);
+  const [updatingEnabled, setUpdatingEnabled] = useState(false);
+  const [tempEnabled, setTempEnabled] = useState<boolean>(false);
 
   // Fetch themes on mount
   useEffect(() => {
@@ -63,11 +64,13 @@ export const AutoHighlights = () => {
     try {
       setLoadingSettings(true);
       setSettingsError(null);
-      const response =
-        await api.admin["auto-highlight-settings"]["default-relevance"].get();
-      if (response.data?.data?.default_relevance !== undefined) {
-        setDefaultRelevance(response.data.data.default_relevance);
-        setTempRelevance(response.data.data.default_relevance);
+
+      // Fetch enabled setting
+      const enabledResponse =
+        await api.admin["auto-highlight-settings"]["default-enabled"].get();
+      if (enabledResponse.data?.data?.default_enabled !== undefined) {
+        setDefaultEnabled(enabledResponse.data.data.default_enabled);
+        setTempEnabled(enabledResponse.data.data.default_enabled);
       }
     } catch (error) {
       setSettingsError("Failed to load settings");
@@ -101,21 +104,50 @@ export const AutoHighlights = () => {
     }
   };
 
-  const handleUpdateSettings = async () => {
+  const handleRelevanceChange = async (
+    themeId: number,
+    newRelevance: number,
+  ) => {
     try {
-      setUpdatingSettings(true);
-      setSettingsError(null);
-      await api.admin["auto-highlight-settings"]["default-relevance"].patch({
-        default_relevance: tempRelevance,
+      // Optimistically update local state
+      setThemes((prev) =>
+        prev.map((theme) =>
+          theme.theme_id === themeId
+            ? { ...theme, default_relevance_threshold: newRelevance }
+            : theme,
+        ),
+      );
+
+      // @ts-expect-error - Dynamic path parameter
+      await api.admin["highlight-themes"][themeId].patch({
+        default_relevance_threshold: newRelevance,
       });
 
-      setDefaultRelevance(tempRelevance);
-      setCreateSuccess("Default relevance threshold updated successfully");
+      setCreateSuccess("Theme default relevance updated successfully");
+      setTimeout(() => setCreateSuccess(null), 2000);
     } catch (error) {
-      setSettingsError("Failed to update settings");
-      console.error("Failed to update settings:", error);
+      setThemesError("Failed to update theme relevance");
+      console.error("Failed to update relevance:", error);
+      // Revert on error
+      fetchThemes();
+    }
+  };
+
+  const handleUpdateEnabled = async () => {
+    try {
+      setUpdatingEnabled(true);
+      setSettingsError(null);
+      await api.admin["auto-highlight-settings"]["default-enabled"].patch({
+        default_enabled: tempEnabled,
+      });
+
+      setDefaultEnabled(tempEnabled);
+      setCreateSuccess("Default auto-highlights setting updated successfully");
+    } catch (error) {
+      setSettingsError("Failed to update enabled setting");
+      console.error("Failed to update enabled setting:", error);
     } finally {
-      setUpdatingSettings(false);
+      setUpdatingEnabled(false);
     }
   };
 
@@ -171,6 +203,29 @@ export const AutoHighlights = () => {
       ),
     },
     {
+      title: "Default Relevance",
+      property: "default_relevance_threshold",
+      className: styles.relevanceColumn,
+      render: (theme) => (
+        <div className={styles.relevanceCell}>
+          <input
+            type="range"
+            min="1"
+            max="5"
+            value={theme.default_relevance_threshold}
+            onChange={(e) =>
+              handleRelevanceChange(theme.theme_id, Number(e.target.value))
+            }
+            className={styles.slider}
+            disabled={updatingTheme !== null}
+          />
+          <span className={styles.relevanceValue}>
+            {theme.default_relevance_threshold}
+          </span>
+        </div>
+      ),
+    },
+    {
       title: "Actions",
       property: "theme_id",
       className: styles.actionsColumn,
@@ -197,7 +252,8 @@ export const AutoHighlights = () => {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Highlight Themes</h3>
         <p className={styles.sectionDescription}>
-          Manage which highlight themes are active and available to users
+          Manage which highlight themes are active, available to users, and set
+          the default relevance threshold for each theme (for logged-out users)
         </p>
 
         {themesError && <div className={styles.error}>{themesError}</div>}
@@ -216,49 +272,41 @@ export const AutoHighlights = () => {
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Default Settings</h3>
         <p className={styles.sectionDescription}>
-          Configure default relevance threshold for logged-out users
+          Configure default auto-highlights behavior for logged-out users and
+          new users
         </p>
 
         {settingsError && <div className={styles.error}>{settingsError}</div>}
+        {createSuccess && <div className={styles.success}>{createSuccess}</div>}
 
         <div className={styles.settingsCard}>
           <div className={styles.settingRow}>
             <div className={styles.settingInfo}>
               <label className={styles.settingLabel}>
-                Default Relevance Threshold
+                Enable Auto-Highlights by Default
               </label>
               <p className={styles.settingDescription}>
-                Show highlights with relevance score of {tempRelevance} or lower
-                (1 = most relevant, 5 = all highlights)
+                When enabled, auto-highlights will be shown by default for
+                logged-out users and new users. Users can toggle this in their
+                settings.
               </p>
             </div>
             <div className={styles.settingControl}>
-              <div className={styles.relevanceSlider}>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={tempRelevance}
-                  onChange={(e) => setTempRelevance(Number(e.target.value))}
-                  className={styles.slider}
-                  disabled={loadingSettings}
-                />
-                <div className={styles.relevanceLabels}>
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                  <span>5</span>
-                </div>
-              </div>
+              <input
+                type="checkbox"
+                checked={tempEnabled}
+                onChange={(e) => setTempEnabled(e.target.checked)}
+                disabled={loadingSettings}
+                className={styles.checkbox}
+              />
               <Button
                 variant="contained"
-                onClick={handleUpdateSettings}
-                loading={updatingSettings}
+                onClick={handleUpdateEnabled}
+                loading={updatingEnabled}
                 disabled={
-                  updatingSettings ||
+                  updatingEnabled ||
                   loadingSettings ||
-                  tempRelevance === defaultRelevance
+                  tempEnabled === defaultEnabled
                 }
               >
                 Save

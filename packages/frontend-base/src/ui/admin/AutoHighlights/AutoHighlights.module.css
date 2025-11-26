@@ -137,6 +137,24 @@
   text-align: center;
 }
 
+.relevanceColumn {
+  width: 200px;
+  text-align: center;
+}
+
+.relevanceCell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.relevanceValue {
+  min-width: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
 .themeNameCell {
   display: flex;
   align-items: center;
@@ -236,7 +254,6 @@
 }
 
 .slider::-webkit-slider-thumb {
-  appearance: none;
   appearance: none;
   width: 20px;
   height: 20px;

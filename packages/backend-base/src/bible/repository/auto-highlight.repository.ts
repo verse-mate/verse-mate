@@ -21,6 +21,7 @@ export interface HighlightTheme {
   is_system: boolean;
   priority: number;
   is_active: boolean;
+  default_relevance_threshold: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -150,6 +151,18 @@ export class AutoHighlightRepository {
       .getOrCreateConnection()
       .updateTable("highlight_themes")
       .set({ is_active, updated_at: new Date() } as any)
+      .where("theme_id", "=", theme_id)
+      .execute();
+  }
+
+  async updateThemeDefaultRelevance(
+    theme_id: number,
+    default_relevance_threshold: number,
+  ): Promise<void> {
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("highlight_themes")
+      .set({ default_relevance_threshold, updated_at: new Date() } as any)
       .where("theme_id", "=", theme_id)
       .execute();
   }

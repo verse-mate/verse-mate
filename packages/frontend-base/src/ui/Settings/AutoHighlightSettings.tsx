@@ -46,16 +46,23 @@ export const AutoHighlightSettings = ({
             setThemes(response.data.data as HighlightTheme[]);
           }
         } else {
-          // Logged-out user: fetch themes and use defaults
-          const response = await api.bible["highlight-themes"].get();
-          if (response.data?.data) {
-            const defaultThemes = (response.data.data as any[]).map(
+          // Logged-out user: fetch themes and use global default
+          const [themesResponse, defaultEnabledResponse] = await Promise.all([
+            api.bible["highlight-themes"].get(),
+            api.admin["auto-highlight-settings"]["default-enabled"].get(),
+          ]);
+
+          const defaultEnabled =
+            defaultEnabledResponse.data?.data?.default_enabled ?? false;
+
+          if (themesResponse.data?.data) {
+            const defaultThemes = (themesResponse.data.data as any[]).map(
               (theme) => ({
                 theme_id: theme.theme_id,
                 theme_name: theme.name,
                 theme_color: theme.color,
                 theme_description: theme.description,
-                is_enabled: true,
+                is_enabled: defaultEnabled,
                 custom_color: null,
                 relevance_threshold: 3,
               }),
