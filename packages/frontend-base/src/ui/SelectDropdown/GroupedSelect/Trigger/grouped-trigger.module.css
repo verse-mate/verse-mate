@@ -12,6 +12,8 @@
   line-height: 24px;
   border-radius: 10px;
   gap: 4px;
+  position: relative;
+  z-index: 1001;
 }
   
 .trigger[data-state="open"], .trigger[data-state="open"] .icon {
