@@ -1,0 +1,25 @@
+declare const styles: {
+  readonly actions: string;
+  readonly actionsColumn: string;
+  readonly bookColumn: string;
+  readonly cancelled: string;
+  readonly completed: string;
+  readonly container: string;
+  readonly costColumn: string;
+  readonly createdColumn: string;
+  readonly error: string;
+  readonly failed: string;
+  readonly header: string;
+  readonly idColumn: string;
+  readonly inProgress: string;
+  readonly nowrapColumn: string;
+  readonly partialFailure: string;
+  readonly pending: string;
+  readonly status: string;
+  readonly statusColumn: string;
+  readonly statusWithSpacing: string;
+  readonly tableContainer: string;
+  readonly typeColumn: string;
+  readonly versionBadge: string;
+};
+export = styles;
