@@ -75,6 +75,7 @@ export const GroupedTrigger = ({
       onClick={handleToggleClick}
       className={extendedStyles.trigger}
       data-state={isOpen ? "open" : "closed"}
+      data-dropdown-trigger="true"
     >
       <span className={extendedStyles.text}>{displayText}</span>
       <span className={extendedStyles.iconWrapper}>

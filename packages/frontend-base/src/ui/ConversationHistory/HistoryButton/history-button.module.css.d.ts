@@ -1,12 +1,12 @@
 declare const styles: {
   readonly container: string;
-  readonly menuOpen: string;
   readonly content: string;
   readonly mainButton: string;
-  readonly truncate: string;
-  readonly menuWrapper: string;
-  readonly threeDotsIcon: string;
   readonly menuButton: string;
+  readonly menuOpen: string;
+  readonly menuWrapper: string;
   readonly selectedChat: string;
+  readonly threeDotsIcon: string;
+  readonly truncate: string;
 };
 export = styles;

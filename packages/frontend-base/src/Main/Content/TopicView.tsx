@@ -8,7 +8,6 @@ import {
 } from "../../hooks/useSearchParams";
 import * as Icon from "../../ui/Icons";
 import { MainText } from "../../ui/MainText";
-import { Renderer } from "../../ui/MarkdownRenderer/Content/content";
 import {
   getNextTopic,
   getPreviousTopic,
@@ -465,11 +464,10 @@ export const TopicView: React.FC<TopicViewProps> = ({
             ref={isLastTopic ? scrollableCallbackRef : null}
           >
             <MainText.Root>
-              <Renderer
-                markdownContent={`# ${topic.name}`}
-                variant="bible-text"
+              <MainText.TopicText
+                topicName={topic.name}
+                markdownContent={topic.content}
               />
-              <Renderer markdownContent={topic.content} variant="bible-text" />
               <div style={{ height: "80px" }} />
             </MainText.Root>
           </div>

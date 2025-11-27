@@ -1,6 +1,7 @@
 declare const styles: {
-  readonly markdown: string;
   readonly bibleText: string;
+  readonly markdown: string;
+  readonly reference: string;
   readonly referenceText: string;
 };
 export = styles;

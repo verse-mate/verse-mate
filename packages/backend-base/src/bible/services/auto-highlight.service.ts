@@ -44,9 +44,11 @@ export class AutoHighlightService {
         theme_name: theme.name,
         theme_color: theme.color,
         theme_description: theme.description,
-        is_enabled: pref?.is_enabled ?? true,
+        is_enabled: pref?.is_enabled ?? false, // Default to disabled for new users
         custom_color: pref?.custom_color ?? null,
         relevance_threshold: pref?.relevance_threshold ?? 3,
+        admin_override: pref?.admin_override ?? false,
+        default_relevance_threshold: theme.default_relevance_threshold,
       };
     });
   }
@@ -57,12 +59,26 @@ export class AutoHighlightService {
     is_enabled?: boolean;
     custom_color?: string;
     relevance_threshold?: number;
+    admin_override?: boolean;
   }) {
     return this.repository.upsertUserThemePreference(params);
   }
 
   async updateThemeActiveStatus(theme_id: number, is_active: boolean) {
     return this.repository.updateThemeActiveStatus(theme_id, is_active);
+  }
+
+  async updateThemeDefaultRelevance(
+    theme_id: number,
+    default_relevance_threshold: number,
+  ) {
+    if (default_relevance_threshold < 1 || default_relevance_threshold > 5) {
+      throw new ValidationError("Relevance threshold must be between 1 and 5");
+    }
+    return this.repository.updateThemeDefaultRelevance(
+      theme_id,
+      default_relevance_threshold,
+    );
   }
 
   async getGlobalDefaultRelevance(): Promise<number> {
@@ -79,6 +95,20 @@ export class AutoHighlightService {
     await this.repository.updateGlobalSetting(
       "default_relevance_threshold",
       relevance.toString(),
+    );
+  }
+
+  async getDefaultAutoHighlightsEnabled(): Promise<boolean> {
+    const setting = await this.repository.getGlobalSetting(
+      "default_auto_highlights_enabled",
+    );
+    return setting === "true";
+  }
+
+  async updateDefaultAutoHighlightsEnabled(enabled: boolean): Promise<void> {
+    await this.repository.updateGlobalSetting(
+      "default_auto_highlights_enabled",
+      enabled.toString(),
     );
   }
 

@@ -1,16 +1,16 @@
 declare const styles: {
-  readonly tableWrapper: string;
-  readonly table: string;
-  readonly tableHead: string;
-  readonly tableFoot: string;
   readonly cellContent: string;
-  readonly tableRow: string;
-  readonly tableBody: string;
   readonly noResult: string;
-  readonly paginationContainer: string;
-  readonly paginationText: string;
   readonly paginationButtonsContainer: string;
+  readonly paginationContainer: string;
   readonly paginationNumberButtonsContainer: string;
+  readonly paginationText: string;
   readonly paginationThreeDots: string;
+  readonly table: string;
+  readonly tableBody: string;
+  readonly tableFoot: string;
+  readonly tableHead: string;
+  readonly tableRow: string;
+  readonly tableWrapper: string;
 };
 export = styles;

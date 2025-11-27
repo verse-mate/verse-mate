@@ -1,8 +1,8 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
+import cacheConstants from "../shared/cache.constants";
 import { getTestClient } from "../shared/test-client";
 import Backend, { type AuthPlugin } from "./auth.plugin";
-import cacheConstants from "../shared/cache.constants";
 
 describe("Auth Refresh Flow", () => {
   const client = getTestClient<AuthPlugin>(Backend);
@@ -28,13 +28,16 @@ describe("Auth Refresh Flow", () => {
       },
     );
 
-    const { data: signupData, error: signupError } = await client.auth.signup.post(authSignupInput);
+    const { data: signupData, error: signupError } =
+      await client.auth.signup.post(authSignupInput);
     if (signupError) throw signupError;
 
     // 2. Verify Email
-    const { data: verifyData, error: verifyError } = await client.auth["verify-email"].post(
+    const { data: verifyData, error: verifyError } = await client.auth[
+      "verify-email"
+    ].post(
       { token },
-      { headers: { authorization: `Bearer ${signupData?.accessToken}` } }
+      { headers: { authorization: `Bearer ${signupData?.accessToken}` } },
     );
     if (verifyError) throw verifyError;
     authPayload = verifyData;
@@ -67,9 +70,10 @@ describe("Auth Refresh Flow", () => {
     expect((expiredError as any)?.status).toBe(401);
 
     // 4. Call Refresh Endpoint
-    const { data: refreshData, error: refreshError } = await client.auth.refresh.post({
-      refreshToken: authPayload.refreshToken,
-    });
+    const { data: refreshData, error: refreshError } =
+      await client.auth.refresh.post({
+        refreshToken: authPayload.refreshToken,
+      });
 
     if (refreshError) {
       console.error("Refresh Error:", JSON.stringify(refreshError, null, 2));

@@ -1338,7 +1338,23 @@ const plugin = new Elysia()
                   return { success: false, message: "Invalid theme_id" };
                 }
                 const service = getAutoHighlightService();
-                await service.updateThemeActiveStatus(themeId, body.is_active);
+
+                // Update is_active if provided
+                if (body.is_active !== undefined) {
+                  await service.updateThemeActiveStatus(
+                    themeId,
+                    body.is_active,
+                  );
+                }
+
+                // Update default_relevance_threshold if provided
+                if (body.default_relevance_threshold !== undefined) {
+                  await service.updateThemeDefaultRelevance(
+                    themeId,
+                    body.default_relevance_threshold,
+                  );
+                }
+
                 return { success: true };
               },
               {
@@ -1346,7 +1362,8 @@ const plugin = new Elysia()
                   theme_id: t.String(),
                 }),
                 body: t.Object({
-                  is_active: t.Boolean(),
+                  is_active: t.Optional(t.Boolean()),
+                  default_relevance_threshold: t.Optional(t.Number()),
                 }),
               },
             )
@@ -1387,6 +1404,108 @@ const plugin = new Elysia()
               {
                 body: t.Object({
                   default_relevance: t.Number(),
+                }),
+              },
+            )
+            .get(
+              "/auto-highlight-settings/default-enabled",
+              async ({ currentUserId, store: { getAutoHighlightService } }) => {
+                if (!currentUserId) {
+                  throw new UnauthorizedError("Authentication required");
+                }
+
+                const service = getAutoHighlightService();
+                const enabled = await service.getDefaultAutoHighlightsEnabled();
+
+                return {
+                  success: true,
+                  data: { default_enabled: enabled },
+                };
+              },
+            )
+            .patch(
+              "/auto-highlight-settings/default-enabled",
+              async ({
+                body,
+                currentUserId,
+                store: { getAutoHighlightService },
+              }) => {
+                if (!currentUserId) {
+                  throw new UnauthorizedError("Authentication required");
+                }
+
+                const service = getAutoHighlightService();
+                await service.updateDefaultAutoHighlightsEnabled(
+                  body.default_enabled,
+                );
+
+                return { success: true };
+              },
+              {
+                body: t.Object({
+                  default_enabled: t.Boolean(),
+                }),
+              },
+            )
+            .get(
+              "/user-theme-preferences/:user_id",
+              async ({
+                params,
+                currentUserId,
+                store: { getAutoHighlightService },
+              }) => {
+                if (!currentUserId) {
+                  throw new UnauthorizedError("Authentication required");
+                }
+
+                const service = getAutoHighlightService();
+                const preferences = await service.getUserThemePreferences(
+                  params.user_id,
+                );
+
+                return { success: true, data: preferences };
+              },
+              {
+                params: t.Object({
+                  user_id: t.String(),
+                }),
+              },
+            )
+            .patch(
+              "/user-theme-preferences/:user_id/:theme_id",
+              async ({
+                params,
+                body,
+                currentUserId,
+                store: { getAutoHighlightService },
+              }) => {
+                if (!currentUserId) {
+                  throw new UnauthorizedError("Authentication required");
+                }
+
+                const themeId = Number.parseInt(params.theme_id, 10);
+                if (!Number.isFinite(themeId)) {
+                  throw new ValidationError("Invalid theme_id");
+                }
+
+                const service = getAutoHighlightService();
+                await service.updateUserThemePreference({
+                  user_id: params.user_id,
+                  theme_id: themeId,
+                  ...body,
+                });
+
+                return { success: true };
+              },
+              {
+                params: t.Object({
+                  user_id: t.String(),
+                  theme_id: t.String(),
+                }),
+                body: t.Object({
+                  is_enabled: t.Optional(t.Boolean()),
+                  relevance_threshold: t.Optional(t.Number()),
+                  admin_override: t.Optional(t.Boolean()),
                 }),
               },
             )

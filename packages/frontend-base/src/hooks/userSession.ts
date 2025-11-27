@@ -1,7 +1,7 @@
 import { api } from "backend-api";
 import { parseCookies } from "nookies";
 import { useCallback, useEffect, useState } from "react";
-import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "../auth/lib";
+import { ACCESS_TOKEN_COOKIE } from "../auth/lib";
 import { deleteCookie } from "../utils/auth-utils";
 import type { UserSession } from "./session";
 

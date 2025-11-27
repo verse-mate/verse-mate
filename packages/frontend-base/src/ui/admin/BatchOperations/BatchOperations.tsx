@@ -1053,7 +1053,7 @@ export const BatchOperations = () => {
         return (
           <span
             className={`${styles.status} ${styles.nowrapColumn} ${
-              styles[
+              (styles as any)[
                 status === "in_progress"
                   ? "inProgress"
                   : status === "partial_failure"
@@ -1460,9 +1460,13 @@ export const BatchOperations = () => {
         <Dialog.Content>
           <Dialog.Head>Create Auto-Highlight Batch</Dialog.Head>
           <Dialog.Description>
-            Generate AI-powered highlights for {isBibleBatch ? "the entire Bible" : selectedBook || "selected book"}.
+            Generate AI-powered highlights for{" "}
+            {isBibleBatch
+              ? "the entire Bible"
+              : selectedBook || "selected book"}
+            .
           </Dialog.Description>
-          
+
           <div style={{ margin: "20px 0" }}>
             <label
               style={{
@@ -1479,17 +1483,54 @@ export const BatchOperations = () => {
               />
               Skip existing books (already generated)
             </label>
-            <p style={{ fontSize: "12px", color: "#666", marginTop: "4px", marginLeft: "24px" }}>
-              If checked, books that already have auto-highlights will be skipped.
+            <p
+              style={{
+                fontSize: "12px",
+                color: "#666",
+                marginTop: "4px",
+                marginLeft: "24px",
+              }}
+            >
+              If checked, books that already have auto-highlights will be
+              skipped.
             </p>
           </div>
 
-          <div style={{ background: "#f9f9f9", padding: "15px", borderRadius: "4px", marginBottom: "20px" }}>
-            <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>Current Settings:</h4>
-            <ul style={{ margin: 0, paddingLeft: "20px", fontSize: "13px", color: "#555" }}>
-              <li>Model: <strong>{selectedModelData?.label || selectedModel}</strong></li>
-              <li>Effort: <strong>{selectedEffortData?.label || selectedEffort}</strong></li>
-              <li>Target: <strong>{isBibleBatch ? "Entire Bible" : selectedBook || "No book selected"}</strong></li>
+          <div
+            style={{
+              background: "#f9f9f9",
+              padding: "15px",
+              borderRadius: "4px",
+              marginBottom: "20px",
+            }}
+          >
+            <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>
+              Current Settings:
+            </h4>
+            <ul
+              style={{
+                margin: 0,
+                paddingLeft: "20px",
+                fontSize: "13px",
+                color: "#555",
+              }}
+            >
+              <li>
+                Model:{" "}
+                <strong>{selectedModelData?.label || selectedModel}</strong>
+              </li>
+              <li>
+                Effort:{" "}
+                <strong>{selectedEffortData?.label || selectedEffort}</strong>
+              </li>
+              <li>
+                Target:{" "}
+                <strong>
+                  {isBibleBatch
+                    ? "Entire Bible"
+                    : selectedBook || "No book selected"}
+                </strong>
+              </li>
             </ul>
             <p style={{ fontSize: "12px", marginTop: "10px", color: "#888" }}>
               (Change these in the main form if needed)
@@ -1503,8 +1544,8 @@ export const BatchOperations = () => {
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleCreateAutoHighlightBatch} 
+            <Button
+              onClick={handleCreateAutoHighlightBatch}
               loading={creatingAutoHighlight}
               disabled={!isBibleBatch && !selectedBook}
             >
@@ -2152,9 +2193,12 @@ export const BatchOperations = () => {
                   />
                   Skip existing explanations
                 </label>
-                <p style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
-                  If checked, only topics without explanations for the selected types/language will be processed.
-                  If unchecked, new versions will be generated even if explanations exist.
+                <p
+                  style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}
+                >
+                  If checked, only topics without explanations for the selected
+                  types/language will be processed. If unchecked, new versions
+                  will be generated even if explanations exist.
                 </p>
               </div>
             </>
