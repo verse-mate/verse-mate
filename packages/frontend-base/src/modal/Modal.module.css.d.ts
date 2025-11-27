@@ -1,6 +1,6 @@
 declare const styles: {
+  readonly closeButton: string;
   readonly modal: string;
   readonly modalContent: string;
-  readonly closeButton: string;
 };
 export = styles;

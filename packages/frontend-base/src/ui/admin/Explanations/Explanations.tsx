@@ -625,7 +625,7 @@ export const Explanations = () => {
         </div>
       </div>
 
-      <div className={styles.tableContainer}>
+      <div className={styles.container}>
         <Table
           columns={columns}
           data={explanations}

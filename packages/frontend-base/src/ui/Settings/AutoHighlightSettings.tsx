@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import useMutation from "../../hooks/useMutation";
 import { Button } from "../Button/Button";
 import autoHighlightStyles from "./autoHighlightSettings.module.css";
@@ -28,9 +28,7 @@ export const AutoHighlightSettings = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [pendingChanges, setPendingChanges] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const relevanceDebounceRef = useRef<Record<number, number | undefined>>({});
 
   // Fetch user theme preferences
   useEffect(() => {
@@ -46,16 +44,23 @@ export const AutoHighlightSettings = ({
             setThemes(response.data.data as HighlightTheme[]);
           }
         } else {
-          // Logged-out user: fetch themes and use defaults
-          const response = await api.bible["highlight-themes"].get();
-          if (response.data?.data) {
-            const defaultThemes = (response.data.data as any[]).map(
+          // Logged-out user: fetch themes and use global default
+          const [themesResponse, defaultEnabledResponse] = await Promise.all([
+            api.bible["highlight-themes"].get(),
+            api.admin["auto-highlight-settings"]["default-enabled"].get(),
+          ]);
+
+          const defaultEnabled =
+            defaultEnabledResponse.data?.data?.default_enabled ?? false;
+
+          if (themesResponse.data?.data) {
+            const defaultThemes = (themesResponse.data.data as any[]).map(
               (theme) => ({
                 theme_id: theme.theme_id,
                 theme_name: theme.name,
                 theme_color: theme.color,
                 theme_description: theme.description,
-                is_enabled: true,
+                is_enabled: defaultEnabled,
                 custom_color: null,
                 relevance_threshold: 3,
               }),
@@ -133,46 +138,6 @@ export const AutoHighlightSettings = ({
       );
       setError("Failed to update theme preference");
     }
-  };
-
-  const handleRelevanceChange = (themeId: number, newRelevance: number) => {
-    if (!isLoggedIn) return;
-
-    // Update local state immediately
-    setThemes((prev) =>
-      prev.map((theme) =>
-        theme.theme_id === themeId
-          ? { ...theme, relevance_threshold: newRelevance }
-          : theme,
-      ),
-    );
-
-    setPendingChanges(true);
-
-    // Clear any pending debounce for this theme
-    const existing = relevanceDebounceRef.current[themeId];
-    if (existing) {
-      clearTimeout(existing);
-    }
-
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        await updatePreference({
-          theme_id: themeId,
-          relevance_threshold: newRelevance,
-        });
-        setSuccessMessage("Relevance threshold updated");
-        setTimeout(() => setSuccessMessage(null), 2000);
-      } catch (err) {
-        console.error("Failed to update relevance:", err);
-        setError("Failed to update relevance threshold");
-      } finally {
-        setPendingChanges(false);
-        relevanceDebounceRef.current[themeId] = undefined;
-      }
-    }, 500);
-
-    relevanceDebounceRef.current[themeId] = timeoutId;
   };
 
   const handleEnableAll = async () => {
@@ -287,18 +252,10 @@ export const AutoHighlightSettings = ({
 
           {isLoggedIn && (
             <div className={autoHighlightStyles.actions}>
-              <Button
-                variant="outlined"
-                onClick={handleEnableAll}
-                disabled={pendingChanges}
-              >
+              <Button variant="outlined" onClick={handleEnableAll}>
                 Enable All
               </Button>
-              <Button
-                variant="outlined"
-                onClick={handleDisableAll}
-                disabled={pendingChanges}
-              >
+              <Button variant="outlined" onClick={handleDisableAll}>
                 Disable All
               </Button>
             </div>
@@ -336,33 +293,6 @@ export const AutoHighlightSettings = ({
                     {theme.theme_description}
                   </p>
                 )}
-
-                <div className={autoHighlightStyles.relevanceControl}>
-                  <label className={autoHighlightStyles.relevanceLabel}>
-                    Relevance: {theme.relevance_threshold}
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={theme.relevance_threshold}
-                    onChange={(e) =>
-                      handleRelevanceChange(
-                        theme.theme_id,
-                        Number(e.target.value),
-                      )
-                    }
-                    disabled={!isLoggedIn || !theme.is_enabled}
-                    className={autoHighlightStyles.slider}
-                  />
-                  <div className={autoHighlightStyles.relevanceLabels}>
-                    <span>1</span>
-                    <span>2</span>
-                    <span>3</span>
-                    <span>4</span>
-                    <span>5</span>
-                  </div>
-                </div>
               </div>
             ))}
           </div>

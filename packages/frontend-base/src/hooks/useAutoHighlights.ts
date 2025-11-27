@@ -13,6 +13,29 @@ export const useAutoHighlights = ({
   chapterNumber,
   userId,
 }: UseAutoHighlightsParams) => {
+  // Fetch global default enabled setting for logged-out users
+  const { data: defaultEnabledData } = useQuery({
+    queryKey: ["auto-highlights-default-enabled"],
+    queryFn: async () => {
+      const response =
+        await api.admin["auto-highlight-settings"]["default-enabled"].get();
+      return response.data?.data?.default_enabled ?? false;
+    },
+    enabled: !userId, // Only fetch for logged-out users
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+
+  // Fetch themes for logged-out users (to get default relevance thresholds)
+  const { data: themes } = useQuery({
+    queryKey: ["highlight-themes"],
+    queryFn: async () => {
+      const response = await api.bible["highlight-themes"].get();
+      return response.data?.data || [];
+    },
+    enabled: !userId, // Only fetch for logged-out users
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+
   // Fetch user theme preferences
   const { data: preferences } = useQuery({
     queryKey: ["user-theme-preferences", userId],
@@ -27,22 +50,48 @@ export const useAutoHighlights = ({
 
   // Fetch auto-highlights for chapter
   const { data: autoHighlights, isLoading } = useQuery({
-    queryKey: ["auto-highlights", bookId, chapterNumber, preferences],
+    queryKey: [
+      "auto-highlights",
+      bookId,
+      chapterNumber,
+      preferences,
+      themes,
+      defaultEnabledData,
+    ],
     queryFn: async () => {
       if (!bookId || !chapterNumber) return [];
+
+      // For logged-out users, check if auto-highlights are enabled globally
+      if (!userId && !defaultEnabledData) {
+        return [];
+      }
 
       // Get enabled theme IDs and per-theme relevance thresholds
       let enabledThemes: number[] = [];
       const themeRelevanceMap: Record<number, number> = {};
 
-      if (preferences && Array.isArray(preferences)) {
+      if (userId && preferences && Array.isArray(preferences)) {
+        // Logged-in user: use their preferences
         const enabledPreferences = preferences.filter((p: any) => p.is_enabled);
 
         enabledThemes = enabledPreferences.map((p: any) => p.theme_id);
 
         // Build per-theme relevance map
+        // Use custom relevance only if admin_override is true, otherwise use theme default
         enabledPreferences.forEach((p: any) => {
-          themeRelevanceMap[p.theme_id] = p.relevance_threshold;
+          themeRelevanceMap[p.theme_id] = p.admin_override
+            ? p.relevance_threshold
+            : p.default_relevance_threshold;
+        });
+      } else if (!userId && themes && Array.isArray(themes)) {
+        // Logged-out user: use theme defaults
+        const activeThemes = (themes as any[]).filter((t) => t.is_active);
+
+        enabledThemes = activeThemes.map((t) => t.theme_id);
+
+        // Build per-theme relevance map using default thresholds
+        activeThemes.forEach((t: any) => {
+          themeRelevanceMap[t.theme_id] = t.default_relevance_threshold || 3;
         });
       }
 

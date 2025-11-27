@@ -1,15 +1,15 @@
 declare const styles: {
-  readonly container: string;
-  readonly main: string;
-  readonly leftSide: string;
-  readonly toggleButton: string;
-  readonly sidebarIcon: string;
-  readonly rightSide: string;
-  readonly right: string;
-  readonly closed: string;
-  readonly rightPanelContent: string;
-  readonly rating: string;
   readonly arrowLeft: string;
+  readonly closed: string;
+  readonly container: string;
   readonly hide: string;
+  readonly leftSide: string;
+  readonly main: string;
+  readonly rating: string;
+  readonly right: string;
+  readonly rightPanelContent: string;
+  readonly rightSide: string;
+  readonly sidebarIcon: string;
+  readonly toggleButton: string;
 };
 export = styles;

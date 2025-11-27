@@ -1,9 +1,9 @@
 declare const styles: {
+  readonly contained: string;
+  readonly ghost: string;
+  readonly horizontal: string;
   readonly item: string;
   readonly root: string;
-  readonly horizontal: string;
   readonly vertical: string;
-  readonly ghost: string;
-  readonly contained: string;
 };
 export = styles;

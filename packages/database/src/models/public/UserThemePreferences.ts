@@ -31,6 +31,8 @@ export default interface UserThemePreferencesTable {
     Date | string | null,
     Date | string | null
   >;
+
+  admin_override: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
 export type UserThemePreferences = Selectable<UserThemePreferencesTable>;

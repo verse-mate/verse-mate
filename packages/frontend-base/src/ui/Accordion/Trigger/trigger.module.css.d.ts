@@ -1,5 +1,5 @@
 declare const styles: {
-  readonly trigger: string;
   readonly fixedItem: string;
+  readonly trigger: string;
 };
 export = styles;

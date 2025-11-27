@@ -3048,19 +3048,21 @@ export class BatchOperationService {
               // custom_id format: topic-references-{topicId}-{timestamp}
               let topicId: string;
               const prefix = "topic-references-";
-              
+
               if (customId.startsWith(prefix)) {
                 const remainder = customId.slice(prefix.length);
                 // Check for timestamp suffix: -1234567890123
                 const timestampMatch = remainder.match(/-(\d{13})$/);
                 if (timestampMatch) {
-                   // Remove the timestamp part (length of digits + 1 for hyphen)
-                   topicId = remainder.slice(0, -timestampMatch[0].length);
+                  // Remove the timestamp part (length of digits + 1 for hyphen)
+                  topicId = remainder.slice(0, -timestampMatch[0].length);
                 } else {
-                   topicId = remainder; // Legacy format (no timestamp)
+                  topicId = remainder; // Legacy format (no timestamp)
                 }
               } else {
-                console.warn(`[BATCH_TOPIC_REFERENCES] Invalid custom_id prefix: ${customId}`);
+                console.warn(
+                  `[BATCH_TOPIC_REFERENCES] Invalid custom_id prefix: ${customId}`,
+                );
                 errorCount++;
                 continue;
               }
@@ -3118,13 +3120,18 @@ export class BatchOperationService {
             } catch (dbError: any) {
               errorCount++;
               // Check specifically for unique constraint violation on active index
-              if (dbError.code === '23505' && dbError.constraint === 'unique_active_topic_reference') {
-                 console.warn(`[BATCH_TOPIC_REFERENCES] Race condition detected for topic ${customId}, skipping duplicate.`);
+              if (
+                dbError.code === "23505" &&
+                dbError.constraint === "unique_active_topic_reference"
+              ) {
+                console.warn(
+                  `[BATCH_TOPIC_REFERENCES] Race condition detected for topic ${customId}, skipping duplicate.`,
+                );
               } else {
-                 console.error(
-                   `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
-                   dbError,
-                 );
+                console.error(
+                  `[BATCH_TOPIC_REFERENCES] Database error for topic in batch ${batchId}:`,
+                  dbError,
+                );
               }
             }
           } else {
