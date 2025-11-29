@@ -1,0 +1,175 @@
+/* ==========================
+   Tour Target Elements
+   ========================== */
+[data-tour-john],
+[data-tour-chapter],
+[data-tour="book-selector"],
+[data-tour="mobile-book-selector"],
+[data-tour="mobile-explanation-tab"],
+[data-tour="mobile-book-tab"],
+[data-tour="mobile-tabs"],
+[data-tour="mobile-menu-button"],
+[data-tour="nt-tab"] {
+  position: relative !important;
+  transform: translate3d(0, 0, 0) !important;
+}
+
+/* Extra height for tablist on small mobile screens when NT tab wraps */
+@media (max-width: 400px) {
+  [role="tablist"]:has([data-tour="nt-tab"]) {
+    height: auto !important;
+    min-height: 80px !important;
+    padding-bottom: 20px !important;
+  }
+}
+
+/* ==========================
+   Driver.js branding overrides
+   ========================== */
+.driver-popover.vm-tour-popover {
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #333 !important;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 15%) !important;
+  max-width: 360px !important;
+  width: auto !important;
+}
+
+/* Override for centered popovers (no arrow) */
+.driver-popover.vm-tour-popover.driver-popover-side-center {
+  position: fixed !important;
+  top: 50vh !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  z-index: 10000 !important;
+}
+
+/* Additional centering for body-targeted steps */
+.driver-popover.vm-tour-popover[style*="left: 0px"][style*="top: 0px"] {
+  position: fixed !important;
+  top: 50vh !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+.driver-popover-title {
+  color: #1a365d !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  margin-bottom: 6px !important;
+  text-align: center !important;
+}
+
+.driver-popover-description {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  text-align: center !important;
+}
+
+/* ==========================
+   Buttons
+   ========================== */
+
+/* Ensure popover and all its contents allow pointer events for proper cursor display */
+.driver-popover,
+.driver-popover * {
+  pointer-events: auto !important;
+}
+
+.vm-tour-popover .driver-popover-footer button {
+  border-radius: 6px !important;
+  padding: 6px 14px !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  text-shadow: none !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+.vm-tour-popover .driver-popover-footer button::before,
+.vm-tour-popover .driver-popover-footer button::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Next/Done button */
+.vm-tour-popover button.driver-popover-next-btn {
+  background: #1a365d !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.vm-tour-popover button.driver-popover-next-btn:hover {
+  background: #2d4a7c !important;
+}
+
+/* Back button */
+.vm-tour-popover button.driver-popover-prev-btn {
+  background: transparent !important;
+  color: #1a365d !important;
+  border: 1px solid #1a365d !important;
+  margin-left: auto !important;
+}
+
+.vm-tour-popover button.driver-popover-prev-btn:hover {
+  background: rgb(26 54 93 / 5%) !important;
+}
+
+/* Skip button */
+.vm-tour-popover .skip-tour-btn {
+  background: transparent !important;
+  color: #9ca3af !important;
+  border: none !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 4px 6px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.vm-tour-popover .skip-tour-btn:hover {
+  color: #000 !important;
+  background: transparent !important;
+}
+
+/* Skip button positioning variants */
+.vm-tour-popover .skip-tour-btn.skip-default {
+  margin-right: auto !important;
+  margin-left: 2px !important;
+  padding-left: 4px !important;
+}
+
+.vm-tour-popover .skip-tour-btn.skip-interactive {
+  margin-left: auto !important;
+  order: 10 !important;
+}
+
+/* ==========================
+   Footer Layout
+   ========================== */
+.vm-tour-popover .driver-popover-footer {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.driver-popover-progress-text {
+  color: #4a5568 !important;
+  font-size: 12px !important;
+  order: -1 !important;
+}
+
+/* ==========================
+   Tour Active State
+   ========================== */
+body.tour-active [data-mobile-accordion-trigger],
+body.tour-active [data-accordion-trigger] {
+  pointer-events: auto !important;
+}
+
+body.tour-active * {
+  scroll-behavior: auto !important;
+}

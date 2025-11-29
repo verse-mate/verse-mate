@@ -923,10 +923,10 @@ export const Text = ({
   return (
     <section className={styles.contentBox} ref={versesContainerRef}>
       <div className={styles.titleContainer}>
-        <h1 className={styles.title}>
+        <h1 className={styles.title} data-tour="chapter-title">
           {bookName} {text.chapterNumber}
         </h1>
-        <div className={styles.actionButtons}>
+        <div className={styles.actionButtons} data-tour="action-buttons">
           {bookId && testament && (
             <BookmarkButton
               bookId={bookId}
@@ -958,8 +958,12 @@ export const Text = ({
       </div>
 
       {text.subtitles && text.subtitles.length > 0 ? (
-        text.subtitles.map((subtitle) => (
-          <div key={subtitle.subtitle} className={styles.textBox}>
+        text.subtitles.map((subtitle, index) => (
+          <div
+            key={subtitle.subtitle}
+            className={styles.textBox}
+            data-tour={index === 0 ? "chapter-content" : undefined}
+          >
             <div className={styles.subtitleBox}>
               <h2 className={styles.subtitle}>
                 {formatSubtitle(subtitle.subtitle)}
@@ -997,7 +1001,7 @@ export const Text = ({
         ))
       ) : (
         // Fallback: render all verses without subtitle grouping
-        <div className={styles.textBox}>
+        <div className={styles.textBox} data-tour="chapter-content">
           <div className={styles.versesContainer}>
             {text.verses.map((verse) => {
               return (
