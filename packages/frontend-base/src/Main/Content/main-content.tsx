@@ -694,6 +694,9 @@ export const MainContent = () => {
 
   const handleMobileAccordionTriggerClick = useCallback(
     (bookName: string) => {
+      // Skip scrolling if tour is active
+      if (document.body.classList.contains("tour-active")) return;
+
       const scrollContainer = mobileScrollContainerRef.current;
       if (!scrollContainer) return;
 
@@ -1180,6 +1183,7 @@ export const MainContent = () => {
                     }}
                     onClose={closeDropdownBook}
                     resetFilter={leftPanelResetFilter}
+                    dataTour="mobile-book-selector"
                   />
                 </>
               )}
@@ -1219,6 +1223,7 @@ export const MainContent = () => {
                               value={TestamentEnum.NT}
                               label="New Testament"
                               resetFilter={leftPanelResetFilter}
+                              dataTour="nt-tab"
                             />
                             <Tabs.Trigger
                               value="TOPICS"
@@ -1281,6 +1286,9 @@ export const MainContent = () => {
                                           <div
                                             data-mobile-accordion-trigger={
                                               book.n
+                                            }
+                                            data-tour-john={
+                                              book.n === "John" ? "" : undefined
                                             }
                                             onClick={() =>
                                               handleMobileAccordionTriggerClick(
@@ -1382,6 +1390,9 @@ export const MainContent = () => {
                                       >
                                         <div
                                           data-mobile-accordion-trigger={book.n}
+                                          data-tour-john={
+                                            book.n === "John" ? "" : undefined
+                                          }
                                           onClick={() =>
                                             handleMobileAccordionTriggerClick(
                                               book.n,
@@ -1474,6 +1485,9 @@ export const MainContent = () => {
                                           <div
                                             data-mobile-accordion-trigger={
                                               book.n
+                                            }
+                                            data-tour-john={
+                                              book.n === "John" ? "" : undefined
                                             }
                                             onClick={() =>
                                               handleMobileAccordionTriggerClick(
@@ -1575,6 +1589,9 @@ export const MainContent = () => {
                                       >
                                         <div
                                           data-mobile-accordion-trigger={book.n}
+                                          data-tour-john={
+                                            book.n === "John" ? "" : undefined
+                                          }
                                           onClick={() =>
                                             handleMobileAccordionTriggerClick(
                                               book.n,
@@ -1744,10 +1761,14 @@ export const MainContent = () => {
               ))}
             </div>
 
-            <RadixTabs.List className={`${styles.buttonList}`}>
+            <RadixTabs.List
+              className={`${styles.buttonList}`}
+              data-tour="mobile-tabs"
+            >
               <RadixTabs.Trigger
                 className={`${styles.trigger}`}
                 value="book"
+                data-tour="mobile-book-tab"
                 onClick={() => {
                   closeDropdownVersion();
                   closeDropdownBook();
@@ -1761,6 +1782,7 @@ export const MainContent = () => {
               <RadixTabs.Trigger
                 className={`${styles.trigger}`}
                 value="explanation"
+                data-tour="mobile-explanation-tab"
                 onClick={() => {
                   closeDropdownVersion();
                   closeDropdownBook();
@@ -1786,6 +1808,7 @@ export const MainContent = () => {
               <button
                 type="button"
                 className={styles.trigger}
+                data-tour="mobile-menu-button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
