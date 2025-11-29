@@ -148,6 +148,45 @@ export const Nav = ({
     }
   }, [isViewingTopic, topicDetails]);
 
+  // Automatically switch to the correct tab when dropdown opens
+  useEffect(() => {
+    if (leftPanelIsOpen) {
+      if (isViewingTopic) {
+        // If viewing a topic, switch to TOPICS tab and set the correct category
+        leftPanelHandleTabChange("TOPICS");
+
+        if (topicDetails?.topic?.category_name) {
+          const categoryMap: { [key: string]: string } = {
+            EVENT: "EVENTS",
+            PROPHECY: "PROPHECIES",
+            PARABLE: "PARABLES",
+            THEME: "THEMES",
+          };
+          const frontendCategory =
+            categoryMap[topicDetails.topic.category_name];
+          if (frontendCategory) {
+            setActiveTopicTab(frontendCategory);
+          }
+        }
+      } else {
+        // If viewing a Bible chapter, determine which testament
+        const allBooks = [...oldTestamentBooks, ...newTestamentBooks];
+        const currentBook = allBooks.find((book) => book.b === bookId);
+        if (currentBook) {
+          leftPanelHandleTabChange(currentBook.t);
+        }
+      }
+    }
+  }, [
+    leftPanelIsOpen,
+    isViewingTopic,
+    topicDetails,
+    bookId,
+    oldTestamentBooks,
+    newTestamentBooks,
+    leftPanelHandleTabChange,
+  ]);
+
   // Updated fixedItem logic
   const fixedItem = leftPanelFilteredBooks.some(
     (bookName) =>

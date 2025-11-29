@@ -1337,6 +1337,7 @@ const plugin = new Elysia()
             is_enabled: t.Optional(t.Boolean()),
             custom_color: t.Optional(t.String()),
             relevance_threshold: t.Optional(t.Number()),
+            admin_override: t.Optional(t.Boolean()),
           }),
         },
       ),

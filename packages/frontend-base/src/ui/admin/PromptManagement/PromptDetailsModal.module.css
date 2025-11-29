@@ -37,6 +37,12 @@
   outline: none; /* Remove default focus outline */
 }
 
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
 
 .buttonContainer {
   display: flex;

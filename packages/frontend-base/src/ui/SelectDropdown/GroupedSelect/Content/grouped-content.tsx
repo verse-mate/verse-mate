@@ -22,9 +22,15 @@ export const GroupedContent = ({
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement;
+
+      // Check if the click is on the trigger button or its children
+      const isTriggerClick = target.closest('[data-dropdown-trigger="true"]');
+
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node) &&
+        !isTriggerClick &&
         onClose
       ) {
         onClose();

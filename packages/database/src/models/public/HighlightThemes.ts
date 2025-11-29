@@ -37,6 +37,8 @@ export default interface HighlightThemesTable {
     Date | string | null,
     Date | string | null
   >;
+
+  default_relevance_threshold: ColumnType<number, number | undefined, number>;
 }
 
 export type HighlightThemes = Selectable<HighlightThemesTable>;

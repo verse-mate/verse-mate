@@ -41,7 +41,7 @@ export function useSignInForm() {
         return console.error("Empty access token");
       }
       setCookie(ACCESS_TOKEN_COOKIE, data.accessToken, 7);
-      
+
       if (data?.refreshToken) {
         setCookie(REFRESH_TOKEN_COOKIE, data.refreshToken, 90);
       }

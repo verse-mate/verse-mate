@@ -8,7 +8,6 @@ import {
 import * as Icon from "../../ui/Icons";
 import contentStyles from "../../ui/LeftPanel/Content/content.module.css";
 import { MainText } from "../../ui/MainText";
-import { Renderer } from "../../ui/MarkdownRenderer/Content/content";
 import {
   getNextTopic,
   getPreviousTopic,
@@ -212,8 +211,10 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   return (
     <div className={contentStyles.bookContent} ref={scrollableCallbackRef}>
       <MainText.Root>
-        <Renderer markdownContent={`# ${topicName}`} variant="bible-text" />
-        <Renderer markdownContent={topicContent} variant="bible-text" />
+        <MainText.TopicText
+          topicName={topicName}
+          markdownContent={topicContent}
+        />
         <div style={{ height: "30px" }} />
       </MainText.Root>
 
