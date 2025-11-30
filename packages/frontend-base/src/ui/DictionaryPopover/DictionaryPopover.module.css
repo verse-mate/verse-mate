@@ -1,0 +1,227 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.popover {
+  --popover-width: 360px;
+  --popover-margin: 24px;
+  --half-width: calc(var(--popover-width) / 2);
+
+  position: fixed;
+  z-index: 999;
+  background: var(--snow, #fff);
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px rgb(0 0 0 / 10%),
+    0 2px 4px rgb(0 0 0 / 6%);
+  min-width: 280px;
+  max-width: 360px;
+  width: max-content;
+
+  /* Position centered at the selection point */
+  left: clamp(
+    calc(var(--half-width) + var(--popover-margin)),
+    var(--popover-x, 50%),
+    calc(100vw - var(--half-width) - var(--popover-margin))
+  );
+  top: var(--popover-y, 50%);
+
+  /* Transform to center horizontally and position above */
+  transform: translate(-50%, calc(-100% - 12px));
+
+  /* Ensure it doesn't overflow viewport vertically */
+  max-height: min(80vh, calc(var(--popover-y, 50%) - 32px));
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--porcelain, #f0f0f0);
+}
+
+.title {
+  margin: 0;
+  font-family: "Roboto Serif", serif;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--night, #000);
+  line-height: 1.4;
+  flex: 1;
+  padding-right: 0.5rem;
+}
+
+.transliteration {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--charcoal-grey, #3e464d);
+  font-style: italic;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--oslo-gray, #818990);
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  background-color: var(--porcelain, #f0f0f0);
+  color: var(--charcoal-grey, #3e464d);
+}
+
+.content {
+  padding: 1rem;
+}
+
+.infoRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.infoRow:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--oslo-gray, #818990);
+  flex-shrink: 0;
+}
+
+.value {
+  font-size: 0.8125rem;
+  color: var(--charcoal-grey, #3e464d);
+  font-weight: 500;
+}
+
+.definition {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: var(--fantasy, #f6f3ec);
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.definition p {
+  margin: 0;
+  font-family: "Roboto Serif", serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--night, #000);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.actions {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--porcelain, #f0f0f0);
+}
+
+.fullButton {
+  width: 100%;
+  font-size: 0.875rem;
+  color: var(--dust, #b09a6d);
+  justify-content: center;
+}
+
+.fullButton:hover {
+  background-color: var(--fantasy, #f6f3ec);
+}
+
+/* Loading state */
+.loading {
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loading p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--oslo-gray, #818990);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--porcelain, #f0f0f0);
+  border-top-color: var(--dust, #b09a6d);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error state */
+.error {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.error p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--oslo-gray, #818990);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .popover {
+    /* On mobile, use more of the screen width */
+    min-width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+
+    /* Center horizontally on mobile */
+    left: 50%;
+    transform: translate(-50%, calc(-100% - 12px));
+
+    /* Constrain to viewport */
+    top: clamp(16px, var(--popover-y, 50%), calc(100vh - 16px));
+  }
+
+  .definition {
+    max-height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 1rem;
+  }
+
+  .transliteration {
+    font-size: 0.875rem;
+  }
+
+  .definition {
+    font-size: 0.875rem;
+  }
+}

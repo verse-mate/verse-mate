@@ -1,0 +1,1 @@
+export { DictionaryPopover } from "./DictionaryPopover";
