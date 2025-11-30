@@ -19,6 +19,8 @@ export interface VerseActionsMenuProps {
   onCopy: () => Promise<void> | void;
   onShare: () => Promise<void> | void;
   onClose: () => void;
+  onDefine?: (strongsNum: string) => void;
+  selectedWord?: string;
 }
 
 export const colors = HIGHLIGHT_COLORS;
