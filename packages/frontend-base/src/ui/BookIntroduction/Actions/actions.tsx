@@ -2,9 +2,10 @@ import styles from "./actions.module.css";
 
 type ActionsProps = {
   onContinue: () => void;
+  chapterNumber?: number;
 };
 
-export const Actions = ({ onContinue }: ActionsProps) => {
+export const Actions = ({ onContinue, chapterNumber = 1 }: ActionsProps) => {
   return (
     <div className={styles.container}>
       <button
@@ -12,7 +13,7 @@ export const Actions = ({ onContinue }: ActionsProps) => {
         onClick={onContinue}
         className={styles.continueButton}
       >
-        Continue to Chapter 1
+        Continue to Chapter {chapterNumber}
       </button>
     </div>
   );

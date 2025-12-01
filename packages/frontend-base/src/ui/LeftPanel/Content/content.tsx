@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { SwipeableHandlers } from "react-swipeable";
 import { DesktopTopicView } from "../../../Main/Content/DesktopTopicView";
-import { getBookIntroduction } from "../../../data/book-intros.mock";
-import { useIntroTracking } from "../../../hooks/useIntroTracking";
+import { useBookIntroduction } from "../../../hooks/useBookIntroduction";
 import {
   useGetSearchParams,
   useSaveSearchParams,
 } from "../../../hooks/useSearchParams";
+import { userSession } from "../../../hooks/userSession";
 import { BookIntroduction } from "../../../ui/BookIntroduction";
 import * as Icon from "../../../ui/Icons";
 import { MainText } from "../../MainText";
@@ -74,7 +74,11 @@ export const Content = ({
   // Book introduction tracking
   const { showIntro } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
-  const { markAsViewed } = useIntroTracking();
+  const { session } = userSession();
+  const { introduction: introData, markAsViewed } = useBookIntroduction(
+    !isViewingTopic && typeof bookId === "number" ? bookId : null,
+    "en",
+  );
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -122,29 +126,23 @@ export const Content = ({
   }
 
   // Check if we should show intro
-  if (showIntro && bookVerseData) {
-    const introData = getBookIntroduction(bookId);
+  if (showIntro && bookVerseData && introData) {
+    const handleContinue = () => {
+      markAsViewed(bookId, !!session);
+      saveSearchParams({ showIntro: false });
+    };
 
-    if (introData) {
-      const handleSkip = () => {
-        markAsViewed(bookId);
-        saveSearchParams({ showIntro: false, verseId: "1" });
-      };
-
-      const handleContinue = () => {
-        markAsViewed(bookId);
-        saveSearchParams({ showIntro: false, verseId: "1" });
-      };
-
-      return (
-        <div className={`${styles.bookContent}`} ref={scrollableCallbackRef}>
-          <BookIntroduction.Root>
-            <BookIntroduction.Content content={introData.fullIntroText} />
-            <BookIntroduction.Actions onContinue={handleContinue} />
-          </BookIntroduction.Root>
-        </div>
-      );
-    }
+    return (
+      <div className={`${styles.bookContent}`} ref={scrollableCallbackRef}>
+        <BookIntroduction.Root>
+          <BookIntroduction.Content content={introData.full_intro_text} />
+          <BookIntroduction.Actions
+            onContinue={handleContinue}
+            chapterNumber={verseId}
+          />
+        </BookIntroduction.Root>
+      </div>
+    );
   }
 
   return (

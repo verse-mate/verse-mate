@@ -1201,4 +1201,16 @@ export class BibleService {
 
     return { success: true, message: "Language stats refreshed successfully." };
   }
+
+  async getBookIntroduction(bookId: number, languageCode = "en") {
+    return this.bibleRepository.getBookIntroduction(bookId, languageCode);
+  }
+
+  async getUserViewedIntroduction(userId: string, bookId: number) {
+    return this.bibleRepository.getUserViewedIntroduction(userId, bookId);
+  }
+
+  async markIntroductionAsViewed(userId: string, bookId: number) {
+    return this.bibleRepository.markIntroductionAsViewed(userId, bookId);
+  }
 }
