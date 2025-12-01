@@ -77,7 +77,7 @@
     height: calc(100dvh - 56px);
     background-color: var(--fantasy);
     position: relative;
-    overflow: hidden; /* Add this */
+    overflow: hidden;
 }
 
 .bookContent {

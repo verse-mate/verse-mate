@@ -327,7 +327,6 @@
         border-right: 1px solid var(--geyser);
         width: 65%;
         position: relative;
-        z-index: 1000;
         background-color: var(--fantasy);
     }
 
@@ -410,21 +409,23 @@
 
 @media screen and (min-width: 1025px) and (max-width: 1994px) {
     .bookContent {
-        /* z-index: 1; */
         height: calc(100dvh - 88px); /* header 56px - footer 48px (removed the footer, so for now i will remove the footer height as well) - progressbar 32px */
         padding: 24px 50px;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE and Edge */
+        align-items: stretch; /* Override center alignment for full width */
+        position: static; /* Prevent containing block for fixed elements */
+        transform: none; /* Prevent containing block for fixed elements */
     }
-    
+
     .bookContent::-webkit-scrollbar {
         display: none; /* Chrome, Safari, Opera */
     }
-    
+
     .nextChapterBtn {
         right: 4px;
     }
-    
+
     .previousChapterBtn {
         left: 1px;
     }
