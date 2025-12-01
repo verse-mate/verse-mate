@@ -1,0 +1,102 @@
+{
+  "1": {
+    "book_id": 1,
+    "author": "Moses",
+    "date_written": "Approximately 1450-1400 BC",
+    "biblical_role": "Genesis serves as the foundation of the entire biblical narrative, explaining the origins of the world, humanity, sin, and God's covenant relationship with His people. It sets the stage for the story of redemption that unfolds throughout Scripture.",
+    "key_themes": [
+      "Creation and the nature of God",
+      "The Fall and the problem of sin",
+      "God's covenant promises",
+      "Faith and obedience",
+      "God's sovereignty in human history"
+    ],
+    "related_books": "Genesis is the first book of the Pentateuch (Genesis-Deuteronomy) and is followed by Exodus, which continues the story of Israel's deliverance from Egypt. The themes introduced here echo throughout the Old and New Testaments.",
+    "literary_style": "Genesis combines narrative prose with genealogies, using literary techniques like symmetry, repetition, and dramatic dialogue. It includes both primeval history (chapters 1-11) and patriarchal narratives (chapters 12-50).",
+    "full_intro_text": "# Introduction to Genesis (Old Testament)\n\nGenesis combines narrative prose with genealogies, using literary techniques like symmetry, repetition, and dramatic dialogue. It includes both primeval history (chapters 1-11) and patriarchal narratives (chapters 12-50).\n\n## Author and Date\n\nMoses is traditionally recognized as the author of Genesis, written during Israel's wilderness journey around 1450-1400 BC. While Moses compiled and shaped the material, it likely draws from earlier oral traditions and written sources passed down through the patriarchs.\n\n## The Book's Role in Scripture\n\nGenesis serves as the foundation of the entire biblical narrative. The name \"Genesis\" comes from the Greek word meaning \"origin\" or \"beginning,\" and the book lives up to its name by explaining the origins of the world, humanity, sin, and God's covenant relationship with His people. Everything that follows in Scripture builds upon the theological and historical framework established here.\n\n## Key Themes and Keywords\n\n- **Creation and the nature of God**: God as sovereign Creator who brings order from chaos\n- **The Fall and the problem of sin**: Humanity's rebellion and its devastating consequences\n- **God's covenant promises**: The foundational promise to Abraham that shapes all of salvation history\n- **Faith and obedience**: The pattern of trusting God's promises despite circumstances\n- **God's sovereignty in human history**: Divine providence working through human choices\n\n## Related Books\n\nGenesis is the first of five books written by Moses, collectively called the Pentateuch or Torah. Exodus immediately follows, narrating Israel's deliverance from Egyptian slavery—a direct continuation of the story that ends with Joseph's death in Egypt. The promises made to Abraham, Isaac, and Jacob in Genesis become the driving force behind God's actions in Exodus and beyond. Themes introduced in Genesis—creation, fall, promise, and redemption—echo throughout both Old and New Testaments, culminating in Christ.",
+    "language_code": "en",
+    "version": 1,
+    "is_active": true,
+    "created_by_admin": true
+  },
+  "50": {
+    "book_id": 50,
+    "author": "Moses",
+    "date_written": "Approximately 1450-1400 BC",
+    "biblical_role": "Exodus tells the foundational story of Israel's identity as God's chosen people. It narrates their miraculous deliverance from Egyptian slavery, the giving of the Law at Mount Sinai, and the establishment of the covenant relationship that would define Israel's relationship with God throughout their history.",
+    "key_themes": [
+      "Redemption and deliverance from bondage",
+      "God's faithfulness to His covenant promises",
+      "The nature and character of God revealed in His name (YHWH)",
+      "Law and covenant as the foundation of community",
+      "God's presence dwelling among His people (the Tabernacle)"
+    ],
+    "related_books": "Exodus continues the narrative begun in Genesis, picking up centuries after Joseph's death. It is followed by Leviticus, which elaborates on the laws and worship practices introduced here. The Exodus event becomes the defining moment referenced throughout the Old Testament prophets and the New Testament as the paradigm of God's salvation.",
+    "literary_style": "Exodus blends dramatic narrative (the plagues, the parting of the Red Sea) with legal material (the Ten Commandments, the covenant code) and detailed instructions for worship (the Tabernacle). The book uses vivid imagery, repetitive patterns (the plague cycle), and theological reflection to convey both historical events and their deeper meaning.",
+    "full_intro_text": "# Introduction to Exodus (Old Testament)\n\nExodus blends dramatic narrative (the plagues, the parting of the Red Sea) with legal material (the Ten Commandments, the covenant code) and detailed instructions for worship (the Tabernacle). The book uses vivid imagery, repetitive patterns (the plague cycle), and theological reflection to convey both historical events and their deeper meaning.\n\n## Author and Date\n\nMoses is traditionally recognized as the author of Exodus, written during Israel's wilderness journey around 1450-1400 BC. As the central human figure of the narrative, Moses wrote from firsthand experience of the events described, though the account was likely shaped into its final form during or shortly after the wilderness period.\n\n## The Book's Role in Scripture\n\nExodus tells the foundational story of Israel's identity as God's chosen people. The name \"Exodus\" comes from the Greek word meaning \"departure\" or \"going out,\" referring to Israel's escape from Egypt. This book narrates their miraculous deliverance from slavery, the giving of the Law at Mount Sinai, and the establishment of the covenant relationship that would define Israel's relationship with God throughout their history. The Exodus event becomes the central redemptive act of the Old Testament, constantly referenced as God's supreme demonstration of His power and faithfulness.\n\n## Key Themes and Keywords\n\n- **Redemption and deliverance from bondage**: God's powerful intervention to save His people from slavery, foreshadowing ultimate redemption\n- **God's faithfulness to His covenant promises**: Remembering Abraham, Isaac, and Jacob, God fulfills His ancient promises\n- **The nature and character of God revealed in His name (YHWH)**: God discloses His personal name and character—merciful, just, faithful, and holy\n- **Law and covenant as the foundation of community**: The Ten Commandments and covenant code establish how God's people should live\n- **God's presence dwelling among His people (the Tabernacle)**: The elaborate instructions for worship demonstrate God's desire to dwell among His people\n\n## Related Books\n\nExodus is the second book of the Pentateuch, continuing directly from Genesis. Where Genesis ends with Joseph's death in Egypt, Exodus begins centuries later with a new Pharaoh who doesn't remember Joseph. Leviticus follows immediately, providing the detailed laws for worship and holiness that build on the covenant established here. The Exodus narrative becomes the primary Old Testament example of salvation—referenced repeatedly in Psalms, the Prophets, and throughout the New Testament where Christ's death and resurrection are presented as the ultimate \"exodus\" from sin.",
+    "language_code": "en",
+    "version": 1,
+    "is_active": true,
+    "created_by_admin": true
+  },
+  "55": {
+    "book_id": 55,
+    "author": "Various (primarily David)",
+    "date_written": "Approximately 1000-400 BC",
+    "biblical_role": "Psalms is Israel's hymnal and prayer book, expressing the full range of human emotion in relationship with God. It teaches believers how to worship, lament, praise, and pray honestly before God while trusting in His character and promises.",
+    "key_themes": [
+      "Worship and praise of God",
+      "Trust in God's character and faithfulness",
+      "Honest expression of doubt, fear, and suffering",
+      "God as King and Creator",
+      "Messianic prophecies pointing to Christ"
+    ],
+    "related_books": "Psalms draws heavily from Israel's historical narratives in Samuel, Kings, and Chronicles. Many psalms reflect events from David's life. The wisdom themes connect with Proverbs and Job, while prophetic elements anticipate the New Testament's revelation of Christ.",
+    "literary_style": "Hebrew poetry characterized by parallelism, vivid imagery, and emotional intensity. The 150 psalms include various types: laments, thanksgivings, hymns of praise, royal psalms, wisdom psalms, and imprecatory psalms.",
+    "full_intro_text": "# Introduction to Psalms (Old Testament)\n\nPsalms is a collection of 150 Hebrew poems and songs that formed the worship and devotional life of ancient Israel. The book's Hebrew title, Tehillim, means \"praises,\" though the psalms encompass far more than praise—including lament, confession, thanksgiving, and prophetic vision.\n\n## Author and Date\n\nThe book of Psalms was compiled over approximately 600 years (1000-400 BC). King David authored nearly half of them (73 psalms), while other contributors include Asaph, the sons of Korah, Solomon, Moses, and several anonymous writers. The collection was likely finalized during or after the Babylonian exile.\n\n## The Book's Role in Scripture\n\nPsalms serves as Israel's hymnal and prayer book, providing believers with words to express every human emotion before God—from desperate anguish to ecstatic joy. It teaches that authentic faith involves bringing our whole selves to God in worship. The psalms also reveal much about God's character and contain numerous Messianic prophecies quoted extensively in the New Testament.\n\n## Key Themes and Keywords\n\n- **Worship and praise of God**: Celebrating God's greatness, goodness, and mighty acts\n- **Trust in God's character and faithfulness**: Anchoring hope in who God is, even in crisis\n- **Honest expression of doubt, fear, and suffering**: Permission to voice struggles without pretense\n- **God as King and Creator**: Affirming God's sovereign rule over all creation and history\n- **Messianic prophecies pointing to Christ**: Psalms 2, 22, 110, and others prefigure Jesus\n\n## Related Books\n\nPsalms connects deeply with the historical books of Samuel, Kings, and Chronicles, as many psalms arose from specific events in Israel's history. The wisdom themes link to Proverbs, Ecclesiastes, and Job. The New Testament quotes Psalms more than any other Old Testament book, particularly in describing Christ's suffering, resurrection, and reign.",
+    "language_code": "en",
+    "version": 1,
+    "is_active": true,
+    "created_by_admin": true
+  },
+  "31": {
+    "book_id": 31,
+    "author": "Primarily Solomon",
+    "date_written": "Approximately 950-700 BC",
+    "biblical_role": "Proverbs provides practical wisdom for everyday living, teaching how to make godly choices in relationships, work, speech, and character development. It presents the fear of the Lord as the foundation of true wisdom and offers guidance for living skillfully in God's world.",
+    "key_themes": [
+      "The fear of the Lord as the beginning of wisdom",
+      "Wise and foolish choices in daily life",
+      "The power of words and self-control",
+      "Character development and moral integrity",
+      "The value of discipline and instruction"
+    ],
+    "related_books": "Proverbs is one of the wisdom books, alongside Job, Psalms, Ecclesiastes, and Song of Solomon. It shares thematic connections with James in the New Testament, which also emphasizes practical wisdom for Christian living.",
+    "literary_style": "Primarily poetic couplets using parallelism, metaphor, and memorable sayings. The book includes extended poems (chapters 1-9), collections of short proverbs (10-29), and an acrostic poem about the virtuous woman (chapter 31).",
+    "full_intro_text": "# Introduction to Proverbs (Old Testament)\n\nProverbs is a collection of wise sayings and teachings designed to impart practical wisdom for living skillfully in God's world. The Hebrew word for proverbs (mashal) can mean \"comparison,\" \"byword,\" or \"rule,\" reflecting the book's use of pithy statements, analogies, and principles to guide daily decisions.\n\n## Author and Date\n\nSolomon authored the majority of Proverbs (chapters 1-22:16 and 25-29), written around 950 BC during his reign as Israel's wisest king. Additional sections were contributed by \"the wise\" (22:17-24:34), Agur (chapter 30), and King Lemuel (chapter 31). The final compilation was completed during King Hezekiah's reign around 700 BC.\n\n## The Book's Role in Scripture\n\nProverbs serves as God's guidebook for navigating life wisely. Unlike the historical narratives that tell what happened or the prophets who declare what God will do, Proverbs teaches how to make godly choices in everyday situations—in business dealings, family relationships, friendships, speech, and character development. It assumes that creation operates according to God's design and that aligning with His wisdom leads to flourishing.\n\n## Key Themes and Keywords\n\n- **The fear of the Lord as the beginning of wisdom**: Reverent trust in God forms the foundation for all understanding\n- **Wise and foolish choices in daily life**: Practical guidance for relationships, work, and decisions\n- **The power of words and self-control**: Teaching the impact of speech and the importance of restraint\n- **Character development and moral integrity**: Building virtue through repeated right choices\n- **The value of discipline and instruction**: Embracing correction as a path to growth\n\n## Related Books\n\nProverbs belongs to the wisdom literature, sharing themes with Job (which questions wisdom), Ecclesiastes (which tests wisdom's limits), and Psalms (which worships the God of wisdom). In the New Testament, James echoes many of Proverbs' teachings about speech, relationships, and practical faith, while Jesus embodies wisdom itself as \"the wisdom of God\" (1 Corinthians 1:24).",
+    "language_code": "en",
+    "version": 1,
+    "is_active": true,
+    "created_by_admin": true
+  },
+  "12": {
+    "book_id": 12,
+    "author": "Matthew (Levi)",
+    "date_written": "Approximately 50-70 AD",
+    "biblical_role": "Matthew presents Jesus as the long-awaited Messiah and King of the Jews, demonstrating how He fulfills Old Testament prophecies and establishes God's kingdom. Written primarily for a Jewish audience, it bridges the Old and New Testaments.",
+    "key_themes": [
+      "Jesus as the fulfillment of Old Testament prophecy",
+      "The Kingdom of Heaven and its values",
+      "Jesus as teacher and His ethical teachings",
+      "Judgment and the division between believers and unbelievers",
+      "The Great Commission to make disciples of all nations"
+    ],
+    "related_books": "Matthew begins the New Testament, following directly from the Old Testament prophets' promises. It parallels Mark and Luke as a Synoptic Gospel while presenting unique material like the Sermon on the Mount. Acts continues the story of the early church that Jesus founded.",
+    "literary_style": "Structured narrative organized around five major teaching discourses, echoing Moses' five books of the Law. Uses frequent Old Testament quotations and fulfillment formulas. Employs Jewish literary conventions including genealogies and numeric patterns.",
+    "full_intro_text": "# Introduction to Matthew (New Testament)\n\nMatthew opens the New Testament by declaring that Jesus Christ is the fulfillment of God's promises to Israel. The Gospel presents Jesus as King, Messiah, and the embodiment of God's presence with His people—\"Immanuel, God with us.\"\n\n## Author and Date\n\nMatthew, also called Levi, was a tax collector called by Jesus to be one of the twelve apostles (Matthew 9:9). As an eyewitness to Jesus' ministry, he wrote this Gospel around 50-70 AD, likely before Jerusalem's destruction in 70 AD. His background as a tax collector would have made him skilled in record-keeping and attention to detail.\n\n## The Book's Role in Scripture\n\nMatthew serves as the bridge between the Old and New Testaments, carefully demonstrating how Jesus fulfills the Law, the Prophets, and the Psalms. Written primarily for a Jewish Christian audience, it answers the question: \"How does Jesus of Nazareth relate to Israel's Scriptures and hopes?\" The Gospel shows that Jesus is the promised Messiah who establishes God's kingdom, though not in the political way many expected.\n\n## Key Themes and Keywords\n\n- **Jesus as the fulfillment of Old Testament prophecy**: Over 60 quotations or allusions showing Jesus as the promised one\n- **The Kingdom of Heaven and its values**: Jesus inaugurates God's reign with radically different values than earthly kingdoms\n- **Jesus as teacher and His ethical teachings**: The Sermon on the Mount reveals the kingdom's righteousness\n- **Judgment and the division between believers and unbelievers**: Parables emphasizing the final separation at Christ's return\n- **The Great Commission to make disciples of all nations**: Jesus' final command extending His mission globally\n\n## Related Books\n\nMatthew is the first of four Gospels presenting Jesus' life, death, and resurrection. Along with Mark and Luke, it forms the \"Synoptic Gospels\" (sharing similar perspectives), though Matthew includes unique material like extensive teaching blocks. The book fulfills promises from Isaiah, Jeremiah, and Malachi, while Acts continues the story of how Jesus' disciples carried out the Great Commission.",
+    "language_code": "en",
+    "version": 1,
+    "is_active": true,
+    "created_by_admin": true
+  }
+}

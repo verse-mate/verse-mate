@@ -1,4 +1,4 @@
-import { getBookIntroduction } from "../../data/book-intros.mock";
+import { useBookIntroduction } from "../../hooks/useBookIntroduction";
 import { useSaveSearchParams } from "../../hooks/useSearchParams";
 import * as Icon from "../Icons";
 import styles from "./book-overview-button.module.css";
@@ -13,12 +13,10 @@ export const BookOverviewButton = ({
   className,
 }: BookOverviewButtonProps) => {
   const { saveSearchParams } = useSaveSearchParams();
-
-  // Check if intro exists for this book
-  const introData = getBookIntroduction(bookId);
+  const { introduction } = useBookIntroduction(bookId, "en");
 
   // Don't render if no intro available
-  if (!introData) {
+  if (!introduction) {
     return null;
   }
 

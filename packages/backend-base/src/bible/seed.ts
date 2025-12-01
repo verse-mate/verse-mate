@@ -6,6 +6,7 @@ import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import type { Subtitles } from "database/src/models/public/Subtitles";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { Verses } from "database/src/models/public/Verses";
+import { seedBookIntroductions } from "database/src/seeds/book-introductions.seed";
 import { defaultUserPromptTemplates } from "../shared/prompts";
 import { parseBibleData } from "./bible";
 
@@ -586,6 +587,9 @@ export async function main() {
 
   // 7. Seed topics
   await seedTopics();
+
+  // 8. Seed book introductions
+  await seedBookIntroductions(db.getOrCreateConnection());
 
   console.log("Seed completed!");
 }

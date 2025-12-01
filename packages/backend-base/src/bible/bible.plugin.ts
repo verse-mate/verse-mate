@@ -169,7 +169,63 @@ const plugin = new Elysia()
           },
         },
       )
+      .derive(authDerive)
+      .get(
+        "/book/:bookId/introduction",
+        async ({ params, query, store: { bibleService }, currentUserId }) => {
+          const { bookId } = params;
+          const { languageCode = "en" } = query;
+
+          const introduction = await bibleService.getBookIntroduction(
+            bookId,
+            languageCode,
+          );
+
+          let hasViewed = false;
+          if (currentUserId && introduction) {
+            const viewedRecord = await bibleService.getUserViewedIntroduction(
+              currentUserId,
+              bookId,
+            );
+            hasViewed = !!viewedRecord;
+          }
+
+          return { introduction, hasViewed };
+        },
+        {
+          params: t.Object({
+            bookId: t.Numeric(),
+          }),
+          query: t.Object({
+            languageCode: t.Optional(t.String()),
+          }),
+        },
+      )
       .resolve({ as: "scoped" }, authDerive)
+      .post(
+        "/book/:bookId/introduction/mark-viewed",
+        async ({ params, store: { bibleService }, currentUserId }) => {
+          if (!currentUserId) {
+            throw new UnauthorizedError(
+              "Must be logged in to mark introduction as viewed",
+            );
+          }
+
+          const { bookId } = params;
+          await bibleService.markIntroductionAsViewed(currentUserId, bookId);
+
+          return { success: true };
+        },
+        {
+          params: t.Object({
+            bookId: t.Numeric(),
+          }),
+          response: {
+            200: t.Object({ success: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/book/explanation/:bookId/:chapterNumber",
         async ({

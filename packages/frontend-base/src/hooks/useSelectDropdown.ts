@@ -115,15 +115,6 @@ export const useSelectDropdown = (testaments?: Testaments) => {
     }
   }, [selectedBook, selectedVerse, resetFilter]);
 
-  // Debugging — you can remove this later
-  useEffect(() => {
-    console.log({
-      debouncedFilter,
-      selectedTab,
-      testamentsSample: testaments?.slice(0, 3),
-    });
-  }, [debouncedFilter, selectedTab, testaments]);
-
   const filteredTestaments: Testament[] = useMemo(() => {
     if (!testaments) return [];
     return filterBibleBooks(testaments, debouncedFilter);

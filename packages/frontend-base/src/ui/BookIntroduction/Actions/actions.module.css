@@ -69,8 +69,9 @@
 @media screen and (min-width: 1025px) {
   .container {
     position: sticky;
-    bottom: 32px;
+    bottom: -2.5%;
     padding: 0;
+    padding-right: 48px;
     background-color: transparent;
     border-top: none;
     justify-content: flex-end;

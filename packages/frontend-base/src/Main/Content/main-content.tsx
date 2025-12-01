@@ -12,17 +12,16 @@ import { getTopicDetails } from "../../api/topics";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
 import { NotesProvider } from "../../contexts/NotesContext";
-import { getBookIntroduction } from "../../data/book-intros.mock";
 import {
   fetchAllChaptersByBook,
   fetchAllTestaments,
   fetchBookVerse,
   fetchExplanation,
 } from "../../hooks/useBible";
+import { useBookIntroduction } from "../../hooks/useBookIntroduction";
 import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
 import { useHandleTab } from "../../hooks/useHandleTab";
-import { useIntroTracking } from "../../hooks/useIntroTracking";
 import { useLastRead } from "../../hooks/useLastRead";
 import { useProgressBar } from "../../hooks/useProgressBar";
 import { useRating } from "../../hooks/useRating";
@@ -308,35 +307,51 @@ export const MainContent = () => {
     explanation?.explanation_id,
   );
 
-  // Book introduction tracking
-  const { hasViewed, markAsViewed } = useIntroTracking();
+  // Book introduction - fetch from API
+  const {
+    introduction: introData,
+    hasViewed: hasViewedIntro,
+    markAsViewed,
+    isLoading: isIntroLoading,
+  } = useBookIntroduction(
+    !isViewingTopic && typeof bookId === "number" ? bookId : null,
+    "en",
+  );
+
+  // Track dismissed intros for this session to prevent re-triggering
+  const dismissedIntrosRef = useRef<Set<number>>(new Set());
 
   // Check if we should show intro when book changes
+  // showIntro and saveSearchParams intentionally excluded to prevent infinite loops
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   useEffect(() => {
     // Only check for intros on Bible books (not topics)
-    if (!isViewingTopic && bookId && typeof bookId === "number") {
-      const introData = getBookIntroduction(bookId);
-      const alreadyViewed = hasViewed(bookId);
-
-      console.log("[BookIntro Debug]", {
-        bookId,
-        isViewingTopic,
-        hasIntroData: !!introData,
-        alreadyViewed,
-        showIntro,
-        shouldTrigger: introData && !alreadyViewed && !showIntro,
-      });
-
+    if (
+      !isViewingTopic &&
+      bookId &&
+      typeof bookId === "number" &&
+      !isIntroLoading
+    ) {
       // Show intro if:
       // 1. Introduction exists for this book
       // 2. User hasn't viewed it yet
       // 3. We're not already showing the intro
-      if (introData && !alreadyViewed && !showIntro) {
-        console.log("[BookIntro] Triggering intro display");
-        saveSearchParams({ showIntro: true });
+      // 4. We haven't dismissed it in this session
+      if (
+        introData &&
+        !hasViewedIntro &&
+        !showIntro &&
+        !dismissedIntrosRef.current.has(bookId)
+      ) {
+        // Just set showIntro to true, preserve all other URL params
+        saveSearchParams({
+          showIntro: true,
+        });
       }
     }
-  }, [bookId, isViewingTopic, hasViewed, showIntro, saveSearchParams]);
+    // Don't include showIntro or saveSearchParams in dependencies to prevent re-triggering when dismissing
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookId, isViewingTopic, introData, hasViewedIntro, isIntroLoading]);
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -1877,23 +1892,37 @@ export const MainContent = () => {
                     buttonsVisible={buttonsVisible}
                     scrollableCallbackRef={scrollableCallbackRef}
                   />
-                ) : showIntro && typeof bookId === "number" ? (
+                ) : showIntro && typeof bookId === "number" && introData ? (
                   // Show book introduction
                   (() => {
-                    const introData = getBookIntroduction(bookId);
-                    if (!introData) return null;
+                    // Read verseId directly from URL to avoid React state timing issues
+                    const urlParams = new URLSearchParams(
+                      window.location.search,
+                    );
+                    const currentVerseId = urlParams.get("verseId") || "1";
 
                     const handleContinue = () => {
-                      markAsViewed(bookId);
-                      saveSearchParams({ showIntro: false, verseId: "1" });
+                      // Mark as dismissed in this session to prevent re-triggering
+                      dismissedIntrosRef.current.add(bookId);
+
+                      // Mark as viewed (updates localStorage immediately to prevent race condition)
+                      markAsViewed(bookId, !!session);
+
+                      // Hide intro (preserves current verseId from URL)
+                      saveSearchParams({ showIntro: false });
                     };
+
+                    const targetChapter = Number(currentVerseId);
 
                     return (
                       <BookIntroduction.Root>
                         <BookIntroduction.Content
-                          content={introData.fullIntroText}
+                          content={introData.full_intro_text}
                         />
-                        <BookIntroduction.Actions onContinue={handleContinue} />
+                        <BookIntroduction.Actions
+                          onContinue={handleContinue}
+                          chapterNumber={targetChapter}
+                        />
                       </BookIntroduction.Root>
                     );
                   })()
