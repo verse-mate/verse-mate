@@ -9,6 +9,7 @@ import {
   getPassageTitle,
 } from "../../../../utils/sharing";
 import { AutoHighlightTooltip } from "../../../AutoHighlightTooltip";
+import { BookOverviewButton } from "../../../BookOverviewButton";
 import { BookmarkButton } from "../../../Bookmarks";
 import { CopyLinkButton } from "../../../CopyLinkButton";
 import { DictionaryModal } from "../../../DictionaryModal";
@@ -972,6 +973,9 @@ export const Text = ({
           {bookName} {text.chapterNumber}
         </h1>
         <div className={styles.actionButtons} data-tour="action-buttons">
+          {bookId && typeof bookId === "number" && (
+            <BookOverviewButton bookId={bookId} />
+          )}
           {bookId && testament && (
             <BookmarkButton
               bookId={bookId}

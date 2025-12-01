@@ -219,7 +219,7 @@ export const useSelectedState = (
       setSelectedBook(bookName);
       setSelectedVerse(verseId);
       setIsOpen(false);
-      saveSearchParams({ bookId, verseId, testament });
+      saveSearchParams({ bookId, verseId, testament, showIntro: false });
 
       // Save to recently viewed with timestamp
       const storedBooksRaw =

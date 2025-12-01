@@ -12,6 +12,7 @@ import { getTopicDetails } from "../../api/topics";
 import { SignIn } from "../../auth/SignIn";
 import { SignUp } from "../../auth/SignUp";
 import { NotesProvider } from "../../contexts/NotesContext";
+import { getBookIntroduction } from "../../data/book-intros.mock";
 import {
   fetchAllChaptersByBook,
   fetchAllTestaments,
@@ -21,6 +22,7 @@ import {
 import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
 import { useHandleTab } from "../../hooks/useHandleTab";
+import { useIntroTracking } from "../../hooks/useIntroTracking";
 import { useLastRead } from "../../hooks/useLastRead";
 import { useProgressBar } from "../../hooks/useProgressBar";
 import { useRating } from "../../hooks/useRating";
@@ -38,6 +40,7 @@ import { userSession } from "../../hooks/userSession";
 import { ModalContainer } from "../../modal/ModalContainer";
 import { updateSelectedBook } from "../../store/book-selection";
 import { Accordion } from "../../ui/Accordion";
+import { BookIntroduction } from "../../ui/BookIntroduction";
 import { Chat } from "../../ui/Chat";
 import { Explanation } from "../../ui/Explanation";
 import { ProfileButton } from "../../ui/Header/UserProfile/user-profile";
@@ -74,6 +77,7 @@ export const MainContent = () => {
     bibleVersion,
     conversationId,
     isViewingTopic,
+    showIntro,
   } = useGetSearchParams();
 
   // Check if we're viewing a topic (special testament value)
@@ -303,6 +307,36 @@ export const MainContent = () => {
     verseId,
     explanation?.explanation_id,
   );
+
+  // Book introduction tracking
+  const { hasViewed, markAsViewed } = useIntroTracking();
+
+  // Check if we should show intro when book changes
+  useEffect(() => {
+    // Only check for intros on Bible books (not topics)
+    if (!isViewingTopic && bookId && typeof bookId === "number") {
+      const introData = getBookIntroduction(bookId);
+      const alreadyViewed = hasViewed(bookId);
+
+      console.log("[BookIntro Debug]", {
+        bookId,
+        isViewingTopic,
+        hasIntroData: !!introData,
+        alreadyViewed,
+        showIntro,
+        shouldTrigger: introData && !alreadyViewed && !showIntro,
+      });
+
+      // Show intro if:
+      // 1. Introduction exists for this book
+      // 2. User hasn't viewed it yet
+      // 3. We're not already showing the intro
+      if (introData && !alreadyViewed && !showIntro) {
+        console.log("[BookIntro] Triggering intro display");
+        saveSearchParams({ showIntro: true });
+      }
+    }
+  }, [bookId, isViewingTopic, hasViewed, showIntro, saveSearchParams]);
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -1843,6 +1877,26 @@ export const MainContent = () => {
                     buttonsVisible={buttonsVisible}
                     scrollableCallbackRef={scrollableCallbackRef}
                   />
+                ) : showIntro && typeof bookId === "number" ? (
+                  // Show book introduction
+                  (() => {
+                    const introData = getBookIntroduction(bookId);
+                    if (!introData) return null;
+
+                    const handleContinue = () => {
+                      markAsViewed(bookId);
+                      saveSearchParams({ showIntro: false, verseId: "1" });
+                    };
+
+                    return (
+                      <BookIntroduction.Root>
+                        <BookIntroduction.Content
+                          content={introData.fullIntroText}
+                        />
+                        <BookIntroduction.Actions onContinue={handleContinue} />
+                      </BookIntroduction.Root>
+                    );
+                  })()
                 ) : (
                   // Show normal Bible content
                   <>
