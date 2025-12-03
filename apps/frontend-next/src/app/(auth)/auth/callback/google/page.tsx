@@ -6,41 +6,16 @@ import {
 } from "frontend-base/src/auth/lib";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import styles from "../callback.module.css";
 
 /**
  * Loading spinner component for the callback page
  */
 function LoadingSpinner() {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "16px",
-      }}
-    >
-      <div
-        style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid var(--gray, #888)",
-          borderTopColor: "var(--white, #fff)",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-        }}
-      />
-      <p style={{ color: "var(--gray, #888)", fontSize: "14px" }}>
-        Completing sign-in...
-      </p>
-      <style>
-        {`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}
-      </style>
+    <div className={styles.loadingContainer}>
+      <div className={styles.spinner} />
+      <p className={styles.loadingText}>Completing sign-in...</p>
     </div>
   );
 }
@@ -56,29 +31,9 @@ function ErrorDisplay({
   onRetry: () => void;
 }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "24px",
-        maxWidth: "400px",
-        textAlign: "center",
-      }}
-    >
+    <div className={styles.errorContainer}>
       {/* Error Icon */}
-      <div
-        style={{
-          width: "64px",
-          height: "64px",
-          borderRadius: "50%",
-          backgroundColor: "rgba(239, 68, 68, 0.1)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <div className={styles.errorIconWrapper}>
         <svg
           width="32"
           height="32"
@@ -88,7 +43,7 @@ function ErrorDisplay({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          style={{ color: "#ef4444" }}
+          className={styles.errorIcon}
           role="img"
           aria-label="Error icon"
         >
@@ -100,64 +55,18 @@ function ErrorDisplay({
       </div>
 
       {/* Error Title */}
-      <h1
-        style={{
-          fontSize: "24px",
-          fontWeight: "bold",
-          color: "var(--white, #fff)",
-          margin: 0,
-        }}
-      >
-        Sign-in Failed
-      </h1>
+      <h1 className={styles.errorTitle}>Sign-in Failed</h1>
 
       {/* Error Message */}
-      <p
-        style={{
-          color: "var(--gray, #888)",
-          fontSize: "14px",
-          lineHeight: "1.5",
-          margin: 0,
-        }}
-      >
-        {errorMessage}
-      </p>
+      <p className={styles.errorMessage}>{errorMessage}</p>
 
       {/* Action Buttons */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          width: "100%",
-        }}
-      >
-        <button
-          type="button"
-          onClick={onRetry}
-          style={{
-            backgroundColor: "var(--white, #fff)",
-            color: "var(--black, #000)",
-            border: "none",
-            borderRadius: "8px",
-            padding: "12px 24px",
-            fontSize: "14px",
-            fontWeight: "600",
-            cursor: "pointer",
-          }}
-        >
+      <div className={styles.errorActions}>
+        <button type="button" onClick={onRetry} className={styles.retryButton}>
           Try Again with Google
         </button>
 
-        <a
-          href="/login"
-          style={{
-            color: "var(--gray, #888)",
-            fontSize: "14px",
-            textDecoration: "underline",
-            textAlign: "center",
-          }}
-        >
+        <a href="/login" className={styles.backLink}>
           Back to Login
         </a>
       </div>
@@ -219,16 +128,7 @@ function GoogleCallbackContent() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "var(--background, #000)",
-        padding: "24px",
-      }}
-    >
+    <div className={styles.pageContainer}>
       {isLoading ? (
         <LoadingSpinner />
       ) : error ? (
@@ -257,15 +157,7 @@ export default function GoogleCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "var(--background, #000)",
-          }}
-        >
+        <div className={styles.pageContainer}>
           <LoadingSpinner />
         </div>
       }
