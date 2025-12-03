@@ -154,19 +154,13 @@ export function SignUp({ onSwitch }: SignUpProps) {
           <div
             role="alert"
             aria-live="polite"
-            style={{
-              padding: "12px 16px",
-              borderRadius: "8px",
-              backgroundColor: "var(--spring-wood, #fef2f2)",
-              border: "1px solid var(--salmon, #f87171)",
-              marginBottom: "16px",
-            }}
+            className={sharedStyles.errorAlert}
           >
             <Text
               color="var(--vivid-burgundy, #9f1b2f)"
               size="14px"
               weight="500"
-              style={{ display: "block", marginBottom: "4px" }}
+              className={sharedStyles.errorMessage}
             >
               {backendError.message}
             </Text>
@@ -174,7 +168,7 @@ export function SignUp({ onSwitch }: SignUpProps) {
               <Text
                 color="var(--vivid-burgundy, #9f1b2f)"
                 size="12px"
-                style={{ display: "block", opacity: 0.8 }}
+                className={sharedStyles.errorSuggestion}
               >
                 {getSSOErrorActionSuggestion(backendError)}
               </Text>
@@ -183,7 +177,7 @@ export function SignUp({ onSwitch }: SignUpProps) {
                 <Text
                   color="var(--vivid-burgundy, #9f1b2f)"
                   size="12px"
-                  style={{ display: "block", opacity: 0.8 }}
+                  className={sharedStyles.errorSuggestion}
                 >
                   {getErrorActionSuggestion(backendError)}
                 </Text>
@@ -202,15 +196,7 @@ export function SignUp({ onSwitch }: SignUpProps) {
           <button
             type="button"
             onClick={() => onSwitch("login")}
-            style={{
-              color: "var(--white)",
-              textDecoration: "underline",
-              background: "none",
-              border: "none",
-              padding: 0,
-              font: "inherit",
-              cursor: "pointer",
-            }}
+            className={sharedStyles.switchButton}
           >
             Login
           </button>
