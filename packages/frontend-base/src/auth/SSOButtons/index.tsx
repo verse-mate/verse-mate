@@ -9,6 +9,10 @@ export interface SSOButtonsProps {
   onAppleClick?: () => void;
   isLoading?: boolean;
   loadingProvider?: "google" | "apple" | null;
+  /** Feature flag to show/hide Google SSO button */
+  googleEnabled?: boolean;
+  /** Feature flag to show/hide Apple SSO button */
+  appleEnabled?: boolean;
 }
 
 function GoogleIcon() {
@@ -130,27 +134,38 @@ export function SSOButtons({
   onAppleClick,
   isLoading = false,
   loadingProvider = null,
+  googleEnabled = false,
+  appleEnabled = false,
 }: SSOButtonsProps) {
+  // If neither provider is enabled, don't render anything
+  if (!googleEnabled && !appleEnabled) {
+    return null;
+  }
+
   return (
     <div className={styles.container} data-testid="sso-buttons">
-      <SSOButton
-        variant="google"
-        icon={<GoogleIcon />}
-        onClick={onGoogleClick}
-        isLoading={isLoading && loadingProvider === "google"}
-        aria-label="Continue with Google"
-      >
-        Continue with Google
-      </SSOButton>
-      <SSOButton
-        variant="apple"
-        icon={<AppleIcon />}
-        onClick={onAppleClick}
-        isLoading={isLoading && loadingProvider === "apple"}
-        aria-label="Continue with Apple"
-      >
-        Continue with Apple
-      </SSOButton>
+      {googleEnabled && (
+        <SSOButton
+          variant="google"
+          icon={<GoogleIcon />}
+          onClick={onGoogleClick}
+          isLoading={isLoading && loadingProvider === "google"}
+          aria-label="Continue with Google"
+        >
+          Continue with Google
+        </SSOButton>
+      )}
+      {appleEnabled && (
+        <SSOButton
+          variant="apple"
+          icon={<AppleIcon />}
+          onClick={onAppleClick}
+          isLoading={isLoading && loadingProvider === "apple"}
+          aria-label="Continue with Apple"
+        >
+          Continue with Apple
+        </SSOButton>
+      )}
     </div>
   );
 }

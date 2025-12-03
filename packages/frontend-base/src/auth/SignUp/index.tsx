@@ -1,5 +1,6 @@
 "use client";
 
+import { $env } from "frontend-envs";
 import { useCallback, useState } from "react";
 import { Button, Link } from "../../..";
 import { Input } from "../../ui/Input";
@@ -10,12 +11,20 @@ import {
   isRetryableError,
   isSSOError,
 } from "../../utils/error-handling";
+import { useStore } from "../../utils/use-store";
 import { PasswordRequirements } from "../PasswordRequirements";
 import { OrDivider, SSOButtons } from "../SSOButtons";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignUpForm } from "./useSignUpForm";
 
-export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
+export interface SignUpProps {
+  onSwitch?: (mode: "login") => void;
+}
+
+export function SignUp({ onSwitch }: SignUpProps) {
+  const { ssoGoogleEnabled, ssoAppleEnabled } = useStore($env, {
+    keys: ["ssoGoogleEnabled", "ssoAppleEnabled"],
+  });
   const {
     hookForm: { register, formState, watch },
     isLoading,
@@ -93,16 +102,18 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
         </Text>
       </div>
 
-      {/* SSO Buttons */}
+      {/* SSO Buttons - only shown if at least one provider is enabled */}
       <SSOButtons
         onGoogleClick={handleGoogleClick}
         onAppleClick={handleAppleClick}
         isLoading={ssoLoading}
         loadingProvider={ssoLoadingProvider}
+        googleEnabled={ssoGoogleEnabled}
+        appleEnabled={ssoAppleEnabled}
       />
 
-      {/* Or Divider */}
-      <OrDivider />
+      {/* Or Divider - only shown if SSO is enabled */}
+      {(ssoGoogleEnabled || ssoAppleEnabled) && <OrDivider />}
 
       <form
         className={sharedStyles.form}
