@@ -1,13 +1,17 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { Button, Link } from "../../..";
 import { Input } from "../../ui/Input";
 import { Text } from "../../ui/Text/Text";
 import {
   getErrorActionSuggestion,
+  getSSOErrorActionSuggestion,
   isRetryableError,
+  isSSOError,
 } from "../../utils/error-handling";
 import { PasswordRequirements } from "../PasswordRequirements";
+import { OrDivider, SSOButtons } from "../SSOButtons";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignUpForm } from "./useSignUpForm";
 
@@ -21,6 +25,57 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
   } = useSignUpForm();
 
   const password = watch("password");
+
+  // SSO loading state
+  const [ssoLoading, setSsoLoading] = useState(false);
+  const [ssoLoadingProvider, setSsoLoadingProvider] = useState<
+    "google" | "apple" | null
+  >(null);
+
+  const handleGoogleClick = useCallback(() => {
+    setSsoLoading(true);
+    setSsoLoadingProvider("google");
+    // Store current redirect location before SSO redirect
+    if (typeof window !== "undefined") {
+      const existingRedirect = localStorage.getItem("redirectTo");
+      if (!existingRedirect) {
+        const pathname = window.location.pathname;
+        if (
+          pathname !== "/login" &&
+          pathname !== "/signup" &&
+          pathname !== "/create-account"
+        ) {
+          localStorage.setItem("redirectTo", pathname + window.location.search);
+        }
+      }
+    }
+    // Redirect to Google OAuth endpoint
+    window.location.href = "/api/auth/sso/google/redirect";
+  }, []);
+
+  const handleAppleClick = useCallback(() => {
+    setSsoLoading(true);
+    setSsoLoadingProvider("apple");
+    // Store current redirect location before SSO redirect
+    if (typeof window !== "undefined") {
+      const existingRedirect = localStorage.getItem("redirectTo");
+      if (!existingRedirect) {
+        const pathname = window.location.pathname;
+        if (
+          pathname !== "/login" &&
+          pathname !== "/signup" &&
+          pathname !== "/create-account"
+        ) {
+          localStorage.setItem("redirectTo", pathname + window.location.search);
+        }
+      }
+    }
+    // Redirect to Apple OAuth endpoint
+    window.location.href = "/api/auth/sso/apple/redirect";
+  }, []);
+
+  // Determine if error is SSO-related for custom action suggestion
+  const errorIsSSORelated = backendError && isSSOError(backendError);
 
   return (
     <div className={sharedStyles.wrapper}>
@@ -37,6 +92,18 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
           Please provide the following information to set up your account.
         </Text>
       </div>
+
+      {/* SSO Buttons */}
+      <SSOButtons
+        onGoogleClick={handleGoogleClick}
+        onAppleClick={handleAppleClick}
+        isLoading={ssoLoading}
+        loadingProvider={ssoLoadingProvider}
+      />
+
+      {/* Or Divider */}
+      <OrDivider />
+
       <form
         className={sharedStyles.form}
         onSubmit={onSubmit}
@@ -92,14 +159,24 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
             >
               {backendError.message}
             </Text>
-            {isRetryableError(backendError) && (
+            {errorIsSSORelated ? (
               <Text
                 color="var(--vivid-burgundy, #9f1b2f)"
                 size="12px"
                 style={{ display: "block", opacity: 0.8 }}
               >
-                {getErrorActionSuggestion(backendError)}
+                {getSSOErrorActionSuggestion(backendError)}
               </Text>
+            ) : (
+              isRetryableError(backendError) && (
+                <Text
+                  color="var(--vivid-burgundy, #9f1b2f)"
+                  size="12px"
+                  style={{ display: "block", opacity: 0.8 }}
+                >
+                  {getErrorActionSuggestion(backendError)}
+                </Text>
+              )
             )}
           </div>
         )}

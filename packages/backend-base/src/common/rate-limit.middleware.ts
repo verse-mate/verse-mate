@@ -116,4 +116,22 @@ export const authRateLimiters = {
     },
     message: "Too many refresh attempts, please try again later",
   }),
+
+  /**
+   * SSO rate limiter: 10 SSO attempts per IP per minute
+   * More lenient than login since SSO flows can have legitimate retries
+   * (e.g., user cancels OAuth flow and tries again)
+   */
+  sso: createRateLimit({
+    windowSeconds: 60,
+    max: 10,
+    keyGenerator: (context) => {
+      const ip =
+        context.request.headers.get("x-forwarded-for") ||
+        context.request.headers.get("x-real-ip") ||
+        "unknown";
+      return `sso:${ip}`;
+    },
+    message: "Too many SSO attempts, please try again in a minute",
+  }),
 };

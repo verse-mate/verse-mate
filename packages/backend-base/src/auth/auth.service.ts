@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "database";
+import type SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 import type { User } from "database/src/models/public/User";
 
 import { VerifyEmail, render } from "../../../emails";
@@ -21,6 +22,8 @@ import type { AuthSignupInput } from "./dto/auth-signup.input";
 import type { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 import { RefreshTokenRepository } from "./refresh-token.repository";
+import type { SSOUserInfo } from "./sso/sso-provider.interface";
+import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
 
 function resetPasswordURL(key: string): string {
   return `${process.env.APP_URL ?? ""}/reset-password?key=${key}`;
@@ -30,11 +33,20 @@ function verifyEmailURL(key: string): string {
   return `${process.env.APP_URL ?? ""}/email-verified?key=${key}`;
 }
 
+/**
+ * Format provider name for display (e.g., "google" -> "Google")
+ */
+function formatProviderName(provider: SsoProviderEnum | string): string {
+  const name = String(provider);
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 export class AuthService {
   private readonly jwtConstants: {
     readonly hashSalt: number;
   };
   private readonly refreshTokenRepository: RefreshTokenRepository;
+  private readonly userSsoAccountRepository: UserSsoAccountRepository;
 
   public constructor(
     private readonly db: db,
@@ -47,6 +59,7 @@ export class AuthService {
       hashSalt: Number(hashSalt),
     };
     this.refreshTokenRepository = new RefreshTokenRepository(db);
+    this.userSsoAccountRepository = new UserSsoAccountRepository(db);
   }
 
   private async validateUser(authLoginInput: AuthLoginInput): Promise<User> {
@@ -59,6 +72,20 @@ export class AuthService {
 
     if (!user) {
       throw new NotFoundError("User not found");
+    }
+
+    // Check if user has no password (SSO-only user)
+    if (user.password === null) {
+      // Get linked SSO providers for personalized error message
+      const linkedProviders = await this.getLinkedSSOProviders(user.id);
+      const providerList =
+        linkedProviders.length > 0 ? linkedProviders.join("/") : "SSO";
+
+      const error = new ValidationError(
+        `This account uses ${providerList} Sign-In. Please use that method, or reset your password to add email/password login.`,
+      );
+      error.code = "SSO_ACCOUNT_NO_PASSWORD";
+      throw error;
     }
 
     // if (!user.isActive) {
@@ -132,6 +159,137 @@ export class AuthService {
   ): Promise<AuthPayload> {
     const user = await this.validateUser(authLoginInput);
     return this.loginUser(user, jwt, userAgent, ipAddress);
+  }
+
+  /**
+   * Authenticate a user via SSO (Single Sign-On)
+   *
+   * This method handles the following scenarios:
+   * 1. Existing SSO link: Login the user
+   * 2. No SSO link but email exists: Auto-link SSO to existing user
+   * 3. No user exists: Create new user with SSO link
+   *
+   * @param provider - The SSO provider (google or apple)
+   * @param ssoUserInfo - User information from the SSO provider
+   * @param jwt - JWT handler for token generation
+   * @param userAgent - Optional user agent string
+   * @param ipAddress - Optional IP address
+   * @returns AuthPayload with access token, refresh token, and verified status
+   */
+  public async loginWithSSO(
+    provider: SsoProviderEnum,
+    ssoUserInfo: SSOUserInfo,
+    jwt: JWT,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<AuthPayload> {
+    const { providerUserId, email, emailVerified, firstName, lastName, name } =
+      ssoUserInfo;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Step 1: Check if SSO account is already linked
+    const existingSsoAccount =
+      await this.userSsoAccountRepository.findByProviderAndProviderId(
+        provider,
+        providerUserId,
+      );
+
+    if (existingSsoAccount) {
+      // SSO account is already linked, get the user and login
+      const user = await this.db
+        .getOrCreateConnection()
+        .selectFrom("user")
+        .where("id", "=", existingSsoAccount.user_id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
+
+      return this.loginUser(user, jwt, userAgent, ipAddress);
+    }
+
+    // Step 2: Check if a user with this email already exists (case-insensitive)
+    let user = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .where((eb) => eb(sql`LOWER(email)`, "=", normalizedEmail))
+      .selectAll()
+      .executeTakeFirst();
+
+    if (user) {
+      // User exists, create SSO link to existing account
+      await this.userSsoAccountRepository.create({
+        user_id: user.id,
+        provider,
+        provider_user_id: providerUserId,
+        email: normalizedEmail,
+      });
+
+      // If user's email was not verified but SSO email is verified, mark as verified
+      if (!user.emailVerified && emailVerified) {
+        await this.db
+          .getOrCreateConnection()
+          .updateTable("user")
+          .set({ emailVerified: true })
+          .where("id", "=", user.id)
+          .execute();
+
+        // Update local user object
+        user = { ...user, emailVerified: true };
+      }
+
+      return this.loginUser(user, jwt, userAgent, ipAddress);
+    }
+
+    // Step 3: No user exists, create new user with SSO (no password)
+    // Parse name into first and last name if not provided separately
+    let userFirstName = firstName;
+    let userLastName = lastName;
+
+    if (!userFirstName && name) {
+      const nameParts = name.trim().split(/\s+/);
+      userFirstName = nameParts[0] || "";
+      userLastName = nameParts.slice(1).join(" ") || "";
+    }
+
+    const newUser = await this.db
+      .getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email: normalizedEmail,
+        password: null, // SSO users don't have a password
+        firstName: userFirstName || "User",
+        lastName: userLastName || "",
+        emailVerified: emailVerified, // SSO providers verify email
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    // Create SSO link for the new user
+    await this.userSsoAccountRepository.create({
+      user_id: newUser.id,
+      provider,
+      provider_user_id: providerUserId,
+      email: normalizedEmail,
+    });
+
+    return this.loginUser(newUser, jwt, userAgent, ipAddress);
+  }
+
+  /**
+   * Get list of linked SSO provider names for a user
+   *
+   * @param userId - The user ID to check
+   * @returns Array of formatted provider names (e.g., ["Google", "Apple"])
+   */
+  public async getLinkedSSOProviders(userId: string): Promise<string[]> {
+    const ssoAccounts =
+      await this.userSsoAccountRepository.findByUserId(userId);
+
+    // Get unique providers and format their names
+    const providers = [
+      ...new Set(ssoAccounts.map((account) => account.provider)),
+    ];
+
+    return providers.map(formatProviderName);
   }
 
   public async refresh(refreshToken: string, jwt: JWT): Promise<AuthPayload> {
