@@ -28,90 +28,13 @@ import {
   UserSchema,
 } from "./schemas/auth-response.schema";
 import { ssoProviderFactory } from "./sso/sso-provider.factory";
-
-// OAuth state TTL in seconds (10 minutes)
-const SSO_STATE_TTL = 600;
-
-/**
- * Get environment configuration for SSO
- * These are read at runtime to allow tests to set up environment variables
- */
-function getSSOConfig() {
-  return {
-    backendUrl: process.env.BACKEND_URL ?? "http://localhost:3001",
-    frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
-    googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
-    appleClientId: process.env.APPLE_CLIENT_ID ?? "",
-  };
-}
-
-/**
- * Generate Google OAuth authorization URL
- */
-function buildGoogleOAuthUrl(state: string): string {
-  const config = getSSOConfig();
-  const params = new URLSearchParams({
-    client_id: config.googleClientId,
-    redirect_uri: `${config.backendUrl}/auth/sso/google/callback`,
-    response_type: "code",
-    scope: "openid email profile",
-    access_type: "offline",
-    state,
-    prompt: "select_account",
-  });
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-}
-
-/**
- * Generate Apple OAuth authorization URL
- */
-function buildAppleOAuthUrl(state: string): string {
-  const config = getSSOConfig();
-  const params = new URLSearchParams({
-    client_id: config.appleClientId,
-    redirect_uri: `${config.backendUrl}/auth/sso/apple/callback`,
-    response_type: "code",
-    scope: "name email",
-    response_mode: "form_post", // Apple uses form_post by default
-    state,
-  });
-  return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
-}
-
-/**
- * Build frontend callback URL with tokens or error
- */
-function buildFrontendCallbackUrl(
-  provider: "google" | "apple",
-  params: {
-    accessToken?: string;
-    refreshToken?: string;
-    verified?: boolean;
-    error?: string;
-    errorDescription?: string;
-  },
-): string {
-  const config = getSSOConfig();
-  const searchParams = new URLSearchParams();
-
-  if (params.accessToken) {
-    searchParams.set("accessToken", params.accessToken);
-  }
-  if (params.refreshToken) {
-    searchParams.set("refreshToken", params.refreshToken);
-  }
-  if (params.verified !== undefined) {
-    searchParams.set("verified", String(params.verified));
-  }
-  if (params.error) {
-    searchParams.set("error", params.error);
-  }
-  if (params.errorDescription) {
-    searchParams.set("error_description", params.errorDescription);
-  }
-
-  return `${config.frontendUrl}/auth/callback/${provider}?${searchParams.toString()}`;
-}
+import {
+  SSO_STATE_TTL,
+  buildAppleOAuthUrl,
+  buildFrontendCallbackUrl,
+  buildGoogleOAuthUrl,
+  getSSOConfig,
+} from "./sso/sso.utils";
 
 const plugin = new Elysia()
   .use(shared)
