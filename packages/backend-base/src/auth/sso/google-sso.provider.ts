@@ -76,22 +76,36 @@ interface GoogleTokenInfoResponse {
 export class GoogleSSOProvider implements SSOProvider {
   readonly name = "google" as const;
 
-  private readonly clientId: string;
-  private readonly clientSecret: string;
-  private readonly redirectUri: string;
-
   private readonly tokenEndpoint = "https://oauth2.googleapis.com/token";
   private readonly tokenInfoEndpoint =
     "https://oauth2.googleapis.com/tokeninfo";
 
-  constructor() {
-    this.clientId = process.env.GOOGLE_CLIENT_ID ?? "";
-    this.clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
-    this.redirectUri =
-      process.env.GOOGLE_REDIRECT_URI ??
-      `${process.env.BACKEND_URL ?? "http://localhost:3001"}/auth/sso/google/callback`;
+  /**
+   * Get client ID at runtime to support test environment variable changes
+   */
+  private get clientId(): string {
+    return process.env.GOOGLE_CLIENT_ID ?? "";
+  }
 
-    if (!this.clientId) {
+  /**
+   * Get client secret at runtime to support test environment variable changes
+   */
+  private get clientSecret(): string {
+    return process.env.GOOGLE_CLIENT_SECRET ?? "";
+  }
+
+  /**
+   * Get redirect URI at runtime to support test environment variable changes
+   */
+  private get redirectUri(): string {
+    return (
+      process.env.GOOGLE_REDIRECT_URI ??
+      `${process.env.BACKEND_URL ?? "http://localhost:3001"}/auth/sso/google/callback`
+    );
+  }
+
+  constructor() {
+    if (!process.env.GOOGLE_CLIENT_ID) {
       console.warn(
         "GOOGLE_CLIENT_ID is not set. Google SSO will not work properly.",
       );
