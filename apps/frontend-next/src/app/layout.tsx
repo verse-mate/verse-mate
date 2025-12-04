@@ -11,6 +11,8 @@ export default function RootLayout({
   const envValues: Env = {
     apiUrl: process.env.API_URL ?? "http://localhost:4000",
     askVerseMate: process.env.NEXT_PUBLIC_ASK_VERSE_MATE === "true",
+    ssoGoogleEnabled: process.env.NEXT_PUBLIC_SSO_GOOGLE_ENABLED === "true",
+    ssoAppleEnabled: process.env.NEXT_PUBLIC_SSO_APPLE_ENABLED === "true",
   };
   $env.set(envValues);
 
