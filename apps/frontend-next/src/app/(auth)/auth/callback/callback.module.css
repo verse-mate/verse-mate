@@ -1,0 +1,127 @@
+/* SSO Callback Page Styles */
+
+.pageContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background, #000);
+  padding: 24px;
+}
+
+/* Loading Spinner */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray, #888);
+  border-top-color: var(--white, #fff);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  color: var(--gray, #888);
+  font-size: 14px;
+}
+
+/* Error Display */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.errorIconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgb(239 68 68 / 10%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.errorIcon {
+  color: #ef4444;
+}
+
+.errorTitle {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--white, #fff);
+  margin: 0;
+}
+
+.errorMessage {
+  color: var(--gray, #888);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.errorActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.retryButton {
+  background-color: var(--white, #fff);
+  color: var(--black, #000);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  opacity: 0.9;
+}
+
+/* Apple-style retry button (black with white border) */
+.retryButtonApple {
+  background-color: var(--black, #000);
+  color: var(--white, #fff);
+  border: 1px solid var(--white, #fff);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retryButtonApple:hover {
+  opacity: 0.9;
+}
+
+.backLink {
+  color: var(--gray, #888);
+  font-size: 14px;
+  text-decoration: underline;
+  text-align: center;
+}
+
+.backLink:hover {
+  color: var(--white, #fff);
+}
