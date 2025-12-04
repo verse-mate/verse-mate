@@ -1,9 +1,9 @@
 declare const styles: {
-  readonly item: string;
   readonly dropdownMenuContent: string;
-  readonly vertical: string;
   readonly horizontal: string;
-  readonly tem: string;
+  readonly item: string;
   readonly itemLink: string;
+  readonly tem: string;
+  readonly vertical: string;
 };
 export = styles;

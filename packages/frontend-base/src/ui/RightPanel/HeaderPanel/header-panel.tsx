@@ -45,7 +45,10 @@ export const Nav = ({
         activeTab !== "newChat" &&
         activeTab !== "chatHistory" &&
         activeTab !== "menu" && (
-          <div className={styles.explanationTypesButton}>
+          <div
+            className={styles.explanationTypesButton}
+            data-tour="explanation-types-desktop"
+          >
             {explanationTypes.map((option, index) => (
               <button
                 className={`${styles.trigger} ${styles.active}`}
@@ -115,6 +118,7 @@ export const Nav = ({
             setRightPanelContent("default");
           }}
           style={{ position: "relative", zIndex: 9999 }}
+          data-tour="menu-button-desktop"
         >
           <Icon.AnimatedHamburgerIcon
             isOpen={activeTab === "menu"}

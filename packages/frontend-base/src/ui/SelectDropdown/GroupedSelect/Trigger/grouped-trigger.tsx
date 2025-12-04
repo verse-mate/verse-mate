@@ -10,6 +10,7 @@ type GroupedTriggerProps = {
   toggleDropdown: () => void;
   onClose: () => void;
   resetFilter: () => void;
+  dataTour?: string;
 };
 
 export const GroupedTrigger = ({
@@ -20,6 +21,7 @@ export const GroupedTrigger = ({
   toggleDropdown,
   onClose,
   resetFilter,
+  dataTour,
 }: GroupedTriggerProps) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -75,6 +77,8 @@ export const GroupedTrigger = ({
       onClick={handleToggleClick}
       className={extendedStyles.trigger}
       data-state={isOpen ? "open" : "closed"}
+      data-tour={dataTour}
+      data-dropdown-trigger="true"
     >
       <span className={extendedStyles.text}>{displayText}</span>
       <span className={extendedStyles.iconWrapper}>

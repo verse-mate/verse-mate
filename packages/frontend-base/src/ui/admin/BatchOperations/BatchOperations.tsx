@@ -1053,7 +1053,7 @@ export const BatchOperations = () => {
         return (
           <span
             className={`${styles.status} ${styles.nowrapColumn} ${
-              styles[
+              (styles as any)[
                 status === "in_progress"
                   ? "inProgress"
                   : status === "partial_failure"

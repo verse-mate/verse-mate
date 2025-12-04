@@ -1,7 +1,7 @@
 "use client";
 import { api } from "backend-api";
-import { addNotification } from "frontend-base/src/notification/store";
 import { useCallback, useEffect, useState } from "react";
+import { addNotification } from "../../../notification/store";
 import { bibleVersions } from "../../../utils/bible-versions";
 import { testaments } from "../../../utils/testaments";
 import { Button } from "../../Button/Button";
@@ -625,7 +625,7 @@ export const Explanations = () => {
         </div>
       </div>
 
-      <div className={styles.tableContainer}>
+      <div className={styles.container}>
         <Table
           columns={columns}
           data={explanations}

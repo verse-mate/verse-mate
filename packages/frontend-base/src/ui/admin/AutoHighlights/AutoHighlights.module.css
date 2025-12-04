@@ -137,6 +137,24 @@
   text-align: center;
 }
 
+.relevanceColumn {
+  width: 200px;
+  text-align: center;
+}
+
+.relevanceCell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.relevanceValue {
+  min-width: 20px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
 .themeNameCell {
   display: flex;
   align-items: center;
@@ -237,7 +255,6 @@
 
 .slider::-webkit-slider-thumb {
   appearance: none;
-  appearance: none;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -268,6 +285,51 @@
   font-size: 0.75rem;
   color: var(--text-secondary, #666);
   padding: 0 2px;
+}
+
+/* User Theme Management */
+.userSelect {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: var(--background-secondary, #fff);
+  cursor: pointer;
+}
+
+.userPrefsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.userPrefItem {
+  background: var(--background-tertiary, #f9f9f9);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.userPrefHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.userPrefControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.relevanceControl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 /* Responsive adjustments */

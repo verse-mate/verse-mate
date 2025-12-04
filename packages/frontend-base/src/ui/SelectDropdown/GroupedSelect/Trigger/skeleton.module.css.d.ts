@@ -1,5 +1,5 @@
 declare const styles: {
-  readonly skeleton: string;
   readonly pulse: string;
+  readonly skeleton: string;
 };
 export = styles;

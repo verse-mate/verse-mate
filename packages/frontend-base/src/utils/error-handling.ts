@@ -55,6 +55,48 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageConfig> = {
     retryable: false,
   },
 
+  // SSO-specific errors
+  SSO_ACCOUNT_NO_PASSWORD: {
+    message:
+      "This account uses Google or Apple Sign-In. Please use that method to log in, or use 'Forgot Password' to set up a password.",
+    type: "validation",
+    retryable: false,
+  },
+  SSO_GOOGLE_NO_PASSWORD: {
+    message:
+      "This account uses Google Sign-In. Please use that method to log in, or use 'Forgot Password' to set up a password.",
+    type: "validation",
+    retryable: false,
+  },
+  SSO_APPLE_NO_PASSWORD: {
+    message:
+      "This account uses Apple Sign-In. Please use that method to log in, or use 'Forgot Password' to set up a password.",
+    type: "validation",
+    retryable: false,
+  },
+  SSO_TOKEN_INVALID: {
+    message: "Sign-in verification failed. Please try again.",
+    type: "validation",
+    retryable: true,
+  },
+  SSO_TOKEN_EXPIRED: {
+    message: "Your sign-in session has expired. Please try again.",
+    type: "validation",
+    retryable: true,
+  },
+  SSO_EMAIL_NOT_VERIFIED: {
+    message:
+      "Your email address is not verified with this provider. Please verify your email and try again.",
+    type: "validation",
+    retryable: false,
+  },
+  SSO_PROVIDER_ERROR: {
+    message:
+      "There was a problem connecting to the sign-in provider. Please try again later.",
+    type: "server",
+    retryable: true,
+  },
+
   // Network and connectivity errors
   NETWORK_ERROR: {
     message:
@@ -171,6 +213,20 @@ export function getErrorType(error: any): string {
   if (errorCode && typeof errorCode === "string") {
     const upperErrorCode = errorCode.toUpperCase();
 
+    // Check for SSO-specific error patterns
+    if (upperErrorCode.includes("SSO_ACCOUNT_NO_PASSWORD")) {
+      return "SSO_ACCOUNT_NO_PASSWORD";
+    }
+    if (upperErrorCode.includes("SSO") && upperErrorCode.includes("GOOGLE")) {
+      return "SSO_GOOGLE_NO_PASSWORD";
+    }
+    if (upperErrorCode.includes("SSO") && upperErrorCode.includes("APPLE")) {
+      return "SSO_APPLE_NO_PASSWORD";
+    }
+    if (upperErrorCode.includes("SSO") && upperErrorCode.includes("TOKEN")) {
+      return "SSO_TOKEN_INVALID";
+    }
+
     // Check for common error patterns
     if (
       upperErrorCode.includes("INVALID") ||
@@ -256,7 +312,7 @@ export function debugUnhandledError(error: any, context = "Unknown"): void {
     const errorCode = extractErrorMessage(error);
 
     if (!errorCode || !ERROR_MESSAGES[errorCode]) {
-      console.group(`🔍 Unhandled Error Structure - ${context}`);
+      console.group(`Unhandled Error Structure - ${context}`);
       console.log("Error object:", error);
       console.log("Extracted code:", errorCode);
       console.log("Error type:", typeof error);
@@ -340,4 +396,25 @@ export function getErrorMessage(error: any): string {
 
   // Fallback for completely unknown structures
   return String(error) || "An unexpected error occurred.";
+}
+
+/**
+ * Check if an error is an SSO-related error
+ */
+export function isSSOError(errorState: ErrorState): boolean {
+  return errorState.code?.startsWith("SSO_") ?? false;
+}
+
+/**
+ * Get SSO-specific action suggestion
+ */
+export function getSSOErrorActionSuggestion(errorState: ErrorState): string {
+  if (
+    errorState.code === "SSO_ACCOUNT_NO_PASSWORD" ||
+    errorState.code === "SSO_GOOGLE_NO_PASSWORD" ||
+    errorState.code === "SSO_APPLE_NO_PASSWORD"
+  ) {
+    return "You can also use 'Forgot Password' to set up a password for email login.";
+  }
+  return getErrorActionSuggestion(errorState);
 }

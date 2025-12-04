@@ -1,0 +1,153 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2);
+  width: 100%;
+}
+
+/* Base SSO Button styles */
+.ssoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--size-2);
+  min-height: 2.75rem;
+  padding: var(--size-2) var(--size-3);
+  border-radius: var(--radius-2);
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+  width: 100%;
+  border: none;
+}
+
+.ssoButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.ssoButton:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Google button - follows Google brand guidelines */
+.google {
+  background-color: #fff;
+  color: #1f1f1f;
+  border: 1px solid #dadce0;
+}
+
+.google:hover:not(:disabled) {
+  background-color: #f8faff;
+  box-shadow: 0 1px 3px rgb(60 64 67 / 15%);
+}
+
+.google:active:not(:disabled) {
+  background-color: #f1f3f4;
+}
+
+/* Apple button - follows Apple brand guidelines */
+.apple {
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #000;
+}
+
+.apple:hover:not(:disabled) {
+  background-color: #1a1a1a;
+}
+
+.apple:active:not(:disabled) {
+  background-color: #333;
+}
+
+/* Icon wrapper */
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Button text */
+.buttonText {
+  flex: 1;
+  text-align: center;
+}
+
+/* Loading spinner animation */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.spinnerTrack {
+  opacity: 0.25;
+}
+
+.spinnerHead {
+  opacity: 1;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Or Divider styles */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2);
+  width: 100%;
+  margin: var(--size-1) 0;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background-color: var(--border, #d5d8e1);
+}
+
+.dividerText {
+  flex-shrink: 0;
+  text-transform: lowercase;
+}
+
+/* Mobile responsiveness */
+@media only screen and (max-width: 480px) {
+  .ssoButton {
+    min-height: 2.625rem;
+    font-size: 0.9375rem;
+    padding: var(--size-2);
+  }
+}
+
+/* Very small screens */
+@media only screen and (max-width: 360px) {
+  .ssoButton {
+    min-height: 2.5rem;
+    font-size: 0.875rem;
+  }
+
+  .iconWrapper {
+    width: 16px;
+    height: 16px;
+  }
+
+  .iconWrapper svg {
+    width: 16px;
+    height: 16px;
+  }
+}

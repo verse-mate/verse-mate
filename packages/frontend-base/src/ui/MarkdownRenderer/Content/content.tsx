@@ -57,12 +57,9 @@ export const Renderer = ({
       <ReactMarkdown
         className={`${styles.markdown} ${variantClass} ${className}`}
         components={{
-          h2: ({ node, ...props }) => (
-            <h2 style={{ marginTop: "32px", marginBottom: "4px" }} {...props} />
-          ),
-          h3: ({ node, ...props }) => (
-            <h3 style={{ marginTop: "1em" }} {...props} />
-          ),
+          h2: ({ node, ...props }) => <h2 {...props} />,
+          h3: ({ node, ...props }) => <h3 {...props} />,
+          h4: ({ node, ...props }) => <h4 {...props} />,
           p: ({ node, ...props }) => {
             const childrenArray = Array.isArray((node as any)?.children)
               ? (node as any).children
