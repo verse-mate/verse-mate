@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import posthog from "posthog-js";
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -24,6 +25,21 @@ const schema = z.object({
     .max(64, "Password must have maximum of 64 characters."),
 });
 
+/**
+ * Decodes a JWT token to extract the payload.
+ * Returns null if decoding fails.
+ */
+function decodeJwtPayload(token: string): { sub?: string } | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 export function useSignInForm() {
   const [backendError, setBackendError] = useState<ErrorState | undefined>(
     undefined,
@@ -44,6 +60,20 @@ export function useSignInForm() {
 
       if (data?.refreshToken) {
         setCookie(REFRESH_TOKEN_COOKIE, data.refreshToken, 90);
+      }
+
+      // Identify user in PostHog after successful login
+      const email = getValues("email");
+      const jwtPayload = decodeJwtPayload(data.accessToken);
+      const userId = jwtPayload?.sub;
+
+      if (userId && email) {
+        try {
+          posthog.identify(userId, { email });
+        } catch (error) {
+          // PostHog may not be initialized (e.g., in development without API key)
+          console.debug("PostHog identify skipped:", error);
+        }
       }
 
       // Check device type for redirection
