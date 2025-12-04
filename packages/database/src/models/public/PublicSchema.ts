@@ -29,6 +29,7 @@ import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
 import type { default as UserPromptTemplatesTable } from "./UserPromptTemplates";
 import type { default as UserRecentlyViewedBooksTable } from "./UserRecentlyViewedBooks";
+import type { default as UserSsoAccountsTable } from "./UserSsoAccounts";
 import type { default as UserThemePreferencesTable } from "./UserThemePreferences";
 import type { default as VerseHighlightsTable } from "./VerseHighlights";
 import type { default as VersesTable } from "./Verses";
@@ -86,6 +87,8 @@ export default interface PublicSchema {
 
   notes: NotesTable;
 
+  refresh_tokens: RefreshTokensTable;
+
   highlight_themes: HighlightThemesTable;
 
   auto_highlights: AutoHighlightsTable;
@@ -94,5 +97,5 @@ export default interface PublicSchema {
 
   auto_highlight_settings: AutoHighlightSettingsTable;
 
-  refresh_tokens: RefreshTokensTable;
+  user_sso_accounts: UserSsoAccountsTable;
 }

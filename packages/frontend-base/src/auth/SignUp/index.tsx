@@ -1,17 +1,30 @@
 "use client";
 
+import { $env } from "frontend-envs";
+import { useCallback, useState } from "react";
 import { Button, Link } from "../../..";
 import { Input } from "../../ui/Input";
 import { Text } from "../../ui/Text/Text";
 import {
   getErrorActionSuggestion,
+  getSSOErrorActionSuggestion,
   isRetryableError,
+  isSSOError,
 } from "../../utils/error-handling";
+import { useStore } from "../../utils/use-store";
 import { PasswordRequirements } from "../PasswordRequirements";
+import { OrDivider, SSOButtons } from "../SSOButtons";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignUpForm } from "./useSignUpForm";
 
-export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
+export interface SignUpProps {
+  onSwitch?: (mode: "login") => void;
+}
+
+export function SignUp({ onSwitch }: SignUpProps) {
+  const { ssoGoogleEnabled, ssoAppleEnabled } = useStore($env, {
+    keys: ["ssoGoogleEnabled", "ssoAppleEnabled"],
+  });
   const {
     hookForm: { register, formState, watch },
     isLoading,
@@ -21,6 +34,57 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
   } = useSignUpForm();
 
   const password = watch("password");
+
+  // SSO loading state
+  const [ssoLoading, setSsoLoading] = useState(false);
+  const [ssoLoadingProvider, setSsoLoadingProvider] = useState<
+    "google" | "apple" | null
+  >(null);
+
+  const handleGoogleClick = useCallback(() => {
+    setSsoLoading(true);
+    setSsoLoadingProvider("google");
+    // Store current redirect location before SSO redirect
+    if (typeof window !== "undefined") {
+      const existingRedirect = localStorage.getItem("redirectTo");
+      if (!existingRedirect) {
+        const pathname = window.location.pathname;
+        if (
+          pathname !== "/login" &&
+          pathname !== "/signup" &&
+          pathname !== "/create-account"
+        ) {
+          localStorage.setItem("redirectTo", pathname + window.location.search);
+        }
+      }
+    }
+    // Redirect to Google OAuth endpoint
+    window.location.href = "/api/auth/sso/google/redirect";
+  }, []);
+
+  const handleAppleClick = useCallback(() => {
+    setSsoLoading(true);
+    setSsoLoadingProvider("apple");
+    // Store current redirect location before SSO redirect
+    if (typeof window !== "undefined") {
+      const existingRedirect = localStorage.getItem("redirectTo");
+      if (!existingRedirect) {
+        const pathname = window.location.pathname;
+        if (
+          pathname !== "/login" &&
+          pathname !== "/signup" &&
+          pathname !== "/create-account"
+        ) {
+          localStorage.setItem("redirectTo", pathname + window.location.search);
+        }
+      }
+    }
+    // Redirect to Apple OAuth endpoint
+    window.location.href = "/api/auth/sso/apple/redirect";
+  }, []);
+
+  // Determine if error is SSO-related for custom action suggestion
+  const errorIsSSORelated = backendError && isSSOError(backendError);
 
   return (
     <div className={sharedStyles.wrapper}>
@@ -37,6 +101,20 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
           Please provide the following information to set up your account.
         </Text>
       </div>
+
+      {/* SSO Buttons - only shown if at least one provider is enabled */}
+      <SSOButtons
+        onGoogleClick={handleGoogleClick}
+        onAppleClick={handleAppleClick}
+        isLoading={ssoLoading}
+        loadingProvider={ssoLoadingProvider}
+        googleEnabled={ssoGoogleEnabled}
+        appleEnabled={ssoAppleEnabled}
+      />
+
+      {/* Or Divider - only shown if SSO is enabled */}
+      {(ssoGoogleEnabled || ssoAppleEnabled) && <OrDivider />}
+
       <form
         className={sharedStyles.form}
         onSubmit={onSubmit}
@@ -76,30 +154,34 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
           <div
             role="alert"
             aria-live="polite"
-            style={{
-              padding: "12px 16px",
-              borderRadius: "8px",
-              backgroundColor: "var(--spring-wood, #fef2f2)",
-              border: "1px solid var(--salmon, #f87171)",
-              marginBottom: "16px",
-            }}
+            className={sharedStyles.errorAlert}
           >
             <Text
               color="var(--vivid-burgundy, #9f1b2f)"
               size="14px"
               weight="500"
-              style={{ display: "block", marginBottom: "4px" }}
+              className={sharedStyles.errorMessage}
             >
               {backendError.message}
             </Text>
-            {isRetryableError(backendError) && (
+            {errorIsSSORelated ? (
               <Text
                 color="var(--vivid-burgundy, #9f1b2f)"
                 size="12px"
-                style={{ display: "block", opacity: 0.8 }}
+                className={sharedStyles.errorSuggestion}
               >
-                {getErrorActionSuggestion(backendError)}
+                {getSSOErrorActionSuggestion(backendError)}
               </Text>
+            ) : (
+              isRetryableError(backendError) && (
+                <Text
+                  color="var(--vivid-burgundy, #9f1b2f)"
+                  size="12px"
+                  className={sharedStyles.errorSuggestion}
+                >
+                  {getErrorActionSuggestion(backendError)}
+                </Text>
+              )
             )}
           </div>
         )}
@@ -114,15 +196,7 @@ export function SignUp({ onSwitch }: { onSwitch?: (mode: "login") => void }) {
           <button
             type="button"
             onClick={() => onSwitch("login")}
-            style={{
-              color: "var(--white)",
-              textDecoration: "underline",
-              background: "none",
-              border: "none",
-              padding: 0,
-              font: "inherit",
-              cursor: "pointer",
-            }}
+            className={sharedStyles.switchButton}
           >
             Login
           </button>

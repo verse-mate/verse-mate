@@ -1,0 +1,25 @@
+declare const styles: {
+  readonly badgeActive: string;
+  readonly badgeDefault: string;
+  readonly clickableId: string;
+  readonly container: string;
+  readonly createdColumn: string;
+  readonly error: string;
+  readonly explanationColumn: string;
+  readonly explanationsTableWrapper: string;
+  readonly header: string;
+  readonly idColumn: string;
+  readonly languageColumn: string;
+  readonly modalContent: string;
+  readonly modalDetail: string;
+  readonly modalExplanationText: string;
+  readonly modalSeparator: string;
+  readonly nowrapColumn: string;
+  readonly paginationControls: string;
+  readonly statusColumn: string;
+  readonly statusContainer: string;
+  readonly typeColumn: string;
+  readonly versionColumn: string;
+  readonly wrapText: string;
+};
+export = styles;

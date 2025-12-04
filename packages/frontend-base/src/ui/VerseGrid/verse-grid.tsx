@@ -71,6 +71,7 @@ export const VerseGrid = ({
                   selectedBook === bookId &&
                   styles.selected
                 }`}
+                data-tour-chapter={verse}
                 onClick={() => {
                   onVerseSelect(
                     bookId,

@@ -5,6 +5,11 @@
 
 export { SignIn } from "./src/auth/SignIn";
 export { SignUp } from "./src/auth/SignUp";
+export {
+  SSOButtons,
+  OrDivider,
+  type SSOButtonsProps,
+} from "./src/auth/SSOButtons";
 export { AuthWrapper as AuthWrapperPage } from "./src/auth/Wrapper";
 export { Notifications, notify } from "./src/notification";
 export { Alert } from "./src/ui/Alert/Alert";

@@ -11,6 +11,8 @@ import {
 import { AutoHighlightTooltip } from "../../../AutoHighlightTooltip";
 import { BookmarkButton } from "../../../Bookmarks";
 import { CopyLinkButton } from "../../../CopyLinkButton";
+import { DictionaryModal } from "../../../DictionaryModal";
+import { DictionaryPopover } from "../../../DictionaryPopover";
 import type { HighlightColor } from "../../../HighlightColorPicker/types";
 import { HighlightMenu } from "../../../HighlightMenu";
 import { NotesButton } from "../../../Notes/NotesButton";
@@ -66,6 +68,20 @@ export const Text = ({
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showNotesModal, setShowNotesModal] = useState(false);
   const versesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Dictionary state
+  const [dictionaryState, setDictionaryState] = useState<{
+    open: boolean;
+    strongsNum: string | null;
+    position: { x: number; y: number };
+  }>({
+    open: false,
+    strongsNum: null,
+    position: { x: 0, y: 0 },
+  });
+  const [dictionaryModalOpen, setDictionaryModalOpen] = useState(false);
+  const [modalStrongsNum, setModalStrongsNum] = useState<string | null>(null);
+  const [selectedWord, setSelectedWord] = useState<string | undefined>();
 
   // Auto-highlights state
   const [selectedAutoHighlight, setSelectedAutoHighlight] =
@@ -459,6 +475,13 @@ export const Text = ({
         selectedText,
       });
 
+      // Check if selection is a single word for dictionary feature
+      const isSingleWord =
+        selectedText &&
+        !/\s/.test(selectedText.trim()) &&
+        selectedText.trim().length > 0;
+      setSelectedWord(isSingleWord ? selectedText.trim() : undefined);
+
       // Position verse actions menu near selection
       const rect = range.getBoundingClientRect();
       setVerseActionsPosition({
@@ -677,6 +700,28 @@ export const Text = ({
     searchParams,
     bookName,
   ]);
+
+  const handleDefine = useCallback(
+    (strongsNum: string) => {
+      setDictionaryState({
+        open: true,
+        strongsNum,
+        position: verseActionsPosition,
+      });
+      setShowVerseActionsMenu(false);
+      setSelectedVerses(null);
+      window.getSelection()?.removeAllRanges();
+    },
+    [verseActionsPosition],
+  );
+
+  const handleOpenFullDefinition = useCallback(() => {
+    if (dictionaryState.strongsNum) {
+      setModalStrongsNum(dictionaryState.strongsNum);
+      setDictionaryModalOpen(true);
+      setDictionaryState({ ...dictionaryState, open: false });
+    }
+  }, [dictionaryState]);
 
   const getVerseHighlights = useCallback(
     (verseNumber: number) => {
@@ -923,10 +968,10 @@ export const Text = ({
   return (
     <section className={styles.contentBox} ref={versesContainerRef}>
       <div className={styles.titleContainer}>
-        <h1 className={styles.title}>
+        <h1 className={styles.title} data-tour="chapter-title">
           {bookName} {text.chapterNumber}
         </h1>
-        <div className={styles.actionButtons}>
+        <div className={styles.actionButtons} data-tour="action-buttons">
           {bookId && testament && (
             <BookmarkButton
               bookId={bookId}
@@ -958,8 +1003,12 @@ export const Text = ({
       </div>
 
       {text.subtitles && text.subtitles.length > 0 ? (
-        text.subtitles.map((subtitle) => (
-          <div key={subtitle.subtitle} className={styles.textBox}>
+        text.subtitles.map((subtitle, index) => (
+          <div
+            key={subtitle.subtitle}
+            className={styles.textBox}
+            data-tour={index === 0 ? "chapter-content" : undefined}
+          >
             <div className={styles.subtitleBox}>
               <h2 className={styles.subtitle}>
                 {formatSubtitle(subtitle.subtitle)}
@@ -997,7 +1046,7 @@ export const Text = ({
         ))
       ) : (
         // Fallback: render all verses without subtitle grouping
-        <div className={styles.textBox}>
+        <div className={styles.textBox} data-tour="chapter-content">
           <div className={styles.versesContainer}>
             {text.verses.map((verse) => {
               return (
@@ -1027,9 +1076,12 @@ export const Text = ({
           onNote={handleVerseNote}
           onCopy={handleVerseCopy}
           onShare={handleVerseShare}
+          onDefine={handleDefine}
+          selectedWord={selectedWord}
           onClose={() => {
             setShowVerseActionsMenu(false);
             setSelectedVerses(null);
+            setSelectedWord(undefined);
             window.getSelection()?.removeAllRanges();
           }}
         />
@@ -1059,6 +1111,28 @@ export const Text = ({
           }}
           onSaveAsUserHighlight={handleSaveAsUserHighlight}
           isLoggedIn={!!session?.id}
+        />
+      )}
+
+      {dictionaryState.open && dictionaryState.strongsNum && (
+        <DictionaryPopover
+          strongsNum={dictionaryState.strongsNum}
+          position={dictionaryState.position}
+          onClose={() =>
+            setDictionaryState({ ...dictionaryState, open: false })
+          }
+          onOpenFull={handleOpenFullDefinition}
+        />
+      )}
+
+      {dictionaryModalOpen && modalStrongsNum && (
+        <DictionaryModal
+          strongsNum={modalStrongsNum}
+          open={dictionaryModalOpen}
+          onClose={() => {
+            setDictionaryModalOpen(false);
+            setModalStrongsNum(null);
+          }}
         />
       )}
 

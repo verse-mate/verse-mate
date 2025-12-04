@@ -1,8 +1,12 @@
 declare const styles: {
-  readonly wrapper: string;
-  readonly form: string;
   readonly centerContentWrapper: string;
-  readonly responsiveRow: string;
+  readonly errorAlert: string;
+  readonly errorMessage: string;
+  readonly errorSuggestion: string;
+  readonly form: string;
   readonly head: string;
+  readonly responsiveRow: string;
+  readonly switchButton: string;
+  readonly wrapper: string;
 };
 export = styles;

@@ -119,6 +119,12 @@
   border-radius: 4px;
 }
 
+.resultMarkdown {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+}
+
 .error {
   color: #d9534f;
   margin-top: 1rem;

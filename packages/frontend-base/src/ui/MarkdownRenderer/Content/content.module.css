@@ -93,6 +93,20 @@
     margin-bottom: 16px;
 }
 
+/* Add extra spacing before headings that follow paragraphs (like after summary text) */
+.markdown p + h2,
+.markdown p + h3,
+.markdown p + h4 {
+    margin-top: 80px;
+}
+
+/* Add spacing between title and first verse heading */
+.markdown h1 + h2,
+.markdown h1 + h3,
+.markdown h1 + h4 {
+    margin-top: 50px;
+}
+
 .markdown h1 {
     margin-top: 8px;
 }
