@@ -33,6 +33,7 @@ import {
   buildAppleOAuthUrl,
   buildFrontendCallbackUrl,
   buildGoogleOAuthUrl,
+  extractClientIp,
   getSSOConfig,
 } from "./sso/sso.utils";
 
@@ -239,10 +240,7 @@ const plugin = new Elysia()
           request,
         }): Promise<AuthPayload> => {
           const userAgent = request.headers.get("user-agent") || undefined;
-          const ipAddress =
-            request.headers.get("x-forwarded-for") ||
-            request.headers.get("x-real-ip") ||
-            undefined;
+          const ipAddress = extractClientIp(request);
           return authService.login(body, jwt, userAgent, ipAddress);
         },
         {
@@ -350,10 +348,7 @@ const plugin = new Elysia()
 
           // Get request metadata for session tracking
           const userAgent = request.headers.get("user-agent") || undefined;
-          const ipAddress =
-            request.headers.get("x-forwarded-for") ||
-            request.headers.get("x-real-ip") ||
-            undefined;
+          const ipAddress = extractClientIp(request);
 
           // Login or create user with SSO
           return authService.loginWithSSO(
@@ -421,15 +416,15 @@ const plugin = new Elysia()
       .get(
         "/sso/google/callback",
         async ({ query, store: { cache, authService }, jwt, set, request }) => {
-          const { state, code, error, error_description } = query;
+          const { state, code, error } = query;
 
           // Handle OAuth errors from Google
           if (error) {
-            console.error("Google OAuth error:", error, error_description);
+            // Log minimal info to avoid sensitive data in logs
+            console.warn("Google OAuth callback failed");
             set.redirect = buildFrontendCallbackUrl("google", {
-              error: error,
-              errorDescription:
-                error_description || "OAuth authentication failed",
+              error: "oauth_error",
+              errorDescription: "OAuth authentication failed",
             });
             set.status = 302;
             return;
@@ -451,7 +446,14 @@ const plugin = new Elysia()
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
-          if (!storedState || storedState.provider !== "google") {
+          // Validate state exists, matches provider, and hasn't expired
+          const now = Date.now();
+          const maxAgeMs = SSO_STATE_TTL * 1000;
+          if (
+            !storedState ||
+            storedState.provider !== "google" ||
+            now - storedState.createdAt > maxAgeMs
+          ) {
             set.redirect = buildFrontendCallbackUrl("google", {
               error: "invalid_state",
               errorDescription: "Invalid or expired state parameter",
@@ -483,10 +485,7 @@ const plugin = new Elysia()
 
             // Get request metadata
             const userAgent = request.headers.get("user-agent") || undefined;
-            const ipAddress =
-              request.headers.get("x-forwarded-for") ||
-              request.headers.get("x-real-ip") ||
-              undefined;
+            const ipAddress = extractClientIp(request);
 
             // Login or create user with SSO
             const authPayload = await authService.loginWithSSO(
@@ -506,12 +505,11 @@ const plugin = new Elysia()
             set.status = 302;
             return;
           } catch (err) {
+            // Log error internally but don't expose details to frontend
             console.error("Google SSO callback error:", err);
-            const errorMessage =
-              err instanceof Error ? err.message : "Authentication failed";
             set.redirect = buildFrontendCallbackUrl("google", {
               error: "auth_failed",
-              errorDescription: errorMessage,
+              errorDescription: "OAuth authentication failed",
             });
             set.status = 302;
             return;
@@ -573,15 +571,15 @@ const plugin = new Elysia()
       .get(
         "/sso/apple/callback",
         async ({ query, store: { cache, authService }, jwt, set, request }) => {
-          const { state, code, error, error_description } = query;
+          const { state, code, error } = query;
 
           // Handle OAuth errors from Apple
           if (error) {
-            console.error("Apple OAuth error:", error, error_description);
+            // Log minimal info to avoid sensitive data in logs
+            console.warn("Apple OAuth callback failed");
             set.redirect = buildFrontendCallbackUrl("apple", {
-              error: error,
-              errorDescription:
-                error_description || "OAuth authentication failed",
+              error: "oauth_error",
+              errorDescription: "OAuth authentication failed",
             });
             set.status = 302;
             return;
@@ -603,7 +601,14 @@ const plugin = new Elysia()
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
-          if (!storedState || storedState.provider !== "apple") {
+          // Validate state exists, matches provider, and hasn't expired
+          const now = Date.now();
+          const maxAgeMs = SSO_STATE_TTL * 1000;
+          if (
+            !storedState ||
+            storedState.provider !== "apple" ||
+            now - storedState.createdAt > maxAgeMs
+          ) {
             set.redirect = buildFrontendCallbackUrl("apple", {
               error: "invalid_state",
               errorDescription: "Invalid or expired state parameter",
@@ -635,10 +640,7 @@ const plugin = new Elysia()
 
             // Get request metadata
             const userAgent = request.headers.get("user-agent") || undefined;
-            const ipAddress =
-              request.headers.get("x-forwarded-for") ||
-              request.headers.get("x-real-ip") ||
-              undefined;
+            const ipAddress = extractClientIp(request);
 
             // Login or create user with SSO
             const authPayload = await authService.loginWithSSO(
@@ -658,12 +660,11 @@ const plugin = new Elysia()
             set.status = 302;
             return;
           } catch (err) {
+            // Log error internally but don't expose details to frontend
             console.error("Apple SSO callback error:", err);
-            const errorMessage =
-              err instanceof Error ? err.message : "Authentication failed";
             set.redirect = buildFrontendCallbackUrl("apple", {
               error: "auth_failed",
-              errorDescription: errorMessage,
+              errorDescription: "OAuth authentication failed",
             });
             set.status = 302;
             return;
@@ -785,10 +786,7 @@ const plugin = new Elysia()
 
             // Get request metadata
             const userAgent = request.headers.get("user-agent") || undefined;
-            const ipAddress =
-              request.headers.get("x-forwarded-for") ||
-              request.headers.get("x-real-ip") ||
-              undefined;
+            const ipAddress = extractClientIp(request);
 
             // Login or create user with SSO
             const authPayload = await authService.loginWithSSO(
@@ -808,12 +806,11 @@ const plugin = new Elysia()
             set.status = 302;
             return;
           } catch (err) {
+            // Log error internally but don't expose details to frontend
             console.error("Apple SSO callback error (POST):", err);
-            const errorMessage =
-              err instanceof Error ? err.message : "Authentication failed";
             set.redirect = buildFrontendCallbackUrl("apple", {
               error: "auth_failed",
-              errorDescription: errorMessage,
+              errorDescription: "OAuth authentication failed",
             });
             set.status = 302;
             return;

@@ -75,6 +75,7 @@ describe("SSO Endpoints", () => {
   const db = Backend.store.db;
   const originalEnv = { ...process.env };
   let fetchMock: ReturnType<typeof spyOn>;
+  let cryptoVerifyMock: ReturnType<typeof spyOn>;
   const testUserIds: string[] = [];
 
   beforeAll(() => {
@@ -96,10 +97,13 @@ ZRKqOIZzG+HblXQ0h5b8bLMqkHmXFQ==
   beforeEach(() => {
     // Mock global fetch for SSO provider API calls
     fetchMock = spyOn(globalThis, "fetch");
+    // Mock crypto.subtle.verify to always return true for test tokens
+    cryptoVerifyMock = spyOn(crypto.subtle, "verify").mockResolvedValue(true);
   });
 
   afterEach(() => {
     fetchMock.mockRestore();
+    cryptoVerifyMock.mockRestore();
   });
 
   afterAll(async () => {

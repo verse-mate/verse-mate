@@ -113,3 +113,26 @@ export function buildFrontendCallbackUrl(
 
   return `${config.frontendUrl}/auth/callback/${provider}?${searchParams.toString()}`;
 }
+
+/**
+ * Extract client IP address from request headers
+ *
+ * Safely parses x-forwarded-for (which may be comma-separated) and falls back
+ * to x-real-ip. Returns undefined if no IP can be determined.
+ *
+ * @param request - The incoming HTTP request
+ * @returns The client IP address or undefined
+ */
+export function extractClientIp(request: Request): string | undefined {
+  const xff = request.headers.get("x-forwarded-for") || "";
+  const xri = request.headers.get("x-real-ip") || "";
+
+  // x-forwarded-for may contain multiple IPs (client, proxies...)
+  // Take the first one which is the original client
+  const parsedXff = xff
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)[0];
+
+  return parsedXff || xri || undefined;
+}

@@ -216,12 +216,26 @@ export class AuthService {
 
     if (user) {
       // User exists, create SSO link to existing account
-      await this.userSsoAccountRepository.create({
-        user_id: user.id,
-        provider,
-        provider_user_id: providerUserId,
-        email: normalizedEmail,
-      });
+      // Handle potential unique constraint race conditions
+      try {
+        await this.userSsoAccountRepository.create({
+          user_id: user.id,
+          provider,
+          provider_user_id: providerUserId,
+          email: normalizedEmail,
+        });
+      } catch (e) {
+        // If unique constraint violation, check if link already exists
+        const existing =
+          await this.userSsoAccountRepository.findByProviderAndProviderId(
+            provider,
+            providerUserId,
+          );
+        if (!existing) {
+          throw e;
+        }
+        // Link already exists, continue with login
+      }
 
       // If user's email was not verified but SSO email is verified, mark as verified
       if (!user.emailVerified && emailVerified) {

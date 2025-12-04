@@ -153,15 +153,17 @@ export function storeSSOTokens(
     return;
   }
 
-  // Import setCookie dynamically to avoid issues in non-browser contexts
+  // Build cookie flags with security attributes
+  const isSecure = window.location.protocol === "https:";
+  const cookieFlags = `path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+
   const setCookie = (name: string, value: string, days: number) => {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; ${cookieFlags}`;
   };
 
-  // Store access token in cookie (7 days) and localStorage
+  // Store tokens only in cookies (avoid localStorage to reduce XSS exposure)
   setCookie(ACCESS_TOKEN_COOKIE, accessToken, 7);
-  localStorage.setItem("accessToken", accessToken);
 
   // Store refresh token in cookie (90 days) if provided
   if (refreshToken) {
@@ -178,15 +180,18 @@ export function clearAuthTokens(): void {
     return;
   }
 
-  // Delete cookies
+  // Use same cookie flags as when setting to ensure proper deletion
+  const isSecure = window.location.protocol === "https:";
+  const cookieFlags = `path=/; SameSite=Lax${isSecure ? "; Secure" : ""}`;
+
   const deleteCookie = (name: string) => {
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; ${cookieFlags}`;
   };
 
   deleteCookie(ACCESS_TOKEN_COOKIE);
   deleteCookie(REFRESH_TOKEN_COOKIE);
 
-  // Clear localStorage
+  // Clear localStorage (legacy cleanup)
   try {
     localStorage.removeItem("accessToken");
   } catch {

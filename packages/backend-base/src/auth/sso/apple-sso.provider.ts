@@ -204,41 +204,76 @@ export class AppleSSOProvider implements SSOProvider {
   }
 
   /**
-   * Decode and verify an Apple ID token
+   * Decode and verify an Apple ID token with cryptographic signature verification
    */
   private async decodeAndVerifyIdToken(
     idToken: string,
   ): Promise<AppleIdTokenClaims> {
-    // Decode the token header to get the key ID
     const parts = idToken.split(".");
     if (parts.length !== 3) {
       throw new UnauthorizedError("Invalid Apple ID token format");
     }
 
-    const headerJson = Buffer.from(parts[0], "base64url").toString("utf-8");
-    const header = JSON.parse(headerJson) as { kid: string; alg: string };
+    const header = JSON.parse(
+      Buffer.from(parts[0], "base64url").toString("utf-8"),
+    ) as { kid: string; alg: string };
 
-    // Get Apple's public keys
+    // Resolve Apple's JWK matching the kid
     const jwks = await this.getApplePublicKeys();
-    const key = jwks.keys.find((k) => k.kid === header.kid);
-
-    if (!key) {
-      // Clear cache and try again in case keys were rotated
+    let jwk = jwks.keys.find((k) => k.kid === header.kid);
+    if (!jwk) {
       this.cachedJWKS = null;
-      const refreshedJwks = await this.getApplePublicKeys();
-      const refreshedKey = refreshedJwks.keys.find((k) => k.kid === header.kid);
-      if (!refreshedKey) {
+      const refreshed = await this.getApplePublicKeys();
+      jwk = refreshed.keys.find((k) => k.kid === header.kid);
+      if (!jwk) {
         throw new UnauthorizedError("Apple public key not found for token");
       }
     }
 
-    // Decode the payload (claims)
-    const payloadJson = Buffer.from(parts[1], "base64url").toString("utf-8");
-    const claims = JSON.parse(payloadJson) as AppleIdTokenClaims;
+    // Enforce RS256 algorithm in header
+    if (header.alg !== "RS256") {
+      throw new UnauthorizedError("Unsupported Apple token algorithm");
+    }
 
-    // Verify claims
+    // Verify signature using the JWK
+    const cryptoKey = await crypto.subtle.importKey(
+      "jwk",
+      {
+        kty: jwk.kty,
+        n: jwk.n,
+        e: jwk.e,
+        alg: "RS256",
+        ext: true,
+      } as JsonWebKey,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+
+    const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+    const signatureBytes = Buffer.from(parts[2], "base64url");
+    // Convert to Uint8Array for WebCrypto compatibility
+    const signature = new Uint8Array(
+      signatureBytes.buffer,
+      signatureBytes.byteOffset,
+      signatureBytes.byteLength,
+    );
+
+    const valid = await crypto.subtle.verify(
+      "RSASSA-PKCS1-v1_5",
+      cryptoKey,
+      signature,
+      data,
+    );
+    if (!valid) {
+      throw new UnauthorizedError("Invalid Apple ID token signature");
+    }
+
+    const claims = JSON.parse(
+      Buffer.from(parts[1], "base64url").toString("utf-8"),
+    ) as AppleIdTokenClaims;
+
     this.verifyClaims(claims);
-
     return claims;
   }
 
@@ -301,14 +336,17 @@ export class AppleSSOProvider implements SSOProvider {
    * Apple requires a JWT signed with the private key as the client secret
    */
   private generateClientSecret(): string {
+    // Guard against missing private key
+    if (!this.privateKey?.trim()) {
+      throw new ValidationError(
+        "Apple Sign In is not configured. Missing APPLE_PRIVATE_KEY.",
+      );
+    }
+
     const now = Math.floor(Date.now() / 1000);
     const expiry = now + 15777000; // 6 months in seconds (Apple's max)
 
-    const header = {
-      alg: "ES256",
-      kid: this.keyId,
-    };
-
+    const header = { alg: "ES256", kid: this.keyId };
     const payload = {
       iss: this.teamId,
       iat: now,
@@ -317,7 +355,6 @@ export class AppleSSOProvider implements SSOProvider {
       sub: this.clientId,
     };
 
-    // Create the JWT
     const headerBase64 = Buffer.from(JSON.stringify(header)).toString(
       "base64url",
     );
@@ -326,60 +363,19 @@ export class AppleSSOProvider implements SSOProvider {
     );
     const unsignedToken = `${headerBase64}.${payloadBase64}`;
 
-    // Sign with ES256
     const privateKey = createPrivateKey({
       key: this.privateKey,
       format: "pem",
     });
-
-    const sign = createSign("SHA256");
+    // Use sha256 for ECDSA and finalize stream before signing
+    const sign = createSign("sha256");
     sign.update(unsignedToken);
-    const signature = sign.sign(privateKey);
+    sign.end();
+    // Use ieee-p1363 encoding to get raw R||S format directly (avoids manual DER conversion)
+    const signature = sign.sign({ key: privateKey, dsaEncoding: "ieee-p1363" });
 
-    // Convert DER signature to raw R+S format for JWT
-    const signatureBase64 = this.derToJose(signature);
-
+    const signatureBase64 = Buffer.from(signature).toString("base64url");
     return `${unsignedToken}.${signatureBase64}`;
-  }
-
-  /**
-   * Convert DER-encoded ECDSA signature to JOSE (raw R||S) format
-   */
-  private derToJose(derSignature: Buffer): string {
-    // DER structure: 0x30 [length] 0x02 [r-length] [r] 0x02 [s-length] [s]
-    let offset = 2; // Skip sequence tag and length
-
-    // Skip integer tag for R
-    offset += 1;
-    const rLength = derSignature[offset];
-    offset += 1;
-
-    // Extract R, removing leading zero if present (for padding)
-    let r = derSignature.subarray(offset, offset + rLength);
-    if (r[0] === 0 && r.length > 32) {
-      r = r.subarray(1);
-    }
-    offset += rLength;
-
-    // Skip integer tag for S
-    offset += 1;
-    const sLength = derSignature[offset];
-    offset += 1;
-
-    // Extract S, removing leading zero if present
-    let s = derSignature.subarray(offset, offset + sLength);
-    if (s[0] === 0 && s.length > 32) {
-      s = s.subarray(1);
-    }
-
-    // Pad R and S to 32 bytes each
-    const rPadded = Buffer.concat([Buffer.alloc(32 - r.length), r]);
-    const sPadded = Buffer.concat([Buffer.alloc(32 - s.length), s]);
-
-    // Concatenate R and S
-    const rawSignature = Buffer.concat([rPadded, sPadded]);
-
-    return rawSignature.toString("base64url");
   }
 
   /**

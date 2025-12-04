@@ -78,6 +78,7 @@ describe("GoogleSSOProvider", () => {
   let provider: GoogleSSOProvider;
   const originalEnv = { ...process.env };
   let fetchMock: ReturnType<typeof spyOn>;
+  let cryptoVerifyMock: ReturnType<typeof spyOn>;
 
   beforeAll(() => {
     // Set required environment variables for Google SSO
@@ -91,10 +92,13 @@ describe("GoogleSSOProvider", () => {
     provider = new GoogleSSOProvider();
     // Mock global fetch
     fetchMock = spyOn(globalThis, "fetch");
+    // Mock crypto.subtle.verify to always return true for test tokens
+    cryptoVerifyMock = spyOn(crypto.subtle, "verify").mockResolvedValue(true);
   });
 
   afterEach(() => {
     fetchMock.mockRestore();
+    cryptoVerifyMock.mockRestore();
   });
 
   afterAll(() => {
@@ -113,9 +117,27 @@ describe("GoogleSSOProvider", () => {
         scope: "openid email profile",
       };
 
+      // Mock token exchange endpoint
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => mockTokenResponse,
+      } as Response);
+
+      // Mock Google JWKS endpoint for signature verification
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          keys: [
+            {
+              kty: "RSA",
+              kid: "mock-key-id",
+              use: "sig",
+              alg: "RS256",
+              n: "mock-n",
+              e: "AQAB",
+            },
+          ],
+        }),
       } as Response);
 
       const result = await provider.verifyToken("valid-auth-code", "web");
@@ -281,6 +303,7 @@ describe("AppleSSOProvider", () => {
   let provider: AppleSSOProvider;
   const originalEnv = { ...process.env };
   let fetchMock: ReturnType<typeof spyOn>;
+  let cryptoVerifyMock: ReturnType<typeof spyOn>;
 
   beforeAll(() => {
     // Set required environment variables for Apple SSO
@@ -300,10 +323,13 @@ ZRKqOIZzG+HblXQ0h5b8bLMqkHmXFQ==
     provider = new AppleSSOProvider();
     // Mock global fetch
     fetchMock = spyOn(globalThis, "fetch");
+    // Mock crypto.subtle.verify to always return true for test tokens
+    cryptoVerifyMock = spyOn(crypto.subtle, "verify").mockResolvedValue(true);
   });
 
   afterEach(() => {
     fetchMock.mockRestore();
+    cryptoVerifyMock.mockRestore();
   });
 
   afterAll(() => {

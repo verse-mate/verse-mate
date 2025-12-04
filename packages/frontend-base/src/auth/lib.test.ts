@@ -240,10 +240,12 @@ describe("SSO Callback Utilities", () => {
   });
 
   describe("storeSSOTokens", () => {
-    it("should store access token in cookie and localStorage", () => {
+    it("should store access token in cookie only (no localStorage for XSS protection)", () => {
       storeSSOTokens("my-access-token");
 
-      expect(mockLocalStorage.accessToken).toBe("my-access-token");
+      // Token should NOT be in localStorage (XSS mitigation)
+      expect(mockLocalStorage.accessToken).toBeUndefined();
+      // Token should be in cookie
       expect(mockCookies.some((c) => c.includes("accessToken="))).toBe(true);
       expect(mockCookies.some((c) => c.includes("my-access-token"))).toBe(true);
     });
@@ -347,7 +349,8 @@ describe("SSO Callback Utilities", () => {
 
       expect(result.success).toBe(true);
       expect(result.redirectUrl).toBe("/");
-      expect(mockLocalStorage.accessToken).toBe("success-token");
+      // Tokens stored in cookies only (not localStorage for XSS protection)
+      expect(mockCookies.some((c) => c.includes("success-token"))).toBe(true);
     });
 
     it("should preserve original destination from localStorage", () => {
