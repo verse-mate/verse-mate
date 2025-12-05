@@ -1,7 +1,7 @@
 .button {
   background: transparent;
   border: none;
-  cursor: pointer;
+  cursor: pointer !important;
   padding: 8px;
   display: flex;
   align-items: center;
@@ -13,10 +13,12 @@
 
 .button:hover {
   color: var(--night);
+  cursor: pointer !important;
 }
 
 .button:active {
   transform: scale(0.95);
+  cursor: pointer !important;
 }
 
 .icon {

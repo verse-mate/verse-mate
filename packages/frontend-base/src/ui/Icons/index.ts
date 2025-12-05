@@ -30,6 +30,7 @@ export { TrashIcon } from "./TrashIcon";
 
 export { ArrowLeftIcon } from "./arrowLeftIcon";
 export { ArrowUpIcon } from "./arrowUpIcon";
+export { AutoStoriesIcon } from "./autoStoriesIcon";
 export { BookmarkIcon } from "./bookmarkIcon";
 export { CheckIcon } from "./checkIcon";
 export { ChevronRightIcon } from "./chevronRight";
