@@ -36,7 +36,7 @@ export const BookOverviewButton = ({
       title="View Book Overview"
       aria-label="View Book Overview"
     >
-      <Icon.OpenedBook className={styles.icon} />
+      <Icon.AutoStoriesIcon className={styles.icon} />
     </button>
   );
 };
