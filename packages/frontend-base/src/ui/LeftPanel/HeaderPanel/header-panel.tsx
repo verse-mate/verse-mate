@@ -630,7 +630,6 @@ export const Nav = ({
           </SelectDropdown.Content>
         </SelectDropdown.Root>
       </div>
-
       {/* Tablet-only commentary type buttons in header */}
       {currentTab === "tab1" && (
         <div
