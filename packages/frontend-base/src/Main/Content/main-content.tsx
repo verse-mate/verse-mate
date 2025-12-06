@@ -322,8 +322,11 @@ export const MainContent = () => {
   const dismissedIntrosRef = useRef<Set<number>>(new Set());
 
   // Check if we should show intro when book changes
-  // showIntro and saveSearchParams intentionally excluded to prevent infinite loops
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
+  // Dependencies intentionally limited to prevent infinite loops:
+  // - showIntro: Excluded because we check it in the condition to prevent re-triggering when dismissing
+  // - saveSearchParams: Stable function from custom hook, doesn't need to be a dependency
+  // This effect should ONLY run when: book changes OR intro data loads OR viewed status changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Prevents infinite loop when dismissing intro
   useEffect(() => {
     // Only check for intros on Bible books (not topics)
     if (
@@ -335,8 +338,8 @@ export const MainContent = () => {
       // Show intro if:
       // 1. Introduction exists for this book
       // 2. User hasn't viewed it yet
-      // 3. We're not already showing the intro
-      // 4. We haven't dismissed it in this session
+      // 3. We're not already showing the intro (prevents re-triggering after dismiss)
+      // 4. We haven't dismissed it in this session (prevents showing again in same session)
       if (
         introData &&
         !hasViewedIntro &&
@@ -349,7 +352,6 @@ export const MainContent = () => {
         });
       }
     }
-    // Don't include showIntro or saveSearchParams in dependencies to prevent re-triggering when dismissing
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookId, isViewingTopic, introData, hasViewedIntro, isIntroLoading]);
 
@@ -743,6 +745,12 @@ export const MainContent = () => {
 
   const handleMobileAccordionTriggerClick = useCallback(
     (bookName: string) => {
+      // Clear any pending scroll animation
+      if (scrollAnimationTimeoutRef.current) {
+        clearTimeout(scrollAnimationTimeoutRef.current);
+        scrollAnimationTimeoutRef.current = null;
+      }
+
       // Skip scrolling if tour is active
       if (document.body.classList.contains("tour-active")) return;
 
@@ -879,11 +887,12 @@ export const MainContent = () => {
         }
       };
 
-      setTimeout(() => {
+      scrollAnimationTimeoutRef.current = setTimeout(() => {
         if (mobileScrollContainerRef.current) {
           // Check if component is still mounted before proceeding
           requestAnimationFrame(measureAndScroll);
         }
+        scrollAnimationTimeoutRef.current = null;
       }, 250);
     },
     [fixedItem],
@@ -955,6 +964,9 @@ export const MainContent = () => {
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
   const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
+  const scrollAnimationTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const [isNearNext, setIsNearNext] = useState(false);
   const [isNearPrev, setIsNearPrev] = useState(false);
@@ -1120,6 +1132,9 @@ export const MainContent = () => {
     return () => {
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
+      }
+      if (scrollAnimationTimeoutRef.current) {
+        clearTimeout(scrollAnimationTimeoutRef.current);
       }
     };
   }, []);

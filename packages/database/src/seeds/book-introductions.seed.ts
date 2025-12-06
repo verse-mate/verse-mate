@@ -14,7 +14,9 @@ export async function seedBookIntroductions(
       .insertInto("book_introductions")
       .values(intro as any)
       .onConflict((oc: any) =>
-        oc.columns(["book_id", "language_code", "version"]).doNothing(),
+        oc
+          .columns(["book_id", "language_code", "version"])
+          .doUpdateSet(intro as any),
       )
       .execute();
 

@@ -176,6 +176,20 @@ const plugin = new Elysia()
           const { bookId } = params;
           const { languageCode = "en" } = query;
 
+          // Validate bookId range (Bible has 66 books)
+          if (bookId < 1 || bookId > 66) {
+            throw new ValidationError(
+              "Invalid book ID. Must be between 1 and 66.",
+            );
+          }
+
+          // Validate language code format (2-letter ISO code)
+          if (languageCode && !/^[a-z]{2}(-[A-Z]{2})?$/.test(languageCode)) {
+            throw new ValidationError(
+              "Invalid language code format. Expected format: 'en' or 'en-US'.",
+            );
+          }
+
           const introduction = await bibleService.getBookIntroduction(
             bookId,
             languageCode,
@@ -212,6 +226,14 @@ const plugin = new Elysia()
           }
 
           const { bookId } = params;
+
+          // Validate bookId range (Bible has 66 books)
+          if (bookId < 1 || bookId > 66) {
+            throw new ValidationError(
+              "Invalid book ID. Must be between 1 and 66.",
+            );
+          }
+
           await bibleService.markIntroductionAsViewed(currentUserId, bookId);
 
           return { success: true };
