@@ -18,7 +18,14 @@ function getViewedIntrosFromStorage(): number[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : [];
-  } catch {
+  } catch (error) {
+    console.error("Failed to read viewed intros from localStorage:", error);
+    // Clear corrupted data
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore cleanup errors
+    }
     return [];
   }
 }
@@ -35,7 +42,13 @@ function markIntroAsViewedInStorage(bookId: number): void {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(viewed));
     }
   } catch (error) {
-    console.error("Error saving to localStorage:", error);
+    console.error("Failed to save viewed intro to localStorage:", error);
+    // Check if it's a quota exceeded error
+    if (error instanceof DOMException && error.name === "QuotaExceededError") {
+      console.warn(
+        "localStorage quota exceeded. Viewed intros will not persist.",
+      );
+    }
   }
 }
 
