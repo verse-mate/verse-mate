@@ -21,6 +21,10 @@ export async function getChapterId(
   }
 
   try {
+    console.log(
+      `Fetching chapter_id for book ${bookId}, chapter ${chapterNumber}`,
+    );
+
     // Call the new API endpoint
     const response = await (api.bible as any)["chapter-id"][bookId][
       chapterNumber
@@ -32,6 +36,9 @@ export async function getChapterId(
 
     if (response.data && response.data.chapter_id !== null) {
       const chapterId = response.data.chapter_id;
+      console.log(
+        `Got chapter_id ${chapterId} for book ${bookId}, chapter ${chapterNumber}`,
+      );
 
       // Cache the result
       chapterIdCache.set(cacheKey, chapterId);
