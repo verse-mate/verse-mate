@@ -6,6 +6,7 @@ import {
   biblePlugin,
   topicPlugin,
   userPlugin,
+  healthCheckPlugin,
 } from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
@@ -18,6 +19,7 @@ const app = new Elysia()
   .use(biblePlugin)
   .use(topicPlugin)
   .use(adminPlugin)
+  .use(healthCheckPlugin)
   .use(cors())
   .use(
     openapi({

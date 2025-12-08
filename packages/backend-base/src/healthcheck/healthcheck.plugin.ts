@@ -16,6 +16,10 @@ const plugin = new Elysia()
   }))
   .group("/health", (app) =>
     app
+      .get("", async ({ set }) => {
+        set.status = 200;
+        return { status: "ok" };
+      })
       .get(
         "/database",
         async ({ store: { HealthCheckService } }) => {
@@ -41,7 +45,7 @@ const plugin = new Elysia()
         },
       )
       .get(
-        "",
+        "all",
         async ({ set, store: { HealthCheckService } }) => {
           const healthcheck = await HealthCheckService.checkAll();
           set.status = healthcheck.status === "ok" ? 200 : 500;
