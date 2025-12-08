@@ -1,0 +1,89 @@
+.container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--fantasy);
+  border-top: 1px solid var(--geyser);
+  z-index: 200;
+}
+
+.continueButton {
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--snow);
+  background-color: var(--night);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+}
+
+.continueButton:hover {
+  background-color: var(--charcoal-grey);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgb(0 0 0 / 15%);
+}
+
+.continueButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 15%);
+}
+
+.continueButton:focus-visible {
+  outline: 2px solid var(--night);
+  outline-offset: 2px;
+}
+
+/* Tablet portrait */
+@media screen and (min-width: 834px) and (max-width: 1024px) and (orientation: portrait) {
+  .container {
+    padding: 16px 80px;
+  }
+
+  .continueButton {
+    max-width: 400px;
+  }
+}
+
+/* Tablet landscape */
+@media screen and (min-width: 834px) and (max-width: 1024px) and (orientation: landscape) {
+  .container {
+    padding: 16px 80px;
+  }
+
+  .continueButton {
+    max-width: 400px;
+  }
+}
+
+/* Desktop */
+@media screen and (min-width: 1025px) {
+  .container {
+    position: sticky;
+    bottom: -2.5%;
+    padding: 0;
+    padding-right: 48px;
+    background-color: transparent;
+    border-top: none;
+    justify-content: flex-end;
+    z-index: 100;
+    margin-top: auto;
+  }
+
+  .continueButton {
+    padding: 16px 40px;
+    font-size: 17px;
+    min-width: 240px;
+    width: auto;
+    max-width: none;
+  }
+}

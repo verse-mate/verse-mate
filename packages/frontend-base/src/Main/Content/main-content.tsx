@@ -18,6 +18,7 @@ import {
   fetchBookVerse,
   fetchExplanation,
 } from "../../hooks/useBible";
+import { useBookIntroduction } from "../../hooks/useBookIntroduction";
 import { useChapter } from "../../hooks/useChapter";
 import { useConversationManager } from "../../hooks/useConversationManager";
 import { useHandleTab } from "../../hooks/useHandleTab";
@@ -38,6 +39,7 @@ import { userSession } from "../../hooks/userSession";
 import { ModalContainer } from "../../modal/ModalContainer";
 import { updateSelectedBook } from "../../store/book-selection";
 import { Accordion } from "../../ui/Accordion";
+import { BookIntroduction } from "../../ui/BookIntroduction";
 import { Chat } from "../../ui/Chat";
 import { Explanation } from "../../ui/Explanation";
 import { ProfileButton } from "../../ui/Header/UserProfile/user-profile";
@@ -74,6 +76,7 @@ export const MainContent = () => {
     bibleVersion,
     conversationId,
     isViewingTopic,
+    showIntro,
   } = useGetSearchParams();
 
   // Check if we're viewing a topic (special testament value)
@@ -303,6 +306,54 @@ export const MainContent = () => {
     verseId,
     explanation?.explanation_id,
   );
+
+  // Book introduction - fetch from API
+  const {
+    introduction: introData,
+    hasViewed: hasViewedIntro,
+    markAsViewed,
+    isLoading: isIntroLoading,
+  } = useBookIntroduction(
+    !isViewingTopic && typeof bookId === "number" ? bookId : null,
+    "en",
+  );
+
+  // Track dismissed intros for this session to prevent re-triggering
+  const dismissedIntrosRef = useRef<Set<number>>(new Set());
+
+  // Check if we should show intro when book changes
+  // Dependencies intentionally limited to prevent infinite loops:
+  // - showIntro: Excluded because we check it in the condition to prevent re-triggering when dismissing
+  // - saveSearchParams: Stable function from custom hook, doesn't need to be a dependency
+  // This effect should ONLY run when: book changes OR intro data loads OR viewed status changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Prevents infinite loop when dismissing intro
+  useEffect(() => {
+    // Only check for intros on Bible books (not topics)
+    if (
+      !isViewingTopic &&
+      bookId &&
+      typeof bookId === "number" &&
+      !isIntroLoading
+    ) {
+      // Show intro if:
+      // 1. Introduction exists for this book
+      // 2. User hasn't viewed it yet
+      // 3. We're not already showing the intro (prevents re-triggering after dismiss)
+      // 4. We haven't dismissed it in this session (prevents showing again in same session)
+      if (
+        introData &&
+        !hasViewedIntro &&
+        !showIntro &&
+        !dismissedIntrosRef.current.has(bookId)
+      ) {
+        // Just set showIntro to true, preserve all other URL params
+        saveSearchParams({
+          showIntro: true,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookId, isViewingTopic, introData, hasViewedIntro, isIntroLoading]);
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -694,6 +745,12 @@ export const MainContent = () => {
 
   const handleMobileAccordionTriggerClick = useCallback(
     (bookName: string) => {
+      // Clear any pending scroll animation
+      if (scrollAnimationTimeoutRef.current) {
+        clearTimeout(scrollAnimationTimeoutRef.current);
+        scrollAnimationTimeoutRef.current = null;
+      }
+
       // Skip scrolling if tour is active
       if (document.body.classList.contains("tour-active")) return;
 
@@ -830,11 +887,12 @@ export const MainContent = () => {
         }
       };
 
-      setTimeout(() => {
+      scrollAnimationTimeoutRef.current = setTimeout(() => {
         if (mobileScrollContainerRef.current) {
           // Check if component is still mounted before proceeding
           requestAnimationFrame(measureAndScroll);
         }
+        scrollAnimationTimeoutRef.current = null;
       }, 250);
     },
     [fixedItem],
@@ -906,6 +964,9 @@ export const MainContent = () => {
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextChapterButtonRef = useRef<HTMLButtonElement>(null);
   const prevChapterButtonRef = useRef<HTMLButtonElement>(null);
+  const scrollAnimationTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const [isNearNext, setIsNearNext] = useState(false);
   const [isNearPrev, setIsNearPrev] = useState(false);
@@ -1071,6 +1132,9 @@ export const MainContent = () => {
     return () => {
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
+      }
+      if (scrollAnimationTimeoutRef.current) {
+        clearTimeout(scrollAnimationTimeoutRef.current);
       }
     };
   }, []);
@@ -1843,6 +1907,40 @@ export const MainContent = () => {
                     buttonsVisible={buttonsVisible}
                     scrollableCallbackRef={scrollableCallbackRef}
                   />
+                ) : showIntro && typeof bookId === "number" && introData ? (
+                  // Show book introduction
+                  (() => {
+                    // Read verseId directly from URL to avoid React state timing issues
+                    const urlParams = new URLSearchParams(
+                      window.location.search,
+                    );
+                    const currentVerseId = urlParams.get("verseId") || "1";
+
+                    const handleContinue = () => {
+                      // Mark as dismissed in this session to prevent re-triggering
+                      dismissedIntrosRef.current.add(bookId);
+
+                      // Mark as viewed (updates localStorage immediately to prevent race condition)
+                      markAsViewed(bookId, !!session);
+
+                      // Hide intro (preserves current verseId from URL)
+                      saveSearchParams({ showIntro: false });
+                    };
+
+                    const targetChapter = Number(currentVerseId);
+
+                    return (
+                      <BookIntroduction.Root>
+                        <BookIntroduction.Content
+                          content={introData.full_intro_text}
+                        />
+                        <BookIntroduction.Actions
+                          onContinue={handleContinue}
+                          chapterNumber={targetChapter}
+                        />
+                      </BookIntroduction.Root>
+                    );
+                  })()
                 ) : (
                   // Show normal Bible content
                   <>

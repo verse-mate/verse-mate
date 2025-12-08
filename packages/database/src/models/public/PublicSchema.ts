@@ -5,6 +5,7 @@ import type { default as AutoHighlightSettingsTable } from "./AutoHighlightSetti
 import type { default as AutoHighlightsTable } from "./AutoHighlights";
 import type { default as BatchJobsTable } from "./BatchJobs";
 import type { default as BibleVersionsTable } from "./BibleVersions";
+import type { default as BookIntroductionsTable } from "./BookIntroductions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
 import type { default as ConversationsTable } from "./Conversations";
@@ -31,6 +32,7 @@ import type { default as UserPromptTemplatesTable } from "./UserPromptTemplates"
 import type { default as UserRecentlyViewedBooksTable } from "./UserRecentlyViewedBooks";
 import type { default as UserSsoAccountsTable } from "./UserSsoAccounts";
 import type { default as UserThemePreferencesTable } from "./UserThemePreferences";
+import type { default as UserViewedBookIntroductionsTable } from "./UserViewedBookIntroductions";
 import type { default as VerseHighlightsTable } from "./VerseHighlights";
 import type { default as VersesTable } from "./Verses";
 
@@ -96,6 +98,10 @@ export default interface PublicSchema {
   user_theme_preferences: UserThemePreferencesTable;
 
   auto_highlight_settings: AutoHighlightSettingsTable;
+
+  book_introductions: BookIntroductionsTable;
+
+  user_viewed_book_introductions: UserViewedBookIntroductionsTable;
 
   user_sso_accounts: UserSsoAccountsTable;
 }

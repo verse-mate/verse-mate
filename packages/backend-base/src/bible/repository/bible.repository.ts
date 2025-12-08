@@ -1422,4 +1422,73 @@ export class BibleRepository {
       throw error;
     }
   }
+
+  async getBookIntroduction(book_id: number, languageCode = "en") {
+    try {
+      const connection = this.db.getOrCreateConnection();
+
+      const result = await connection
+        .selectFrom("book_introductions")
+        .selectAll()
+        .where("book_id", "=", book_id)
+        .where("language_code", "=", languageCode)
+        .where("is_active", "=", true)
+        .orderBy("version", "desc")
+        .executeTakeFirst();
+
+      return result || null;
+    } catch (error) {
+      console.error("ERROR in BibleRepository.getBookIntroduction:", error);
+      throw error;
+    }
+  }
+
+  async getUserViewedIntroduction(userId: string, bookId: number) {
+    try {
+      const connection = this.db.getOrCreateConnection();
+
+      const result = await connection
+        .selectFrom("user_viewed_book_introductions")
+        .selectAll()
+        .where("user_id", "=", userId)
+        .where("book_id", "=", bookId)
+        .executeTakeFirst();
+
+      return result || null;
+    } catch (error) {
+      console.error(
+        "ERROR in BibleRepository.getUserViewedIntroduction:",
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async markIntroductionAsViewed(userId: string, bookId: number) {
+    try {
+      const connection = this.db.getOrCreateConnection();
+
+      await connection
+        .insertInto("user_viewed_book_introductions")
+        .values({
+          user_id: userId,
+          book_id: bookId,
+          viewed_at: new Date().toISOString(),
+        })
+        .onConflict((oc) =>
+          oc.columns(["user_id", "book_id"]).doUpdateSet({
+            viewed_at: new Date().toISOString(),
+          }),
+        )
+        .execute();
+
+      return { success: true };
+    } catch (error) {
+      console.error(
+        "ERROR in BibleRepository.markIntroductionAsViewed:",
+        error,
+      );
+      throw error;
+    }
+  }
 }
