@@ -6,8 +6,16 @@ import Backend, { type HealthCheckPlugin } from "./healthcheck.plugin";
 describe("Healthcheck", () => {
   const client = getTestClient<HealthCheckPlugin>(Backend);
 
-  it("GET /health - overall health status check", async () => {
+  it("GET /health - simple health check", async () => {
     const { data, error } = await client.health.get();
+
+    expect(error).toBeFalsy();
+    expect(data).toBeTruthy();
+    expect(data?.status).toBe("ok");
+  });
+
+  it("GET /health/all - overall health status check", async () => {
+    const { data, error } = await client.health.all.get();
 
     expect(error).toBeFalsy();
     expect(data).toBeTruthy();
