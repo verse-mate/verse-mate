@@ -47,7 +47,6 @@ describe("PostHog Frontend Integration", () => {
       // When: PostHog is initialized with valid config
       const config = {
         api_host: posthogHost,
-        opt_out_capturing_by_default: true,
         capture_pageview: true,
         capture_pageleave: true,
         disable_session_recording: true,
@@ -66,7 +65,6 @@ describe("PostHog Frontend Integration", () => {
         posthogKey,
         expect.objectContaining({
           api_host: posthogHost,
-          opt_out_capturing_by_default: true,
           capture_pageview: true,
         }),
       );

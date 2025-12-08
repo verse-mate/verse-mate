@@ -1,5 +1,6 @@
 "use client";
 
+import { $env } from "frontend-envs";
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { type ReactNode, useEffect, useRef } from "react";
@@ -15,9 +16,8 @@ interface PostHogProviderProps {
  * - Automatic page view tracking
  * - Web vitals tracking
  * - Session replay (configurable via environment variable)
- * - GDPR-compliant opt-out by default
  *
- * PostHog is only initialized when NEXT_PUBLIC_POSTHOG_KEY is set.
+ * PostHog is only initialized when posthogKey is set in the env store.
  */
 export function PostHogProvider({ children }: PostHogProviderProps) {
   const initialized = useRef(false);
@@ -28,11 +28,7 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
       return;
     }
 
-    const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    const posthogHost =
-      process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com";
-    const sessionReplayEnabled =
-      process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY === "true";
+    const { posthogKey, posthogHost, posthogSessionReplay } = $env.get();
 
     // Do not initialize if API key is not set
     if (!posthogKey) {
@@ -42,14 +38,12 @@ export function PostHogProvider({ children }: PostHogProviderProps) {
 
     posthog.init(posthogKey, {
       api_host: posthogHost,
-      // GDPR compliance: opt out by default, user must consent
-      opt_out_capturing_by_default: true,
       // Automatic page view tracking
       capture_pageview: true,
       // Automatic page leave tracking for accurate session duration
       capture_pageleave: true,
       // Session replay configuration
-      disable_session_recording: !sessionReplayEnabled,
+      disable_session_recording: !posthogSessionReplay,
       // Persist user identity across sessions
       persistence: "localStorage+cookie",
       // Only load PostHog after page load for better performance

@@ -28,7 +28,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
   );
 }
 
-export async function down(db: Kysely<Database>): Promise<void> {
+export async function down(_db: Kysely<Database>): Promise<void> {
   console.log(
     "WARNING: Cannot remove values from PostgreSQL enum types directly.",
   );

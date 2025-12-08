@@ -15,6 +15,9 @@ export default function RootLayout({
     askVerseMate: process.env.NEXT_PUBLIC_ASK_VERSE_MATE === "true",
     ssoGoogleEnabled: process.env.NEXT_PUBLIC_SSO_GOOGLE_ENABLED === "true",
     ssoAppleEnabled: process.env.NEXT_PUBLIC_SSO_APPLE_ENABLED === "true",
+    posthogKey: process.env.POSTHOG_KEY ?? "",
+    posthogHost: process.env.POSTHOG_HOST ?? "https://app.posthog.com",
+    posthogSessionReplay: process.env.POSTHOG_SESSION_REPLAY === "true",
   };
   $env.set(envValues);
 

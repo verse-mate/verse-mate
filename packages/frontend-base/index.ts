@@ -25,8 +25,7 @@ export { Container } from "./src/ui/Container/Container";
 export {
   CookieConsent,
   CONSENT_STORAGE_KEY,
-  CONSENT_ACCEPTED,
-  CONSENT_DECLINED,
+  CONSENT_ACKNOWLEDGED,
   type CookieConsentProps,
 } from "./src/ui/CookieConsent";
 export * from "./src/ui/Dialog";

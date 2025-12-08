@@ -1,6 +1,5 @@
 "use client";
 
-import posthog from "posthog-js";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "../Button/Button";
 import styles from "./CookieConsent.module.css";
@@ -8,9 +7,8 @@ import styles from "./CookieConsent.module.css";
 /**
  * Cookie consent storage key for localStorage
  */
-export const CONSENT_STORAGE_KEY = "posthog-consent";
-export const CONSENT_ACCEPTED = "accepted";
-export const CONSENT_DECLINED = "declined";
+export const CONSENT_STORAGE_KEY = "cookie-consent";
+export const CONSENT_ACKNOWLEDGED = "acknowledged";
 
 export interface CookieConsentProps {
   /**
@@ -23,11 +21,10 @@ export interface CookieConsentProps {
 /**
  * Cookie Consent Banner Component
  *
- * Displays a consent banner for analytics tracking (PostHog).
- * - Shows only on first visit (when no consent state exists in localStorage)
- * - Accept button calls posthog.opt_in_capturing() and enables tracking
- * - Decline button calls posthog.opt_out_capturing() and disables tracking
- * - Consent choice is persisted in localStorage
+ * Displays an informational banner about cookie usage.
+ * - Shows only on first visit (when no acknowledgment exists in localStorage)
+ * - OK button dismisses the banner
+ * - Acknowledgment is persisted in localStorage
  *
  * @example
  * <CookieConsent privacyPolicyUrl="/privacy-policy" />
@@ -35,6 +32,10 @@ export interface CookieConsentProps {
 export function CookieConsent({
   privacyPolicyUrl = "/privacy",
 }: CookieConsentProps) {
+  // TODO: Enable cookie consent banner once privacy policy is ready
+  return null;
+
+  // biome-ignore lint/correctness/noUnreachable: <explanation>
   const [showBanner, setShowBanner] = useState(false);
 
   // Check localStorage on mount to determine if banner should show
@@ -46,29 +47,15 @@ export function CookieConsent({
 
     const storedConsent = localStorage.getItem(CONSENT_STORAGE_KEY);
 
-    // Show banner only on first visit (when no consent state exists)
+    // Show banner only on first visit (when no acknowledgment exists)
     if (storedConsent === null) {
       setShowBanner(true);
     }
   }, []);
 
-  const handleAccept = useCallback(() => {
-    // Enable PostHog tracking
-    posthog.opt_in_capturing();
-
-    // Persist choice in localStorage
-    localStorage.setItem(CONSENT_STORAGE_KEY, CONSENT_ACCEPTED);
-
-    // Hide banner
-    setShowBanner(false);
-  }, []);
-
-  const handleDecline = useCallback(() => {
-    // Disable PostHog tracking
-    posthog.opt_out_capturing();
-
-    // Persist choice in localStorage
-    localStorage.setItem(CONSENT_STORAGE_KEY, CONSENT_DECLINED);
+  const handleDismiss = useCallback(() => {
+    // Persist acknowledgment in localStorage
+    localStorage.setItem(CONSENT_STORAGE_KEY, CONSENT_ACKNOWLEDGED);
 
     // Hide banner
     setShowBanner(false);
@@ -95,20 +82,12 @@ export function CookieConsent({
         </p>
         <div className={styles.actions}>
           <Button
-            onClick={handleDecline}
-            variant="outlined"
-            color="var(--gray)"
-            format="soft"
-          >
-            Decline
-          </Button>
-          <Button
-            onClick={handleAccept}
+            onClick={handleDismiss}
             variant="contained"
             color="var(--dust)"
             format="soft"
           >
-            Accept
+            OK
           </Button>
         </div>
       </div>
