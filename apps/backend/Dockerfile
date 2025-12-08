@@ -27,5 +27,4 @@ EXPOSE 3000
 HEALTHCHECK CMD wget --spider -q http://localhost:3000/health || exit 1
 
 CMD bun run ./dist/migrator.js migrate-deploy && \
-    bun run ./dist/seeder.js && \
     bun --bun run ./dist/index.js

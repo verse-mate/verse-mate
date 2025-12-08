@@ -5,6 +5,9 @@ export const $env = map({
   askVerseMate: false,
   ssoGoogleEnabled: false,
   ssoAppleEnabled: false,
+  posthogKey: "",
+  posthogHost: "https://app.posthog.com",
+  posthogSessionReplay: false,
 });
 
 export type Env = StoreValue<typeof $env>;

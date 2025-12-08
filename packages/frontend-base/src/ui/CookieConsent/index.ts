@@ -1,7 +1,6 @@
 export {
   CookieConsent,
   CONSENT_STORAGE_KEY,
-  CONSENT_ACCEPTED,
-  CONSENT_DECLINED,
+  CONSENT_ACKNOWLEDGED,
   type CookieConsentProps,
 } from "./CookieConsent";
