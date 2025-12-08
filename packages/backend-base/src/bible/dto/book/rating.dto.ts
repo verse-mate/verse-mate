@@ -9,7 +9,7 @@ export const RatingDto = t.Intersect([
     user: t.Pick(UserDto, ["id"]),
     rating: t.Number({ minimum: 1 }),
   }),
-  t.Intersect([t.Pick(ExplanationDto, ["explanation_id"])]),
+  t.Pick(ExplanationDto, ["explanation_id"]),
 ]);
 
 export type RatingDto = Static<typeof RatingDto>;

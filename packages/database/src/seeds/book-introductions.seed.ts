@@ -1,22 +1,18 @@
 import type { Kysely } from "kysely";
 import type Database from "../models/Database";
+import introsData from "./data/book-intros.json";
 
 export async function seedBookIntroductions(
   db: Omit<Kysely<Database>, "destroy">,
 ) {
-  const introsData = require("./data/book-intros.json");
-
   console.log("Seeding book introductions...");
 
   for (const [bookId, intro] of Object.entries(introsData)) {
-    // book_introductions table type may not be generated yet, using any cast
-    await (db as any)
+    await db
       .insertInto("book_introductions")
-      .values(intro as any)
-      .onConflict((oc: any) =>
-        oc
-          .columns(["book_id", "language_code", "version"])
-          .doUpdateSet(intro as any),
+      .values(intro)
+      .onConflict((oc) =>
+        oc.columns(["book_id", "language_code", "version"]).doUpdateSet(intro),
       )
       .execute();
 
