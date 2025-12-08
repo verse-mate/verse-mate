@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { SwipeableHandlers } from "react-swipeable";
 import { DesktopTopicView } from "../../../Main/Content/DesktopTopicView";
+import { useBookIntroduction } from "../../../hooks/useBookIntroduction";
+import {
+  useGetSearchParams,
+  useSaveSearchParams,
+} from "../../../hooks/useSearchParams";
+import { userSession } from "../../../hooks/userSession";
+import { BookIntroduction } from "../../../ui/BookIntroduction";
 import * as Icon from "../../../ui/Icons";
 import { MainText } from "../../MainText";
 import { ProgressBar } from "../../ProgressBar";
@@ -64,6 +71,15 @@ export const Content = ({
   const [isNearNext, setIsNearNext] = useState(false);
   const [isNearPrev, setIsNearPrev] = useState(false);
 
+  // Book introduction tracking
+  const { showIntro } = useGetSearchParams();
+  const { saveSearchParams } = useSaveSearchParams();
+  const { session } = userSession();
+  const { introduction: introData, markAsViewed } = useBookIntroduction(
+    !isViewingTopic && typeof bookId === "number" ? bookId : null,
+    "en",
+  );
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (window.innerWidth < 1024) return;
@@ -106,6 +122,26 @@ export const Content = ({
         buttonsVisible={buttonsVisible}
         scrollableCallbackRef={scrollableCallbackRef}
       />
+    );
+  }
+
+  // Check if we should show intro
+  if (showIntro && bookVerseData && introData) {
+    const handleContinue = () => {
+      markAsViewed(bookId, !!session);
+      saveSearchParams({ showIntro: false });
+    };
+
+    return (
+      <div className={`${styles.bookContent}`} ref={scrollableCallbackRef}>
+        <BookIntroduction.Root>
+          <BookIntroduction.Content content={introData.full_intro_text} />
+          <BookIntroduction.Actions
+            onContinue={handleContinue}
+            chapterNumber={verseId}
+          />
+        </BookIntroduction.Root>
+      </div>
     );
   }
 

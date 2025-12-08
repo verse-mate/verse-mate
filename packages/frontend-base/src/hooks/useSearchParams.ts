@@ -13,6 +13,7 @@ export const useSaveSearchParams = () => {
     explanationId,
     explanationType,
     bibleVersion,
+    showIntro,
   }: {
     bookId?: string;
     verseId?: string;
@@ -21,6 +22,7 @@ export const useSaveSearchParams = () => {
     explanationId?: string;
     explanationType?: ExplanationTypeEnum;
     bibleVersion?: string;
+    showIntro?: boolean;
   }) => {
     const searchParams = new URLSearchParams(window.location.search);
 
@@ -31,6 +33,15 @@ export const useSaveSearchParams = () => {
     if (explanationId) searchParams.set("explanationId", explanationId);
     if (explanationType) searchParams.set("explanationType", explanationType);
     if (bibleVersion) searchParams.set("bibleVersion", bibleVersion);
+
+    // Handle showIntro parameter
+    if (showIntro !== undefined) {
+      if (showIntro) {
+        searchParams.set("showIntro", "true");
+      } else {
+        searchParams.delete("showIntro");
+      }
+    }
 
     const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
 
@@ -71,6 +82,7 @@ export const useGetSearchParams = () => {
   const explanationType =
     (searchParams?.get("explanationType") as ExplanationTypeEnum) ||
     ExplanationTypeEnum.summary;
+  const showIntro = searchParams?.get("showIntro") === "true";
 
   return {
     bookId,
@@ -81,6 +93,7 @@ export const useGetSearchParams = () => {
     explanationId,
     explanationType,
     isViewingTopic,
+    showIntro,
     // chapters is intentionally omitted here
   };
 };

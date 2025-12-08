@@ -1,0 +1,25 @@
+.container {
+  width: 100%;
+  height: 100%;
+  background-color: var(--fantasy);
+  color: var(--night);
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  padding-bottom: 80px;
+  overflow: hidden auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Desktop - add position relative for absolute button positioning */
+@media screen and (min-width: 1025px) {
+  .container {
+    position: static;
+    padding-bottom: 48px;
+  }
+}

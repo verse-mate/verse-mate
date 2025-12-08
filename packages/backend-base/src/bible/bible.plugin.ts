@@ -79,6 +79,16 @@ async function gpt5Text({
   return response.output_text ?? "oopsies";
 }
 
+/**
+ * Validates that a bookId is within the valid range (1-66) for Bible books
+ * @throws {ValidationError} if bookId is out of range
+ */
+function validateBookId(bookId: number): void {
+  if (bookId < 1 || bookId > 66) {
+    throw new ValidationError("Invalid book ID. Must be between 1 and 66.");
+  }
+}
+
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("bible plugin"))
@@ -170,6 +180,80 @@ const plugin = new Elysia()
         },
       )
       .resolve({ as: "scoped" }, authDerive)
+      .get(
+        "/book/:bookId/introduction",
+        async ({ params, query, store: { bibleService }, currentUserId }) => {
+          const { bookId } = params;
+          const { languageCode = "en" } = query;
+
+          validateBookId(bookId);
+
+          // Validate language code format (2-letter ISO code)
+          if (languageCode && !/^[a-z]{2}(-[A-Z]{2})?$/.test(languageCode)) {
+            throw new ValidationError(
+              "Invalid language code format. Expected format: 'en' or 'en-US'.",
+            );
+          }
+
+          const introduction = await bibleService.getBookIntroduction(
+            bookId,
+            languageCode,
+          );
+
+          let hasViewed = false;
+          if (currentUserId && introduction) {
+            const viewedRecord = await bibleService.getUserViewedIntroduction(
+              currentUserId,
+              bookId,
+            );
+            hasViewed = !!viewedRecord;
+          }
+
+          return { introduction, hasViewed };
+        },
+        {
+          params: t.Object({
+            bookId: t.Numeric(),
+          }),
+          query: t.Object({
+            languageCode: t.Optional(t.String()),
+          }),
+          response: {
+            200: t.Object({
+              introduction: t.Any(),
+              hasViewed: t.Boolean(),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/book/:bookId/introduction/mark-viewed",
+        async ({ params, store: { bibleService }, currentUserId }) => {
+          if (!currentUserId) {
+            throw new UnauthorizedError(
+              "Must be logged in to mark introduction as viewed",
+            );
+          }
+
+          const { bookId } = params;
+
+          validateBookId(bookId);
+
+          await bibleService.markIntroductionAsViewed(currentUserId, bookId);
+
+          return { success: true };
+        },
+        {
+          params: t.Object({
+            bookId: t.Numeric(),
+          }),
+          response: {
+            200: t.Object({ success: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/book/explanation/:bookId/:chapterNumber",
         async ({

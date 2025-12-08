@@ -324,3 +324,28 @@ export const HighlightUpdateSchema = t.Object({
 export const HighlightDeleteSchema = t.Object({
   success: t.Boolean(),
 });
+
+// Book introduction schemas
+export const BookIntroductionSchema = t.Object({
+  introduction: t.Union([
+    t.Object({
+      introduction_id: t.String(),
+      book_id: t.Number(),
+      author: t.String(),
+      date_written: t.String(),
+      biblical_role: t.String(),
+      key_themes: t.Array(t.String()),
+      related_books: t.String(),
+      literary_style: t.String(),
+      full_intro_text: t.String(),
+      language_code: t.String(),
+      version: t.Number(),
+      is_active: t.Boolean(),
+      created_by_admin: t.Boolean(),
+      created_at: t.String(),
+      updated_at: t.String(),
+    }),
+    t.Null(),
+  ]),
+  hasViewed: t.Optional(t.Boolean()),
+});

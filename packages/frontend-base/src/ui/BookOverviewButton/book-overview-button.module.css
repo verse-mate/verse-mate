@@ -1,0 +1,28 @@
+.button {
+  background: transparent;
+  border: none;
+  cursor: pointer !important;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--night-light);
+  transition: color 0.2s ease, transform 0.2s ease;
+  border-radius: 4px;
+}
+
+.button:hover {
+  color: var(--night);
+  cursor: pointer !important;
+}
+
+.button:active {
+  transform: scale(0.95);
+  cursor: pointer !important;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  fill: currentcolor;
+}
