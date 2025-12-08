@@ -173,6 +173,19 @@ const plugin = new Elysia()
           ),
       ),
   )
+  // Public endpoint - anyone can read the default auto-highlights enabled setting
+  .get(
+    "/admin/auto-highlight-settings/default-enabled",
+    async ({ store: { getAutoHighlightService } }) => {
+      const service = getAutoHighlightService();
+      const enabled = await service.getDefaultAutoHighlightsEnabled();
+
+      return {
+        success: true,
+        data: { default_enabled: enabled },
+      };
+    },
+  )
   .guard(authGuard, (app) => {
     return app
       .resolve({ as: "scoped" }, authDerive)
@@ -1405,22 +1418,6 @@ const plugin = new Elysia()
                 body: t.Object({
                   default_relevance: t.Number(),
                 }),
-              },
-            )
-            .get(
-              "/auto-highlight-settings/default-enabled",
-              async ({ currentUserId, store: { getAutoHighlightService } }) => {
-                if (!currentUserId) {
-                  throw new UnauthorizedError("Authentication required");
-                }
-
-                const service = getAutoHighlightService();
-                const enabled = await service.getDefaultAutoHighlightsEnabled();
-
-                return {
-                  success: true,
-                  data: { default_enabled: enabled },
-                };
               },
             )
             .patch(

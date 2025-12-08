@@ -1,15 +1,16 @@
 import { type Static, t } from "elysia";
-import { UserDto } from "../user/user.dto";
-import { ChapterDto } from "./chapter.dto";
-import { ExplanationDto } from "./explanation.dto";
 
-export const RatingDto = t.Intersect([
-  t.Pick(ChapterDto, ["book_id", "chapter_number"]),
-  t.Object({
-    user: t.Pick(UserDto, ["id"]),
-    rating: t.Number({ minimum: 1 }),
+export const RatingDto = t.Object({
+  book_id: t.Number(),
+  chapter_number: t.Number(),
+  user: t.Object({
+    id: t.String({
+      format: "uuid",
+      error: "Invalid user id",
+    }),
   }),
-  t.Pick(ExplanationDto, ["explanation_id"]),
-]);
+  rating: t.Number({ minimum: 1 }),
+  explanation_id: t.Number(),
+});
 
 export type RatingDto = Static<typeof RatingDto>;
