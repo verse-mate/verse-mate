@@ -6,6 +6,22 @@ on:
     tags: [ 'v*.*.*' ] # version tags, eg. v1.2.3 or  v1.3.0-rc1
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'How to bump the version?'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - manual
+      manual_version:
+        description: 'Manual version (required if bump_type is manual)'
+        required: false
+        type: string
 
 env:
   CLOUDFLARE_ENV: |-
@@ -17,6 +33,85 @@ env:
     }}
 
 jobs:
+  tag-version:
+    name: Tag Version
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate and Push Tag
+        run: |
+          REF="${{ github.ref }}"
+          EVENT="${{ github.event_name }}"
+          
+          echo "Triggered by $EVENT on $REF"
+          
+          BUMP_TYPE="none"
+          
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            BUMP_TYPE="${{ inputs.bump_type }}"
+          elif [ "$EVENT" = "push" ]; then
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            echo "Commit message: $COMMIT_MSG"
+            
+            if [[ "$COMMIT_MSG" == *"[major]"* ]]; then
+              BUMP_TYPE="major"
+            elif [[ "$COMMIT_MSG" == *"[minor]"* ]]; then
+              BUMP_TYPE="minor"
+            elif [[ "$COMMIT_MSG" == *"[patch]"* ]]; then
+              BUMP_TYPE="patch"
+            fi
+          fi
+          
+          echo "Bump Type: $BUMP_TYPE"
+          
+          if [ "$BUMP_TYPE" != "none" ]; then
+            # Configure git
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            echo "Latest tag: $LATEST_TAG"
+            
+            VERSION=""
+            if [ "$BUMP_TYPE" = "manual" ]; then
+              VERSION="${{ inputs.manual_version }}"
+            else
+              CLEAN_TAG=${LATEST_TAG#v}
+              IFS='.' read -r major minor patch <<< "$CLEAN_TAG"
+              major=${major:-0}
+              minor=${minor:-0}
+              patch=${patch:-0}
+              
+              if [ "$BUMP_TYPE" = "major" ]; then
+                major=$((major + 1))
+                minor=0
+                patch=0
+              elif [ "$BUMP_TYPE" = "minor" ]; then
+                minor=$((minor + 1))
+                patch=0
+              else
+                patch=$((patch + 1))
+              fi
+              VERSION="$major.$minor.$patch"
+            fi
+            
+            NEW_TAG="v$VERSION"
+            echo "Calculated new tag: $NEW_TAG"
+            
+            # Create and push tag
+            git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+            git push origin "$NEW_TAG"
+          else
+            echo "No version bump detected."
+          fi
+
   build-backend:
     name: Build Backend
     runs-on: ubuntu-latest
