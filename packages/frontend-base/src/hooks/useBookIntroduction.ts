@@ -94,7 +94,7 @@ export function useBookIntroduction(
 
   // Combined hasViewed: check both backend response and localStorage
   const hasViewed =
-    data?.hasViewed || (bookId ? localStorageViewed.includes(bookId) : false);
+    data?.hasViewed ?? (bookId ? localStorageViewed.includes(bookId) : false);
 
   // Mark as viewed function that works for both logged-in and non-logged-in users
   const markAsViewed = (bookId: number, isLoggedIn: boolean) => {

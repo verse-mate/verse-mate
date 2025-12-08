@@ -1425,13 +1425,9 @@ export class BibleRepository {
 
   async getBookIntroduction(book_id: number, languageCode = "en") {
     try {
-      console.log("=== BibleRepository.getBookIntroduction ===", {
-        book_id,
-        languageCode,
-      });
       const connection = this.db.getOrCreateConnection();
 
-      const result = await (connection as any)
+      const result = await connection
         .selectFrom("book_introductions")
         .selectAll()
         .where("book_id", "=", book_id)
@@ -1440,11 +1436,6 @@ export class BibleRepository {
         .orderBy("version", "desc")
         .executeTakeFirst();
 
-      console.log(
-        "Introduction result:",
-        result ? "Found" : "Not found",
-        result ? JSON.stringify(result).substring(0, 100) : "",
-      );
       return result || null;
     } catch (error) {
       console.error("ERROR in BibleRepository.getBookIntroduction:", error);
@@ -1456,7 +1447,7 @@ export class BibleRepository {
     try {
       const connection = this.db.getOrCreateConnection();
 
-      const result = await (connection as any)
+      const result = await connection
         .selectFrom("user_viewed_book_introductions")
         .selectAll()
         .where("user_id", "=", userId)
@@ -1477,14 +1468,14 @@ export class BibleRepository {
     try {
       const connection = this.db.getOrCreateConnection();
 
-      await (connection as any)
+      await connection
         .insertInto("user_viewed_book_introductions")
         .values({
           user_id: userId,
           book_id: bookId,
           viewed_at: new Date().toISOString(),
         })
-        .onConflict((oc: any) =>
+        .onConflict((oc) =>
           oc.columns(["user_id", "book_id"]).doUpdateSet({
             viewed_at: new Date().toISOString(),
           }),

@@ -79,6 +79,16 @@ async function gpt5Text({
   return response.output_text ?? "oopsies";
 }
 
+/**
+ * Validates that a bookId is within the valid range (1-66) for Bible books
+ * @throws {ValidationError} if bookId is out of range
+ */
+function validateBookId(bookId: number): void {
+  if (bookId < 1 || bookId > 66) {
+    throw new ValidationError("Invalid book ID. Must be between 1 and 66.");
+  }
+}
+
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("bible plugin"))
@@ -169,19 +179,14 @@ const plugin = new Elysia()
           },
         },
       )
-      .derive(authDerive)
+      .resolve({ as: "scoped" }, authDerive)
       .get(
         "/book/:bookId/introduction",
         async ({ params, query, store: { bibleService }, currentUserId }) => {
           const { bookId } = params;
           const { languageCode = "en" } = query;
 
-          // Validate bookId range (Bible has 66 books)
-          if (bookId < 1 || bookId > 66) {
-            throw new ValidationError(
-              "Invalid book ID. Must be between 1 and 66.",
-            );
-          }
+          validateBookId(bookId);
 
           // Validate language code format (2-letter ISO code)
           if (languageCode && !/^[a-z]{2}(-[A-Z]{2})?$/.test(languageCode)) {
@@ -213,9 +218,15 @@ const plugin = new Elysia()
           query: t.Object({
             languageCode: t.Optional(t.String()),
           }),
+          response: {
+            200: t.Object({
+              introduction: t.Any(),
+              hasViewed: t.Boolean(),
+            }),
+            ...StandardErrorResponses,
+          },
         },
       )
-      .resolve({ as: "scoped" }, authDerive)
       .post(
         "/book/:bookId/introduction/mark-viewed",
         async ({ params, store: { bibleService }, currentUserId }) => {
@@ -227,12 +238,7 @@ const plugin = new Elysia()
 
           const { bookId } = params;
 
-          // Validate bookId range (Bible has 66 books)
-          if (bookId < 1 || bookId > 66) {
-            throw new ValidationError(
-              "Invalid book ID. Must be between 1 and 66.",
-            );
-          }
+          validateBookId(bookId);
 
           await bibleService.markIntroductionAsViewed(currentUserId, bookId);
 
