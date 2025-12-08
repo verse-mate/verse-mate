@@ -1,7 +1,7 @@
 FROM oven/bun:1.2.23
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wget postgresql-client vim && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl postgresql-client vim && rm -rf /var/lib/apt/lists/*
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 bunjs
@@ -24,7 +24,7 @@ RUN bun install kysely@0.27.4
 
 EXPOSE 3000
 
-HEALTHCHECK CMD wget --spider -q http://localhost:3000/health || exit 1
+HEALTHCHECK CMD curl -sf http://localhost:3000/health || exit 1
 
 CMD bun run ./dist/migrator.js migrate-deploy && \
     bun --bun run ./dist/index.js
