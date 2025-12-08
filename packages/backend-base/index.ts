@@ -6,6 +6,8 @@ import biblePlugin from "./src/bible/bible.plugin";
 import type { BiblePlugin } from "./src/bible/bible.plugin";
 import userPlugin from "./src/user/user.plugin";
 import type { UserPlugin } from "./src/user/user.plugin";
+import healthCheckPlugin from "./src/healthcheck/healthcheck.plugin";
+import type { HealthCheckPlugin } from "./src/healthcheck/healthcheck.plugin";
 
 import topicPlugin from "./src/topics/topic.plugin";
 import type { TopicPlugin } from "./src/topics/topic.plugin";
@@ -31,4 +33,6 @@ export {
   adminPlugin,
   type TopicPlugin,
   topicPlugin,
+  type HealthCheckPlugin,
+  healthCheckPlugin,
 };
