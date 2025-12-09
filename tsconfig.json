@@ -29,7 +29,8 @@
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "@verse-mate/*": ["./packages/*"]
+      "@verse-mate/*": ["./packages/*"],
+      "@/*": ["./apps/frontend-next/src/*"]
     }
   },
   "exclude": ["./apps/website/*", "playwright.config.ts", "VerseMate"]

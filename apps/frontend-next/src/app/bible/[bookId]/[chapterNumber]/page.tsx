@@ -1,4 +1,4 @@
-import { getBookSlug, parseBookParam } from "frontend-base";
+import { getBookSlug, parseBookParam } from "@/lib/bookSlugs";
 import { notFound, redirect } from "next/navigation";
 import { AutoOpenHandler } from "./components/AutoOpenHandler";
 
@@ -46,31 +46,51 @@ export default async function DeepLinkPage({
     }
   }
 
-  // If query params are missing, redirect to initialize them
-  if (!urlSearchParams.bookId || !urlSearchParams.verseId) {
-    const testament = bookId <= 39 ? "OT" : "NT";
-    const query = new URLSearchParams(
-      urlSearchParams as Record<string, string>,
-    );
-    query.set("bookId", bookId.toString());
-    query.set("verseId", chapterNumber.toString());
-    query.set("testament", testament);
-    if (!query.has("bibleVersion")) {
-      query.set("bibleVersion", "NASB1995");
+  // Don't need query params anymore - we read from path
+  // Migrate old param names to new single-letter params, remove defaults
+  const query = new URLSearchParams(urlSearchParams as Record<string, string>);
+  let needsRedirect = false;
+
+  // Migrate old version params to 'v', remove if default
+  if (query.has("bibleVersion") || query.has("version")) {
+    const version = query.get("bibleVersion") || query.get("version");
+    query.delete("bibleVersion");
+    query.delete("version");
+    if (version && version !== "NASB1995") {
+      query.set("v", version);
     }
-    redirect(`/bible/${bookIdParam}/${chapterNumber}?${query.toString()}`);
+    needsRedirect = true;
+  }
+
+  // Migrate old type params to 't', remove if default
+  if (query.has("explanationType") || query.has("type")) {
+    const type = query.get("explanationType") || query.get("type");
+    query.delete("explanationType");
+    query.delete("type");
+    if (type && type !== "summary") {
+      query.set("t", type);
+    }
+    needsRedirect = true;
+  }
+
+  if (needsRedirect) {
+    const queryString = query.toString();
+    redirect(
+      `/bible/${bookIdParam}/${chapterNumber}${queryString ? `?${queryString}` : ""}`,
+    );
   }
 
   // If query params exist, this is the main reader page
-  // Import MainContent dynamically to avoid SSR issues
-  const { MainPage } = await import("frontend-base");
+  const { MainContentWrapper } = await import(
+    "./components/MainContentWrapper"
+  );
 
   return (
     <>
       {/* Auto-open handler runs in background on mobile */}
       <AutoOpenHandler bookId={bookId} chapterNumber={chapterNumber} />
       {/* Main Bible reader */}
-      <MainPage.MainContent />
+      <MainContentWrapper />
     </>
   );
 }

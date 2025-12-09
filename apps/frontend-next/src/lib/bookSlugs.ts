@@ -1,7 +1,6 @@
 /**
- * Book slug mapping for SEO-friendly URLs
- * Maps bookId (1-66) to URL-friendly slugs
- * Format: lowercase with hyphens (e.g., "genesis", "1-chronicles", "song-of-solomon")
+ * Book slug utilities for server-side use
+ * These are duplicated here to avoid the "use client" boundary issue
  */
 
 export const BOOK_SLUGS: Record<number, string> = {
@@ -75,8 +74,7 @@ export const BOOK_SLUGS: Record<number, string> = {
   66: "revelation",
 };
 
-// Reverse mapping: slug -> bookId
-export const SLUG_TO_BOOK_ID: Record<string, number> = Object.entries(
+const SLUG_TO_BOOK_ID: Record<string, number> = Object.entries(
   BOOK_SLUGS,
 ).reduce(
   (acc, [id, slug]) => {
@@ -86,45 +84,18 @@ export const SLUG_TO_BOOK_ID: Record<string, number> = Object.entries(
   {} as Record<string, number>,
 );
 
-/**
- * Get the URL slug for a book ID
- * @param bookId - Book ID (1-66)
- * @returns URL slug or null if invalid
- */
 export function getBookSlug(bookId: number): string | null {
   return BOOK_SLUGS[bookId] ?? null;
 }
 
-/**
- * Get the book ID from a URL slug
- * @param slug - URL slug (e.g., "genesis", "1-corinthians")
- * @returns Book ID (1-66) or null if invalid
- */
 export function getBookIdFromSlug(slug: string): number | null {
   return SLUG_TO_BOOK_ID[slug.toLowerCase()] ?? null;
 }
 
-/**
- * Check if a string is a valid book slug
- * @param slug - String to check
- * @returns true if valid book slug
- */
-export function isValidBookSlug(slug: string): boolean {
-  return slug.toLowerCase() in SLUG_TO_BOOK_ID;
-}
-
-/**
- * Parse bookId from URL parameter (accepts both numeric IDs and slugs)
- * @param param - URL parameter (either "1", "43", "genesis", "john", etc.)
- * @returns Book ID (1-66) or null if invalid
- */
 export function parseBookParam(param: string): number | null {
-  // Try parsing as number first
   const numericId = Number.parseInt(param, 10);
   if (!Number.isNaN(numericId) && numericId >= 1 && numericId <= 66) {
     return numericId;
   }
-
-  // Try parsing as slug
   return getBookIdFromSlug(param);
 }

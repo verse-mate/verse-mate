@@ -1,4 +1,4 @@
-import { BOOK_SLUGS } from "frontend-base";
+import { BOOK_SLUGS } from "@/lib/bookSlugs";
 import { type NextRequest, NextResponse } from "next/server";
 import { ACCESS_TOKEN_COOKIE } from "./lib/utils";
 
@@ -43,20 +43,13 @@ export function middleware(request: NextRequest) {
           newUrl.pathname = `/bible/${bookSlug}/${chapterNumber}`;
 
           // Preserve other query params (explanationType, bibleVersion, etc.)
+          // But NOT bookId, verseId, testament - they're in the path now
           const newSearchParams = new URLSearchParams();
           searchParams.forEach((value, key) => {
             if (key !== "bookId" && key !== "verseId" && key !== "testament") {
               newSearchParams.set(key, value);
             }
           });
-
-          // Add required params
-          newSearchParams.set("bookId", bookIdStr);
-          newSearchParams.set("verseId", verseIdStr);
-          newSearchParams.set(
-            "testament",
-            testament || (bookId <= 39 ? "OT" : "NT"),
-          );
 
           newUrl.search = newSearchParams.toString();
 

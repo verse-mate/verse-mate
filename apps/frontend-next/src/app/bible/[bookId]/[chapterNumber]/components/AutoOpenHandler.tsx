@@ -12,13 +12,15 @@ export function AutoOpenHandler({
   bookId,
   chapterNumber,
 }: AutoOpenHandlerProps) {
+  const [isMobile, setIsMobile] = useState(false);
   const [attempted, setAttempted] = useState(false);
 
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
-    const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
+    const mobile = /iphone|ipad|ipod|android/.test(userAgent);
+    setIsMobile(mobile);
 
-    if (!isMobile) return; // Desktop users stay on page
+    if (!mobile) return; // Desktop users stay on page
 
     // Wait 2.5 seconds before attempting app open
     const timer = setTimeout(() => {
@@ -35,6 +37,9 @@ export function AutoOpenHandler({
 
     return () => clearTimeout(timer);
   }, [bookId, chapterNumber]);
+
+  // Don't render anything on desktop
+  if (!isMobile) return null;
 
   return (
     <div className="auto-open-status">
