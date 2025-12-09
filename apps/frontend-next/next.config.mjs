@@ -72,17 +72,23 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/.well-known/apple-app-site-association',
+        source: "/.well-known/apple-app-site-association",
         headers: [
-          { key: 'Content-Type', value: 'application/json' },
-          { key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' },
+          { key: "Content-Type", value: "application/json" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
         ],
       },
       {
-        source: '/.well-known/assetlinks.json',
+        source: "/.well-known/assetlinks.json",
         headers: [
-          { key: 'Content-Type', value: 'application/json' },
-          { key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' },
+          { key: "Content-Type", value: "application/json" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
         ],
       },
     ];
