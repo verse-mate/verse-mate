@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { getBookSlug } from "frontend-base";
 import { useEffect, useState } from "react";
 
 interface AutoOpenHandlerProps {
@@ -12,7 +12,6 @@ export function AutoOpenHandler({
   bookId,
   chapterNumber,
 }: AutoOpenHandlerProps) {
-  const router = useRouter();
   const [attempted, setAttempted] = useState(false);
 
   useEffect(() => {
@@ -24,24 +23,18 @@ export function AutoOpenHandler({
     // Wait 2.5 seconds before attempting app open
     const timer = setTimeout(() => {
       setAttempted(true);
-      const appUrl = `https://app.versemate.org/bible/${bookId}/${chapterNumber}`;
+
+      // Get slug for app URL
+      const bookSlug = getBookSlug(bookId) || bookId.toString();
+      const appUrl = `https://app.versemate.org/bible/${bookSlug}/${chapterNumber}`;
 
       // Attempt to open app via Universal/App Link
+      // Note: If app doesn't open, user stays on this page (which is the full reader)
       window.location.href = appUrl;
-
-      // Fallback: redirect to web viewer after 3 seconds if still here
-      setTimeout(() => {
-        if (document.hasFocus()) {
-          const testament = bookId <= 39 ? "OT" : "NT";
-          router.push(
-            `/?bookId=${bookId}&verseId=${chapterNumber}&testament=${testament}`,
-          );
-        }
-      }, 3000);
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, [bookId, chapterNumber, router]);
+  }, [bookId, chapterNumber]);
 
   return (
     <div className="auto-open-status">
