@@ -8,11 +8,10 @@ interface ChapterPreviewProps {
 }
 
 export function ChapterPreview({
-  bookId,
   chapterNumber,
   bookName,
   text,
-}: ChapterPreviewProps) {
+}: Omit<ChapterPreviewProps, "bookId">) {
   return (
     <div className="chapter-preview-card">
       <h1 className="chapter-title">
