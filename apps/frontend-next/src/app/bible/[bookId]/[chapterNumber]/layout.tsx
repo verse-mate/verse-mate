@@ -1,4 +1,4 @@
-import { getBookSlug, parseBookParam } from "frontend-base";
+import { getBookSlug, parseBookParam } from "@/lib/bookSlugs";
 import type { Metadata } from "next";
 import { fetchChapterForPreview } from "./lib/fetchChapterData";
 

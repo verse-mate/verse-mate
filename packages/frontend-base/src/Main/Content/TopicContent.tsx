@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { getTopicsByCategory } from "../../api/topics";
-import {
-  useGetSearchParams,
-  useSaveSearchParams,
-} from "../../hooks/useSearchParams";
+import { useGetSearchParams } from "../../hooks/useSearchParams";
 import { useTopicsByCategory } from "../../hooks/useTopics";
 import { Accordion } from "../../ui/Accordion";
 import { mapCategoryToBackend } from "../../utils/topic-utils";
+import { buildTopicUrl } from "../../utils/topicSlugs";
 
 interface TopicContentProps {
   category: string;
@@ -80,18 +79,19 @@ export const TopicContent: React.FC<TopicContentProps> = ({
 
   const error = errorCurrent;
 
-  const { saveSearchParams } = useSaveSearchParams();
+  const router = useRouter();
 
   const handleTopicClick = (topic: any) => {
-    // Navigate to topic view using the new URL structure:
-    // - bookId = category (EVENTS, PROPHECIES, PARABLES)
-    // - verseId = sort_order (1, 2, 3...)
-    // - testament = TOPIC
-    saveSearchParams({
-      bookId: category, // Use the current category
-      verseId: String(topic.sort_order), // Use the topic's sort_order as verseId
-      testament: "TOPIC" as any, // Special value to indicate topic view
-    });
+    // Navigate to topic slug URL: /topic/events/the-resurrection
+    const topicUrl = buildTopicUrl(backendCategory, topic.name);
+
+    // Add bible version if not default
+    const url =
+      bibleVersion && bibleVersion !== "NASB1995"
+        ? `${topicUrl}?v=${bibleVersion}`
+        : topicUrl;
+
+    router.push(url);
 
     // Close the mobile dropdown
     const closeEvent = new CustomEvent("closeDropdownBook");

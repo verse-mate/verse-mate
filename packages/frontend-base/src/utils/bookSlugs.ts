@@ -121,7 +121,7 @@ export function isValidBookSlug(slug: string): boolean {
 export function parseBookParam(param: string): number | null {
   // Try parsing as number first
   const numericId = Number.parseInt(param, 10);
-  if (!isNaN(numericId) && numericId >= 1 && numericId <= 66) {
+  if (!Number.isNaN(numericId) && numericId >= 1 && numericId <= 66) {
     return numericId;
   }
 

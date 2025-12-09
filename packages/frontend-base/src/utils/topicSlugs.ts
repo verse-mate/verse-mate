@@ -7,9 +7,14 @@
 
 /**
  * Static category slug mappings
- * Frontend format (EVENTS) → URL slug (events)
+ * Backend format (EVENT, PROPHECY, etc.) → URL slug (events, prophecies, etc.)
  */
 export const TOPIC_CATEGORY_SLUGS: Record<string, string> = {
+  EVENT: "events",
+  PROPHECY: "prophecies",
+  PARABLE: "parables",
+  THEME: "themes",
+  // Legacy plural formats (for backward compatibility)
   EVENTS: "events",
   PROPHECIES: "prophecies",
   PARABLES: "parables",
