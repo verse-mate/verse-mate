@@ -81,14 +81,8 @@ export const useSaveSearchParams = () => {
       const targetPath = `/bible/${bookSlug}/${verseId}`;
       shouldUseRouter = currentPath !== targetPath;
     }
-    // For topics, navigate to root with query params (temporary until we implement /topic/[category]/[slug])
-    else if (testament === "TOPIC") {
-      searchParams.set("bookId", bookId || "");
-      searchParams.set("verseId", verseId || "");
-      searchParams.set("testament", testament);
-      newUrl = `/?${searchParams.toString()}`;
-      shouldUseRouter = true; // Force navigation to root route
-    }
+    // Topics should never use saveSearchParams - they navigate via router.push() with slug URLs
+    // This legacy code path is intentionally removed
     // For root route or other cases, keep current behavior
     else {
       if (bookId) searchParams.set("bookId", bookId);
@@ -167,29 +161,21 @@ export const useGetSearchParams = () => {
     }
     // Check if we're on a topic slug route: /topic/[category]/[slug]
     else if (pathname.match(/^\/topic\/[^/]+\/[^/]+/)) {
-      // For topics on slug routes, try to get data from TopicContext
-      // Context is provided by the topic page component
-      try {
-        // Check if we're in a topic context
-        if (typeof window !== "undefined" && (window as any).__TOPIC_DATA__) {
-          const topicData = (window as any).__TOPIC_DATA__;
-          testament = "TOPIC";
-          isViewingTopic = true;
-          bookId = topicData.category;
-          verseId = topicData.sortOrder;
-        } else {
-          // Fallback to query params if context not available
-          testament = "TOPIC";
-          isViewingTopic = true;
-          bookId = searchParams?.get("bookId") || "";
-          verseId = Number(searchParams?.get("verseId")) || 1;
-        }
-      } catch {
-        // Fallback if context access fails
+      // For topics on slug routes, get data from window.__TOPIC_DATA__
+      // This is set by TopicProvider in the topic page component
+      if ((window as any).__TOPIC_DATA__) {
+        const topicData = (window as any).__TOPIC_DATA__;
         testament = "TOPIC";
         isViewingTopic = true;
-        bookId = searchParams?.get("bookId") || "";
-        verseId = Number(searchParams?.get("verseId")) || 1;
+        bookId = topicData.category;
+        verseId = topicData.sortOrder;
+      } else {
+        // If no topic data available, use defaults
+        // (This shouldn't happen in normal flow, but prevents crashes)
+        testament = "TOPIC";
+        isViewingTopic = true;
+        bookId = "";
+        verseId = 1;
       }
     }
     // Otherwise, check query params (for root route)
