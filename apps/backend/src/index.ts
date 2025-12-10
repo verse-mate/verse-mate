@@ -4,9 +4,9 @@ import {
   adminPlugin,
   authPlugin,
   biblePlugin,
+  healthCheckPlugin,
   topicPlugin,
   userPlugin,
-  healthCheckPlugin,
 } from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
