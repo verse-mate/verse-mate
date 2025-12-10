@@ -131,7 +131,7 @@ export class BatchOperationService {
     // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `topic_discovery_${discoveryTopicType}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -246,7 +246,10 @@ export class BatchOperationService {
 
     // Create a proper File object for OpenAI API
     const file = await openai.files.create({
-      file: new File([buffer], `topic_references_${Date.now()}.jsonl`),
+      file: new File(
+        [new Uint8Array(buffer)],
+        `topic_references_${Date.now()}.jsonl`,
+      ),
       purpose: "batch",
     });
 
@@ -508,7 +511,7 @@ export class BatchOperationService {
     // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `topic_explanations_${topic.topic_id}_${languageCode}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -625,7 +628,7 @@ export class BatchOperationService {
     // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `batch_${bookId}_${bibleVersion}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -1085,7 +1088,7 @@ export class BatchOperationService {
     // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `rephrase_batch_${book.book_id}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -1329,7 +1332,7 @@ export class BatchOperationService {
     // Create a proper File object for OpenAI API
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `translate_batch_${book.book_id}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -4177,7 +4180,7 @@ export class BatchOperationService {
     // Create OpenAI file
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `translate_topic_names_${target_language_code}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -4387,7 +4390,7 @@ export class BatchOperationService {
 
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `translate_topic_explanations_${target_language_code}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
@@ -4801,7 +4804,7 @@ export class BatchOperationService {
 
     const file = await openai.files.create({
       file: new File(
-        [buffer],
+        [new Uint8Array(buffer)],
         `auto_highlight_${book.book_id}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
