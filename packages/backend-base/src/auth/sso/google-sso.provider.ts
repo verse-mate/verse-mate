@@ -352,13 +352,8 @@ export class GoogleSSOProvider implements SSOProvider {
       );
 
       const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-      const signatureBytes = Buffer.from(parts[2], "base64url");
       // Convert to Uint8Array for WebCrypto compatibility
-      const signature = new Uint8Array(
-        signatureBytes.buffer,
-        signatureBytes.byteOffset,
-        signatureBytes.byteLength,
-      );
+      const signature = Uint8Array.from(Buffer.from(parts[2], "base64url"));
 
       const valid = await crypto.subtle.verify(
         "RSASSA-PKCS1-v1_5",
