@@ -18,7 +18,9 @@ describe("Topic Slug Utils", () => {
     });
 
     it("collapses multiple spaces and hyphens", () => {
-      expect(generateTopicSlug("The   Good   Samaritan")).toBe("the-good-samaritan");
+      expect(generateTopicSlug("The   Good   Samaritan")).toBe(
+        "the-good-samaritan",
+      );
       expect(generateTopicSlug("Faith--Works")).toBe("faith-works");
     });
 
@@ -56,17 +58,23 @@ describe("Topic Slug Utils", () => {
   describe("generateUniqueSlug", () => {
     it("returns base slug if not in existing slugs", () => {
       const existing = ["other-topic"];
-      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe("my-topic");
+      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe(
+        "my-topic",
+      );
     });
 
     it("appends -2 if slug exists", () => {
       const existing = ["my-topic"];
-      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe("my-topic-2");
+      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe(
+        "my-topic-2",
+      );
     });
 
     it("increments suffix if -2 also exists", () => {
       const existing = ["my-topic", "my-topic-2"];
-      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe("my-topic-3");
+      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe(
+        "my-topic-3",
+      );
     });
 
     it("handles non-consecutive suffixes correctly", () => {
@@ -74,7 +82,9 @@ describe("Topic Slug Utils", () => {
       // Should fill the gap or just find next available?
       // Logic: start at 2, increment until not found.
       // So it should find my-topic-2 is available.
-      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe("my-topic-2");
+      expect(generateUniqueSlug("my-topic", "EVENT", existing)).toBe(
+        "my-topic-2",
+      );
     });
   });
 });

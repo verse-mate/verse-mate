@@ -82,7 +82,7 @@ export function getCategorySlug(category: string): string | null {
  */
 export function generateUniqueSlug(
   baseSlug: string,
-  category: string,
+  _category: string,
   existingSlugs: string[],
 ): string {
   const slugSet = new Set(existingSlugs);

@@ -49,13 +49,13 @@ export async function up(db: Kysely<Database>): Promise<void> {
     // Generate unique slug within category
     let slug = baseSlug;
     let counter = 2;
-    while (slugsPerCategory.get(category)!.has(slug)) {
+    while (slugsPerCategory.get(category)?.has(slug)) {
       slug = `${baseSlug}-${counter}`;
       counter++;
     }
 
     // Track this slug
-    slugsPerCategory.get(category)!.add(slug);
+    slugsPerCategory.get(category)?.add(slug);
 
     // Update topic with generated slug
     await db
