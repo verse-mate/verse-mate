@@ -1,4 +1,5 @@
 import { db } from "database";
+import { generateTopicSlug } from "../topics/utils/slug.utils";
 import type { Books } from "database/src/models/public/Books";
 import type { Chapters } from "database/src/models/public/Chapters";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
@@ -386,10 +387,11 @@ async function seedTopics() {
 
   // Insert topics
   for (const topic of topics) {
+    const slug = generateTopicSlug(topic.name);
     await db
       .getOrCreateConnection()
       .insertInto("topics")
-      .values(topic)
+      .values({ ...topic, slug })
       .execute();
   }
 
