@@ -3,12 +3,12 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.org.versemate.mobile",
-        "paths": ["/bible/*"]
+        "appID": "8F77Q5NNB7.org.versemate.mobile",
+        "paths": ["/bible/*", "/topic/*/*"]
       }
     ]
   },
   "webcredentials": {
-    "apps": ["TEAM_ID.org.versemate.mobile"]
+    "apps": ["8F77Q5NNB7.org.versemate.mobile"]
   }
 }
