@@ -2956,17 +2956,18 @@ export class BatchOperationService {
 
           if (Array.isArray(topics)) {
             for (const topic of topics) {
-                        await this.db
-                          .getOrCreateConnection()
-                          .insertInto("topics")
-                          .values({
-                            name: topic.name,
-                            description: topic.description,
-                            category: topic.category,
-                            // Generate slug since it's now a required field and not explicitly passed
-                            slug: generateTopicSlug(topic.name),
-                          })
-                          .execute();              processedCount++;
+              await this.db
+                .getOrCreateConnection()
+                .insertInto("topics")
+                .values({
+                  name: topic.name,
+                  description: topic.description,
+                  category: topic.category,
+                  // Generate slug since it's now a required field and not explicitly passed
+                  slug: generateTopicSlug(topic.name),
+                })
+                .execute();
+              processedCount++;
             }
           }
         } catch (error) {
