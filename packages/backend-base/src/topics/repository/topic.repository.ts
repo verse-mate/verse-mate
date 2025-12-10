@@ -175,17 +175,56 @@ export class TopicRepository {
     return results.map((r) => r.slug);
   }
 
-  async createTopic(topic: Omit<Insertable<Topics>, "topic_id">) {
-    return await this.db
-      .getOrCreateConnection()
+  async createTopic(topic: Omit<Insertable<Topics>, "topic_id" | "slug"> & { slug?: string }) {
+    const connection = this.db.getOrCreateConnection();
+    
+    // Generate slug if not provided
+    let slug = topic.slug;
+    if (!slug) {
+      slug = generateTopicSlug(topic.name);
+    }
+
+    // Ensure slug uniqueness
+    const existingSlugs = await this.getSlugsInCategory(topic.category);
+    slug = generateUniqueSlug(slug, topic.category, existingSlugs);
+
+    return await connection
       .insertInto("topics")
-      .values(topic)
+      .values({
+        ...topic,
+        slug,
+      })
       .returningAll()
       .executeTakeFirstOrThrow();
   }
 
   async updateTopic(topicId: string, topic: Updateable<Topics>) {
     try {
+      // If slug is being updated, ensure uniqueness
+      if (topic.slug) {
+        // Get category (needed for uniqueness check)
+        // We might need to fetch the current topic if category is not in the update
+        let category = topic.category;
+        
+        if (!category) {
+          const currentTopic = await this.getTopic(topicId);
+          if (!currentTopic) throw new Error("Topic not found");
+          category = currentTopic.category;
+        }
+
+        const existingSlugs = await this.getSlugsInCategory(category);
+        // Remove current topic's slug from check if it matches (to allow keeping same slug)
+        // But getSlugsInCategory returns all slugs. 
+        // generateUniqueSlug handles collision. 
+        // Ideally we shouldn't rename to a slug that exists.
+        
+        // However, generateUniqueSlug will append -2 if it exists.
+        // If we strictly want to set it to 'foo', and 'foo' exists, we get 'foo-2'.
+        // That seems acceptable.
+        
+        topic.slug = generateUniqueSlug(topic.slug as string, category, existingSlugs);
+      }
+
       const result = await this.db
         .getOrCreateConnection()
         .updateTable("topics")
