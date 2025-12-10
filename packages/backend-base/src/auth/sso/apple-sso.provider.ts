@@ -251,13 +251,8 @@ export class AppleSSOProvider implements SSOProvider {
     );
 
     const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-    const signatureBytes = Buffer.from(parts[2], "base64url");
     // Convert to Uint8Array for WebCrypto compatibility
-    const signature = new Uint8Array(
-      signatureBytes.buffer,
-      signatureBytes.byteOffset,
-      signatureBytes.byteLength,
-    );
+    const signature = Uint8Array.from(Buffer.from(parts[2], "base64url"));
 
     const valid = await crypto.subtle.verify(
       "RSASSA-PKCS1-v1_5",
@@ -374,7 +369,7 @@ export class AppleSSOProvider implements SSOProvider {
     // Use ieee-p1363 encoding to get raw R||S format directly (avoids manual DER conversion)
     const signature = sign.sign({ key: privateKey, dsaEncoding: "ieee-p1363" });
 
-    const signatureBase64 = Buffer.from(signature).toString("base64url");
+    const signatureBase64 = signature.toString("base64url");
     return `${unsignedToken}.${signatureBase64}`;
   }
 
