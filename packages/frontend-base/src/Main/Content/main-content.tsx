@@ -308,12 +308,7 @@ export const MainContent = () => {
   );
 
   // Book introduction - fetch from API
-  const {
-    introduction: introData,
-    hasViewed: hasViewedIntro,
-    markAsViewed,
-    isLoading: isIntroLoading,
-  } = useBookIntroduction(
+  const { introduction: introData, markAsViewed } = useBookIntroduction(
     !isViewingTopic && typeof bookId === "number" ? bookId : null,
     "en",
   );
@@ -321,39 +316,35 @@ export const MainContent = () => {
   // Track dismissed intros for this session to prevent re-triggering
   const dismissedIntrosRef = useRef<Set<number>>(new Set());
 
-  // Check if we should show intro when book changes
-  // Dependencies intentionally limited to prevent infinite loops:
-  // - showIntro: Excluded because we check it in the condition to prevent re-triggering when dismissing
-  // - saveSearchParams: Stable function from custom hook, doesn't need to be a dependency
-  // This effect should ONLY run when: book changes OR intro data loads OR viewed status changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Prevents infinite loop when dismissing intro
-  useEffect(() => {
-    // Only check for intros on Bible books (not topics)
-    if (
-      !isViewingTopic &&
-      bookId &&
-      typeof bookId === "number" &&
-      !isIntroLoading
-    ) {
-      // Show intro if:
-      // 1. Introduction exists for this book
-      // 2. User hasn't viewed it yet
-      // 3. We're not already showing the intro (prevents re-triggering after dismiss)
-      // 4. We haven't dismissed it in this session (prevents showing again in same session)
-      if (
-        introData &&
-        !hasViewedIntro &&
-        !showIntro &&
-        !dismissedIntrosRef.current.has(bookId)
-      ) {
-        // Just set showIntro to true, preserve all other URL params
-        saveSearchParams({
-          showIntro: true,
-        });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, isViewingTopic, introData, hasViewedIntro, isIntroLoading]);
+  // DISABLED: Auto-trigger intro popup was too intrusive
+  // Intros now only show when user clicks the "Book Overview" button
+  // useEffect(() => {
+  //   // Only check for intros on Bible books (not topics)
+  //   if (
+  //     !isViewingTopic &&
+  //     bookId &&
+  //     typeof bookId === "number" &&
+  //     !isIntroLoading
+  //   ) {
+  //     // Show intro if:
+  //     // 1. Introduction exists for this book
+  //     // 2. User hasn't viewed it yet
+  //     // 3. We're not already showing the intro (prevents re-triggering after dismiss)
+  //     // 4. We haven't dismissed it in this session (prevents showing again in same session)
+  //     if (
+  //       introData &&
+  //       !hasViewedIntro &&
+  //       !showIntro &&
+  //       !dismissedIntrosRef.current.has(bookId)
+  //     ) {
+  //       // Just set showIntro to true, preserve all other URL params
+  //       saveSearchParams({
+  //         showIntro: true,
+  //       });
+  //     }
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [bookId, isViewingTopic, introData, hasViewedIntro, isIntroLoading]);
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -419,7 +410,10 @@ export const MainContent = () => {
       const chapterNumber = verseId;
 
       if (testamentLabel && bookName) {
-        setSelectedTab(testament);
+        // Only set tab if testament is a valid TestamentEnum value
+        if (testament === TestamentEnum.OT || testament === TestamentEnum.NT) {
+          setSelectedTab(testament);
+        }
         setSelectedTestamentLabel(testamentLabel);
         setSelectedBookName(bookName);
         setChapterSelected(String(chapterNumber));

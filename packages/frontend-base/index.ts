@@ -38,6 +38,8 @@ export { Text } from "./src/ui/Text/Text";
 export { Tooltip } from "./src/ui/Tooltip/Tooltip";
 export * from "./src/utils/auth-utils";
 export { safePromise } from "./src/utils/safe-promise";
+export * from "./src/utils/bookSlugs";
+export * from "./src/utils/topicSlugs";
 
 /**
  * VerseMate UI Components

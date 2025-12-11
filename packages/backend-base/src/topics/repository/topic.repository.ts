@@ -2,6 +2,7 @@ import type { Topics } from "database/src/models/public/Topics";
 import type { Insertable, Updateable } from "kysely";
 import { sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
+import { generateTopicSlug, generateUniqueSlug } from "../utils/slug.utils";
 
 export class TopicRepository {
   constructor(private readonly db: db) {}
@@ -107,17 +108,129 @@ export class TopicRepository {
     };
   }
 
-  async createTopic(topic: Omit<Insertable<Topics>, "topic_id">) {
-    return await this.db
+  /**
+   * Get topic by category and slug (for deep linking)
+   * @param category - Topic category (EVENT, PROPHECY, PARABLE, THEME)
+   * @param slug - URL-friendly slug
+   * @param languageCode - Language code for translations
+   * @returns Topic with translation if available, or null if not found
+   */
+  async getTopicBySlug(category: string, slug: string, languageCode = "en-US") {
+    const connection = this.db.getOrCreateConnection();
+
+    const topic = await connection
+      .selectFrom("topics")
+      .leftJoin("topic_translations", (join) =>
+        join
+          .onRef("topics.topic_id", "=", "topic_translations.topic_id")
+          .on("topic_translations.language_code", "=", sql.lit(languageCode))
+          .on("topic_translations.is_active", "=", true),
+      )
+      .where("topics.category", "=", category)
+      .where("topics.slug", "=", slug)
+      .where("topics.is_active", "=", true)
+      .select([
+        "topics.topic_id",
+        "topics.name as original_name",
+        "topics.description as original_description",
+        "topics.category",
+        "topics.slug",
+        "topics.sort_order",
+        "topics.is_active",
+        "topic_translations.translated_name",
+        "topic_translations.translated_description",
+      ])
+      .executeTakeFirst();
+
+    if (!topic) {
+      return null;
+    }
+
+    return {
+      topic_id: topic.topic_id,
+      name: topic.translated_name || topic.original_name,
+      description:
+        topic.translated_description || topic.original_description || null,
+      category: topic.category,
+      slug: topic.slug,
+      sort_order: topic.sort_order,
+      is_active: topic.is_active,
+      is_translated: !!topic.translated_name,
+    };
+  }
+
+  /**
+   * Get all slugs in a category (for uniqueness checking)
+   * @param category - Topic category
+   * @returns Array of slugs in the category
+   */
+  async getSlugsInCategory(category: string): Promise<string[]> {
+    const results = await this.db
       .getOrCreateConnection()
+      .selectFrom("topics")
+      .select("slug")
+      .where("category", "=", category)
+      .execute();
+
+    return results.map((r) => r.slug);
+  }
+
+  async createTopic(
+    topic: Omit<Insertable<Topics>, "topic_id" | "slug"> & { slug?: string },
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    // Generate slug if not provided
+    let slug = topic.slug;
+    if (!slug) {
+      slug = generateTopicSlug(topic.name);
+    }
+
+    // Ensure slug uniqueness
+    const existingSlugs = await this.getSlugsInCategory(topic.category);
+    slug = generateUniqueSlug(slug, topic.category, existingSlugs);
+
+    return await connection
       .insertInto("topics")
-      .values(topic)
+      .values({
+        ...topic,
+        slug,
+      })
       .returningAll()
       .executeTakeFirstOrThrow();
   }
 
   async updateTopic(topicId: string, topic: Updateable<Topics>) {
     try {
+      // If slug is being updated, ensure uniqueness
+      if (topic.slug) {
+        // Get category (needed for uniqueness check)
+        // We might need to fetch the current topic if category is not in the update
+        let category = topic.category;
+
+        if (!category) {
+          const currentTopic = await this.getTopic(topicId);
+          if (!currentTopic) throw new Error("Topic not found");
+          category = currentTopic.category;
+        }
+
+        const existingSlugs = await this.getSlugsInCategory(category);
+        // Remove current topic's slug from check if it matches (to allow keeping same slug)
+        // But getSlugsInCategory returns all slugs.
+        // generateUniqueSlug handles collision.
+        // Ideally we shouldn't rename to a slug that exists.
+
+        // However, generateUniqueSlug will append -2 if it exists.
+        // If we strictly want to set it to 'foo', and 'foo' exists, we get 'foo-2'.
+        // That seems acceptable.
+
+        topic.slug = generateUniqueSlug(
+          topic.slug as string,
+          category,
+          existingSlugs,
+        );
+      }
+
       const result = await this.db
         .getOrCreateConnection()
         .updateTable("topics")

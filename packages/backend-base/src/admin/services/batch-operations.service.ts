@@ -8,6 +8,7 @@ import { ValidationError } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
+import { generateTopicSlug } from "../../topics/utils/slug.utils";
 
 interface BatchJobRequest {
   custom_id: string;
@@ -2965,8 +2966,9 @@ export class BatchOperationService {
                   name: topic.name,
                   description: topic.description,
                   category: topic.category,
+                  // Generate slug since it's now a required field and not explicitly passed
+                  slug: generateTopicSlug(topic.name),
                 })
-                .onConflict((oc) => oc.column("topic_id").doNothing())
                 .execute();
               processedCount++;
             }
