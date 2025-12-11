@@ -26,13 +26,34 @@ export function AutoOpenHandler({
     const timer = setTimeout(() => {
       setAttempted(true);
 
-      // Get slug for app URL
       const bookSlug = getBookSlug(bookId) || bookId.toString();
-      const appUrl = `https://app.versemate.org/bible/${bookSlug}/${chapterNumber}`;
+      const path = `/bible/${bookSlug}/${chapterNumber}`;
 
-      // Attempt to open app via Universal/App Link
-      // Note: If app doesn't open, user stays on this page (which is the full reader)
-      window.location.href = appUrl;
+      const ua = navigator.userAgent.toLowerCase();
+      const isAndroid = /android/.test(ua);
+      const isIOS = /iphone|ipad|ipod/.test(ua);
+
+      try {
+        if (isAndroid) {
+          // Prefer intent for Android to avoid stuck states
+          const intentUrl = `intent://app.versemate.org${path}#Intent;scheme=https;package=org.versemate.mobile;end`;
+          window.location.href = intentUrl;
+        } else if (isIOS) {
+          // iOS: navigate to https link (Universal Link). If it fails, quickly return without leaving blank page.
+          const start = Date.now();
+          window.location.href = `https://app.versemate.org${path}`;
+          // Fallback: after 1s, if still here, do nothing (stay on web)
+          setTimeout(() => {
+            if (Date.now() - start < 1100) {
+              // still in browser; no-op to keep user on this page
+            }
+          }, 1000);
+        } else {
+          window.location.href = `https://app.versemate.org${path}`;
+        }
+      } catch {
+        // Swallow errors and keep user on web
+      }
     }, 2500);
 
     return () => clearTimeout(timer);
