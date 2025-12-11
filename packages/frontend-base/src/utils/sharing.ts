@@ -1,3 +1,5 @@
+import { getBookSlug } from "./bookSlugs";
+
 interface ShareablePassageParams {
   bookId?: string | null;
   verseId?: string | null;
@@ -84,7 +86,42 @@ export function generateShareableUrl(params: ShareablePassageParams): string {
   const baseUrl = getBaseUrl();
   const url = new URL(baseUrl);
 
-  // Add query parameters if they exist, with sanitization
+  const bookIdNum = params.bookId ? Number.parseInt(params.bookId, 10) : null;
+  // Use chapterNumber if available, otherwise verseId (legacy mapping)
+  const chapterNum = params.chapterNumber
+    ? params.chapterNumber
+    : params.verseId;
+
+  // Try to generate a modern slug-based URL
+  if (bookIdNum && chapterNum) {
+    const slug = getBookSlug(bookIdNum);
+    if (slug) {
+      url.pathname = `/bible/${slug}/${chapterNum}`;
+
+      // Add clean query params
+      if (params.explanationType && params.explanationType !== "summary") {
+        url.searchParams.set("t", sanitizeParam(params.explanationType));
+      }
+      if (params.bibleVersion && params.bibleVersion !== "NASB1995") {
+        url.searchParams.set("v", sanitizeParam(params.bibleVersion));
+      }
+
+      // Support verse ranges (e.g., verses=1-5 or verses=1)
+      if (params.startVerse !== null && params.startVerse !== undefined) {
+        const startVerse = sanitizeParam(String(params.startVerse));
+        if (params.endVerse && params.endVerse !== params.startVerse) {
+          const endVerse = sanitizeParam(String(params.endVerse));
+          url.searchParams.set("verses", `${startVerse}-${endVerse}`);
+        } else {
+          url.searchParams.set("verses", startVerse);
+        }
+      }
+
+      return url.toString();
+    }
+  }
+
+  // Fallback to legacy query parameters if slug generation fails
   if (params.bookId) {
     url.searchParams.set("bookId", sanitizeParam(params.bookId));
   }
