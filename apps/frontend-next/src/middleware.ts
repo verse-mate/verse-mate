@@ -47,7 +47,7 @@ export function middleware(request: NextRequest) {
           const newSearchParams = new URLSearchParams();
           searchParams.forEach((value, key) => {
             if (key !== "bookId" && key !== "verseId" && key !== "testament") {
-              newSearchParams.set(key, value);
+              newSearchParams.append(key, value);
             }
           });
 

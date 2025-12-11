@@ -151,64 +151,65 @@ const plugin = new Elysia()
           response: TopicSearchResponseSchema,
         },
       )
-      .get(
-        "/by-slug",
-        async ({ query, store: { topicService }, set }) => {
-          const { category, slug } = query;
-
-          if (!category || !slug) {
-            set.status = 400;
-            throw new Error("Both 'category' and 'slug' are required");
-          }
-
-          try {
-            const topic = await topicService.getTopicBySlug(
-              category,
-              slug,
-              "en-US", // TODO: Get from Accept-Language header or user preference
-            );
-
-            return {
-              topic_id: topic.topic_id,
-              name: topic.name,
-              description: topic.description,
-              category: topic.category,
-              slug: topic.slug,
-              sort_order: topic.sort_order,
-              is_translated: topic.is_translated,
-            };
-          } catch (error) {
-            if (error instanceof Error && error.message.includes("not found")) {
-              set.status = 404;
-              throw new Error("Topic not found");
-            }
-
-            if (
-              error instanceof Error &&
-              error.message.includes("Invalid category")
-            ) {
-              set.status = 400;
-              throw new Error("Invalid category slug");
-            }
-
-            throw error;
-          }
-        },
-        {
-          query: t.Object({
-            category: t.String(),
-            slug: t.String(),
-          }),
-          detail: {
-            tags: ["Topics"],
-            summary: "Get topic by category and slug",
-            description:
-              "Lookup topic using URL-friendly category and slug (for deep linking)",
-          },
-          response: TopicBySlugResponseSchema,
-        },
-      )
-      .get(
+              .get(
+                "/by-slug",
+                async ({ query, store: { topicService }, set }) => {
+                  const { category, slug } = query;
+      
+                  if (!category || !slug) {
+                    set.status = 400;
+                    return { error: "Both 'category' and 'slug' are required" };
+                  }
+      
+                  try {
+                    const topic = await topicService.getTopicBySlug(
+                      category,
+                      slug,
+                      "en-US", // TODO: Get from Accept-Language header or user preference
+                    );
+      
+                    return {
+                      topic_id: topic.topic_id,
+                      name: topic.name,
+                      description: topic.description,
+                      category: topic.category,
+                      slug: topic.slug,
+                      sort_order: topic.sort_order,
+                      is_translated: topic.is_translated,
+                    };
+                  } catch (error) {
+                    const message = error instanceof Error ? error.message : String(error);
+                    if (message.includes("not found")) {
+                      set.status = 404;
+                      return { error: "Topic not found" };
+                    }
+                    if (message.includes("Invalid category")) {
+                      set.status = 400;
+                      return { error: "Invalid category slug" };
+                    }
+                    set.status = 500;
+                    return { error: "Internal server error" };
+                  }
+                },
+                {
+                  query: t.Object({
+                    category: t.String(),
+                    slug: t.String(),
+                  }),
+                  detail: {
+                    tags: ["Topics"],
+                    summary: "Get topic by category and slug",
+                    description:
+                      "Lookup topic using URL-friendly category and slug (for deep linking)",
+                  },
+                  response: {
+                    200: TopicBySlugResponseSchema,
+                    400: t.Object({ error: t.String() }),
+                    404: t.Object({ error: t.String() }),
+                    500: t.Object({ error: t.String() }),
+                  },
+                },
+              )      .get(
         "/:id",
         async ({ params, query, store, currentUserId }) => {
           const { id } = params;
