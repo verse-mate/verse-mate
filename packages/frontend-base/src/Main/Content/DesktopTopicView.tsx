@@ -1,10 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getTopicDetails, getTopicReferences } from "../../api/topics";
-import {
-  useGetSearchParams,
-  useSaveSearchParams,
-} from "../../hooks/useSearchParams";
+import { useGetSearchParams } from "../../hooks/useSearchParams";
 import * as Icon from "../../ui/Icons";
 import contentStyles from "../../ui/LeftPanel/Content/content.module.css";
 import { MainText } from "../../ui/MainText";
@@ -14,6 +12,7 @@ import {
   getTopicBySortOrder,
   getTopicCount,
 } from "../../utils/topic-utils";
+import { buildTopicUrl } from "../../utils/topicSlugs";
 
 interface DesktopTopicViewProps {
   category: string;
@@ -29,7 +28,6 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   scrollableCallbackRef,
 }) => {
   const { bibleVersion } = useGetSearchParams();
-  const { saveSearchParams } = useSaveSearchParams();
   const queryClient = useQueryClient();
 
   const [topicId, setTopicId] = useState<string | null>(null);
@@ -140,27 +138,31 @@ export const DesktopTopicView: React.FC<DesktopTopicViewProps> = ({
   }, [category, sortOrder, topicId, bibleVersion, queryClient]);
 
   // Navigation handlers
+  const router = useRouter();
+
   const handleNextTopic = useCallback(async () => {
     const nextTopic = await getNextTopic(category, sortOrder, bibleVersion);
-    if (nextTopic?.sort_order) {
-      saveSearchParams({
-        bookId: category,
-        verseId: String(nextTopic.sort_order),
-        testament: "TOPIC" as any,
-      });
+    if (nextTopic?.name) {
+      const topicUrl = buildTopicUrl(category, nextTopic.name);
+      const url =
+        bibleVersion && bibleVersion !== "NASB1995"
+          ? `${topicUrl}?v=${bibleVersion}`
+          : topicUrl;
+      router.push(url);
     }
-  }, [category, sortOrder, bibleVersion, saveSearchParams]);
+  }, [category, sortOrder, bibleVersion, router]);
 
   const handlePreviousTopic = useCallback(async () => {
     const prevTopic = await getPreviousTopic(category, sortOrder, bibleVersion);
-    if (prevTopic?.sort_order) {
-      saveSearchParams({
-        bookId: category,
-        verseId: String(prevTopic.sort_order),
-        testament: "TOPIC" as any,
-      });
+    if (prevTopic?.name) {
+      const topicUrl = buildTopicUrl(category, prevTopic.name);
+      const url =
+        bibleVersion && bibleVersion !== "NASB1995"
+          ? `${topicUrl}?v=${bibleVersion}`
+          : topicUrl;
+      router.push(url);
     }
-  }, [category, sortOrder, bibleVersion, saveSearchParams]);
+  }, [category, sortOrder, bibleVersion, router]);
 
   // Proximity detection for buttons
   useEffect(() => {

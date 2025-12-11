@@ -1,11 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 import { getTopicDetails, getTopicReferences } from "../../api/topics";
-import {
-  useGetSearchParams,
-  useSaveSearchParams,
-} from "../../hooks/useSearchParams";
+import { useGetSearchParams } from "../../hooks/useSearchParams";
 import * as Icon from "../../ui/Icons";
 import { MainText } from "../../ui/MainText";
 import {
@@ -15,6 +13,7 @@ import {
   getTopicCount,
   mapCategoryToBackend,
 } from "../../utils/topic-utils";
+import { buildTopicUrl } from "../../utils/topicSlugs";
 import mainContentStyles from "./main-content.module.css";
 
 interface TopicViewProps {
@@ -41,7 +40,6 @@ export const TopicView: React.FC<TopicViewProps> = ({
   scrollableCallbackRef,
 }) => {
   const { bibleVersion } = useGetSearchParams();
-  const { saveSearchParams } = useSaveSearchParams();
   const queryClient = useQueryClient();
 
   const [visibleTopics, setVisibleTopics] = useState<VisibleTopic[]>([]);
@@ -181,28 +179,32 @@ export const TopicView: React.FC<TopicViewProps> = ({
     prefetchAdjacentTopics();
   }, [category, sortOrder, bibleVersion, queryClient]);
 
+  const router = useRouter();
+
   // Navigation handlers
   const handleNextTopic = useCallback(async () => {
     const nextTopic = await getNextTopic(category, sortOrder, bibleVersion);
-    if (nextTopic?.sort_order) {
-      saveSearchParams({
-        bookId: category,
-        verseId: String(nextTopic.sort_order),
-        testament: "TOPIC" as any,
-      });
+    if (nextTopic?.name) {
+      const topicUrl = buildTopicUrl(category, nextTopic.name);
+      const url =
+        bibleVersion && bibleVersion !== "NASB1995"
+          ? `${topicUrl}?v=${bibleVersion}`
+          : topicUrl;
+      router.push(url);
     }
-  }, [category, sortOrder, bibleVersion, saveSearchParams]);
+  }, [category, sortOrder, bibleVersion, router]);
 
   const handlePreviousTopic = useCallback(async () => {
     const prevTopic = await getPreviousTopic(category, sortOrder, bibleVersion);
-    if (prevTopic?.sort_order) {
-      saveSearchParams({
-        bookId: category,
-        verseId: String(prevTopic.sort_order),
-        testament: "TOPIC" as any,
-      });
+    if (prevTopic?.name) {
+      const topicUrl = buildTopicUrl(category, prevTopic.name);
+      const url =
+        bibleVersion && bibleVersion !== "NASB1995"
+          ? `${topicUrl}?v=${bibleVersion}`
+          : topicUrl;
+      router.push(url);
     }
-  }, [category, sortOrder, bibleVersion, saveSearchParams]);
+  }, [category, sortOrder, bibleVersion, router]);
 
   // Animation end handler
   const handleAnimationEnd = useCallback(() => {

@@ -68,6 +68,31 @@ const nextConfig = {
     NEXT_PUBLIC_ASK_VERSE_MATE:
       process.env.NEXT_PUBLIC_ASK_VERSE_MATE || "false",
   },
+  // Headers for .well-known files (Universal Links & App Links)
+  async headers() {
+    return [
+      {
+        source: "/.well-known/apple-app-site-association",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+        ],
+      },
+      {
+        source: "/.well-known/assetlinks.json",
+        headers: [
+          { key: "Content-Type", value: "application/json" },
+          {
+            key: "Cache-Control",
+            value: "public, max-age=3600, must-revalidate",
+          },
+        ],
+      },
+    ];
+  },
   transpilePackages: ["@verse-mate/frontend-base"],
 };
 

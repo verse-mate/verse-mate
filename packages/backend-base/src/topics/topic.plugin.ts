@@ -24,6 +24,16 @@ const TopicSearchResponseSchema = t.Object({
   topics: t.Array(TopicSearchItemSchema),
 });
 
+const TopicBySlugResponseSchema = t.Object({
+  topic_id: t.String({ format: "uuid" }),
+  name: t.String(),
+  description: t.Union([t.String(), t.Null()]),
+  category: t.String(),
+  slug: t.String(),
+  sort_order: t.Union([t.Number(), t.Null()]),
+  is_translated: t.Optional(t.Boolean()),
+});
+
 // Schema for full topic details (all fields from database)
 const TopicSchema = t.Object({
   topic_id: t.String({ format: "uuid" }),
@@ -139,6 +149,66 @@ const plugin = new Elysia()
             bible_version: t.Optional(t.String()),
           }),
           response: TopicSearchResponseSchema,
+        },
+      )
+      .get(
+        "/by-slug",
+        async ({ query, store: { topicService }, set }) => {
+          const { category, slug } = query;
+
+          if (!category || !slug) {
+            set.status = 400;
+            return { error: "Both 'category' and 'slug' are required" };
+          }
+
+          try {
+            const topic = await topicService.getTopicBySlug(
+              category,
+              slug,
+              "en-US", // TODO: Get from Accept-Language header or user preference
+            );
+
+            return {
+              topic_id: topic.topic_id,
+              name: topic.name,
+              description: topic.description,
+              category: topic.category,
+              slug: topic.slug,
+              sort_order: topic.sort_order,
+              is_translated: topic.is_translated,
+            };
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            if (message.includes("not found")) {
+              set.status = 404;
+              return { error: "Topic not found" };
+            }
+            if (message.includes("Invalid category")) {
+              set.status = 400;
+              return { error: "Invalid category slug" };
+            }
+            set.status = 500;
+            return { error: "Internal server error" };
+          }
+        },
+        {
+          query: t.Object({
+            category: t.String(),
+            slug: t.String(),
+          }),
+          detail: {
+            tags: ["Topics"],
+            summary: "Get topic by category and slug",
+            description:
+              "Lookup topic using URL-friendly category and slug (for deep linking)",
+          },
+          response: {
+            200: TopicBySlugResponseSchema,
+            400: t.Object({ error: t.String() }),
+            404: t.Object({ error: t.String() }),
+            500: t.Object({ error: t.String() }),
+          },
         },
       )
       .get(

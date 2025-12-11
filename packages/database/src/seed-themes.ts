@@ -1,6 +1,20 @@
 import { db } from "./database";
 
 /**
+ * Generate URL-friendly slug from topic title
+ * Matches frontend algorithm in packages/frontend-base/src/utils/topicSlugs.ts
+ */
+function generateTopicSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Collapse multiple hyphens
+    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+}
+
+/**
  * Seed the 20 theme topics
  * This script can be run independently to add theme topics without affecting existing data
  */
@@ -170,10 +184,11 @@ async function seedThemeTopics() {
 
   // Insert theme topics
   for (const topic of themeTopics) {
+    const slug = generateTopicSlug(topic.name);
     await db
       .getOrCreateConnection()
       .insertInto("topics")
-      .values(topic)
+      .values({ ...topic, slug })
       .execute();
     console.log(`  ✓ Inserted: ${topic.name}`);
   }

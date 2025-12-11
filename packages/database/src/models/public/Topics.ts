@@ -30,6 +30,8 @@ export default interface TopicsTable {
     Date | string | null,
     Date | string | null
   >;
+
+  slug: ColumnType<string, string, string>;
 }
 
 export type Topics = Selectable<TopicsTable>;

@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "8F77Q5NNB7.org.versemate.mobile",
+        "paths": ["/bible/*", "/topic/*/*"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["8F77Q5NNB7.org.versemate.mobile"]
+  }
+}

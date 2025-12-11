@@ -7,6 +7,7 @@ import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { TopicDto, UpdateTopicDto } from "../dto/topic.dto";
 import { TopicRepository } from "../repository/topic.repository";
+import { getCategoryFromSlug } from "../utils/slug.utils";
 
 export class TopicService {
   private topicRepository: TopicRepository;
@@ -68,6 +69,34 @@ export class TopicService {
         error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to fetch topic ${topicId}: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Get topic by category slug and topic slug (for deep linking)
+   */
+  async getTopicBySlug(
+    categorySlug: string,
+    topicSlug: string,
+    languageCode = "en-US",
+  ) {
+    // Convert URL category slug to backend format
+    const category = getCategoryFromSlug(categorySlug);
+
+    if (!category) {
+      throw new Error(`Invalid category slug: ${categorySlug}`);
+    }
+
+    const topic = await this.topicRepository.getTopicBySlug(
+      category,
+      topicSlug,
+      languageCode,
+    );
+
+    if (!topic) {
+      throw new Error(`Topic not found: ${categorySlug}/${topicSlug}`);
+    }
+
+    return topic;
   }
 
   async createTopic(topic: Static<typeof TopicDto>) {

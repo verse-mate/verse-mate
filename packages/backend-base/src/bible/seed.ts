@@ -8,6 +8,7 @@ import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import type { Verses } from "database/src/models/public/Verses";
 import { seedBookIntroductions } from "database/src/seeds/book-introductions.seed";
 import { defaultUserPromptTemplates } from "../shared/prompts";
+import { generateTopicSlug } from "../topics/utils/slug.utils";
 import { parseBibleData } from "./bible";
 
 // --------------- Utility Insert Functions ---------------
@@ -386,10 +387,11 @@ async function seedTopics() {
 
   // Insert topics
   for (const topic of topics) {
+    const slug = generateTopicSlug(topic.name);
     await db
       .getOrCreateConnection()
       .insertInto("topics")
-      .values(topic)
+      .values({ ...topic, slug })
       .execute();
   }
 
