@@ -973,9 +973,10 @@ export const Text = ({
           {bookName} {text.chapterNumber}
         </h1>
         <div className={styles.actionButtons} data-tour="action-buttons">
-          {bookId && typeof bookId === "number" && (
+          {/* Book Overview button temporarily disabled */}
+          {/* {bookId && typeof bookId === "number" && (
             <BookOverviewButton bookId={bookId} />
-          )}
+          )} */}
           {bookId && testament && (
             <BookmarkButton
               bookId={bookId}

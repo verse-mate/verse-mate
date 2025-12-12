@@ -5,18 +5,20 @@ import { useEffect, useState } from "react";
 import AppTourDriver from "../components/AppTourDriver";
 
 export default function Home() {
+  // Tutorial temporarily disabled - will be updated and re-enabled later
   const [runTour, setRunTour] = useState(false);
 
-  useEffect(() => {
-    try {
-      const completed =
-        typeof window !== "undefined" &&
-        localStorage.getItem("vm_tour_completed") === "1";
-      setRunTour(!completed);
-    } catch {
-      setRunTour(false);
-    }
-  }, []);
+  // Commented out to disable tutorial
+  // useEffect(() => {
+  //   try {
+  //     const completed =
+  //       typeof window !== "undefined" &&
+  //       localStorage.getItem("vm_tour_completed") === "1";
+  //     setRunTour(!completed);
+  //   } catch {
+  //     setRunTour(false);
+  //   }
+  // }, []);
 
   return (
     <>
