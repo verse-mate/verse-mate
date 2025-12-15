@@ -1,5 +1,7 @@
+// @ts-expect-error - openai is installed in workspace package
 import OpenAI from "openai";
 import "dotenv/config";
+// @ts-expect-error - database is a workspace package
 import { db } from "database";
 
 const openai = new OpenAI({
@@ -59,7 +61,7 @@ async function debugBatchById(batchId: string) {
 
     // Parse JSONL and show structure
     console.log("--- PARSED STRUCTURE ---");
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
+    const lines = text.split("\n").filter((line: string) => line.trim() !== "");
 
     for (let i = 0; i < Math.min(lines.length, 2); i++) {
       const parsed = JSON.parse(lines[i]);
