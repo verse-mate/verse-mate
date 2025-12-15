@@ -9,10 +9,8 @@ import {
   getPassageTitle,
 } from "../../../../utils/sharing";
 import { AutoHighlightTooltip } from "../../../AutoHighlightTooltip";
-import { BookOverviewButton } from "../../../BookOverviewButton";
 import { BookmarkButton } from "../../../Bookmarks";
 import { CopyLinkButton } from "../../../CopyLinkButton";
-import { DictionaryModal } from "../../../DictionaryModal";
 import { DictionaryPopover } from "../../../DictionaryPopover";
 import type { HighlightColor } from "../../../HighlightColorPicker/types";
 import { HighlightMenu } from "../../../HighlightMenu";
@@ -80,8 +78,6 @@ export const Text = ({
     strongsNum: null,
     position: { x: 0, y: 0 },
   });
-  const [dictionaryModalOpen, setDictionaryModalOpen] = useState(false);
-  const [modalStrongsNum, setModalStrongsNum] = useState<string | null>(null);
   const [selectedWord, setSelectedWord] = useState<string | undefined>();
 
   // Auto-highlights state
@@ -716,14 +712,6 @@ export const Text = ({
     [verseActionsPosition],
   );
 
-  const handleOpenFullDefinition = useCallback(() => {
-    if (dictionaryState.strongsNum) {
-      setModalStrongsNum(dictionaryState.strongsNum);
-      setDictionaryModalOpen(true);
-      setDictionaryState({ ...dictionaryState, open: false });
-    }
-  }, [dictionaryState]);
-
   const getVerseHighlights = useCallback(
     (verseNumber: number) => {
       return highlights.filter(
@@ -1126,18 +1114,6 @@ export const Text = ({
           onClose={() =>
             setDictionaryState({ ...dictionaryState, open: false })
           }
-          onOpenFull={handleOpenFullDefinition}
-        />
-      )}
-
-      {dictionaryModalOpen && modalStrongsNum && (
-        <DictionaryModal
-          strongsNum={modalStrongsNum}
-          open={dictionaryModalOpen}
-          onClose={() => {
-            setDictionaryModalOpen(false);
-            setModalStrongsNum(null);
-          }}
         />
       )}
 
