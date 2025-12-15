@@ -1,3 +1,4 @@
+// @ts-expect-error - openai is installed in workspace package
 import OpenAI from "openai";
 import "dotenv/config";
 
@@ -22,7 +23,7 @@ async function getFileContent(fileId: string) {
 
     // Parse JSONL and show structure
     console.log("\n--- PARSED STRUCTURE ---");
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
+    const lines = text.split("\n").filter((line: string) => line.trim() !== "");
 
     for (let i = 0; i < Math.min(lines.length, 3); i++) {
       const parsed = JSON.parse(lines[i]);
