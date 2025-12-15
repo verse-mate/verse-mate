@@ -10,8 +10,6 @@ declare const styles: {
   readonly label: string;
   readonly value: string;
   readonly definition: string;
-  readonly actions: string;
-  readonly fullButton: string;
   readonly loading: string;
   readonly spinner: string;
   readonly spin: string;
