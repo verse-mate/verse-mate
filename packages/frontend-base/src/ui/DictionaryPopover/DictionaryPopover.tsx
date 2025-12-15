@@ -1,20 +1,17 @@
 import { type StrongsEntry, lookup } from "lexicon";
 import { useEffect, useState } from "react";
-import { Button } from "../Button/Button";
 import styles from "./DictionaryPopover.module.css";
 
 interface DictionaryPopoverProps {
   strongsNum: string;
   position: { x: number; y: number };
   onClose: () => void;
-  onOpenFull?: () => void;
 }
 
 export const DictionaryPopover = ({
   strongsNum,
   position,
   onClose,
-  onOpenFull,
 }: DictionaryPopoverProps) => {
   const [entry, setEntry] = useState<StrongsEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,9 +85,24 @@ export const DictionaryPopover = ({
             <span className={styles.value}>{entry.id}</span>
           </div>
 
+          {entry.partOfSpeech && (
+            <div className={styles.infoRow}>
+              <span className={styles.label}>Part of Speech:</span>
+              <span className={styles.value}>{entry.partOfSpeech}</span>
+            </div>
+          )}
+
           <div className={styles.definition}>
             <p>{entry.definition}</p>
+            {entry.extendedDefinition && <p>{entry.extendedDefinition}</p>}
           </div>
+
+          {entry.derivation && (
+            <div className={styles.infoRow}>
+              <span className={styles.label}>Origin:</span>
+              <span className={styles.value}>{entry.derivation}</span>
+            </div>
+          )}
 
           {entry.kjvTranslation && (
             <div className={styles.infoRow}>
@@ -99,21 +111,6 @@ export const DictionaryPopover = ({
             </div>
           )}
         </div>
-
-        {onOpenFull && (
-          <div className={styles.actions}>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                onOpenFull();
-                onClose();
-              }}
-              className={styles.fullButton}
-            >
-              See Full Definition →
-            </Button>
-          </div>
-        )}
       </>
     );
   };
