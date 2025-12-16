@@ -5,6 +5,7 @@ import {
   getSSOErrorMessage,
   handleSSOCallback,
 } from "frontend-base/src/auth/lib";
+import { decodeJwtPayload } from "frontend-base/src/utils/auth-utils";
 import { useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { Suspense, useEffect, useState } from "react";
@@ -41,23 +42,6 @@ function getAppleErrorMessage(
 
   // Fall back to generic SSO error message
   return getSSOErrorMessage(errorCode, errorDescription);
-}
-
-/**
- * Decodes a JWT token to extract the payload.
- * Returns null if decoding fails.
- */
-function decodeJwtPayload(
-  token: string,
-): { sub?: string; email?: string; isNewUser?: boolean } | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    return payload;
-  } catch {
-    return null;
-  }
 }
 
 /**
