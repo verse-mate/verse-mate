@@ -1,7 +1,7 @@
 "use client";
 
 import { MainPage } from "frontend-base";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import AppTourDriver from "../components/AppTourDriver";
 
 export default function Home() {
