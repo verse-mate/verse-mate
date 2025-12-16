@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { api } from "backend-api";
+import { AnalyticsEvent, analytics } from "../../analytics";
 import useMutation from "../../hooks/useMutation";
 import { setCookie } from "../../utils/auth-utils";
 import { type ErrorState, processError } from "../../utils/error-handling";
@@ -70,6 +71,18 @@ export function useSignInForm() {
       if (userId && email) {
         try {
           posthog.identify(userId, { email });
+
+          // Set user properties for email login
+          analytics.setUserProperties({
+            email,
+            account_type: "email",
+            is_registered: true,
+          });
+
+          // Track LOGIN_COMPLETED event
+          analytics.track(AnalyticsEvent.LOGIN_COMPLETED, {
+            method: "email",
+          });
         } catch (error) {
           // PostHog may not be initialized (e.g., in development without API key)
           console.debug("PostHog identify skipped:", error);

@@ -1,0 +1,53 @@
+/**
+ * Analytics Module
+ *
+ * Provides type-safe analytics tracking for VerseMate web application.
+ *
+ * @example
+ * ```ts
+ * import { analytics, AnalyticsEvent } from '../analytics';
+ *
+ * // Track an event
+ * analytics.track(AnalyticsEvent.CHAPTER_VIEWED, {
+ *   bookId: 1,
+ *   chapterNumber: 1,
+ *   bibleVersion: 'NASB1995'
+ * });
+ *
+ * // Identify a user
+ * analytics.identify('user-123', {
+ *   email: 'user@example.com',
+ *   account_type: 'email'
+ * });
+ * ```
+ */
+
+export { analytics } from "./analytics";
+export { AnalyticsEvent } from "./types";
+export type {
+  // Event Properties
+  EventProperties,
+  ChapterViewedProperties,
+  ViewModeSwitchedProperties,
+  ExplanationTabChangedProperties,
+  BookmarkAddedProperties,
+  BookmarkRemovedProperties,
+  HighlightCreatedProperties,
+  HighlightEditedProperties,
+  HighlightDeletedProperties,
+  NoteCreatedProperties,
+  NoteEditedProperties,
+  NoteDeletedProperties,
+  DictionaryLookupProperties,
+  AutoHighlightSettingChangedProperties,
+  ChapterSharedProperties,
+  TopicSharedProperties,
+  VersemateTooltipOpenedProperties,
+  AutoHighlightTooltipViewedProperties,
+  SignupCompletedProperties,
+  LoginCompletedProperties,
+  LogoutProperties,
+  // User Properties
+  UserProperties,
+  AuthMethod,
+} from "./types";

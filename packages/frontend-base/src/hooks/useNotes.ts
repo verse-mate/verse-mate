@@ -1,5 +1,6 @@
 import { $env } from "frontend-envs";
 import { useCallback, useEffect, useState } from "react";
+import { AnalyticsEvent, analytics } from "../analytics";
 import { userSession } from "./userSession";
 
 export interface Note {
@@ -156,6 +157,15 @@ export const useNotes = () => {
             });
             const updatedNotes = [newNote, ...notes];
             setNotes(updatedNotes);
+
+            // Track NOTE_CREATED event
+            analytics.track(AnalyticsEvent.NOTE_CREATED, {
+              bookId: noteData.bookId,
+              bookName: noteData.bookName,
+              chapterNumber: noteData.chapterNumber,
+              verseNumber: noteData.verseNumber || 0,
+            });
+
             return newNote;
           }
         } else {
@@ -170,6 +180,15 @@ export const useNotes = () => {
           const updatedNotes = [newNote, ...notes];
           setNotes(updatedNotes);
           saveNotesToStorage(updatedNotes);
+
+          // Track NOTE_CREATED event
+          analytics.track(AnalyticsEvent.NOTE_CREATED, {
+            bookId: noteData.bookId,
+            bookName: noteData.bookName,
+            chapterNumber: noteData.chapterNumber,
+            verseNumber: noteData.verseNumber || 0,
+          });
+
           return newNote;
         }
       } catch (error) {
@@ -185,6 +204,15 @@ export const useNotes = () => {
         const updatedNotes = [newNote, ...notes];
         setNotes(updatedNotes);
         saveNotesToStorage(updatedNotes);
+
+        // Track NOTE_CREATED event even on fallback
+        analytics.track(AnalyticsEvent.NOTE_CREATED, {
+          bookId: noteData.bookId,
+          bookName: noteData.bookName,
+          chapterNumber: noteData.chapterNumber,
+          verseNumber: noteData.verseNumber || 0,
+        });
+
         return newNote;
       }
     },
@@ -194,6 +222,9 @@ export const useNotes = () => {
   // Update an existing note
   const updateNote = useCallback(
     async (id: string, content: string) => {
+      // Get the note being updated for analytics
+      const noteToUpdate = notes.find((note) => note.id === id);
+
       try {
         if (USE_BACKEND) {
           const response = await fetch(getApiPath("/book/note/update"), {
@@ -215,6 +246,16 @@ export const useNotes = () => {
               );
               return updatedNotes;
             });
+
+            // Track NOTE_EDITED event
+            if (noteToUpdate) {
+              analytics.track(AnalyticsEvent.NOTE_EDITED, {
+                bookId: noteToUpdate.bookId,
+                bookName: noteToUpdate.bookName,
+                chapterNumber: noteToUpdate.chapterNumber,
+                verseNumber: noteToUpdate.verseNumber || 0,
+              });
+            }
             return;
           }
 
@@ -230,6 +271,16 @@ export const useNotes = () => {
           saveNotesToStorage(updatedNotes);
           return updatedNotes;
         });
+
+        // Track NOTE_EDITED event
+        if (noteToUpdate) {
+          analytics.track(AnalyticsEvent.NOTE_EDITED, {
+            bookId: noteToUpdate.bookId,
+            bookName: noteToUpdate.bookName,
+            chapterNumber: noteToUpdate.chapterNumber,
+            verseNumber: noteToUpdate.verseNumber || 0,
+          });
+        }
       } catch (error) {
         console.error("Failed to update note:", error);
         setNotes((currentNotes) => {
@@ -241,14 +292,27 @@ export const useNotes = () => {
           saveNotesToStorage(updatedNotes);
           return updatedNotes;
         });
+
+        // Track NOTE_EDITED event even on fallback
+        if (noteToUpdate) {
+          analytics.track(AnalyticsEvent.NOTE_EDITED, {
+            bookId: noteToUpdate.bookId,
+            bookName: noteToUpdate.bookName,
+            chapterNumber: noteToUpdate.chapterNumber,
+            verseNumber: noteToUpdate.verseNumber || 0,
+          });
+        }
       }
     },
-    [saveNotesToStorage, getApiPath],
+    [notes, saveNotesToStorage, getApiPath],
   );
 
   // Delete a note
   const deleteNote = useCallback(
     async (id: string) => {
+      // Get the note being deleted for analytics
+      const noteToDelete = notes.find((note) => note.id === id);
+
       try {
         if (USE_BACKEND) {
           const response = await fetch(
@@ -263,6 +327,16 @@ export const useNotes = () => {
             if (result?.success) {
               const updatedNotes = notes.filter((note) => note.id !== id);
               setNotes(updatedNotes);
+
+              // Track NOTE_DELETED event
+              if (noteToDelete) {
+                analytics.track(AnalyticsEvent.NOTE_DELETED, {
+                  bookId: noteToDelete.bookId,
+                  bookName: noteToDelete.bookName,
+                  chapterNumber: noteToDelete.chapterNumber,
+                  verseNumber: noteToDelete.verseNumber || 0,
+                });
+              }
               return;
             }
           }
@@ -274,12 +348,32 @@ export const useNotes = () => {
         const updatedNotes = notes.filter((note) => note.id !== id);
         setNotes(updatedNotes);
         saveNotesToStorage(updatedNotes);
+
+        // Track NOTE_DELETED event
+        if (noteToDelete) {
+          analytics.track(AnalyticsEvent.NOTE_DELETED, {
+            bookId: noteToDelete.bookId,
+            bookName: noteToDelete.bookName,
+            chapterNumber: noteToDelete.chapterNumber,
+            verseNumber: noteToDelete.verseNumber || 0,
+          });
+        }
       } catch (error) {
         console.error("Failed to delete note:", error);
         // Fallback to localStorage
         const updatedNotes = notes.filter((note) => note.id !== id);
         setNotes(updatedNotes);
         saveNotesToStorage(updatedNotes);
+
+        // Track NOTE_DELETED event even on fallback
+        if (noteToDelete) {
+          analytics.track(AnalyticsEvent.NOTE_DELETED, {
+            bookId: noteToDelete.bookId,
+            bookName: noteToDelete.bookName,
+            chapterNumber: noteToDelete.chapterNumber,
+            verseNumber: noteToDelete.verseNumber || 0,
+          });
+        }
       }
     },
     [notes, saveNotesToStorage, getApiPath],

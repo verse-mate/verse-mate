@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { AnalyticsEvent, analytics } from "../../analytics";
 import { Button } from "../Button/Button";
 import type { HighlightColor } from "../HighlightColorPicker/types";
 import type { AutoHighlight } from "../MainText/Content/Text/types";
@@ -9,6 +11,9 @@ interface AutoHighlightTooltipProps {
   onClose: () => void;
   onSaveAsUserHighlight: (color: HighlightColor) => void;
   isLoggedIn: boolean;
+  /** Optional book and chapter info for analytics tracking */
+  bookId?: number;
+  chapterNumber?: number;
 }
 
 export const AutoHighlightTooltip = ({
@@ -17,7 +22,22 @@ export const AutoHighlightTooltip = ({
   onClose,
   onSaveAsUserHighlight,
   isLoggedIn,
+  bookId,
+  chapterNumber,
 }: AutoHighlightTooltipProps) => {
+  // Track tooltip view once when opened
+  const hasTracked = useRef(false);
+
+  useEffect(() => {
+    if (!hasTracked.current && bookId && chapterNumber) {
+      analytics.track(AnalyticsEvent.AUTO_HIGHLIGHT_TOOLTIP_VIEWED, {
+        bookId,
+        chapterNumber,
+      });
+      hasTracked.current = true;
+    }
+  }, [bookId, chapterNumber]);
+
   const handleSave = () => {
     // Map theme color to HighlightColor type
     const colorMap: Record<string, HighlightColor> = {
