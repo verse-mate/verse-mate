@@ -10,7 +10,7 @@ import { api } from "backend-api";
 import { AnalyticsEvent, analytics } from "../../analytics";
 import useMutation from "../../hooks/useMutation";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
-import { setCookie } from "../../utils/auth-utils";
+import { decodeJwtPayload, setCookie } from "../../utils/auth-utils";
 import { type ErrorState, processError } from "../../utils/error-handling";
 import { ACCESS_TOKEN_COOKIE, zodEmail, zodPassword } from "../lib";
 
@@ -33,21 +33,6 @@ const schema: z.ZodType<SignUpData> = z.object({
     .min(1, "Required.")
     .max(250, "Last name must have maximum of 250 characters."),
 });
-
-/**
- * Decodes a JWT token to extract the payload.
- * Returns null if decoding fails.
- */
-function decodeJwtPayload(token: string): { sub?: string } | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    return payload;
-  } catch {
-    return null;
-  }
-}
 
 export function useSignUpForm() {
   const [backendError, setBackendError] = useState<ErrorState | undefined>(
