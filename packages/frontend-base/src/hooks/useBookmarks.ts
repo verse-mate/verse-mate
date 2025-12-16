@@ -1,5 +1,6 @@
 import { $env } from "frontend-envs";
 import { useCallback, useEffect, useState } from "react";
+import { AnalyticsEvent, analytics } from "../analytics";
 import { userSession } from "../hooks/userSession";
 
 export interface Bookmark {
@@ -172,6 +173,16 @@ export const useBookmarks = () => {
           globalBookmarks = updatedBookmarks;
           setBookmarks(updatedBookmarks);
 
+          // Track BOOKMARK_ADDED event
+          analytics.track(AnalyticsEvent.BOOKMARK_ADDED, {
+            bookId,
+            bookName,
+            chapterNumber,
+            // Note: bookmarks are at chapter level, not verse level
+            // Using 0 to indicate chapter-level bookmark
+            verseNumber: 0,
+          });
+
           // Notify any other components that are listening to this state
           notifyListeners();
 
@@ -192,6 +203,13 @@ export const useBookmarks = () => {
         setError("You must be logged in to remove bookmarks");
         return;
       }
+
+      // Get bookmark info for analytics before removing
+      const bookmarkToRemove = globalBookmarks.find(
+        (bookmark) =>
+          bookmark.book_id === bookId &&
+          bookmark.chapter_number === chapterNumber,
+      );
 
       try {
         // Prepare query parameters for the DELETE request
@@ -239,6 +257,14 @@ export const useBookmarks = () => {
         );
         globalBookmarks = updatedBookmarks;
         setBookmarks(updatedBookmarks);
+
+        // Track BOOKMARK_REMOVED event
+        analytics.track(AnalyticsEvent.BOOKMARK_REMOVED, {
+          bookId,
+          bookName: bookmarkToRemove?.book_name || "",
+          chapterNumber,
+          verseNumber: 0,
+        });
 
         // Notify any other components that are listening to this state
         notifyListeners();

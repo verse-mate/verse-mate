@@ -1,5 +1,6 @@
 import { type StrongsEntry, lookup } from "lexicon";
 import { useEffect, useState } from "react";
+import { AnalyticsEvent, analytics } from "../../analytics";
 import styles from "./DictionaryPopover.module.css";
 
 interface DictionaryPopoverProps {
@@ -25,6 +26,13 @@ export const DictionaryPopover = ({
       .then((result) => {
         if (result.found && result.entry) {
           setEntry(result.entry);
+
+          // Track DICTIONARY_LOOKUP event on successful lookup
+          analytics.track(AnalyticsEvent.DICTIONARY_LOOKUP, {
+            word: result.entry.lemma || strongsNum,
+            source: "strongs",
+            strongsNumber: strongsNum,
+          });
         } else {
           setError(result.error || "Word not found");
         }

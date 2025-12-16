@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AnalyticsEvent, analytics } from "../../analytics";
 import { notify } from "../../notification";
 import { Button } from "../Button/Button";
 import { ShareIcon } from "../Icons/shareIcon";
@@ -13,6 +14,7 @@ export function ShareButton({
   text = "Check out this Bible passage",
   className = "",
   variant = "icon",
+  analyticsContext,
 }: ShareButtonProps) {
   const [canShare, setCanShare] = useState(false);
 
@@ -42,6 +44,21 @@ export function ShareButton({
           color: "var(--success)",
         });
       }
+
+      // Track share event after successful share/copy
+      if (analyticsContext) {
+        if (analyticsContext.type === "chapter") {
+          analytics.track(AnalyticsEvent.CHAPTER_SHARED, {
+            bookId: Number(analyticsContext.bookIdOrCategory),
+            chapterNumber: Number(analyticsContext.chapterOrSlug),
+          });
+        } else if (analyticsContext.type === "topic") {
+          analytics.track(AnalyticsEvent.TOPIC_SHARED, {
+            category: String(analyticsContext.bookIdOrCategory),
+            topicSlug: String(analyticsContext.chapterOrSlug),
+          });
+        }
+      }
     } catch (error) {
       // Handle AbortError (user cancelled) silently
       if (error instanceof Error && error.name === "AbortError") {
@@ -53,7 +70,7 @@ export function ShareButton({
         color: "var(--error)",
       });
     }
-  }, [url, title, text, canShare]);
+  }, [url, title, text, canShare, analyticsContext]);
 
   if (variant === "icon") {
     return (

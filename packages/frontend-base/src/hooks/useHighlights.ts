@@ -1,6 +1,7 @@
 import { api } from "backend-api";
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import { useCallback, useEffect, useState } from "react";
+import { AnalyticsEvent, analytics } from "../analytics";
 import type { HighlightColor } from "../ui/HighlightColorPicker";
 import { getChapterId } from "../utils/chapter-utils";
 import { userSession } from "./userSession";
@@ -135,9 +136,10 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
       startChar?: number,
       endChar?: number,
       selectedText?: string,
+      bookName?: string, // Optional for analytics
     ) => {
       if (!session?.id) {
-        console.error("❌ User not authenticated", {
+        console.error("User not authenticated", {
           session,
           sessionId: session?.id,
           sessionKeys: session ? Object.keys(session) : "no session",
@@ -237,6 +239,15 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
             };
             globalHighlights = [...globalHighlights, newHighlight];
             notifyListeners();
+
+            // Track HIGHLIGHT_CREATED event
+            analytics.track(AnalyticsEvent.HIGHLIGHT_CREATED, {
+              bookId,
+              bookName: bookName || "",
+              chapterNumber,
+              verseNumber: startVerse,
+              highlightColor: color,
+            });
           }
           return true;
         }
@@ -262,7 +273,11 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
 
   // Update highlight color
   const updateHighlightColor = useCallback(
-    async (highlightId: number, color: HighlightColor) => {
+    async (
+      highlightId: number,
+      color: HighlightColor,
+      bookName?: string, // Optional for analytics
+    ) => {
       if (!session?.id) {
         setError("User not authenticated");
         return false;
@@ -271,11 +286,14 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
       // Store original highlights for potential rollback
       const originalHighlights = [...globalHighlights];
 
-      // Optimistic update - change color immediately in UI
+      // Get the current highlight for analytics
       const currentHighlight = globalHighlights.find(
         (h) => h.highlight_id === highlightId,
       );
+      const previousColor = currentHighlight?.color;
+
       if (currentHighlight) {
+        // Optimistic update - change color immediately in UI
         globalHighlights = globalHighlights.map((h) =>
           h.highlight_id === highlightId
             ? { ...h, color, updated_at: new Date().toISOString() }
@@ -317,6 +335,18 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
               h.highlight_id === highlightId ? updatedHighlight : h,
             );
             notifyListeners();
+
+            // Track HIGHLIGHT_EDITED event
+            if (previousColor && previousColor !== color) {
+              analytics.track(AnalyticsEvent.HIGHLIGHT_EDITED, {
+                bookId: 0, // Chapter ID is stored in the highlight, not book ID
+                bookName: bookName || "",
+                chapterNumber: 0,
+                verseNumber: currentHighlight?.start_verse || 0,
+                previousColor: previousColor,
+                newColor: color,
+              });
+            }
           }
           return true;
         }
@@ -339,13 +369,18 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
 
   // Delete a highlight
   const deleteHighlight = useCallback(
-    async (highlightId: number) => {
+    async (highlightId: number, bookName?: string) => {
       if (!session?.id) {
         setError("User not authenticated");
         return false;
       }
 
       const originalHighlights = [...globalHighlights];
+
+      // Get the highlight for analytics before deleting
+      const highlightToDelete = globalHighlights.find(
+        (h) => h.highlight_id === highlightId,
+      );
 
       // Optimistic update - remove immediately from UI
       globalHighlights = globalHighlights.filter(
@@ -368,6 +403,16 @@ export const useHighlights = (bookId?: number, chapterNumber?: number) => {
         }
 
         if (response.data?.success) {
+          // Track HIGHLIGHT_DELETED event
+          if (highlightToDelete) {
+            analytics.track(AnalyticsEvent.HIGHLIGHT_DELETED, {
+              bookId: 0, // Chapter ID is stored, not book ID
+              bookName: bookName || "",
+              chapterNumber: 0,
+              verseNumber: highlightToDelete.start_verse,
+              highlightColor: highlightToDelete.color,
+            });
+          }
           return true;
         }
         globalHighlights = originalHighlights;
