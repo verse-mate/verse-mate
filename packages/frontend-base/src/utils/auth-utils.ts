@@ -80,3 +80,27 @@ export function getCookie(name: string): string | null {
 export function deleteCookie(name: string) {
   setCookie(name, "", -1);
 }
+
+/**
+ * JWT payload type for decoded tokens
+ */
+export interface JwtPayload {
+  sub?: string;
+  email?: string;
+  isNewUser?: boolean;
+}
+
+/**
+ * Decodes a JWT token to extract the payload.
+ * Returns null if decoding fails.
+ */
+export function decodeJwtPayload(token: string): JwtPayload | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+}

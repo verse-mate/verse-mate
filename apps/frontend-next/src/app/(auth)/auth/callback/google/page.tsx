@@ -1,10 +1,13 @@
 "use client";
 
+import { AnalyticsEvent, analytics } from "frontend-base/src/analytics";
 import {
   getSSOErrorMessage,
   handleSSOCallback,
 } from "frontend-base/src/auth/lib";
+import { decodeJwtPayload } from "frontend-base/src/utils/auth-utils";
 import { useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { Suspense, useEffect, useState } from "react";
 import styles from "../callback.module.css";
 
@@ -104,10 +107,50 @@ function GoogleCallbackContent() {
     // Convert ReadonlyURLSearchParams to URLSearchParams for compatibility
     const params = new URLSearchParams(searchParams.toString());
 
+    // Get access token before it's consumed by handleSSOCallback
+    const accessToken = params.get("accessToken");
+
     // Parse the callback parameters
     const result = handleSSOCallback(params);
 
     if (result.success && result.redirectUrl) {
+      // Track analytics for successful Google SSO login
+      if (accessToken) {
+        try {
+          const jwtPayload = decodeJwtPayload(accessToken);
+          const userId = jwtPayload?.sub;
+          const email = jwtPayload?.email;
+          const isNewUser = jwtPayload?.isNewUser;
+
+          if (userId) {
+            // Identify user in PostHog first
+            posthog.identify(userId, { email });
+
+            // Set user properties
+            analytics.setUserProperties({
+              email,
+              account_type: "google",
+              is_registered: true,
+            });
+
+            // If this is a new user, fire SIGNUP_COMPLETED
+            if (isNewUser) {
+              analytics.track(AnalyticsEvent.SIGNUP_COMPLETED, {
+                method: "google",
+              });
+            }
+
+            // Always fire LOGIN_COMPLETED
+            analytics.track(AnalyticsEvent.LOGIN_COMPLETED, {
+              method: "google",
+            });
+          }
+        } catch (err) {
+          // Analytics tracking should not block login
+          console.debug("Analytics tracking skipped:", err);
+        }
+      }
+
       // Success - redirect to the app
       window.location.href = result.redirectUrl;
     } else {
