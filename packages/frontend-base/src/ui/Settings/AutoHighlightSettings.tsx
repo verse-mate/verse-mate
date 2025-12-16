@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "backend-api";
 import { useEffect, useState } from "react";
+import { AnalyticsEvent, analytics } from "../../analytics";
 import useMutation from "../../hooks/useMutation";
 import { Button } from "../Button/Button";
 import autoHighlightStyles from "./autoHighlightSettings.module.css";
@@ -113,6 +114,9 @@ export const AutoHighlightSettings = ({
 
     const newStatus = !currentStatus;
 
+    // Get the theme name for analytics
+    const theme = themes.find((t) => t.theme_id === themeId);
+
     // Optimistic update
     setThemes((prev) =>
       prev.map((theme) =>
@@ -126,6 +130,12 @@ export const AutoHighlightSettings = ({
       await updatePreference({ theme_id: themeId, is_enabled: newStatus });
       setSuccessMessage("Theme preference updated");
       setTimeout(() => setSuccessMessage(null), 2000);
+
+      // Track AUTO_HIGHLIGHT_SETTING_CHANGED event
+      analytics.track(AnalyticsEvent.AUTO_HIGHLIGHT_SETTING_CHANGED, {
+        themeName: theme?.theme_name || `Theme ${themeId}`,
+        enabled: newStatus,
+      });
     } catch (err) {
       console.error("Failed to update theme:", err);
       // Revert optimistic update
@@ -154,6 +164,12 @@ export const AutoHighlightSettings = ({
       );
       setSuccessMessage("All themes enabled");
       setTimeout(() => setSuccessMessage(null), 2000);
+
+      // Track AUTO_HIGHLIGHT_SETTING_CHANGED for bulk enable
+      analytics.track(AnalyticsEvent.AUTO_HIGHLIGHT_SETTING_CHANGED, {
+        themeName: "All Themes",
+        enabled: true,
+      });
     } catch (err) {
       console.error("Failed to enable all themes:", err);
       setError("Failed to enable all themes");
@@ -174,6 +190,12 @@ export const AutoHighlightSettings = ({
       );
       setSuccessMessage("All themes disabled");
       setTimeout(() => setSuccessMessage(null), 2000);
+
+      // Track AUTO_HIGHLIGHT_SETTING_CHANGED for bulk disable
+      analytics.track(AnalyticsEvent.AUTO_HIGHLIGHT_SETTING_CHANGED, {
+        themeName: "All Themes",
+        enabled: false,
+      });
     } catch (err) {
       console.error("Failed to disable all themes:", err);
       setError("Failed to disable all themes");

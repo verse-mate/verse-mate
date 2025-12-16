@@ -7,8 +7,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { api } from "backend-api";
+import { AnalyticsEvent, analytics } from "../../analytics";
 import useMutation from "../../hooks/useMutation";
-import { setCookie } from "../../utils/auth-utils";
+import { decodeJwtPayload, setCookie } from "../../utils/auth-utils";
 import { type ErrorState, processError } from "../../utils/error-handling";
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, zodEmail } from "../lib";
 
@@ -24,21 +25,6 @@ const schema = z.object({
     .min(8, "Password must have at least 8 characters.")
     .max(64, "Password must have maximum of 64 characters."),
 });
-
-/**
- * Decodes a JWT token to extract the payload.
- * Returns null if decoding fails.
- */
-function decodeJwtPayload(token: string): { sub?: string } | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    return payload;
-  } catch {
-    return null;
-  }
-}
 
 export function useSignInForm() {
   const [backendError, setBackendError] = useState<ErrorState | undefined>(
@@ -70,6 +56,18 @@ export function useSignInForm() {
       if (userId && email) {
         try {
           posthog.identify(userId, { email });
+
+          // Set user properties for email login
+          analytics.setUserProperties({
+            email,
+            account_type: "email",
+            is_registered: true,
+          });
+
+          // Track LOGIN_COMPLETED event
+          analytics.track(AnalyticsEvent.LOGIN_COMPLETED, {
+            method: "email",
+          });
         } catch (error) {
           // PostHog may not be initialized (e.g., in development without API key)
           console.debug("PostHog identify skipped:", error);
