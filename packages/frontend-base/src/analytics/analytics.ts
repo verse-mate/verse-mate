@@ -2,18 +2,21 @@
  * Analytics Service
  *
  * Thin wrapper over PostHog SDK providing type-safe analytics tracking.
- * All tracking is disabled in development mode.
+ * Tracking is disabled when posthogKey is not configured.
  *
  * @see Spec: agent-os/specs/2025-12-15-posthog-product-analytics/spec.md
  */
 
+import { $env } from "frontend-envs";
 import posthog from "posthog-js";
 import type { AnalyticsEvent, EventProperties, UserProperties } from "./types";
 
 /**
- * Check if we're in development mode
+ * Check if analytics is enabled by verifying posthogKey is configured
  */
-const isDevelopment = process.env.NODE_ENV === "development";
+function isAnalyticsEnabled(): boolean {
+  return Boolean($env.get().posthogKey);
+}
 
 /**
  * Type for PostHog-compatible properties
@@ -33,7 +36,7 @@ type PostHogProperties = Record<string, PostHogCompatibleValue>;
  * Analytics service singleton
  *
  * Provides type-safe methods for tracking events and identifying users.
- * Skips all tracking in development mode to avoid polluting analytics.
+ * Skips all tracking when posthogKey is not configured.
  */
 export const analytics = {
   /**
@@ -55,8 +58,8 @@ export const analytics = {
     event: E,
     properties: EventProperties[E],
   ): void {
-    // Skip tracking in development mode
-    if (isDevelopment) {
+    // Skip tracking when PostHog is not configured
+    if (!isAnalyticsEnabled()) {
       return;
     }
 
@@ -81,8 +84,8 @@ export const analytics = {
    * ```
    */
   identify(userId: string, traits: UserProperties): void {
-    // Skip tracking in development mode
-    if (isDevelopment) {
+    // Skip tracking when PostHog is not configured
+    if (!isAnalyticsEnabled()) {
       return;
     }
 
@@ -96,8 +99,8 @@ export const analytics = {
    * Clears the current user identity and creates a new anonymous ID.
    */
   reset(): void {
-    // Skip tracking in development mode
-    if (isDevelopment) {
+    // Skip tracking when PostHog is not configured
+    if (!isAnalyticsEnabled()) {
       return;
     }
 
@@ -121,8 +124,8 @@ export const analytics = {
    * ```
    */
   setUserProperties(properties: Partial<UserProperties>): void {
-    // Skip tracking in development mode
-    if (isDevelopment) {
+    // Skip tracking when PostHog is not configured
+    if (!isAnalyticsEnabled()) {
       return;
     }
 
@@ -145,8 +148,8 @@ export const analytics = {
   registerSuperProperties(
     properties: Record<string, string | number | boolean>,
   ): void {
-    // Skip tracking in development mode
-    if (isDevelopment) {
+    // Skip tracking when PostHog is not configured
+    if (!isAnalyticsEnabled()) {
       return;
     }
 
@@ -156,9 +159,9 @@ export const analytics = {
   /**
    * Check if analytics is enabled
    *
-   * Returns false in development mode.
+   * Returns false when posthogKey is not configured.
    */
   isEnabled(): boolean {
-    return !isDevelopment;
+    return isAnalyticsEnabled();
   },
 };

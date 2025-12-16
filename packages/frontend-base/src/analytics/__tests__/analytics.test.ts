@@ -131,7 +131,9 @@ describe("Analytics Service", () => {
 describe("AnalyticsEvent Enum", () => {
   it("should contain all expected Bible reading event names", () => {
     expect(String(AnalyticsEvent.CHAPTER_VIEWED)).toBe("CHAPTER_VIEWED");
-    expect(String(AnalyticsEvent.VIEW_MODE_SWITCHED)).toBe("VIEW_MODE_SWITCHED");
+    expect(String(AnalyticsEvent.VIEW_MODE_SWITCHED)).toBe(
+      "VIEW_MODE_SWITCHED",
+    );
     expect(String(AnalyticsEvent.EXPLANATION_TAB_CHANGED)).toBe(
       "EXPLANATION_TAB_CHANGED",
     );
