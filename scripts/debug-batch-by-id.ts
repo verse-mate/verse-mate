@@ -1,7 +1,5 @@
-// @ts-expect-error - openai is installed in workspace package
 import OpenAI from "openai";
 import "dotenv/config";
-// @ts-expect-error - database is a workspace package
 import { db } from "database";
 
 const openai = new OpenAI({
