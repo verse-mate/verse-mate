@@ -14,6 +14,8 @@ import { db } from "database";
 import { Elysia } from "elysia";
 
 const app = new Elysia()
+  // Handle favicon.ico requests to prevent NOT_FOUND errors from browsers
+  .get("/favicon.ico", () => new Response(null, { status: 204 }))
   .use(authPlugin)
   .use(userPlugin)
   .use(biblePlugin)

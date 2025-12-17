@@ -1,4 +1,3 @@
-// @ts-expect-error - openai is installed in workspace package
 import OpenAI from "openai";
 import "dotenv/config";
 
