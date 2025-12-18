@@ -308,7 +308,12 @@ export const MainContent = () => {
   );
 
   // Book introduction - fetch from API
-  const { introduction: introData, markAsViewed } = useBookIntroduction(
+  const {
+    introduction: introData,
+    hasViewed: hasViewedIntro,
+    isLoading: isIntroLoading,
+    markAsViewed,
+  } = useBookIntroduction(
     !isViewingTopic && typeof bookId === "number" ? bookId : null,
     "en",
   );
@@ -316,35 +321,40 @@ export const MainContent = () => {
   // Track dismissed intros for this session to prevent re-triggering
   const dismissedIntrosRef = useRef<Set<number>>(new Set());
 
-  // DISABLED: Auto-trigger intro popup was too intrusive
-  // Intros now only show when user clicks the "Book Overview" button
-  // useEffect(() => {
-  //   // Only check for intros on Bible books (not topics)
-  //   if (
-  //     !isViewingTopic &&
-  //     bookId &&
-  //     typeof bookId === "number" &&
-  //     !isIntroLoading
-  //   ) {
-  //     // Show intro if:
-  //     // 1. Introduction exists for this book
-  //     // 2. User hasn't viewed it yet
-  //     // 3. We're not already showing the intro (prevents re-triggering after dismiss)
-  //     // 4. We haven't dismissed it in this session (prevents showing again in same session)
-  //     if (
-  //       introData &&
-  //       !hasViewedIntro &&
-  //       !showIntro &&
-  //       !dismissedIntrosRef.current.has(bookId)
-  //     ) {
-  //       // Just set showIntro to true, preserve all other URL params
-  //       saveSearchParams({
-  //         showIntro: true,
-  //       });
-  //     }
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [bookId, isViewingTopic, introData, hasViewedIntro, isIntroLoading]);
+  useEffect(() => {
+    // Only check for intros on Bible books (not topics)
+    if (
+      !isViewingTopic &&
+      bookId &&
+      typeof bookId === "number" &&
+      !isIntroLoading
+    ) {
+      // Show intro if:
+      // 1. Introduction exists for this book
+      // 2. User hasn't viewed it yet
+      // 3. We're not already showing the intro (prevents re-triggering after dismiss)
+      // 4. We haven't dismissed it in this session (prevents showing again in same session)
+      if (
+        introData &&
+        !hasViewedIntro &&
+        !showIntro &&
+        !dismissedIntrosRef.current.has(bookId)
+      ) {
+        // Just set showIntro to true, preserve all other URL params
+        saveSearchParams({
+          showIntro: true,
+        });
+      }
+    }
+  }, [
+    bookId,
+    isViewingTopic,
+    introData,
+    hasViewedIntro,
+    isIntroLoading,
+    showIntro,
+    saveSearchParams,
+  ]);
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -1901,7 +1911,16 @@ export const MainContent = () => {
                     buttonsVisible={buttonsVisible}
                     scrollableCallbackRef={scrollableCallbackRef}
                   />
-                ) : showIntro && typeof bookId === "number" && introData ? (
+                ) : // Auto-show book introduction only if:
+                // - URL flag showIntro is true
+                // - We have an intro for this book
+                // - User has NOT already viewed it (localStorage/DB)
+                // - It has not been dismissed in this session
+                showIntro &&
+                  typeof bookId === "number" &&
+                  introData &&
+                  !hasViewedIntro &&
+                  !dismissedIntrosRef.current.has(bookId) ? (
                   // Show book introduction
                   (() => {
                     // Read verseId directly from URL to avoid React state timing issues
