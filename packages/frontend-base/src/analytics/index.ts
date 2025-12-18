@@ -19,11 +19,26 @@
  *   email: 'user@example.com',
  *   account_type: 'email'
  * });
+ *
+ * // Capture an exception
+ * analytics.captureException(error, {
+ *   source: 'error-boundary',
+ *   pathname: '/bible/genesis/1'
+ * });
  * ```
  */
 
 export { analytics } from "./analytics";
 export { AnalyticsEvent } from "./types";
+
+// Error tracking exports
+export {
+  shouldExcludeError,
+  collectErrorContext,
+  extractErrorDetails,
+} from "./error-filters";
+export type { ExceptionContext } from "./error-filters";
+
 export type {
   // Event Properties
   EventProperties,
