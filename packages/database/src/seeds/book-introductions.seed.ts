@@ -2,6 +2,12 @@ import type { Kysely } from "kysely";
 import type Database from "../models/Database";
 import introsData from "./data/book-intros.json";
 
+interface IntroData {
+  book_id?: number;
+  full_intro_text?: string;
+  [key: string]: unknown;
+}
+
 const CANONICAL_BOOK_IDS: Record<string, number> = {
   Genesis: 1,
   Exodus: 2,
@@ -76,8 +82,10 @@ export async function seedBookIntroductions(
 ) {
   console.log("Seeding book introductions...");
 
-  for (const [bookId, intro] of Object.entries(introsData)) {
-    const fullText = (intro as any).full_intro_text as string | undefined;
+  const typedIntrosData = introsData as Record<string, IntroData>;
+
+  for (const [bookId, intro] of Object.entries(typedIntrosData)) {
+    const fullText = intro.full_intro_text;
     let canonicalBookId: number | undefined;
 
     if (typeof fullText === "string") {
@@ -90,20 +98,21 @@ export async function seedBookIntroductions(
     }
 
     if (!canonicalBookId) {
-      canonicalBookId = (intro as any).book_id ?? Number(bookId);
+      canonicalBookId = intro.book_id ?? Number(bookId);
     }
+
+    const payload: IntroData & { book_id: number } = {
+      ...intro,
+      book_id: canonicalBookId,
+    };
 
     await db
       .insertInto("book_introductions")
-      .values({
-        ...(intro as any),
-        book_id: canonicalBookId,
-      })
+      .values(payload as any)
       .onConflict((oc) =>
-        oc.columns(["book_id", "language_code", "version"]).doUpdateSet({
-          ...(intro as any),
-          book_id: canonicalBookId,
-        }),
+        oc
+          .columns(["book_id", "language_code", "version"])
+          .doUpdateSet(payload as any),
       )
       .execute();
 
