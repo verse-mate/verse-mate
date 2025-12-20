@@ -28,11 +28,24 @@ const introScreens: Array<{
     mobileImage: "/assets/splashScreens/Mobile-Splash-1.png",
   },
   {
+    title: "Book Introductions",
+    body: "For each book of the Bible, VerseMate gives you a concise introduction so you know what you're reading and why it matters.",
+    bullets: [
+      "Author & date – who wrote it and when",
+      "The book's role – where it fits in the Scripture",
+      "Key themes & keywords",
+      "Related books – how this book connects to the rest of the Bible",
+    ],
+    primaryCta: "Next",
+    image: "/assets/splashScreens/Desktop-Spalsh-2.png",
+    mobileImage: "/assets/splashScreens/Mobile-Splash-2.png",
+  },
+  {
     title: "Explore Any Book. Any Verse.",
     body: "Tap any verse to unlock deeper insight. Tap any word to see its original Hebrew or Greek meaning, pronunciation, and usage.",
     primaryCta: "Next",
-    image: "/assets/splashScreens/Desktop-Splash-2.png",
-    mobileImage: "/assets/splashScreens/Mobile-Splash-2.png",
+    image: "/assets/splashScreens/Desktop-Splash-3.png",
+    mobileImage: "/assets/splashScreens/Mobile-Splash-3.png",
   },
   {
     title: "Understand Scripture at Every Level",
@@ -43,8 +56,8 @@ const introScreens: Array<{
       "Detailed – rich historical and theological depth",
     ],
     primaryCta: "Next",
-    image: "/assets/splashScreens/Desktop-Splash-3.png",
-    mobileImage: "/assets/splashScreens/Mobile-Splash-3.png",
+    image: "/assets/splashScreens/Desktop-Splash-4.png",
+    mobileImage: "/assets/splashScreens/Mobile-Splash-4.png",
   },
   {
     title: "Explore the Bigger Story",
@@ -56,8 +69,8 @@ const introScreens: Array<{
       "People, places, and timelines",
     ],
     primaryCta: "Next",
-    image: "/assets/splashScreens/Desktop-Splash-4.png",
-    mobileImage: "/assets/splashScreens/Mobile-Splash-4.png",
+    image: "/assets/splashScreens/Desktop-Splash-5.png",
+    mobileImage: "/assets/splashScreens/Mobile-Splash-5.png",
   },
   {
     title: "Make It Personal. Share It Forward.",
@@ -67,15 +80,15 @@ const introScreens: Array<{
       "Share Scripture and insights with the people you love",
     ],
     primaryCta: "Next",
-    image: "/assets/splashScreens/Desktop-Splash-5.png",
-    mobileImage: "/assets/splashScreens/Mobile-Splash-5.png",
+    image: "/assets/splashScreens/Desktop-Splash-6.png",
+    mobileImage: "/assets/splashScreens/Mobile-Splash-6.png",
   },
   {
     title: "Built for Everyone, Everywhere",
     body: "VerseMate is available in many languages and will always be free for anyone around the world.",
     primaryCta: "Start Reading",
-    image: "/assets/splashScreens/Desktop-Splash-6.png",
-    mobileImage: "/assets/splashScreens/Mobile-Splash-6.png",
+    image: "/assets/splashScreens/Desktop-Splash-7.png",
+    mobileImage: "/assets/splashScreens/Mobile-Splash-7.png",
   },
 ];
 

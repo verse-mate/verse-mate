@@ -11,7 +11,7 @@
 .intro-splash-backdrop {
   position: absolute;
   inset: 0;
-  background: rgb(15 23 42 / 75%);
+  background: rgb(0 0 0 / 60%);
 }
 
 .intro-splash-card {
@@ -20,19 +20,22 @@
   width: 100%;
   margin: 0 16px;
   border-radius: 16px;
-  background: #fff;
+  background: #f5efe0;
   color: #0f172a;
+  border: 1px solid #000;
   box-shadow: 0 24px 60px rgb(15 23 42 / 45%);
   padding: 24px 20px 18px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 90vh;
+  overflow: hidden;
 }
 
 @media (prefers-color-scheme: dark) {
   .intro-splash-card {
-    background: #020617;
-    color: #e5e7eb;
+    background: #f5efe0;
+    color: #0f172a;
   }
 }
 
@@ -49,16 +52,27 @@
 
 .intro-splash-content {
   padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .intro-splash-visual {
   margin: 0 4px 10px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgb(212 180 109 / 6%);
 }
 
 .intro-splash-image {
   display: block;
   width: 100%;
-  border-radius: 12px;
+  max-height: 40vh;
+  object-fit: contain;
+  border-radius: 10px;
 }
 
 .intro-splash-title {
@@ -114,11 +128,11 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: #e5e7eb;
+  background: #000;
 }
 
 .intro-splash-dot-active {
-  background: #1d4ed8;
+  background: #e3c47e;
 }
 
 .intro-splash-actions {
@@ -127,36 +141,28 @@
   margin-left: auto;
 }
 
-.intro-splash-back {
-  min-width: 64px;
+button.intro-splash-back {
+  min-width: 0;
+  padding-inline: 14px;
+  background: #f5efe0;
+  color: #000;
   border-radius: 999px;
-  border: 1px solid #d1d5db;
-  background: transparent;
-  color: #4b5563;
-  font-size: 13px;
-  padding: 6px 10px;
-  cursor: pointer;
+  border: 1px solid #000;
 }
 
-.intro-splash-back:disabled {
+button.intro-splash-back:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-.intro-splash-primary {
-  min-width: 130px;
-  border-radius: 999px;
-  border: none;
-  background: #1d4ed8;
+button.intro-splash-primary {
+  min-width: 0;
+  padding-inline: 18px;
+  background: #d4b46d;
   color: #fff;
-  font-size: 14px;
+  border-radius: 999px;
+  border: 1px solid #d4b46d;
   font-weight: 600;
-  padding: 8px 16px;
-  cursor: pointer;
-}
-
-.intro-splash-primary:hover {
-  background: #1e40af;
 }
 
 @media (max-width: 480px) {
@@ -167,5 +173,31 @@
 
   .intro-splash-title {
     font-size: 20px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button.intro-splash-back {
+    transition: background-color 150ms ease-out, color 150ms ease-out,
+      border-color 150ms ease-out;
+  }
+
+  button.intro-splash-back:not(:disabled):hover,
+  button.intro-splash-back:not(:disabled):focus-visible {
+    background: #b09a6d;
+    border-color: #b09a6d;
+    color: #fff;
+  }
+
+  button.intro-splash-primary {
+    transition: background-color 150ms ease-out, color 150ms ease-out,
+      border-color 150ms ease-out;
+  }
+
+  button.intro-splash-primary:hover,
+  button.intro-splash-primary:focus-visible {
+    background: #000;
+    border-color: #d4b46d;
+    color: #d4b46d;
   }
 }
