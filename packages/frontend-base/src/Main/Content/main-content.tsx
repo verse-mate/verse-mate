@@ -1911,16 +1911,7 @@ export const MainContent = () => {
                     buttonsVisible={buttonsVisible}
                     scrollableCallbackRef={scrollableCallbackRef}
                   />
-                ) : // Auto-show book introduction only if:
-                // - URL flag showIntro is true
-                // - We have an intro for this book
-                // - User has NOT already viewed it (localStorage/DB)
-                // - It has not been dismissed in this session
-                showIntro &&
-                  typeof bookId === "number" &&
-                  introData &&
-                  !hasViewedIntro &&
-                  !dismissedIntrosRef.current.has(bookId) ? (
+                ) : showIntro && typeof bookId === "number" && introData ? (
                   // Show book introduction
                   (() => {
                     // Read verseId directly from URL to avoid React state timing issues
