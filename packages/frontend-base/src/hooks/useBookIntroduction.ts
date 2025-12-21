@@ -9,14 +9,24 @@ import {
 
 const STORAGE_KEY = "book-intros-viewed";
 
+// Simple in-memory cache so we don't JSON.parse localStorage on every render.
+// All hook instances share this cache.
+let viewedCache: number[] | null = null;
+
 /**
  * Get viewed book IDs from localStorage for non-logged-in users
  */
 function getViewedIntrosFromStorage(): number[] {
   if (typeof window === "undefined") return [];
+
+  // Use cached value if available
+  if (viewedCache) return viewedCache;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
+    if (!stored) {
+      viewedCache = [];
+      return viewedCache;
+    }
 
     const parsed = JSON.parse(stored);
     if (!Array.isArray(parsed)) {
@@ -26,9 +36,10 @@ function getViewedIntrosFromStorage(): number[] {
     }
 
     // Normalize to numeric book IDs to avoid string/number mismatch issues
-    return parsed
+    viewedCache = parsed
       .map((value) => Number(value))
       .filter((n) => Number.isFinite(n) && n > 0);
+    return viewedCache;
   } catch (error) {
     console.error("Failed to read viewed intros from localStorage:", error);
     // Clear corrupted data
@@ -37,7 +48,8 @@ function getViewedIntrosFromStorage(): number[] {
     } catch {
       // Ignore cleanup errors
     }
-    return [];
+    viewedCache = [];
+    return viewedCache;
   }
 }
 
@@ -49,8 +61,9 @@ function markIntroAsViewedInStorage(bookId: number): void {
   try {
     const viewed = getViewedIntrosFromStorage();
     if (!viewed.includes(bookId)) {
-      viewed.push(bookId);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(viewed));
+      const next = [...viewed, bookId];
+      viewedCache = next;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     }
   } catch (error) {
     console.error("Failed to save viewed intro to localStorage:", error);
