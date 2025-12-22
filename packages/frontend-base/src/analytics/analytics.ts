@@ -200,9 +200,16 @@ export const analytics = {
       $exception_type: errorName,
       $exception_message: errorMessage,
       $exception_stack_trace_raw: errorStack,
-      // Include any additional context properties
-      ...(context as unknown as PostHogProperties),
     };
+
+    // Safely merge context properties if provided
+    if (context) {
+      for (const [key, value] of Object.entries(context)) {
+        if (value !== undefined) {
+          properties[key] = value as PostHogCompatibleValue;
+        }
+      }
+    }
 
     // Capture as $exception event for PostHog's error tracking
     posthog.capture("$exception", properties);

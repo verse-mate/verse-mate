@@ -131,8 +131,11 @@ function isCrossOriginError(error: unknown): boolean {
 
 /**
  * Check if browser is currently offline
+ *
+ * Exported for testing purposes - wrap navigator.onLine access
+ * to make mocking more reliable across test environments.
  */
-function isOffline(): boolean {
+export function isOffline(): boolean {
   // Check if navigator exists (may not exist in SSR/non-browser environments)
   if (typeof navigator !== "undefined" && "onLine" in navigator) {
     return !navigator.onLine;
