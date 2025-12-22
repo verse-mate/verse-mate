@@ -178,9 +178,6 @@ export default function HowItWorksSection() {
                 height: "380.3px",
                 left: "78px",
                 top: "0px",
-                background: "rgba(0, 0, 0, 0.001)",
-                boxShadow: "4px 4px 50px rgba(0, 0, 0, 0.1)",
-                borderRadius: "20px",
               }}
             >
               <div
@@ -212,9 +209,6 @@ export default function HowItWorksSection() {
                 height: "380.3px",
                 left: "290px",
                 top: "115px",
-                background: "rgba(0, 0, 0, 0.001)",
-                boxShadow: "4px 4px 50px rgba(0, 0, 0, 0.1)",
-                borderRadius: "20px",
               }}
             >
               <div
@@ -246,9 +240,6 @@ export default function HowItWorksSection() {
                 height: "380.3px",
                 left: "0px",
                 top: "278px",
-                background: "rgba(0, 0, 0, 0.001)",
-                boxShadow: "4px 4px 50px rgba(0, 0, 0, 0.1)",
-                borderRadius: "20px",
               }}
             >
               <div

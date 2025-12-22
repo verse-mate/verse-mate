@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import "dotenv/config";
-import { db } from "database";
+import { db } from "@verse-mate/database";
 
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,

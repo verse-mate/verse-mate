@@ -202,107 +202,64 @@ export default function MobileHero() {
         </div>
       </div>
 
-      {/* Hero Image */}
+      {/* Hero Image Container - Mobile */}
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          padding: "0px",
-          isolation: "isolate",
           position: "absolute",
           width: "392px",
-          height: "528px",
-          right: "24px",
-          top: "524px",
+          height: "400px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          bottom: "-40px",
+          zIndex: 10,
         }}
       >
-        {/* Shadow */}
-        <div
+        {/* Background iPad View - Largest */}
+        <img
+          src="/ipad.png"
+          alt="Desktop View"
           style={{
             position: "absolute",
-            width: "392px",
-            height: "11px",
-            left: "calc(50% - 392px/2)",
-            top: "264px",
-            background: "rgba(0, 0, 0, 0.75)",
-            filter: "blur(20px)",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-            zIndex: 0,
+            right: "0%",
+            top: "0px",
+            width: "412px",
+            height: "auto",
+            borderRadius: "12px",
+            zIndex: 10,
           }}
         />
 
-        {/* iPad */}
-        <div
+        {/* Middle Bible Reader View - Overlapping Left */}
+        <img
+          src="/bibleReader.png"
+          alt="Bible Reader View"
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            padding: "8px",
-            gap: "8px",
-            width: "392px",
-            height: "264px",
-            background: "rgba(0, 0, 0, 0.001)",
-            borderRadius: "16px",
-            border: "0.5px solid #D4B896",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-            zIndex: 1,
+            position: "absolute",
+            left: "17%",
+            top: "10%",
+            width: "45%",
+            height: "auto",
+            aspectRatio: "160 / 198",
+            borderRadius: "10px",
+            zIndex: 20,
           }}
-        >
-          <div
-            style={{
-              width: "376px",
-              height: "248px",
-              backgroundImage: "url(/ipad.png)",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              borderRadius: "8px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-            }}
-          />
-        </div>
+        />
 
-        {/* iPad Reflection */}
-        <div
+        {/* Front Summary View - Overlapping Right */}
+        <img
+          src="/summary.png"
+          alt="Summary View"
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            padding: "8px",
-            gap: "8px",
-            width: "392px",
-            height: "264px",
-            background: "rgba(0, 0, 0, 0.001)",
-            opacity: 0.05,
+            position: "absolute",
+            right: "33%",
+            top: "17%",
+            width: "33%",
+            height: "auto",
+            aspectRatio: "108 / 175",
             borderRadius: "16px",
-            border: "0.5px solid rgba(212, 184, 150, 0.3)",
-            transform: "scaleY(-1)",
-            flex: "none",
-            order: 2,
-            flexGrow: 0,
-            zIndex: 2,
+            zIndex: 30,
           }}
-        >
-          <div
-            style={{
-              width: "376px",
-              height: "248px",
-              backgroundImage: "url(/ipad.png)",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              borderRadius: "8px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-            }}
-          />
-        </div>
+        />
       </div>
 
       {/* Text Line */}
