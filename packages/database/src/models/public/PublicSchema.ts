@@ -22,6 +22,8 @@ import type { default as NotesTable } from "./Notes";
 import type { default as PromptsTable } from "./Prompts";
 import type { default as RefreshTokensTable } from "./RefreshTokens";
 import type { default as SubtitlesTable } from "./Subtitles";
+import type { default as SupportConversationsTable } from "./SupportConversations";
+import type { default as SupportMessagesTable } from "./SupportMessages";
 import type { default as TopicExplanationsTable } from "./TopicExplanations";
 import type { default as TopicReferencesTable } from "./TopicReferences";
 import type { default as TopicTranslationsTable } from "./TopicTranslations";
@@ -104,4 +106,8 @@ export default interface PublicSchema {
   book_introductions: BookIntroductionsTable;
 
   user_viewed_book_introductions: UserViewedBookIntroductionsTable;
+
+  support_conversations: SupportConversationsTable;
+
+  support_messages: SupportMessagesTable;
 }
