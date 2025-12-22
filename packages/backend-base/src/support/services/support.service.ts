@@ -188,9 +188,13 @@ export class SupportService {
       .digest("hex");
     const computedSignature = `v0=${hmac}`;
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(computedSignature),
-    );
+    const sigBuffer = Buffer.from(signature);
+    const compBuffer = Buffer.from(computedSignature);
+
+    if (sigBuffer.length !== compBuffer.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(sigBuffer as any, compBuffer as any);
   }
 }
