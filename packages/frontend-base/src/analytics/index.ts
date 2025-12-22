@@ -36,6 +36,7 @@ export {
   shouldExcludeError,
   collectErrorContext,
   extractErrorDetails,
+  isOffline,
 } from "./error-filters";
 export type { ExceptionContext } from "./error-filters";
 
