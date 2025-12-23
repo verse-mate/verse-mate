@@ -77,21 +77,33 @@ export default function Footer() {
           </Link>
         </div>
 
-        {/* Footer - Adjusted width since social icons are commented out */}
+        {/* Footer Links */}
         <div
           style={{
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
             padding: "0px",
-            gap: "0px",
-            width: "0px",
+            gap: "24px",
             height: "24px",
             flex: "none",
             order: 1,
             flexGrow: 0,
           }}
         >
+          <Link
+            href="/privacy"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 400,
+              fontSize: "14px",
+              lineHeight: "24px",
+              color: "#FFFFFF",
+              textDecoration: "none",
+            }}
+          >
+            Privacy Policy
+          </Link>
           {/* Icons - Commented out for future use
           <div
             style={{

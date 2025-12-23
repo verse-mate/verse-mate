@@ -71,113 +71,33 @@ export default function Footer() {
           </Link>
         </div>
 
-        {/* Social Icons */}
+        {/* Footer Links */}
         <div
           style={{
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
             padding: "0px",
-            gap: "64px",
-            width: "96px",
+            gap: "24px",
             height: "24px",
             flex: "none",
             order: 1,
             flexGrow: 0,
           }}
         >
-          <div
+          <Link
+            href="/privacy"
             style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "flex-start",
-              padding: "0px",
-              gap: "12px",
-              width: "96px",
-              height: "24px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 400,
+              fontSize: "14px",
+              lineHeight: "24px",
+              color: "#FFFFFF",
+              textDecoration: "none",
             }}
           >
-            {/* Facebook */}
-            <div
-              style={{
-                width: "24px",
-                height: "24px",
-                flex: "none",
-                order: 0,
-                flexGrow: 0,
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  left: "10.94%",
-                  right: "10.94%",
-                  top: "10.94%",
-                  bottom: "10.94%",
-                  background: "transparent",
-                  width: "19px",
-                  height: "19px",
-                  display: "none",
-                }}
-              />
-            </div>
-
-            {/* Instagram */}
-            <div
-              style={{
-                width: "24px",
-                height: "24px",
-                flex: "none",
-                order: 1,
-                flexGrow: 0,
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  left: "5.4%",
-                  right: "5.37%",
-                  top: "5.37%",
-                  bottom: "5.4%",
-                  background: "transparent",
-                  width: "21px",
-                  height: "21px",
-                  display: "none",
-                }}
-              />
-            </div>
-
-            {/* Twitter */}
-            <div
-              style={{
-                width: "24px",
-                height: "24px",
-                flex: "none",
-                order: 2,
-                flexGrow: 0,
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  left: "13.33%",
-                  right: "13.34%",
-                  top: "13.33%",
-                  bottom: "13.28%",
-                  background: "transparent",
-                  width: "18px",
-                  height: "18px",
-                  display: "none",
-                }}
-              />
-            </div>
-          </div>
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </footer>
