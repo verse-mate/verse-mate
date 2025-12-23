@@ -622,6 +622,7 @@ export default function DesktopPrivacyPage() {
                       background: "#F5F5F5",
                       border: "1px solid #E0E0E0",
                       fontWeight: 600,
+                      color: "#333333",
                     }}
                   >
                     Data Type
@@ -633,6 +634,7 @@ export default function DesktopPrivacyPage() {
                       background: "#F5F5F5",
                       border: "1px solid #E0E0E0",
                       fontWeight: 600,
+                      color: "#333333",
                     }}
                   >
                     Retention Period
@@ -641,42 +643,42 @@ export default function DesktopPrivacyPage() {
               </thead>
               <tbody>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Account information
                   </td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Until you delete your account
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Bookmarks, highlights, notes
                   </td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Until you delete them or your account
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Reading history
                   </td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Until you delete your account
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Analytics data
                   </td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     12 months, then anonymized
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     Error/crash logs
                   </td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>
                     90 days
                   </td>
                 </tr>

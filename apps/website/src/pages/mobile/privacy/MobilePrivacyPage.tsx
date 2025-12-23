@@ -299,30 +299,30 @@ export default function MobilePrivacyPage() {
               <table style={{ width: "100%", minWidth: "300px", borderCollapse: "collapse", fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontSize: "13px", lineHeight: "20px" }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: "left", padding: "10px 12px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600 }}>Data Type</th>
-                    <th style={{ textAlign: "left", padding: "10px 12px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600 }}>Retention Period</th>
+                    <th style={{ textAlign: "left", padding: "10px 12px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600, color: "#333333" }}>Data Type</th>
+                    <th style={{ textAlign: "left", padding: "10px 12px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600, color: "#333333" }}>Retention Period</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Account information</td>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Until you delete your account</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Account information</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Until you delete your account</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Bookmarks, highlights, notes</td>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Until you delete them or your account</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Bookmarks, highlights, notes</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Until you delete them or your account</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Reading history</td>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Until you delete your account</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Reading history</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Until you delete your account</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Analytics data</td>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>12 months, then anonymized</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Analytics data</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>12 months, then anonymized</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>Error/crash logs</td>
-                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 200 }}>90 days</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Error/crash logs</td>
+                    <td style={{ padding: "10px 12px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>90 days</td>
                   </tr>
                 </tbody>
               </table>

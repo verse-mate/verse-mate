@@ -309,30 +309,30 @@ export default function TabletPrivacyPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-inter)", fontSize: "16px", lineHeight: "24px", marginBottom: "24px" }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", padding: "12px 16px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600 }}>Data Type</th>
-                  <th style={{ textAlign: "left", padding: "12px 16px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600 }}>Retention Period</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600, color: "#333333" }}>Data Type</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", background: "#F5F5F5", border: "1px solid #E0E0E0", fontWeight: 600, color: "#333333" }}>Retention Period</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Account information</td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Until you delete your account</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Account information</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Until you delete your account</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Bookmarks, highlights, notes</td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Until you delete them or your account</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Bookmarks, highlights, notes</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Until you delete them or your account</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Reading history</td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Until you delete your account</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Reading history</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Until you delete your account</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Analytics data</td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>12 months, then anonymized</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Analytics data</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>12 months, then anonymized</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>Error/crash logs</td>
-                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 300 }}>90 days</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>Error/crash logs</td>
+                  <td style={{ padding: "12px 16px", border: "1px solid #E0E0E0", fontWeight: 400, color: "#333333" }}>90 days</td>
                 </tr>
               </tbody>
             </table>
