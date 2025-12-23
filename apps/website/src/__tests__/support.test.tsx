@@ -4,7 +4,7 @@
  * These tests verify the Support page functionality:
  * - Route renders without errors
  * - Page contains "Contact Support" heading
- * - mailto link to versematehelp@gmail.com is present
+ * - mailto link to info@versemate.org is present
  * - Page follows expected styling patterns
  *
  * Note: To run these tests, a test framework (Jest/Vitest + React Testing Library)
@@ -79,12 +79,12 @@ describe("Support Page", () => {
       render(<DesktopSupportPage />);
     });
 
-    it("contains mailto link to versematehelp@gmail.com", () => {
+    it("contains mailto link to info@versemate.org", () => {
       const mailtoLinks = screen.getAllByRole("link", { name: /info@versemate\.org/ });
       expect(mailtoLinks.length).toBeGreaterThan(0);
 
       const emailLink = mailtoLinks.find(
-        (link) => link.getAttribute("href") === "mailto:versematehelp@gmail.com"
+        (link) => link.getAttribute("href") === "mailto:info@versemate.org"
       );
       expect(emailLink).toBeInTheDocument();
     });

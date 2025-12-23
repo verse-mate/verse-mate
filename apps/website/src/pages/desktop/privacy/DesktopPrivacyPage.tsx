@@ -756,7 +756,7 @@ export default function DesktopPrivacyPage() {
               }}
             >
               You can view your personal data within the app settings. Contact us at{" "}
-              <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>{" "}
+              <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>{" "}
               to request a copy of your data.
             </p>
 
@@ -812,7 +812,7 @@ export default function DesktopPrivacyPage() {
               }}
             >
               You can delete individual bookmarks, highlights, and notes at any time. To delete your entire account and all associated data, contact us at{" "}
-              <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>.
+              <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>.
             </p>
 
             <p
@@ -921,7 +921,7 @@ export default function DesktopPrivacyPage() {
               }}
             >
               If you are in the European Economic Area, you have rights under the General Data Protection Regulation, including access, rectification, erasure, restriction, portability, and objection. Contact us at{" "}
-              <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>{" "}
+              <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>{" "}
               to exercise these rights.
             </p>
           </section>
@@ -985,7 +985,7 @@ export default function DesktopPrivacyPage() {
               }}
             >
               While we strive to protect your information, no method of transmission or storage is 100% secure. If you discover a security vulnerability, please contact us at{" "}
-              <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>.
+              <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>.
             </p>
           </section>
 
@@ -1018,7 +1018,7 @@ export default function DesktopPrivacyPage() {
               }}
             >
               VerseMate is intended for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us at{" "}
-              <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>, and we will delete such information.
+              <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>, and we will delete such information.
             </p>
           </section>
 
@@ -1157,7 +1157,7 @@ export default function DesktopPrivacyPage() {
               }}
             >
               <strong>Email:</strong>{" "}
-              <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>
+              <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>
             </p>
             <p
               style={{

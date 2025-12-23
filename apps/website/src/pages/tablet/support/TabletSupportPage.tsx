@@ -205,7 +205,7 @@ export default function TabletSupportPage() {
                   Send us an email and we'll get back to you as soon as possible.
                 </p>
                 <a
-                  href="mailto:versematehelp@gmail.com"
+                  href="mailto:info@versemate.org"
                   style={{
                     display: "inline-flex",
                     flexDirection: "row",
@@ -228,7 +228,7 @@ export default function TabletSupportPage() {
                       color: "#000000",
                     }}
                   >
-                    versematehelp@gmail.com
+                    info@versemate.org
                   </span>
                 </a>
               </div>

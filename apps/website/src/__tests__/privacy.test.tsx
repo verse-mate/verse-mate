@@ -4,7 +4,7 @@
  * These tests verify the Privacy Policy page functionality:
  * - Route renders without errors
  * - All 12 content sections are present
- * - mailto links point to versematehelp@gmail.com
+ * - mailto links point to info@versemate.org
  * - Internal link to /support exists
  *
  * Note: To run these tests, a test framework (Jest/Vitest + React Testing Library)
@@ -95,12 +95,12 @@ describe("Privacy Policy Page", () => {
       render(<DesktopPrivacyPage />);
     });
 
-    it("contains mailto links to versematehelp@gmail.com", () => {
+    it("contains mailto links to info@versemate.org", () => {
       const mailtoLinks = screen.getAllByRole("link", { name: /info@versemate\.org/ });
       expect(mailtoLinks.length).toBeGreaterThan(0);
 
       mailtoLinks.forEach((link) => {
-        expect(link).toHaveAttribute("href", "mailto:versematehelp@gmail.com");
+        expect(link).toHaveAttribute("href", "mailto:info@versemate.org");
       });
     });
 
