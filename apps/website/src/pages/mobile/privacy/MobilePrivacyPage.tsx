@@ -346,7 +346,7 @@ export default function MobilePrivacyPage() {
 
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 600, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0 0 8px 0" }}>Access & Portability</p>
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 200, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0 0 12px 0" }}>
-              You can view your personal data within the app settings. Contact us at <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a> to request a copy of your data.
+              You can view your personal data within the app settings. Contact us at <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a> to request a copy of your data.
             </p>
 
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 600, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0 0 8px 0" }}>Correction</p>
@@ -356,7 +356,7 @@ export default function MobilePrivacyPage() {
 
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 600, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0 0 8px 0" }}>Deletion</p>
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 200, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0 0 12px 0" }}>
-              You can delete individual bookmarks, highlights, and notes at any time. To delete your entire account, contact us at <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>.
+              You can delete individual bookmarks, highlights, and notes at any time. To delete your entire account, contact us at <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>.
             </p>
 
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 600, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0 0 8px 0" }}>Opt-Out of Analytics</p>
@@ -376,7 +376,7 @@ export default function MobilePrivacyPage() {
 
             <h3 style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 600, fontSize: "16px", lineHeight: "24px", color: "#000000", margin: "0 0 8px 0" }}>For European Users (GDPR)</h3>
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 200, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0" }}>
-              If you are in the European Economic Area, you have rights under the General Data Protection Regulation. Contact us at <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a> to exercise these rights.
+              If you are in the European Economic Area, you have rights under the General Data Protection Regulation. Contact us at <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a> to exercise these rights.
             </p>
           </div>
 
@@ -397,7 +397,7 @@ export default function MobilePrivacyPage() {
               <li><strong>Regular Audits:</strong> We regularly review our security practices</li>
             </ul>
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 200, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0" }}>
-              If you discover a security vulnerability, please contact us at <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>.
+              If you discover a security vulnerability, please contact us at <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>.
             </p>
           </div>
 
@@ -409,7 +409,7 @@ export default function MobilePrivacyPage() {
             <div style={{ width: "48px", height: "4px", background: "#C2B291", marginBottom: "16px" }} />
 
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 200, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0" }}>
-              VerseMate is intended for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us at <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>.
+              VerseMate is intended for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us at <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>.
             </p>
           </div>
 
@@ -456,7 +456,7 @@ export default function MobilePrivacyPage() {
               If you have questions about this Privacy Policy or our data practices, please contact us:
             </p>
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 200, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0 0 8px 0" }}>
-              <strong>Email:</strong> <a href="mailto:info@versemate.org" style={{ color: "#C2B291" }}>info@versemate.org</a>
+              <strong>Email:</strong> <a href="mailto:versematehelp@gmail.com" style={{ color: "#C2B291" }}>versematehelp@gmail.com</a>
             </p>
             <p style={{ fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)", fontWeight: 200, fontSize: "14px", lineHeight: "22px", color: "#000000", margin: "0" }}>
               <strong>Support:</strong> <Link href="/support" style={{ color: "#C2B291" }}>https://versemate.org/support</Link>

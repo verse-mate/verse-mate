@@ -194,7 +194,7 @@ export default function DesktopSupportPage() {
                   Send us an email and we'll get back to you as soon as possible.
                 </p>
                 <a
-                  href="mailto:info@versemate.org"
+                  href="mailto:versematehelp@gmail.com"
                   style={{
                     display: "inline-flex",
                     flexDirection: "row",
@@ -217,7 +217,7 @@ export default function DesktopSupportPage() {
                       color: "#000000",
                     }}
                   >
-                    info@versemate.org
+                    versematehelp@gmail.com
                   </span>
                 </a>
               </div>
