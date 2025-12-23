@@ -184,8 +184,6 @@ export default function MobileHowItWorks() {
                 height: "214px",
                 left: "43px",
                 top: "0px",
-                background: "rgba(0, 0, 0, 0.001)",
-                boxShadow: "2.22096px 2.22096px 27.762px rgba(0, 0, 0, 0.1)",
                 borderRadius: "12px",
               }}
             >
@@ -216,8 +214,6 @@ export default function MobileHowItWorks() {
                 height: "215px",
                 left: "158px",
                 top: "64px",
-                background: "rgba(0, 0, 0, 0.001)",
-                boxShadow: "2.22096px 2.22096px 27.762px rgba(0, 0, 0, 0.1)",
                 borderRadius: "12px",
               }}
             >
@@ -248,8 +244,6 @@ export default function MobileHowItWorks() {
                 height: "214px",
                 left: "0px",
                 top: "154px",
-                background: "rgba(0, 0, 0, 0.001)",
-                boxShadow: "2.22096px 2.22096px 27.762px rgba(0, 0, 0, 0.1)",
                 borderRadius: "12px",
               }}
             >
