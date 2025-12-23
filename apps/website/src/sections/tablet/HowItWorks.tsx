@@ -168,7 +168,6 @@ export default function HowItWorks() {
                 height: "380.3px",
                 left: "173px",
                 top: "0px",
-                boxShadow: "4px 4px 50px rgba(0, 0, 0, 0.1)",
                 borderRadius: "20px",
                 backgroundImage: "url(/howitworks1.png)",
                 backgroundSize: "cover",
@@ -184,7 +183,6 @@ export default function HowItWorks() {
                 height: "380.3px",
                 left: "385px",
                 top: "115px",
-                boxShadow: "4px 4px 50px rgba(0, 0, 0, 0.1)",
                 borderRadius: "20px",
                 backgroundImage: "url(/howitworks2.png)",
                 backgroundSize: "cover",
@@ -200,7 +198,6 @@ export default function HowItWorks() {
                 height: "380.3px",
                 left: "95px",
                 top: "278px",
-                boxShadow: "4px 4px 50px rgba(0, 0, 0, 0.1)",
                 borderRadius: "20px",
                 backgroundImage: "url(/howitworks3.png)",
                 backgroundSize: "cover",
@@ -395,7 +392,7 @@ export default function HowItWorks() {
         {/* Text Line */}
         <p
           style={{
-            width: "896px",
+            width: "740px",
             height: "64px",
             fontFamily: "var(--font-inter)",
             fontStyle: "normal",
@@ -410,7 +407,8 @@ export default function HowItWorks() {
             flexGrow: 0,
           }}
         >
-          Choose the level of depth that fits your study style and spiritual journey.
+          Available in multiple Bible versions and languages - so anyone,
+          anywhere, can understand the truth.
         </p>
       </div>
     </section>
