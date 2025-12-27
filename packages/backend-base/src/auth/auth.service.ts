@@ -763,5 +763,140 @@ export class AuthService {
     return this.getUserById(userId);
   }
 
+  /**
+   * Delete user account and all associated data
+   *
+   * This method permanently deletes a user's account and all related data
+   * from the database. It requires password verification for email/password
+   * accounts but skips it for SSO-only accounts (where password is null).
+   *
+   * Data deleted includes:
+   * - User record
+   * - All refresh tokens (sessions)
+   * - SSO account links
+   * - Reading progress and history
+   * - Notes, highlights, and favorites
+   * - Conversations and ratings
+   * - Theme preferences
+   *
+   * @param userId - The ID of the user to delete
+   * - password - The user's current password (required for email/password accounts)
+   * @throws UnauthorizedError if password is incorrect or required but not provided
+   * @throws NotFoundError if user doesn't exist
+   */
+  public async deleteAccount(userId: string, password?: string): Promise<void> {
+    // Get user to check if password is needed
+    const user = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .where("id", "=", userId)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    // For email/password accounts, require password verification
+    if (user.password !== null) {
+      if (!password) {
+        const error = new ValidationError(
+          "Password is required to delete your account",
+        );
+        error.code = "PASSWORD_REQUIRED";
+        throw error;
+      }
+
+      // Verify password is correct
+      const validPassword = await Bun.password.verify(
+        password,
+        user.password,
+        "bcrypt",
+      );
+
+      if (!validPassword) {
+        throw new UnauthorizedError("Invalid password");
+      }
+    }
+
+    // Clear all access tokens from Redis first (before transaction)
+    await this.cache.delete(cacheConstants.accessToken(userId));
+
+    // Delete all user data in a transaction to ensure atomicity
+    await this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        // Delete dependent data first (order matters for foreign key constraints)
+        // 1. Explanation ratings
+        await trx
+          .deleteFrom("explanation_ratings")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 2. Conversations (will cascade to messages via FK)
+        await trx
+          .deleteFrom("conversations")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 3. Favorites
+        await trx
+          .deleteFrom("favorites")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 4. Notes
+        await trx.deleteFrom("notes").where("user_id", "=", userId).execute();
+
+        // 5. Verse highlights
+        await trx
+          .deleteFrom("verse_highlights")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 6. User theme preferences
+        await trx
+          .deleteFrom("user_theme_preferences")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 7. User viewed book introductions
+        await trx
+          .deleteFrom("user_viewed_book_introductions")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 8. User recently viewed books
+        await trx
+          .deleteFrom("user_recently_viewed_books")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 9. User progress
+        await trx
+          .deleteFrom("user_progress")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 10. User SSO accounts
+        await trx
+          .deleteFrom("user_sso_accounts")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 11. Refresh tokens
+        await trx
+          .deleteFrom("refresh_tokens")
+          .where("user_id", "=", userId)
+          .execute();
+
+        // 12. Delete user record last
+        await trx.deleteFrom("user").where("id", "=", userId).execute();
+      });
+
+    // Transaction completed successfully
+  }
+
   // TODO: Implement refresh accessToken (keep alive)
 }
