@@ -138,4 +138,20 @@ export const authRateLimiters = {
     },
     message: "Too many SSO attempts, please try again in a minute",
   }),
+
+  /**
+   * Delete account rate limiter: 3 attempts per user per hour
+   * Prevents abuse of account deletion endpoint while allowing legitimate retries
+   * if password is incorrect
+   */
+  deleteAccount: createRateLimit({
+    windowSeconds: 3600,
+    max: 3,
+    keyGenerator: (context) => {
+      // Use currentUserId from authDerive
+      const userId = context.currentUserId || "unknown";
+      return `delete-account:${userId}`;
+    },
+    message: "Too many deletion attempts, please try again later",
+  }),
 };

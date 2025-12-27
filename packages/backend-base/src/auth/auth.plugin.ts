@@ -215,6 +215,32 @@ const plugin = new Elysia()
                 ...StandardErrorResponses,
               },
             },
+          )
+          .delete(
+            "/account",
+            async ({ currentUserId, body, store: { authService }, set }) => {
+              if (!currentUserId) {
+                throw new UnauthorizedError("Unauthorized");
+              }
+              await authService.deleteAccount(currentUserId, body?.password);
+              set.status = 200;
+              return { success: true, message: "Account successfully deleted" };
+            },
+            {
+              body: t.Optional(
+                t.Object({
+                  password: t.Optional(t.String()),
+                }),
+              ),
+              beforeHandle: authRateLimiters.deleteAccount,
+              response: {
+                200: t.Object({
+                  success: t.Boolean(),
+                  message: t.String(),
+                }),
+                ...StandardErrorResponses,
+              },
+            },
           ),
       )
       .post(
