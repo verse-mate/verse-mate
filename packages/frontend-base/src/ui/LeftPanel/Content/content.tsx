@@ -75,7 +75,11 @@ export const Content = ({
   const { showIntro } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
   const { session } = userSession();
-  const { introduction: introData, markAsViewed } = useBookIntroduction(
+  const {
+    introduction: introData,
+    hasViewed: hasViewedIntro,
+    markAsViewed,
+  } = useBookIntroduction(
     !isViewingTopic && typeof bookId === "number" ? bookId : null,
     "en",
   );
@@ -126,6 +130,8 @@ export const Content = ({
   }
 
   // Check if we should show intro
+  // Auto-popup respects hasViewedIntro via logic in MainContent;
+  // manual Book Overview button should always show when showIntro is true.
   if (showIntro && bookVerseData && introData) {
     const handleContinue = () => {
       markAsViewed(bookId, !!session);
