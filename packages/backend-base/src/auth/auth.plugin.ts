@@ -33,6 +33,7 @@ import {
   buildAppleOAuthUrl,
   buildFrontendCallbackUrl,
   buildGoogleOAuthUrl,
+  createRedirectResponse,
   extractClientIp,
   getSSOConfig,
 } from "./sso/sso.utils";
@@ -422,13 +423,11 @@ const plugin = new Elysia()
 
           // Build OAuth URL and redirect
           const authUrl = buildGoogleOAuthUrl(state);
-          set.redirect = authUrl;
-          set.status = 302;
-          return;
+          return createRedirectResponse(authUrl);
         },
         {
           response: {
-            302: t.Undefined(),
+            302: t.Any(),
             ...StandardErrorResponses,
           },
         },
@@ -448,22 +447,22 @@ const plugin = new Elysia()
           if (error) {
             // Log minimal info to avoid sensitive data in logs
             console.warn("Google OAuth callback failed");
-            set.redirect = buildFrontendCallbackUrl("google", {
-              error: "oauth_error",
-              errorDescription: "OAuth authentication failed",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", {
+                error: "oauth_error",
+                errorDescription: "OAuth authentication failed",
+              }),
+            );
           }
 
           // Verify state parameter
           if (!state) {
-            set.redirect = buildFrontendCallbackUrl("google", {
-              error: "invalid_state",
-              errorDescription: "Missing state parameter",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", {
+                error: "invalid_state",
+                errorDescription: "Missing state parameter",
+              }),
+            );
           }
 
           // Check state in Redis
@@ -480,12 +479,12 @@ const plugin = new Elysia()
             storedState.provider !== "google" ||
             now - storedState.createdAt > maxAgeMs
           ) {
-            set.redirect = buildFrontendCallbackUrl("google", {
-              error: "invalid_state",
-              errorDescription: "Invalid or expired state parameter",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", {
+                error: "invalid_state",
+                errorDescription: "Invalid or expired state parameter",
+              }),
+            );
           }
 
           // Delete used state to prevent replay attacks
@@ -493,12 +492,12 @@ const plugin = new Elysia()
 
           // Verify authorization code is present
           if (!code) {
-            set.redirect = buildFrontendCallbackUrl("google", {
-              error: "missing_code",
-              errorDescription: "Missing authorization code",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", {
+                error: "missing_code",
+                errorDescription: "Missing authorization code",
+              }),
+            );
           }
 
           try {
@@ -523,28 +522,28 @@ const plugin = new Elysia()
             );
 
             // Redirect to frontend with tokens
-            set.redirect = buildFrontendCallbackUrl("google", {
-              accessToken: authPayload.accessToken,
-              refreshToken: authPayload.refreshToken,
-              verified: authPayload.verified,
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", {
+                accessToken: authPayload.accessToken,
+                refreshToken: authPayload.refreshToken,
+                verified: authPayload.verified,
+              }),
+            );
           } catch (err) {
             // Log error internally but don't expose details to frontend
             console.error("Google SSO callback error:", err);
-            set.redirect = buildFrontendCallbackUrl("google", {
-              error: "auth_failed",
-              errorDescription: "OAuth authentication failed",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", {
+                error: "auth_failed",
+                errorDescription: "OAuth authentication failed",
+              }),
+            );
           }
         },
         {
           query: SSOCallbackQuery,
           response: {
-            302: t.Undefined(),
+            302: t.Any(),
             ...StandardErrorResponses,
           },
         },
@@ -577,13 +576,11 @@ const plugin = new Elysia()
 
           // Build OAuth URL and redirect
           const authUrl = buildAppleOAuthUrl(state);
-          set.redirect = authUrl;
-          set.status = 302;
-          return;
+          return createRedirectResponse(authUrl);
         },
         {
           response: {
-            302: t.Undefined(),
+            302: t.Any(),
             ...StandardErrorResponses,
           },
         },
@@ -603,22 +600,22 @@ const plugin = new Elysia()
           if (error) {
             // Log minimal info to avoid sensitive data in logs
             console.warn("Apple OAuth callback failed");
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "oauth_error",
-              errorDescription: "OAuth authentication failed",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "oauth_error",
+                errorDescription: "OAuth authentication failed",
+              }),
+            );
           }
 
           // Verify state parameter
           if (!state) {
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "invalid_state",
-              errorDescription: "Missing state parameter",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "invalid_state",
+                errorDescription: "Missing state parameter",
+              }),
+            );
           }
 
           // Check state in Redis
@@ -635,12 +632,12 @@ const plugin = new Elysia()
             storedState.provider !== "apple" ||
             now - storedState.createdAt > maxAgeMs
           ) {
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "invalid_state",
-              errorDescription: "Invalid or expired state parameter",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "invalid_state",
+                errorDescription: "Invalid or expired state parameter",
+              }),
+            );
           }
 
           // Delete used state to prevent replay attacks
@@ -648,12 +645,12 @@ const plugin = new Elysia()
 
           // Verify authorization code is present
           if (!code) {
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "missing_code",
-              errorDescription: "Missing authorization code",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "missing_code",
+                errorDescription: "Missing authorization code",
+              }),
+            );
           }
 
           try {
@@ -678,28 +675,28 @@ const plugin = new Elysia()
             );
 
             // Redirect to frontend with tokens
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              accessToken: authPayload.accessToken,
-              refreshToken: authPayload.refreshToken,
-              verified: authPayload.verified,
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                accessToken: authPayload.accessToken,
+                refreshToken: authPayload.refreshToken,
+                verified: authPayload.verified,
+              }),
+            );
           } catch (err) {
             // Log error internally but don't expose details to frontend
             console.error("Apple SSO callback error:", err);
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "auth_failed",
-              errorDescription: "OAuth authentication failed",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "auth_failed",
+                errorDescription: "OAuth authentication failed",
+              }),
+            );
           }
         },
         {
           query: SSOCallbackQuery,
           response: {
-            302: t.Undefined(),
+            302: t.Any(),
             ...StandardErrorResponses,
           },
         },
@@ -712,28 +709,28 @@ const plugin = new Elysia()
        */
       .post(
         "/sso/apple/callback",
-        async ({ body, store: { cache, authService }, jwt, set, request }) => {
+        async ({ body, store: { cache, authService }, jwt, request }) => {
           const { state, code, error, id_token, user } = body;
 
           // Handle OAuth errors from Apple
           if (error) {
             console.error("Apple OAuth error (POST):", error);
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: error,
-              errorDescription: "OAuth authentication failed",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: error,
+                errorDescription: "OAuth authentication failed",
+              }),
+            );
           }
 
           // Verify state parameter
           if (!state) {
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "invalid_state",
-              errorDescription: "Missing state parameter",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "invalid_state",
+                errorDescription: "Missing state parameter",
+              }),
+            );
           }
 
           // Check state in Redis
@@ -743,12 +740,12 @@ const plugin = new Elysia()
           }>(cacheConstants.ssoState(state));
 
           if (!storedState || storedState.provider !== "apple") {
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "invalid_state",
-              errorDescription: "Invalid or expired state parameter",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "invalid_state",
+                errorDescription: "Invalid or expired state parameter",
+              }),
+            );
           }
 
           // Delete used state to prevent replay attacks
@@ -757,12 +754,12 @@ const plugin = new Elysia()
           // Apple can send either code or id_token
           const tokenToVerify = code || id_token;
           if (!tokenToVerify) {
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "missing_code",
-              errorDescription: "Missing authorization code or ID token",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "missing_code",
+                errorDescription: "Missing authorization code or ID token",
+              }),
+            );
           }
 
           try {
@@ -824,22 +821,22 @@ const plugin = new Elysia()
             );
 
             // Redirect to frontend with tokens
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              accessToken: authPayload.accessToken,
-              refreshToken: authPayload.refreshToken,
-              verified: authPayload.verified,
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                accessToken: authPayload.accessToken,
+                refreshToken: authPayload.refreshToken,
+                verified: authPayload.verified,
+              }),
+            );
           } catch (err) {
             // Log error internally but don't expose details to frontend
             console.error("Apple SSO callback error (POST):", err);
-            set.redirect = buildFrontendCallbackUrl("apple", {
-              error: "auth_failed",
-              errorDescription: "OAuth authentication failed",
-            });
-            set.status = 302;
-            return;
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", {
+                error: "auth_failed",
+                errorDescription: "OAuth authentication failed",
+              }),
+            );
           }
         },
         {
@@ -851,7 +848,7 @@ const plugin = new Elysia()
             user: t.Optional(t.String()), // Apple sends user info as JSON string
           }),
           response: {
-            302: t.Undefined(),
+            302: t.Any(),
             ...StandardErrorResponses,
           },
         },
