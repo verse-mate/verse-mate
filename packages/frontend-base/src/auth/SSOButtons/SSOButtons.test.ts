@@ -209,13 +209,13 @@ describe("SSO Components Structure", () => {
 });
 
 describe("SSO Integration Points", () => {
-  it("should have correct redirect URLs defined", () => {
-    // These are the expected OAuth redirect endpoints
-    const googleRedirectUrl = "/api/auth/sso/google/redirect";
-    const appleRedirectUrl = "/api/auth/sso/apple/redirect";
+  it("should have correct redirect URL paths defined", () => {
+    // These are the expected OAuth redirect endpoint paths (appended to backend API URL)
+    const googleRedirectPath = "/auth/sso/google/redirect";
+    const appleRedirectPath = "/auth/sso/apple/redirect";
 
-    expect(googleRedirectUrl).toBe("/api/auth/sso/google/redirect");
-    expect(appleRedirectUrl).toBe("/api/auth/sso/apple/redirect");
+    expect(googleRedirectPath).toBe("/auth/sso/google/redirect");
+    expect(appleRedirectPath).toBe("/auth/sso/apple/redirect");
   });
 
   it("should define SSO button labels according to brand guidelines", () => {
