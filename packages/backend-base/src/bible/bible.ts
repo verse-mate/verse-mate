@@ -165,5 +165,10 @@ function getBookIdByName(bookName: string): number {
     Revelation: 66,
   };
 
-  return bookMap[bookName] || -1;
+  const id = bookMap[bookName];
+  if (!id) {
+    throw new Error(`Unknown book name: ${bookName}`);
+  }
+
+  return id;
 }
