@@ -123,6 +123,19 @@ export function buildFrontendCallbackUrl(
  * @param request - The incoming HTTP request
  * @returns The client IP address or undefined
  */
+/**
+ * Create a redirect Response object
+ *
+ * @param url - The URL to redirect to
+ * @returns A Response object with 302 status and Location header
+ */
+export function createRedirectResponse(url: string): Response {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: url },
+  });
+}
+
 export function extractClientIp(request: Request): string | undefined {
   const xff = request.headers.get("x-forwarded-for") || "";
   const xri = request.headers.get("x-real-ip") || "";
