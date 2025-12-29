@@ -183,8 +183,15 @@ export class AuthService {
     userAgent?: string,
     ipAddress?: string,
   ): Promise<AuthPayload> {
-    const { providerUserId, email, emailVerified, firstName, lastName, name } =
-      ssoUserInfo;
+    const {
+      providerUserId,
+      email,
+      emailVerified,
+      firstName,
+      lastName,
+      name,
+      picture,
+    } = ssoUserInfo;
     const normalizedEmail = email.toLowerCase().trim();
 
     // Step 1: Check if SSO account is already linked
@@ -203,11 +210,24 @@ export class AuthService {
         .selectAll()
         .executeTakeFirstOrThrow();
 
+      // Update profile picture if it changed
+      if (picture && picture !== user.imageSrc) {
+        await this.db
+          .getOrCreateConnection()
+          .updateTable("user")
+          .set({
+            imageSrc: picture,
+            picture_source: provider as any,
+          })
+          .where("id", "=", user.id)
+          .execute();
+      }
+
       return this.loginUser(user, jwt, userAgent, ipAddress);
     }
 
     // Step 2: Check if a user with this email already exists (case-insensitive)
-    let user = await this.db
+    const user = await this.db
       .getOrCreateConnection()
       .selectFrom("user")
       .where((eb) => eb(sql`LOWER(email)`, "=", normalizedEmail))
@@ -237,20 +257,32 @@ export class AuthService {
         // Link already exists, continue with login
       }
 
-      // If user's email was not verified but SSO email is verified, mark as verified
+      // Update user if email was not verified but SSO email is verified,
+      // or if profile picture changed
+      const updates: any = {};
       if (!user.emailVerified && emailVerified) {
+        updates.emailVerified = true;
+      }
+      if (picture && picture !== user.imageSrc) {
+        updates.imageSrc = picture;
+        updates.picture_source = provider;
+      }
+
+      let userToLogin: User = user;
+
+      if (Object.keys(updates).length > 0) {
         await this.db
           .getOrCreateConnection()
           .updateTable("user")
-          .set({ emailVerified: true })
+          .set(updates)
           .where("id", "=", user.id)
           .execute();
 
         // Update local user object
-        user = { ...user, emailVerified: true };
+        userToLogin = { ...user, ...updates };
       }
 
-      return this.loginUser(user, jwt, userAgent, ipAddress);
+      return this.loginUser(userToLogin, jwt, userAgent, ipAddress);
     }
 
     // Step 3: No user exists, create new user with SSO (no password)
@@ -273,6 +305,8 @@ export class AuthService {
         firstName: userFirstName || "User",
         lastName: userLastName || "",
         emailVerified: emailVerified, // SSO providers verify email
+        imageSrc: picture || null,
+        picture_source: (picture ? provider : null) as any,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -375,15 +409,19 @@ export class AuthService {
 
   public async getUserById(
     userId: string,
-  ): Promise<Pick<
-    User,
-    | "id"
-    | "email"
-    | "firstName"
-    | "lastName"
-    | "is_admin"
-    | "preferred_language"
-  > | null> {
+  ): Promise<
+    | (Pick<
+        User,
+        | "id"
+        | "email"
+        | "firstName"
+        | "lastName"
+        | "is_admin"
+        | "preferred_language"
+        | "imageSrc"
+      > & { hasPassword: boolean })
+    | null
+  > {
     const user = await this.db
       .getOrCreateConnection()
       .selectFrom("user")
@@ -395,10 +433,17 @@ export class AuthService {
         "lastName",
         "is_admin",
         "preferred_language",
+        "imageSrc",
+        "password",
       ])
       .executeTakeFirst();
     if (!user) return null;
-    return user;
+
+    const { password, ...userData } = user;
+    return {
+      ...userData,
+      hasPassword: password !== null,
+    };
   }
 
   public async logout(
@@ -709,15 +754,19 @@ export class AuthService {
   public async updateProfile(
     userId: string,
     authUpdateProfileInput: AuthUpdateProfileInput,
-  ): Promise<Pick<
-    User,
-    | "id"
-    | "email"
-    | "firstName"
-    | "lastName"
-    | "is_admin"
-    | "preferred_language"
-  > | null> {
+  ): Promise<
+    | (Pick<
+        User,
+        | "id"
+        | "email"
+        | "firstName"
+        | "lastName"
+        | "is_admin"
+        | "preferred_language"
+        | "imageSrc"
+      > & { hasPassword: boolean })
+    | null
+  > {
     const { firstName, lastName, email } = authUpdateProfileInput;
 
     // Check if the new email is already taken by another user (case-insensitive)
