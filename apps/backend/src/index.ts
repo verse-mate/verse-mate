@@ -5,6 +5,7 @@ import {
   authPlugin,
   biblePlugin,
   healthCheckPlugin,
+  supportPlugin,
   topicPlugin,
   userPlugin,
 } from "backend-base";
@@ -20,6 +21,7 @@ const app = new Elysia()
   .use(userPlugin)
   .use(biblePlugin)
   .use(topicPlugin)
+  .use(supportPlugin)
   .use(adminPlugin)
   .use(healthCheckPlugin)
   .use(cors())
