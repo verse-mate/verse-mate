@@ -69,6 +69,38 @@ export default function MobileHeader() {
           </Link>
         </div>
 
+        {/* Join as a Volunteer Button */}
+        <Link
+          href="/volunteer"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "12px 20px",
+            gap: "8px",
+            width: "160px",
+            height: "44px",
+            background: "#000000",
+            borderRadius: "100px",
+            flex: "none",
+            order: 1,
+            flexGrow: 0,
+            border: "none",
+            cursor: "pointer",
+            textDecoration: "none",
+            fontFamily: "var(--font-inter)",
+            fontStyle: "normal",
+            fontWeight: 600,
+            fontSize: "11px",
+            lineHeight: "16px",
+            color: "#FFFFFF",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Join as a Volunteer
+        </Link>
+
         {/* Hamburger Menu Button */}
         <button
           onClick={toggleMenu}

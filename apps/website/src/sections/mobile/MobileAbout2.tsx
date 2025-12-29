@@ -10,15 +10,17 @@ export default function MobileAbout2() {
         alignItems: "center",
         padding: "48px 24px",
         gap: "32px",
+        isolation: "isolate",
         width: "440px",
         height: "736px",
         background: "#F6F3EC",
         flex: "none",
-        order: 6,
+        order: 1,
         alignSelf: "stretch",
         flexGrow: 0,
         margin: "0 auto",
         maxWidth: "100vw",
+        zIndex: 1,
       }}
     >
       {/* Content */}

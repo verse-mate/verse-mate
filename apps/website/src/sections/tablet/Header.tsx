@@ -12,16 +12,14 @@ export default function Header() {
         justifyContent: "space-between",
         alignItems: "center",
         padding: "0px 64px",
-        gap: "794px",
-        position: "absolute",
+        width: "1024px",
         height: "76px",
-        left: "0px",
-        right: "0px",
-        top: "0px",
+        background: "#FFFFFF",
         flex: "none",
-        order: 8,
+        order: 0,
+        alignSelf: "stretch",
         flexGrow: 0,
-        zIndex: 8,
+        margin: "0 auto",
       }}
     >
       {/* Logo */}
@@ -52,11 +50,51 @@ export default function Header() {
             height={48}
             style={{
               objectFit: "contain",
-              filter: "brightness(0) invert(1)",
             }}
           />
         </Link>
       </div>
+
+      {/* Button */}
+      <Link
+        href="/volunteer"
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "16px 32px",
+          gap: "8px",
+          width: "208px",
+          height: "56px",
+          background: "#000000",
+          borderRadius: "100px",
+          flex: "none",
+          order: 1,
+          flexGrow: 0,
+          border: "none",
+          cursor: "pointer",
+          textDecoration: "none",
+        }}
+      >
+        <span
+          style={{
+            width: "145px",
+            height: "24px",
+            fontFamily: "var(--font-inter)",
+            fontStyle: "normal",
+            fontWeight: 400,
+            fontSize: "16px",
+            lineHeight: "24px",
+            color: "#FFFFFF",
+            flex: "none",
+            order: 0,
+            flexGrow: 0,
+          }}
+        >
+          Join as a Volunteer
+        </span>
+      </Link>
 
       {/* Menu - Hidden for tablet as per Figma design */}
       <nav
@@ -73,8 +111,7 @@ export default function Header() {
           order: 1,
           flexGrow: 0,
         }}
-      >
-      </nav>
+      ></nav>
     </header>
   );
 }
