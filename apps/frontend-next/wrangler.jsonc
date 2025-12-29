@@ -100,6 +100,8 @@
         "API_URL": "https://api.verse-mate.apegro.dev",
         "APP_URL": "https://app.versemate.org",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
+        "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
+        "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true",
         "POSTHOG_KEY": "phc_UhHXkLHgiD6916hYZgaKy9pjOOlZi9sTRic3RhWWLRC",
         "POSTHOG_HOST": "https://us.i.posthog.com",
         "POSTHOG_SESSION_REPLAY": "true"
