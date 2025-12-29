@@ -111,7 +111,7 @@ export default function HeroSection() {
               alignItems: "flex-start",
               padding: "24px 0px",
               gap: "24px",
-              width: "478px",
+              width: "436px",
               height: "128px",
               flex: "none",
               order: 2,
@@ -119,9 +119,55 @@ export default function HeroSection() {
               zIndex: 2,
             }}
           >
-            {/* Primary Button */}
-            <button
-              onClick={() => navigateToApp()}
+            {/* Primary Button - Try Versemate (outline) */}
+            <Link
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                navigateToApp();
+              }}
+              style={{
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "24px 32px",
+                gap: "8px",
+                width: "206px",
+                height: "80px",
+                border: "2px solid #FFFFFF",
+                borderRadius: "100px",
+                flex: "none",
+                order: 0,
+                flexGrow: 0,
+                textDecoration: "none",
+                cursor: "pointer",
+                background: "transparent",
+              }}
+            >
+              <span
+                style={{
+                  width: "142px",
+                  height: "32px",
+                  fontFamily: "var(--font-inter)",
+                  fontStyle: "normal",
+                  fontWeight: 600,
+                  fontSize: "20px",
+                  lineHeight: "32px",
+                  color: "#FFFFFF",
+                  flex: "none",
+                  order: 0,
+                  flexGrow: 0,
+                }}
+              >
+                Try Versemate
+              </span>
+            </Link>
+
+            {/* Secondary Button - Get the app (solid) */}
+            <Link
+              href="/download-app"
               style={{
                 display: "flex",
                 flexDirection: "row",
@@ -134,7 +180,7 @@ export default function HeroSection() {
                 background: "#FFFFFF",
                 borderRadius: "100px",
                 flex: "none",
-                order: 0,
+                order: 1,
                 flexGrow: 0,
                 textDecoration: "none",
                 border: "none",
@@ -143,7 +189,7 @@ export default function HeroSection() {
             >
               <span
                 style={{
-                  width: "142px",
+                  width: "113px",
                   height: "32px",
                   fontFamily: "var(--font-inter)",
                   fontStyle: "normal",
@@ -154,54 +200,13 @@ export default function HeroSection() {
                   flex: "none",
                   order: 0,
                   flexGrow: 0,
-                }}
-              >
-                Try Versemate
-              </span>
-            </button>
-
-            {/* Secondary Button */}
-            <Link
-              href="/volunteer"
-              style={{
-                boxSizing: "border-box",
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                padding: "24px 32px",
-                gap: "8px",
-                width: "248px",
-                height: "80px",
-                border: "2px solid #FFFFFF",
-                borderRadius: "100px",
-                flex: "none",
-                order: 1,
-                flexGrow: 0,
-                textDecoration: "none",
-              }}
-            >
-              <span
-                style={{
-                  width: "184px",
-                  height: "32px",
-                  fontFamily: "var(--font-inter)",
-                  fontStyle: "normal",
-                  fontWeight: 600,
-                  fontSize: "20px",
-                  lineHeight: "32px",
-                  color: "#FFFFFF",
-                  flex: "none",
-                  order: 0,
-                  flexGrow: 0,
                   textAlign: "center",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  whiteSpace: "nowrap",
                 }}
               >
-                Join as a Volunteer
+                Get the app
               </span>
             </Link>
           </div>
@@ -217,10 +222,14 @@ export default function HeroSection() {
             padding: "0px",
             gap: "8px",
             position: "absolute",
+            width: "1440px",
             height: "32px",
-            left: "0px",
-            right: "0px",
-            top: "828px",
+            left: "calc(50% - 1440px/2)",
+            bottom: "72px",
+            flex: "none",
+            order: 3,
+            flexGrow: 0,
+            zIndex: 3,
           }}
         >
           <span
