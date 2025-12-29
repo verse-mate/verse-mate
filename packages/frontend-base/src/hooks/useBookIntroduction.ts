@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import {
   type BookIntroduction,
   getBookIntroduction as fetchBookIntroduction,
@@ -10,14 +9,37 @@ import {
 
 const STORAGE_KEY = "book-intros-viewed";
 
+// Simple in-memory cache so we don't JSON.parse localStorage on every render.
+// All hook instances share this cache.
+let viewedCache: number[] | null = null;
+
 /**
  * Get viewed book IDs from localStorage for non-logged-in users
  */
 function getViewedIntrosFromStorage(): number[] {
   if (typeof window === "undefined") return [];
+
+  // Use cached value if available
+  if (viewedCache) return viewedCache;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) {
+      viewedCache = [];
+      return viewedCache;
+    }
+
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) {
+      // Legacy or corrupted format, clear it
+      localStorage.removeItem(STORAGE_KEY);
+      return [];
+    }
+
+    // Normalize to numeric book IDs to avoid string/number mismatch issues
+    viewedCache = parsed
+      .map((value) => Number(value))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    return viewedCache;
   } catch (error) {
     console.error("Failed to read viewed intros from localStorage:", error);
     // Clear corrupted data
@@ -26,7 +48,8 @@ function getViewedIntrosFromStorage(): number[] {
     } catch {
       // Ignore cleanup errors
     }
-    return [];
+    viewedCache = [];
+    return viewedCache;
   }
 }
 
@@ -38,8 +61,9 @@ function markIntroAsViewedInStorage(bookId: number): void {
   try {
     const viewed = getViewedIntrosFromStorage();
     if (!viewed.includes(bookId)) {
-      viewed.push(bookId);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(viewed));
+      const next = [...viewed, bookId];
+      viewedCache = next;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     }
   } catch (error) {
     console.error("Failed to save viewed intro to localStorage:", error);
@@ -60,12 +84,6 @@ export function useBookIntroduction(
   languageCode = "en",
 ) {
   const queryClient = useQueryClient();
-  const [localStorageViewed, setLocalStorageViewed] = useState<number[]>([]);
-
-  // Load localStorage on mount
-  useEffect(() => {
-    setLocalStorageViewed(getViewedIntrosFromStorage());
-  }, []);
 
   // Fetch introduction
   const { data, isLoading, error, refetch } = useQuery({
@@ -93,14 +111,15 @@ export function useBookIntroduction(
   });
 
   // Combined hasViewed: check both backend response and localStorage
-  const hasViewed =
-    data?.hasViewed ?? (bookId ? localStorageViewed.includes(bookId) : false);
+  const hasViewed = !!(
+    data?.hasViewed ||
+    (bookId && getViewedIntrosFromStorage().includes(bookId))
+  );
 
   // Mark as viewed function that works for both logged-in and non-logged-in users
   const markAsViewed = (bookId: number, isLoggedIn: boolean) => {
     // Optimistically update localStorage immediately to prevent race condition
     markIntroAsViewedInStorage(bookId);
-    setLocalStorageViewed(getViewedIntrosFromStorage());
 
     if (isLoggedIn) {
       // For logged-in users, also call the API
