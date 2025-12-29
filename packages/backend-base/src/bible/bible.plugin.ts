@@ -974,6 +974,7 @@ const plugin = new Elysia()
             user_id: body.user_id,
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            insight_type: body.insight_type,
           });
 
           return { success };
@@ -983,6 +984,7 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
             book_id: t.Number(),
             chapter_number: t.Number(),
+            insight_type: t.Optional(t.String()),
           }),
           response: {
             200: BookmarkActionSchema,
@@ -998,6 +1000,7 @@ const plugin = new Elysia()
           const user_id = query.user_id;
           const book_id = Number(query.book_id);
           const chapter_number = Number(query.chapter_number);
+          const insight_type = query.insight_type;
 
           if (
             !user_id ||
@@ -1014,6 +1017,7 @@ const plugin = new Elysia()
             user_id,
             book_id,
             chapter_number,
+            insight_type,
           });
 
           return { success };
@@ -1023,6 +1027,7 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
             book_id: t.String(),
             chapter_number: t.String(),
+            insight_type: t.Optional(t.String()),
           }),
           response: {
             200: BookmarkActionSchema,
@@ -1055,6 +1060,7 @@ const plugin = new Elysia()
             user_id: body.user_id,
             book_id: body.book_id,
             chapter_number: body.chapter_number,
+            insight_type: body.insight_type,
           });
 
           return { success };
@@ -1064,6 +1070,7 @@ const plugin = new Elysia()
             user_id: t.String({ format: "uuid" }),
             book_id: t.Number(),
             chapter_number: t.Number(),
+            insight_type: t.Optional(t.String()),
           }),
           response: {
             200: BookmarkActionSchema,

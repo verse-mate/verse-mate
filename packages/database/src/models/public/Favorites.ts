@@ -25,6 +25,8 @@ export default interface FavoritesTable {
     ChaptersChapterId,
     ChaptersChapterId
   >;
+
+  insight_type: ColumnType<string | null, string | null, string | null>;
 }
 
 export type Favorites = Selectable<FavoritesTable>;
