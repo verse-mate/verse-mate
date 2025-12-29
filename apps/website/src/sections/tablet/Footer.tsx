@@ -18,25 +18,26 @@ export default function Footer() {
         alignSelf: "stretch",
         flexGrow: 0,
         zIndex: 7,
+        margin: "0 auto",
       }}
     >
-      {/* Page Links */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0px",
-          gap: "48px",
-          width: "896px",
-          height: "34px",
-          flex: "none",
-          order: 0,
-          alignSelf: "stretch",
-          flexGrow: 0,
-        }}
-      >
+        {/* Page Links */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0px",
+            gap: "48px",
+            width: "896px",
+            height: "34px",
+            flex: "none",
+            order: 0,
+            alignSelf: "stretch",
+            flexGrow: 0,
+          }}
+        >
         {/* Logo */}
         <div
           style={{

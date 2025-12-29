@@ -120,49 +120,13 @@ export default function MobileHero() {
             zIndex: 2,
           }}
         >
-          {/* Primary Button */}
-          <button
-            onClick={() => navigateToApp()}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "16px 24px",
-              gap: "8px",
-              width: "184px",
-              height: "56px",
-              background: "#FFFFFF",
-              borderRadius: "100px",
-              flex: "none",
-              order: 0,
-              flexGrow: 1,
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            <span
-              style={{
-                width: "114px",
-                height: "24px",
-                fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                fontStyle: "normal",
-                fontWeight: 600,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#000000",
-                flex: "none",
-                order: 0,
-                flexGrow: 0,
-              }}
-            >
-              Try Versemate
-            </span>
-          </button>
-
-          {/* Secondary Button */}
+          {/* Primary Button - Try Versemate (outline) */}
           <Link
-            href="/volunteer"
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              navigateToApp();
+            }}
             style={{
               boxSizing: "border-box",
               display: "flex",
@@ -176,14 +140,16 @@ export default function MobileHero() {
               border: "2px solid #FFFFFF",
               borderRadius: "100px",
               flex: "none",
-              order: 1,
+              order: 0,
               flexGrow: 1,
               textDecoration: "none",
+              cursor: "pointer",
+              background: "transparent",
             }}
           >
             <span
               style={{
-                width: "148px",
+                width: "114px",
                 height: "24px",
                 fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
                 fontStyle: "normal",
@@ -196,7 +162,48 @@ export default function MobileHero() {
                 flexGrow: 0,
               }}
             >
-              Join as a Volunteer
+              Try Versemate
+            </span>
+          </Link>
+
+          {/* Secondary Button - Get the app (solid) */}
+          <Link
+            href="/download-app"
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "16px 24px",
+              gap: "8px",
+              width: "184px",
+              height: "56px",
+              background: "#FFFFFF",
+              borderRadius: "100px",
+              flex: "none",
+              order: 1,
+              flexGrow: 1,
+              textDecoration: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <span
+              style={{
+                width: "92px",
+                height: "24px",
+                fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
+                fontStyle: "normal",
+                fontWeight: 600,
+                fontSize: "16px",
+                lineHeight: "24px",
+                color: "#000000",
+                flex: "none",
+                order: 0,
+                flexGrow: 0,
+              }}
+            >
+              Get the app
             </span>
           </Link>
         </div>
