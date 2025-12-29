@@ -679,26 +679,43 @@ export class BibleRepository {
     }
   }
 
-  async checkFavoriteExists({ user_id, chapter_id }: UserChapterDto) {
-    const favorite = await this.db
+  async checkFavoriteExists({
+    user_id,
+    chapter_id,
+    insight_type,
+  }: UserChapterDto & { insight_type?: string }) {
+    let query = this.db
       .getOrCreateConnection()
       .selectFrom("favorites")
       .where("user_id", "=", user_id)
       .where("chapter_id", "=", chapter_id)
-      .where("type", "=", FavoriteTypeEnum.chapter)
-      .select("favorite_id")
-      .executeTakeFirst();
+      .where("type", "=", FavoriteTypeEnum.chapter);
+
+    // Match on insight_type (NULL for chapter bookmarks, specific value for insight bookmarks)
+    if (insight_type) {
+      query = query.where("insight_type", "=", insight_type);
+    } else {
+      query = query.where("insight_type", "is", null);
+    }
+
+    const favorite = await query.select("favorite_id").executeTakeFirst();
 
     return { favorite: favorite ?? null };
   }
 
-  async addFavorite({ user_id, chapter_id }: UserChapterDto) {
+  async addFavorite({
+    user_id,
+    chapter_id,
+    insight_type,
+  }: UserChapterDto & { insight_type?: string }) {
     try {
       console.log(
         "Repository: Adding favorite for user:",
         user_id,
         "chapter:",
         chapter_id,
+        "insight_type:",
+        insight_type,
       );
 
       // Log connection attempt
@@ -716,6 +733,7 @@ export class BibleRepository {
           user_id,
           chapter_id,
           type: FavoriteTypeEnum.chapter,
+          insight_type: insight_type ?? null,
         })
         .execute();
 
@@ -743,13 +761,19 @@ export class BibleRepository {
     }
   }
 
-  async removeFavorite({ user_id, chapter_id }: UserChapterDto) {
+  async removeFavorite({
+    user_id,
+    chapter_id,
+    insight_type,
+  }: UserChapterDto & { insight_type?: string }) {
     try {
       console.log(
         "Repository: Removing favorite for user:",
         user_id,
         "chapter:",
         chapter_id,
+        "insight_type:",
+        insight_type,
       );
 
       // Log connection attempt
@@ -763,12 +787,20 @@ export class BibleRepository {
 
       // Log SQL query details
       console.log("Repository: Executing removeFavorite delete query");
-      const result = await connection
+      let query = connection
         .deleteFrom("favorites")
         .where("user_id", "=", user_id)
         .where("chapter_id", "=", chapter_id)
-        .where("type", "=", FavoriteTypeEnum.chapter)
-        .execute();
+        .where("type", "=", FavoriteTypeEnum.chapter);
+
+      // Match on insight_type (NULL for chapter bookmarks, specific value for insight bookmarks)
+      if (insight_type) {
+        query = query.where("insight_type", "=", insight_type);
+      } else {
+        query = query.where("insight_type", "is", null);
+      }
+
+      const result = await query.execute();
 
       console.log("Repository: Delete result:", result);
       return { success: true };
