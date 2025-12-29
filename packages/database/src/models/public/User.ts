@@ -32,6 +32,9 @@ export default interface UserTable {
   >;
 
   is_admin: ColumnType<boolean, boolean | undefined, boolean>;
+
+  /** Source of profile picture: google, apple, or custom */
+  picture_source: ColumnType<string | null, string | null, string | null>;
 }
 
 export type User = Selectable<UserTable>;

@@ -21,6 +21,8 @@ export interface SSOUserInfo {
   firstName?: string;
   /** User's last name (optional) */
   lastName?: string;
+  /** User's profile picture URL (optional) */
+  picture?: string;
 }
 
 /**

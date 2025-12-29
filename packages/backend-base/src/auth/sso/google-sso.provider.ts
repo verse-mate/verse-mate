@@ -460,6 +460,7 @@ export class GoogleSSOProvider implements SSOProvider {
       name: claims.name,
       firstName: claims.given_name,
       lastName: claims.family_name,
+      picture: claims.picture,
     };
   }
 }
