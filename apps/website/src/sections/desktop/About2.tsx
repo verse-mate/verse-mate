@@ -2,30 +2,24 @@ export default function About2Section() {
   return (
     <section
       style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "80px 120px",
+        gap: "48px",
+        isolation: "isolate",
         width: "100vw",
         height: "740px",
         background: "#F6F3EC",
         flex: "none",
-        order: 6,
+        order: 1,
         alignSelf: "stretch",
         flexGrow: 0,
-        zIndex: 6,
+        zIndex: 1,
+        margin: "0 auto",
       }}
     >
-      {/* Content Container - maintains 1440px layout */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "83px 120px",
-          gap: "69px",
-          width: "1440px",
-          height: "100%",
-          margin: "0 auto",
-        }}
-      >
       {/* Content */}
       <div
         style={{
@@ -33,7 +27,7 @@ export default function About2Section() {
           flexDirection: "row",
           alignItems: "center",
           padding: "0px",
-          gap: "69px",
+          gap: "48px",
           width: "1200px",
           height: "480px",
           flex: "none",
@@ -117,7 +111,6 @@ export default function About2Section() {
             flexGrow: 0,
           }}
         />
-      </div>
       </div>
     </section>
   );
