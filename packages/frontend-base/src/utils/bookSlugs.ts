@@ -119,12 +119,16 @@ export function isValidBookSlug(slug: string): boolean {
  * @returns Book ID (1-66) or null if invalid
  */
 export function parseBookParam(param: string): number | null {
-  // Try parsing as number first
-  const numericId = Number.parseInt(param, 10);
-  if (!Number.isNaN(numericId) && numericId >= 1 && numericId <= 66) {
-    return numericId;
+  const trimmed = param.trim();
+
+  // Treat as numeric ID only if the entire string is digits
+  if (/^\d+$/.test(trimmed)) {
+    const numericId = Number.parseInt(trimmed, 10);
+    if (!Number.isNaN(numericId) && numericId >= 1 && numericId <= 66) {
+      return numericId;
+    }
   }
 
-  // Try parsing as slug
+  // Otherwise, treat as slug (e.g., "1-kings", "john")
   return getBookIdFromSlug(param);
 }

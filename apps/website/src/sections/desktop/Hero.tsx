@@ -257,12 +257,11 @@ export default function HeroSection() {
           position: "absolute",
           width: "776px",
           height: "1033px",
-          right: "-37px",
+          right: "45px",
           top: "115px",
           flex: "none",
           order: 3,
           flexGrow: 0,
-          zIndex: 3,
         }}
       >
         {/* Shadow */}
@@ -281,73 +280,56 @@ export default function HeroSection() {
             zIndex: 0,
           }}
         />
-
-        {/* iPad */}
+        {/* Hero Image Container */}
         <div
           style={{
+            position: "absolute",
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
-            padding: "8px",
-            gap: "8px",
-            width: "776px",
-            height: "516px",
-            background: "transparent",
-            borderRadius: "32px",
-            border: "0.5px solid #ffffff",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-            zIndex: 1,
+            padding: "0px",
+            width: "820px",
+            height: "1033px",
+            right: "-80px",
+            top: "90px",
+            zIndex: 10,
           }}
         >
-          <div
+          {/* Background iPad View - Largest */}
+          <img
+            src="/ipad.png"
+            alt="Desktop View"
             style={{
-              width: "760px",
-              height: "500px",
-              backgroundImage: "url(/ipad.png)",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              borderRadius: "24px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
+              position: "absolute",
+              right: "0px",
+              top: "0px",
+              width: "100%",
+              height: "auto",
+              zIndex: 10,
             }}
           />
-        </div>
 
-        {/* iPad Reflection */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            padding: "8px",
-            gap: "8px",
-            width: "776px",
-            height: "517px",
-            background: "transparent",
-            opacity: 0.05,
-            borderRadius: "32px",
-            border: "0.5px solid rgba(212, 184, 150, 0.3)",
-            transform: "scaleY(-1)",
-            flex: "none",
-            order: 2,
-            flexGrow: 0,
-            zIndex: 2,
-          }}
-        >
-          <div
+          {/* Middle Bible Reader View - Overlapping Left */}
+          <img
+            src="/bibleReader.png"
+            alt="Bible Reader View"
             style={{
-              width: "760px",
-              height: "501px",
-              backgroundImage: "url(/ipad.png)",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              borderRadius: "24px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
+              position: "absolute",
+              left: "15%",
+              top: "8%",
+              zIndex: 20,
+            }}
+          />
+
+          {/* Front Summary View - Overlapping Right */}
+          <img
+            src="/summary.png"
+            alt="Summary View"
+            style={{
+              position: "absolute",
+              left: "36%",
+              top: "15%",
+              zIndex: 30,
             }}
           />
         </div>
