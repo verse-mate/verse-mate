@@ -22,8 +22,8 @@ export interface SignUpProps {
 }
 
 export function SignUp({ onSwitch }: SignUpProps) {
-  const { ssoGoogleEnabled, ssoAppleEnabled } = useStore($env, {
-    keys: ["ssoGoogleEnabled", "ssoAppleEnabled"],
+  const { ssoGoogleEnabled, ssoAppleEnabled, apiUrl } = useStore($env, {
+    keys: ["ssoGoogleEnabled", "ssoAppleEnabled", "apiUrl"],
   });
   const {
     hookForm: { register, formState, watch },
@@ -58,9 +58,9 @@ export function SignUp({ onSwitch }: SignUpProps) {
         }
       }
     }
-    // Redirect to Google OAuth endpoint
-    window.location.href = "/api/auth/sso/google/redirect";
-  }, []);
+    // Redirect to Google OAuth endpoint on backend
+    window.location.href = `${apiUrl}/auth/sso/google/redirect`;
+  }, [apiUrl]);
 
   const handleAppleClick = useCallback(() => {
     setSsoLoading(true);
@@ -79,9 +79,9 @@ export function SignUp({ onSwitch }: SignUpProps) {
         }
       }
     }
-    // Redirect to Apple OAuth endpoint
-    window.location.href = "/api/auth/sso/apple/redirect";
-  }, []);
+    // Redirect to Apple OAuth endpoint on backend
+    window.location.href = `${apiUrl}/auth/sso/apple/redirect`;
+  }, [apiUrl]);
 
   // Determine if error is SSO-related for custom action suggestion
   const errorIsSSORelated = backendError && isSSOError(backendError);
