@@ -227,7 +227,7 @@ export class AuthService {
     }
 
     // Step 2: Check if a user with this email already exists (case-insensitive)
-    let user = await this.db
+    const user = await this.db
       .getOrCreateConnection()
       .selectFrom("user")
       .where((eb) => eb(sql`LOWER(email)`, "=", normalizedEmail))
