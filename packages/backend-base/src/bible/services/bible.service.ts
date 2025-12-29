@@ -403,7 +403,13 @@ export class BibleService {
     user_id,
     book_id,
     chapter_number,
-  }: { user_id: string; book_id: number; chapter_number: number }) {
+    insight_type,
+  }: {
+    user_id: string;
+    book_id: number;
+    chapter_number: number;
+    insight_type?: string;
+  }) {
     console.log(
       "Service: Adding bookmark for user:",
       user_id,
@@ -411,6 +417,8 @@ export class BibleService {
       book_id,
       "chapter:",
       chapter_number,
+      "insight_type:",
+      insight_type,
     );
 
     // Try to get real chapter_id first
@@ -429,6 +437,7 @@ export class BibleService {
     const { favorite } = await this.bibleRepository.checkFavoriteExists({
       user_id,
       chapter_id: chapter_id,
+      insight_type,
     });
 
     // If favorite already exists, return success
@@ -441,6 +450,7 @@ export class BibleService {
     const { success } = await this.bibleRepository.addFavorite({
       user_id,
       chapter_id: chapter_id,
+      insight_type,
     });
 
     return { success };
@@ -450,7 +460,13 @@ export class BibleService {
     user_id,
     book_id,
     chapter_number,
-  }: { user_id: string; book_id: number; chapter_number: number }) {
+    insight_type,
+  }: {
+    user_id: string;
+    book_id: number;
+    chapter_number: number;
+    insight_type?: string;
+  }) {
     const { chapter_id } = await this.bibleRepository.getChapterId({
       book_id,
       chapter_number,
@@ -460,6 +476,7 @@ export class BibleService {
     const { success } = await this.bibleRepository.removeFavorite({
       user_id,
       chapter_id,
+      insight_type,
     });
 
     return { success };
