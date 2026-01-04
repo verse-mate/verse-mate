@@ -19,7 +19,7 @@ export function CopyLinkButton({
       }
 
       await navigator.clipboard.writeText(url);
-      
+
       notify({
         content: "Link copied to clipboard",
         color: "var(--success)",
