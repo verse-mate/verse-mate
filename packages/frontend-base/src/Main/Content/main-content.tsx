@@ -308,12 +308,7 @@ export const MainContent = () => {
   );
 
   // Book introduction - fetch from API
-  const {
-    introduction: introData,
-    hasViewed: hasViewedIntro,
-    isLoading: isIntroLoading,
-    markAsViewed,
-  } = useBookIntroduction(
+  const { introduction: introData, markAsViewed } = useBookIntroduction(
     !isViewingTopic && typeof bookId === "number" ? bookId : null,
     "en",
   );

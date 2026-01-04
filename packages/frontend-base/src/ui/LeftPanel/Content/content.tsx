@@ -75,11 +75,7 @@ export const Content = ({
   const { showIntro } = useGetSearchParams();
   const { saveSearchParams } = useSaveSearchParams();
   const { session } = userSession();
-  const {
-    introduction: introData,
-    hasViewed: hasViewedIntro,
-    markAsViewed,
-  } = useBookIntroduction(
+  const { introduction: introData, markAsViewed } = useBookIntroduction(
     !isViewingTopic && typeof bookId === "number" ? bookId : null,
     "en",
   );
