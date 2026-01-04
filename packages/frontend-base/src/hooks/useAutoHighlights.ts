@@ -109,6 +109,9 @@ export const useAutoHighlights = ({
         if (themeRelevancePairs) {
           queryParams.theme_relevance = themeRelevancePairs;
         }
+      } else {
+        // If no themes are enabled, don't fetch anything, return empty
+        return [];
       }
 
       // @ts-expect-error - Dynamic path parameter
@@ -121,7 +124,12 @@ export const useAutoHighlights = ({
       // API returns {success: true, data: [...]} so we need response.data.data
       return (response.data?.data || []) as AutoHighlight[];
     },
-    enabled: !!bookId && !!chapterNumber,
+    enabled:
+      !!bookId &&
+      !!chapterNumber &&
+      (userId
+        ? preferences !== undefined
+        : themes !== undefined && defaultEnabledData !== undefined),
     staleTime: 1000 * 60 * 10, // Cache for 10 minutes
   });
 
