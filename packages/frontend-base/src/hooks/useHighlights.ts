@@ -10,6 +10,8 @@ export interface Highlight {
   highlight_id: number;
   user_id: string;
   chapter_id: number;
+  book_id: number;
+  chapter_number: number;
   start_verse: number;
   end_verse: number;
   start_char?: number;
@@ -25,6 +27,8 @@ interface HighlightApiResponse {
   highlight_id: number;
   user_id: string;
   chapter_id: number;
+  book_id: number;
+  chapter_number: number;
   start_verse: number;
   end_verse: number;
   start_char: number | null;

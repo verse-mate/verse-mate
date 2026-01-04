@@ -955,6 +955,31 @@ export const Text = ({
     };
   }, [handleTextSelection]);
 
+  // Scroll to verse if param is present
+  useEffect(() => {
+    if (searchParams.verse && versesContainerRef.current) {
+      const verseElement = versesContainerRef.current.querySelector(
+        `[data-verse-number="${searchParams.verse}"]`,
+      );
+      if (verseElement) {
+        verseElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // Highlight the verse temporarily
+        verseElement.animate(
+          [
+            { backgroundColor: "transparent" },
+            { backgroundColor: "rgba(176, 154, 109, 0.2)" },
+            { backgroundColor: "transparent" },
+          ],
+          {
+            duration: 2000,
+            iterations: 1,
+          },
+        );
+      }
+    }
+  }, [searchParams.verse]);
+
   return (
     <section className={styles.contentBox} ref={versesContainerRef}>
       <div className={styles.titleContainer}>

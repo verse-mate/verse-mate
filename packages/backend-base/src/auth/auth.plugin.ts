@@ -403,7 +403,7 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/google/redirect",
-        async ({ store: { cache }, set }) => {
+        async ({ store: { cache } }) => {
           const config = getSSOConfig();
           if (!config.googleClientId) {
             throw new ValidationError(
@@ -440,7 +440,7 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/google/callback",
-        async ({ query, store: { cache, authService }, jwt, set, request }) => {
+        async ({ query, store: { cache, authService }, jwt, request }) => {
           const { state, code, error } = query;
 
           // Handle OAuth errors from Google
@@ -556,7 +556,7 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/apple/redirect",
-        async ({ store: { cache }, set }) => {
+        async ({ store: { cache } }) => {
           const config = getSSOConfig();
           if (!config.appleClientId) {
             throw new ValidationError(
@@ -593,7 +593,7 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/apple/callback",
-        async ({ query, store: { cache, authService }, jwt, set, request }) => {
+        async ({ query, store: { cache, authService }, jwt, request }) => {
           const { state, code, error } = query;
 
           // Handle OAuth errors from Apple
