@@ -12,8 +12,8 @@ const MyMainPage = ({ children }: { children: ReactNode }) => {
   return (
     <MainPage.QueryProvider>
       <DynamicBrowserRouter>
-        <Notifications />
         {children}
+        <Notifications />
       </DynamicBrowserRouter>
     </MainPage.QueryProvider>
   );

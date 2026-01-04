@@ -9,7 +9,7 @@
   position: fixed;
   top: var(--notification-container-top, 1rem);
   right: var(--notification-container-right, 1rem);
-  z-index: 10;
+  z-index: 9999;
   direction: rtr;
   max-width: 500px;
   white-space: pre-line;
@@ -25,7 +25,7 @@
     align-items: center;
     width: calc(100% - 2rem);
     max-width: calc(100% - 2rem);
-    z-index: 10;
+    z-index: 9999;
   }
 }
 
