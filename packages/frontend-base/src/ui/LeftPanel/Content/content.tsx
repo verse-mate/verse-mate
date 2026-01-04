@@ -132,7 +132,7 @@ export const Content = ({
   // Check if we should show intro
   // Auto-popup respects hasViewedIntro via logic in MainContent;
   // manual Book Overview button should always show when showIntro is true.
-  if (showIntro && bookVerseData && introData) {
+  if (showIntro && bookVerseData && introData && introData.book_id === bookId) {
     const handleContinue = () => {
       markAsViewed(bookId, !!session);
       saveSearchParams({ showIntro: false });
