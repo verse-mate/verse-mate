@@ -68,5 +68,6 @@ export { LoginCard } from "./src/ui/LoginCard";
 export { NotFound } from "./src/not-found";
 export { Chat } from "./src/ui/Chat";
 export { Explanation } from "./src/ui/Explanation";
+export { HighlightsList } from "./src/ui/Highlights";
 export { ExplanationRegeneration } from "./src/ui/admin/ExplanationRegeneration/ExplanationRegeneration";
 export { UserManagement } from "./src/ui/admin/UserManagement/UserManagement";

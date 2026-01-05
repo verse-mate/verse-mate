@@ -191,7 +191,7 @@ describe("Auth - Delete Account", () => {
     const authService = Backend.store.authService;
 
     // Use loginUser directly (since we already have the user)
-    const ssoAuthPayload = await (authService as any).loginUser(
+    const _ssoAuthPayload = await (authService as any).loginUser(
       ssoUser,
       Backend.store.db.getOrCreateConnection().selectFrom,
     );
