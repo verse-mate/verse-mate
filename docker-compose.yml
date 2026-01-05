@@ -57,4 +57,4 @@ services:
   #   ports:
   #     - "3000:3000"
   #   environment:
-  #     - API_URL=https://api.verse-mate.apegro.dev
+  #     - API_URL=https://api.versemate.org
