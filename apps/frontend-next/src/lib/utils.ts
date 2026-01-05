@@ -1,5 +1,5 @@
 export function getUrl(path?: string): string {
-  const baseUrl = process.env.APP_URL || "https://verse-mate.apegro.dev";
+  const baseUrl = process.env.APP_URL || "https://app.versemate.org";
   const normalizedPath =
     path && !path.startsWith("/") ? `/${path}` : path || "";
   return `${baseUrl}${normalizedPath}`;
