@@ -1,0 +1,120 @@
+.getInvolvedSection {
+  width: 100%;
+  max-width: 100vw;
+  height: 1214px;
+}
+
+.titleContainer {
+  width: 203px;
+  height: 48px;
+}
+
+.title {
+  width: 223px;
+  height: 32px;
+}
+
+.cardsContainer {
+  width: 896px;
+  height: 734px;
+}
+
+.card {
+  width: 428px;
+  height: 734px;
+}
+
+.cardTitle {
+  width: 428px;
+  height: 64px;
+  font-size: 48px;
+  line-height: 64px;
+}
+
+.cardContent {
+  width: 428px;
+  height: 646px;
+}
+
+.volunteerImage {
+  width: 428px;
+  height: 214px;
+  background-image: url("/volunteer.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.giveImage {
+  width: 428px;
+  height: 214px;
+  background-image: url("/give.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.cardTextContainer {
+  width: 428px;
+  height: 208px;
+}
+
+.cardHeading {
+  width: 380px;
+  height: 64px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.cardGiveHeading {
+  width: 380px;
+  height: 32px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.cardDescription {
+  width: 380px;
+  height: 128px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.buttonContainer {
+  width: 428px;
+  height: 80px;
+}
+
+.button {
+  width: 364px;
+  height: 80px;
+  font-size: 20px;
+  line-height: 32px;
+}
+
+.volunteerButtonText {
+  width: 235px;
+  height: 32px;
+}
+
+.giveButtonText {
+  width: 162px;
+  height: 32px;
+}
+
+.bottomTextContainer {
+  width: 896px;
+  height: 112px;
+}
+
+.bottomTextPrimary {
+  width: 896px;
+  height: 64px;
+  font-size: 20px;
+  line-height: 32px;
+}
+
+.bottomTextSecondary {
+  width: 896px;
+  height: 24px;
+  font-size: 16px;
+  line-height: 24px;
+}

@@ -1,62 +1,18 @@
 "use client";
 
+import styles from "./MobileHowItWorks.module.css";
+
 export default function MobileHowItWorks() {
   return (
     <section
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "48px 24px",
-        gap: "48px",
-        width: "440px",
-        height: "1229px",
-        background:
-          "radial-gradient(50% 50% at 50% 50%, #FFFFFF 0%, #F1EDE3 100%)",
-        borderRadius: "0px",
-        flex: "none",
-        order: 1,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        margin: "0 auto",
-        maxWidth: "100vw",
-      }}
+      className={`${styles.section} mx-auto flex max-w-full flex-col items-center gap-12 self-stretch bg-light-radial p-12 px-6`}
     >
       {/* Title */}
       <div
-        style={{
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "8px 0px",
-          gap: "8px",
-          width: "152px",
-          height: "40px",
-          borderBottom: "6px solid #C2B291",
-          flex: "none",
-          order: 0,
-          flexGrow: 0,
-        }}
+        className={`${styles.titleBorder} flex flex-row items-center justify-center gap-2 p-0 py-2`}
       >
         <span
-          style={{
-            width: "170px",
-            height: "24px",
-            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "16px",
-            lineHeight: "24px",
-            textAlign: "center",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#1B1B1B",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
+          className={`${styles.titleText} text-center font-inter font-bold uppercase text-brand-dark-gray`}
         >
           How it works?
         </span>
@@ -64,75 +20,21 @@ export default function MobileHowItWorks() {
 
       {/* Content */}
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "0px",
-          gap: "40px",
-          width: "392px",
-          height: "1045px",
-          flex: "none",
-          order: 1,
-          alignSelf: "stretch",
-          flexGrow: 0,
-        }}
+        className={`${styles.content} flex flex-col items-center gap-10 self-stretch p-0`}
       >
         {/* Text group */}
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            padding: "0px",
-            gap: "16px",
-            width: "392px",
-            height: "192px",
-            flex: "none",
-            order: 0,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
+          className={`${styles.textGroup} flex flex-col items-center gap-4 self-stretch p-0`}
         >
           <h2
-            style={{
-              width: "392px",
-              height: "80px",
-              fontFamily: "var(--font-merriweather, Merriweather, serif)",
-              fontStyle: "normal",
-              fontWeight: 700,
-              fontSize: "32px",
-              lineHeight: "40px",
-              textAlign: "center",
-              color: "#000000",
-              flex: "none",
-              order: 0,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              margin: "0",
-            }}
+            className={`${styles.heading} m-0 self-stretch text-center font-merriweather font-bold text-brand-black`}
           >
             Explore Scripture
             <br />
             Your Way.
           </h2>
           <p
-            style={{
-              width: "396px",
-              height: "96px",
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontStyle: "normal",
-              fontWeight: 300,
-              fontSize: "16px",
-              lineHeight: "24px",
-              textAlign: "center",
-              color: "#3E464D",
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              margin: "0",
-            }}
+            className={`${styles.description} m-0 self-stretch text-center font-inter font-light text-brand-slate`}
           >
             Whether you're new to the Word or someone looking
             <br />
@@ -146,191 +48,49 @@ export default function MobileHowItWorks() {
 
         {/* Images and description */}
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "0px",
-            gap: "40px",
-            width: "392px",
-            height: "725px",
-            flex: "none",
-            order: 1,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
+          className={`${styles.imagesAndDescription} flex flex-col items-center justify-center gap-10 self-stretch p-0`}
         >
           {/* Frame 1 */}
           <div
-            style={{
-              width: "392px",
-              height: "368px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-              position: "relative",
-            }}
+            className={`${styles.imageFrame} relative`}
           >
             {/* Summary */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "4px",
-                position: "absolute",
-                width: "234px",
-                height: "214px",
-                left: "43px",
-                top: "0px",
-                borderRadius: "12px",
-              }}
+              className={`${styles.imageWrapper1} flex flex-col items-start`}
             >
-              <div
-                style={{
-                  width: "226px",
-                  height: "206px",
-                  backgroundImage: "url(/howitworks1.png)",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  borderRadius: "8px",
-                  flex: "none",
-                  order: 0,
-                  flexGrow: 0,
-                }}
-              />
+              <div className={`${styles.image1}`} />
             </div>
 
             {/* By Line */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "4px",
-                position: "absolute",
-                width: "234px",
-                height: "215px",
-                left: "158px",
-                top: "64px",
-                borderRadius: "12px",
-              }}
+              className={`${styles.imageWrapper2} flex flex-col items-start`}
             >
-              <div
-                style={{
-                  width: "226px",
-                  height: "207px",
-                  backgroundImage: "url(/howitworks2.png)",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  borderRadius: "8px",
-                  flex: "none",
-                  order: 0,
-                  flexGrow: 0,
-                }}
-              />
+              <div className={`${styles.image2}`} />
             </div>
 
             {/* Detailed */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "4px",
-                position: "absolute",
-                width: "234px",
-                height: "214px",
-                left: "0px",
-                top: "154px",
-                borderRadius: "12px",
-              }}
+              className={`${styles.imageWrapper3} flex flex-col items-start`}
             >
-              <div
-                style={{
-                  width: "226px",
-                  height: "206px",
-                  backgroundImage: "url(/howitworks3.png)",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  borderRadius: "8px",
-                  flex: "none",
-                  order: 0,
-                  flexGrow: 0,
-                }}
-              />
+              <div className={`${styles.image3}`} />
             </div>
           </div>
 
           {/* Description */}
           <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              padding: "0px",
-              gap: "24px",
-              width: "392px",
-              height: "317px",
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-            }}
+            className={`${styles.descriptionGroup} flex flex-col items-center gap-6 self-stretch p-0`}
           >
             {/* Summary View */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px",
-                gap: "8px",
-                width: "392px",
-                height: "85px",
-                borderRadius: "20px",
-                flex: "none",
-                order: 0,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.featureCard1} flex flex-col items-start gap-2 self-stretch p-0`}
             >
               <h3
-                style={{
-                  width: "392px",
-                  height: "29px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 700,
-                  fontSize: "20px",
-                  lineHeight: "24px",
-                  color: "#1B1B1B",
-                  flex: "none",
-                  order: 0,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.featureTitle} ${styles.featureTitle1} m-0 self-stretch font-inter font-bold text-brand-dark-gray`}
               >
                 Summary View
               </h3>
               <p
-                style={{
-                  width: "392px",
-                  height: "48px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 300,
-                  fontSize: "16px",
-                  lineHeight: "24px",
-                  color: "#3E464D",
-                  flex: "none",
-                  order: 1,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.featureText} ${styles.featureText1} m-0 self-stretch font-inter font-light text-brand-slate`}
               >
                 Get a summary, line-by-line breakdown, or in-depth analysis.
               </p>
@@ -338,56 +98,15 @@ export default function MobileHowItWorks() {
 
             {/* Line by Line */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px",
-                gap: "8px",
-                width: "392px",
-                height: "80px",
-                borderRadius: "20px",
-                flex: "none",
-                order: 1,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.featureCard2} flex flex-col items-start gap-2 self-stretch p-0`}
             >
               <h3
-                style={{
-                  width: "392px",
-                  height: "24px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 700,
-                  fontSize: "20px",
-                  lineHeight: "24px",
-                  color: "#1B1B1B",
-                  flex: "none",
-                  order: 0,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.featureTitle} ${styles.featureTitle2} m-0 self-stretch font-inter font-bold text-brand-dark-gray`}
               >
                 Line by Line
               </h3>
               <p
-                style={{
-                  width: "392px",
-                  height: "48px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 300,
-                  fontSize: "16px",
-                  lineHeight: "24px",
-                  color: "#3E464D",
-                  flex: "none",
-                  order: 1,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.featureText} ${styles.featureText2} m-0 self-stretch font-inter font-light text-brand-slate`}
               >
                 Thoughtful commentary for every verse - perfect for learning,
                 reflecting, and growing in faith.
@@ -396,56 +115,15 @@ export default function MobileHowItWorks() {
 
             {/* In-Depth Study */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px",
-                gap: "8px",
-                width: "392px",
-                height: "104px",
-                borderRadius: "20px",
-                flex: "none",
-                order: 2,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.featureCard3} flex flex-col items-start gap-2 self-stretch p-0`}
             >
               <h3
-                style={{
-                  width: "392px",
-                  height: "24px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 700,
-                  fontSize: "20px",
-                  lineHeight: "24px",
-                  color: "#1B1B1B",
-                  flex: "none",
-                  order: 0,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.featureTitle} ${styles.featureTitle3} m-0 self-stretch font-inter font-bold text-brand-dark-gray`}
               >
                 In-Depth Study
               </h3>
               <p
-                style={{
-                  width: "392px",
-                  height: "72px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 300,
-                  fontSize: "16px",
-                  lineHeight: "24px",
-                  color: "#3E464D",
-                  flex: "none",
-                  order: 1,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.featureText} ${styles.featureText3} m-0 self-stretch font-inter font-light text-brand-slate`}
               >
                 Rich theological insight with context, cross-references, and
                 language tools - built for serious Bible study.
@@ -456,22 +134,7 @@ export default function MobileHowItWorks() {
 
         {/* Text Line */}
         <p
-          style={{
-            width: "392px",
-            height: "48px",
-            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-            fontStyle: "normal",
-            fontWeight: 500,
-            fontSize: "16px",
-            lineHeight: "24px",
-            textAlign: "center",
-            color: "#1B1B1B",
-            flex: "none",
-            order: 2,
-            alignSelf: "stretch",
-            flexGrow: 0,
-            margin: "0",
-          }}
+          className={`${styles.bottomText} m-0 self-stretch text-center font-inter font-medium text-brand-dark-gray`}
         >
           Available in multiple Bible versions and languages - so anyone,
           anywhere, can understand the truth.

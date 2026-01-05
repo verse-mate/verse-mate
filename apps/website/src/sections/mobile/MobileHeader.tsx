@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { mobileTokens } from "../../styles/tokens/mobile.tokens";
+import styles from "./MobileHeader.module.css";
 
 export default function MobileHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -26,45 +27,18 @@ export default function MobileHeader() {
   return (
     <>
       <header
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0 16px",
-          position: "absolute",
-          height: mobileTokens.components.nav.height,
-          left: "0px",
-          right: "0px",
-          top: "0px",
-          zIndex: 1000,
-          background: "#FFFFFF",
-          transition: "all 0.3s ease",
-        }}
+        className="absolute left-0 right-0 top-0 z-[1000] flex flex-row items-center justify-between bg-white px-4 transition-all duration-300"
+        style={{ height: mobileTokens.components.nav.height }}
       >
         {/* Logo */}
-        <div
-          style={{
-            flex: "1",
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              position: "relative",
-            }}
-          >
+        <div className="flex-1">
+          <Link href="/" className="relative flex items-center">
             <Image
               src="/versemate-logo.png"
               alt="VerseMate"
               width={120}
               height={32}
-              style={{
-                objectFit: "contain",
-                filter: "brightness(0)",
-              }}
+              className={`${styles.logoImage} object-contain`}
             />
           </Link>
         </div>
@@ -72,31 +46,7 @@ export default function MobileHeader() {
         {/* Join as a Volunteer Button */}
         <Link
           href="/volunteer"
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "12px 20px",
-            gap: "8px",
-            width: "160px",
-            height: "44px",
-            background: "#000000",
-            borderRadius: "100px",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-            border: "none",
-            cursor: "pointer",
-            textDecoration: "none",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 600,
-            fontSize: "11px",
-            lineHeight: "16px",
-            color: "#FFFFFF",
-            whiteSpace: "nowrap",
-          }}
+          className={`${styles.volunteerButton} flex cursor-pointer flex-row items-center justify-center gap-2 whitespace-nowrap rounded-full border-none bg-black px-5 py-3 font-inter font-semibold text-white no-underline`}
         >
           Join as a Volunteer
         </Link>
@@ -104,47 +54,24 @@ export default function MobileHeader() {
         {/* Hamburger Menu Button */}
         <button
           onClick={toggleMenu}
-          style={{
-            display: "none", // Hidden but keeping code intact
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "24px",
-            height: "24px",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            padding: "0",
-          }}
+          className={`${styles.hamburgerButton} hidden cursor-pointer flex-col items-center justify-center border-none bg-transparent p-0`}
           aria-label="Toggle menu"
         >
           <div
+            className={`${styles.hamburgerLine} bg-white`}
             style={{
-              width: "20px",
-              height: "2px",
-              backgroundColor: "#FFFFFF",
-              transition: "all 0.3s ease",
               transform: isMenuOpen
                 ? "rotate(45deg) translate(6px, 6px)"
                 : "none",
             }}
           />
           <div
-            style={{
-              width: "20px",
-              height: "2px",
-              backgroundColor: "#FFFFFF",
-              margin: "3px 0",
-              transition: "all 0.3s ease",
-              opacity: isMenuOpen ? 0 : 1,
-            }}
+            className={`${styles.hamburgerLine} ${styles.hamburgerLineMiddle} bg-white`}
+            style={{ opacity: isMenuOpen ? 0 : 1 }}
           />
           <div
+            className={`${styles.hamburgerLine} bg-white`}
             style={{
-              width: "20px",
-              height: "2px",
-              backgroundColor: "#FFFFFF",
-              transition: "all 0.3s ease",
               transform: isMenuOpen
                 ? "rotate(-45deg) translate(6px, -6px)"
                 : "none",
@@ -156,39 +83,22 @@ export default function MobileHeader() {
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
         <div
-          style={{
-            position: "fixed",
-            top: mobileTokens.components.nav.height,
-            left: "0",
-            right: "0",
-            bottom: "0",
-            backgroundColor: "rgba(0, 0, 0, 0.95)",
-            zIndex: 999,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            paddingTop: mobileTokens.spacing.xl,
-          }}
+          className={`${styles.menuOverlay} fixed left-0 right-0 bottom-0 z-[999] flex flex-col items-center`}
+          style={{ top: mobileTokens.components.nav.height, paddingTop: mobileTokens.spacing.xl }}
         >
           <nav
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: mobileTokens.spacing.lg,
-            }}
+            className="flex flex-col items-center"
+            style={{ gap: mobileTokens.spacing.lg }}
           >
             <Link
               href="/"
               onClick={() => setIsMenuOpen(false)}
+              className="text-center text-white no-underline"
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
                 fontWeight: mobileTokens.typography.h2.fontWeight,
                 fontSize: mobileTokens.typography.h2.fontSize,
                 lineHeight: mobileTokens.typography.h2.lineHeight,
-                color: mobileTokens.colors.text.white,
-                textDecoration: "none",
-                textAlign: "center",
               }}
             >
               Home
@@ -196,14 +106,12 @@ export default function MobileHeader() {
             <Link
               href="/volunteer"
               onClick={() => setIsMenuOpen(false)}
+              className="text-center text-white no-underline"
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
                 fontWeight: mobileTokens.typography.h2.fontWeight,
                 fontSize: mobileTokens.typography.h2.fontSize,
                 lineHeight: mobileTokens.typography.h2.lineHeight,
-                color: mobileTokens.colors.text.white,
-                textDecoration: "none",
-                textAlign: "center",
               }}
             >
               Volunteer
@@ -211,14 +119,12 @@ export default function MobileHeader() {
             <Link
               href="/give"
               onClick={() => setIsMenuOpen(false)}
+              className="text-center text-white no-underline"
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
                 fontWeight: mobileTokens.typography.h2.fontWeight,
                 fontSize: mobileTokens.typography.h2.fontSize,
                 lineHeight: mobileTokens.typography.h2.lineHeight,
-                color: mobileTokens.colors.text.white,
-                textDecoration: "none",
-                textAlign: "center",
               }}
             >
               Give
@@ -226,14 +132,12 @@ export default function MobileHeader() {
             <Link
               href="/about"
               onClick={() => setIsMenuOpen(false)}
+              className="text-center text-white no-underline"
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
                 fontWeight: mobileTokens.typography.h2.fontWeight,
                 fontSize: mobileTokens.typography.h2.fontSize,
                 lineHeight: mobileTokens.typography.h2.lineHeight,
-                color: mobileTokens.colors.text.white,
-                textDecoration: "none",
-                textAlign: "center",
               }}
             >
               About
@@ -243,16 +147,12 @@ export default function MobileHeader() {
                 navigateToLogin();
                 setIsMenuOpen(false);
               }}
+              className="cursor-pointer border-none bg-transparent text-center text-white"
               style={{
                 fontFamily: mobileTokens.typography.h2.fontFamily,
                 fontWeight: mobileTokens.typography.h2.fontWeight,
                 fontSize: mobileTokens.typography.h2.fontSize,
                 lineHeight: mobileTokens.typography.h2.lineHeight,
-                color: mobileTokens.colors.text.white,
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                textAlign: "center",
               }}
             >
               Login
