@@ -1,116 +1,29 @@
 import { navigateToApp } from "@/lib/navigation";
 import Link from "next/link";
+import styles from "./Hero.module.css";
 
 export default function HeroSection() {
   return (
-    <section
-      style={{
-        position: "relative",
-        width: "1024px",
-        height: "1231px",
-        background: "linear-gradient(111.34deg, #000000 0%, #936E2B 100%)",
-        backgroundBlendMode: "multiply",
-        borderRadius: "0px",
-        flex: "none",
-        order: 0,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        zIndex: 0,
-        overflow: "hidden",
-      }}
-    >
-      {/* Tilted Image */}
-      <div
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "100%",
-          left: "0",
-          top: "0",
-          backgroundImage: "url(/Tilted%20image%20text%20Desktop.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          opacity: 1,
-        }}
-      />
+    <section className={`${styles.section} relative overflow-hidden`}>
+      {/* Text Overlay */}
+      <div className={`${styles.textOverlay} absolute inset-0`} />
 
-      {/* Content - full width, centered */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          padding: "80px 64px 0px",
-          gap: "16px",
-          isolation: "isolate",
-          position: "absolute",
-          height: "432px",
-          left: "0px",
-          right: "0px",
-          top: "76px",
-        }}
-      >
-        {/* Main Heading - full width */}
-        <h1
-          style={{
-            width: "896px",
-            height: "128px",
-            fontFamily: "var(--font-merriweather, Merriweather, serif)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "48px",
-            lineHeight: "64px",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            alignSelf: "stretch",
-            flexGrow: 0,
-            zIndex: 0,
-          }}
-        >
+      {/* Content */}
+      <div className={`${styles.content} absolute left-0 right-0 top-[76px] flex flex-col items-start isolate`}>
+        {/* Main Heading */}
+        <h1 className={`${styles.heading} self-stretch font-merriweather font-bold text-white`}>
           The Bible Was Meant to Be Understood - Not Just Read.
         </h1>
 
-        {/* Description Text - full width */}
-        <p
-          style={{
-            width: "896px",
-            height: "84px",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "24px",
-            lineHeight: "32px",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 1,
-            alignSelf: "stretch",
-            flexGrow: 0,
-            zIndex: 1,
-          }}
-        >
+        {/* Description Text */}
+        <p className={`${styles.description} self-stretch font-inter font-normal text-white`}>
           When people truly understand Scripture, lives change. Versemate helps
           anyone, anywhere, connect with God&rsquo;s Word clearly - and grow
           deeper in faith.
         </p>
 
-        {/* Button Container - horizontal layout */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "flex-start",
-            padding: "24px 0px",
-            gap: "24px",
-            width: "436px",
-            height: "128px",
-            flex: "none",
-            order: 2,
-            flexGrow: 0,
-            zIndex: 2,
-          }}
-        >
+        {/* Button Container */}
+        <div className={`${styles.buttonContainer} flex flex-row items-start`}>
           {/* Primary Button - Try Versemate (outline) */}
           <Link
             href="/"
@@ -118,41 +31,9 @@ export default function HeroSection() {
               e.preventDefault();
               navigateToApp();
             }}
-            style={{
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "24px 32px",
-              gap: "8px",
-              width: "206px",
-              height: "80px",
-              border: "2px solid #FFFFFF",
-              borderRadius: "100px",
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-              textDecoration: "none",
-              cursor: "pointer",
-              background: "transparent",
-            }}
+            className={`${styles.buttonPrimary} flex flex-row items-center justify-center cursor-pointer no-underline bg-transparent`}
           >
-            <span
-              style={{
-                width: "142px",
-                height: "32px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 600,
-                fontSize: "20px",
-                lineHeight: "32px",
-                color: "#FFFFFF",
-                flex: "none",
-                order: 0,
-                flexGrow: 0,
-              }}
-            >
+            <span className={`${styles.buttonText} ${styles.buttonTextPrimary} font-inter text-white`}>
               Try Versemate
             </span>
           </Link>
@@ -160,175 +41,48 @@ export default function HeroSection() {
           {/* Secondary Button - Get the app (solid) */}
           <Link
             href="/download-app"
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "24px 32px",
-              gap: "8px",
-              width: "206px",
-              height: "80px",
-              background: "#FFFFFF",
-              borderRadius: "100px",
-              flex: "none",
-              order: 1,
-              flexGrow: 0,
-              textDecoration: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
+            className={`${styles.buttonSecondary} flex flex-row items-center justify-center cursor-pointer no-underline bg-white border-none`}
           >
-            <span
-              style={{
-                width: "113px",
-                height: "32px",
-                fontFamily: "var(--font-inter)",
-                fontStyle: "normal",
-                fontWeight: 600,
-                fontSize: "20px",
-                lineHeight: "32px",
-                color: "#000000",
-                flex: "none",
-                order: 0,
-                flexGrow: 0,
-                textAlign: "center",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <span className={`${styles.buttonText} ${styles.buttonTextSecondary} font-inter text-black text-center flex items-center justify-center`}>
               Get the app
             </span>
           </Link>
         </div>
       </div>
 
-      {/* Hero Image - positioned at bottom center like in required screenshot */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          padding: "0px",
-          isolation: "isolate",
-          position: "absolute",
-          width: "896px",
-          height: "1193px",
-          right: "64px",
-          top: "518px",
-          flex: "none",
-          order: 3,
-          flexGrow: 0,
-          zIndex: 3,
-        }}
-      >
+      {/* Hero Image Container */}
+      <div className={`${styles.heroImageContainer} absolute flex flex-col items-start isolate z-[3]`}>
         {/* Shadow */}
-        <div
-          style={{
-            position: "absolute",
-            width: "896px",
-            height: "25px",
-            right: "0px",
-            top: "582px",
-            background: "rgba(0, 0, 0, 0.75)",
-            filter: "blur(20px)",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-            zIndex: 0,
-          }}
-        />
+        <div className={`${styles.heroImageShadow} absolute`} />
 
-        {/* iPad */}
-        {/* Hero Image Container */}
-        <div
-          style={{
-            position: "absolute",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            padding: "0px",
-            width: "820px",
-            height: "1033px",
-            right: "50px",
-            top: "75px",
-            zIndex: 10,
-          }}
-        >
-          {/* Background iPad View - Largest */}
+        {/* Hero Images */}
+        <div className={`${styles.heroImages} absolute flex flex-col items-start z-10`}>
+          {/* Background iPad View */}
           <img
             src="/ipad.png"
             alt="Desktop View"
-            style={{
-              position: "absolute",
-              right: "0px",
-              top: "0px",
-              width: "100%",
-              height: "auto",
-              zIndex: 10,
-            }}
+            className={`${styles.ipadImage} absolute w-full h-auto z-10`}
           />
 
-          {/* Middle Bible Reader View - Overlapping Left */}
+          {/* Middle Bible Reader View */}
           <img
             src="/bibleReader.png"
             alt="Bible Reader View"
-            style={{
-              position: "absolute",
-              left: "15%",
-              top: "8%",
-              zIndex: 20,
-            }}
+            className={`${styles.bibleReaderImage} absolute z-20`}
           />
 
-          {/* Front Summary View - Overlapping Right */}
+          {/* Front Summary View */}
           <img
             src="/summary.png"
             alt="Summary View"
-            style={{
-              position: "absolute",
-              left: "36%",
-              top: "15%",
-              zIndex: 30,
-            }}
+            className={`${styles.summaryImage} absolute z-30`}
           />
         </div>
       </div>
 
-      {/* Text Line */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "0px",
-          gap: "8px",
-          position: "absolute",
-          height: "32px",
-          left: "0px",
-          right: "0px",
-          top: "1159px",
-        }}
-      >
-        <span
-          style={{
-            width: "580px",
-            height: "32px",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "24px",
-            lineHeight: "32px",
-            textAlign: "center",
-            letterSpacing: "0.2em",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
-        >
+      {/* Bottom Text Line */}
+      <div className={`${styles.bottomText} absolute flex flex-row items-center justify-center`}>
+        <span className={`${styles.bottomTextSpan} font-inter font-normal text-center text-white`}>
           Always free. For everyone. Forever.
         </span>
       </div>
