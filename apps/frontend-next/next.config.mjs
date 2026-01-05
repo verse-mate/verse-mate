@@ -64,7 +64,7 @@ const nextConfig = {
   },
   // Environment variables available at build time
   env: {
-    API_URL: process.env.API_URL || "https://api.verse-mate.apegro.dev",
+    API_URL: process.env.API_URL || "https://api.versemate.org",
     NEXT_PUBLIC_ASK_VERSE_MATE:
       process.env.NEXT_PUBLIC_ASK_VERSE_MATE || "false",
   },

@@ -13,7 +13,7 @@
 
   // Environment variables
   "vars": {
-    "API_URL": "https://api.verse-mate.apegro.dev",
+    "API_URL": "https://api.versemate.org",
     "APP_URL": "https://verse-mate.xyz",
     "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
     "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
@@ -71,7 +71,7 @@
     "preview": {
       "name": "v-m-preview-app",
       "vars": {
-        "API_URL": "https://api.verse-mate.apegro.dev",
+        "API_URL": "https://api.versemate.org",
         "APP_URL": "https://v-m-preview-app.verse-mate.workers.dev",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
         "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
@@ -84,7 +84,7 @@
     "staging": {
       "name": "verse-mate-staging-app",
       "vars": {
-        "API_URL": "https://api.verse-mate.apegro.dev",
+        "API_URL": "https://api.versemate.org",
         "APP_URL": "https://staging.app.verse-mate.xyz",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
         "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
@@ -103,7 +103,7 @@
     "production": {
       "name": "verse-mate-production",
       "vars": {
-        "API_URL": "https://api.verse-mate.apegro.dev",
+        "API_URL": "https://api.versemate.org",
         "APP_URL": "https://app.versemate.org",
         "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
         "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
