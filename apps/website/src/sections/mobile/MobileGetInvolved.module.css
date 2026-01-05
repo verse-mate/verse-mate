@@ -107,31 +107,85 @@
 }
 
 .buttonWrapper {
-  width: 392px;
-  height: 56px;
-  padding: 0 32px;
+  width: 100%;
+  max-width: 392px;
+  height: auto;
+  padding: 0 20px;
+}
+
+@media (min-width: 375px) {
+  .buttonWrapper {
+    padding: 0 24px;
+  }
+}
+
+@media (min-width: 430px) {
+  .buttonWrapper {
+    padding: 0 32px;
+  }
 }
 
 .button {
-  width: 328px;
-  height: 56px;
+  width: 100%;
+  max-width: 328px;
+  height: auto;
+  min-height: 48px;
+  padding: 12px 20px;
   background: #c2b291;
   border-radius: 100px;
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 375px) {
+  .button {
+    min-height: 52px;
+    padding: 14px 22px;
+  }
+}
+
+@media (min-width: 430px) {
+  .button {
+    min-height: 56px;
+    padding: 16px 24px;
+  }
+}
+
+.button:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 }
 
 .buttonText {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+@media (min-width: 375px) {
+  .buttonText {
+    font-size: 15px;
+    line-height: 23px;
+  }
+}
+
+@media (min-width: 430px) {
+  .buttonText {
+    font-size: 16px;
+    line-height: 24px;
+  }
 }
 
 .volunteerButtonText {
-  width: 188px;
-  height: 24px;
+  width: auto;
+  max-width: 188px;
+  height: auto;
+  white-space: nowrap;
 }
 
 .giveButtonText {
-  width: 130px;
-  height: 24px;
+  width: auto;
+  max-width: 130px;
+  height: auto;
+  white-space: nowrap;
 }
 
 .bottomTextGroup {
