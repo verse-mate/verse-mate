@@ -308,12 +308,7 @@ export const MainContent = () => {
   );
 
   // Book introduction - fetch from API
-  const {
-    introduction: introData,
-    hasViewed: hasViewedIntro,
-    isLoading: isIntroLoading,
-    markAsViewed,
-  } = useBookIntroduction(
+  const { introduction: introData, markAsViewed } = useBookIntroduction(
     !isViewingTopic && typeof bookId === "number" ? bookId : null,
     "en",
   );
@@ -321,40 +316,8 @@ export const MainContent = () => {
   // Track dismissed intros for this session to prevent re-triggering
   const dismissedIntrosRef = useRef<Set<number>>(new Set());
 
-  useEffect(() => {
-    // Only check for intros on Bible books (not topics)
-    if (
-      !isViewingTopic &&
-      bookId &&
-      typeof bookId === "number" &&
-      !isIntroLoading
-    ) {
-      // Show intro if:
-      // 1. Introduction exists for this book
-      // 2. User hasn't viewed it yet
-      // 3. We're not already showing the intro (prevents re-triggering after dismiss)
-      // 4. We haven't dismissed it in this session (prevents showing again in same session)
-      if (
-        introData &&
-        !hasViewedIntro &&
-        !showIntro &&
-        !dismissedIntrosRef.current.has(bookId)
-      ) {
-        // Just set showIntro to true, preserve all other URL params
-        saveSearchParams({
-          showIntro: true,
-        });
-      }
-    }
-  }, [
-    bookId,
-    isViewingTopic,
-    introData,
-    hasViewedIntro,
-    isIntroLoading,
-    showIntro,
-    saveSearchParams,
-  ]);
+  // Auto-show intro logic removed per request
+  // The intro will only be shown when the user explicitly clicks the "Book Overview" button
 
   const oldTestamentBooks = useMemo(
     () =>
@@ -1911,7 +1874,10 @@ export const MainContent = () => {
                     buttonsVisible={buttonsVisible}
                     scrollableCallbackRef={scrollableCallbackRef}
                   />
-                ) : showIntro && typeof bookId === "number" && introData ? (
+                ) : showIntro &&
+                  typeof bookId === "number" &&
+                  introData &&
+                  introData.book_id === bookId ? (
                   // Show book introduction
                   (() => {
                     // Read verseId directly from URL to avoid React state timing issues

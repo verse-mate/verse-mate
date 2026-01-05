@@ -61,7 +61,10 @@ export class AutoHighlightRepository {
       .where("auto_highlights.chapter_number", "=", params.chapter_number)
       .where("highlight_themes.is_active", "=", true);
 
-    if (params.theme_ids && params.theme_ids.length > 0) {
+    if (params.theme_ids) {
+      if (params.theme_ids.length === 0) {
+        return [];
+      }
       query = query.where("auto_highlights.theme_id", "in", params.theme_ids);
     }
 
