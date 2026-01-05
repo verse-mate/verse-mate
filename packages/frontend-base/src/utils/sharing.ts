@@ -14,7 +14,6 @@ interface ShareablePassageParams {
 // Allowed hosts for security validation
 const ALLOWED_HOSTS = [
   "localhost",
-  "verse-mate.apegro.dev",
   "app.versemate.org",
   "versemate.com", // Add production domain when available
 ];

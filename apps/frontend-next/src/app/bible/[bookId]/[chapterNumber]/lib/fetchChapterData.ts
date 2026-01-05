@@ -2,7 +2,7 @@ export async function fetchChapterForPreview(
   bookId: number,
   chapterNumber: number,
 ) {
-  const apiUrl = process.env.API_URL || "https://api.verse-mate.apegro.dev";
+  const apiUrl = process.env.API_URL || "https://api.versemate.org";
 
   try {
     const response = await fetch(

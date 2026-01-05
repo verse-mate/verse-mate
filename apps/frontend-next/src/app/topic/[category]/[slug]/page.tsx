@@ -15,7 +15,7 @@ async function getTopicsByCategory(
   bibleVersion = "NASB1995",
 ) {
   try {
-    const baseUrl = process.env.API_URL || "https://api.verse-mate.apegro.dev";
+    const baseUrl = process.env.API_URL || "https://api.versemate.org";
     const response = await fetch(
       `${baseUrl}/topics/search?category=${category}&bible_version=${bibleVersion}`,
       { cache: "no-store" },

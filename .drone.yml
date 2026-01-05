@@ -168,7 +168,7 @@ steps:
       - chmod 600 ~/.ssh/id_rsa
       - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
       # Deploy
-      - ssh root@verse-mate.apegro.dev "cd ~/verse-mate && docker compose pull && docker compose up -d && docker system prune -a -f"
+      - ssh root@app.versemate.org "cd ~/verse-mate && docker compose pull && docker compose up -d && docker system prune -a -f"
     environment:
       SSH_PRIVATE_KEY:
         from_secret: SSH_PRIVATE_KEY
