@@ -1,9 +1,16 @@
 export default function DownloadAppSection() {
   return (
-    <section className="w-full bg-[#F6F3EC] relative overflow-hidden isolate">
+    <section className="w-full self-stretch bg-[#F6F3EC] relative overflow-hidden isolate">
       {/* Content Container */}
-      <div className="max-w-[1440px] mx-auto px-8 md:px-12 lg:px-16 xl:px-[120px] py-12 md:py-16 lg:py-20 xl:py-[80px]">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-12 lg:gap-16 xl:gap-20">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-[120px] py-12 md:py-16 lg:py-20 xl:py-[80px] relative 2xl:min-h-[860px]">
+        {/* Text Line - Always free (Desktop) */}
+        <div className="hidden xl:flex absolute left-0 right-0 bottom-10 flex-row justify-center items-center gap-2 h-8 z-10">
+          <span className="font-inter font-normal text-2xl leading-8 text-center tracking-[0.2em] text-[#3E464D]">
+            Always free. For everyone. Forever.
+          </span>
+        </div>
+
+        <div className="flex w-full flex-col lg:flex-row lg:items-center gap-12 lg:gap-16 xl:gap-20">
           {/* Text Content */}
           <div className="flex flex-col gap-10 lg:flex-1 lg:max-w-[651px]">
             {/* Main Content */}
@@ -48,7 +55,7 @@ export default function DownloadAppSection() {
                   href="https://apps.apple.com/us/app/verse-mate/id6756897180"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col justify-center items-center py-2 bg-black rounded-lg no-underline w-auto"
+                  className="flex flex-col justify-center items-center py-2 gap-2 w-[197px] h-[58px] bg-black rounded-lg no-underline"
                 >
                   <img
                     src="/appStore.png"
@@ -62,7 +69,7 @@ export default function DownloadAppSection() {
                   href="https://play.google.com/store/apps/details?id=org.versemate.app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col justify-center items-center py-2 bg-black rounded-lg no-underline w-auto"
+                  className="flex flex-col justify-center items-center py-2 gap-2 w-[197px] h-[58px] bg-black rounded-lg no-underline"
                 >
                   <img
                     src="/googleStore.png"
