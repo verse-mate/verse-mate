@@ -38,6 +38,20 @@ export async function generateMetadata({
       description: "Read this chapter on VerseMate",
       url: `https://app.versemate.org/bible/${bookSlug}/${chapterNumber}`,
       type: "article",
+      images: [
+        {
+          url: "https://app.versemate.org/app-icon.png",
+          width: 1024,
+          height: 1024,
+          alt: "VerseMate",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary",
+      title: `${bookName} ${chapterNumber}`,
+      description: "Read this chapter on VerseMate",
+      images: ["https://app.versemate.org/app-icon.png"],
     },
   };
 }
