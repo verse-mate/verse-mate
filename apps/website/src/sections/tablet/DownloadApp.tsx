@@ -237,7 +237,7 @@ export default function DownloadAppSection() {
           >
             {/* Frame 8 - App Store Button */}
             <a
-              href="https://apps.apple.com/app/verse-mate"
+              href="https://apps.apple.com/us/app/verse-mate/id6756897180"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -273,7 +273,7 @@ export default function DownloadAppSection() {
 
             {/* Frame 9 - Google Play Button */}
             <a
-              href="https://play.google.com/store/apps/details?id=org.versemate"
+              href="https://play.google.com/store/apps/details?id=org.versemate.app"
               target="_blank"
               rel="noopener noreferrer"
               style={{
