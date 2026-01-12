@@ -1,0 +1,288 @@
+.getInvolvedSection {
+  width: 100%;
+  max-width: 100vw;
+  height: auto;
+  min-height: 1214px;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .getInvolvedSection {
+    min-height: auto;
+    padding: 64px 32px;
+  }
+}
+
+.titleContainer {
+  width: auto;
+  max-width: 203px;
+  height: auto;
+}
+
+.title {
+  width: auto;
+  max-width: 223px;
+  height: auto;
+  font-size: 20px;
+  line-height: 32px;
+}
+
+@media (min-width: 900px) {
+  .title {
+    font-size: 24px;
+  }
+}
+
+.cardsContainer {
+  width: 100%;
+  max-width: 896px;
+  height: auto;
+  gap: 32px;
+}
+
+@media (min-width: 768px) and (max-width: 899px) {
+  .cardsContainer {
+    max-width: 100%;
+    flex-direction: column;
+  }
+}
+
+.card {
+  width: 100%;
+  max-width: 428px;
+  height: auto;
+}
+
+@media (min-width: 768px) and (max-width: 899px) {
+  .card {
+    max-width: 100%;
+  }
+}
+
+.cardTitle {
+  width: 100%;
+  max-width: 428px;
+  height: auto;
+  font-size: 40px;
+  line-height: 52px;
+}
+
+@media (min-width: 900px) {
+  .cardTitle {
+    font-size: 48px;
+    line-height: 64px;
+  }
+}
+
+.cardContent {
+  width: 100%;
+  max-width: 428px;
+  height: auto;
+}
+
+@media (min-width: 768px) and (max-width: 899px) {
+  .cardContent {
+    max-width: 100%;
+  }
+}
+
+.volunteerImage {
+  width: 100%;
+  max-width: 428px;
+  height: auto;
+  min-height: 180px;
+  aspect-ratio: 2 / 1;
+  background-image: url("/volunteer.png");
+  background-size: cover;
+  background-position: center;
+}
+
+@media (min-width: 900px) {
+  .volunteerImage {
+    min-height: 214px;
+  }
+}
+
+.giveImage {
+  width: 100%;
+  max-width: 428px;
+  height: auto;
+  min-height: 180px;
+  aspect-ratio: 2 / 1;
+  background-image: url("/give.png");
+  background-size: cover;
+  background-position: center;
+}
+
+@media (min-width: 900px) {
+  .giveImage {
+    min-height: 214px;
+  }
+}
+
+.cardTextContainer {
+  width: 100%;
+  max-width: 428px;
+  height: auto;
+  padding: 0 24px;
+}
+
+@media (min-width: 900px) {
+  .cardTextContainer {
+    padding: 0 24px;
+  }
+}
+
+.cardHeading {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  font-size: 20px;
+  line-height: 28px;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .cardHeading {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+
+.cardGiveHeading {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  font-size: 20px;
+  line-height: 28px;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .cardGiveHeading {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+
+.cardDescription {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  font-size: 20px;
+  line-height: 28px;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .cardDescription {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+
+.buttonContainer {
+  width: 100%;
+  max-width: 428px;
+  height: auto;
+  padding: 0 32px;
+}
+
+@media (min-width: 768px) {
+  .buttonContainer {
+    padding: 0 16px;
+  }
+}
+
+@media (min-width: 900px) {
+  .buttonContainer {
+    padding: 0 32px;
+  }
+}
+
+.button {
+  width: 100%;
+  max-width: 364px;
+  height: auto;
+  min-height: 60px;
+  padding: 16px 24px;
+  font-size: 18px;
+  line-height: 28px;
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .button {
+    min-height: 70px;
+    padding: 18px 28px;
+    font-size: 19px;
+    line-height: 30px;
+  }
+}
+
+@media (min-width: 900px) {
+  .button {
+    min-height: 80px;
+    padding: 20px 32px;
+    font-size: 20px;
+    line-height: 32px;
+  }
+}
+
+.button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+}
+
+.volunteerButtonText {
+  width: auto;
+  max-width: 235px;
+  height: auto;
+  white-space: nowrap;
+}
+
+.giveButtonText {
+  width: auto;
+  max-width: 162px;
+  height: auto;
+  white-space: nowrap;
+}
+
+.bottomTextContainer {
+  width: 100%;
+  max-width: 896px;
+  height: auto;
+}
+
+.bottomTextPrimary {
+  width: 100%;
+  max-width: 896px;
+  height: auto;
+  font-size: 18px;
+  line-height: 28px;
+  padding: 0 16px;
+}
+
+@media (min-width: 900px) {
+  .bottomTextPrimary {
+    font-size: 20px;
+    line-height: 32px;
+    padding: 0;
+  }
+}
+
+.bottomTextSecondary {
+  width: 100%;
+  max-width: 896px;
+  height: auto;
+  font-size: 14px;
+  line-height: 22px;
+  padding: 0 16px;
+}
+
+@media (min-width: 900px) {
+  .bottomTextSecondary {
+    font-size: 16px;
+    line-height: 24px;
+    padding: 0;
+  }
+}

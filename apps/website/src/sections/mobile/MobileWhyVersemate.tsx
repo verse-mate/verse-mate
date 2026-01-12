@@ -1,104 +1,27 @@
 "use client";
 
+import styles from "./MobileWhyVersemate.module.css";
+
 export default function MobileWhyVersemate() {
   return (
     <section
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        padding: "48px 24px",
-        gap: "48px",
-        isolation: "isolate",
-        width: "440px",
-        height: "592px",
-        flex: "none",
-        order: 2,
-        flexGrow: 0,
-        position: "relative",
-        margin: "0 auto",
-        maxWidth: "100vw",
-        overflow: "hidden",
-      }}
+      className={`${styles.section} relative isolate mx-auto flex max-w-full flex-col items-start gap-12 overflow-hidden p-12 px-6`}
     >
       {/* Image */}
-      <div
-        style={{
-          position: "absolute",
-          width: "440px",
-          height: "592px",
-          left: "0px",
-          top: "0px",
-          flex: "none",
-          order: 0,
-          flexGrow: 0,
-          zIndex: 0,
-        }}
-      >
+      <div className={`${styles.imageContainer}`}>
         {/* Background Image */}
-        <div
-          style={{
-            position: "absolute",
-            width: "600px",
-            height: "592px",
-            left: "-80px",
-            top: "0px",
-            backgroundImage: "url(/why-versemate.jpg)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
+        <div className={`${styles.backgroundImage}`} />
 
         {/* Overlay */}
-        <div
-          style={{
-            position: "absolute",
-            width: "440px",
-            height: "592px",
-            left: "0px",
-            top: "0px",
-            background:
-              "linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%)",
-          }}
-        />
+        <div className={`${styles.overlay}`} />
       </div>
 
       {/* Title */}
       <div
-        style={{
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "8px 0px",
-          gap: "8px",
-          width: "162px",
-          height: "40px",
-          borderBottom: "6px solid #C2B291",
-          flex: "none",
-          order: 1,
-          flexGrow: 0,
-          zIndex: 1,
-        }}
+        className={`${styles.titleBorder} flex flex-row items-center justify-center gap-2 p-0 py-2`}
       >
         <span
-          style={{
-            width: "180px",
-            height: "24px",
-            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "16px",
-            lineHeight: "24px",
-            textAlign: "center",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
+          className={`${styles.titleText} text-center font-inter font-bold uppercase text-white`}
         >
           WHY VERSEMATE
         </span>
@@ -106,110 +29,41 @@ export default function MobileWhyVersemate() {
 
       {/* Text */}
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          padding: "0px",
-          gap: "16px",
-          width: "392px",
-          height: "408px",
-          flex: "none",
-          order: 2,
-          alignSelf: "stretch",
-          flexGrow: 0,
-          zIndex: 2,
-        }}
+        className={`${styles.textContent} flex flex-col items-start gap-4 self-stretch p-0`}
       >
         {/* Main Heading */}
         <h2
-          style={{
-            width: "392px",
-            height: "80px",
-            fontFamily: "var(--font-merriweather, Merriweather, serif)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "32px",
-            lineHeight: "40px",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            alignSelf: "stretch",
-            flexGrow: 0,
-            margin: "0",
-          }}
+          className={`${styles.heading} m-0 self-stretch font-merriweather font-bold text-white`}
         >
           Not Just Read - Understood.
         </h2>
 
         {/* Description Text */}
         <div
-          style={{
-            width: "392px",
-            height: "312px",
-            flex: "none",
-            order: 1,
-            alignSelf: "stretch",
-            flexGrow: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
+          className={`${styles.descriptionContainer} flex flex-col gap-4 self-stretch`}
         >
           <p
-            style={{
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontStyle: "normal",
-              fontWeight: 300,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: "#FFFFFF",
-              margin: "0",
-            }}
+            className={`${styles.descriptionText} m-0 font-inter font-light text-white`}
           >
             Too many people walk away from the Bible confused or overwhelmed.
           </p>
 
           <p
-            style={{
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontStyle: "normal",
-              fontWeight: 300,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: "#FFFFFF",
-              margin: "0",
-            }}
+            className={`${styles.descriptionText} m-0 font-inter font-light text-white`}
           >
             Versemate was created to change that. We believe the Word of God was
             meant to be understood - not just read.
           </p>
 
           <p
-            style={{
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontStyle: "normal",
-              fontWeight: 300,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: "#FFFFFF",
-              margin: "0",
-            }}
+            className={`${styles.descriptionText} m-0 font-inter font-light text-white`}
           >
             That's why we built a free, accessible platform that uses modern
             tools to explain timeless Scripture with clarity and faithfulness.
           </p>
 
           <p
-            style={{
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontStyle: "normal",
-              fontWeight: 300,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: "#FFFFFF",
-              margin: "0",
-            }}
+            className={`${styles.descriptionText} m-0 font-inter font-light text-white`}
           >
             No paywalls. No clutter. Just the truth of God's Word, made simple.
           </p>

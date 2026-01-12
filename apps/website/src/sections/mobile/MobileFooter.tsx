@@ -1,74 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import styles from "./MobileFooter.module.css";
 
 export default function MobileFooter() {
   return (
-    <footer
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "48px 16px",
-        width: "440px",
-        height: "100px",
-        background: "#1B1B1B",
-        flex: "none",
-        order: 7,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        margin: "0 auto",
-        maxWidth: "100vw",
-      }}
-    >
+    <footer className={`${styles.footer} flex flex-col items-center justify-center`}>
       {/* pageLinks */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0px",
-          gap: "24px",
-          width: "312px",
-          height: "34px",
-          flex: "none",
-          order: 0,
-          alignSelf: "stretch",
-          flexGrow: 0,
-        }}
-      >
+      <div className={`${styles.pageLinks} flex flex-row items-center justify-between`}>
         {/* Logo */}
-        <div
-          style={{
-            width: "100px",
-            height: "28px",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              position: "relative",
-            }}
-          >
+        <div className={`${styles.logo}`}>
+          <Link href="/" className="relative flex h-full items-center">
             <Image
               src="/versemate-logo.png"
               alt="VerseMate"
-              width={100}
-              height={28}
-              style={{
-                objectFit: "contain",
-                filter: "brightness(0) invert(1)",
-              }}
+              width={124}
+              height={34}
+              className={`${styles.logoImage} object-contain`}
             />
           </Link>
         </div>
@@ -76,17 +25,7 @@ export default function MobileFooter() {
         {/* Privacy Policy Link */}
         <Link
           href="/privacy"
-          style={{
-            fontFamily: "Inter, sans-serif",
-            fontWeight: 400,
-            fontSize: "12px",
-            lineHeight: "20px",
-            color: "#FFFFFF",
-            textDecoration: "none",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-          }}
+          className={`${styles.privacyLink} font-inter font-normal text-white no-underline`}
         >
           Privacy Policy
         </Link>

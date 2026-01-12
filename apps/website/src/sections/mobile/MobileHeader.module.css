@@ -1,0 +1,31 @@
+.volunteerButton {
+  width: auto;
+  min-width: 160px;
+  height: 44px;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.hamburgerButton {
+  width: 24px;
+  height: 24px;
+}
+
+.hamburgerLine {
+  width: 20px;
+  height: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburgerLineMiddle {
+  margin: 3px 0;
+}
+
+.menuOverlay {
+  background-color: rgb(0 0 0 / 95%);
+}
+
+.logoImage {
+  filter: brightness(0);
+}

@@ -1,0 +1,181 @@
+/* Mobile Hero Section */
+.section {
+  width: 100%;
+  max-width: 100vw;
+  height: 901px;
+  background: linear-gradient(111.34deg, #000 0%, #936E2B 100%);
+  background-blend-mode: multiply;
+  margin: 0 auto;
+}
+
+.textOverlay {
+  background-image: url("/Tilted%20Image%20text%20Mobile.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 1;
+}
+
+.content {
+  height: 432px;
+  padding: 80px 24px 0;
+  gap: 16px;
+}
+
+.heading {
+  width: 392px;
+  height: 120px;
+  font-size: 32px;
+  line-height: 40px;
+  margin: 0;
+}
+
+.description {
+  width: 392px;
+  height: 96px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 200;
+  margin: 0;
+}
+
+.buttonContainer {
+  width: 392px;
+  height: 104px;
+  padding: 24px 0;
+  gap: 24px;
+}
+
+.buttonPrimary {
+  width: 150px;
+  min-width: 150px;
+  height: 50px;
+  padding: 14px 20px;
+  gap: 8px;
+  border: 2px solid #FFF;
+  border-radius: 100px;
+  flex-grow: 1;
+}
+
+@media (min-width: 375px) {
+  .buttonPrimary {
+    width: 165px;
+    min-width: 165px;
+    height: 52px;
+    padding: 15px 22px;
+  }
+}
+
+@media (min-width: 430px) {
+  .buttonPrimary {
+    width: 184px;
+    min-width: 184px;
+    height: 56px;
+    padding: 16px 24px;
+  }
+}
+
+.buttonSecondary {
+  width: 150px;
+  min-width: 150px;
+  height: 50px;
+  padding: 14px 20px;
+  gap: 8px;
+  border-radius: 100px;
+  flex-grow: 1;
+}
+
+@media (min-width: 375px) {
+  .buttonSecondary {
+    width: 165px;
+    min-width: 165px;
+    height: 52px;
+    padding: 15px 22px;
+  }
+}
+
+@media (min-width: 430px) {
+  .buttonSecondary {
+    width: 184px;
+    min-width: 184px;
+    height: 56px;
+    padding: 16px 24px;
+  }
+}
+
+.buttonText {
+  height: auto;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (min-width: 375px) {
+  .buttonText {
+    font-size: 15px;
+    line-height: 23px;
+  }
+}
+
+@media (min-width: 430px) {
+  .buttonText {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+.buttonTextPrimary {
+  width: auto;
+}
+
+.buttonTextSecondary {
+  width: auto;
+}
+
+.heroImageContainer {
+  width: 392px;
+  height: 400px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -40px;
+}
+
+.ipadImage {
+  right: 0;
+  top: 0;
+  width: 412px;
+  border-radius: 12px;
+}
+
+.bibleReaderImage {
+  left: 17%;
+  top: 10%;
+  width: 45%;
+  aspect-ratio: 160 / 198;
+  border-radius: 10px;
+}
+
+.summaryImage {
+  right: 33%;
+  top: 17%;
+  width: 33%;
+  aspect-ratio: 108 / 175;
+  border-radius: 16px;
+}
+
+.bottomText {
+  height: 32px;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  gap: 8px;
+}
+
+.bottomTextSpan {
+  width: 374px;
+  height: 24px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0.2em;
+}

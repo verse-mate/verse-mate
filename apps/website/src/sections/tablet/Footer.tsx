@@ -1,105 +1,32 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import styles from "./Footer.module.css";
 
 export default function Footer() {
   return (
-    <footer
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "48px 64px",
-        width: "1024px",
-        height: "180px",
-        background: "#1B1B1B",
-        flex: "none",
-        order: 7,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        zIndex: 7,
-        margin: "0 auto",
-      }}
-    >
-        {/* Page Links */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0px",
-            gap: "48px",
-            width: "896px",
-            height: "34px",
-            flex: "none",
-            order: 0,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
-        >
+    <footer className={`${styles.footer} flex flex-col items-center justify-center`}>
+      {/* pageLinks */}
+      <div className={`${styles.pageLinks} flex flex-row items-center justify-between`}>
         {/* Logo */}
-        <div
-          style={{
-            width: "124px",
-            height: "34px",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              height: "100%",
-              padding: "0",
-              margin: "0",
-              position: "relative",
-            }}
-          >
+        <div className={`${styles.logo}`}>
+          <Link href="/" className="relative flex h-full items-center">
             <Image
               src="/versemate-logo.png"
               alt="VerseMate"
               width={124}
               height={34}
-              style={{
-                objectFit: "contain",
-                filter: "brightness(0) invert(1)",
-              }}
+              className={`${styles.logoImage} object-contain`}
             />
           </Link>
         </div>
 
-        {/* Footer Links */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            padding: "0px",
-            gap: "24px",
-            height: "24px",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-          }}
+        {/* Privacy Policy Link */}
+        <Link
+          href="/privacy"
+          className={`${styles.privacyLink} font-inter font-normal text-white no-underline`}
         >
-          <Link
-            href="/privacy"
-            style={{
-              fontFamily: "Inter, sans-serif",
-              fontWeight: 400,
-              fontSize: "14px",
-              lineHeight: "24px",
-              color: "#FFFFFF",
-              textDecoration: "none",
-            }}
-          >
-            Privacy Policy
-          </Link>
-        </div>
+          Privacy Policy
+        </Link>
       </div>
     </footer>
   );
