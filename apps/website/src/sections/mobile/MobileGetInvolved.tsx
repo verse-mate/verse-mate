@@ -1,63 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import styles from "./MobileGetInvolved.module.css";
 
 export default function MobileGetInvolved() {
   return (
     <section
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "48px 24px",
-        gap: "48px",
-        width: "440px",
-        height: "1512px",
-        background: "linear-gradient(180deg, #1B1B1B 0%, #000000 100%)",
-        flex: "none",
-        order: 4,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        margin: "0 auto",
-        maxWidth: "100vw",
-      }}
+      className={`${styles.section} mx-auto flex max-w-full flex-col items-center gap-12 self-stretch bg-dark-gradient p-12 px-6`}
     >
       {/* Title */}
       <div
-        style={{
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "8px 0px",
-          gap: "8px",
-          width: "136px",
-          height: "40px",
-          borderBottom: "6px solid #C2B291",
-          flex: "none",
-          order: 0,
-          flexGrow: 0,
-        }}
+        className={`${styles.titleBorder} flex flex-row items-center justify-center gap-2 p-0 py-2`}
       >
         <span
-          style={{
-            width: "136px",
-            height: "24px",
-            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "16px",
-            lineHeight: "24px",
-            textAlign: "center",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-            whiteSpace: "nowrap",
-          }}
+          className={`${styles.titleText} whitespace-nowrap text-center font-inter font-bold uppercase text-white`}
         >
           Get Involved
         </span>
@@ -65,148 +21,39 @@ export default function MobileGetInvolved() {
 
       {/* Group of cards */}
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          padding: "0px",
-          gap: "40px",
-          width: "392px",
-          height: "1160px",
-          flex: "none",
-          order: 1,
-          alignSelf: "stretch",
-          flexGrow: 0,
-        }}
+        className={`${styles.cardGroup} flex flex-col items-start gap-10 self-stretch p-0`}
       >
         {/* Volunteer */}
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            padding: "0px",
-            gap: "24px",
-            width: "392px",
-            height: "572px",
-            flex: "none",
-            order: 0,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
+          className={`${styles.volunteerCard} flex flex-col items-center gap-6 self-stretch p-0`}
         >
           {/* Volunteer Title */}
           <h2
-            style={{
-              width: "392px",
-              height: "40px",
-              fontFamily: "var(--font-merriweather, Merriweather, serif)",
-              fontStyle: "normal",
-              fontWeight: 700,
-              fontSize: "32px",
-              lineHeight: "40px",
-              textAlign: "center",
-              color: "#FFFFFF",
-              flex: "none",
-              order: 0,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              margin: "0",
-            }}
+            className={`${styles.cardTitle} m-0 self-stretch text-center font-merriweather font-bold text-white`}
           >
             Volunteer
           </h2>
 
           {/* Content */}
           <div
-            style={{
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              padding: "0px 0px 40px",
-              gap: "40px",
-              width: "392px",
-              height: "508px",
-              background: "rgba(255, 255, 255, 0.1)",
-              boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
-              borderRadius: "50px",
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-            }}
+            className={`${styles.cardContent} ${styles.volunteerContent} flex flex-col items-center gap-10 self-stretch pb-10`}
           >
             {/* Image */}
             <div
-              style={{
-                width: "392px",
-                height: "196px",
-                backgroundImage: "url(/volunteer.png)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                borderRadius: "40px 40px 0px 0px",
-                flex: "none",
-                order: 0,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.cardImage} ${styles.volunteerImage} self-stretch`}
             />
 
             {/* Text */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px 24px",
-                gap: "16px",
-                width: "392px",
-                height: "136px",
-                flex: "none",
-                order: 1,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.cardText} ${styles.volunteerText} flex flex-col items-start gap-4 self-stretch`}
             >
               <h3
-                style={{
-                  width: "344px",
-                  height: "48px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 700,
-                  fontSize: "20px",
-                  lineHeight: "24px",
-                  textAlign: "center",
-                  color: "#FFFFFF",
-                  flex: "none",
-                  order: 0,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.cardHeading} ${styles.volunteerHeading} m-0 self-stretch text-center font-inter font-bold text-white`}
               >
                 Want to Help People Understand the Bible?
               </h3>
               <p
-                style={{
-                  width: "344px",
-                  height: "72px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 300,
-                  fontSize: "16px",
-                  lineHeight: "24px",
-                  textAlign: "center",
-                  color: "#FFFFFF",
-                  opacity: 0.5,
-                  flex: "none",
-                  order: 1,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.cardDescription} m-0 self-stretch text-center font-inter font-light text-white`}
               >
                 We're looking for developers, testers, translators, and people
                 of faith who want to make an eternal impact.
@@ -215,55 +62,14 @@ export default function MobileGetInvolved() {
 
             {/* Button Container */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px 32px",
-                gap: "8px",
-                width: "392px",
-                height: "56px",
-                flex: "none",
-                order: 2,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.buttonWrapper} flex flex-col items-start gap-2 self-stretch`}
             >
               <Link
                 href="/volunteer"
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: "16px 24px",
-                  gap: "8px",
-                  width: "328px",
-                  height: "56px",
-                  background: "#C2B291",
-                  borderRadius: "100px",
-                  flex: "none",
-                  order: 0,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  textDecoration: "none",
-                }}
+                className={`${styles.button} flex flex-row items-center justify-center gap-2 self-stretch p-6 px-6 py-4 no-underline`}
               >
                 <span
-                  style={{
-                    width: "188px",
-                    height: "24px",
-                    fontFamily:
-                      "var(--font-inter, Inter, system-ui, sans-serif)",
-                    fontStyle: "normal",
-                    fontWeight: 600,
-                    fontSize: "16px",
-                    lineHeight: "24px",
-                    color: "#000000",
-                    flex: "none",
-                    order: 0,
-                    flexGrow: 0,
-                  }}
+                  className={`${styles.buttonText} ${styles.volunteerButtonText} font-inter font-semibold text-black`}
                 >
                   Join the Volunteer Team
                 </span>
@@ -274,131 +80,35 @@ export default function MobileGetInvolved() {
 
         {/* Give */}
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            padding: "0px",
-            gap: "24px",
-            width: "392px",
-            height: "548px",
-            flex: "none",
-            order: 1,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
+          className={`${styles.giveCard} flex flex-col items-center gap-6 self-stretch p-0`}
         >
           {/* Give Title */}
           <h2
-            style={{
-              width: "392px",
-              height: "40px",
-              fontFamily: "var(--font-merriweather, Merriweather, serif)",
-              fontStyle: "normal",
-              fontWeight: 700,
-              fontSize: "32px",
-              lineHeight: "40px",
-              textAlign: "center",
-              color: "#FFFFFF",
-              flex: "none",
-              order: 0,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              margin: "0",
-            }}
+            className={`${styles.cardTitle} m-0 self-stretch text-center font-merriweather font-bold text-white`}
           >
             Give
           </h2>
 
           {/* Content */}
           <div
-            style={{
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              padding: "0px 0px 40px",
-              gap: "40px",
-              width: "392px",
-              height: "484px",
-              background: "rgba(255, 255, 255, 0.1)",
-              borderRadius: "50px",
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-            }}
+            className={`${styles.cardContent} ${styles.giveContent} flex flex-col items-center gap-10 self-stretch pb-10`}
           >
             {/* Image */}
             <div
-              style={{
-                width: "392px",
-                height: "196px",
-                backgroundImage: "url(/give.png)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                borderRadius: "40px 40px 0px 0px",
-                flex: "none",
-                order: 0,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.cardImage} ${styles.giveImage} self-stretch`}
             />
 
             {/* Text */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px 24px",
-                gap: "16px",
-                width: "392px",
-                height: "112px",
-                flex: "none",
-                order: 1,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.cardText} ${styles.giveText} flex flex-col items-start gap-4 self-stretch`}
             >
               <h3
-                style={{
-                  width: "344px",
-                  height: "24px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 700,
-                  fontSize: "20px",
-                  lineHeight: "24px",
-                  textAlign: "center",
-                  color: "#FFFFFF",
-                  flex: "none",
-                  order: 0,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.cardHeading} ${styles.giveHeading} m-0 self-stretch text-center font-inter font-bold text-white`}
               >
                 Believe in the Mission?
               </h3>
               <p
-                style={{
-                  width: "344px",
-                  height: "72px",
-                  fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                  fontStyle: "normal",
-                  fontWeight: 300,
-                  fontSize: "16px",
-                  lineHeight: "24px",
-                  textAlign: "center",
-                  color: "#FFFFFF",
-                  opacity: 0.5,
-                  flex: "none",
-                  order: 1,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  margin: "0",
-                }}
+                className={`${styles.cardDescription} m-0 self-stretch text-center font-inter font-light text-white`}
               >
                 Your gift keeps Versemate 100% free and accessible to people
                 around the world seeking to understand God's Word.
@@ -407,55 +117,14 @@ export default function MobileGetInvolved() {
 
             {/* Button Container */}
             <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px 32px",
-                gap: "8px",
-                width: "392px",
-                height: "56px",
-                flex: "none",
-                order: 2,
-                alignSelf: "stretch",
-                flexGrow: 0,
-              }}
+              className={`${styles.buttonWrapper} flex flex-col items-start gap-2 self-stretch`}
             >
               <Link
                 href="/give"
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: "16px 24px",
-                  gap: "8px",
-                  width: "328px",
-                  height: "56px",
-                  background: "#C2B291",
-                  borderRadius: "100px",
-                  flex: "none",
-                  order: 0,
-                  alignSelf: "stretch",
-                  flexGrow: 0,
-                  textDecoration: "none",
-                }}
+                className={`${styles.button} flex flex-row items-center justify-center gap-2 self-stretch p-6 px-6 py-4 no-underline`}
               >
                 <span
-                  style={{
-                    width: "130px",
-                    height: "24px",
-                    fontFamily:
-                      "var(--font-inter, Inter, system-ui, sans-serif)",
-                    fontStyle: "normal",
-                    fontWeight: 600,
-                    fontSize: "16px",
-                    lineHeight: "24px",
-                    color: "#000000",
-                    flex: "none",
-                    order: 0,
-                    flexGrow: 0,
-                  }}
+                  className={`${styles.buttonText} ${styles.giveButtonText} font-inter font-semibold text-black`}
                 >
                   Make a Donation
                 </span>
@@ -466,60 +135,17 @@ export default function MobileGetInvolved() {
 
         {/* Bottom text */}
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            padding: "0px",
-            gap: "0px",
-            width: "392px",
-            height: "96px",
-            flex: "none",
-            order: 2,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
+          className={`${styles.bottomTextGroup} flex flex-col items-start gap-0 self-stretch p-0`}
         >
           <p
-            style={{
-              width: "392px",
-              height: "48px",
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontStyle: "normal",
-              fontWeight: 500,
-              fontSize: "16px",
-              lineHeight: "24px",
-              textAlign: "center",
-              color: "#C2B291",
-              flex: "none",
-              order: 0,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              margin: "0 0 24px 0",
-            }}
+            className={`${styles.nonprofitText} self-stretch text-center font-inter font-medium text-brand-tan`}
           >
             Versemate is a 501(c)(3) nonprofit making the
             <br />
             Bible easier to understand - for everyone, forever.
           </p>
           <p
-            style={{
-              width: "392px",
-              height: "48px",
-              fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-              fontStyle: "normal",
-              fontWeight: 300,
-              fontSize: "14px",
-              lineHeight: "24px",
-              textAlign: "center",
-              color: "#FFFFFF",
-              opacity: 0.5,
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              margin: "0",
-            }}
+            className={`${styles.taxText} m-0 self-stretch text-center font-inter font-light text-white`}
           >
             Donations are tax-deductible in the U.S.
             <br />

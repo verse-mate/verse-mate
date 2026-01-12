@@ -1,0 +1,48 @@
+/* Desktop Global Section */
+.section {
+  width: 100%;
+  max-width: 100vw;
+  height: 800px;
+}
+
+.contentContainer {
+  width: 1440px;
+}
+
+.title {
+  width: 323px;
+  height: 48px;
+}
+
+.titleText {
+  width: 323px;
+  height: 32px;
+}
+
+.content {
+  width: 1200px;
+  height: 400px;
+}
+
+.icon {
+  width: 400px;
+  height: 400px;
+  background-image: url("/globalandgrowing-icon.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.textContent {
+  width: 736px;
+  height: 368px;
+}
+
+.heading {
+  width: 736px;
+  height: 128px;
+}
+
+.description {
+  width: 736px;
+  height: 224px;
+}

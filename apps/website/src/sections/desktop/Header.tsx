@@ -4,6 +4,7 @@ import { navigateToLogin } from "@/lib/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import styles from "./Header.module.css";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -20,55 +21,18 @@ export default function Header() {
   return (
     <header
       data-header="desktop"
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0px 64px",
-        gap: "794px",
-        position: "absolute",
-        height: "76px",
-        left: "0px",
-        right: "0px",
-        top: "0px",
-        background: "#FFFFFF",
-        flex: "none",
-        order: 8,
-        flexGrow: 0,
-        zIndex: 8,
-      }}
+      className={`${styles.header} absolute left-0 right-0 top-0 z-50 flex flex-row items-center justify-between bg-white`}
     >
+      <div className="w-full max-w-[1440px] mx-auto flex flex-row items-center justify-between px-8 xl:px-16">
       {/* Logo */}
-      <div
-        style={{
-          margin: "0 auto",
-          width: "175px",
-          height: "48px",
-          flex: "none",
-          order: 0,
-          flexGrow: 0,
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            height: "100%",
-            padding: "0",
-            margin: "0",
-            position: "relative",
-          }}
-        >
+      <div className={`${styles.logo}`}>
+        <Link href="/" className="relative flex h-full items-center p-0 m-0">
           <Image
             src="/versemate-logo.png"
             alt="VerseMate"
             width={175}
             height={48}
-            style={{
-              objectFit: "contain",
-            }}
+            className="object-contain"
           />
         </Link>
       </div>
@@ -76,314 +40,73 @@ export default function Header() {
       {/* Button */}
       <Link
         href="/volunteer"
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "16px 32px",
-          gap: "8px",
-          margin: "0 auto",
-          width: "208px",
-          height: "56px",
-          background: "#000000",
-          borderRadius: "100px",
-          flex: "none",
-          order: 1,
-          flexGrow: 0,
-          border: "none",
-          cursor: "pointer",
-          textDecoration: "none",
-        }}
+        className={`${styles.volunteerButton} flex cursor-pointer flex-row items-center justify-center gap-2 rounded-full border-none bg-black px-8 py-4 no-underline`}
       >
-        <span
-          style={{
-            width: "145px",
-            height: "24px",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "16px",
-            lineHeight: "24px",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
-        >
+        <span className={`${styles.buttonText} font-inter text-base font-normal leading-6 text-white`}>
           Join as a Volunteer
         </span>
       </Link>
 
       {/* Menu */}
       <nav
-        style={{
-          display: "none",
-          flexDirection: "row",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          padding: "0px",
-          gap: "48px",
-          width: "437px",
-          height: "76px",
-          flex: "none",
-          order: 1,
-          flexGrow: 0,
-        }}
+        className={`${styles.nav} hidden flex-row items-center justify-end p-0`}
       >
         {/* Home Menu Item */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "6px 0px 0px",
-            gap: "4px",
-            width: "46px",
-            height: "76px",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
-        >
+        <div className={`${styles.menuItem} ${styles.menuItemHome} flex flex-col items-center justify-center`}>
           <Link
             href="/"
-            style={{
-              width: "46px",
-              height: "24px",
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 500,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: isScrolled ? "#FFFFFF" : "#000000",
-              opacity: 0.6,
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-              textDecoration: "none",
-              textAlign: "center",
-            }}
+            className={`${styles.menuLink} w-full text-center font-inter text-base font-medium leading-6 no-underline ${isScrolled ? "text-white" : "text-black"}`}
           >
             Home
           </Link>
-          <div
-            style={{
-              width: "0px",
-              height: "2px",
-              background: "#FFFFFF",
-              borderRadius: "2px",
-              flex: "none",
-              order: 1,
-              flexGrow: 0,
-            }}
-          />
+          <div className={`${styles.underline} rounded-sm bg-white`} />
         </div>
 
         {/* Volunteer Menu Item */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "6px 0px 0px",
-            gap: "4px",
-            width: "74px",
-            height: "76px",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-          }}
-        >
+        <div className={`${styles.menuItem} ${styles.menuItemVolunteer} flex flex-col items-center justify-center`}>
           <a
             href="mailto:info@versemate.org?subject=I want to volunteer&body=Hi, I'm interested in helping with VerseMate..."
-            style={{
-              width: "74px",
-              height: "24px",
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 500,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: isScrolled ? "#FFFFFF" : "#000000",
-              opacity: 0.6,
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-              textDecoration: "none",
-              textAlign: "center",
-            }}
+            className={`${styles.menuLink} w-full text-center font-inter text-base font-medium leading-6 no-underline ${isScrolled ? "text-white" : "text-black"}`}
           >
             Volunteer
           </a>
-          <div
-            style={{
-              width: "0px",
-              height: "2px",
-              background: "#FFFFFF",
-              borderRadius: "2px",
-              flex: "none",
-              order: 1,
-              flexGrow: 0,
-            }}
-          />
+          <div className={`${styles.underline} rounded-sm bg-white`} />
         </div>
 
         {/* Give Menu Item */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "6px 0px 0px",
-            gap: "4px",
-            width: "35px",
-            height: "76px",
-            flex: "none",
-            order: 2,
-            flexGrow: 0,
-          }}
-        >
+        <div className={`${styles.menuItem} ${styles.menuItemGive} flex flex-col items-center justify-center`}>
           <Link
             href="/give"
-            style={{
-              width: "35px",
-              height: "24px",
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 500,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: isScrolled ? "#FFFFFF" : "#000000",
-              opacity: 0.6,
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-              textDecoration: "none",
-              textAlign: "center",
-            }}
+            className={`${styles.menuLink} w-full text-center font-inter text-base font-medium leading-6 no-underline ${isScrolled ? "text-white" : "text-black"}`}
           >
             Give
           </Link>
-          <div
-            style={{
-              width: "0px",
-              height: "2px",
-              background: "#FFFFFF",
-              borderRadius: "2px",
-              flex: "none",
-              order: 1,
-              flexGrow: 0,
-            }}
-          />
+          <div className={`${styles.underline} rounded-sm bg-white`} />
         </div>
 
         {/* About Menu Item */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "6px 0px 0px",
-            gap: "4px",
-            width: "47px",
-            height: "76px",
-            flex: "none",
-            order: 3,
-            flexGrow: 0,
-          }}
-        >
+        <div className={`${styles.menuItem} ${styles.menuItemAbout} flex flex-col items-center justify-center`}>
           <Link
             href="/about"
-            style={{
-              width: "47px",
-              height: "24px",
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 500,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: isScrolled ? "#FFFFFF" : "#000000",
-              opacity: 0.6,
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-              textDecoration: "none",
-              textAlign: "center",
-            }}
+            className={`${styles.menuLink} w-full text-center font-inter text-base font-medium leading-6 no-underline ${isScrolled ? "text-white" : "text-black"}`}
           >
             About
           </Link>
-          <div
-            style={{
-              width: "0px",
-              height: "2px",
-              background: "#FFFFFF",
-              borderRadius: "2px",
-              flex: "none",
-              order: 1,
-              flexGrow: 0,
-            }}
-          />
+          <div className={`${styles.underline} rounded-sm bg-white`} />
         </div>
 
         {/* Login Menu Item */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "6px 0px 0px",
-            gap: "4px",
-            width: "43px",
-            height: "76px",
-            flex: "none",
-            order: 4,
-            flexGrow: 0,
-          }}
-        >
+        <div className={`${styles.menuItem} ${styles.menuItemLogin} flex flex-col items-center justify-center`}>
           <button
             onClick={() => navigateToLogin()}
-            style={{
-              width: "43px",
-              height: "24px",
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 500,
-              fontSize: "16px",
-              lineHeight: "24px",
-              color: isScrolled ? "#FFFFFF" : "#000000",
-              opacity: 0.6,
-              flex: "none",
-              order: 0,
-              flexGrow: 0,
-              textDecoration: "none",
-              textAlign: "center",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-            }}
+            className={`${styles.menuLink} w-full cursor-pointer border-none bg-transparent text-center font-inter text-base font-medium leading-6 no-underline ${isScrolled ? "text-white" : "text-black"}`}
           >
             Login
           </button>
-          <div
-            style={{
-              width: "0px",
-              height: "2px",
-              background: "#FFFFFF",
-              borderRadius: "2px",
-              flex: "none",
-              order: 1,
-              flexGrow: 0,
-            }}
-          />
+          <div className={`${styles.underline} rounded-sm bg-white`} />
         </div>
       </nav>
+      </div>
     </header>
   );
 }

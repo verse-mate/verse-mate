@@ -1,60 +1,18 @@
 "use client";
 
+import styles from "./MobileAbout1.module.css";
+
 export default function MobileAbout1() {
   return (
     <section
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "48px 24px",
-        gap: "48px",
-        width: "440px",
-        height: "968px",
-        background: "#FFFFFF",
-        flex: "none",
-        order: 5,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        margin: "0 auto",
-        maxWidth: "100vw",
-      }}
+      className={`${styles.section} mx-auto flex max-w-full flex-col items-center gap-12 self-stretch bg-white p-12 px-6`}
     >
       {/* Title */}
       <div
-        style={{
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "8px 0px",
-          gap: "8px",
-          width: "64px",
-          height: "40px",
-          borderBottom: "6px solid #C2B291",
-          flex: "none",
-          order: 0,
-          flexGrow: 0,
-        }}
+        className={`${styles.titleBorder} flex flex-row items-center justify-center gap-2 p-0 py-2`}
       >
         <span
-          style={{
-            width: "64px",
-            height: "24px",
-            fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "16px",
-            lineHeight: "24px",
-            textAlign: "center",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#1B1B1B",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
+          className={`${styles.titleText} text-center font-inter font-bold uppercase text-brand-dark-gray`}
         >
           About
         </span>
@@ -62,129 +20,44 @@ export default function MobileAbout1() {
 
       {/* Content */}
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          padding: "0px",
-          gap: "32px",
-          width: "392px",
-          height: "784px",
-          flex: "none",
-          order: 1,
-          alignSelf: "stretch",
-          flexGrow: 0,
-        }}
+        className={`${styles.content} flex flex-col items-start justify-center gap-8 self-stretch p-0`}
       >
         {/* Image */}
         <div
-          style={{
-            width: "392px",
-            height: "392px",
-            backgroundImage: "url(/bible.png)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            borderRadius: "50px",
-            flex: "none",
-            order: 0,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
+          className={`${styles.image} self-stretch`}
         />
 
         {/* Text */}
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            padding: "0px",
-            gap: "16px",
-            width: "392px",
-            height: "360px",
-            flex: "none",
-            order: 1,
-            alignSelf: "stretch",
-            flexGrow: 0,
-          }}
+          className={`${styles.textGroup} flex flex-col items-start justify-center gap-4 self-stretch p-0`}
         >
           {/* Main Heading */}
           <h2
-            style={{
-              width: "392px",
-              height: "80px",
-              fontFamily: "var(--font-merriweather, Merriweather, serif)",
-              fontStyle: "normal",
-              fontWeight: 700,
-              fontSize: "32px",
-              lineHeight: "40px",
-              color: "#000000",
-              flex: "none",
-              order: 0,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              margin: "0",
-            }}
+            className={`${styles.heading} m-0 self-stretch font-merriweather font-bold text-brand-black`}
           >
             Built by Believers. Guided by the Word.
           </h2>
 
           {/* Description Text */}
           <div
-            style={{
-              width: "392px",
-              height: "264px",
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: "0px",
-            }}
+            className={`${styles.descriptionContainer} flex flex-col gap-0 self-stretch`}
           >
             <p
-              style={{
-                fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#3E464D",
-                margin: "0",
-              }}
+              className={`${styles.descriptionText} m-0 font-inter font-light text-brand-slate`}
             >
               Versemate is a nonprofit organization on a mission to make the
               Bible easier to understand, study, and love - for everyone,
               everywhere.
             </p>
             <p
-              style={{
-                fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#3E464D",
-                margin: "0 0 16px 0",
-              }}
+              className={`${styles.descriptionText} ${styles.paragraph2} font-inter font-light text-brand-slate`}
             >
               We are developers, translators, and believers from around the
               world, united by one calling: to help more people connect with God
               through His Word.
             </p>
             <p
-              style={{
-                fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)",
-                fontStyle: "normal",
-                fontWeight: 300,
-                fontSize: "16px",
-                lineHeight: "24px",
-                color: "#3E464D",
-                margin: "0",
-              }}
+              className={`${styles.descriptionText} m-0 font-inter font-light text-brand-slate`}
             >
               To make the Word of God easy to understand, deeply accessible, and
               free to everyone - so more people around the world can encounter

@@ -1,116 +1,31 @@
+import styles from "./About2.module.css";
+
 export default function About2Section() {
   return (
-    <section
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "80px 120px",
-        gap: "48px",
-        isolation: "isolate",
-        width: "100vw",
-        height: "740px",
-        background: "#F6F3EC",
-        flex: "none",
-        order: 1,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        zIndex: 1,
-        margin: "0 auto",
-      }}
-    >
-      {/* Content */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          padding: "0px",
-          gap: "48px",
-          width: "1200px",
-          height: "480px",
-          flex: "none",
-          order: 0,
-          alignSelf: "stretch",
-          flexGrow: 0,
-        }}
-      >
-        {/* Text */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "flex-start",
-            padding: "0px",
-            gap: "16px",
-            width: "651px",
-            height: "304px",
-            flex: "none",
-            order: 0,
-            flexGrow: 1,
-          }}
-        >
-          {/* Main Heading */}
-          <h2
-            style={{
-              width: "651px",
-              height: "128px",
-              fontFamily: "var(--font-merriweather, Merriweather, serif)",
-              fontStyle: "normal",
-              fontWeight: 700,
-              fontSize: "48px",
-              lineHeight: "64px",
-              color: "#000000",
-              flex: "none",
-              order: 0,
-              alignSelf: "stretch",
-              flexGrow: 0,
-            }}
-          >
-            Illuminating God&rsquo;s Word for Everyone
-          </h2>
+    <section className="w-full bg-brand-light-cream">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-center gap-12 px-8 py-12 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-[120px]">
+        {/* Content */}
+        <div className="flex w-full max-w-[1200px] flex-col items-center gap-8 md:gap-10 lg:flex-row lg:gap-12">
+          {/* Text */}
+          <div className="flex w-full flex-col items-start justify-center gap-4 lg:flex-1">
+            {/* Main Heading */}
+            <h2 className="w-full font-merriweather text-3xl font-bold leading-tight text-brand-black md:text-4xl md:leading-snug lg:text-5xl lg:leading-[64px]">
+              Illuminating God&rsquo;s Word for Everyone
+            </h2>
 
-          {/* Description Text */}
-          <p
-            style={{
-              width: "651px",
-              height: "160px",
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 400,
-              fontSize: "24px",
-              lineHeight: "32px",
-              color: "#3E464D",
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-            }}
-          >
-            We believe the Bible isn&rsquo;t just for scholars or clergy -
-            it&rsquo;s for everyone. Whether you&rsquo;re discovering Scripture
-            for the first time or leading a study group, Versemate helps
-            illuminate God&rsquo;s Word for real understanding and lasting
-            transformation.
-          </p>
+            {/* Description Text */}
+            <p className="w-full font-inter text-lg font-normal leading-7 text-brand-slate md:text-xl md:leading-relaxed lg:text-2xl lg:leading-8">
+              We believe the Bible isn&rsquo;t just for scholars or clergy -
+              it&rsquo;s for everyone. Whether you&rsquo;re discovering Scripture
+              for the first time or leading a study group, Versemate helps
+              illuminate God&rsquo;s Word for real understanding and lasting
+              transformation.
+            </p>
+          </div>
+
+          {/* Image */}
+          <div className={`${styles.image} w-full max-w-[400px] rounded-[50px] md:max-w-[450px] lg:w-[480px] lg:max-w-none lg:flex-shrink-0`} />
         </div>
-
-        {/* Image */}
-        <div
-          style={{
-            width: "480px",
-            height: "480px",
-            backgroundImage: "url(/group.png)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            borderRadius: "50px",
-            flex: "none",
-            order: 1,
-            flexGrow: 0,
-          }}
-        />
       </div>
     </section>
   );

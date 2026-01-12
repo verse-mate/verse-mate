@@ -2,55 +2,22 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import styles from "./Header.module.css";
 
 export default function Header() {
   return (
     <header
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0px 64px",
-        width: "1024px",
-        height: "76px",
-        background: "#FFFFFF",
-        flex: "none",
-        order: 0,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        margin: "0 auto",
-      }}
+      className={`${styles.header} mx-auto flex flex-row items-center justify-between self-stretch bg-white px-16 py-0`}
     >
       {/* Logo */}
-      <div
-        style={{
-          width: "175px",
-          height: "48px",
-          flex: "none",
-          order: 0,
-          flexGrow: 0,
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            height: "100%",
-            padding: "0",
-            margin: "0",
-            position: "relative",
-          }}
-        >
+      <div className={`${styles.logo}`}>
+        <Link href="/" className="relative flex h-full items-center p-0 m-0">
           <Image
             src="/versemate-logo.png"
             alt="VerseMate"
             width={175}
             height={48}
-            style={{
-              objectFit: "contain",
-            }}
+            className="object-contain"
           />
         </Link>
       </div>
@@ -58,59 +25,16 @@ export default function Header() {
       {/* Button */}
       <Link
         href="/volunteer"
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "16px 32px",
-          gap: "8px",
-          width: "208px",
-          height: "56px",
-          background: "#000000",
-          borderRadius: "100px",
-          flex: "none",
-          order: 1,
-          flexGrow: 0,
-          border: "none",
-          cursor: "pointer",
-          textDecoration: "none",
-        }}
+        className={`${styles.volunteerButton} flex cursor-pointer flex-row items-center justify-center gap-2 rounded-full border-none bg-black px-8 py-4 no-underline`}
       >
-        <span
-          style={{
-            width: "145px",
-            height: "24px",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 400,
-            fontSize: "16px",
-            lineHeight: "24px",
-            color: "#FFFFFF",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
-        >
+        <span className={`${styles.buttonText} font-inter text-base font-normal leading-6 text-white`}>
           Join as a Volunteer
         </span>
       </Link>
 
       {/* Menu - Hidden for tablet as per Figma design */}
       <nav
-        style={{
-          display: "none",
-          flexDirection: "row",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          padding: "0px",
-          gap: "48px",
-          width: "437px",
-          height: "76px",
-          flex: "none",
-          order: 1,
-          flexGrow: 0,
-        }}
+        className={`${styles.nav} hidden flex-row items-center justify-end p-0`}
       ></nav>
     </header>
   );

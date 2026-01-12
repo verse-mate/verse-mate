@@ -1,168 +1,47 @@
+import styles from "./Global.module.css";
+
 export default function GlobalSection() {
   return (
-    <section
-      style={{
-        width: "100vw",
-        height: "800px",
-        background: "#FFFFFF",
-        flex: "none",
-        order: 3,
-        alignSelf: "stretch",
-        flexGrow: 0,
-        zIndex: 3,
-      }}
-    >
+    <section className={`${styles.section} w-full self-stretch bg-brand-white`}>
       {/* Content Container - maintains 1440px layout */}
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "96px 120px",
-          gap: "64px",
-          width: "1440px",
-          height: "100%",
-          margin: "0 auto",
-        }}
+        className={`${styles.contentContainer} mx-auto flex h-full flex-col items-center gap-16 px-[120px] py-24`}
       >
-      {/* Title */}
-      <div
-        style={{
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "8px 0px",
-          gap: "8px",
-          width: "323px",
-          height: "48px",
-          borderBottom: "6px solid #C2B291",
-          flex: "none",
-          order: 0,
-          flexGrow: 0,
-        }}
-      >
-        <span
-          style={{
-            width: "323px",
-            height: "32px",
-            fontFamily: "var(--font-inter)",
-            fontStyle: "normal",
-            fontWeight: 700,
-            fontSize: "24px",
-            lineHeight: "32px",
-            textAlign: "center",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#1B1B1B",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-            whiteSpace: "nowrap",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          Global and Growing
-        </span>
-      </div>
-
-      {/* Content */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "0px",
-          gap: "64px",
-          width: "1200px",
-          height: "400px",
-          flex: "none",
-          order: 1,
-          flexGrow: 0,
-        }}
-      >
-        {/* Icons */}
+        {/* Title */}
         <div
-          style={{
-            width: "400px",
-            height: "400px",
-            backgroundImage: "url(/globalandgrowing-icon.png)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            flex: "none",
-            order: 0,
-            flexGrow: 0,
-          }}
-        />
-
-        {/* Text */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            padding: "0px",
-            gap: "16px",
-            width: "736px",
-            height: "368px",
-            flex: "none",
-            order: 1,
-            flexGrow: 1,
-          }}
+          className={`${styles.title} flex flex-row items-center justify-center gap-2 border-b-[6px] border-brand-tan px-0 py-2`}
         >
-          {/* Main Heading */}
-          <h2
-            style={{
-              width: "736px",
-              height: "128px",
-              fontFamily: "var(--font-merriweather, Merriweather, serif)",
-              fontStyle: "normal",
-              fontWeight: 700,
-              fontSize: "48px",
-              lineHeight: "64px",
-              color: "#000000",
-              flex: "none",
-              order: 0,
-              alignSelf: "stretch",
-              flexGrow: 0,
-            }}
-          >
-            Built Worldwide. Anchored in the Word.
-          </h2>
-
-          {/* Description Text */}
-          <p
-            style={{
-              width: "736px",
-              height: "224px",
-              fontFamily: "var(--font-inter)",
-              fontStyle: "normal",
-              fontWeight: 400,
-              fontSize: "24px",
-              lineHeight: "32px",
-              color: "#3E464D",
-              flex: "none",
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-            }}
-          >
-            Versemate is powered by believers across the globe - developers,
-            translators, and thinkers working together in faith.
-            <br />
-            <br />
-            Our tools are modern. Our foundation is eternal.
-            <br />
-            <br />
-            Together, we&rsquo;re helping more people encounter Scripture
-            clearly, every day, in every language.
-          </p>
+          <span className={`${styles.titleText} flex items-center justify-center whitespace-nowrap font-inter text-2xl font-bold uppercase leading-8 tracking-[0.1em] text-brand-dark-gray`}>
+            Global and Growing
+          </span>
         </div>
-      </div>
+
+        {/* Content */}
+        <div className={`${styles.content} flex flex-row items-center justify-center gap-16 p-0`}>
+          {/* Icons */}
+          <div className={`${styles.icon}`} />
+
+          {/* Text */}
+          <div className={`${styles.textContent} flex flex-1 flex-col items-end gap-4 p-0`}>
+            {/* Main Heading */}
+            <h2 className={`${styles.heading} self-stretch font-merriweather text-5xl font-bold leading-[64px] text-brand-black`}>
+              Built Worldwide. Anchored in the Word.
+            </h2>
+
+            {/* Description Text */}
+            <p className={`${styles.description} self-stretch font-inter text-2xl font-normal leading-8 text-brand-slate`}>
+              Versemate is powered by believers across the globe - developers,
+              translators, and thinkers working together in faith.
+              <br />
+              <br />
+              Our tools are modern. Our foundation is eternal.
+              <br />
+              <br />
+              Together, we&rsquo;re helping more people encounter Scripture
+              clearly, every day, in every language.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );
