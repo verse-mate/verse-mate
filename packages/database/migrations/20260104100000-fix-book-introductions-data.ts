@@ -9,6 +9,19 @@ import introsData from "../src/seeds/data/book-intros.json";
 export async function up(db: Kysely<Database>): Promise<void> {
   console.log("🛠️ Data Migration: Repairing book_introductions table...");
 
+  // Check if books table has data (skip if empty - happens in CI where seeding runs after migrations)
+  const booksCount = await db
+    .selectFrom("books" as any)
+    .select(db.fn.count("id").as("count"))
+    .executeTakeFirst();
+
+  if (!booksCount || Number(booksCount.count) === 0) {
+    console.log(
+      "⏭️ Skipping book_introductions repair - books table is empty (will be seeded later)",
+    );
+    return;
+  }
+
   // 1. Clear existing corrupted data
   await db.deleteFrom("book_introductions").execute();
 
