@@ -9,15 +9,7 @@ import {
 import { Pool } from "pg";
 
 import type Database from "../models/Database";
-
-// SSL config for DigitalOcean managed databases (self-signed certs)
-const getSSLConfig = () => {
-  const url = process.env.POSTGRES_URL || "";
-  if (url.includes("sslmode=require")) {
-    return { rejectUnauthorized: false };
-  }
-  return false;
-};
+import { getSSLConfig } from "../utils/ssl-config";
 
 async function migrateToLatest(migrationFolder: string) {
   const db = new Kysely<Database>({
