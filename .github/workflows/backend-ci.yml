@@ -4,8 +4,8 @@
 # It triggers on pushes to main branch and version tags (v*.*.*).
 #
 # Required GitHub Secrets:
+#   DOCKER_CONFIG_JSON       - Docker config JSON with registry auth (from ~/.docker/config.json)
 #   DO_REGISTRY              - DigitalOcean registry URL (e.g., registry.digitalocean.com)
-#   DO_REGISTRY_TOKEN        - Registry authentication token
 #   DO_REGISTRY_IMAGE        - Base image name (without -backend suffix)
 #   OBJECT_STORAGE_ACCESS_KEY_ID     - Object storage credentials
 #   OBJECT_STORAGE_SECRET_ACCESS_KEY - Object storage credentials
@@ -294,8 +294,10 @@ jobs:
         with:
           name: backend-build
 
-      - name: Login to DigitalOcean Registry
-        run: docker login -u ${{ secrets.DO_REGISTRY_TOKEN }} -p ${{ secrets.DO_REGISTRY_TOKEN }} ${{ secrets.DO_REGISTRY }}
+      - name: Setup Docker auth
+        run: |
+          mkdir -p ~/.docker
+          echo '${{ secrets.DOCKER_CONFIG_JSON }}' > ~/.docker/config.json
 
       - name: Pull existing image for cache
         run: docker pull ${{ secrets.DO_REGISTRY }}/${{ secrets.DO_REGISTRY_IMAGE }}-backend:${{ github.ref_name }} || true
