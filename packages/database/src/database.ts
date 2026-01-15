@@ -2,7 +2,7 @@ import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 
 import type Database from "./models/Database";
-import { getSSLConfig } from "./utils/ssl-config";
+import { getCleanConnectionString, getSSLConfig } from "./utils/ssl-config";
 
 let connection: Kysely<Database> | undefined;
 
@@ -11,7 +11,7 @@ export const db = {
     if (!connection) {
       const dialect = new PostgresDialect({
         pool: new Pool({
-          connectionString: process.env.POSTGRES_URL,
+          connectionString: getCleanConnectionString(),
           max: 10,
           ssl: getSSLConfig(),
         }),
