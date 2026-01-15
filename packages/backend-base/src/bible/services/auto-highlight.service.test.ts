@@ -71,7 +71,7 @@ describe("AutoHighlightService", () => {
       expect(firstPref).toHaveProperty("theme_color");
       expect(firstPref).toHaveProperty("is_enabled");
       expect(firstPref).toHaveProperty("relevance_threshold");
-      expect(firstPref.is_enabled).toBe(true); // Default
+      expect(firstPref.is_enabled).toBe(false); // Default (disabled for new users)
       expect(firstPref.relevance_threshold).toBe(3); // Default
     });
 
@@ -114,9 +114,9 @@ describe("AutoHighlightService", () => {
       expect(customPref?.is_enabled).toBe(false);
       expect(customPref?.relevance_threshold).toBe(1);
 
-      // Other themes should have defaults
+      // Other themes should have defaults (disabled for new users)
       const defaultPref = prefs.find((p) => p.theme_id === themes[1].theme_id);
-      expect(defaultPref?.is_enabled).toBe(true);
+      expect(defaultPref?.is_enabled).toBe(false);
       expect(defaultPref?.relevance_threshold).toBe(3);
     });
   });
