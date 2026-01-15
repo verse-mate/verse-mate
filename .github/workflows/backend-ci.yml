@@ -17,7 +17,8 @@ name: Backend CI/CD
 
 on:
   push:
-    branches: [main]
+    # TODO: Remove 'feature/github-actions-migration' after PR is merged - keep only [main]
+    branches: [main, feature/github-actions-migration]
     tags: ['v*.*.*']
 
 jobs:
@@ -171,11 +172,11 @@ jobs:
           --health-retries 5
 
       redis:
-        image: redis:7.0-alpine
+        image: valkey/valkey:8-alpine
         ports:
           - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "valkey-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -219,7 +220,7 @@ jobs:
           cd packages/database && bun migrate:deploy && bun db:seed && bun seed:themes
 
       - name: Run tests
-        run: bun test
+        run: cd packages/backend-base && bun test
 
       - name: Cleanup environment files
         if: always()
