@@ -185,6 +185,8 @@ jobs:
       POSTGRES_URL: postgresql://postgres_user:postgres_password@localhost:5432/postgres_db
       REDIS_URL: redis://:@localhost:6379/0
       ENVIRONMENT: test
+      # Dummy key for tests - actual API calls should be mocked
+      OPENAI_API_KEY: sk-test-dummy-key-for-ci
       OBJECT_STORAGE_ACCESS_KEY_ID: ${{ secrets.OBJECT_STORAGE_ACCESS_KEY_ID }}
       OBJECT_STORAGE_SECRET_ACCESS_KEY: ${{ secrets.OBJECT_STORAGE_SECRET_ACCESS_KEY }}
       OBJECT_STORAGE_ENDPOINT: ${{ secrets.OBJECT_STORAGE_ENDPOINT }}
