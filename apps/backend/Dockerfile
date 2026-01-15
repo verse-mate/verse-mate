@@ -23,9 +23,8 @@ COPY --chown=bunjs:bunjs packages/backend-base/src/bible/data/NASB1995.json /app
 RUN bun install kysely@0.27.4
 
 # Use PORT env var (DO App Platform injects this)
-# Default to 8080 which is DO's default
-ENV PORT=8080
-EXPOSE 8080
+ENV PORT=3000
+EXPOSE 3000
 
 # Health check with longer intervals for migration startup time
 # DO App Platform also does its own health checks, this is for local docker
