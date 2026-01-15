@@ -318,16 +318,16 @@ jobs:
     needs: [docker-push]
     if: github.event_name == 'push'
 
+    # Future deployment implementation (reference from .drone.yml):
+    # 1. Install SSH client: apk add openssh
+    # 2. Configure SSH key from secrets:
+    #    mkdir -p ~/.ssh
+    #    echo -e "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    #    chmod 600 ~/.ssh/id_rsa
+    #    echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+    # 3. SSH to server and run:
+    #    ssh root@app.versemate.org "cd ~/verse-mate && docker compose pull && docker compose up -d && docker system prune -a -f"
+    # Required secrets for future: SSH_PRIVATE_KEY
     steps:
       - name: Deploy placeholder
         run: echo "TODO: Implement deployment"
-        # Future deployment implementation (reference from .drone.yml):
-        # 1. Install SSH client: apk add openssh
-        # 2. Configure SSH key from secrets:
-        #    mkdir -p ~/.ssh
-        #    echo -e "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-        #    chmod 600 ~/.ssh/id_rsa
-        #    echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-        # 3. SSH to server and run:
-        #    ssh root@app.versemate.org "cd ~/verse-mate && docker compose pull && docker compose up -d && docker system prune -a -f"
-        # Required secrets for future: SSH_PRIVATE_KEY
