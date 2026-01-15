@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 import { ValidationError } from "../../common/errors";
-import { createTestUser } from "../../shared/test-helpers";
 import { AutoHighlightRepository } from "../repository/auto-highlight.repository";
 import { BibleRepository } from "../repository/bible.repository";
 import { AutoHighlightService } from "./auto-highlight.service";
@@ -9,13 +8,26 @@ import { AutoHighlightService } from "./auto-highlight.service";
 describe("AutoHighlightService", () => {
   let service: AutoHighlightService;
   let bibleRepository: BibleRepository;
-  let testUser: Awaited<ReturnType<typeof createTestUser>>;
+  let testUserId: string;
   const testBookId = 1; // Genesis
 
   beforeAll(async () => {
     bibleRepository = new BibleRepository(Database);
     service = new AutoHighlightService(Database, bibleRepository);
-    testUser = await createTestUser();
+
+    // Create test user directly via database (avoids circular dependency in createTestUser)
+    const testEmail = `test-auto-highlight-svc-${Date.now()}@test.com`;
+    const user = await Database.getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email: testEmail,
+        firstName: "Test",
+        lastName: "User",
+        password: "hashed-password",
+      })
+      .returning(["id"])
+      .executeTakeFirstOrThrow();
+    testUserId = user.id;
   });
 
   afterAll(() => {
@@ -55,7 +67,7 @@ describe("AutoHighlightService", () => {
 
   describe("User Theme Preferences", () => {
     it("should get user theme preferences with defaults", async () => {
-      const prefs = await service.getUserThemePreferences(testUser.userId);
+      const prefs = await service.getUserThemePreferences(testUserId);
 
       expect(Array.isArray(prefs)).toBe(true);
       expect(prefs.length).toBeGreaterThanOrEqual(6);
@@ -80,13 +92,13 @@ describe("AutoHighlightService", () => {
       const testTheme = themes[0];
 
       await service.updateUserThemePreference({
-        user_id: testUser.userId,
+        user_id: testUserId,
         theme_id: testTheme.theme_id,
         is_enabled: false,
         relevance_threshold: 2,
       });
 
-      const prefs = await service.getUserThemePreferences(testUser.userId);
+      const prefs = await service.getUserThemePreferences(testUserId);
       const updated = prefs.find((p) => p.theme_id === testTheme.theme_id);
 
       expect(updated?.is_enabled).toBe(false);
@@ -98,13 +110,13 @@ describe("AutoHighlightService", () => {
 
       // Set preference for first theme only
       await service.updateUserThemePreference({
-        user_id: testUser.userId,
+        user_id: testUserId,
         theme_id: themes[0].theme_id,
         is_enabled: false,
         relevance_threshold: 1,
       });
 
-      const prefs = await service.getUserThemePreferences(testUser.userId);
+      const prefs = await service.getUserThemePreferences(testUserId);
 
       // Should return all active themes
       expect(prefs.length).toBe(themes.length);
