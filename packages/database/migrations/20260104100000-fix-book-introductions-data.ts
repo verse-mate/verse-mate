@@ -12,7 +12,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
   // Check if books table has data (skip if empty - happens in CI where seeding runs after migrations)
   const booksCount = await db
     .selectFrom("books" as any)
-    .select(db.fn.count("id").as("count"))
+    .select(db.fn.count("book_id").as("count"))
     .executeTakeFirst();
 
   if (!booksCount || Number(booksCount.count) === 0) {
