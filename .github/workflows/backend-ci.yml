@@ -216,6 +216,7 @@ jobs:
         run: |
           cp apps/backend/.env.example .env
           cp apps/backend/.env.example packages/database/.env
+          cp packages/backend-base/.env.example packages/backend-base/.env
 
       - name: Run database migrations and seeds
         run: |
@@ -226,7 +227,7 @@ jobs:
 
       - name: Cleanup environment files
         if: always()
-        run: rm -rf .env packages/database/.env
+        run: rm -rf .env packages/database/.env packages/backend-base/.env
 
   # ============================================
   # BUILD BACKEND JOB
