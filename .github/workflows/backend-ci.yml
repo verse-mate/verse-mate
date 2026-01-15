@@ -17,7 +17,8 @@ name: Backend CI/CD
 
 on:
   push:
-    branches: [main]
+    # TODO: Remove 'feature-github-actions-migration' after PR is merged - keep only [main]
+    branches: [main, feature-github-actions-migration]
     tags: ['v*.*.*']
 
 jobs:
