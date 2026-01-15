@@ -1,5 +1,7 @@
 import { spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
+import authPlugin from "../auth/auth.plugin";
+import biblePlugin from "../bible/bible.plugin";
 import { getTestClient } from "./test-client";
 
 /**
@@ -10,10 +12,6 @@ export async function createTestUser(options?: {
   email?: string;
 }) {
   const { isAdmin = false, email } = options || {};
-
-  // Lazy imports to avoid circular dependency issues
-  const { default: authPlugin } = await import("../auth/auth.plugin");
-  const { default: biblePlugin } = await import("../bible/bible.plugin");
 
   // Create combined plugin for auth
   const plugin = biblePlugin.use(authPlugin);
