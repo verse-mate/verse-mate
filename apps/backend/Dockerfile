@@ -20,9 +20,6 @@ COPY --chown=bunjs:bunjs packages/database/migrations ./migrations
 COPY --chown=bunjs:bunjs packages/backend-base/src/bible/data/key_english.json /app/dist/data/key_english.json
 COPY --chown=bunjs:bunjs packages/backend-base/src/bible/data/NASB1995.json /app/dist/data/NASB1995.json
 
-# Install runtime dependencies (not bundled due to native bindings)
-RUN bun install kysely@0.27.4 pg@8.12.0 yargs@17.7.2
-
 # Use PORT env var (DO App Platform injects this)
 ENV PORT=3000
 EXPOSE 3000
