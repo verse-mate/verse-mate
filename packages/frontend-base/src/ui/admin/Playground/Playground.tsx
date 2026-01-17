@@ -53,6 +53,9 @@ export const Playground = () => {
   const [activeExplanation, setActiveExplanation] = useState<string | null>(
     null,
   );
+  const [editableSystemPrompt, setEditableSystemPrompt] = useState<string>("");
+  const [editableUserPrompt, setEditableUserPrompt] = useState<string>("");
+  const [maxOutputTokens, setMaxOutputTokens] = useState<number>(50000);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +96,7 @@ export const Playground = () => {
           );
           if (activeSystemPrompt) {
             setSelectedSystemPrompt(activeSystemPrompt.prompt_id);
+            setEditableSystemPrompt(activeSystemPrompt.prompt);
           }
         }
 
@@ -104,6 +108,7 @@ export const Playground = () => {
           );
           if (activeSummaryPrompt) {
             setSelectedUserPrompt(activeSummaryPrompt.id);
+            setEditableUserPrompt(activeSummaryPrompt.prompt_template);
           }
         }
 
@@ -150,28 +155,38 @@ export const Playground = () => {
     fetchActiveExplanation();
   }, [selectedBook, chapterNumber, bibleVersion, selectedUserPromptData]);
 
+  const handleSystemPromptChange = (id: number) => {
+    setSelectedSystemPrompt(id);
+    const prompt = systemPrompts.find((p) => p.prompt_id === id);
+    if (prompt) {
+      setEditableSystemPrompt(prompt.prompt);
+    }
+  };
+
+  const handleUserPromptChange = (id: number) => {
+    setSelectedUserPrompt(id);
+    const prompt = userPrompts.find((p) => p.id === id);
+    if (prompt) {
+      setEditableUserPrompt(prompt.prompt_template);
+    }
+  };
+
   const handleRun = async () => {
     try {
       setLoading(true);
       setError(null);
       setResult(null);
 
-      const systemPrompt =
-        systemPrompts.find((p) => p.prompt_id === selectedSystemPrompt)
-          ?.prompt || "";
-      const userPrompt =
-        userPrompts.find((p) => p.id === selectedUserPrompt)?.prompt_template ||
-        "";
-
       const response = await api.admin.prompts.playground.post({
-        system_prompt: systemPrompt,
-        user_prompt: userPrompt,
+        system_prompt: editableSystemPrompt,
+        user_prompt: editableUserPrompt,
         book_name: bookName,
         chapter_number: chapterNumber,
         bible_version: bibleVersion,
         model,
         effort,
         send_chapter_context: sendChapterContext,
+        max_output_tokens: maxOutputTokens,
       });
 
       if (response.data) {
@@ -193,7 +208,7 @@ export const Playground = () => {
           <label className={styles.label}>System Prompt:</label>
           <select
             value={selectedSystemPrompt}
-            onChange={(e) => setSelectedSystemPrompt(Number(e.target.value))}
+            onChange={(e) => handleSystemPromptChange(Number(e.target.value))}
             className={styles.select}
           >
             <option value="">Select a system prompt</option>
@@ -203,12 +218,19 @@ export const Playground = () => {
               </option>
             ))}
           </select>
+          <textarea
+            value={editableSystemPrompt}
+            onChange={(e) => setEditableSystemPrompt(e.target.value)}
+            className={styles.textarea}
+            rows={10}
+            style={{ width: "100%", marginTop: "10px" }}
+          />
         </div>
         <div className={`${styles.formGroup} ${styles.userPromptsContainer}`}>
-          <label className={styles.label}>User Prompt:</label>
+          <label className={styles.label}>User Prompt Template:</label>
           <select
             value={selectedUserPrompt}
-            onChange={(e) => setSelectedUserPrompt(Number(e.target.value))}
+            onChange={(e) => handleUserPromptChange(Number(e.target.value))}
             className={styles.select}
           >
             <option value="">Select a user prompt</option>
@@ -228,6 +250,13 @@ export const Playground = () => {
                 </option>
               ))}
           </select>
+          <textarea
+            value={editableUserPrompt}
+            onChange={(e) => setEditableUserPrompt(e.target.value)}
+            className={styles.textarea}
+            rows={10}
+            style={{ width: "100%", marginTop: "10px" }}
+          />
         </div>
         <div className={`${styles.formGroup} ${styles.bookName}`}>
           <label className={styles.label}>Book Name:</label>
@@ -291,6 +320,23 @@ export const Playground = () => {
             <option value="gpt-5-mini">GPT-5 Mini</option>
             <option value="gpt-5-nano">GPT-5 Nano</option>
           </select>
+        </div>
+        <div className={`${styles.formGroup} ${styles.maxTokens}`}>
+          <label className={styles.label}>Max Tokens:</label>
+          <input
+            type="number"
+            value={maxOutputTokens}
+            onChange={(e) =>
+              setMaxOutputTokens(Number.parseInt(e.target.value))
+            }
+            className={styles.input}
+            style={{
+              width: "100%",
+              padding: "8px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+            }}
+          />
         </div>
         <div className={`${styles.formGroup} ${styles.effort}`}>
           <label className={styles.label}>Effort:</label>

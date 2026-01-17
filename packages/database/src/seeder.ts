@@ -2,6 +2,7 @@ import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 import { main as runSeedScript } from "../../backend-base/src/bible/seed";
 import type Database from "./models/Database";
+import { seedTranslationTemplates } from "./seeds/translation-templates.seed";
 
 async function runSeed() {
   const db = new Kysely<Database>({
@@ -14,6 +15,7 @@ async function runSeed() {
 
   // Insert records here
   await runSeedScript();
+  await seedTranslationTemplates(db);
 
   db.destroy();
 }

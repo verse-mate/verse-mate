@@ -17,6 +17,7 @@ interface PlaygroundRequest {
   model: string;
   effort: "low" | "medium" | "high";
   send_chapter_context: boolean;
+  max_output_tokens?: number;
 }
 
 export class AdminPromptService {
@@ -243,6 +244,7 @@ export class AdminPromptService {
       input: fullPrompt,
       model,
       effort,
+      max_output_tokens: request.max_output_tokens,
     });
 
     return { result: aiResponse };
@@ -255,18 +257,20 @@ export class AdminPromptService {
     input,
     model,
     effort,
+    max_output_tokens,
   }: {
     instructions?: string;
     input: string;
     model: string;
     effort?: "low" | "medium" | "high";
+    max_output_tokens?: number;
   }) {
     const response = await this.openai.responses.create({
       model,
       reasoning: { effort },
       instructions,
       input,
-      max_output_tokens: 50000,
+      max_output_tokens: max_output_tokens || 50000,
     });
     return response.output_text || "";
   }
