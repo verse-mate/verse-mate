@@ -278,6 +278,8 @@ const plugin = new Elysia()
                       currentUserId,
                       body.skipExisting || false,
                       body.effort || "medium",
+                      body.chapters,
+                      body.maxOutputTokens,
                     );
                   }
                   if (!body.bookId) {
@@ -291,6 +293,9 @@ const plugin = new Elysia()
                     currentUserId,
                     body.skipExisting || false,
                     body.effort || "medium",
+                    undefined, // parentBatchId
+                    body.chapters,
+                    body.maxOutputTokens,
                   );
                 }
                 if (body.type === "bible") {
@@ -301,6 +306,7 @@ const plugin = new Elysia()
                     currentUserId,
                     body.effort || "medium",
                     body.skipExisting || false,
+                    body.maxOutputTokens,
                   );
                 }
 
@@ -322,6 +328,8 @@ const plugin = new Elysia()
                       t.Literal("high"),
                     ]),
                   ),
+                  chapters: t.Optional(t.Array(t.Number())),
+                  maxOutputTokens: t.Optional(t.Number()),
                 }),
                 response: {
                   200: BatchOperationSchema,
@@ -403,6 +411,7 @@ const plugin = new Elysia()
                   body.bibleVersion,
                   body.effort || "medium",
                   body.bookName,
+                  body.maxOutputTokens,
                 );
               },
               {
@@ -418,6 +427,7 @@ const plugin = new Elysia()
                     ]),
                   ),
                   bibleVersion: t.String(),
+                  maxOutputTokens: t.Optional(t.Number()),
                 }),
                 response: {
                   200: BatchOperationSchema,
@@ -493,6 +503,7 @@ const plugin = new Elysia()
                   body.skipExisting || false,
                   body.effort || "medium",
                   body.bookName,
+                  body.maxOutputTokens,
                 );
               },
               {
@@ -511,6 +522,7 @@ const plugin = new Elysia()
                   target_language_code: t.String(),
                   explanationTypes: t.Array(t.String()),
                   skipExisting: t.Optional(t.Boolean()),
+                  maxOutputTokens: t.Optional(t.Number()),
                 }),
                 response: {
                   200: BatchOperationSchema,
@@ -1215,6 +1227,7 @@ const plugin = new Elysia()
                         t.Literal("high"),
                       ]),
                       send_chapter_context: t.Boolean(),
+                      max_output_tokens: t.Optional(t.Number()),
                     }),
                     response: {
                       200: PlaygroundSchema,

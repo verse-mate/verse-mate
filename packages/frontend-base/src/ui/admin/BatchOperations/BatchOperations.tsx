@@ -242,6 +242,8 @@ export const BatchOperations = () => {
   const [selectedExplanationTypes, setSelectedExplanationTypes] = useState<
     string[]
   >(["summary", "detailed", "byline"]);
+  const [selectedChapters, setSelectedChapters] = useState<string>("");
+  const [maxOutputTokens, setMaxOutputTokens] = useState<number>(50000);
   const [skipExistingExplanations, setSkipExistingExplanations] =
     useState(false);
   const [selectedEffort, setSelectedEffort] = useState<string>("medium");
@@ -510,6 +512,35 @@ export const BatchOperations = () => {
 
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
+  const parseChapters = (input: string): number[] | undefined => {
+    if (!input.trim()) return undefined;
+
+    const result: number[] = [];
+    const parts = input.split(",").map((p) => p.trim());
+
+    for (const part of parts) {
+      if (part.includes("-")) {
+        const [start, end] = part
+          .split("-")
+          .map((p) => Number.parseInt(p.trim()));
+        if (!Number.isNaN(start) && !Number.isNaN(end)) {
+          for (let i = start; i <= end; i++) {
+            result.push(i);
+          }
+        }
+      } else {
+        const num = Number.parseInt(part);
+        if (!Number.isNaN(num)) {
+          result.push(num);
+        }
+      }
+    }
+
+    return result.length > 0
+      ? Array.from(new Set(result)).sort((a, b) => a - b)
+      : undefined;
+  };
+
   const handleCreateBatch = async () => {
     if (!isBibleBatch && selectedBook === null) {
       setError("Please select a book");
@@ -532,6 +563,8 @@ export const BatchOperations = () => {
         explanationTypes: selectedExplanationTypes,
         skipExisting: skipExistingExplanations,
         effort: selectedEffort as "low" | "medium" | "high",
+        chapters: !isBibleBatch ? parseChapters(selectedChapters) : undefined,
+        maxOutputTokens,
       });
       await fetchBatchJobs();
     } catch (err) {
@@ -697,6 +730,7 @@ export const BatchOperations = () => {
         model: selectedModel,
         effort: selectedEffort as "low" | "medium" | "high",
         bibleVersion: selectedBibleVersion,
+        maxOutputTokens,
       });
       await fetchBatchJobs();
       setRephraseModalOpen(false);
@@ -764,6 +798,7 @@ export const BatchOperations = () => {
         target_language_code: languageToConfirm.code,
         explanationTypes: selectedExplanationTypes,
         skipExisting: skipExistingExplanations,
+        maxOutputTokens,
       });
 
       await fetchBatchJobs();
@@ -1214,6 +1249,26 @@ export const BatchOperations = () => {
                 fontWeight: "bold",
               }}
             >
+              Max Tokens:
+            </label>
+            <Input
+              type="number"
+              value={maxOutputTokens}
+              onChange={(e) =>
+                setMaxOutputTokens(Number.parseInt(e.target.value))
+              }
+              placeholder="e.g. 50000"
+            />
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
               Effort Level:
             </label>
             <SelectDropdown.Root
@@ -1334,6 +1389,25 @@ export const BatchOperations = () => {
               </SelectDropdown.Content>
             </SelectDropdown.Root>
           </div>
+
+          {!isBibleBatch && (
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Chapters (Optional):
+              </label>
+              <Input
+                value={selectedChapters}
+                onChange={(e) => setSelectedChapters(e.target.value)}
+                placeholder="e.g. 1, 5, 10-15"
+              />
+            </div>
+          )}
         </div>
         <div style={{ marginBottom: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
