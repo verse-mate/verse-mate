@@ -20,14 +20,11 @@ COPY --chown=bunjs:bunjs packages/database/migrations ./migrations
 COPY --chown=bunjs:bunjs packages/backend-base/src/bible/data/key_english.json /app/dist/data/key_english.json
 COPY --chown=bunjs:bunjs packages/backend-base/src/bible/data/NASB1995.json /app/dist/data/NASB1995.json
 
-# Use PORT env var (DO App Platform injects this)
-ENV PORT=3000
+RUN bun install kysely@0.27.4
+
 EXPOSE 3000
 
-# Health check with longer intervals for migration startup time
-# DO App Platform also does its own health checks, this is for local docker
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -sf http://localhost:${PORT}/health || exit 1
+HEALTHCHECK CMD curl -sf http://localhost:${PORT}/health || exit 1
 
 CMD bun run ./dist/migrator.js migrate-deploy && \
     bun --bun run ./dist/index.js
