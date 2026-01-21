@@ -24,7 +24,7 @@ RUN bun install kysely@0.27.4
 
 EXPOSE 3000
 
-HEALTHCHECK CMD curl -sf http://localhost:3000/health || exit 1
+HEALTHCHECK CMD curl -sf http://localhost:${PORT}/health || exit 1
 
 CMD bun run ./dist/migrator.js migrate-deploy && \
     bun --bun run ./dist/index.js
