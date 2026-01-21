@@ -9,12 +9,14 @@ import {
 import { Pool } from "pg";
 
 import type Database from "../models/Database";
+import { getCleanConnectionString, getSSLConfig } from "../utils/ssl-config";
 
 async function migrateDown(migrationFolder: string) {
   const db = new Kysely<Database>({
     dialect: new PostgresDialect({
       pool: new Pool({
-        connectionString: process.env.POSTGRES_URL,
+        connectionString: getCleanConnectionString(),
+        ssl: getSSLConfig(),
       }),
     }),
   });
