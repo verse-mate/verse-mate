@@ -572,6 +572,7 @@ export class BatchOperationService {
     effort: "low" | "medium" | "high" = "medium",
     chapters?: number[],
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+    batchType = "book",
   ) {
     console.log(
       `[BATCH] Starting book batch for book "${bookName}", version ${bibleVersion}, types: ${explanationTypes.join(
@@ -605,6 +606,7 @@ export class BatchOperationService {
       undefined,
       chapters,
       maxOutputTokens,
+      batchType,
     );
   }
 
@@ -619,6 +621,7 @@ export class BatchOperationService {
     parentBatchId?: number,
     chapters?: number[],
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+    batchType = "book",
   ) {
     console.log(
       `[BATCH] Starting book batch for book ${bookId}, version ${bibleVersion}, types: ${explanationTypes.join(
@@ -677,7 +680,7 @@ export class BatchOperationService {
       .getOrCreateConnection()
       .insertInto("batch_jobs")
       .values({
-        batch_type: "book",
+        batch_type: batchType,
         openai_batch_id: batch.id,
         status: "validating",
         book_id: bookId,
@@ -1178,6 +1181,7 @@ export class BatchOperationService {
     parentBatchId?: number,
     chapterNumbers?: number[],
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+    batchType = "translate",
   ) {
     console.log(
       `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}${chapterNumbers ? `, chapters: ${chapterNumbers.join(", ")}` : ""}`,
@@ -1322,7 +1326,8 @@ export class BatchOperationService {
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", book.book_id)
         .where("explanations.language_code", "=", target_language_code)
-        .where("explanations.type", "in", explanationTypes as any);
+        .where("explanations.type", "in", explanationTypes as any)
+        .where("explanations.is_active", "=", true);
 
       if (chapterNumbers && chapterNumbers.length > 0) {
         existingQuery = existingQuery.where(
@@ -1450,7 +1455,7 @@ export class BatchOperationService {
     await connection
       .insertInto("batch_jobs")
       .values({
-        batch_type: "translate",
+        batch_type: batchType,
         openai_batch_id: batch.id,
         status: "validating",
         model,
@@ -2280,7 +2285,10 @@ export class BatchOperationService {
       if (batchJob.batch_type === "rephrase") {
         return this.processRephraseOutputFile(batchId, outputFileId, batchJob);
       }
-      if (batchJob.batch_type === "translate") {
+      if (
+        batchJob.batch_type === "translate" ||
+        batchJob.batch_type === "auto-translate"
+      ) {
         return this.processTranslateOutputFile(batchId, outputFileId, batchJob);
       }
       if (batchJob.batch_type === "topic-discovery") {
@@ -4075,11 +4083,12 @@ export class BatchOperationService {
     }
   }
 
-  private async triggerAutoTranslations(
+  public async triggerAutoTranslations(
     explanations: { bookId: number; chapterNumber: number; type: string }[],
     model: string,
     adminUserId: string,
     maxOutputTokens: number,
+    parentBatchId?: number,
   ) {
     const connection = this.db.getOrCreateConnection();
 
@@ -4123,6 +4132,7 @@ export class BatchOperationService {
           .where("chapters.chapter_number", "=", item.chapterNumber)
           .where("explanations.type", "=", item.type as any)
           .where("explanations.language_code", "!=", "en")
+          .where("explanations.is_active", "=", true)
           .select("explanations.language_code")
           .groupBy("explanations.language_code")
           .execute();
@@ -4161,9 +4171,10 @@ export class BatchOperationService {
             langCode,
             types,
             false, // force update
-            undefined,
+            parentBatchId,
             chapterNumbers,
             maxOutputTokens,
+            "auto-translate",
           );
         } catch (error) {
           console.error(
@@ -4173,6 +4184,40 @@ export class BatchOperationService {
         }
       }
     }
+  }
+
+  async getAutoTranslationImpact(
+    bookName: string,
+    explanationTypes: string[],
+    chapters?: number[],
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    let query = connection
+      .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .innerJoin("books", "chapters.book_id", "books.book_id")
+      .where("books.name", "=", bookName)
+      .where("explanations.language_code", "!=", "en")
+      .where("explanations.type", "in", explanationTypes as any)
+      .where("explanations.is_active", "=", true)
+      .select([
+        "explanations.language_code",
+        connection.fn.count("explanations.explanation_id").as("count"),
+      ])
+      .groupBy("explanations.language_code");
+
+    if (chapters && chapters.length > 0) {
+      query = query.where("chapters.chapter_number", "in", chapters);
+    }
+
+    const results = await query.execute();
+
+    return results.map((r) => ({
+      language_code: r.language_code,
+      count: Number(r.count),
+      language_name: getLanguageName(r.language_code),
+    }));
   }
 
   /**

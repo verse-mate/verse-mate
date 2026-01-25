@@ -280,6 +280,7 @@ const plugin = new Elysia()
                       body.effort || "medium",
                       body.chapters,
                       body.maxOutputTokens,
+                      body.batchType,
                     );
                   }
                   if (!body.bookId) {
@@ -296,6 +297,7 @@ const plugin = new Elysia()
                     undefined, // parentBatchId
                     body.chapters,
                     body.maxOutputTokens,
+                    body.batchType,
                   );
                 }
                 if (body.type === "bible") {
@@ -330,6 +332,7 @@ const plugin = new Elysia()
                   ),
                   chapters: t.Optional(t.Array(t.Number())),
                   maxOutputTokens: t.Optional(t.Number()),
+                  batchType: t.Optional(t.String()),
                 }),
                 response: {
                   200: BatchOperationSchema,
@@ -528,6 +531,34 @@ const plugin = new Elysia()
                 }),
                 response: {
                   200: BatchOperationSchema,
+                  ...StandardErrorResponses,
+                },
+              },
+            )
+            .post(
+              "/batch-explanations/impact-preview",
+              async ({ body, store }) => {
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.getAutoTranslationImpact(
+                  body.bookName,
+                  body.explanationTypes,
+                  body.chapters,
+                );
+              },
+              {
+                body: t.Object({
+                  bookName: t.String(),
+                  explanationTypes: t.Array(t.String()),
+                  chapters: t.Optional(t.Array(t.Number())),
+                }),
+                response: {
+                  200: t.Array(
+                    t.Object({
+                      language_code: t.String(),
+                      count: t.Number(),
+                      language_name: t.String(),
+                    }),
+                  ),
                   ...StandardErrorResponses,
                 },
               },

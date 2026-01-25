@@ -282,16 +282,25 @@ export const batchMonitoringConsumer = async (job: Job) => {
         let totalCompletionTokens = 0;
         let successfulExplanations = 0;
         let failedExplanations = 0;
+        const successfulItems: {
+          bookId: number;
+          chapterNumber: number;
+          type: string;
+        }[] = [];
 
         const batchJob = await db
           .getOrCreateConnection()
           .selectFrom("batch_jobs")
           .where("openai_batch_id", "=", batchId)
           .select([
+            "id",
             "bible_version",
             "book_id",
             "explanations_processed",
             "batch_type",
+            "created_by",
+            "model",
+            "max_output_tokens",
           ])
           .executeTakeFirst();
 
@@ -314,6 +323,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
           batchJob.batch_type === "rephrase" ||
           batchJob.batch_type === "rephrase-bible" ||
           batchJob.batch_type === "translate" ||
+          batchJob.batch_type === "auto-translate" ||
           batchJob.batch_type === "translate-bible" ||
           batchJob.batch_type === "topic-explanations" ||
           batchJob.batch_type === "topic-discovery" ||
@@ -352,6 +362,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
         // This should not happen for translate batches as they are handled above
         if (
           batchJob.batch_type === "translate" ||
+          batchJob.batch_type === "auto-translate" ||
           batchJob.batch_type === "translate-bible"
         ) {
           console.error(
@@ -494,6 +505,13 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 .execute();
 
               successfulExplanations++;
+              if (batchJob.book_id) {
+                successfulItems.push({
+                  bookId: batchJob.book_id,
+                  chapterNumber,
+                  type: explanationType,
+                });
+              }
               console.log(
                 `[BATCH_MONITORING] Saved explanation: ${parsedLine.custom_id}`,
               );
@@ -537,6 +555,38 @@ export const batchMonitoringConsumer = async (job: Job) => {
           })
           .where("openai_batch_id", "=", batchId)
           .execute();
+
+        // Trigger auto-translations if applicable
+        if (
+          (finalStatus === "completed" || finalStatus === "partial_failure") &&
+          successfulItems.length > 0 &&
+          (!batchJob.batch_type ||
+            batchJob.batch_type === "book" ||
+            batchJob.batch_type === "regenerate-book")
+        ) {
+          console.log(
+            `[BATCH_MONITORING] Triggering auto-translations for ${successfulItems.length} items from batch ${batchId}`,
+          );
+          try {
+            const batchService = new BatchOperationService(
+              db,
+              batchMonitoringQueue,
+              batchProcessingQueue,
+            );
+            await batchService.triggerAutoTranslations(
+              successfulItems,
+              batchJob.model,
+              batchJob.created_by,
+              batchJob.max_output_tokens || 16000,
+              batchJob.id,
+            );
+          } catch (error) {
+            console.error(
+              `[BATCH_MONITORING] Failed to trigger auto-translations for batch ${batchId}:`,
+              error,
+            );
+          }
+        }
 
         // Clean up JSONL file after successful processing
         await cleanupBatchFiles(batchId);

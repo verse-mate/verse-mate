@@ -427,6 +427,10 @@ export const BatchOperations = () => {
   const [rephraseModalOpen, setRephraseModalOpen] = useState(false);
   const [regenerateModalOpen, setRegenerateModalOpen] = useState(false);
   const [createConfirmModalOpen, setCreateConfirmModalOpen] = useState(false);
+  const [impactPreview, setImpactPreview] = useState<
+    { language_code: string; count: number; language_name: string }[]
+  >([]);
+  const [loadingImpact, setLoadingImpact] = useState(false);
   const [rephrasing, setRephrasing] = useState(false);
 
   // Modal 4 (Translate) state
@@ -657,6 +661,38 @@ export const BatchOperations = () => {
 
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (regenerateModalOpen && selectedBook) {
+      const fetchImpact = async () => {
+        setLoadingImpact(true);
+        try {
+          const chapters = parseChapters(selectedChapters);
+          const response = await api.admin["batch-explanations"][
+            "impact-preview"
+          ].post({
+            bookName: selectedBook,
+            explanationTypes: selectedExplanationTypes,
+            chapters: chapters,
+          });
+          setImpactPreview(response.data || []);
+        } catch (error) {
+          console.error("Failed to fetch impact preview", error);
+          setImpactPreview([]);
+        } finally {
+          setLoadingImpact(false);
+        }
+      };
+      fetchImpact();
+    } else {
+      setImpactPreview([]);
+    }
+  }, [
+    regenerateModalOpen,
+    selectedBook,
+    selectedChapters,
+    selectedExplanationTypes,
+  ]);
+
   const handleCreateBatch = async () => {
     if (!isBibleBatch && selectedBook === null) {
       setError("Please select a book");
@@ -749,6 +785,7 @@ export const BatchOperations = () => {
         effort: selectedEffort as "low" | "medium" | "high",
         chapters,
         maxOutputTokens,
+        batchType: "regenerate-book",
       });
       await fetchBatchJobs();
     } catch (err) {
@@ -2767,6 +2804,38 @@ export const BatchOperations = () => {
                 {selectedExplanationTypes.join(", ")}
               </li>
             </ul>
+
+            <div style={{ marginTop: "20px" }}>
+              <p>
+                <strong>Auto-Translation Impact:</strong>
+              </p>
+              {loadingImpact ? (
+                <p style={{ color: "#666", fontStyle: "italic" }}>
+                  Calculating impact...
+                </p>
+              ) : impactPreview.length > 0 ? (
+                <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
+                  {impactPreview.map((lang) => (
+                    <li key={lang.language_code}>
+                      <strong>
+                        {lang.language_name} ({lang.language_code}):
+                      </strong>{" "}
+                      {lang.count} items will be regenerated
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p
+                  style={{
+                    color: "#666",
+                    fontStyle: "italic",
+                    marginTop: "5px",
+                  }}
+                >
+                  No existing translations found to update for this scope.
+                </p>
+              )}
+            </div>
           </div>
           <Dialog.Footer>
             <Button
