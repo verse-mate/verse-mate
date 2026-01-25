@@ -1250,6 +1250,7 @@ const plugin = new Elysia()
                     body: t.Object({
                       system_prompt: t.String(),
                       user_prompt: t.String(),
+                      prompt_type: t.String(),
                       book_name: t.String(),
                       chapter_number: t.Number(),
                       bible_version: t.String(),
