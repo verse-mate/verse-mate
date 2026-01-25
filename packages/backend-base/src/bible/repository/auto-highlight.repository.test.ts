@@ -1,18 +1,30 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
-import { createTestUser } from "../../shared/test-helpers";
 import { AutoHighlightRepository } from "./auto-highlight.repository";
 
 describe("AutoHighlightRepository", () => {
   let repository: AutoHighlightRepository;
-  let testUser: Awaited<ReturnType<typeof createTestUser>>;
+  let testUserId: string;
   let themeId: number;
   const testBookId = 1; // Genesis
   const testChapter = 1;
 
   beforeAll(async () => {
     repository = new AutoHighlightRepository(Database);
-    testUser = await createTestUser();
+
+    // Create test user directly via database (avoids circular dependency in createTestUser)
+    const testEmail = `test-auto-highlight-repo-${Date.now()}@test.com`;
+    const user = await Database.getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email: testEmail,
+        firstName: "Test",
+        lastName: "User",
+        password: "hashed-password",
+      })
+      .returning(["id"])
+      .executeTakeFirstOrThrow();
+    testUserId = user.id;
 
     // Get a theme for testing
     const themes = await repository.getActiveThemes();
@@ -307,13 +319,13 @@ describe("AutoHighlightRepository", () => {
   describe("User Theme Preferences", () => {
     it("should upsert user theme preference (insert)", async () => {
       await repository.upsertUserThemePreference({
-        user_id: testUser.userId,
+        user_id: testUserId,
         theme_id: themeId,
         is_enabled: false,
         relevance_threshold: 2,
       });
 
-      const prefs = await repository.getUserThemePreferences(testUser.userId);
+      const prefs = await repository.getUserThemePreferences(testUserId);
       const pref = prefs.find((p) => p.theme_id === themeId);
 
       expect(pref).toBeDefined();
@@ -324,7 +336,7 @@ describe("AutoHighlightRepository", () => {
     it("should upsert user theme preference (update)", async () => {
       // Insert initial preference
       await repository.upsertUserThemePreference({
-        user_id: testUser.userId,
+        user_id: testUserId,
         theme_id: themeId,
         is_enabled: true,
         relevance_threshold: 3,
@@ -332,13 +344,13 @@ describe("AutoHighlightRepository", () => {
 
       // Update it
       await repository.upsertUserThemePreference({
-        user_id: testUser.userId,
+        user_id: testUserId,
         theme_id: themeId,
         is_enabled: false,
         relevance_threshold: 5,
       });
 
-      const prefs = await repository.getUserThemePreferences(testUser.userId);
+      const prefs = await repository.getUserThemePreferences(testUserId);
       const pref = prefs.find((p) => p.theme_id === themeId);
 
       expect(pref).toBeDefined();
@@ -348,13 +360,13 @@ describe("AutoHighlightRepository", () => {
 
     it("should get user theme preferences with theme details", async () => {
       await repository.upsertUserThemePreference({
-        user_id: testUser.userId,
+        user_id: testUserId,
         theme_id: themeId,
         is_enabled: true,
         relevance_threshold: 4,
       });
 
-      const prefs = await repository.getUserThemePreferences(testUser.userId);
+      const prefs = await repository.getUserThemePreferences(testUserId);
 
       expect(Array.isArray(prefs)).toBe(true);
       const pref = prefs.find((p) => p.theme_id === themeId);

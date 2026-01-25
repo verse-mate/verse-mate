@@ -1,13 +1,13 @@
 services:
   redis:
     container_name: redis
-    image: redis:7.2-alpine
+    image: valkey/valkey:8-alpine
     restart: always
     ports:
       - "6379:6379"
     volumes:
       - ./.docker/redis_data:/data
-    command: redis-server --requirepass abcd1234
+    command: valkey-server --requirepass abcd1234
 
   postgres:
     container_name: postgres
