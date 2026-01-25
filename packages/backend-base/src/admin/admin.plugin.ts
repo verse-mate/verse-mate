@@ -278,6 +278,9 @@ const plugin = new Elysia()
                       currentUserId,
                       body.skipExisting || false,
                       body.effort || "medium",
+                      body.chapters,
+                      body.maxOutputTokens,
+                      body.batchType,
                     );
                   }
                   if (!body.bookId) {
@@ -291,6 +294,10 @@ const plugin = new Elysia()
                     currentUserId,
                     body.skipExisting || false,
                     body.effort || "medium",
+                    undefined, // parentBatchId
+                    body.chapters,
+                    body.maxOutputTokens,
+                    body.batchType,
                   );
                 }
                 if (body.type === "bible") {
@@ -301,6 +308,7 @@ const plugin = new Elysia()
                     currentUserId,
                     body.effort || "medium",
                     body.skipExisting || false,
+                    body.maxOutputTokens,
                   );
                 }
 
@@ -322,6 +330,9 @@ const plugin = new Elysia()
                       t.Literal("high"),
                     ]),
                   ),
+                  chapters: t.Optional(t.Array(t.Number())),
+                  maxOutputTokens: t.Optional(t.Number()),
+                  batchType: t.Optional(t.String()),
                 }),
                 response: {
                   200: BatchOperationSchema,
@@ -403,6 +414,7 @@ const plugin = new Elysia()
                   body.bibleVersion,
                   body.effort || "medium",
                   body.bookName,
+                  body.maxOutputTokens,
                 );
               },
               {
@@ -418,6 +430,7 @@ const plugin = new Elysia()
                     ]),
                   ),
                   bibleVersion: t.String(),
+                  maxOutputTokens: t.Optional(t.Number()),
                 }),
                 response: {
                   200: BatchOperationSchema,
@@ -493,6 +506,8 @@ const plugin = new Elysia()
                   body.skipExisting || false,
                   body.effort || "medium",
                   body.bookName,
+                  body.chapters,
+                  body.maxOutputTokens,
                 );
               },
               {
@@ -511,9 +526,39 @@ const plugin = new Elysia()
                   target_language_code: t.String(),
                   explanationTypes: t.Array(t.String()),
                   skipExisting: t.Optional(t.Boolean()),
+                  chapters: t.Optional(t.Array(t.Number())),
+                  maxOutputTokens: t.Optional(t.Number()),
                 }),
                 response: {
                   200: BatchOperationSchema,
+                  ...StandardErrorResponses,
+                },
+              },
+            )
+            .post(
+              "/batch-explanations/impact-preview",
+              async ({ body, store }) => {
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.getAutoTranslationImpact(
+                  body.bookName,
+                  body.explanationTypes,
+                  body.chapters,
+                );
+              },
+              {
+                body: t.Object({
+                  bookName: t.String(),
+                  explanationTypes: t.Array(t.String()),
+                  chapters: t.Optional(t.Array(t.Number())),
+                }),
+                response: {
+                  200: t.Array(
+                    t.Object({
+                      language_code: t.String(),
+                      count: t.Number(),
+                      language_name: t.String(),
+                    }),
+                  ),
                   ...StandardErrorResponses,
                 },
               },
@@ -1205,6 +1250,7 @@ const plugin = new Elysia()
                     body: t.Object({
                       system_prompt: t.String(),
                       user_prompt: t.String(),
+                      prompt_type: t.String(),
                       book_name: t.String(),
                       chapter_number: t.Number(),
                       bible_version: t.String(),
@@ -1215,6 +1261,7 @@ const plugin = new Elysia()
                         t.Literal("high"),
                       ]),
                       send_chapter_context: t.Boolean(),
+                      max_output_tokens: t.Optional(t.Number()),
                     }),
                     response: {
                       200: PlaygroundSchema,

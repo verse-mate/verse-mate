@@ -13,6 +13,7 @@ declare const styles: {
   readonly formGroup: string;
   readonly input: string;
   readonly label: string;
+  readonly maxTokens: string;
   readonly model: string;
   readonly playground: string;
   readonly resultBox: string;
@@ -24,6 +25,7 @@ declare const styles: {
   readonly selected: string;
   readonly sendChapterContext: string;
   readonly systemPrompt: string;
+  readonly textarea: string;
   readonly title: string;
   readonly userPromptsContainer: string;
 };

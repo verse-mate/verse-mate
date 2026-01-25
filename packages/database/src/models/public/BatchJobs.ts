@@ -91,6 +91,8 @@ export default interface BatchJobsTable {
   >;
 
   explanation_type: ColumnType<string | null, string | null, string | null>;
+
+  max_output_tokens: ColumnType<number | null, number | null, number | null>;
 }
 
 export type BatchJobs = Selectable<BatchJobsTable>;

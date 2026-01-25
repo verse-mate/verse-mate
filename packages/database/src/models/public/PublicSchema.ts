@@ -28,6 +28,7 @@ import type { default as TopicExplanationsTable } from "./TopicExplanations";
 import type { default as TopicReferencesTable } from "./TopicReferences";
 import type { default as TopicTranslationsTable } from "./TopicTranslations";
 import type { default as TopicsTable } from "./Topics";
+import type { default as TranslationTemplatesTable } from "./TranslationTemplates";
 import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
 import type { default as UserPromptTemplatesTable } from "./UserPromptTemplates";
@@ -110,4 +111,6 @@ export default interface PublicSchema {
   support_conversations: SupportConversationsTable;
 
   support_messages: SupportMessagesTable;
+
+  translation_templates: TranslationTemplatesTable;
 }
