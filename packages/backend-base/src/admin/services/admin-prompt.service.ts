@@ -11,6 +11,7 @@ const PROTECTED_PROMPT_IDS = [1, 2, 3];
 interface PlaygroundRequest {
   system_prompt: string;
   user_prompt: string;
+  prompt_type: string;
   book_name: string;
   chapter_number: number;
   bible_version: string;
@@ -172,6 +173,7 @@ export class AdminPromptService {
     const {
       system_prompt,
       user_prompt,
+      prompt_type,
       book_name,
       chapter_number,
       bible_version,
@@ -194,47 +196,55 @@ export class AdminPromptService {
 
     const language = this.getLanguageName(version.language_code);
 
-    const finalUserPrompt = this.getUserPrompt({
-      explanationPrompt: user_prompt
-        .replace("{bookName}", book_name)
-        .replace("{chapterNumber}", chapter_number.toString()),
-      language,
-    });
-
+    let finalUserPrompt = "";
     let contextText = "";
-    if (send_chapter_context) {
-      const book = await connection
-        .selectFrom("books")
-        .where("name", "=", book_name)
-        .select("book_id")
-        .executeTakeFirst();
-      if (!book) throw new NotFoundError(`Book ${book_name} not found`);
 
-      const chapter = await connection
-        .selectFrom("chapters")
-        .where("book_id", "=", book.book_id)
-        .where("chapter_number", "=", chapter_number)
-        .select("chapter_id")
-        .executeTakeFirst();
-      if (!chapter)
-        throw new NotFoundError(
-          `Chapter ${chapter_number} not found for book ${book_name}`,
-        );
+    if (prompt_type === "translate") {
+      // For translation, the user_prompt IS the text to translate
+      // and system_prompt handles the instructions
+      finalUserPrompt = user_prompt;
+    } else {
+      finalUserPrompt = this.getUserPrompt({
+        explanationPrompt: user_prompt
+          .replace("{bookName}", book_name)
+          .replace("{chapterNumber}", chapter_number.toString()),
+        language,
+      });
 
-      const verses = await connection
-        .selectFrom("verses")
-        .where("chapter_id", "=", chapter.chapter_id)
-        .where("version_id", "=", version.id)
-        .select(["verse_number", "text"])
-        .orderBy("verse_number", "asc")
-        .execute();
+      if (send_chapter_context) {
+        const book = await connection
+          .selectFrom("books")
+          .where("name", "=", book_name)
+          .select("book_id")
+          .executeTakeFirst();
+        if (!book) throw new NotFoundError(`Book ${book_name} not found`);
 
-      if (!verses || verses.length === 0) {
-        throw new NotFoundError(
-          `No verses found for chapter ${chapter_number} in version ${bible_version}`,
-        );
+        const chapter = await connection
+          .selectFrom("chapters")
+          .where("book_id", "=", book.book_id)
+          .where("chapter_number", "=", chapter_number)
+          .select("chapter_id")
+          .executeTakeFirst();
+        if (!chapter)
+          throw new NotFoundError(
+            `Chapter ${chapter_number} not found for book ${book_name}`,
+          );
+
+        const verses = await connection
+          .selectFrom("verses")
+          .where("chapter_id", "=", chapter.chapter_id)
+          .where("version_id", "=", version.id)
+          .select(["verse_number", "text"])
+          .orderBy("verse_number", "asc")
+          .execute();
+
+        if (!verses || verses.length === 0) {
+          throw new NotFoundError(
+            `No verses found for chapter ${chapter_number} in version ${bible_version}`,
+          );
+        }
+        contextText = `\r\n\r\nBiblical Text (${book_name} ${chapter_number}):\r\n${verses.map((v) => `${v.verse_number}. ${v.text}`).join("\n")}`;
       }
-      contextText = `\r\n\r\nBiblical Text (${book_name} ${chapter_number}):\r\n${verses.map((v) => `${v.verse_number}. ${v.text}`).join("\n")}`;
     }
 
     const fullPrompt = `${finalUserPrompt}${contextText}`;
