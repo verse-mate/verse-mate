@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "backend-api";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 import ReactMarkdown from "react-markdown";
 import { bibleVersions } from "../../../utils/bible-versions";
@@ -169,9 +169,9 @@ export const Playground = () => {
         setChapterNumber(1);
       }
     }
-  }, [selectedBook, isInitialized]);
+  }, [selectedBook, isInitialized, chapterNumber]);
 
-  const fetchPrompts = async () => {
+  const fetchPrompts = useCallback(async () => {
     try {
       const [systemPromptsResponse, userPromptsResponse] = await Promise.all([
         api.admin.prompts.system.get(),
@@ -190,7 +190,7 @@ export const Playground = () => {
     } catch (err) {
       console.error("Failed to fetch prompts:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -208,7 +208,7 @@ export const Playground = () => {
     };
 
     fetchInitialData();
-  }, []);
+  }, [fetchPrompts]);
 
   useEffect(() => {
     if (!isInitialized) return; // Wait for localStorage to be checked first
@@ -242,7 +242,13 @@ export const Playground = () => {
         setEditableUserPrompt(activeSummaryPrompt.prompt_template);
       }
     }
-  }, [systemPrompts, userPrompts, isInitialized]);
+  }, [
+    systemPrompts,
+    userPrompts,
+    isInitialized,
+    selectedSystemPrompt,
+    selectedUserPrompt,
+  ]);
 
   useEffect(() => {
     const fetchActiveExplanation = async () => {
@@ -280,7 +286,14 @@ export const Playground = () => {
       }
     };
     fetchActiveExplanation();
-  }, [selectedBook, chapterNumber, bibleVersion, selectedUserPromptData]);
+  }, [
+    selectedBook,
+    chapterNumber,
+    bibleVersion,
+    selectedUserPromptData,
+    selectedPromptType,
+    editableUserPrompt,
+  ]);
 
   const handlePromptTypeChange = (type: string) => {
     setSelectedPromptType(type);
@@ -676,20 +689,27 @@ export const Playground = () => {
       )}
 
       {/* Prompt Diff Modal */}
-      <Dialog open={diffModalOpen} onOpenChange={setDiffModalOpen} maxWidth="1000px">
+      <Dialog
+        open={diffModalOpen}
+        onOpenChange={setDiffModalOpen}
+        maxWidth="1000px"
+      >
         <Dialog.Content>
           <Dialog.Head>Confirm Changes</Dialog.Head>
           <Dialog.Description>
-            Are you sure you want to save these changes to the database? This will affect all future generation batches using this prompt.
+            Are you sure you want to save these changes to the database? This
+            will affect all future generation batches using this prompt.
           </Dialog.Description>
-          
-          <div style={{ 
-            margin: "20px 0", 
-            border: "1px solid #eee", 
-            borderRadius: "4px", 
-            overflowY: "auto", 
-            maxHeight: "60vh" 
-          }}>
+
+          <div
+            style={{
+              margin: "20px 0",
+              border: "1px solid #eee",
+              borderRadius: "4px",
+              overflowY: "auto",
+              maxHeight: "60vh",
+            }}
+          >
             {promptToSave && (
               <ReactDiffViewer
                 oldValue={promptToSave.oldValue.replace(/\r\n/g, "\n").trim()}
@@ -708,22 +728,19 @@ export const Playground = () => {
                       removedColor: "#24292e",
                       wordAddedBackground: "#acf2bd",
                       wordRemovedBackground: "#fdb8c0",
-                    }
+                    },
                   },
                   line: {
                     wordBreak: "break-word",
-                    whiteSpace: "pre-wrap"
-                  }
+                    whiteSpace: "pre-wrap",
+                  },
                 }}
               />
             )}
           </div>
 
           <Dialog.Footer>
-            <Button
-              variant="outlined"
-              onClick={() => setDiffModalOpen(false)}
-            >
+            <Button variant="outlined" onClick={() => setDiffModalOpen(false)}>
               Cancel
             </Button>
             <Button
