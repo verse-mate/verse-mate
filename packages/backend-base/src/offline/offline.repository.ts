@@ -328,7 +328,6 @@ export class OfflineRepository {
 
     // TODO: Fix topic references query. The schema for topic_references does not match the spec (missing structured verse data).
     // Currently it only has 'content' field.
-    const references: any[] = [];
 
     return {
       topics: topics.map((t) => ({
