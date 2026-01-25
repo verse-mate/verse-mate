@@ -503,6 +503,7 @@ const plugin = new Elysia()
                   body.skipExisting || false,
                   body.effort || "medium",
                   body.bookName,
+                  body.chapters,
                   body.maxOutputTokens,
                 );
               },
@@ -522,6 +523,7 @@ const plugin = new Elysia()
                   target_language_code: t.String(),
                   explanationTypes: t.Array(t.String()),
                   skipExisting: t.Optional(t.Boolean()),
+                  chapters: t.Optional(t.Array(t.Number())),
                   maxOutputTokens: t.Optional(t.Number()),
                 }),
                 response: {

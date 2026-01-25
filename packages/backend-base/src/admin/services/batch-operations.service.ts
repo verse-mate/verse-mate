@@ -891,6 +891,7 @@ export class BatchOperationService {
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
     bookName?: string,
+    chapterNumbers?: number[],
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     if (type === "book" && !bookName) {
@@ -973,6 +974,7 @@ export class BatchOperationService {
             explanationTypes,
             skipExisting,
             parentBatchId,
+            undefined, // chapterNumbers
             maxOutputTokens,
           );
         } catch (error) {
@@ -1005,6 +1007,7 @@ export class BatchOperationService {
         explanationTypes,
         skipExisting,
         undefined,
+        chapterNumbers,
         maxOutputTokens,
       );
     }
@@ -1173,10 +1176,11 @@ export class BatchOperationService {
     explanationTypes: string[],
     skipExisting: boolean,
     parentBatchId?: number,
+    chapterNumbers?: number[],
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     console.log(
-      `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}`,
+      `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}${chapterNumbers ? `, chapters: ${chapterNumbers.join(", ")}` : ""}`,
     );
     const connection = this.db.getOrCreateConnection();
 
@@ -1259,12 +1263,35 @@ export class BatchOperationService {
       titleTemplates.map((t) => [t.type, t.title_template]),
     );
 
+    const getLocalizedTitle = (type: string, chapterNumber: number) => {
+      const template = titleTemplateMap.get(type);
+      if (template) {
+        return template
+          .replace("{Book}", bookName)
+          .replace("{chapterNumber}", chapterNumber.toString());
+      }
+      // Default English patterns as fallback
+      const defaults: Record<string, string> = {
+        summary: "# Overview {Book} {chapterNumber}",
+        byline: "# Verse Analysis {Book} {chapterNumber}",
+        detailed: "# In-depth Analysis {Book} {chapterNumber}",
+      };
+      const defaultTemplate = defaults[type] || "# {Book} {chapterNumber}";
+      return defaultTemplate
+        .replace("{Book}", bookName)
+        .replace("{chapterNumber}", chapterNumber.toString());
+    };
+
     let query = connection
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .where("chapters.book_id", "=", book.book_id)
       .where("explanations.language_code", "=", source_language_code)
       .where("is_active", "=", true);
+
+    if (chapterNumbers && chapterNumbers.length > 0) {
+      query = query.where("chapters.chapter_number", "in", chapterNumbers);
+    }
 
     if (explanationTypes.length > 0) {
       query = query.where("explanations.type", "in", explanationTypes as any);
@@ -1290,12 +1317,22 @@ export class BatchOperationService {
 
     if (skipExisting) {
       console.log("[BATCH] Checking for existing translations to skip...");
-      const existingTargetExplanations = await connection
+      let existingQuery = connection
         .selectFrom("explanations")
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", book.book_id)
         .where("explanations.language_code", "=", target_language_code)
-        .where("explanations.type", "in", explanationTypes as any)
+        .where("explanations.type", "in", explanationTypes as any);
+
+      if (chapterNumbers && chapterNumbers.length > 0) {
+        existingQuery = existingQuery.where(
+          "chapters.chapter_number",
+          "in",
+          chapterNumbers,
+        );
+      }
+
+      const existingTargetExplanations = await existingQuery
         .select(["chapters.chapter_number", "explanations.type"])
         .execute();
 
@@ -1310,24 +1347,10 @@ export class BatchOperationService {
       for (const explanation of activeExplanations) {
         const key = `${explanation.chapter_number}-${explanation.type}`;
         if (!existingSet.has(key)) {
-          let itemPrompt = finalPrompt;
-          const titleTemplate = titleTemplateMap.get(explanation.type);
-
-          if (titleTemplate) {
-            const localizedTitle = titleTemplate
-              .replace("{Book}", bookName)
-              .replace(
-                "{chapterNumber}",
-                explanation.chapter_number.toString(),
-              );
-            itemPrompt = itemPrompt.replace(
-              "{localized_title}",
-              localizedTitle,
-            );
-          } else {
-            // Fallback: just remove the placeholder if no template found
-            itemPrompt = itemPrompt.replace("{localized_title}", "");
-          }
+          const itemPrompt = finalPrompt.replace(
+            "{localized_title}",
+            getLocalizedTitle(explanation.type, explanation.chapter_number),
+          );
 
           batchRequests.push({
             custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
@@ -1349,17 +1372,10 @@ export class BatchOperationService {
     } else {
       console.log("[BATCH] Not skipping existing translations");
       batchRequests = activeExplanations.map((explanation) => {
-        let itemPrompt = finalPrompt;
-        const titleTemplate = titleTemplateMap.get(explanation.type);
-
-        if (titleTemplate) {
-          const localizedTitle = titleTemplate
-            .replace("{Book}", bookName)
-            .replace("{chapterNumber}", explanation.chapter_number.toString());
-          itemPrompt = itemPrompt.replace("{localized_title}", localizedTitle);
-        } else {
-          itemPrompt = itemPrompt.replace("{localized_title}", "");
-        }
+        const itemPrompt = finalPrompt.replace(
+          "{localized_title}",
+          getLocalizedTitle(explanation.type, explanation.chapter_number),
+        );
 
         return {
           custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
@@ -4067,22 +4083,7 @@ export class BatchOperationService {
   ) {
     const connection = this.db.getOrCreateConnection();
 
-    // 1. Get all target languages (active versions excluding source 'en')
-    const targetVersions = await connection
-      .selectFrom("bible_versions")
-      .where("language_code", "!=", "en")
-      .where("is_active", "=", true)
-      .select(["version_key", "language_code"])
-      .execute();
-
-    if (targetVersions.length === 0) {
-      console.log(
-        "[BATCH_AUTO_TRANS] No target languages found for auto-translation.",
-      );
-      return;
-    }
-
-    // 2. Group explanations by book for easier processing
+    // Group explanations by book for processing
     const bookMap = new Map<number, typeof explanations>();
     for (const exp of explanations) {
       const list = bookMap.get(exp.bookId) || [];
@@ -4090,7 +4091,6 @@ export class BatchOperationService {
       bookMap.set(exp.bookId, list);
     }
 
-    // 3. For each book and each target language, trigger a batch
     for (const [bookId, items] of bookMap.entries()) {
       const book = await connection
         .selectFrom("books")
@@ -4100,28 +4100,74 @@ export class BatchOperationService {
 
       if (!book) continue;
 
-      const types = Array.from(new Set(items.map((i) => i.type)));
+      // For each item (specific chapter & type), find which languages ALREADY have a translation
+      // We process this item by item to ensure strict adherence to "only existing"
+      // Optimization: We can group by language if multiple chapters need the same language update
 
-      for (const targetVersion of targetVersions) {
+      const tasksPerLanguage = new Map<
+        string,
+        { types: Set<string>; chapters: Set<number> }
+      >();
+
+      for (const item of items) {
+        // Find existing translations for this specific explanation (book, chapter, type)
+        // excluding the source language 'en'
+        const existingTranslations = await connection
+          .selectFrom("explanations")
+          .innerJoin(
+            "chapters",
+            "explanations.chapter_id",
+            "chapters.chapter_id",
+          )
+          .where("chapters.book_id", "=", bookId)
+          .where("chapters.chapter_number", "=", item.chapterNumber)
+          .where("explanations.type", "=", item.type as any)
+          .where("explanations.language_code", "!=", "en")
+          .select("explanations.language_code")
+          .groupBy("explanations.language_code")
+          .execute();
+
+        for (const trans of existingTranslations) {
+          const langCode = trans.language_code;
+          let task = tasksPerLanguage.get(langCode);
+          if (!task) {
+            task = {
+              types: new Set(),
+              chapters: new Set(),
+            };
+            tasksPerLanguage.set(langCode, task);
+          }
+          task.types.add(item.type);
+          task.chapters.add(item.chapterNumber);
+        }
+      }
+
+      // Now trigger a batch for each identified language with the accumulated scope
+      for (const [langCode, task] of tasksPerLanguage.entries()) {
+        const types = Array.from(task.types);
+        const chapterNumbers = Array.from(task.chapters).sort((a, b) => a - b);
+
         console.log(
-          `[BATCH_AUTO_TRANS] Triggering translation for ${book.name} to ${targetVersion.language_code}`,
+          `[BATCH_AUTO_TRANS] Triggering regeneration for ${book.name} to ${langCode} (Chapters: ${chapterNumbers.join(", ")})`,
         );
+
         try {
           await this.createBookTranslateBatch(
             model,
             adminUserId,
-            "medium", // Default effort
+            "medium",
             book.name,
-            "en", // Source language
-            targetVersion.language_code,
+            "en",
+            langCode,
             types,
-            false, // Don't skip existing, we want to update them
-            undefined, // parentBatchId
+            false, // force update
+            undefined,
+            chapterNumbers,
             maxOutputTokens,
           );
         } catch (error) {
           console.error(
-            `[BATCH_AUTO_TRANS] Failed to trigger auto-translation for ${book.name} (${targetVersion.language_code}):`,
+            `[BATCH_AUTO_TRANS] Failed to trigger auto-translation for ${book.name} (${langCode}):`,
             error,
           );
         }
