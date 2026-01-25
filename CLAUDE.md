@@ -66,7 +66,7 @@ cd apps/frontend-next && bun build  # Build frontend
 - **Backend**: Elysia (Bun-native web framework) with plugin architecture
 - **Frontend**: Next.js 14 with React 18, TypeScript
 - **Database**: PostgreSQL with Kysely ORM
-- **Queue**: BullMQ with Redis for background job processing
+- **Queue**: BullMQ with Valkey for background job processing
 - **Auth**: Custom implementation with bearer token sessions
 - **API Client**: Eden Treaty for type-safe client-server communication
 - **AI**: OpenAI GPT-5 Nano for Bible explanations and chat
@@ -89,7 +89,7 @@ The frontend communicates with the backend using Eden Treaty (type-safe Elysia c
 - Backend Base: `packages/backend-base/.env` (copy from `.env.example`)
 - Frontend: `apps/frontend-next/.env` (copy from `.env.example`)
 - Database: `packages/database/.env` (copy from `.env.example`)
-- Required services: PostgreSQL and Redis (configured in `docker-compose.yml`)
+- Required services: PostgreSQL and Valkey (configured in `docker-compose.yml`)
 
 ### Code Style
 - 2-space indentation
@@ -130,7 +130,7 @@ const result = await db.selectFrom('users').where('id', '=', userId).selectAll()
 ### Background Jobs and Queues
 - Queues are defined in `packages/backend-base/src/queue/`
 - Workers are in `packages/backend-base/src/workers/`
-- Uses BullMQ with Redis for job processing
+- Uses BullMQ with Valkey for job processing
 - Example: `batch-processing.queue.ts` and `batch-processing.worker.ts`
 
 ## Docker and Local Development
@@ -138,16 +138,16 @@ const result = await db.selectFrom('users').where('id', '=', userId).selectAll()
 ### Docker Services
 The project uses Docker Compose for local infrastructure:
 - **PostgreSQL** (port 5432): Main database
-- **Redis** (port 6379): Queue backend and caching
+- **Valkey** (port 6379): Queue backend and caching (Redis-compatible)
 - **Prisma Studio** (port 5555): Database GUI tool
 
 Start services: `docker compose up -d` (or use `make install` for full setup)
 
 ### CI/CD Pipeline
-Drone CI (`.drone.yml`) runs on push to `main` or `develop`:
+GitHub Actions (`.github/workflows/`) runs on push to `main` or version tags:
 1. Install dependencies and compile
 2. Run TypeScript checks, Biome linting, and Stylelint
-3. Run tests with temporary PostgreSQL and Redis
+3. Run tests with temporary PostgreSQL and Valkey
 4. Build frontend and backend
 5. Build and push Docker images
 6. Deploy to production server via SSH
