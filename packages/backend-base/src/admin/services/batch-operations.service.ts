@@ -2464,28 +2464,48 @@ export class BatchOperationService {
               continue;
             }
 
-            const newExplanation = {
-              type: explanationType as any,
-              explanation: explanationContent,
-              chapter_id: chapter.chapter_id,
-              language_code: version.language_code,
-              version: 1, // Start with version 1
-              is_active: true,
-            };
+            // Find the most recent version of this specific explanation to increment
+            const existingExplanation = await this.db
+              .getOrCreateConnection()
+              .selectFrom("explanations")
+              .where("chapter_id", "=", chapter.chapter_id)
+              .where("type", "=", explanationType as any)
+              .where("language_code", "=", version.language_code)
+              .orderBy("version", "desc")
+              .select("version")
+              .executeTakeFirst();
+
+            const nextVersion = existingExplanation
+              ? existingExplanation.version + 1
+              : 1;
 
             await this.db
               .getOrCreateConnection()
-              .insertInto("explanations")
-              .values(newExplanation)
-              .onConflict((oc) =>
-                oc
-                  .columns(["chapter_id", "type", "language_code", "version"])
-                  .doUpdateSet({
+              .transaction()
+              .execute(async (trx) => {
+                // Deactivate all existing versions of this specific explanation
+                await trx
+                  .updateTable("explanations")
+                  .set({ is_active: false })
+                  .where("chapter_id", "=", chapter.chapter_id)
+                  .where("type", "=", explanationType as any)
+                  .where("language_code", "=", version.language_code)
+                  .execute();
+
+                // Insert the new, active version
+                await trx
+                  .insertInto("explanations")
+                  .values({
+                    type: explanationType as any,
                     explanation: explanationContent,
-                    is_active: true, // Ensure it's active on update
-                  }),
-              )
-              .execute();
+                    chapter_id: chapter.chapter_id,
+                    language_code: version.language_code,
+                    version: nextVersion,
+                    is_active: true,
+                    created_at: new Date(),
+                  })
+                  .execute();
+              });
 
             processedCount++;
             console.log(`[BATCH] Saved explanation: ${parsedLine.custom_id}`);
