@@ -73,6 +73,7 @@ export const Playground = () => {
     newValue: string;
   } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -80,26 +81,35 @@ export const Playground = () => {
     if (savedState) {
       try {
         const state = JSON.parse(savedState);
-        if (state.selectedPromptType) setSelectedPromptType(state.selectedPromptType);
-        if (state.selectedSystemPrompt) setSelectedSystemPrompt(state.selectedSystemPrompt);
-        if (state.selectedUserPrompt) setSelectedUserPrompt(state.selectedUserPrompt);
+        if (state.selectedPromptType)
+          setSelectedPromptType(state.selectedPromptType);
+        if (state.selectedSystemPrompt)
+          setSelectedSystemPrompt(state.selectedSystemPrompt);
+        if (state.selectedUserPrompt)
+          setSelectedUserPrompt(state.selectedUserPrompt);
         if (state.bookName) setBookName(state.bookName);
         if (state.chapterNumber) setChapterNumber(state.chapterNumber);
         if (state.bibleVersion) setBibleVersion(state.bibleVersion);
         if (state.model) setModel(state.model);
         if (state.effort) setEffort(state.effort);
-        if (state.sendChapterContext !== undefined) setSendChapterContext(state.sendChapterContext);
-        if (state.editableSystemPrompt) setEditableSystemPrompt(state.editableSystemPrompt);
-        if (state.editableUserPrompt) setEditableUserPrompt(state.editableUserPrompt);
+        if (state.sendChapterContext !== undefined)
+          setSendChapterContext(state.sendChapterContext);
+        if (state.editableSystemPrompt)
+          setEditableSystemPrompt(state.editableSystemPrompt);
+        if (state.editableUserPrompt)
+          setEditableUserPrompt(state.editableUserPrompt);
         if (state.maxOutputTokens) setMaxOutputTokens(state.maxOutputTokens);
       } catch (e) {
         console.error("Failed to load playground state from localStorage", e);
       }
     }
+    setIsInitialized(true);
   }, []);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
+    if (!isInitialized) return; // Prevent overwriting localStorage with defaults during initial render
+
     const stateToSave = {
       selectedPromptType,
       selectedSystemPrompt,
@@ -128,6 +138,7 @@ export const Playground = () => {
     editableSystemPrompt,
     editableUserPrompt,
     maxOutputTokens,
+    isInitialized,
   ]);
 
   const selectedBook = books.find((book) => book.name === bookName);
@@ -152,10 +163,13 @@ export const Playground = () => {
       currentUserPromptData.prompt_template.replace(/\r\n/g, "\n").trim();
 
   useEffect(() => {
-    if (selectedBook) {
-      setChapterNumber(1);
+    if (isInitialized && selectedBook) {
+      // Only reset if the current chapter is out of bounds for the new book
+      if (chapterNumber > selectedBook.chapters.length) {
+        setChapterNumber(1);
+      }
     }
-  }, [selectedBook]);
+  }, [selectedBook, isInitialized]);
 
   const fetchPrompts = async () => {
     try {
@@ -197,8 +211,18 @@ export const Playground = () => {
   }, []);
 
   useEffect(() => {
-    // Set initial system prompt
-    if (systemPrompts.length > 0 && selectedSystemPrompt === "") {
+    if (!isInitialized) return; // Wait for localStorage to be checked first
+
+    // Check if we already have data from localStorage
+    const savedState = localStorage.getItem(STORAGE_KEY);
+    const hasSavedState = !!savedState;
+
+    // Set initial system prompt if not already set by localStorage
+    if (
+      systemPrompts.length > 0 &&
+      selectedSystemPrompt === "" &&
+      !hasSavedState
+    ) {
       const activeSystemPrompt = systemPrompts.find(
         (p) => p.status === "active" && p.prompt_type === "system",
       );
@@ -208,8 +232,8 @@ export const Playground = () => {
       }
     }
 
-    // Set initial user prompt
-    if (userPrompts.length > 0 && selectedUserPrompt === "") {
+    // Set initial user prompt if not already set by localStorage
+    if (userPrompts.length > 0 && selectedUserPrompt === "" && !hasSavedState) {
       const activeSummaryPrompt = userPrompts.find(
         (p) => p.explanation_type === "summary" && p.status === "active",
       );
@@ -218,7 +242,7 @@ export const Playground = () => {
         setEditableUserPrompt(activeSummaryPrompt.prompt_template);
       }
     }
-  }, [systemPrompts, userPrompts]);
+  }, [systemPrompts, userPrompts, isInitialized]);
 
   useEffect(() => {
     const fetchActiveExplanation = async () => {
@@ -239,7 +263,11 @@ export const Playground = () => {
           });
           if (response.data) {
             setActiveExplanation(response.data || null);
-            if (selectedPromptType === "translate" && response.data) {
+            if (
+              selectedPromptType === "translate" &&
+              response.data &&
+              !editableUserPrompt // Only auto-fill if currently empty to avoid overwriting cached work
+            ) {
               setEditableUserPrompt(response.data);
             }
           } else {
@@ -498,7 +526,10 @@ export const Playground = () => {
           <label className={styles.label}>Book Name:</label>
           <select
             value={bookName}
-            onChange={(e) => setBookName(e.target.value)}
+            onChange={(e) => {
+              setBookName(e.target.value);
+              setChapterNumber(1);
+            }}
             className={styles.select}
           >
             {books
