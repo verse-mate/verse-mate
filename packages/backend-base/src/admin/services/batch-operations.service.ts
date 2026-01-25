@@ -27,6 +27,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,
 });
 
+export const DEFAULT_MAX_OUTPUT_TOKENS = 50000;
+
 async function calculateActualCost(
   promptTokens: number,
   completionTokens: number,
@@ -92,6 +94,7 @@ export class BatchOperationService {
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
     category?: string,
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-discovery");
@@ -111,7 +114,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: "",
           input: prompt.prompt_template,
-          max_output_tokens: 50000,
+          max_output_tokens: maxOutputTokens,
         },
       },
     ];
@@ -157,6 +160,7 @@ export class BatchOperationService {
         bible_version: "N/A",
         explanation_types: [],
         topic_category: discoveryTopicType,
+        max_output_tokens: maxOutputTokens,
       })
       .execute();
 
@@ -176,6 +180,7 @@ export class BatchOperationService {
     category?: string,
     topicId?: string,
     skipExisting = false,
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     // Modify the query to filter by category if provided
     let query = this.db
@@ -228,7 +233,7 @@ export class BatchOperationService {
         input: prompt.prompt_template
           .replace("{topic_name}", topic.name)
           .replace("{topic_description}", topic.description || ""),
-        max_output_tokens: 50000,
+        max_output_tokens: maxOutputTokens,
       },
     }));
 
@@ -274,6 +279,7 @@ export class BatchOperationService {
         explanation_types: [],
         topic_category: category || null, // Store category if provided
         topic_id: topicId || null, // Store topic_id if provided
+        max_output_tokens: maxOutputTokens,
       })
       .execute();
 
@@ -297,6 +303,7 @@ export class BatchOperationService {
     includeReferencesInSummary = false,
     includeReferencesInDetailed = false,
     skipExisting = true,
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     const connection = this.db.getOrCreateConnection();
 
@@ -312,6 +319,7 @@ export class BatchOperationService {
         explanation_types: explanationTypes,
         topic_category: category || null,
         topic_id: topicId || null,
+        max_output_tokens: maxOutputTokens,
       })
       .returning("id")
       .executeTakeFirstOrThrow();
@@ -387,6 +395,7 @@ export class BatchOperationService {
           parentBatchId,
           includeReferencesInSummary,
           includeReferencesInDetailed,
+          maxOutputTokens,
         );
         batchResults.push({ success: true, ...childBatch });
       } catch (error) {
@@ -421,6 +430,7 @@ export class BatchOperationService {
     parentBatchId: number,
     includeReferencesInSummary: boolean,
     includeReferencesInDetailed: boolean,
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     const batchRequests: BatchJobRequest[] = [];
 
@@ -484,7 +494,7 @@ export class BatchOperationService {
           reasoning: { effort },
           instructions: systemPrompt.prompt,
           input: finalInput,
-          max_output_tokens: 50000,
+          max_output_tokens: maxOutputTokens,
         },
       });
     }
@@ -540,6 +550,7 @@ export class BatchOperationService {
         topic_category: topic.category,
         topic_id: topic.topic_id,
         parent_batch_id: parentBatchId,
+        max_output_tokens: maxOutputTokens,
       })
       .execute();
 
@@ -559,11 +570,14 @@ export class BatchOperationService {
     adminUserId: string,
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
+    chapters?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+    batchType = "book",
   ) {
     console.log(
       `[BATCH] Starting book batch for book "${bookName}", version ${bibleVersion}, types: ${explanationTypes.join(
         ", ",
-      )}`,
+      )}${chapters ? `, chapters: ${chapters.join(", ")}` : ""}`,
     );
 
     const book = await this.db
@@ -589,6 +603,10 @@ export class BatchOperationService {
       adminUserId,
       skipExisting,
       effort,
+      undefined,
+      chapters,
+      maxOutputTokens,
+      batchType,
     );
   }
 
@@ -601,11 +619,14 @@ export class BatchOperationService {
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
     parentBatchId?: number,
+    chapters?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+    batchType = "book",
   ) {
     console.log(
       `[BATCH] Starting book batch for book ${bookId}, version ${bibleVersion}, types: ${explanationTypes.join(
         ", ",
-      )}`,
+      )}${chapters ? `, chapters: ${chapters.join(", ")}` : ""}`,
     );
 
     const { jsonlContent, totalRequests } = await this.generateJSONLContent(
@@ -615,6 +636,8 @@ export class BatchOperationService {
       model,
       skipExisting,
       effort,
+      chapters,
+      maxOutputTokens,
     );
 
     // Check if the content exceeds OpenAI's file size limit (100MB)
@@ -657,7 +680,7 @@ export class BatchOperationService {
       .getOrCreateConnection()
       .insertInto("batch_jobs")
       .values({
-        batch_type: "book",
+        batch_type: batchType,
         openai_batch_id: batch.id,
         status: "validating",
         book_id: bookId,
@@ -670,6 +693,7 @@ export class BatchOperationService {
         created_by: adminUserId,
         created_at: new Date(),
         parent_batch_id: parentBatchId === undefined ? null : parentBatchId,
+        max_output_tokens: maxOutputTokens,
       })
       .execute();
 
@@ -689,6 +713,7 @@ export class BatchOperationService {
     adminUserId: string,
     effort: "low" | "medium" | "high" = "medium",
     skipExisting = false,
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     console.log(
       `[BATCH] Starting Bible batch for version ${bibleVersion}, types: ${explanationTypes.join(
@@ -708,6 +733,7 @@ export class BatchOperationService {
         explanation_types: explanationTypes,
         created_by: adminUserId,
         total_requests: 66,
+        max_output_tokens: maxOutputTokens,
       })
       .returning("id")
       .executeTakeFirstOrThrow();
@@ -741,6 +767,8 @@ export class BatchOperationService {
           skipExisting,
           effort,
           parentBatchId,
+          undefined, // chapters
+          maxOutputTokens,
         );
         batchResults.push({ success: true, ...bookBatch });
       } catch (error) {
@@ -769,6 +797,7 @@ export class BatchOperationService {
     bibleVersion: string,
     effort: "low" | "medium" | "high" = "medium",
     bookName?: string,
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     if (type === "book" && !bookName) {
       throw new Error(
@@ -793,6 +822,7 @@ export class BatchOperationService {
           total_requests: 66,
           bible_version: bibleVersion,
           explanation_types: [],
+          max_output_tokens: maxOutputTokens,
         })
         .returning("id")
         .executeTakeFirstOrThrow();
@@ -828,6 +858,7 @@ export class BatchOperationService {
           book.name,
           bibleVersion,
           parentBatchId,
+          maxOutputTokens,
         );
       }
 
@@ -845,6 +876,8 @@ export class BatchOperationService {
         effort,
         bookName,
         bibleVersion,
+        undefined,
+        maxOutputTokens,
       );
     }
 
@@ -861,6 +894,8 @@ export class BatchOperationService {
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
     bookName?: string,
+    chapterNumbers?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     if (type === "book" && !bookName) {
       throw new Error(
@@ -893,6 +928,7 @@ export class BatchOperationService {
           source_language_code,
           target_language_code,
           explanation_types: [],
+          max_output_tokens: maxOutputTokens,
         })
         .returning("id")
         .executeTakeFirstOrThrow();
@@ -941,6 +977,8 @@ export class BatchOperationService {
             explanationTypes,
             skipExisting,
             parentBatchId,
+            undefined, // chapterNumbers
+            maxOutputTokens,
           );
         } catch (error) {
           console.error(
@@ -971,6 +1009,9 @@ export class BatchOperationService {
         target_language_code,
         explanationTypes,
         skipExisting,
+        undefined,
+        chapterNumbers,
+        maxOutputTokens,
       );
     }
 
@@ -984,6 +1025,7 @@ export class BatchOperationService {
     bookName: string,
     bibleVersion: string,
     parentBatchId?: number,
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     const connection = this.db.getOrCreateConnection();
 
@@ -1059,7 +1101,7 @@ export class BatchOperationService {
             reasoning: { effort },
             instructions: rephrasePrompt.prompt,
             input: explanation.explanation,
-            max_output_tokens: 50000,
+            max_output_tokens: maxOutputTokens,
           },
         };
       },
@@ -1114,6 +1156,7 @@ export class BatchOperationService {
         parent_batch_id: parentBatchId,
         bible_version: bibleVersion, // preserve actual version
         explanation_types: [],
+        max_output_tokens: maxOutputTokens,
       })
       .execute();
 
@@ -1136,9 +1179,12 @@ export class BatchOperationService {
     explanationTypes: string[],
     skipExisting: boolean,
     parentBatchId?: number,
+    chapterNumbers?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+    batchType = "translate",
   ) {
     console.log(
-      `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}`,
+      `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}${chapterNumbers ? `, chapters: ${chapterNumbers.join(", ")}` : ""}`,
     );
     const connection = this.db.getOrCreateConnection();
 
@@ -1210,12 +1256,46 @@ export class BatchOperationService {
 
     console.log(`[BATCH] Target language name: ${language}`);
 
+    // Fetch localized title templates for the target language
+    const titleTemplates = await connection
+      .selectFrom("translation_templates")
+      .where("language_code", "=", target_language_code)
+      .select(["type", "title_template"])
+      .execute();
+
+    const titleTemplateMap = new Map(
+      titleTemplates.map((t) => [t.type, t.title_template]),
+    );
+
+    const getLocalizedTitle = (type: string, chapterNumber: number) => {
+      const template = titleTemplateMap.get(type);
+      if (template) {
+        return template
+          .replace("{Book}", bookName)
+          .replace("{chapterNumber}", chapterNumber.toString());
+      }
+      // Default English patterns as fallback
+      const defaults: Record<string, string> = {
+        summary: "# Overview {Book} {chapterNumber}",
+        byline: "# Verse Analysis {Book} {chapterNumber}",
+        detailed: "# In-depth Analysis {Book} {chapterNumber}",
+      };
+      const defaultTemplate = defaults[type] || "# {Book} {chapterNumber}";
+      return defaultTemplate
+        .replace("{Book}", bookName)
+        .replace("{chapterNumber}", chapterNumber.toString());
+    };
+
     let query = connection
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .where("chapters.book_id", "=", book.book_id)
       .where("explanations.language_code", "=", source_language_code)
       .where("is_active", "=", true);
+
+    if (chapterNumbers && chapterNumbers.length > 0) {
+      query = query.where("chapters.chapter_number", "in", chapterNumbers);
+    }
 
     if (explanationTypes.length > 0) {
       query = query.where("explanations.type", "in", explanationTypes as any);
@@ -1241,12 +1321,23 @@ export class BatchOperationService {
 
     if (skipExisting) {
       console.log("[BATCH] Checking for existing translations to skip...");
-      const existingTargetExplanations = await connection
+      let existingQuery = connection
         .selectFrom("explanations")
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", book.book_id)
         .where("explanations.language_code", "=", target_language_code)
         .where("explanations.type", "in", explanationTypes as any)
+        .where("explanations.is_active", "=", true);
+
+      if (chapterNumbers && chapterNumbers.length > 0) {
+        existingQuery = existingQuery.where(
+          "chapters.chapter_number",
+          "in",
+          chapterNumbers,
+        );
+      }
+
+      const existingTargetExplanations = await existingQuery
         .select(["chapters.chapter_number", "explanations.type"])
         .execute();
 
@@ -1261,6 +1352,11 @@ export class BatchOperationService {
       for (const explanation of activeExplanations) {
         const key = `${explanation.chapter_number}-${explanation.type}`;
         if (!existingSet.has(key)) {
+          const itemPrompt = finalPrompt.replace(
+            "{localized_title}",
+            getLocalizedTitle(explanation.type, explanation.chapter_number),
+          );
+
           batchRequests.push({
             custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
             method: "POST",
@@ -1268,9 +1364,9 @@ export class BatchOperationService {
             body: {
               model,
               reasoning: { effort },
-              instructions: finalPrompt,
+              instructions: itemPrompt,
               input: explanation.explanation,
-              max_output_tokens: 50000,
+              max_output_tokens: maxOutputTokens,
             },
           });
         }
@@ -1280,18 +1376,25 @@ export class BatchOperationService {
       );
     } else {
       console.log("[BATCH] Not skipping existing translations");
-      batchRequests = activeExplanations.map((explanation) => ({
-        custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
-        method: "POST",
-        url: "/v1/responses",
-        body: {
-          model,
-          reasoning: { effort },
-          instructions: finalPrompt,
-          input: explanation.explanation,
-          max_output_tokens: 50000,
-        },
-      }));
+      batchRequests = activeExplanations.map((explanation) => {
+        const itemPrompt = finalPrompt.replace(
+          "{localized_title}",
+          getLocalizedTitle(explanation.type, explanation.chapter_number),
+        );
+
+        return {
+          custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
+          method: "POST",
+          url: "/v1/responses",
+          body: {
+            model,
+            reasoning: { effort },
+            instructions: itemPrompt,
+            input: explanation.explanation,
+            max_output_tokens: maxOutputTokens,
+          },
+        };
+      });
     }
 
     if (batchRequests.length === 0) {
@@ -1352,7 +1455,7 @@ export class BatchOperationService {
     await connection
       .insertInto("batch_jobs")
       .values({
-        batch_type: "translate",
+        batch_type: batchType,
         openai_batch_id: batch.id,
         status: "validating",
         model,
@@ -1364,6 +1467,7 @@ export class BatchOperationService {
         source_language_code,
         target_language_code,
         explanation_types: [],
+        max_output_tokens: maxOutputTokens,
       })
       .execute();
 
@@ -2004,6 +2108,8 @@ export class BatchOperationService {
     model: string,
     skipExisting = false,
     effort: "low" | "medium" | "high" = "medium",
+    chapterNumbers?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ): Promise<{ jsonlContent: string; totalRequests: number }> {
     const connection = this.db.getOrCreateConnection();
 
@@ -2038,15 +2144,26 @@ export class BatchOperationService {
       `[BATCH] Database query result: bookId=${bookId}, book.name="${book.name}"`,
     );
 
-    const chapters = await connection
+    let chaptersQuery = connection
       .selectFrom("chapters")
       .where("book_id", "=", bookId)
       .select(["chapter_id", "chapter_number"])
-      .orderBy("chapter_number", "asc")
-      .execute();
+      .orderBy("chapter_number", "asc");
+
+    if (chapterNumbers && chapterNumbers.length > 0) {
+      chaptersQuery = chaptersQuery.where(
+        "chapter_number",
+        "in",
+        chapterNumbers,
+      );
+    }
+
+    const chapters = await chaptersQuery.execute();
 
     if (!chapters || chapters.length === 0) {
-      throw new Error(`No chapters found for book ${bookId}`);
+      throw new Error(
+        `No chapters found for book ${bookId}${chapterNumbers ? ` with numbers: ${chapterNumbers.join(", ")}` : ""}`,
+      );
     }
 
     const batchRequests: BatchJobRequest[] = [];
@@ -2117,7 +2234,7 @@ export class BatchOperationService {
             reasoning: { effort },
             instructions: sanitizedSystemPrompt,
             input: sanitizedUserPrompt,
-            max_output_tokens: 50000,
+            max_output_tokens: maxOutputTokens,
           },
         });
       }
@@ -2150,7 +2267,14 @@ export class BatchOperationService {
         .getOrCreateConnection()
         .selectFrom("batch_jobs")
         .where("openai_batch_id", "=", batchId)
-        .select(["batch_type", "bible_version", "book_id", "model"])
+        .select([
+          "batch_type",
+          "bible_version",
+          "book_id",
+          "model",
+          "created_by",
+          "max_output_tokens",
+        ])
         .executeTakeFirst();
 
       if (!batchJob) {
@@ -2161,7 +2285,10 @@ export class BatchOperationService {
       if (batchJob.batch_type === "rephrase") {
         return this.processRephraseOutputFile(batchId, outputFileId, batchJob);
       }
-      if (batchJob.batch_type === "translate") {
+      if (
+        batchJob.batch_type === "translate" ||
+        batchJob.batch_type === "auto-translate"
+      ) {
         return this.processTranslateOutputFile(batchId, outputFileId, batchJob);
       }
       if (batchJob.batch_type === "topic-discovery") {
@@ -2229,6 +2356,12 @@ export class BatchOperationService {
       let errorCount = 0;
       let totalPromptTokens = 0;
       let totalCompletionTokens = 0;
+
+      const successfulExplanations: {
+        bookId: number;
+        chapterNumber: number;
+        type: string;
+      }[] = [];
 
       for (const line of lines) {
         try {
@@ -2331,31 +2464,60 @@ export class BatchOperationService {
               continue;
             }
 
-            const newExplanation = {
-              type: explanationType as any,
-              explanation: explanationContent,
-              chapter_id: chapter.chapter_id,
-              language_code: version.language_code,
-              version: 1, // Start with version 1
-              is_active: true,
-            };
+            // Find the most recent version of this specific explanation to increment
+            const existingExplanation = await this.db
+              .getOrCreateConnection()
+              .selectFrom("explanations")
+              .where("chapter_id", "=", chapter.chapter_id)
+              .where("type", "=", explanationType as any)
+              .where("language_code", "=", version.language_code)
+              .orderBy("version", "desc")
+              .select("version")
+              .executeTakeFirst();
+
+            const nextVersion = existingExplanation
+              ? existingExplanation.version + 1
+              : 1;
 
             await this.db
               .getOrCreateConnection()
-              .insertInto("explanations")
-              .values(newExplanation)
-              .onConflict((oc) =>
-                oc
-                  .columns(["chapter_id", "type", "language_code", "version"])
-                  .doUpdateSet({
+              .transaction()
+              .execute(async (trx) => {
+                // Deactivate all existing versions of this specific explanation
+                await trx
+                  .updateTable("explanations")
+                  .set({ is_active: false })
+                  .where("chapter_id", "=", chapter.chapter_id)
+                  .where("type", "=", explanationType as any)
+                  .where("language_code", "=", version.language_code)
+                  .execute();
+
+                // Insert the new, active version
+                await trx
+                  .insertInto("explanations")
+                  .values({
+                    type: explanationType as any,
                     explanation: explanationContent,
-                    is_active: true, // Ensure it's active on update
-                  }),
-              )
-              .execute();
+                    chapter_id: chapter.chapter_id,
+                    language_code: version.language_code,
+                    version: nextVersion,
+                    is_active: true,
+                    created_at: new Date(),
+                  })
+                  .execute();
+              });
 
             processedCount++;
             console.log(`[BATCH] Saved explanation: ${parsedLine.custom_id}`);
+
+            // Collect for auto-translation if it's the source language (usually English)
+            if (version.language_code === "en" && batchJob.book_id) {
+              successfulExplanations.push({
+                bookId: batchJob.book_id,
+                chapterNumber,
+                type: explanationType,
+              });
+            }
           } else {
             const customId = parsedLine.custom_id || "UNKNOWN";
             const statusCode = parsedLine.response?.status_code || "NO_STATUS";
@@ -2422,6 +2584,21 @@ export class BatchOperationService {
       console.log(
         `[BATCH] Marked batch ${batchId} as explanations processed with cost $${actualCost.toFixed(4)}`,
       );
+
+      // Trigger auto-translations if we have successful source explanations
+      if (successfulExplanations.length > 0) {
+        console.log(
+          `[BATCH] Triggering auto-translations for ${successfulExplanations.length} new source explanations.`,
+        );
+        // We'll implement triggerAutoTranslations as a separate method
+        // For efficiency, we group them by book and type to minimize batches
+        await this.triggerAutoTranslations(
+          successfulExplanations,
+          batchJob.model,
+          batchJob.created_by,
+          batchJob.max_output_tokens || DEFAULT_MAX_OUTPUT_TOKENS,
+        );
+      }
     } catch (error) {
       console.error(
         `[BATCH] Error processing output file for batch ${batchId}`,
@@ -3924,6 +4101,143 @@ export class BatchOperationService {
         error,
       );
     }
+  }
+
+  public async triggerAutoTranslations(
+    explanations: { bookId: number; chapterNumber: number; type: string }[],
+    model: string,
+    adminUserId: string,
+    maxOutputTokens: number,
+    parentBatchId?: number,
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    // Group explanations by book for processing
+    const bookMap = new Map<number, typeof explanations>();
+    for (const exp of explanations) {
+      const list = bookMap.get(exp.bookId) || [];
+      list.push(exp);
+      bookMap.set(exp.bookId, list);
+    }
+
+    for (const [bookId, items] of bookMap.entries()) {
+      const book = await connection
+        .selectFrom("books")
+        .where("book_id", "=", bookId)
+        .select("name")
+        .executeTakeFirst();
+
+      if (!book) continue;
+
+      // For each item (specific chapter & type), find which languages ALREADY have a translation
+      // We process this item by item to ensure strict adherence to "only existing"
+      // Optimization: We can group by language if multiple chapters need the same language update
+
+      const tasksPerLanguage = new Map<
+        string,
+        { types: Set<string>; chapters: Set<number> }
+      >();
+
+      for (const item of items) {
+        // Find existing translations for this specific explanation (book, chapter, type)
+        // excluding the source language 'en'
+        const existingTranslations = await connection
+          .selectFrom("explanations")
+          .innerJoin(
+            "chapters",
+            "explanations.chapter_id",
+            "chapters.chapter_id",
+          )
+          .where("chapters.book_id", "=", bookId)
+          .where("chapters.chapter_number", "=", item.chapterNumber)
+          .where("explanations.type", "=", item.type as any)
+          .where("explanations.language_code", "!=", "en")
+          .where("explanations.is_active", "=", true)
+          .select("explanations.language_code")
+          .groupBy("explanations.language_code")
+          .execute();
+
+        for (const trans of existingTranslations) {
+          const langCode = trans.language_code;
+          let task = tasksPerLanguage.get(langCode);
+          if (!task) {
+            task = {
+              types: new Set(),
+              chapters: new Set(),
+            };
+            tasksPerLanguage.set(langCode, task);
+          }
+          task.types.add(item.type);
+          task.chapters.add(item.chapterNumber);
+        }
+      }
+
+      // Now trigger a batch for each identified language with the accumulated scope
+      for (const [langCode, task] of tasksPerLanguage.entries()) {
+        const types = Array.from(task.types);
+        const chapterNumbers = Array.from(task.chapters).sort((a, b) => a - b);
+
+        console.log(
+          `[BATCH_AUTO_TRANS] Triggering regeneration for ${book.name} to ${langCode} (Chapters: ${chapterNumbers.join(", ")})`,
+        );
+
+        try {
+          await this.createBookTranslateBatch(
+            model,
+            adminUserId,
+            "medium",
+            book.name,
+            "en",
+            langCode,
+            types,
+            false, // force update
+            parentBatchId,
+            chapterNumbers,
+            maxOutputTokens,
+            "auto-translate",
+          );
+        } catch (error) {
+          console.error(
+            `[BATCH_AUTO_TRANS] Failed to trigger auto-translation for ${book.name} (${langCode}):`,
+            error,
+          );
+        }
+      }
+    }
+  }
+
+  async getAutoTranslationImpact(
+    bookName: string,
+    explanationTypes: string[],
+    chapters?: number[],
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    let query = connection
+      .selectFrom("explanations")
+      .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
+      .innerJoin("books", "chapters.book_id", "books.book_id")
+      .where("books.name", "=", bookName)
+      .where("explanations.language_code", "!=", "en")
+      .where("explanations.type", "in", explanationTypes as any)
+      .where("explanations.is_active", "=", true)
+      .select([
+        "explanations.language_code",
+        connection.fn.count("explanations.explanation_id").as("count"),
+      ])
+      .groupBy("explanations.language_code");
+
+    if (chapters && chapters.length > 0) {
+      query = query.where("chapters.chapter_number", "in", chapters);
+    }
+
+    const results = await query.execute();
+
+    return results.map((r) => ({
+      language_code: r.language_code,
+      count: Number(r.count),
+      language_name: getLanguageName(r.language_code),
+    }));
   }
 
   /**
