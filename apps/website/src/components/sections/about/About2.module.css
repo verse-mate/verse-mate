@@ -1,0 +1,6 @@
+.image {
+  aspect-ratio: 1 / 1;
+  background-image: url("/group.png");
+  background-size: cover;
+  background-position: center;
+}

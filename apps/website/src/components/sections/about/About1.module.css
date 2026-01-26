@@ -1,0 +1,6 @@
+/* Image styling with background */
+.image {
+  background-image: url("/bible.png");
+  background-size: cover;
+  background-position: center;
+}
