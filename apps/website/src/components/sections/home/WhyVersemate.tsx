@@ -6,8 +6,8 @@ export default function WhyVersemate() {
       {/* Content Container - responsive with max-width */}
       <div className="mx-auto flex h-full w-full max-w-[1440px] flex-col items-start gap-8 px-6 py-12 md:gap-12 md:px-12 md:py-16 lg:gap-16 lg:px-16 lg:py-20 xl:px-[120px] xl:py-24">
         {/* Title */}
-        <div className="flex w-full max-w-[242px] flex-row items-center justify-center gap-2 border-b-4 border-brand-tan px-0 py-2 md:border-b-[6px]">
-          <span className="w-full font-inter text-lg font-bold uppercase leading-6 tracking-[0.1em] text-white md:text-xl md:leading-7 lg:text-2xl lg:leading-8">
+        <div className="flex flex-row items-center justify-center gap-2 border-b-4 border-brand-tan px-0 py-2 md:border-b-[6px] w-fit">
+          <span className="whitespace-nowrap font-inter text-lg font-bold uppercase leading-6 tracking-[0.1em] text-white md:text-xl md:leading-7 lg:text-2xl lg:leading-8">
             Why Versemate
           </span>
         </div>

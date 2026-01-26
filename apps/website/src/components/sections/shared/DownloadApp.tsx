@@ -1,8 +1,8 @@
 export default function DownloadApp() {
   return (
-    <section className="w-full bg-[#F6F3EC] relative overflow-hidden">
+    <section className="w-full bg-[#F6F3EC] relative pt-[120px] min-h-screen">
       {/* Content Container */}
-      <div className="mx-auto flex w-full flex-col items-start px-4 pt-24 pb-12 gap-8 md:max-w-[1024px] md:px-16 md:py-[91px] md:flex-row md:justify-between md:items-start md:gap-0 md:min-h-[976px] xl:max-w-[1440px] xl:px-[120px] xl:py-[80px] xl:min-h-[860px] relative">
+      <div className="mx-auto flex w-full flex-col items-start px-4 pb-12 gap-8 md:max-w-[1024px] md:px-16 md:pb-[91px] md:flex-row md:justify-between md:items-start md:gap-0 xl:max-w-[1440px] xl:px-[120px] xl:pb-[80px] relative">
         {/* Text Line - Always free (Desktop Only) */}
         <div className="hidden md:flex absolute left-0 right-0 bottom-10 flex-row justify-center items-center gap-2 h-8 z-0">
           <span className="font-inter font-normal text-2xl leading-8 text-center tracking-[0.2em] text-[#3E464D]">

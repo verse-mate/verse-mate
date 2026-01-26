@@ -240,7 +240,7 @@ export default function Privacy() {
               Access & Portability
             </h3>
             <p className="font-inter text-sm font-light leading-6 text-black md:text-base md:leading-6 mb-6">
-              You can view your personal data within the app settings. Contact us at info@versemate.org to request a copy of your data.
+              You can view your personal data within the app settings. Contact us at <a href="mailto:info@versemate.org" className="text-brand-tan">info@versemate.org</a> to request a copy of your data.
             </p>
 
             <h3 className="font-inter text-base font-semibold leading-7 text-black md:text-lg md:leading-7 mb-4">
@@ -254,7 +254,7 @@ export default function Privacy() {
               Deletion
             </h3>
             <p className="font-inter text-sm font-light leading-6 text-black md:text-base md:leading-6 mb-6">
-              You can delete individual bookmarks, highlights, and notes at any time. To delete your entire account and all associated data, contact us at info@versemate.org.
+              You can delete individual bookmarks, highlights, and notes at any time. To delete your entire account and all associated data, contact us at <a href="mailto:info@versemate.org" className="text-brand-tan">info@versemate.org</a>.
             </p>
 
             <h3 className="font-inter text-base font-semibold leading-7 text-black md:text-lg md:leading-7 mb-4">
@@ -282,7 +282,7 @@ export default function Privacy() {
               For European Users (GDPR)
             </h3>
             <p className="font-inter text-sm font-light leading-6 text-black md:text-base md:leading-6">
-              If you are in the European Economic Area, you have rights under the General Data Protection Regulation, including access, rectification, erasure, restriction, portability, and objection. Contact us at info@versemate.org to exercise these rights.
+              If you are in the European Economic Area, you have rights under the General Data Protection Regulation, including access, rectification, erasure, restriction, portability, and objection. Contact us at <a href="mailto:info@versemate.org" className="text-brand-tan">info@versemate.org</a> to exercise these rights.
             </p>
           </div>
 
@@ -302,7 +302,7 @@ export default function Privacy() {
               <li><strong>Regular Audits:</strong> We regularly review our security practices</li>
             </ul>
             <p className="font-inter text-sm font-light leading-6 text-black md:text-base md:leading-6">
-              While we strive to protect your information, no method of transmission or storage is 100% secure. If you discover a security vulnerability, please contact us at info@versemate.org.
+              While we strive to protect your information, no method of transmission or storage is 100% secure. If you discover a security vulnerability, please contact us at <a href="mailto:info@versemate.org" className="text-brand-tan">info@versemate.org</a>.
             </p>
           </div>
 
@@ -313,7 +313,7 @@ export default function Privacy() {
             </h2>
 
             <p className="font-inter text-sm font-light leading-6 text-black md:text-base md:leading-6">
-              VerseMate is intended for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us at info@versemate.org, and we will delete such information.
+              VerseMate is intended for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you believe a child under 13 has provided us with personal information, please contact us at <a href="mailto:info@versemate.org" className="text-brand-tan">info@versemate.org</a>, and we will delete such information.
             </p>
           </div>
 

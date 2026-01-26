@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Hero() {
   return (
-    <section className="relative w-full max-w-full h-[901px] md:h-[1270px] lg:h-[1000px] xl:h-[900px] overflow-hidden bg-hero-gradient">
+    <section className="relative w-full max-w-full h-[901px] md:h-[1270px] lg:h-[1000px] xl:h-[1000px] 2xl:h-[900px] overflow-hidden bg-hero-gradient">
       {/* Text Pattern Overlay - Different images for mobile/tablet/desktop */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat md:hidden"
@@ -15,14 +15,14 @@ export default function Hero() {
         }}
       />
       <div
-        className="hidden md:block xl:hidden absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="hidden md:block 2xl:hidden absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: "url('/Tilted%20Image%20text%20Mobile.png')",
           opacity: 0.05,
         }}
       />
       <div
-        className="hidden xl:block absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="hidden 2xl:block absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: "url('/Tilted%20image%20text%20Desktop.png')",
           opacity: 0.5,
@@ -30,16 +30,16 @@ export default function Hero() {
       />
 
       {/* Content Wrapper */}
-      <div className="relative md:mx-auto md:w-[1024px] xl:w-[1440px] xl:h-full">
+      <div className="relative md:mx-auto md:w-[1024px] xl:w-[1280px] 2xl:w-[1440px] 2xl:h-full">
         {/* Content */}
-        <div className="absolute left-0 right-0 top-[76px] flex flex-col items-start isolate px-6 pt-20 gap-4 h-[432px] md:px-16 md:pt-20 md:gap-4 lg:px-14 lg:pt-16 lg:gap-6 xl:justify-center xl:h-[752px] xl:px-[120px] xl:pt-8">
+        <div className="absolute left-0 right-0 top-[76px] flex flex-col items-start isolate px-6 pt-20 gap-4 h-[432px] md:px-16 md:pt-20 md:gap-4 lg:px-14 lg:pt-16 lg:gap-6 xl:px-16 xl:pt-18 2xl:justify-center 2xl:h-[752px] 2xl:px-[120px] 2xl:pt-8">
           {/* Main Heading */}
-          <h1 className="font-merriweather font-bold text-white text-[32px] leading-10 w-full max-w-[392px] m-0 md:text-5xl md:leading-[64px] md:max-w-[896px] lg:text-[44px] lg:leading-[56px] lg:max-w-[700px] xl:text-5xl xl:leading-[64px] xl:w-[540px]">
+          <h1 className="font-merriweather font-bold text-white text-[32px] leading-10 w-full max-w-[392px] m-0 md:text-5xl md:leading-[64px] md:max-w-[896px] lg:text-[44px] lg:leading-[56px] lg:max-w-[700px] xl:text-[46px] xl:leading-[58px] xl:max-w-[720px] 2xl:text-5xl 2xl:leading-[64px] 2xl:w-[540px]">
             The Bible Was Meant to Be Understood - Not Just Read.
           </h1>
 
           {/* Description Text */}
-          <p className="font-inter font-normal text-white text-base leading-6 w-full max-w-[392px] m-0 md:text-2xl md:leading-8 md:max-w-[896px] lg:text-xl lg:leading-7 lg:max-w-[700px] xl:text-2xl xl:leading-8 xl:w-[540px]">
+          <p className="font-inter font-normal text-white text-base leading-6 w-full max-w-[392px] m-0 md:text-2xl md:leading-8 md:max-w-[896px] lg:text-xl lg:leading-7 lg:max-w-[700px] xl:text-[22px] xl:leading-[30px] xl:max-w-[720px] 2xl:text-2xl 2xl:leading-8 2xl:w-[540px]">
             When people truly understand Scripture, lives change. Versemate helps
             anyone, anywhere, connect with God&rsquo;s Word clearly - and grow
             deeper in faith.
@@ -74,7 +74,7 @@ export default function Hero() {
         </div>
 
         {/* Bottom Text Line */}
-        <div className="absolute flex flex-row items-center justify-center left-0 right-0 h-8 gap-2 bottom-10 md:top-[1197px] md:bottom-auto lg:bottom-20 lg:top-auto xl:w-[1440px] xl:left-1/2 xl:-translate-x-1/2 xl:bottom-[72px]">
+        <div className="absolute flex flex-row items-center justify-center left-0 right-0 h-8 gap-2 bottom-10 md:top-[1197px] md:bottom-auto lg:bottom-20 lg:top-auto xl:bottom-16 xl:top-auto 2xl:w-[1440px] 2xl:left-1/2 2xl:-translate-x-1/2 2xl:bottom-[72px]">
           <span className="font-inter font-normal text-center text-white whitespace-nowrap text-base leading-6 tracking-[0.2em] w-[374px] md:text-2xl md:leading-8 md:w-[561px]">
             Always free. For everyone. Forever.
           </span>
@@ -82,31 +82,31 @@ export default function Hero() {
       </div>
 
       {/* Hero Image Container */}
-      <div className="absolute z-10 w-[392px] h-[400px] left-1/2 -translate-x-1/2 top-[500px] md:w-[940px] md:h-[679px] md:top-[600px] lg:w-[650px] lg:h-[470px] lg:top-[540px] xl:w-[776px] xl:h-[1033px] xl:right-[45px] xl:top-[115px] xl:left-auto xl:translate-x-0">
+      <div className="absolute z-10 w-[392px] h-[400px] left-1/2 -translate-x-1/2 top-[500px] md:w-[940px] md:h-[679px] md:top-[600px] lg:w-[650px] lg:h-[470px] lg:top-[540px] xl:w-[700px] xl:h-[500px] xl:top-[520px] 2xl:w-[776px] 2xl:h-[1033px] 2xl:right-[45px] 2xl:top-[115px] 2xl:left-auto 2xl:translate-x-0">
         {/* Shadow - Desktop only */}
-        <div className="hidden xl:block absolute w-[776px] h-[25px] -right-[0.41px] top-[510px] bg-black/75 blur-[20px]" />
+        <div className="hidden 2xl:block absolute w-[776px] h-[25px] -right-[0.41px] top-[510px] bg-black/75 blur-[20px]" />
 
         {/* Hero Images */}
-        <div className="absolute flex flex-col items-start z-10 w-full h-full xl:w-[820px] xl:h-[1033px] xl:-right-20 xl:top-[90px]">
+        <div className="absolute flex flex-col items-start z-10 w-full h-full 2xl:w-[820px] 2xl:h-[1033px] 2xl:-right-20 2xl:top-[90px]">
           {/* Background iPad View */}
           <img
             src="/ipad.png"
             alt="Desktop View"
-            className="absolute h-auto z-10 right-0 top-0 w-full max-w-[412px] rounded-xl md:max-w-none xl:w-full"
+            className="absolute h-auto z-10 right-0 top-0 w-full max-w-[412px] rounded-xl md:max-w-none 2xl:w-full"
           />
 
           {/* Middle Bible Reader View */}
           <img
             src="/bibleReader.png"
             alt="Bible Reader View"
-            className="absolute z-20 left-[17%] top-[10%] w-[45%] aspect-[160/198] rounded-[10px] md:left-[15%] md:top-[8%] xl:left-[15%] xl:top-[8%]"
+            className="absolute z-20 left-[17%] top-[10%] w-[45%] aspect-[160/198] rounded-[10px] md:left-[15%] md:top-[8%] 2xl:left-[15%] 2xl:top-[8%]"
           />
 
           {/* Front Summary View */}
           <img
             src="/summary.png"
             alt="Summary View"
-            className="absolute z-30 right-[33%] top-[17%] w-[33%] aspect-[108/175] rounded-2xl md:left-[36%] md:right-auto md:top-[15%] xl:left-[36%] xl:right-auto xl:top-[15%]"
+            className="absolute z-30 right-[33%] top-[17%] w-[33%] aspect-[108/175] rounded-2xl md:left-[36%] md:right-auto md:top-[15%] 2xl:left-[36%] 2xl:right-auto 2xl:top-[15%]"
           />
         </div>
       </div>
