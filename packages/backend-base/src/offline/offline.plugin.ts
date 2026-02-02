@@ -78,7 +78,7 @@ const plugin = new Elysia()
             set.headers["Last-Modified"] = lastModified.toUTCString();
           }
 
-          return new Response(data, {
+          return new Response(new Uint8Array(data), {
             headers: set.headers as HeadersInit,
           });
         },
@@ -137,7 +137,7 @@ const plugin = new Elysia()
             set.headers["Last-Modified"] = lastModified.toUTCString();
           }
 
-          return new Response(data, {
+          return new Response(new Uint8Array(data), {
             headers: set.headers as HeadersInit,
           });
         },
@@ -196,7 +196,7 @@ const plugin = new Elysia()
             set.headers["Last-Modified"] = lastModified.toUTCString();
           }
 
-          return new Response(data, {
+          return new Response(new Uint8Array(data), {
             headers: set.headers as HeadersInit,
           });
         },
