@@ -114,4 +114,18 @@ export class OfflineService {
     const topicsData = await this.offlineRepository.getAllTopics(languageCode);
     return topicsData.topics.length > 0;
   }
+
+  /**
+   * Get all user data (notes, highlights, bookmarks) as gzip-compressed JSON
+   */
+  async getUserData(userId: string): Promise<Buffer> {
+    const [notes, highlights, bookmarks] = await Promise.all([
+      this.offlineRepository.getAllUserNotes(userId),
+      this.offlineRepository.getAllUserHighlights(userId),
+      this.offlineRepository.getAllUserBookmarks(userId),
+    ]);
+
+    const jsonData = JSON.stringify({ notes, highlights, bookmarks });
+    return gzipSync(jsonData);
+  }
 }

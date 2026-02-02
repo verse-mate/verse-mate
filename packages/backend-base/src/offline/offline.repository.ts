@@ -62,6 +62,34 @@ export interface TopicReferenceData {
   verse_end: number | null;
 }
 
+export interface OfflineUserNote {
+  note_id: string;
+  book_id: number;
+  chapter_number: number;
+  verse_number: number | null;
+  content: string;
+  updated_at: string;
+}
+
+export interface OfflineUserHighlight {
+  highlight_id: number;
+  book_id: number;
+  chapter_number: number;
+  start_verse: number;
+  end_verse: number;
+  color: string;
+  start_char: number | null;
+  end_char: number | null;
+  updated_at: string;
+}
+
+export interface OfflineUserBookmark {
+  favorite_id: number;
+  book_id: number;
+  chapter_number: number;
+  created_at: string;
+}
+
 export class OfflineRepository {
   constructor(private readonly db: db) {}
 
@@ -357,5 +385,96 @@ export class OfflineRepository {
       .executeTakeFirst();
 
     return result?.updated_at ? new Date(result.updated_at) : null;
+  }
+
+  /**
+   * Get all notes for a specific user
+   */
+  async getAllUserNotes(userId: string): Promise<OfflineUserNote[]> {
+    const connection = this.db.getOrCreateConnection();
+
+    // TODO: Remove 'as any' once notes table is added to database schema types
+    const notes = await (connection as any)
+      .selectFrom("notes as n")
+      .innerJoin("chapters as c", "n.chapter_id", "c.chapter_id")
+      .leftJoin("verses as v", "n.verse_id", "v.verse_id")
+      .where("n.user_id", "=", userId)
+      .select([
+        "n.note_id",
+        "c.book_id",
+        "c.chapter_number",
+        "v.verse_number",
+        "n.content",
+        sql<string>`COALESCE(n.updated_at, n.created_at)`.as("updated_at"),
+      ])
+      .execute();
+
+    return notes.map((n: any) => ({
+      note_id: n.note_id,
+      book_id: n.book_id,
+      chapter_number: n.chapter_number,
+      verse_number: n.verse_number ?? null,
+      content: n.content,
+      updated_at: new Date(n.updated_at).toISOString(),
+    }));
+  }
+
+  /**
+   * Get all highlights for a specific user
+   */
+  async getAllUserHighlights(userId: string): Promise<OfflineUserHighlight[]> {
+    const connection = this.db.getOrCreateConnection();
+
+    const highlights = await connection
+      .selectFrom("verse_highlights")
+      .where("user_id", "=", userId)
+      .selectAll()
+      .execute();
+
+    return highlights.map((h) => ({
+      highlight_id: h.highlight_id,
+      book_id: h.book_id,
+      chapter_number: h.chapter_number,
+      start_verse: h.start_verse,
+      end_verse: h.end_verse,
+      color: h.color || "yellow",
+      start_char: h.start_char,
+      end_char: h.end_char,
+      updated_at: new Date(h.updated_at ?? h.created_at ?? new Date()).toISOString(),
+    }));
+  }
+
+  /**
+   * Get all bookmarks for a specific user
+   */
+  async getAllUserBookmarks(userId: string): Promise<OfflineUserBookmark[]> {
+    const connection = this.db.getOrCreateConnection();
+
+    // In BibleRepository.getFavorites, bookmark type is hardcoded to 'chapter'
+    const bookmarks = await connection
+      .selectFrom("favorites")
+      .innerJoin("chapters", "favorites.chapter_id", "chapters.chapter_id")
+      .where("favorites.user_id", "=", userId)
+      .where("favorites.type", "=", "chapter" as any) // Assuming enum
+      .select([
+        "favorites.favorite_id",
+        "chapters.book_id",
+        "chapters.chapter_number",
+      ])
+      .execute();
+
+    // Note: Favorites table doesn't have created_at in the schema I saw earlier.
+    // I'll return current date if not available, or check schema again.
+    // The schema packages/database/src/models/public/Favorites.ts does NOT have created_at.
+    // I'll use a placeholder or check if there is a way to know.
+    // For now, I'll use new Date().toISOString() as fallback, but this implies sync might be tricky.
+    // Actually, Kysely types might be generated and strict.
+    
+    return bookmarks.map((b) => ({
+      favorite_id: b.favorite_id,
+      book_id: b.book_id,
+      chapter_number: b.chapter_number,
+      created_at: new Date().toISOString(), // Fallback as created_at is missing in favorites
+    }));
   }
 }

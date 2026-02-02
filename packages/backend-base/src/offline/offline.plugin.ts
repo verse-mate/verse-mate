@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
+import { authDerive, authGuard } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
-import { NotFoundError } from "../common/errors";
+import { NotFoundError, UnauthorizedError } from "../common/errors";
 import shared from "../shared/shared.plugin";
 import { OfflineRepository } from "./offline.repository";
 import { OfflineService } from "./offline.service";
@@ -211,6 +212,39 @@ const plugin = new Elysia()
               "Returns all topics and their references for a specific language as gzip-compressed JSON. Supports If-Modified-Since header for conditional requests.",
           },
         },
+      )
+
+      // GET /offline/user-data - Download all user data (notes, highlights, bookmarks)
+      .guard(authGuard, (app) =>
+        app.resolve({ as: "scoped" }, authDerive).get(
+          "/user-data",
+          async ({ currentUserId, store: { offlineService }, set }) => {
+            if (!currentUserId) {
+              throw new UnauthorizedError("Authentication required");
+            }
+
+            // Get compressed data
+            const data = await offlineService.getUserData(currentUserId);
+
+            // Set response headers
+            set.headers["Content-Type"] = "application/json";
+            set.headers["Content-Encoding"] = "gzip";
+            // User data changes frequently, so avoid long caching or use ETag
+            set.headers["Cache-Control"] = "private, no-cache";
+
+            return new Response(new Uint8Array(data), {
+              headers: set.headers as HeadersInit,
+            });
+          },
+          {
+            detail: {
+              tags: ["Offline"],
+              summary: "Download user data",
+              description:
+                "Returns all notes, highlights, and bookmarks for the authenticated user as gzip-compressed JSON.",
+            },
+          },
+        ),
       ),
   );
 
