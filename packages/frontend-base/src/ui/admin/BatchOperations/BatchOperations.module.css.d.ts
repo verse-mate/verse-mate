@@ -3,6 +3,12 @@ declare const styles: {
   readonly actionsColumn: string;
   readonly bookColumn: string;
   readonly cancelled: string;
+  readonly chapterActions: string;
+  readonly chapterDropdown: string;
+  readonly chapterGrid: string;
+  readonly chapterInput: string;
+  readonly chapterItem: string;
+  readonly chapterSelector: string;
   readonly completed: string;
   readonly container: string;
   readonly costColumn: string;
@@ -15,6 +21,7 @@ declare const styles: {
   readonly nowrapColumn: string;
   readonly partialFailure: string;
   readonly pending: string;
+  readonly selected: string;
   readonly status: string;
   readonly statusColumn: string;
   readonly statusWithSpacing: string;

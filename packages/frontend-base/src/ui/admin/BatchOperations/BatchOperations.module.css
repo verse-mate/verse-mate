@@ -168,7 +168,84 @@
     }
     
     .actions {
-      justify-content: center;
-    }
-  }
-  
+          justify-content: center;
+        }
+      }
+      
+      .chapterSelector {
+        position: relative;
+        width: 100%;
+      }
+      
+      .chapterInput {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 8px 12px;
+        min-height: 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      
+      .chapterDropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        min-width: 300px;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-top: 4px;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
+        padding: 10px;
+      }
+      
+      .chapterActions {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eee;
+      }
+      
+      .chapterActions span {
+        font-size: 12px;
+        color: #007bff;
+        cursor: pointer;
+      }
+      
+      .chapterActions span:hover {
+        text-decoration: underline;
+      }
+      
+      .chapterGrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+        gap: 4px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      
+      .chapterItem {
+        border: 1px solid #eee;
+        border-radius: 4px;
+        text-align: center;
+        padding: 6px 0;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      
+      .chapterItem:hover {
+        background-color: #f5f5f5;
+      }
+      
+      .chapterItem.selected {
+        background-color: #007bff;
+        color: white;
+        border-color: #0056b3;
+      }
