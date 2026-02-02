@@ -440,7 +440,9 @@ export class OfflineRepository {
       color: h.color || "yellow",
       start_char: h.start_char,
       end_char: h.end_char,
-      updated_at: new Date(h.updated_at ?? h.created_at ?? new Date()).toISOString(),
+      updated_at: new Date(
+        h.updated_at ?? h.created_at ?? new Date(),
+      ).toISOString(),
     }));
   }
 
@@ -469,7 +471,7 @@ export class OfflineRepository {
     // I'll use a placeholder or check if there is a way to know.
     // For now, I'll use new Date().toISOString() as fallback, but this implies sync might be tricky.
     // Actually, Kysely types might be generated and strict.
-    
+
     return bookmarks.map((b) => ({
       favorite_id: b.favorite_id,
       book_id: b.book_id,
