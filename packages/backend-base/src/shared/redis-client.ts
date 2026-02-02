@@ -1,28 +1,50 @@
 import ms from "ms";
 import { type RedisClientType, createClient } from "redis";
 
+// Check if URL uses SSL (rediss://)
+const isSSLUrl = (url: string) => url.startsWith("rediss://");
+
 class RedisClient {
   private client: RedisClientType;
 
   constructor(redisUrl = "redis://localhost:6379") {
     const url = new URL(redisUrl);
     const password = url.password || undefined;
+    const useSSL = isSSLUrl(redisUrl);
+
+    // For SSL connections, use separate socket config to handle self-signed certs
+    const socketConfig = useSSL
+      ? {
+          tls: true as const,
+          rejectUnauthorized: false,
+          reconnectStrategy: (retries: number) => {
+            if (retries > 10) {
+              console.log(
+                `Max retry attempts reached. Please check your Redis server at ${redisUrl}`,
+              );
+              return false;
+            }
+            console.log(`Redis connection attempt ${retries}`);
+            return Math.min(retries * 100, 3000);
+          },
+        }
+      : {
+          reconnectStrategy: (retries: number) => {
+            if (retries > 10) {
+              console.log(
+                `Max retry attempts reached. Please check your Redis server at ${redisUrl}`,
+              );
+              return false;
+            }
+            console.log(`Redis connection attempt ${retries}`);
+            return Math.min(retries * 100, 3000);
+          },
+        };
 
     this.client = createClient({
       url: redisUrl,
       ...(password ? { password } : {}),
-      socket: {
-        reconnectStrategy: (retries) => {
-          if (retries > 10) {
-            console.log(
-              `Max retry attempts reached. Please check your Redis server at ${redisUrl}`,
-            );
-            return false;
-          }
-          console.log(`Redis connection attempt ${retries}`);
-          return Math.min(retries * 100, 3000);
-        },
-      },
+      socket: socketConfig,
     });
 
     this.client.on("error", (error) => {

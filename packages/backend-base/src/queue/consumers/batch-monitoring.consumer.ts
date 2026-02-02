@@ -282,16 +282,25 @@ export const batchMonitoringConsumer = async (job: Job) => {
         let totalCompletionTokens = 0;
         let successfulExplanations = 0;
         let failedExplanations = 0;
+        const successfulItems: {
+          bookId: number;
+          chapterNumber: number;
+          type: string;
+        }[] = [];
 
         const batchJob = await db
           .getOrCreateConnection()
           .selectFrom("batch_jobs")
           .where("openai_batch_id", "=", batchId)
           .select([
+            "id",
             "bible_version",
             "book_id",
             "explanations_processed",
             "batch_type",
+            "created_by",
+            "model",
+            "max_output_tokens",
           ])
           .executeTakeFirst();
 
@@ -314,6 +323,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
           batchJob.batch_type === "rephrase" ||
           batchJob.batch_type === "rephrase-bible" ||
           batchJob.batch_type === "translate" ||
+          batchJob.batch_type === "auto-translate" ||
           batchJob.batch_type === "translate-bible" ||
           batchJob.batch_type === "topic-explanations" ||
           batchJob.batch_type === "topic-discovery" ||
@@ -352,6 +362,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
         // This should not happen for translate batches as they are handled above
         if (
           batchJob.batch_type === "translate" ||
+          batchJob.batch_type === "auto-translate" ||
           batchJob.batch_type === "translate-bible"
         ) {
           console.error(
@@ -470,30 +481,57 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 continue;
               }
 
-              const newExplanation = {
-                type: explanationType as any,
-                explanation: explanationContent,
-                chapter_id: chapter.chapter_id,
-                language_code: version.language_code,
-                version: 1, // Start with version 1
-                is_active: true,
-              };
+              // Find the most recent version of this specific explanation to increment
+              const existingExplanation = await db
+                .getOrCreateConnection()
+                .selectFrom("explanations")
+                .where("chapter_id", "=", chapter.chapter_id)
+                .where("type", "=", explanationType as any)
+                .where("language_code", "=", version.language_code)
+                .orderBy("version", "desc")
+                .select("version")
+                .executeTakeFirst();
+
+              const nextVersion = existingExplanation
+                ? existingExplanation.version + 1
+                : 1;
 
               await db
                 .getOrCreateConnection()
-                .insertInto("explanations")
-                .values(newExplanation)
-                .onConflict((oc) =>
-                  oc
-                    .columns(["chapter_id", "type", "language_code", "version"])
-                    .doUpdateSet({
+                .transaction()
+                .execute(async (trx) => {
+                  // Deactivate all existing versions of this specific explanation
+                  await trx
+                    .updateTable("explanations")
+                    .set({ is_active: false })
+                    .where("chapter_id", "=", chapter.chapter_id)
+                    .where("type", "=", explanationType as any)
+                    .where("language_code", "=", version.language_code)
+                    .execute();
+
+                  // Insert the new, active version
+                  await trx
+                    .insertInto("explanations")
+                    .values({
+                      type: explanationType as any,
                       explanation: explanationContent,
-                      is_active: true, // Ensure it's active on update
-                    }),
-                )
-                .execute();
+                      chapter_id: chapter.chapter_id,
+                      language_code: version.language_code,
+                      version: nextVersion,
+                      is_active: true,
+                      created_at: new Date(),
+                    })
+                    .execute();
+                });
 
               successfulExplanations++;
+              if (batchJob.book_id) {
+                successfulItems.push({
+                  bookId: batchJob.book_id,
+                  chapterNumber,
+                  type: explanationType,
+                });
+              }
               console.log(
                 `[BATCH_MONITORING] Saved explanation: ${parsedLine.custom_id}`,
               );
@@ -537,6 +575,38 @@ export const batchMonitoringConsumer = async (job: Job) => {
           })
           .where("openai_batch_id", "=", batchId)
           .execute();
+
+        // Trigger auto-translations if applicable
+        if (
+          (finalStatus === "completed" || finalStatus === "partial_failure") &&
+          successfulItems.length > 0 &&
+          (!batchJob.batch_type ||
+            batchJob.batch_type === "book" ||
+            batchJob.batch_type === "regenerate-book")
+        ) {
+          console.log(
+            `[BATCH_MONITORING] Triggering auto-translations for ${successfulItems.length} items from batch ${batchId}`,
+          );
+          try {
+            const batchService = new BatchOperationService(
+              db,
+              batchMonitoringQueue,
+              batchProcessingQueue,
+            );
+            await batchService.triggerAutoTranslations(
+              successfulItems,
+              batchJob.model,
+              batchJob.created_by,
+              batchJob.max_output_tokens || 16000,
+              batchJob.id,
+            );
+          } catch (error) {
+            console.error(
+              `[BATCH_MONITORING] Failed to trigger auto-translations for batch ${batchId}:`,
+              error,
+            );
+          }
+        }
 
         // Clean up JSONL file after successful processing
         await cleanupBatchFiles(batchId);

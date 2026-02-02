@@ -96,6 +96,149 @@ const effortOptions: EffortOption[] = [
 
 const bookOptions = testaments;
 
+const parseChapters = (input: string): number[] | undefined => {
+  if (!input.trim()) return undefined;
+
+  const result: number[] = [];
+  const parts = input.split(",").map((p) => p.trim());
+
+  for (const part of parts) {
+    if (part.includes("-")) {
+      const [start, end] = part
+        .split("-")
+        .map((p) => Number.parseInt(p.trim()));
+      if (!Number.isNaN(start) && !Number.isNaN(end)) {
+        for (let i = start; i <= end; i++) {
+          result.push(i);
+        }
+      }
+    } else {
+      const num = Number.parseInt(part);
+      if (!Number.isNaN(num)) {
+        result.push(num);
+      }
+    }
+  }
+
+  return result.length > 0
+    ? Array.from(new Set(result)).sort((a, b) => a - b)
+    : undefined;
+};
+
+const ChapterSelector = ({
+  maxChapters,
+  selectedChapters,
+  onChange,
+  disabled,
+}: {
+  maxChapters: number;
+  selectedChapters: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedSet = new Set(parseChapters(selectedChapters) || []);
+
+  const toggleChapter = (num: number) => {
+    const newSet = new Set(selectedSet);
+    if (newSet.has(num)) {
+      newSet.delete(num);
+    } else {
+      newSet.add(num);
+    }
+    const sorted = Array.from(newSet).sort((a, b) => a - b);
+    onChange(sorted.join(", "));
+  };
+
+  const selectAll = () => {
+    const all = Array.from({ length: maxChapters }, (_, i) => i + 1);
+    onChange(all.join(", "));
+  };
+
+  const clearAll = () => onChange("");
+
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      action();
+    }
+  };
+
+  return (
+    <div className={styles.chapterSelector} ref={containerRef}>
+      <div
+        className={styles.chapterInput}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={(e) =>
+          !disabled && handleKeyDown(e, () => setIsOpen(!isOpen))
+        }
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-expanded={isOpen}
+        style={{
+          opacity: disabled ? 0.6 : 1,
+          cursor: disabled ? "not-allowed" : "pointer",
+        }}
+      >
+        <span>{selectedChapters || "Select Chapters..."}</span>
+        <ChevronDownIcon />
+      </div>
+      {isOpen && !disabled && (
+        <div className={styles.chapterDropdown}>
+          <div className={styles.chapterActions}>
+            <span
+              onClick={selectAll}
+              onKeyDown={(e) => handleKeyDown(e, selectAll)}
+              role="button"
+              tabIndex={0}
+            >
+              All
+            </span>
+            <span
+              onClick={clearAll}
+              onKeyDown={(e) => handleKeyDown(e, clearAll)}
+              role="button"
+              tabIndex={0}
+            >
+              None
+            </span>
+          </div>
+          <div className={styles.chapterGrid}>
+            {Array.from({ length: maxChapters }, (_, i) => i + 1).map((num) => (
+              <div
+                key={num}
+                className={`${styles.chapterItem} ${selectedSet.has(num) ? styles.selected : ""}`}
+                onClick={() => toggleChapter(num)}
+                onKeyDown={(e) => handleKeyDown(e, () => toggleChapter(num))}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selectedSet.has(num)}
+              >
+                {num}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ActionsMenu = ({
   job,
   monitoringId,
@@ -242,6 +385,8 @@ export const BatchOperations = () => {
   const [selectedExplanationTypes, setSelectedExplanationTypes] = useState<
     string[]
   >(["summary", "detailed", "byline"]);
+  const [selectedChapters, setSelectedChapters] = useState<string>("");
+  const [maxOutputTokens, setMaxOutputTokens] = useState<number>(50000);
   const [skipExistingExplanations, setSkipExistingExplanations] =
     useState(false);
   const [selectedEffort, setSelectedEffort] = useState<string>("medium");
@@ -280,6 +425,12 @@ export const BatchOperations = () => {
 
   // Modal 3 (Rephrase) state
   const [rephraseModalOpen, setRephraseModalOpen] = useState(false);
+  const [regenerateModalOpen, setRegenerateModalOpen] = useState(false);
+  const [createConfirmModalOpen, setCreateConfirmModalOpen] = useState(false);
+  const [impactPreview, setImpactPreview] = useState<
+    { language_code: string; count: number; language_name: string }[]
+  >([]);
+  const [loadingImpact, setLoadingImpact] = useState(false);
   const [rephrasing, setRephrasing] = useState(false);
 
   // Modal 4 (Translate) state
@@ -510,6 +661,38 @@ export const BatchOperations = () => {
 
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (regenerateModalOpen && selectedBook) {
+      const fetchImpact = async () => {
+        setLoadingImpact(true);
+        try {
+          const chapters = parseChapters(selectedChapters);
+          const response = await api.admin["batch-explanations"][
+            "impact-preview"
+          ].post({
+            bookName: selectedBook,
+            explanationTypes: selectedExplanationTypes,
+            chapters: chapters,
+          });
+          setImpactPreview(response.data || []);
+        } catch (error) {
+          console.error("Failed to fetch impact preview", error);
+          setImpactPreview([]);
+        } finally {
+          setLoadingImpact(false);
+        }
+      };
+      fetchImpact();
+    } else {
+      setImpactPreview([]);
+    }
+  }, [
+    regenerateModalOpen,
+    selectedBook,
+    selectedChapters,
+    selectedExplanationTypes,
+  ]);
+
   const handleCreateBatch = async () => {
     if (!isBibleBatch && selectedBook === null) {
       setError("Please select a book");
@@ -519,6 +702,23 @@ export const BatchOperations = () => {
     if (selectedExplanationTypes.length === 0) {
       setError("Please select at least one explanation type");
       return;
+    }
+
+    const chapters = !isBibleBatch
+      ? parseChapters(selectedChapters)
+      : undefined;
+
+    if (!isBibleBatch && chapters && selectedBook) {
+      const bookData = bookOptions.find((b) => b.n === selectedBook);
+      if (bookData) {
+        const invalidChapters = chapters.filter((c) => c < 1 || c > bookData.c);
+        if (invalidChapters.length > 0) {
+          setError(
+            `Invalid chapters for ${selectedBook}: ${invalidChapters.join(", ")}. Max chapters: ${bookData.c}`,
+          );
+          return;
+        }
+      }
     }
 
     try {
@@ -532,11 +732,65 @@ export const BatchOperations = () => {
         explanationTypes: selectedExplanationTypes,
         skipExisting: skipExistingExplanations,
         effort: selectedEffort as "low" | "medium" | "high",
+        chapters,
+        maxOutputTokens,
       });
       await fetchBatchJobs();
     } catch (err) {
       setError("Failed to create batch job");
       console.error("Error creating batch job:", err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleRegenerateBatch = async () => {
+    if (!isBibleBatch && selectedBook === null) {
+      setError("Please select a book");
+      return;
+    }
+
+    if (selectedExplanationTypes.length === 0) {
+      setError("Please select at least one explanation type");
+      return;
+    }
+
+    const chapters = !isBibleBatch
+      ? parseChapters(selectedChapters)
+      : undefined;
+
+    if (!isBibleBatch && chapters && selectedBook) {
+      const bookData = bookOptions.find((b) => b.n === selectedBook);
+      if (bookData) {
+        const invalidChapters = chapters.filter((c) => c < 1 || c > bookData.c);
+        if (invalidChapters.length > 0) {
+          setError(
+            `Invalid chapters for ${selectedBook}: ${invalidChapters.join(", ")}. Max chapters: ${bookData.c}`,
+          );
+          return;
+        }
+      }
+    }
+
+    try {
+      setCreating(true);
+      setError(null);
+      await api.admin["batch-explanations"].post({
+        type: isBibleBatch ? "bible" : "book",
+        bookName: isBibleBatch ? undefined : selectedBook || undefined,
+        bibleVersion: selectedBibleVersion,
+        model: selectedModel,
+        explanationTypes: selectedExplanationTypes,
+        skipExisting: false, // FORCE OVERWRITE for regeneration
+        effort: selectedEffort as "low" | "medium" | "high",
+        chapters,
+        maxOutputTokens,
+        batchType: "regenerate-book",
+      });
+      await fetchBatchJobs();
+    } catch (err) {
+      setError("Failed to create regeneration batch job");
+      console.error("Error creating regeneration batch job:", err);
     } finally {
       setCreating(false);
     }
@@ -697,6 +951,7 @@ export const BatchOperations = () => {
         model: selectedModel,
         effort: selectedEffort as "low" | "medium" | "high",
         bibleVersion: selectedBibleVersion,
+        maxOutputTokens,
       });
       await fetchBatchJobs();
       setRephraseModalOpen(false);
@@ -764,6 +1019,8 @@ export const BatchOperations = () => {
         target_language_code: languageToConfirm.code,
         explanationTypes: selectedExplanationTypes,
         skipExisting: skipExistingExplanations,
+        chapters: !isBibleBatch ? parseChapters(selectedChapters) : undefined,
+        maxOutputTokens,
       });
 
       await fetchBatchJobs();
@@ -1214,6 +1471,26 @@ export const BatchOperations = () => {
                 fontWeight: "bold",
               }}
             >
+              Max Tokens:
+            </label>
+            <Input
+              type="number"
+              value={maxOutputTokens}
+              onChange={(e) =>
+                setMaxOutputTokens(Number.parseInt(e.target.value))
+              }
+              placeholder="e.g. 50000"
+            />
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
               Effort Level:
             </label>
             <SelectDropdown.Root
@@ -1334,6 +1611,26 @@ export const BatchOperations = () => {
               </SelectDropdown.Content>
             </SelectDropdown.Root>
           </div>
+
+          {!isBibleBatch && (
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                Chapters (Optional):
+              </label>
+              <ChapterSelector
+                maxChapters={selectedBookData?.c || 150}
+                selectedChapters={selectedChapters}
+                onChange={setSelectedChapters}
+                disabled={!selectedBook}
+              />
+            </div>
+          )}
         </div>
         <div style={{ marginBottom: "20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
@@ -1413,7 +1710,7 @@ export const BatchOperations = () => {
         {/* Other form elements... */}
         <div style={{ display: "flex", gap: "10px" }}>
           <Button
-            onClick={handleCreateBatch}
+            onClick={() => setCreateConfirmModalOpen(true)}
             disabled={
               creating ||
               (!isBibleBatch && selectedBook === null) ||
@@ -1423,6 +1720,18 @@ export const BatchOperations = () => {
             style={{ minWidth: "180px", padding: "8px 16px" }}
           >
             {creating ? "Creating..." : "Create New Batch"}
+          </Button>
+          <Button
+            onClick={() => setRegenerateModalOpen(true)}
+            disabled={
+              creating ||
+              (!isBibleBatch && selectedBook === null) ||
+              selectedExplanationTypes.length === 0
+            }
+            loading={creating}
+            style={{ minWidth: "180px", padding: "8px 16px" }}
+          >
+            Regenerate Content
           </Button>
           <Button
             onClick={() => setRephraseModalOpen(true)}
@@ -2381,6 +2690,169 @@ export const BatchOperations = () => {
               }
             >
               {creatingTopicBatch ? "Creating..." : "Create Batch"}
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Create Confirmation Modal */}
+      <Dialog
+        open={createConfirmModalOpen}
+        onOpenChange={setCreateConfirmModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Batch Creation</Dialog.Head>
+          <Dialog.Description>
+            You are about to create a new content generation batch.
+          </Dialog.Description>
+          <div style={{ margin: "20px 0", fontSize: "14px" }}>
+            <p>
+              <strong>Settings:</strong>
+            </p>
+            <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
+              <li>
+                <strong>Type:</strong>{" "}
+                {isBibleBatch ? "Entire Bible" : `Book: ${selectedBook}`}
+              </li>
+              {!isBibleBatch && selectedChapters && (
+                <li>
+                  <strong>Chapters:</strong> {selectedChapters}
+                </li>
+              )}
+              <li>
+                <strong>Model:</strong> {selectedModel}
+              </li>
+              <li>
+                <strong>Explanation Types:</strong>{" "}
+                {selectedExplanationTypes.join(", ")}
+              </li>
+              <li>
+                <strong>Skip Existing:</strong>{" "}
+                {skipExistingExplanations ? "Yes" : "No"}
+              </li>
+            </ul>
+          </div>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setCreateConfirmModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setCreateConfirmModalOpen(false);
+                handleCreateBatch();
+              }}
+              loading={creating}
+            >
+              Confirm Create
+            </Button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog>
+
+      {/* Regenerate Confirmation Modal */}
+      <Dialog
+        open={regenerateModalOpen}
+        onOpenChange={setRegenerateModalOpen}
+        maxWidth="600px"
+      >
+        <Dialog.Content>
+          <Dialog.Head>Confirm Regeneration</Dialog.Head>
+          <Dialog.Description>
+            You are about to regenerate content.
+          </Dialog.Description>
+          <div
+            style={{
+              background: "#fff3cd",
+              color: "#856404",
+              padding: "15px",
+              borderRadius: "4px",
+              margin: "20px 0",
+              border: "1px solid #ffeeba",
+            }}
+          >
+            <strong>Warning:</strong> This will <u>overwrite</u> any existing
+            content for the selected scope.
+            <br />
+            <br />
+            Additionally, if specific chapters are selected, any existing
+            translations for those chapters will be automatically queued for
+            update.
+          </div>
+          <div style={{ margin: "20px 0", fontSize: "14px" }}>
+            <p>
+              <strong>Scope:</strong>
+            </p>
+            <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
+              <li>
+                <strong>Type:</strong>{" "}
+                {isBibleBatch ? "Entire Bible" : `Book: ${selectedBook}`}
+              </li>
+              {!isBibleBatch && selectedChapters && (
+                <li>
+                  <strong>Chapters:</strong> {selectedChapters}
+                </li>
+              )}
+              <li>
+                <strong>Model:</strong> {selectedModel}
+              </li>
+              <li>
+                <strong>Explanation Types:</strong>{" "}
+                {selectedExplanationTypes.join(", ")}
+              </li>
+            </ul>
+
+            <div style={{ marginTop: "20px" }}>
+              <p>
+                <strong>Auto-Translation Impact:</strong>
+              </p>
+              {loadingImpact ? (
+                <p style={{ color: "#666", fontStyle: "italic" }}>
+                  Calculating impact...
+                </p>
+              ) : impactPreview.length > 0 ? (
+                <ul style={{ paddingLeft: "20px", marginTop: "10px" }}>
+                  {impactPreview.map((lang) => (
+                    <li key={lang.language_code}>
+                      <strong>
+                        {lang.language_name} ({lang.language_code}):
+                      </strong>{" "}
+                      {lang.count} items will be regenerated
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p
+                  style={{
+                    color: "#666",
+                    fontStyle: "italic",
+                    marginTop: "5px",
+                  }}
+                >
+                  No existing translations found to update for this scope.
+                </p>
+              )}
+            </div>
+          </div>
+          <Dialog.Footer>
+            <Button
+              onClick={() => setRegenerateModalOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setRegenerateModalOpen(false);
+                handleRegenerateBatch();
+              }}
+              loading={creating}
+              style={{ backgroundColor: "#d32f2f", color: "white" }}
+            >
+              Confirm Regenerate
             </Button>
           </Dialog.Footer>
         </Dialog.Content>
