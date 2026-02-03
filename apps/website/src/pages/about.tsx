@@ -2,7 +2,6 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import About1 from "@/components/sections/about/About1";
 import About2 from "@/components/sections/about/About2";
-import DownloadApp from "@/components/sections/shared/DownloadApp";
 
 export default function About() {
   return (

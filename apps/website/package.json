@@ -7,9 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "deploy": "bun run build && wrangler deploy",
     "deploy:preview": "bun run build && wrangler deploy --env preview",
     "deploy:staging": "bun run build && wrangler deploy --env staging",
@@ -30,12 +27,6 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.4.6",
-    "@eslint/eslintrc": "^3",
-    "jest": "^29.7.0",
-    "@types/jest": "^29.5.14",
-    "jest-environment-jsdom": "^29.7.0",
-    "@testing-library/react": "^16.1.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "ts-jest": "^29.2.5"
+    "@eslint/eslintrc": "^3"
   }
 }

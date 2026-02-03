@@ -1,5 +1,3 @@
-"use client";
-
 import { navigateToLogin } from "@/lib/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -29,8 +27,8 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Desktop Navigation - Hidden with Tailwind */}
-          <nav className="hidden">
+          {/* Desktop Navigation - Temporarily disabled */}
+          {/* <nav className="hidden md:flex md:gap-8 md:items-center">
             <Link
               href="/"
               className="font-inter text-base font-medium leading-6 text-black opacity-60 hover:opacity-100 transition-opacity no-underline"
@@ -61,7 +59,7 @@ export default function Header() {
             >
               Login
             </button>
-          </nav>
+          </nav> */}
 
           {/* Volunteer Button - Always visible */}
           <Link
@@ -71,10 +69,10 @@ export default function Header() {
             Join as a Volunteer
           </Link>
 
-          {/* Mobile Hamburger Menu - Hidden with Tailwind */}
-          <button
+          {/* Mobile Hamburger Menu - Temporarily disabled */}
+          {/* <button
             onClick={toggleMenu}
-            className="hidden ml-4 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-0 w-6 h-6"
+            className="flex md:hidden ml-4 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-0 w-6 h-6"
             aria-label="Toggle menu"
           >
             <div
@@ -97,17 +95,16 @@ export default function Header() {
                   : "none",
               }}
             />
-          </button>
+          </button> */}
         </div>
       </header>
 
-      {/* Mobile Menu Overlay - Hidden with Tailwind */}
-      <div className="hidden">
-        {isMenuOpen && (
-          <div
-            className="fixed left-0 right-0 bottom-0 top-[76px] z-[999] flex flex-col items-center bg-black/95 pt-12 xl:hidden"
-            onClick={() => setIsMenuOpen(false)}
-          >
+      {/* Mobile Menu Overlay - Temporarily disabled */}
+      {/* {isMenuOpen && (
+        <div
+          className="fixed left-0 right-0 bottom-0 top-[76px] z-[999] flex flex-col items-center bg-black/95 pt-12 md:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        >
             <nav className="flex flex-col items-center gap-8">
               <Link
                 href="/"
@@ -148,8 +145,7 @@ export default function Header() {
               </button>
             </nav>
           </div>
-        )}
-      </div>
+      )} */}
     </>
   );
 }
