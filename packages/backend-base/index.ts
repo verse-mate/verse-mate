@@ -15,6 +15,9 @@ import type { TopicPlugin } from "./src/topics/topic.plugin";
 import supportPlugin from "./src/support/support.plugin";
 import type { SupportPlugin } from "./src/support/support.plugin";
 
+import offlinePlugin from "./src/offline/offline.plugin";
+import type { OfflinePlugin } from "./src/offline/offline.plugin";
+
 export {
   ApiError,
   UnauthorizedError,
@@ -40,4 +43,6 @@ export {
   healthCheckPlugin,
   type SupportPlugin,
   supportPlugin,
+  type OfflinePlugin,
+  offlinePlugin,
 };
