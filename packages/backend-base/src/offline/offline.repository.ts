@@ -103,6 +103,7 @@ export class OfflineRepository {
     const bibleVersions = await connection
       .selectFrom("bible_versions")
       .select([
+        "id",
         "version_key",
         "version_name as name",
         "language_code",
@@ -115,7 +116,7 @@ export class OfflineRepository {
       bibleVersions.map(async (version) => {
         const verseCount = await connection
           .selectFrom("verses")
-          .where("version_id", "=", version.version_key)
+          .where("version_id", "=", version.id)
           .select((eb) => eb.fn.count("verse_id").as("count"))
           .executeTakeFirst();
 
