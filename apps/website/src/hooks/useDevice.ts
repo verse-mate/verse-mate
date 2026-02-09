@@ -2,8 +2,6 @@
  * Device detection hook for adaptive design
  */
 
-"use client";
-
 import { useEffect, useState } from "react";
 
 export type DeviceType = "mobile" | "tablet" | "desktop";

@@ -1,18 +1,15 @@
-"use client";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import DownloadApp from "@/components/sections/shared/DownloadApp";
 
-import React from "react";
-import { AdaptiveComponent } from "../components/adaptive/AdaptiveComponent";
-import DesktopDownloadAppPage from "./desktop/download-app/DesktopDownloadAppPage";
-import MobileDownloadAppPage from "./mobile/download-app/MobileDownloadAppPage";
-import TabletDownloadAppPage from "./tablet/download-app/TabletDownloadAppPage";
-
-export default function DownloadApp() {
+export default function DownloadAppPage() {
   return (
-    <AdaptiveComponent
-      mobileComponent={MobileDownloadAppPage}
-      tabletComponent={TabletDownloadAppPage}
-      desktopComponent={DesktopDownloadAppPage}
-      testId="download-app"
-    />
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1">
+        <DownloadApp />
+      </main>
+      <Footer />
+    </div>
   );
 }
