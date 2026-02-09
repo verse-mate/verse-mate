@@ -1,5 +1,3 @@
-"use client";
-
 import { navigateToApp } from "@/lib/navigation";
 import Link from "next/link";
 
