@@ -1,10 +1,12 @@
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { gunzipSync } from "node:zlib";
+import type { OfflineManifest, OfflineRepository } from "../offline.repository";
 import { OfflineService } from "../offline.service";
-import type { OfflineRepository, OfflineManifest } from "../offline.repository";
 
 // Create a mock repository with all methods
-function createMockRepository(overrides?: Partial<OfflineRepository>): OfflineRepository {
+function createMockRepository(
+  overrides?: Partial<OfflineRepository>,
+): OfflineRepository {
   return {
     buildManifest: mock(() =>
       Promise.resolve<OfflineManifest>({
@@ -37,8 +39,18 @@ function createMockRepository(overrides?: Partial<OfflineRepository>): OfflineRe
     ),
     getAllVerses: mock(() =>
       Promise.resolve([
-        { book_id: 1, chapter_number: 1, verse_number: 1, text: "In the beginning God created the heavens and the earth." },
-        { book_id: 1, chapter_number: 1, verse_number: 2, text: "The earth was formless and void." },
+        {
+          book_id: 1,
+          chapter_number: 1,
+          verse_number: 1,
+          text: "In the beginning God created the heavens and the earth.",
+        },
+        {
+          book_id: 1,
+          chapter_number: 1,
+          verse_number: 2,
+          text: "The earth was formless and void.",
+        },
       ]),
     ),
     getBibleVersionUpdatedAt: mock(() =>
@@ -64,7 +76,12 @@ function createMockRepository(overrides?: Partial<OfflineRepository>): OfflineRe
     getAllTopics: mock(() =>
       Promise.resolve({
         topics: [
-          { topic_id: "t1", name: "Creation", content: "God created everything.", language_code: "en" },
+          {
+            topic_id: "t1",
+            name: "Creation",
+            content: "God created everything.",
+            language_code: "en",
+          },
         ],
         references: [],
       }),
@@ -74,17 +91,39 @@ function createMockRepository(overrides?: Partial<OfflineRepository>): OfflineRe
     ),
     getAllUserNotes: mock(() =>
       Promise.resolve([
-        { note_id: "n1", book_id: 1, chapter_number: 1, verse_number: 1, content: "My note", updated_at: "2025-01-01T00:00:00.000Z" },
+        {
+          note_id: "n1",
+          book_id: 1,
+          chapter_number: 1,
+          verse_number: 1,
+          content: "My note",
+          updated_at: "2025-01-01T00:00:00.000Z",
+        },
       ]),
     ),
     getAllUserHighlights: mock(() =>
       Promise.resolve([
-        { highlight_id: 1, book_id: 1, chapter_number: 1, start_verse: 1, end_verse: 1, color: "yellow", start_char: null, end_char: null, updated_at: "2025-01-01T00:00:00.000Z" },
+        {
+          highlight_id: 1,
+          book_id: 1,
+          chapter_number: 1,
+          start_verse: 1,
+          end_verse: 1,
+          color: "yellow",
+          start_char: null,
+          end_char: null,
+          updated_at: "2025-01-01T00:00:00.000Z",
+        },
       ]),
     ),
     getAllUserBookmarks: mock(() =>
       Promise.resolve([
-        { favorite_id: 1, book_id: 1, chapter_number: 1, created_at: "2025-01-01T00:00:00.000Z" },
+        {
+          favorite_id: 1,
+          book_id: 1,
+          chapter_number: 1,
+          created_at: "2025-01-01T00:00:00.000Z",
+        },
       ]),
     ),
     ...overrides,
@@ -163,7 +202,9 @@ describe("OfflineService", () => {
       const decompressed = gunzipSync(data).toString();
       const parsed = JSON.parse(decompressed);
       expect(parsed).toHaveLength(2);
-      expect(parsed[0].text).toBe("In the beginning God created the heavens and the earth.");
+      expect(parsed[0].text).toBe(
+        "In the beginning God created the heavens and the earth.",
+      );
     });
   });
 
@@ -236,7 +277,9 @@ describe("OfflineService", () => {
 
     it("returns false when no topics exist", async () => {
       const repo = createMockRepository({
-        getAllTopics: mock(() => Promise.resolve({ topics: [], references: [] })),
+        getAllTopics: mock(() =>
+          Promise.resolve({ topics: [], references: [] }),
+        ),
       });
       const svc = new OfflineService(repo, mockCache as any);
       expect(await svc.topicsExist("fr")).toBe(false);

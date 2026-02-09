@@ -237,9 +237,7 @@ export class OfflineRepository {
     const version = await connection
       .selectFrom("bible_versions")
       .where("version_key", "=", versionKey)
-      .select(
-        sql<string>`COALESCE(created_at, NOW())`.as("updated_at"),
-      )
+      .select(sql<string>`COALESCE(created_at, NOW())`.as("updated_at"))
       .executeTakeFirst();
 
     return version ? new Date(version.updated_at) : null;
