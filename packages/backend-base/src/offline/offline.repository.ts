@@ -238,7 +238,7 @@ export class OfflineRepository {
       .selectFrom("bible_versions")
       .where("version_key", "=", versionKey)
       .select(
-        sql<string>`COALESCE(updated_at, created_at, NOW())`.as("updated_at"),
+        sql<string>`COALESCE(created_at, NOW())`.as("updated_at"),
       )
       .executeTakeFirst();
 
