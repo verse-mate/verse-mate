@@ -237,9 +237,7 @@ export class OfflineRepository {
     const version = await connection
       .selectFrom("bible_versions")
       .where("version_key", "=", versionKey)
-      .select(
-        sql<string>`COALESCE(updated_at, created_at, NOW())`.as("updated_at"),
-      )
+      .select(sql<string>`COALESCE(created_at, NOW())`.as("updated_at"))
       .executeTakeFirst();
 
     return version ? new Date(version.updated_at) : null;
@@ -319,11 +317,7 @@ export class OfflineRepository {
           eb(eb.fn("lower", ["language_code"]), "=", baseLanguageCode),
         ]),
       )
-      .select(
-        sql<string>`MAX(COALESCE(updated_at, created_at, NOW()))`.as(
-          "updated_at",
-        ),
-      )
+      .select(sql<string>`MAX(COALESCE(created_at, NOW()))`.as("updated_at"))
       .executeTakeFirst();
 
     return result?.updated_at ? new Date(result.updated_at) : null;

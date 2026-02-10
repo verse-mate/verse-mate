@@ -1,4 +1,3 @@
-import { gzipSync } from "node:zlib";
 import type { cache } from "../shared/shared.plugin";
 import type { OfflineManifest, OfflineRepository } from "./offline.repository";
 
@@ -42,12 +41,10 @@ export class OfflineService {
   }
 
   /**
-   * Get all verses for a Bible version as gzip-compressed JSON
+   * Get all verses for a Bible version
    */
-  async getBibleVersionData(versionKey: string): Promise<Buffer> {
-    const verses = await this.offlineRepository.getAllVerses(versionKey);
-    const jsonData = JSON.stringify(verses);
-    return gzipSync(jsonData);
+  async getBibleVersionData(versionKey: string) {
+    return this.offlineRepository.getAllVerses(versionKey);
   }
 
   /**
@@ -66,13 +63,10 @@ export class OfflineService {
   }
 
   /**
-   * Get all commentaries for a language as gzip-compressed JSON
+   * Get all commentaries for a language
    */
-  async getCommentaryData(languageCode: string): Promise<Buffer> {
-    const explanations =
-      await this.offlineRepository.getAllExplanations(languageCode);
-    const jsonData = JSON.stringify(explanations);
-    return gzipSync(jsonData);
+  async getCommentaryData(languageCode: string) {
+    return this.offlineRepository.getAllExplanations(languageCode);
   }
 
   /**
@@ -92,12 +86,10 @@ export class OfflineService {
   }
 
   /**
-   * Get all topics for a language as gzip-compressed JSON
+   * Get all topics for a language
    */
-  async getTopicsData(languageCode: string): Promise<Buffer> {
-    const topicsData = await this.offlineRepository.getAllTopics(languageCode);
-    const jsonData = JSON.stringify(topicsData);
-    return gzipSync(jsonData);
+  async getTopicsData(languageCode: string) {
+    return this.offlineRepository.getAllTopics(languageCode);
   }
 
   /**
@@ -116,16 +108,15 @@ export class OfflineService {
   }
 
   /**
-   * Get all user data (notes, highlights, bookmarks) as gzip-compressed JSON
+   * Get all user data (notes, highlights, bookmarks)
    */
-  async getUserData(userId: string): Promise<Buffer> {
+  async getUserData(userId: string) {
     const [notes, highlights, bookmarks] = await Promise.all([
       this.offlineRepository.getAllUserNotes(userId),
       this.offlineRepository.getAllUserHighlights(userId),
       this.offlineRepository.getAllUserBookmarks(userId),
     ]);
 
-    const jsonData = JSON.stringify({ notes, highlights, bookmarks });
-    return gzipSync(jsonData);
+    return { notes, highlights, bookmarks };
   }
 }
