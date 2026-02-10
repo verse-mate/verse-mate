@@ -42,7 +42,7 @@ const plugin = new Elysia()
       // GET /offline/bible/:versionKey - Download full Bible version
       .get(
         "/bible/:versionKey",
-        async ({ params, headers, store: { offlineService }, set }) => {
+        async ({ params, headers, store: { offlineService } }) => {
           const { versionKey } = params;
 
           // Check if version exists
@@ -59,28 +59,27 @@ const plugin = new Elysia()
             if (lastModified) {
               const clientDate = new Date(ifModifiedSince);
               if (lastModified <= clientDate) {
-                set.status = 304;
-                return null;
+                return new Response(null, { status: 304 });
               }
             }
           }
 
-          // Get compressed data
+          // Get data
           const data = await offlineService.getBibleVersionData(versionKey);
 
-          // Set response headers
-          set.headers["Content-Type"] = "application/json";
-          set.headers["Content-Encoding"] = "gzip";
-          set.headers["Cache-Control"] = "public, max-age=86400"; // 24 hours
+          const responseHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=86400",
+          };
 
           const lastModified =
             await offlineService.getBibleVersionLastModified(versionKey);
           if (lastModified) {
-            set.headers["Last-Modified"] = lastModified.toUTCString();
+            responseHeaders["Last-Modified"] = lastModified.toUTCString();
           }
 
-          return new Response(new Uint8Array(data), {
-            headers: set.headers as HeadersInit,
+          return new Response(JSON.stringify(data), {
+            headers: responseHeaders,
           });
         },
         {
@@ -99,7 +98,7 @@ const plugin = new Elysia()
       // GET /offline/commentaries/:languageCode - Download all commentaries for a language
       .get(
         "/commentaries/:languageCode",
-        async ({ params, headers, store: { offlineService }, set }) => {
+        async ({ params, headers, store: { offlineService } }) => {
           const { languageCode } = params;
 
           // Check if commentaries exist for this language
@@ -118,28 +117,27 @@ const plugin = new Elysia()
             if (lastModified) {
               const clientDate = new Date(ifModifiedSince);
               if (lastModified <= clientDate) {
-                set.status = 304;
-                return null;
+                return new Response(null, { status: 304 });
               }
             }
           }
 
-          // Get compressed data
+          // Get data
           const data = await offlineService.getCommentaryData(languageCode);
 
-          // Set response headers
-          set.headers["Content-Type"] = "application/json";
-          set.headers["Content-Encoding"] = "gzip";
-          set.headers["Cache-Control"] = "public, max-age=86400"; // 24 hours
+          const responseHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=86400",
+          };
 
           const lastModified =
             await offlineService.getCommentaryLastModified(languageCode);
           if (lastModified) {
-            set.headers["Last-Modified"] = lastModified.toUTCString();
+            responseHeaders["Last-Modified"] = lastModified.toUTCString();
           }
 
-          return new Response(new Uint8Array(data), {
-            headers: set.headers as HeadersInit,
+          return new Response(JSON.stringify(data), {
+            headers: responseHeaders,
           });
         },
         {
@@ -158,7 +156,7 @@ const plugin = new Elysia()
       // GET /offline/topics/:languageCode - Download all topics for a language
       .get(
         "/topics/:languageCode",
-        async ({ params, headers, store: { offlineService }, set }) => {
+        async ({ params, headers, store: { offlineService } }) => {
           const { languageCode } = params;
 
           // Check if topics exist for this language
@@ -177,28 +175,27 @@ const plugin = new Elysia()
             if (lastModified) {
               const clientDate = new Date(ifModifiedSince);
               if (lastModified <= clientDate) {
-                set.status = 304;
-                return null;
+                return new Response(null, { status: 304 });
               }
             }
           }
 
-          // Get compressed data
+          // Get data
           const data = await offlineService.getTopicsData(languageCode);
 
-          // Set response headers
-          set.headers["Content-Type"] = "application/json";
-          set.headers["Content-Encoding"] = "gzip";
-          set.headers["Cache-Control"] = "public, max-age=86400"; // 24 hours
+          const responseHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=86400",
+          };
 
           const lastModified =
             await offlineService.getTopicsLastModified(languageCode);
           if (lastModified) {
-            set.headers["Last-Modified"] = lastModified.toUTCString();
+            responseHeaders["Last-Modified"] = lastModified.toUTCString();
           }
 
-          return new Response(new Uint8Array(data), {
-            headers: set.headers as HeadersInit,
+          return new Response(JSON.stringify(data), {
+            headers: responseHeaders,
           });
         },
         {
@@ -218,22 +215,19 @@ const plugin = new Elysia()
       .guard(authGuard, (app) =>
         app.resolve({ as: "scoped" }, authDerive).get(
           "/user-data",
-          async ({ currentUserId, store: { offlineService }, set }) => {
+          async ({ currentUserId, store: { offlineService } }) => {
             if (!currentUserId) {
               throw new UnauthorizedError("Authentication required");
             }
 
-            // Get compressed data
+            // Get data
             const data = await offlineService.getUserData(currentUserId);
 
-            // Set response headers
-            set.headers["Content-Type"] = "application/json";
-            set.headers["Content-Encoding"] = "gzip";
-            // User data changes frequently, so avoid long caching or use ETag
-            set.headers["Cache-Control"] = "private, no-cache";
-
-            return new Response(new Uint8Array(data), {
-              headers: set.headers as HeadersInit,
+            return new Response(JSON.stringify(data), {
+              headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": "private, no-cache",
+              },
             });
           },
           {

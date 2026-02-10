@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import { gunzipSync } from "node:zlib";
 import type { OfflineManifest, OfflineRepository } from "../offline.repository";
 import { OfflineService } from "../offline.service";
 
@@ -192,17 +191,12 @@ describe("OfflineService", () => {
   });
 
   describe("getBibleVersionData", () => {
-    it("returns gzip-compressed JSON of all verses", async () => {
+    it("returns all verses from the repository", async () => {
       const data = await service.getBibleVersionData("NASB1995");
 
-      expect(data).toBeInstanceOf(Buffer);
       expect(mockRepo.getAllVerses).toHaveBeenCalledWith("NASB1995");
-
-      // Decompress and verify
-      const decompressed = gunzipSync(data).toString();
-      const parsed = JSON.parse(decompressed);
-      expect(parsed).toHaveLength(2);
-      expect(parsed[0].text).toBe(
+      expect(data).toHaveLength(2);
+      expect(data[0].text).toBe(
         "In the beginning God created the heavens and the earth.",
       );
     });
@@ -233,14 +227,12 @@ describe("OfflineService", () => {
   });
 
   describe("getCommentaryData", () => {
-    it("returns gzip-compressed JSON of commentaries", async () => {
+    it("returns commentaries from the repository", async () => {
       const data = await service.getCommentaryData("en");
 
-      const decompressed = gunzipSync(data).toString();
-      const parsed = JSON.parse(decompressed);
-      expect(parsed).toHaveLength(1);
-      expect(parsed[0].type).toBe("summary");
       expect(mockRepo.getAllExplanations).toHaveBeenCalledWith("en");
+      expect(data).toHaveLength(1);
+      expect(data[0].type).toBe("summary");
     });
   });
 
@@ -259,14 +251,12 @@ describe("OfflineService", () => {
   });
 
   describe("getTopicsData", () => {
-    it("returns gzip-compressed JSON of topics and references", async () => {
+    it("returns topics and references from the repository", async () => {
       const data = await service.getTopicsData("en");
 
-      const decompressed = gunzipSync(data).toString();
-      const parsed = JSON.parse(decompressed);
-      expect(parsed.topics).toHaveLength(1);
-      expect(parsed.topics[0].name).toBe("Creation");
-      expect(parsed.references).toEqual([]);
+      expect(data.topics).toHaveLength(1);
+      expect(data.topics[0].name).toBe("Creation");
+      expect(data.references).toEqual([]);
     });
   });
 
@@ -287,20 +277,17 @@ describe("OfflineService", () => {
   });
 
   describe("getUserData", () => {
-    it("returns gzip-compressed JSON with notes, highlights, and bookmarks", async () => {
+    it("returns notes, highlights, and bookmarks", async () => {
       const data = await service.getUserData("user-123");
 
-      const decompressed = gunzipSync(data).toString();
-      const parsed = JSON.parse(decompressed);
+      expect(data.notes).toHaveLength(1);
+      expect(data.notes[0].note_id).toBe("n1");
 
-      expect(parsed.notes).toHaveLength(1);
-      expect(parsed.notes[0].note_id).toBe("n1");
+      expect(data.highlights).toHaveLength(1);
+      expect(data.highlights[0].color).toBe("yellow");
 
-      expect(parsed.highlights).toHaveLength(1);
-      expect(parsed.highlights[0].color).toBe("yellow");
-
-      expect(parsed.bookmarks).toHaveLength(1);
-      expect(parsed.bookmarks[0].favorite_id).toBe(1);
+      expect(data.bookmarks).toHaveLength(1);
+      expect(data.bookmarks[0].favorite_id).toBe(1);
 
       expect(mockRepo.getAllUserNotes).toHaveBeenCalledWith("user-123");
       expect(mockRepo.getAllUserHighlights).toHaveBeenCalledWith("user-123");
@@ -316,12 +303,9 @@ describe("OfflineService", () => {
       const svc = new OfflineService(repo, mockCache as any);
       const data = await svc.getUserData("empty-user");
 
-      const decompressed = gunzipSync(data).toString();
-      const parsed = JSON.parse(decompressed);
-
-      expect(parsed.notes).toEqual([]);
-      expect(parsed.highlights).toEqual([]);
-      expect(parsed.bookmarks).toEqual([]);
+      expect(data.notes).toEqual([]);
+      expect(data.highlights).toEqual([]);
+      expect(data.bookmarks).toEqual([]);
     });
   });
 });
