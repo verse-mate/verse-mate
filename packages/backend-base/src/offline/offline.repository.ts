@@ -317,11 +317,7 @@ export class OfflineRepository {
           eb(eb.fn("lower", ["language_code"]), "=", baseLanguageCode),
         ]),
       )
-      .select(
-        sql<string>`MAX(COALESCE(updated_at, created_at, NOW()))`.as(
-          "updated_at",
-        ),
-      )
+      .select(sql<string>`MAX(COALESCE(created_at, NOW()))`.as("updated_at"))
       .executeTakeFirst();
 
     return result?.updated_at ? new Date(result.updated_at) : null;
