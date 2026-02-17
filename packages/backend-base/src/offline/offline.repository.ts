@@ -167,6 +167,18 @@ export class OfflineRepository {
       .groupBy("language_code")
       .execute();
 
+    // Also check for English originals in the topics table (not stored in topic_translations)
+    const englishOriginals = await connection
+      .selectFrom("topics")
+      .where("is_active", "=", true)
+      .select([
+        sql<number>`COUNT(*)`.as("topic_count"),
+        sql<string>`MAX(COALESCE(updated_at, created_at, NOW()))`.as(
+          "updated_at",
+        ),
+      ])
+      .executeTakeFirst();
+
     // Use Intl.DisplayNames to get language names
     const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
 
@@ -179,6 +191,23 @@ export class OfflineRepository {
         size_bytes: Number(lang.topic_count || 0) * 1000,
       }),
     );
+
+    // Include English if there are active topics and "en" isn't already from translations
+    const hasEnglishTranslation = topicLanguages.some(
+      (lang) => lang.language_code === "en",
+    );
+    if (
+      !hasEnglishTranslation &&
+      englishOriginals &&
+      Number(englishOriginals.topic_count) > 0
+    ) {
+      topicManifests.push({
+        code: "en",
+        name: displayNames.of("en") || "English",
+        updated_at: new Date(englishOriginals.updated_at).toISOString(),
+        size_bytes: Number(englishOriginals.topic_count) * 1000,
+      });
+    }
 
     return {
       bible_versions: bibleVersionManifests,
@@ -331,21 +360,32 @@ export class OfflineRepository {
   ): Promise<{ topics: TopicData[]; references: TopicReferenceData[] }> {
     const connection = this.db.getOrCreateConnection();
 
-    // Get translated topics for the language
+    // Get topics with translations, falling back to originals for English
     const topics = await connection
       .selectFrom("topics")
-      .innerJoin(
-        "topic_translations",
-        "topic_translations.topic_id",
-        "topics.topic_id",
+      .leftJoin("topic_translations", (join) =>
+        join
+          .onRef("topics.topic_id", "=", "topic_translations.topic_id")
+          .on("topic_translations.language_code", "=", sql.lit(languageCode)),
       )
       .where("topics.is_active", "=", true)
-      .where("topic_translations.language_code", "=", languageCode)
+      .where((eb) =>
+        eb.or([
+          eb("topic_translations.language_code", "=", languageCode),
+          // Include originals when requesting English and no translation exists
+          eb.and([
+            eb(sql`${sql.lit(languageCode)}`, "in", sql`('en', 'en-US')`),
+            eb("topic_translations.language_code", "is", null),
+          ]),
+        ]),
+      )
       .select([
         "topics.topic_id",
-        "topic_translations.translated_name as name",
-        "topic_translations.translated_description as description",
-        "topic_translations.language_code",
+        "topics.name as original_name",
+        "topics.description as original_description",
+        "topic_translations.translated_name",
+        "topic_translations.translated_description",
+        "topic_translations.language_code as translation_language_code",
       ])
       .execute();
 
@@ -355,9 +395,9 @@ export class OfflineRepository {
     return {
       topics: topics.map((t) => ({
         topic_id: t.topic_id,
-        name: t.name,
-        content: t.description || "",
-        language_code: t.language_code,
+        name: t.translated_name || t.original_name,
+        content: t.translated_description || t.original_description || "",
+        language_code: t.translation_language_code || languageCode,
       })),
       references: [],
     };
@@ -368,6 +408,23 @@ export class OfflineRepository {
    */
   async getTopicsUpdatedAt(languageCode: string): Promise<Date | null> {
     const connection = this.db.getOrCreateConnection();
+
+    // For English, check the topics table directly since originals are in English
+    const isEnglish = languageCode === "en" || languageCode === "en-US";
+
+    if (isEnglish) {
+      const result = await connection
+        .selectFrom("topics")
+        .where("is_active", "=", true)
+        .select(
+          sql<string>`MAX(COALESCE(updated_at, created_at, NOW()))`.as(
+            "updated_at",
+          ),
+        )
+        .executeTakeFirst();
+
+      return result?.updated_at ? new Date(result.updated_at) : null;
+    }
 
     const result = await connection
       .selectFrom("topic_translations")
