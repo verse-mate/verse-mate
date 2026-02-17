@@ -52,14 +52,20 @@ export interface TopicData {
   name: string;
   content: string;
   language_code: string;
+  category: string;
+  sort_order: number | null;
 }
 
 export interface TopicReferenceData {
   topic_id: string;
-  book_id: number;
-  chapter_number: number;
-  verse_start: number;
-  verse_end: number | null;
+  reference_content: string;
+}
+
+export interface TopicExplanationData {
+  topic_id: string;
+  type: string;
+  explanation: string;
+  language_code: string;
 }
 
 export interface OfflineUserNote {
@@ -353,11 +359,13 @@ export class OfflineRepository {
   }
 
   /**
-   * Get all topics and their references for a specific language
+   * Get all topics with their references and explanations for a specific language
    */
-  async getAllTopics(
-    languageCode: string,
-  ): Promise<{ topics: TopicData[]; references: TopicReferenceData[] }> {
+  async getAllTopics(languageCode: string): Promise<{
+    topics: TopicData[];
+    references: TopicReferenceData[];
+    explanations: TopicExplanationData[];
+  }> {
     const connection = this.db.getOrCreateConnection();
 
     // Get topics with translations, falling back to originals for English
@@ -383,14 +391,53 @@ export class OfflineRepository {
         "topics.topic_id",
         "topics.name as original_name",
         "topics.description as original_description",
+        "topics.category",
+        "topics.sort_order",
         "topic_translations.translated_name",
         "topic_translations.translated_description",
         "topic_translations.language_code as translation_language_code",
       ])
       .execute();
 
-    // TODO: Fix topic references query. The schema for topic_references does not match the spec (missing structured verse data).
-    // Currently it only has 'content' field.
+    const topicIds = topics.map((t) => t.topic_id);
+
+    // Get topic references (raw content with verse placeholders)
+    const references =
+      topicIds.length > 0
+        ? await connection
+            .selectFrom("topic_references")
+            .where("topic_id", "in", topicIds)
+            .where("is_active", "=", true)
+            .select(["topic_id", "content"])
+            .execute()
+        : [];
+
+    // Normalize language code for explanation lookup
+    const normalizedLang = languageCode.toLowerCase();
+    const baseLang = normalizedLang.includes("-")
+      ? normalizedLang.split("-")[0]
+      : normalizedLang;
+
+    // Get topic explanations for the requested language
+    const explanations =
+      topicIds.length > 0
+        ? await connection
+            .selectFrom("topic_explanations")
+            .where("topic_id", "in", topicIds)
+            .where("is_active", "=", true)
+            .where((eb) =>
+              eb.or([
+                eb(
+                  eb.fn("lower", ["language_code"]),
+                  "=",
+                  normalizedLang,
+                ),
+                eb(eb.fn("lower", ["language_code"]), "=", baseLang),
+              ]),
+            )
+            .select(["topic_id", "type", "explanation", "language_code"])
+            .execute()
+        : [];
 
     return {
       topics: topics.map((t) => ({
@@ -398,8 +445,19 @@ export class OfflineRepository {
         name: t.translated_name || t.original_name,
         content: t.translated_description || t.original_description || "",
         language_code: t.translation_language_code || languageCode,
+        category: t.category,
+        sort_order: t.sort_order,
       })),
-      references: [],
+      references: references.map((r) => ({
+        topic_id: r.topic_id,
+        reference_content: r.content,
+      })),
+      explanations: explanations.map((e) => ({
+        topic_id: e.topic_id,
+        type: e.type,
+        explanation: e.explanation,
+        language_code: e.language_code,
+      })),
     };
   }
 
