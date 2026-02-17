@@ -374,11 +374,7 @@ export class OfflineRepository {
           eb("topic_translations.language_code", "=", languageCode),
           // Include originals when requesting English and no translation exists
           eb.and([
-            eb(
-              sql`${sql.lit(languageCode)}`,
-              "in",
-              sql`('en', 'en-US')`,
-            ),
+            eb(sql`${sql.lit(languageCode)}`, "in", sql`('en', 'en-US')`),
             eb("topic_translations.language_code", "is", null),
           ]),
         ]),
@@ -400,8 +396,7 @@ export class OfflineRepository {
       topics: topics.map((t) => ({
         topic_id: t.topic_id,
         name: t.translated_name || t.original_name,
-        content:
-          t.translated_description || t.original_description || "",
+        content: t.translated_description || t.original_description || "",
         language_code: t.translation_language_code || languageCode,
       })),
       references: [],
@@ -415,8 +410,7 @@ export class OfflineRepository {
     const connection = this.db.getOrCreateConnection();
 
     // For English, check the topics table directly since originals are in English
-    const isEnglish =
-      languageCode === "en" || languageCode === "en-US";
+    const isEnglish = languageCode === "en" || languageCode === "en-US";
 
     if (isEnglish) {
       const result = await connection
