@@ -10,4 +10,5 @@ export type {
   CommentaryData,
   TopicData,
   TopicReferenceData,
+  TopicExplanationData,
 } from "./offline.repository";
