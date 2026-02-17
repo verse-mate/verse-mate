@@ -59,19 +59,26 @@ export const TopicDataSchema = t.Object({
   name: t.String(),
   content: t.String(),
   language_code: t.String(),
+  category: t.String(),
+  sort_order: t.Union([t.Number(), t.Null()]),
 });
 
 export const TopicReferenceDataSchema = t.Object({
   topic_id: t.String(),
-  book_id: t.Number(),
-  chapter_number: t.Number(),
-  verse_start: t.Number(),
-  verse_end: t.Union([t.Number(), t.Null()]),
+  reference_content: t.String(),
+});
+
+export const TopicExplanationDataSchema = t.Object({
+  topic_id: t.String(),
+  type: t.String(),
+  explanation: t.String(),
+  language_code: t.String(),
 });
 
 export const TopicsDataResponseSchema = t.Object({
   topics: t.Array(TopicDataSchema),
   references: t.Array(TopicReferenceDataSchema),
+  explanations: t.Array(TopicExplanationDataSchema),
 });
 
 // User data schemas for offline sync

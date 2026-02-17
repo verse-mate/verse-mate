@@ -80,9 +80,25 @@ function createMockRepository(
             name: "Creation",
             content: "God created everything.",
             language_code: "en",
+            category: "EVENT",
+            sort_order: 1,
           },
         ],
-        references: [],
+        references: [
+          {
+            topic_id: "t1",
+            reference_content:
+              "## Creation\n{chapter:Genesis 1}\n{verse:Genesis 1:26-28}",
+          },
+        ],
+        explanations: [
+          {
+            topic_id: "t1",
+            type: "summary",
+            explanation: "# Summary\nGenesis describes creation.",
+            language_code: "en",
+          },
+        ],
       }),
     ),
     getTopicsUpdatedAt: mock(() =>
@@ -251,12 +267,18 @@ describe("OfflineService", () => {
   });
 
   describe("getTopicsData", () => {
-    it("returns topics and references from the repository", async () => {
+    it("returns topics, references, and explanations from the repository", async () => {
       const data = await service.getTopicsData("en");
 
       expect(data.topics).toHaveLength(1);
       expect(data.topics[0].name).toBe("Creation");
-      expect(data.references).toEqual([]);
+      expect(data.topics[0].category).toBe("EVENT");
+      expect(data.references).toHaveLength(1);
+      expect(data.references[0].reference_content).toContain(
+        "{chapter:Genesis 1}",
+      );
+      expect(data.explanations).toHaveLength(1);
+      expect(data.explanations[0].type).toBe("summary");
     });
   });
 
@@ -268,7 +290,7 @@ describe("OfflineService", () => {
     it("returns false when no topics exist", async () => {
       const repo = createMockRepository({
         getAllTopics: mock(() =>
-          Promise.resolve({ topics: [], references: [] }),
+          Promise.resolve({ topics: [], references: [], explanations: [] }),
         ),
       });
       const svc = new OfflineService(repo, mockCache as any);
