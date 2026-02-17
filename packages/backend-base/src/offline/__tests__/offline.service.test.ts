@@ -274,7 +274,9 @@ describe("OfflineService", () => {
       expect(data.topics[0].name).toBe("Creation");
       expect(data.topics[0].category).toBe("EVENT");
       expect(data.references).toHaveLength(1);
-      expect(data.references[0].reference_content).toContain("{chapter:Genesis 1}");
+      expect(data.references[0].reference_content).toContain(
+        "{chapter:Genesis 1}",
+      );
       expect(data.explanations).toHaveLength(1);
       expect(data.explanations[0].type).toBe("summary");
     });
