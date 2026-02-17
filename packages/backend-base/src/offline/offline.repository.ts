@@ -413,6 +413,7 @@ export class OfflineRepository {
         : [];
 
     // Normalize language code for explanation lookup
+    // Must match regional variants: "en" should find "en-US", "en-GB", etc.
     const normalizedLang = languageCode.toLowerCase();
     const baseLang = normalizedLang.includes("-")
       ? normalizedLang.split("-")[0]
@@ -429,6 +430,7 @@ export class OfflineRepository {
               eb.or([
                 eb(eb.fn("lower", ["language_code"]), "=", normalizedLang),
                 eb(eb.fn("lower", ["language_code"]), "=", baseLang),
+                eb(eb.fn("lower", ["language_code"]), "like", `${baseLang}-%`),
               ]),
             )
             .select(["topic_id", "type", "explanation", "language_code"])
