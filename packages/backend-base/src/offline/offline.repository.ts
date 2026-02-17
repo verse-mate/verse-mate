@@ -427,11 +427,7 @@ export class OfflineRepository {
             .where("is_active", "=", true)
             .where((eb) =>
               eb.or([
-                eb(
-                  eb.fn("lower", ["language_code"]),
-                  "=",
-                  normalizedLang,
-                ),
+                eb(eb.fn("lower", ["language_code"]), "=", normalizedLang),
                 eb(eb.fn("lower", ["language_code"]), "=", baseLang),
               ]),
             )
