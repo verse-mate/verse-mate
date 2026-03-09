@@ -2,6 +2,7 @@ import Queue from "bull";
 import { db } from "database";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
+import { MAX_EXPLANATION_TOKENS } from "./types";
 
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,
@@ -102,7 +103,7 @@ async function gpt5Text({
   const options: any = {
     model: "gpt-5",
     messages,
-    max_completion_tokens: 10000,
+    max_completion_tokens: MAX_EXPLANATION_TOKENS,
   };
 
   const chat = await openai.chat.completions.create(options as any);

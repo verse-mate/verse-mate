@@ -56,3 +56,10 @@ export type BookMeta = {
   genre: Genre;
   chaptersCount: number;
 };
+
+/**
+ * Maximum tokens for OpenAI explanation generation.
+ * Set high enough to handle the longest chapters (e.g., Psalm 119 with 176 verses).
+ * Each verse in by-line format uses ~100-150 tokens.
+ */
+export const MAX_EXPLANATION_TOKENS = 30000;
