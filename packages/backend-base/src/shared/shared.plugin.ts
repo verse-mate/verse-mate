@@ -86,6 +86,9 @@ const setup = new Elysia({ name: "shared" })
       code,
       path,
     }) => {
+      // NOT_FOUND is expected HTTP behavior (404s), not an application exception
+      if (code === "NOT_FOUND") return;
+
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,
         query: query as { accessToken?: string },
