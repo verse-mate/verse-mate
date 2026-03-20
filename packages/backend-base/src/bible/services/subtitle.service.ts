@@ -286,7 +286,8 @@ export class SubtitleService {
 
       if (element.type === "text") {
         // Match verse placeholders like {verse:Matthew 1:18-25} (tolerate whitespace inside braces)
-        const verseRegex = /{\s*verse:([A-Za-z\s]+)\s+(\d+):(\d+)(?:-(\d+))?\s*}/;
+        const verseRegex =
+          /{\s*verse:([A-Za-z\s]+)\s+(\d+):(\d+)(?:-(\d+))?\s*}/;
         const match = element.content.match(verseRegex);
 
         if (match) {
