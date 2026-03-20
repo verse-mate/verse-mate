@@ -128,12 +128,12 @@ export async function parseAndInjectVerses(
 ) {
   const bibleRepository = new BibleRepository(database);
 
-  // Handle verse placeholders
-  const verseRegex = /{verse:([\w\d .'\-]+)\s+(\d+):(\d+)(?:-(\d+))?}/g;
+  // Handle verse placeholders (tolerate optional whitespace inside braces)
+  const verseRegex = /{\s*verse:([\w\d .'\-]+)\s+(\d+):(\d+)(?:-(\d+))?\s*}/g;
   const versePlaceholders = [...text.matchAll(verseRegex)];
 
-  // Handle chapter placeholders
-  const chapterRegex = /{chapter:([\w\d .'\-]+)\s+(\d+)(?:-(\d+))?}/g;
+  // Handle chapter placeholders (tolerate optional whitespace inside braces)
+  const chapterRegex = /{\s*chapter:([\w\d .'\-]+)\s+(\d+)(?:-(\d+))?\s*}/g;
   const chapterPlaceholders = [...text.matchAll(chapterRegex)];
 
   if (versePlaceholders.length === 0 && chapterPlaceholders.length === 0) {
