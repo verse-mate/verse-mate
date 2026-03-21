@@ -233,7 +233,7 @@ export class SubtitleService {
       }
       if (
         nextElement.type === "text" &&
-        nextElement.content.includes("{verse:")
+        /{\s*verse:/.test(nextElement.content)
       ) {
         return true; // Found a verse placeholder
       }
@@ -285,8 +285,9 @@ export class SubtitleService {
       }
 
       if (element.type === "text") {
-        // Match verse placeholders like {verse:Matthew 1:18-25}
-        const verseRegex = /{verse:([A-Za-z\s]+)\s+(\d+):(\d+)(?:-(\d+))?}/;
+        // Match verse placeholders like {verse:Matthew 1:18-25} (tolerate whitespace inside braces)
+        const verseRegex =
+          /{\s*verse:([A-Za-z\s]+)\s+(\d+):(\d+)(?:-(\d+))?\s*}/;
         const match = element.content.match(verseRegex);
 
         if (match) {
