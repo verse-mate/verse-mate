@@ -130,7 +130,7 @@ export class AutoHighlightService {
 
     // Capture theme name up to the " - Relevance:" delimiter and restrict relevance to 1-5
     const highlightRegex =
-      /{(verse|chapter):([^}]+)}\s*-\s*(.*?)\s*-\s*Relevance:\s*([1-5])\b/gi;
+      /{\s*(verse|chapter):\s*([^}]+?)\s*}\s*-\s*(.*?)\s*-\s*Relevance:\s*([1-5])\b/gi;
 
     const matches = Array.from(aiResponse.matchAll(highlightRegex));
 
