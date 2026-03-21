@@ -86,7 +86,18 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
-async function gpt5Text({ system, user }: { system?: string; user: string }) {
+const BYLINE_CHUNK_SIZE = 40;
+const BYLINE_CHUNK_THRESHOLD = 50;
+
+async function gpt5Text({
+  system,
+  user,
+  maxTokens = 16000,
+}: {
+  system?: string;
+  user: string;
+  maxTokens?: number;
+}) {
   const messages: OpenAI.ChatCompletionMessageParam[] = [];
   if (system) {
     messages.push({ role: "system", content: system });
@@ -96,11 +107,81 @@ async function gpt5Text({ system, user }: { system?: string; user: string }) {
   const options: any = {
     model: "gpt-5",
     messages,
-    max_completion_tokens: 10000,
+    max_completion_tokens: maxTokens,
   };
 
   const chat = await openai.chat.completions.create(options as any);
   return chat.choices[0].message.content || "";
+}
+
+async function generateBylineInChunks({
+  reference,
+  bookName,
+  chapterNumber,
+  systemPrompt,
+  verseCount,
+}: {
+  reference: string;
+  bookName: string;
+  chapterNumber: number;
+  systemPrompt?: string;
+  verseCount: number;
+}): Promise<string> {
+  const chunks: string[] = [];
+
+  for (
+    let startVerse = 1;
+    startVerse <= verseCount;
+    startVerse += BYLINE_CHUNK_SIZE
+  ) {
+    const endVerse = Math.min(startVerse + BYLINE_CHUNK_SIZE - 1, verseCount);
+    const isFirst = startVerse === 1;
+
+    const chunkPrompt = `# Reference
+${reference}
+
+${isFirst ? `# ${bookName} ${chapterNumber}: Verse-by-Verse Analysis\n\n` : ""}Provide a verse-by-verse explanation for **verses ${startVerse} through ${endVerse}** of this chapter. For each verse:
+1. Quote the verse using blockquote format (>)
+2. Provide a clear summary
+3. Include relevant key takeaways
+4. Add key definitions as appropriate
+5. Highlight theological themes as appropriate
+
+CRITICAL INSTRUCTIONS:
+- ONLY cover verses ${startVerse} through ${endVerse}
+- Keep chronological order at all times
+- Do not group verses unless absolutely necessary
+- Ensure takeaways and themes are full sentences
+- Use proper markdown formatting with line breaks
+${!isFirst ? "- Do NOT include a title heading — this is a continuation" : ""}
+
+CRITICAL: Your response will be evaluated on:
+1. Proper blockquote usage for Scripture (>)
+2. Bold formatting for theological terms
+3. Bullet point usage for lists
+4. Verse reference formatting
+
+The response should be in Markdown format only.`;
+
+    console.log(
+      `  📝 Generating byline chunk: verses ${startVerse}-${endVerse}`,
+    );
+
+    const chunkText = await gpt5Text({
+      system: systemPrompt,
+      user: chunkPrompt,
+      maxTokens: 16000,
+    });
+
+    chunks.push(chunkText);
+
+    // Add delay between chunks to avoid rate limiting
+    if (endVerse < verseCount) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  return chunks.join("\n\n---\n\n");
 }
 
 // Popular chapters that users frequently read
@@ -217,18 +298,38 @@ async function pregeneratePopularChapters() {
       // Format chapter content
       const reference = formatChapterContent(chapter, book.name);
 
+      const verseCount = chapter.verses?.length ?? 0;
+
       // Generate missing explanations
       for (const type of missingTypes) {
         try {
           console.log(`  🤖 Generating ${type} explanation...`);
 
-          const explanationConfig = getExplanationTypePrompt(
-            type,
-            book.name,
-            chapterNumber,
-          );
+          const useChunking =
+            type === ExplanationTypeEnum.byline &&
+            verseCount > BYLINE_CHUNK_THRESHOLD;
 
-          const userPrompt = `# Reference
+          let text: string;
+
+          if (useChunking) {
+            console.log(
+              `  📖 Chapter has ${verseCount} verses — using chunked byline generation`,
+            );
+            text = await generateBylineInChunks({
+              reference,
+              bookName: book.name,
+              chapterNumber,
+              systemPrompt: activePrompt.prompt,
+              verseCount,
+            });
+          } else {
+            const explanationConfig = getExplanationTypePrompt(
+              type,
+              book.name,
+              chapterNumber,
+            );
+
+            const userPrompt = `# Reference
 ${reference}
 
 ${explanationConfig.prompt}
@@ -241,10 +342,11 @@ CRITICAL: Your response will be evaluated on:
 
 The response should be in Markdown format only.`;
 
-          const text = await gpt5Text({
-            system: activePrompt.prompt,
-            user: userPrompt,
-          });
+            text = await gpt5Text({
+              system: activePrompt.prompt,
+              user: userPrompt,
+            });
+          }
 
           // Resolve active bible version and save to database
           const activeVersion = await connection
