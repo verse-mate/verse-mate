@@ -1,16 +1,18 @@
-import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { NotFoundError } from "../../common/errors";
+import {
+  generateChunkedByline,
+  shouldUseBylineChunking,
+  toBylineVerses,
+} from "../../shared/byline-chunking";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
-const BYLINE_CHUNK_SIZE = 40;
-const BYLINE_CHUNK_THRESHOLD = 50;
-
 export class ExplanationRegenerationService {
-  private openai: OpenAI;
-  private promptRepository: PromptRepository;
+  private readonly openai: OpenAI;
+  private readonly promptRepository: PromptRepository;
 
   constructor(private readonly db: db) {
     this.openai = new OpenAI({
@@ -41,73 +43,6 @@ export class ExplanationRegenerationService {
     });
 
     return response.output_text || "";
-  }
-
-  private async generateBylineInChunks({
-    versesText,
-    bookName,
-    chapterNumber,
-    verseCount,
-    instructions,
-    model,
-    effort,
-    language,
-  }: {
-    versesText: string;
-    bookName: string;
-    chapterNumber: number;
-    verseCount: number;
-    instructions?: string;
-    model: string;
-    effort: "low" | "medium" | "high";
-    language: string;
-  }): Promise<string> {
-    const chunks: string[] = [];
-
-    for (
-      let startVerse = 1;
-      startVerse <= verseCount;
-      startVerse += BYLINE_CHUNK_SIZE
-    ) {
-      const endVerse = Math.min(startVerse + BYLINE_CHUNK_SIZE - 1, verseCount);
-      const isFirst = startVerse === 1;
-
-      const chunkPrompt = `${isFirst ? `# ${bookName} ${chapterNumber}: Verse-by-Verse Analysis\n\n` : ""}Provide a verse-by-verse explanation for **verses ${startVerse} through ${endVerse}** of this chapter. For each verse:
-1. Quote the verse using blockquote format (>)
-2. Provide a clear summary
-3. Include relevant key takeaways
-4. Add key definitions as appropriate
-5. Highlight theological themes as appropriate
-
-CRITICAL INSTRUCTIONS:
-- ONLY cover verses ${startVerse} through ${endVerse}
-- Keep chronological order at all times
-- Do not group verses unless absolutely necessary
-- Ensure takeaways and themes are full sentences
-- Use proper markdown formatting with line breaks
-${!isFirst ? "- Do NOT include a title heading — this is a continuation" : ""}
-
-Biblical Text (${bookName} ${chapterNumber}):
-${versesText}
-
-The response should be in ${language} using Markdown format only.`;
-
-      console.log(
-        `  [REGENERATION] Generating byline chunk: verses ${startVerse}-${endVerse}`,
-      );
-
-      const chunkText = await this.gpt5Text({
-        instructions,
-        input: chunkPrompt,
-        model,
-        effort,
-        maxTokens: 20000,
-      });
-
-      chunks.push(chunkText);
-    }
-
-    return chunks.join("\n\n---\n\n");
   }
 
   private getLanguageName(code: string, locale = "en"): string {
@@ -200,31 +135,36 @@ The response should be in ${language} using Markdown format only.`;
         .orderBy("verse_number", "asc")
         .execute();
 
-      const verseCount = verses.length;
-      const useChunking =
-        explanationType === ExplanationTypeEnum.byline &&
-        verseCount > BYLINE_CHUNK_THRESHOLD;
+      const verseRows = toBylineVerses(verses);
+      const useChunking = shouldUseBylineChunking(
+        explanationType,
+        verseRows.length,
+      );
+      const chunkSuffix = useChunking
+        ? ` (chunked: ${verseRows.length} verses)`
+        : "";
 
       console.log(
-        `[REGENERATION] Generating new explanation for ${book.name} ${chapterNumber}, type: ${explanationType}, model: ${model}${useChunking ? ` (chunked: ${verseCount} verses)` : ""}`,
+        `[REGENERATION] Generating new explanation for ${book.name} ${chapterNumber}, type: ${explanationType}, model: ${model}${chunkSuffix}`,
       );
 
       let newExplanationContent: string;
 
-      if (useChunking && verses.length > 0) {
-        const versesText = verses
-          .map((v) => `${v.verse_number}. ${v.text}`)
-          .join("\n");
-
-        newExplanationContent = await this.generateBylineInChunks({
-          versesText,
+      if (useChunking && verseRows.length > 0) {
+        newExplanationContent = await generateChunkedByline({
+          verses: verseRows,
           bookName: book.name,
           chapterNumber,
-          verseCount,
-          instructions: systemPrompt.prompt,
-          model,
-          effort,
           language,
+          logPrefix: "[REGENERATION_BYLINE]",
+          generateChunk: async ({ prompt }) =>
+            this.gpt5Text({
+              instructions: systemPrompt.prompt,
+              input: prompt,
+              model,
+              effort,
+              maxTokens: 20000,
+            }),
         });
       } else {
         let userPrompt: string;

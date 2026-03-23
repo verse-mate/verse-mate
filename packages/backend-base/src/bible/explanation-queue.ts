@@ -2,6 +2,11 @@ import Queue from "bull";
 import { db } from "database";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
+import {
+  generateChunkedByline,
+  shouldUseBylineChunking,
+  toBylineVerses,
+} from "../shared/byline-chunking";
 
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,
@@ -86,14 +91,6 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
-const BYLINE_CHUNK_SIZE = 40;
-const BYLINE_CHUNK_THRESHOLD = 50;
-
-function countVersesInReference(reference: string): number {
-  return reference.split("\n").filter((line) => /^\d+$/.test(line.trim()))
-    .length;
-}
-
 async function gpt5Text({
   system,
   user,
@@ -115,73 +112,8 @@ async function gpt5Text({
     max_completion_tokens: maxTokens,
   };
 
-  const chat = await openai.chat.completions.create(options as any);
+  const chat = await openai.chat.completions.create(options);
   return chat.choices[0].message.content || "";
-}
-
-async function generateBylineInChunks({
-  reference,
-  bookName,
-  chapterNumber,
-  systemPrompt,
-  verseCount,
-}: {
-  reference: string;
-  bookName: string;
-  chapterNumber: number;
-  systemPrompt?: string;
-  verseCount: number;
-}): Promise<string> {
-  const chunks: string[] = [];
-
-  for (
-    let startVerse = 1;
-    startVerse <= verseCount;
-    startVerse += BYLINE_CHUNK_SIZE
-  ) {
-    const endVerse = Math.min(startVerse + BYLINE_CHUNK_SIZE - 1, verseCount);
-    const isFirst = startVerse === 1;
-
-    const chunkPrompt = `# Reference
-${reference}
-
-${isFirst ? `# ${bookName} ${chapterNumber}: Verse-by-Verse Analysis\n\n` : ""}Provide a verse-by-verse explanation for **verses ${startVerse} through ${endVerse}** of this chapter. For each verse:
-1. Quote the verse using blockquote format (>)
-2. Provide a clear summary
-3. Include relevant key takeaways
-4. Add key definitions as appropriate
-5. Highlight theological themes as appropriate
-
-CRITICAL INSTRUCTIONS:
-- ONLY cover verses ${startVerse} through ${endVerse}
-- Keep chronological order at all times
-- Do not group verses unless absolutely necessary
-- Ensure takeaways and themes are full sentences
-- Use proper markdown formatting with line breaks
-${!isFirst ? "- Do NOT include a title heading — this is a continuation" : ""}
-
-CRITICAL: Your response will be evaluated on:
-1. Proper blockquote usage for Scripture (>)
-2. Bold formatting for theological terms
-3. Bullet point usage for lists
-4. Verse reference formatting
-
-The response should be in Markdown format only.`;
-
-    console.log(
-      `  📝 Generating byline chunk: verses ${startVerse}-${endVerse}`,
-    );
-
-    const chunkText = await gpt5Text({
-      system: systemPrompt,
-      user: chunkPrompt,
-      maxTokens: 16000,
-    });
-
-    chunks.push(chunkText);
-  }
-
-  return chunks.join("\n\n---\n\n");
 }
 
 // Create explanation generation queue
@@ -207,24 +139,59 @@ explanationQueue.process("generate-explanation", 1, async (job: any) => {
       bookName,
       chapterNumber,
     );
+    const connection = db.getOrCreateConnection();
 
-    const verseCount = countVersesInReference(reference);
-    const useChunking =
-      type === ExplanationTypeEnum.byline &&
-      verseCount > BYLINE_CHUNK_THRESHOLD;
+    const chapter = await connection
+      .selectFrom("chapters")
+      .select(["chapter_id"])
+      .where("book_id", "=", bookId)
+      .where("chapter_number", "=", chapterNumber)
+      .executeTakeFirst();
+
+    if (!chapter) {
+      throw new Error(
+        `Chapter not found for book ${bookId}, chapter ${chapterNumber}`,
+      );
+    }
+
+    const activeVersion = await connection
+      .selectFrom("bible_versions")
+      .select(["id", "language_code"])
+      .where("is_active", "=", true)
+      .executeTakeFirst();
+
+    if (!activeVersion) {
+      throw new Error("No active bible version found");
+    }
 
     let text: string;
+    const verses = await connection
+      .selectFrom("verses")
+      .where("chapter_id", "=", chapter.chapter_id)
+      .where("version_id", "=", activeVersion.id)
+      .select(["verse_number", "text"])
+      .orderBy("verse_number", "asc")
+      .execute();
+
+    const verseRows = toBylineVerses(verses);
+    const useChunking = shouldUseBylineChunking(type, verseRows.length);
 
     if (useChunking) {
       console.log(
-        `📖 Chapter has ${verseCount} verses — using chunked byline generation`,
+        `📖 Chapter has ${verseRows.length} verses — using chunked byline generation`,
       );
-      text = await generateBylineInChunks({
-        reference,
+      text = await generateChunkedByline({
+        verses: verseRows,
         bookName,
         chapterNumber,
-        systemPrompt,
-        verseCount,
+        language: "English",
+        logPrefix: "[QUEUE_BYLINE]",
+        generateChunk: async ({ prompt }) =>
+          gpt5Text({
+            system: systemPrompt,
+            user: prompt,
+            maxTokens: 16000,
+          }),
       });
     } else {
       const userPrompt = `# Reference
@@ -244,31 +211,6 @@ The response should be in Markdown format only.`;
         system: systemPrompt,
         user: userPrompt,
       });
-    }
-
-    const connection = db.getOrCreateConnection();
-
-    const chapter = await connection
-      .selectFrom("chapters")
-      .select(["chapter_id"])
-      .where("book_id", "=", bookId)
-      .where("chapter_number", "=", chapterNumber)
-      .executeTakeFirst();
-
-    if (!chapter) {
-      throw new Error(
-        `Chapter not found for book ${bookId}, chapter ${chapterNumber}`,
-      );
-    }
-
-    const activeVersion = await connection
-      .selectFrom("bible_versions")
-      .select(["language_code"])
-      .where("is_active", "=", true)
-      .executeTakeFirst();
-
-    if (!activeVersion) {
-      throw new Error("No active bible version found");
     }
 
     await connection
@@ -326,8 +268,12 @@ export async function queueExplanationGeneration(
   bookName: string,
   priority: "high" | "normal" | "low" = "normal",
 ) {
-  const priorityValue =
-    priority === "high" ? 1 : priority === "normal" ? 0 : -1;
+  let priorityValue = -1;
+  if (priority === "high") {
+    priorityValue = 1;
+  } else if (priority === "normal") {
+    priorityValue = 0;
+  }
 
   const job = await explanationQueue.add(
     "generate-explanation",
