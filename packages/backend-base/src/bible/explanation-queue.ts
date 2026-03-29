@@ -184,7 +184,7 @@ explanationQueue.process("generate-explanation", 1, async (job: any) => {
         verses: verseRows,
         bookName,
         chapterNumber,
-        language: "English",
+        bylineTemplate: explanationConfig.prompt,
         logPrefix: "[QUEUE_BYLINE]",
         generateChunk: async ({ prompt }) =>
           gpt5Text({

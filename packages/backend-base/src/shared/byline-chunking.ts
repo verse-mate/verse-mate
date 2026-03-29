@@ -1,8 +1,6 @@
 export const BYLINE_CHUNK_SIZE = 40;
 export const BYLINE_CHUNK_THRESHOLD = 50;
 
-type Effort = "low" | "medium" | "high";
-
 export type BylineVerse = {
   verseNumber: number;
   text: string;
@@ -20,7 +18,8 @@ type GenerateChunkedBylineParams = {
   verses: BylineVerse[];
   bookName: string;
   chapterNumber: number;
-  language: string;
+  /** The resolved byline user prompt template (with {bookName}/{chapterNumber}/{language} already replaced) */
+  bylineTemplate: string;
   chunkSize?: number;
   maxRetries?: number;
   logPrefix?: string;
@@ -37,11 +36,16 @@ const REFUSAL_PATTERN =
   /\b(?:can(?:not|'t)|unable|won't|exceed(?:s|ed|ing)?)\b[\s\S]{0,120}\b(?:limit|single response|single message|token|length|size)\b/i;
 
 export function toBylineVerses(
-  verses: Array<{ verse_number?: number; verseNumber?: number; text: string }>,
+  verses: Array<{
+    verse_number?: number;
+    verseNumber?: number;
+    verseId?: number;
+    text: string;
+  }>,
 ): BylineVerse[] {
   return verses
     .map((v) => ({
-      verseNumber: v.verse_number ?? v.verseNumber ?? 0,
+      verseNumber: v.verse_number ?? v.verseNumber ?? v.verseId ?? 0,
       text: v.text,
     }))
     .filter((v) => Number.isFinite(v.verseNumber) && v.verseNumber > 0)
@@ -51,43 +55,38 @@ export function toBylineVerses(
 function buildRangePrompt({
   bookName,
   chapterNumber,
-  language,
   startVerse,
   endVerse,
   versesText,
   isFirst,
   isRetry,
+  bylineTemplate,
 }: {
   bookName: string;
   chapterNumber: number;
-  language: string;
   startVerse: number;
   endVerse: number;
   versesText: string;
   isFirst: boolean;
   isRetry: boolean;
+  bylineTemplate: string;
 }) {
-  return `${isFirst ? `# ${bookName} ${chapterNumber}: Verse-by-Verse Analysis\n\n` : ""}Provide a verse-by-verse explanation for **verses ${startVerse} through ${endVerse}** of this chapter. For each verse:
-1. Quote the verse using blockquote format (>)
-2. Provide a clear summary
-3. Include relevant key takeaways
-4. Add key definitions as appropriate
-5. Highlight theological themes as appropriate
+  let prompt = bylineTemplate
+    .replace("{verseRange}", `verses ${startVerse} through ${endVerse}`)
+    .replace(
+      "{verseRangeContext}",
+      `Biblical Text (${bookName} ${chapterNumber} verses ${startVerse}-${endVerse}):\n${versesText}`,
+    );
 
-CRITICAL INSTRUCTIONS:
-- ONLY cover verses ${startVerse} through ${endVerse}
-- Keep chronological order at all times
-- Do not group verses unless absolutely necessary
-- Ensure takeaways and themes are full sentences
-- Use proper markdown formatting with line breaks
-- Include explicit verse headings for each verse in the range (e.g. "## ${bookName} ${chapterNumber}:1")
-${!isFirst ? "- Do NOT include a title heading - this is a continuation" : ""}
-${isRetry ? "- Previous attempt did not fully cover the required range. Ensure you include every verse in this range." : ""}
+  if (!isFirst) {
+    prompt +=
+      "\n\n- Do NOT include the title heading — this is a continuation of a chunked generation.";
+  }
+  if (isRetry) {
+    prompt += `\n\n- Previous attempt did not fully cover the required range. Ensure you include every verse from ${startVerse} to ${endVerse}.`;
+  }
 
-Biblical Text (${bookName} ${chapterNumber} verses ${startVerse}-${endVerse}):
-${versesText}
-
-The response should be in ${language} using Markdown format only.`;
+  return prompt;
 }
 
 function collectVerseMentionsForChapter(
@@ -158,7 +157,7 @@ export async function generateChunkedByline({
   verses,
   bookName,
   chapterNumber,
-  language,
+  bylineTemplate,
   chunkSize = BYLINE_CHUNK_SIZE,
   maxRetries = 1,
   logPrefix = "[BYLINE_CHUNK]",
@@ -167,17 +166,21 @@ export async function generateChunkedByline({
   const sortedVerses = [...verses].sort(
     (a, b) => a.verseNumber - b.verseNumber,
   );
-  const totalVerses = sortedVerses.length;
 
-  if (totalVerses === 0) {
+  if (sortedVerses.length === 0) {
     throw new Error("Cannot chunk byline generation without verses");
   }
 
+  const maxVerseNumber = sortedVerses[sortedVerses.length - 1].verseNumber;
   const chunks: string[] = [];
 
-  for (let startVerse = 1; startVerse <= totalVerses; startVerse += chunkSize) {
-    const endVerse = Math.min(startVerse + chunkSize - 1, totalVerses);
-    const isFirst = startVerse === 1;
+  for (
+    let startVerse = sortedVerses[0].verseNumber;
+    startVerse <= maxVerseNumber;
+    startVerse += chunkSize
+  ) {
+    const endVerse = Math.min(startVerse + chunkSize - 1, maxVerseNumber);
+    const isFirst = startVerse === sortedVerses[0].verseNumber;
 
     const versesText = sortedVerses
       .filter((v) => v.verseNumber >= startVerse && v.verseNumber <= endVerse)
@@ -197,12 +200,12 @@ export async function generateChunkedByline({
       const prompt = buildRangePrompt({
         bookName,
         chapterNumber,
-        language,
         startVerse,
         endVerse,
         versesText,
         isFirst,
         isRetry: attempt > 0,
+        bylineTemplate,
       });
 
       const attemptLabel = `${logPrefix} verses ${startVerse}-${endVerse} attempt ${attempt + 1}/${maxRetries + 1}`;
@@ -244,7 +247,82 @@ export async function generateChunkedByline({
     chunks.push(finalChunkText);
   }
 
-  return chunks.join("\n\n---\n\n");
+  return chunks.join("\n\n");
+}
+
+/**
+ * Like generateChunkedByline but fires all chunks in parallel.
+ * Use for playground/sync calls where latency matters.
+ */
+export async function generateChunkedBylineParallel({
+  verses,
+  bookName,
+  chapterNumber,
+  bylineTemplate,
+  chunkSize = BYLINE_CHUNK_SIZE,
+  maxRetries = 1,
+  logPrefix = "[BYLINE_CHUNK_PARALLEL]",
+  generateChunk,
+}: GenerateChunkedBylineParams): Promise<string> {
+  const chunkPrompts = buildBylineChunkPrompts({
+    verses,
+    bookName,
+    chapterNumber,
+    bylineTemplate,
+    chunkSize,
+  });
+
+  if (chunkPrompts.length === 0) {
+    throw new Error("Cannot chunk byline generation without verses");
+  }
+
+  const results = await Promise.all(
+    chunkPrompts.map(async (chunk) => {
+      let finalText = "";
+      let lastReason = "unknown";
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const attemptLabel = `${logPrefix} verses ${chunk.startVerse}-${chunk.endVerse} attempt ${attempt + 1}/${maxRetries + 1}`;
+        console.log(`${attemptLabel} generating`);
+
+        const text = await generateChunk({
+          prompt: chunk.prompt,
+          startVerse: chunk.startVerse,
+          endVerse: chunk.endVerse,
+          isFirst: chunk.chunkIndex === 0,
+          attempt,
+        });
+
+        const coverage = validateChunkCoverage({
+          output: text,
+          chapterNumber,
+          startVerse: chunk.startVerse,
+          endVerse: chunk.endVerse,
+        });
+
+        if (coverage.valid) {
+          console.log(`${attemptLabel} valid`);
+          finalText = text;
+          break;
+        }
+
+        lastReason = coverage.reason;
+        console.warn(
+          `${attemptLabel} invalid (${coverage.reason}), mentions: [${coverage.mentionsInRange.join(", ")}]`,
+        );
+      }
+
+      if (!finalText) {
+        throw new Error(
+          `Failed to generate valid chunk for verses ${chunk.startVerse}-${chunk.endVerse}: ${lastReason}`,
+        );
+      }
+
+      return { chunkIndex: chunk.chunkIndex, text: finalText };
+    }),
+  );
+
+  return stitchBylineChunks(results);
 }
 
 export function shouldUseBylineChunking(
@@ -254,9 +332,91 @@ export function shouldUseBylineChunking(
   return explanationType === "byline" && verseCount > BYLINE_CHUNK_THRESHOLD;
 }
 
-export function normalizeEffort(value: string): Effort {
-  if (value === "low" || value === "high") {
-    return value;
+export type BylineChunkPrompt = {
+  prompt: string;
+  startVerse: number;
+  endVerse: number;
+  chunkIndex: number;
+  totalChunks: number;
+};
+
+/**
+ * Build chunked prompts for batch/sync use without calling the API.
+ * Returns an array of prompt objects, one per chunk.
+ */
+export function buildBylineChunkPrompts({
+  verses,
+  bookName,
+  chapterNumber,
+  bylineTemplate,
+  chunkSize = BYLINE_CHUNK_SIZE,
+}: {
+  verses: BylineVerse[];
+  bookName: string;
+  chapterNumber: number;
+  bylineTemplate: string;
+  chunkSize?: number;
+}): BylineChunkPrompt[] {
+  const sortedVerses = [...verses].sort(
+    (a, b) => a.verseNumber - b.verseNumber,
+  );
+
+  if (sortedVerses.length === 0) return [];
+
+  const maxVerseNumber = sortedVerses[sortedVerses.length - 1].verseNumber;
+  const firstVerse = sortedVerses[0].verseNumber;
+
+  // Pre-calculate total chunks
+  let totalChunks = 0;
+  for (let s = firstVerse; s <= maxVerseNumber; s += chunkSize) totalChunks++;
+
+  const prompts: BylineChunkPrompt[] = [];
+  let chunkIndex = 0;
+
+  for (
+    let startVerse = firstVerse;
+    startVerse <= maxVerseNumber;
+    startVerse += chunkSize
+  ) {
+    const endVerse = Math.min(startVerse + chunkSize - 1, maxVerseNumber);
+    const isFirst = startVerse === firstVerse;
+
+    const versesText = sortedVerses
+      .filter((v) => v.verseNumber >= startVerse && v.verseNumber <= endVerse)
+      .map((v) => `${v.verseNumber}. ${v.text}`)
+      .join("\n");
+
+    prompts.push({
+      prompt: buildRangePrompt({
+        bookName,
+        chapterNumber,
+        startVerse,
+        endVerse,
+        versesText,
+        isFirst,
+        isRetry: false,
+        bylineTemplate,
+      }),
+      startVerse,
+      endVerse,
+      chunkIndex,
+      totalChunks,
+    });
+
+    chunkIndex++;
   }
-  return "medium";
+
+  return prompts;
+}
+
+/**
+ * Stitch ordered chunk texts back into a single explanation.
+ */
+export function stitchBylineChunks(
+  chunks: Array<{ chunkIndex: number; text: string }>,
+): string {
+  return chunks
+    .sort((a, b) => a.chunkIndex - b.chunkIndex)
+    .map((c) => c.text)
+    .join("\n\n");
 }

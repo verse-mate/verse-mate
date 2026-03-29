@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { NotFoundError } from "../../common/errors";
 import {
-  generateChunkedByline,
+  generateChunkedBylineParallel,
   shouldUseBylineChunking,
   toBylineVerses,
 } from "../../shared/byline-chunking";
@@ -151,11 +151,11 @@ export class ExplanationRegenerationService {
       let newExplanationContent: string;
 
       if (useChunking && verseRows.length > 0) {
-        newExplanationContent = await generateChunkedByline({
+        newExplanationContent = await generateChunkedBylineParallel({
           verses: verseRows,
           bookName: book.name,
           chapterNumber,
-          language,
+          bylineTemplate: explanationConfig.prompt,
           logPrefix: "[REGENERATION_BYLINE]",
           generateChunk: async ({ prompt }) =>
             this.gpt5Text({

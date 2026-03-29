@@ -4,6 +4,11 @@ import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
 import { ForbiddenError, NotFoundError } from "../../common/errors";
+import {
+  generateChunkedBylineParallel,
+  shouldUseBylineChunking,
+  toBylineVerses,
+} from "../../shared/byline-chunking";
 import type { db } from "../../shared/shared.plugin";
 
 const PROTECTED_PROMPT_IDS = [1, 2, 3];
@@ -207,7 +212,9 @@ export class AdminPromptService {
       finalUserPrompt = this.getUserPrompt({
         explanationPrompt: user_prompt
           .replace("{bookName}", book_name)
-          .replace("{chapterNumber}", chapter_number.toString()),
+          .replace("{chapterNumber}", chapter_number.toString())
+          .replace("{verseRange}", "all verses")
+          .replace("{verseRangeContext}", ""),
         language,
       });
 
@@ -244,6 +251,67 @@ export class AdminPromptService {
           );
         }
         contextText = `\r\n\r\nBiblical Text (${book_name} ${chapter_number}):\r\n${verses.map((v) => `${v.verse_number}. ${v.text}`).join("\n")}`;
+      }
+    }
+
+    // Check if we should use chunked generation for byline on long chapters
+    if (
+      prompt_type === "byline" &&
+      send_chapter_context &&
+      book_name &&
+      chapter_number
+    ) {
+      const book = await connection
+        .selectFrom("books")
+        .where("name", "=", book_name)
+        .select("book_id")
+        .executeTakeFirst();
+
+      if (book) {
+        const chapter = await connection
+          .selectFrom("chapters")
+          .where("book_id", "=", book.book_id)
+          .where("chapter_number", "=", chapter_number)
+          .select("chapter_id")
+          .executeTakeFirst();
+
+        if (chapter) {
+          const verses = await connection
+            .selectFrom("verses")
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("version_id", "=", version.id)
+            .select(["verse_number", "text"])
+            .orderBy("verse_number", "asc")
+            .execute();
+
+          const verseRows = toBylineVerses(verses);
+
+          if (shouldUseBylineChunking(prompt_type, verseRows.length)) {
+            console.log(
+              `[PLAYGROUND] Using chunked byline for ${book_name} ${chapter_number}: ${verseRows.length} verses`,
+            );
+
+            const result = await generateChunkedBylineParallel({
+              verses: verseRows,
+              bookName: book_name,
+              chapterNumber: chapter_number,
+              bylineTemplate: user_prompt
+                .replace("{bookName}", book_name)
+                .replace("{chapterNumber}", chapter_number.toString()),
+              logPrefix: "[PLAYGROUND_BYLINE]",
+              generateChunk: async ({ prompt }) =>
+                this.gpt5Text({
+                  instructions: system_prompt,
+                  input: prompt,
+                  model,
+                  effort,
+                  max_output_tokens: request.max_output_tokens,
+                }),
+            });
+
+            return { result };
+          }
+        }
       }
     }
 
