@@ -2,12 +2,17 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { NotFoundError } from "../../common/errors";
+import {
+  generateChunkedBylineParallel,
+  shouldUseBylineChunking,
+  toBylineVerses,
+} from "../../shared/byline-chunking";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
 export class ExplanationRegenerationService {
-  private openai: OpenAI;
-  private promptRepository: PromptRepository;
+  private readonly openai: OpenAI;
+  private readonly promptRepository: PromptRepository;
 
   constructor(private readonly db: db) {
     this.openai = new OpenAI({
@@ -21,18 +26,20 @@ export class ExplanationRegenerationService {
     input,
     model,
     effort = "medium",
+    maxTokens = 20000,
   }: {
     instructions?: string;
     input: string;
     model: string;
     effort?: "low" | "medium" | "high";
+    maxTokens?: number;
   }) {
     const response = await this.openai.responses.create({
       model,
       reasoning: { effort },
       instructions,
       input,
-      max_output_tokens: 20000,
+      max_output_tokens: maxTokens,
     });
 
     return response.output_text || "";
@@ -120,48 +127,71 @@ export class ExplanationRegenerationService {
         language,
       );
 
-      let userPrompt: string;
+      const verses = await connection
+        .selectFrom("verses")
+        .where("chapter_id", "=", chapter_id)
+        .where("version_id", "=", version.id)
+        .select(["verse_number", "text"])
+        .orderBy("verse_number", "asc")
+        .execute();
 
-      if (sendChapterContext) {
-        const verses = await connection
-          .selectFrom("verses")
-          .where("chapter_id", "=", chapter_id)
-          .where("version_id", "=", version.id)
-          .select(["verse_number", "text"])
-          .orderBy("verse_number", "asc")
-          .execute();
-
-        if (!verses || verses.length === 0) {
-          throw new NotFoundError(
-            `No verses found for chapter ${chapterNumber} in version ${bibleVersion}`,
-          );
-        }
-
-        const versesText = verses
-          .map((v) => `${v.verse_number}. ${v.text}`)
-          .join("\n");
-
-        userPrompt = this.getUserPrompt({
-          explanationPrompt: `${explanationConfig.prompt}\n\nBiblical Text (${book.name} ${chapterNumber}):\n${versesText}`,
-          language,
-        });
-      } else {
-        userPrompt = this.getUserPrompt({
-          explanationPrompt: explanationConfig.prompt,
-          language,
-        });
-      }
+      const verseRows = toBylineVerses(verses);
+      const useChunking = shouldUseBylineChunking(
+        explanationType,
+        verseRows.length,
+      );
+      const chunkSuffix = useChunking
+        ? ` (chunked: ${verseRows.length} verses)`
+        : "";
 
       console.log(
-        `[REGENERATION] Generating new explanation for ${book.name} ${chapterNumber}, type: ${explanationType}, model: ${model}`,
+        `[REGENERATION] Generating new explanation for ${book.name} ${chapterNumber}, type: ${explanationType}, model: ${model}${chunkSuffix}`,
       );
 
-      const newExplanationContent = await this.gpt5Text({
-        instructions: systemPrompt.prompt,
-        input: userPrompt,
-        model,
-        effort,
-      });
+      let newExplanationContent: string;
+
+      if (useChunking && verseRows.length > 0) {
+        newExplanationContent = await generateChunkedBylineParallel({
+          verses: verseRows,
+          bookName: book.name,
+          chapterNumber,
+          bylineTemplate: explanationConfig.prompt,
+          logPrefix: "[REGENERATION_BYLINE]",
+          generateChunk: async ({ prompt }) =>
+            this.gpt5Text({
+              instructions: systemPrompt.prompt,
+              input: prompt,
+              model,
+              effort,
+              maxTokens: 20000,
+            }),
+        });
+      } else {
+        let userPrompt: string;
+
+        if (sendChapterContext && verses.length > 0) {
+          const versesText = verses
+            .map((v) => `${v.verse_number}. ${v.text}`)
+            .join("\n");
+
+          userPrompt = this.getUserPrompt({
+            explanationPrompt: `${explanationConfig.prompt}\n\nBiblical Text (${book.name} ${chapterNumber}):\n${versesText}`,
+            language,
+          });
+        } else {
+          userPrompt = this.getUserPrompt({
+            explanationPrompt: explanationConfig.prompt,
+            language,
+          });
+        }
+
+        newExplanationContent = await this.gpt5Text({
+          instructions: systemPrompt.prompt,
+          input: userPrompt,
+          model,
+          effort,
+        });
+      }
 
       const originalExplanation = await connection
         .selectFrom("explanations")

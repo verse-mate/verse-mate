@@ -1,6 +1,11 @@
 import { db } from "database";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
+import {
+  generateChunkedByline,
+  shouldUseBylineChunking,
+  toBylineVerses,
+} from "../shared/byline-chunking";
 import { parseBibleData } from "./bible";
 
 const openai = new OpenAI({
@@ -86,7 +91,15 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
-async function gpt5Text({ system, user }: { system?: string; user: string }) {
+async function gpt5Text({
+  system,
+  user,
+  maxTokens = 16000,
+}: {
+  system?: string;
+  user: string;
+  maxTokens?: number;
+}) {
   const messages: OpenAI.ChatCompletionMessageParam[] = [];
   if (system) {
     messages.push({ role: "system", content: system });
@@ -96,10 +109,10 @@ async function gpt5Text({ system, user }: { system?: string; user: string }) {
   const options: any = {
     model: "gpt-5",
     messages,
-    max_completion_tokens: 10000,
+    max_completion_tokens: maxTokens,
   };
 
-  const chat = await openai.chat.completions.create(options as any);
+  const chat = await openai.chat.completions.create(options);
   return chat.choices[0].message.content || "";
 }
 
@@ -170,7 +183,7 @@ async function pregeneratePopularChapters() {
 
     for (const chapterNumber of chapters) {
       const chapter = (book as any).chapters.find(
-        (c: any) => c.chapterNumber === chapterNumber,
+        (c: any) => c.chapterId === chapterNumber,
       );
       if (!chapter) {
         console.log(`⚠️ Chapter ${chapterNumber} not found in ${book.name}`);
@@ -217,6 +230,8 @@ async function pregeneratePopularChapters() {
       // Format chapter content
       const reference = formatChapterContent(chapter, book.name);
 
+      const verseRows = toBylineVerses(chapter.verses ?? []);
+
       // Generate missing explanations
       for (const type of missingTypes) {
         try {
@@ -228,7 +243,29 @@ async function pregeneratePopularChapters() {
             chapterNumber,
           );
 
-          const userPrompt = `# Reference
+          const useChunking = shouldUseBylineChunking(type, verseRows.length);
+
+          let text: string;
+
+          if (useChunking) {
+            console.log(
+              `  📖 Chapter has ${verseRows.length} verses — using chunked byline generation`,
+            );
+            text = await generateChunkedByline({
+              verses: verseRows,
+              bookName: book.name,
+              chapterNumber,
+              bylineTemplate: explanationConfig.prompt,
+              logPrefix: "[PREGENERATE_POPULAR_BYLINE]",
+              generateChunk: async ({ prompt }) =>
+                gpt5Text({
+                  system: activePrompt.prompt,
+                  user: prompt,
+                  maxTokens: 16000,
+                }),
+            });
+          } else {
+            const userPrompt = `# Reference
 ${reference}
 
 ${explanationConfig.prompt}
@@ -241,10 +278,11 @@ CRITICAL: Your response will be evaluated on:
 
 The response should be in Markdown format only.`;
 
-          const text = await gpt5Text({
-            system: activePrompt.prompt,
-            user: userPrompt,
-          });
+            text = await gpt5Text({
+              system: activePrompt.prompt,
+              user: userPrompt,
+            });
+          }
 
           // Resolve active bible version and save to database
           const activeVersion = await connection
@@ -291,21 +329,21 @@ The response should be in Markdown format only.`;
 }
 
 function formatChapterContent(chapter: any, bookName: string): string {
-  const { chapterNumber, verses, subtitles } = chapter;
+  const { chapterId, verses, subtitles } = chapter;
 
   const subtitleSections = subtitles.map((subtitle: any) => {
     const subtitleVerses = verses
       .filter(
         (verse: any) =>
-          verse.verseNumber >= subtitle.start_verse &&
-          verse.verseNumber <= subtitle.end_verse,
+          verse.verseId >= subtitle.start_verse &&
+          verse.verseId <= subtitle.end_verse,
       )
-      .map((verse: any) => `${verse.verseNumber}\n${verse.text}`)
+      .map((verse: any) => `${verse.verseId}\n${verse.text}`)
       .join("\n");
-    return `${subtitle.subtitle}\n(${bookName} ${chapterNumber}:${subtitle.start_verse} - ${subtitle.end_verse})\n\n${subtitleVerses}`;
+    return `${subtitle.subtitle}\n(${bookName} ${chapterId}:${subtitle.start_verse} - ${subtitle.end_verse})\n\n${subtitleVerses}`;
   });
 
-  return `${bookName} ${chapterNumber}\n\n${subtitleSections.join("\n\n")}`;
+  return `${bookName} ${chapterId}\n\n${subtitleSections.join("\n\n")}`;
 }
 
 // Run pre-generation
