@@ -210,18 +210,19 @@ async function pregenerateHebrewsChapters() {
     // Format chapter content for AI
     const reference = formatChapterContent(bibleChapter, "Hebrews");
 
-    const verseRows = toBylineVerses(
-      (bibleChapter.verses ?? []).map((v: any) => ({
-        verseNumber: v.verseId,
-        text: v.text,
-      })),
-    );
+    const verseRows = toBylineVerses(bibleChapter.verses ?? []);
 
     // Generate missing explanations
     for (const type of missingTypes) {
       try {
         console.log(
           `  🤖 Generating ${type} explanation for Hebrews ${chapterNumber}...`,
+        );
+
+        const explanationConfig = getExplanationTypePrompt(
+          type,
+          "Hebrews",
+          chapterNumber,
         );
 
         const useChunking = shouldUseBylineChunking(type, verseRows.length);
@@ -236,7 +237,7 @@ async function pregenerateHebrewsChapters() {
             verses: verseRows,
             bookName: "Hebrews",
             chapterNumber,
-            language: "English",
+            bylineTemplate: explanationConfig.prompt,
             logPrefix: "[PREGENERATE_HEBREWS_BYLINE]",
             generateChunk: async ({ prompt }) =>
               gpt5Text({
@@ -246,12 +247,6 @@ async function pregenerateHebrewsChapters() {
               }),
           });
         } else {
-          const explanationConfig = getExplanationTypePrompt(
-            type,
-            "Hebrews",
-            chapterNumber,
-          );
-
           const userPrompt = `# Reference
 ${reference}
 
