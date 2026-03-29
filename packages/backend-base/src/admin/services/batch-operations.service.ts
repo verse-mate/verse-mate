@@ -6,6 +6,12 @@ import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
 import { ValidationError } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
+import {
+  buildBylineChunkPrompts,
+  shouldUseBylineChunking,
+  stitchBylineChunks,
+  toBylineVerses,
+} from "../../shared/byline-chunking";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 import { generateTopicSlug } from "../../topics/utils/slug.utils";
@@ -2188,6 +2194,10 @@ export class BatchOperationService {
       );
     }
 
+    const sanitizedSystemPrompt = systemPrompt.prompt
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n");
+
     for (const chapter of chapters) {
       for (const explanationType of explanationTypes) {
         const chapterTypeKey = `${chapter.chapter_number}-${explanationType}`;
@@ -2197,6 +2207,60 @@ export class BatchOperationService {
             `[BATCH] Skipping existing explanation: ${book.name} ${chapter.chapter_number} ${explanationType}`,
           );
           continue;
+        }
+
+        const bookSlug = book.name.toLowerCase().replace(/\s+/g, "-");
+
+        // Check if this byline chapter needs chunking
+        if (explanationType === "byline") {
+          const verses = await connection
+            .selectFrom("verses")
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("version_id", "=", version.id)
+            .select(["verse_number", "text"])
+            .orderBy("verse_number", "asc")
+            .execute();
+
+          const verseRows = toBylineVerses(verses);
+
+          if (shouldUseBylineChunking(explanationType, verseRows.length)) {
+            const bylineConfig = await getExplanationTypePrompt(
+              explanationType,
+              book.name,
+              chapter.chapter_number,
+              this.db,
+              language,
+            );
+
+            const chunkPrompts = buildBylineChunkPrompts({
+              verses: verseRows,
+              bookName: book.name,
+              chapterNumber: chapter.chapter_number,
+              bylineTemplate: bylineConfig.prompt,
+            });
+
+            console.log(
+              `[BATCH] Chunking byline for ${book.name} ${chapter.chapter_number}: ${verseRows.length} verses → ${chunkPrompts.length} chunks`,
+            );
+
+            for (const chunk of chunkPrompts) {
+              batchRequests.push({
+                custom_id: `${bookSlug}-${chapter.chapter_number}-byline-${chapter.chapter_id}-chunk-${chunk.chunkIndex}-of-${chunk.totalChunks}-v${chunk.startVerse}-${chunk.endVerse}`,
+                method: "POST",
+                url: "/v1/responses",
+                body: {
+                  model,
+                  reasoning: { effort },
+                  instructions: sanitizedSystemPrompt,
+                  input: chunk.prompt
+                    .replace(/\r\n/g, "\n")
+                    .replace(/\r/g, "\n"),
+                  max_output_tokens: maxOutputTokens,
+                },
+              });
+            }
+            continue;
+          }
         }
 
         const explanationConfig = await getExplanationTypePrompt(
@@ -2212,21 +2276,12 @@ export class BatchOperationService {
           language,
         });
 
-        const sanitizedSystemPrompt = systemPrompt.prompt
-          .replace(/\r\n/g, "\n")
-          .replace(/\r/g, "\n");
-
         const sanitizedUserPrompt = userPrompt
           .replace(/\r\n/g, "\n")
           .replace(/\r/g, "\n");
 
         batchRequests.push({
-          custom_id: `${book.name
-            .toLowerCase()
-            .replace(
-              /\s+/g,
-              "-",
-            )}-${chapter.chapter_number}-${explanationType}-${chapter.chapter_id}`,
+          custom_id: `${bookSlug}-${chapter.chapter_number}-${explanationType}-${chapter.chapter_id}`,
           method: "POST",
           url: "/v1/responses",
           body: {
@@ -2363,6 +2418,20 @@ export class BatchOperationService {
         type: string;
       }[] = [];
 
+      // Collect byline chunks: key = "chapterId" → { totalChunks, collected chunks }
+      const bylineChunkCollector = new Map<
+        string,
+        {
+          chapterNumber: number;
+          chapterId: number;
+          totalChunks: number;
+          chunks: Array<{ chunkIndex: number; text: string }>;
+        }
+      >();
+
+      const CHUNK_PATTERN =
+        /^(.+)-(\d+)-byline-(\d+)-chunk-(\d+)-of-(\d+)-v(\d+)-(\d+)$/;
+
       for (const line of lines) {
         try {
           const parsedLine = JSON.parse(line);
@@ -2397,6 +2466,35 @@ export class BatchOperationService {
             typeof extractedText === "string" &&
             extractedText.length > 0
           ) {
+            // Check if this is a chunked byline response
+            const chunkMatch = parsedLine.custom_id.match(CHUNK_PATTERN);
+
+            if (chunkMatch) {
+              const chapterNumber = Number.parseInt(chunkMatch[2], 10);
+              const chapterId = Number.parseInt(chunkMatch[3], 10);
+              const chunkIndex = Number.parseInt(chunkMatch[4], 10);
+              const totalChunks = Number.parseInt(chunkMatch[5], 10);
+
+              const key = `${chapterId}`;
+              if (!bylineChunkCollector.has(key)) {
+                bylineChunkCollector.set(key, {
+                  chapterNumber,
+                  chapterId,
+                  totalChunks,
+                  chunks: [],
+                });
+              }
+
+              bylineChunkCollector
+                .get(key)
+                ?.chunks.push({ chunkIndex, text: extractedText });
+
+              console.log(
+                `[BATCH] Collected byline chunk ${chunkIndex + 1}/${totalChunks} for chapter ${chapterNumber} (ID: ${chapterId})`,
+              );
+              continue;
+            }
+
             const customIdParts = parsedLine.custom_id.split("-");
 
             // Handle both new format (4 parts) and legacy format (3 parts) for backward compatibility
@@ -2551,6 +2649,95 @@ export class BatchOperationService {
         } catch (error) {
           errorCount++;
           console.error("[BATCH] Error processing explanation line:", error);
+        }
+      }
+
+      // Stitch and save collected byline chunks
+      for (const [_key, collected] of bylineChunkCollector) {
+        try {
+          if (collected.chunks.length < collected.totalChunks) {
+            console.warn(
+              `[BATCH] Incomplete byline chunks for chapter ${collected.chapterNumber} (ID: ${collected.chapterId}): got ${collected.chunks.length}/${collected.totalChunks}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          const stitchedText = stitchBylineChunks(collected.chunks);
+
+          const chapter = await this.db
+            .getOrCreateConnection()
+            .selectFrom("chapters")
+            .where("chapter_id", "=", collected.chapterId)
+            .select("chapter_id")
+            .executeTakeFirst();
+
+          if (!chapter) {
+            console.error(
+              `[BATCH] Chapter not found for stitched byline: ID ${collected.chapterId}`,
+            );
+            errorCount++;
+            continue;
+          }
+
+          const existingExplanation = await this.db
+            .getOrCreateConnection()
+            .selectFrom("explanations")
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("type", "=", "byline" as any)
+            .where("language_code", "=", version.language_code)
+            .orderBy("version", "desc")
+            .select("version")
+            .executeTakeFirst();
+
+          const nextVersion = existingExplanation
+            ? existingExplanation.version + 1
+            : 1;
+
+          await this.db
+            .getOrCreateConnection()
+            .transaction()
+            .execute(async (trx) => {
+              await trx
+                .updateTable("explanations")
+                .set({ is_active: false })
+                .where("chapter_id", "=", chapter.chapter_id)
+                .where("type", "=", "byline" as any)
+                .where("language_code", "=", version.language_code)
+                .execute();
+
+              await trx
+                .insertInto("explanations")
+                .values({
+                  type: "byline" as any,
+                  explanation: stitchedText,
+                  chapter_id: chapter.chapter_id,
+                  language_code: version.language_code,
+                  version: nextVersion,
+                  is_active: true,
+                  created_at: new Date(),
+                })
+                .execute();
+            });
+
+          processedCount++;
+          console.log(
+            `[BATCH] Saved stitched byline for chapter ${collected.chapterNumber} (${collected.chunks.length} chunks → ${stitchedText.length} chars)`,
+          );
+
+          if (version.language_code === "en" && batchJob.book_id) {
+            successfulExplanations.push({
+              bookId: batchJob.book_id,
+              chapterNumber: collected.chapterNumber,
+              type: "byline",
+            });
+          }
+        } catch (error) {
+          errorCount++;
+          console.error(
+            `[BATCH] Error stitching byline for chapter ${collected.chapterNumber}:`,
+            error,
+          );
         }
       }
 

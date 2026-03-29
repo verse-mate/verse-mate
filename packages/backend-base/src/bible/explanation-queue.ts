@@ -2,6 +2,11 @@ import Queue from "bull";
 import { db } from "database";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
+import {
+  generateChunkedByline,
+  shouldUseBylineChunking,
+  toBylineVerses,
+} from "../shared/byline-chunking";
 
 const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY,
@@ -89,9 +94,11 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
 async function gpt5Text({
   system,
   user,
+  maxTokens = 16000,
 }: {
   system?: string;
   user: string;
+  maxTokens?: number;
 }) {
   const messages: OpenAI.ChatCompletionMessageParam[] = [];
   if (system) {
@@ -102,10 +109,10 @@ async function gpt5Text({
   const options: any = {
     model: "gpt-5",
     messages,
-    max_completion_tokens: 10000,
+    max_completion_tokens: maxTokens,
   };
 
-  const chat = await openai.chat.completions.create(options as any);
+  const chat = await openai.chat.completions.create(options);
   return chat.choices[0].message.content || "";
 }
 
@@ -132,25 +139,6 @@ explanationQueue.process("generate-explanation", 1, async (job: any) => {
       bookName,
       chapterNumber,
     );
-
-    const userPrompt = `# Reference
-${reference}
-
-${explanationConfig.prompt}
-
-CRITICAL: Your response will be evaluated on:
-1. Proper blockquote usage for Scripture (>)
-2. Bold formatting for theological terms
-3. Bullet point usage for lists
-4. Verse reference formatting
-
-The response should be in Markdown format only.`;
-
-    const text = await gpt5Text({
-      system: systemPrompt,
-      user: userPrompt,
-    });
-
     const connection = db.getOrCreateConnection();
 
     const chapter = await connection
@@ -168,12 +156,61 @@ The response should be in Markdown format only.`;
 
     const activeVersion = await connection
       .selectFrom("bible_versions")
-      .select(["language_code"])
+      .select(["id", "language_code"])
       .where("is_active", "=", true)
       .executeTakeFirst();
 
     if (!activeVersion) {
       throw new Error("No active bible version found");
+    }
+
+    let text: string;
+    const verses = await connection
+      .selectFrom("verses")
+      .where("chapter_id", "=", chapter.chapter_id)
+      .where("version_id", "=", activeVersion.id)
+      .select(["verse_number", "text"])
+      .orderBy("verse_number", "asc")
+      .execute();
+
+    const verseRows = toBylineVerses(verses);
+    const useChunking = shouldUseBylineChunking(type, verseRows.length);
+
+    if (useChunking) {
+      console.log(
+        `📖 Chapter has ${verseRows.length} verses — using chunked byline generation`,
+      );
+      text = await generateChunkedByline({
+        verses: verseRows,
+        bookName,
+        chapterNumber,
+        bylineTemplate: explanationConfig.prompt,
+        logPrefix: "[QUEUE_BYLINE]",
+        generateChunk: async ({ prompt }) =>
+          gpt5Text({
+            system: systemPrompt,
+            user: prompt,
+            maxTokens: 16000,
+          }),
+      });
+    } else {
+      const userPrompt = `# Reference
+${reference}
+
+${explanationConfig.prompt}
+
+CRITICAL: Your response will be evaluated on:
+1. Proper blockquote usage for Scripture (>)
+2. Bold formatting for theological terms
+3. Bullet point usage for lists
+4. Verse reference formatting
+
+The response should be in Markdown format only.`;
+
+      text = await gpt5Text({
+        system: systemPrompt,
+        user: userPrompt,
+      });
     }
 
     await connection
@@ -231,8 +268,12 @@ export async function queueExplanationGeneration(
   bookName: string,
   priority: "high" | "normal" | "low" = "normal",
 ) {
-  const priorityValue =
-    priority === "high" ? 1 : priority === "normal" ? 0 : -1;
+  let priorityValue = -1;
+  if (priority === "high") {
+    priorityValue = 1;
+  } else if (priority === "normal") {
+    priorityValue = 0;
+  }
 
   const job = await explanationQueue.add(
     "generate-explanation",

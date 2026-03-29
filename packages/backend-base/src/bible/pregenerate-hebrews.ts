@@ -1,6 +1,11 @@
 import { db } from "database";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import OpenAI from "openai";
+import {
+  generateChunkedByline,
+  shouldUseBylineChunking,
+  toBylineVerses,
+} from "../shared/byline-chunking";
 import { parseBibleData } from "./bible";
 
 const openai = new OpenAI({
@@ -86,7 +91,15 @@ Provide an in-depth yet accessible explanation of ${bookName} ${chapterNumber} w
   }
 };
 
-async function gpt5Text({ system, user }: { system?: string; user: string }) {
+async function gpt5Text({
+  system,
+  user,
+  maxTokens = 16000,
+}: {
+  system?: string;
+  user: string;
+  maxTokens?: number;
+}) {
   const messages: OpenAI.ChatCompletionMessageParam[] = [];
   if (system) {
     messages.push({ role: "system", content: system });
@@ -96,10 +109,10 @@ async function gpt5Text({ system, user }: { system?: string; user: string }) {
   const options: any = {
     model: "gpt-5",
     messages,
-    max_completion_tokens: 10000,
+    max_completion_tokens: maxTokens,
   };
 
-  const chat = await openai.chat.completions.create(options as any);
+  const chat = await openai.chat.completions.create(options);
   return chat.choices[0].message.content || "";
 }
 
@@ -197,6 +210,8 @@ async function pregenerateHebrewsChapters() {
     // Format chapter content for AI
     const reference = formatChapterContent(bibleChapter, "Hebrews");
 
+    const verseRows = toBylineVerses(bibleChapter.verses ?? []);
+
     // Generate missing explanations
     for (const type of missingTypes) {
       try {
@@ -210,7 +225,29 @@ async function pregenerateHebrewsChapters() {
           chapterNumber,
         );
 
-        const userPrompt = `# Reference
+        const useChunking = shouldUseBylineChunking(type, verseRows.length);
+
+        let text: string;
+
+        if (useChunking) {
+          console.log(
+            `  📖 Chapter has ${verseRows.length} verses — using chunked byline generation`,
+          );
+          text = await generateChunkedByline({
+            verses: verseRows,
+            bookName: "Hebrews",
+            chapterNumber,
+            bylineTemplate: explanationConfig.prompt,
+            logPrefix: "[PREGENERATE_HEBREWS_BYLINE]",
+            generateChunk: async ({ prompt }) =>
+              gpt5Text({
+                system: activePrompt.prompt,
+                user: prompt,
+                maxTokens: 16000,
+              }),
+          });
+        } else {
+          const userPrompt = `# Reference
 ${reference}
 
 ${explanationConfig.prompt}
@@ -223,10 +260,11 @@ CRITICAL: Your response will be evaluated on:
 
 The response should be in Markdown format only.`;
 
-        const text = await gpt5Text({
-          system: activePrompt.prompt,
-          user: userPrompt,
-        });
+          text = await gpt5Text({
+            system: activePrompt.prompt,
+            user: userPrompt,
+          });
+        }
 
         // Save to database using correct chapter_id and active version
         const activeVersion = await connection
