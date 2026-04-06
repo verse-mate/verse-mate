@@ -4,6 +4,7 @@ import type { Job } from "bullmq";
 import { db } from "database";
 import OpenAI from "openai";
 import { BatchOperationService } from "../../admin/services/batch-operations.service";
+import { stitchBylineChunks } from "../../shared/byline-chunking";
 import {
   BATCH_MONITORING_QUEUE,
   batchMonitoringQueue,
@@ -374,6 +375,18 @@ export const batchMonitoringConsumer = async (job: Job) => {
           return;
         }
 
+        const CHUNK_PATTERN =
+          /^(.+)-(\d+)-byline-(\d+)-chunk-(\d+)-of-(\d+)-v(\d+)-(\d+)$/;
+        const bylineChunkCollector = new Map<
+          string,
+          {
+            chapterNumber: number;
+            chapterId: number;
+            totalChunks: number;
+            chunks: Array<{ chunkIndex: number; text: string }>;
+          }
+        >();
+
         for (const line of lines) {
           const parsedLine = JSON.parse(line);
 
@@ -395,6 +408,37 @@ export const batchMonitoringConsumer = async (job: Job) => {
 
           if (parsedLine.custom_id && hasContent) {
             try {
+              // Check for chunked byline custom_id first
+              const chunkMatch = parsedLine.custom_id.match(CHUNK_PATTERN);
+              if (chunkMatch) {
+                const chapterNumber = Number.parseInt(chunkMatch[2], 10);
+                const chapterId = Number.parseInt(chunkMatch[3], 10);
+                const chunkIndex = Number.parseInt(chunkMatch[4], 10);
+                const totalChunks = Number.parseInt(chunkMatch[5], 10);
+
+                const explanationContent =
+                  responseBody.output_text ||
+                  responseBody.output[1].content[0].text;
+
+                const key = `${chapterId}`;
+                if (!bylineChunkCollector.has(key)) {
+                  bylineChunkCollector.set(key, {
+                    chapterNumber,
+                    chapterId,
+                    totalChunks,
+                    chunks: [],
+                  });
+                }
+                bylineChunkCollector
+                  .get(key)
+                  ?.chunks.push({ chunkIndex, text: explanationContent });
+
+                console.log(
+                  `[BATCH_MONITORING] Collected byline chunk ${chunkIndex + 1}/${totalChunks} for chapter ${chapterNumber} (ID: ${chapterId})`,
+                );
+                continue;
+              }
+
               const customIdParts = parsedLine.custom_id.split("-");
 
               // Handle variable-length custom IDs where book names may contain hyphens
@@ -542,6 +586,109 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 error,
               );
             }
+          }
+        }
+
+        // Stitch and save collected byline chunks
+        for (const [, collected] of bylineChunkCollector) {
+          try {
+            if (collected.chunks.length < collected.totalChunks) {
+              console.warn(
+                `[BATCH_MONITORING] Incomplete byline chunks for chapter ${collected.chapterNumber} (ID: ${collected.chapterId}): got ${collected.chunks.length}/${collected.totalChunks}`,
+              );
+              failedExplanations++;
+              continue;
+            }
+
+            const stitchedText = stitchBylineChunks(collected.chunks);
+
+            const version = await db
+              .getOrCreateConnection()
+              .selectFrom("bible_versions")
+              .where("version_key", "=", batchJob.bible_version)
+              .select(["id", "language_code"])
+              .executeTakeFirst();
+
+            if (!version) {
+              console.error(
+                `[BATCH_MONITORING] Bible version ${batchJob.bible_version} not found for stitched byline`,
+              );
+              failedExplanations++;
+              continue;
+            }
+
+            const chapter = await db
+              .getOrCreateConnection()
+              .selectFrom("chapters")
+              .where("chapter_id", "=", collected.chapterId)
+              .select("chapter_id")
+              .executeTakeFirst();
+
+            if (!chapter) {
+              console.error(
+                `[BATCH_MONITORING] Chapter not found for stitched byline: ID ${collected.chapterId}`,
+              );
+              failedExplanations++;
+              continue;
+            }
+
+            const existingExplanation = await db
+              .getOrCreateConnection()
+              .selectFrom("explanations")
+              .where("chapter_id", "=", chapter.chapter_id)
+              .where("type", "=", "byline" as any)
+              .where("language_code", "=", version.language_code)
+              .orderBy("version", "desc")
+              .select("version")
+              .executeTakeFirst();
+
+            const nextVersion = existingExplanation
+              ? existingExplanation.version + 1
+              : 1;
+
+            await db
+              .getOrCreateConnection()
+              .transaction()
+              .execute(async (trx) => {
+                await trx
+                  .updateTable("explanations")
+                  .set({ is_active: false })
+                  .where("chapter_id", "=", chapter.chapter_id)
+                  .where("type", "=", "byline" as any)
+                  .where("language_code", "=", version.language_code)
+                  .execute();
+
+                await trx
+                  .insertInto("explanations")
+                  .values({
+                    type: "byline" as any,
+                    explanation: stitchedText,
+                    chapter_id: chapter.chapter_id,
+                    language_code: version.language_code,
+                    version: nextVersion,
+                    is_active: true,
+                    created_at: new Date(),
+                  })
+                  .execute();
+              });
+
+            successfulExplanations++;
+            if (batchJob.book_id) {
+              successfulItems.push({
+                bookId: batchJob.book_id,
+                chapterNumber: collected.chapterNumber,
+                type: "byline",
+              });
+            }
+            console.log(
+              `[BATCH_MONITORING] Saved stitched byline for chapter ${collected.chapterNumber} (${collected.chunks.length} chunks → ${stitchedText.length} chars)`,
+            );
+          } catch (error) {
+            failedExplanations++;
+            console.error(
+              `[BATCH_MONITORING] Error stitching byline for chapter ${collected.chapterNumber}:`,
+              error,
+            );
           }
         }
 
