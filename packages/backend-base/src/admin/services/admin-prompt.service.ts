@@ -211,10 +211,10 @@ export class AdminPromptService {
     } else {
       finalUserPrompt = this.getUserPrompt({
         explanationPrompt: user_prompt
-          .replace("{bookName}", book_name)
-          .replace("{chapterNumber}", chapter_number.toString())
-          .replace("{verseRange}", "all verses")
-          .replace("{verseRangeContext}", ""),
+          .replaceAll("{bookName}", book_name)
+          .replaceAll("{chapterNumber}", chapter_number.toString())
+          .replaceAll("{verseRange}", "all verses")
+          .replaceAll("{verseRangeContext}", ""),
         language,
       });
 
@@ -296,8 +296,8 @@ export class AdminPromptService {
               bookName: book_name,
               chapterNumber: chapter_number,
               bylineTemplate: user_prompt
-                .replace("{bookName}", book_name)
-                .replace("{chapterNumber}", chapter_number.toString()),
+                .replaceAll("{bookName}", book_name)
+                .replaceAll("{chapterNumber}", chapter_number.toString()),
               logPrefix: "[PLAYGROUND_BYLINE]",
               generateChunk: async ({ prompt }) =>
                 this.gpt5Text({
