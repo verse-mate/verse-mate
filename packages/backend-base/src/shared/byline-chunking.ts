@@ -72,8 +72,8 @@ function buildRangePrompt({
   bylineTemplate: string;
 }) {
   let prompt = bylineTemplate
-    .replace("{verseRange}", `verses ${startVerse} through ${endVerse}`)
-    .replace(
+    .replaceAll("{verseRange}", `verses ${startVerse} through ${endVerse}`)
+    .replaceAll(
       "{verseRangeContext}",
       `Biblical Text (${bookName} ${chapterNumber} verses ${startVerse}-${endVerse}):\n${versesText}`,
     );
