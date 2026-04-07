@@ -81,7 +81,10 @@ const getUserPrompt = ({
   explanationPrompt,
   language,
 }: { explanationPrompt: string; language: string }) => {
-  return `${explanationPrompt}\n\nThe response should be in ${language} using Markdown format only.`;
+  const cleaned = explanationPrompt
+    .replaceAll("{verseRange}", "all verses")
+    .replaceAll("{verseRangeContext}", "");
+  return `${cleaned}\n\nThe response should be in ${language} using Markdown format only.`;
 };
 
 export class BatchOperationService {
