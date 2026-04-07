@@ -22,11 +22,9 @@ export const getExplanationTypePrompt = async (
             : 0.3;
       return {
         prompt: (promptTemplate as any).prompt_template
-          .replace("{bookName}", bookName)
-          .replace("{chapterNumber}", chapterNumber.toString())
-          .replace("{language}", language)
-          .replace("{verseRange}", "all verses")
-          .replace("{verseRangeContext}", ""),
+          .replaceAll("{bookName}", bookName)
+          .replaceAll("{chapterNumber}", chapterNumber.toString())
+          .replaceAll("{language}", language),
         temperature,
       };
     }
@@ -51,11 +49,9 @@ export const getExplanationTypePrompt = async (
           : 0.3;
     return {
       prompt: fallbackTemplate.prompt_template
-        .replace("{bookName}", bookName)
-        .replace("{chapterNumber}", chapterNumber.toString())
-        .replace("{language}", language)
-        .replace("{verseRange}", "all verses")
-        .replace("{verseRangeContext}", ""),
+        .replaceAll("{bookName}", bookName)
+        .replaceAll("{chapterNumber}", chapterNumber.toString())
+        .replaceAll("{language}", language),
       temperature,
     };
   }

@@ -265,10 +265,13 @@ async function pregeneratePopularChapters() {
                 }),
             });
           } else {
+            const cleanedPrompt = explanationConfig.prompt
+              .replaceAll("{verseRange}", "all verses")
+              .replaceAll("{verseRangeContext}", "");
             const userPrompt = `# Reference
 ${reference}
 
-${explanationConfig.prompt}
+${cleanedPrompt}
 
 CRITICAL: Your response will be evaluated on:
 1. Proper blockquote usage for Scripture (>)
