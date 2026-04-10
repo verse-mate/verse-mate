@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useStore } from "@nanostores/react";
+import { fontSizeStore } from "../../../../store/font-size";
 import { useAutoHighlights } from "../../../../hooks/useAutoHighlights";
 import { useBookmarks } from "../../../../hooks/useBookmarks";
 import { useGetSearchParams } from "../../../../hooks/useSearchParams";
@@ -42,6 +44,7 @@ export const Text = ({
 }: TextProps) => {
   const searchParams = useGetSearchParams();
   const { session } = userSession();
+  const userFontSize = useStore(fontSizeStore);
   const {
     isBookmarked: checkIfBookmarked,
     addBookmark,
@@ -1036,7 +1039,7 @@ export const Text = ({
                 {subtitle.end_verse})
               </p>
             </div>
-            <div className={styles.versesContainer}>
+            <div className={styles.versesContainer} style={{ fontSize: userFontSize }}>
               {text.verses
                 .filter(
                   (verse) =>
@@ -1065,7 +1068,7 @@ export const Text = ({
       ) : (
         // Fallback: render all verses without subtitle grouping
         <div className={styles.textBox} data-tour="chapter-content">
-          <div className={styles.versesContainer}>
+          <div className={styles.versesContainer} style={{ fontSize: userFontSize }}>
             {text.verses.map((verse) => {
               return (
                 <span

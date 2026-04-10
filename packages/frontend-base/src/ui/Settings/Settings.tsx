@@ -4,8 +4,15 @@ import Link from "next/link";
 import { destroyCookie } from "nookies";
 import posthog from "posthog-js";
 import { useEffect, useState } from "react";
+import { useStore } from "@nanostores/react";
 import useMutation from "../../hooks/useMutation";
 import { userSession } from "../../hooks/userSession";
+import {
+  fontSizeStore,
+  setFontSize,
+  MIN_FONT_SIZE,
+  MAX_FONT_SIZE,
+} from "../../store/font-size";
 import { bibleVersions } from "../../utils/bible-versions";
 import { Button } from "../Button/Button";
 import {
@@ -35,6 +42,7 @@ export const Settings = ({
 }: SettingsProps) => {
   const { session, fetchSession } = userSession();
   const queryClient = useQueryClient();
+  const currentFontSize = useStore(fontSizeStore);
   const selectedVersionData = bibleVersions.find(
     (version) => version.key === selectedBibleVersion,
   );
@@ -372,6 +380,47 @@ export const Settings = ({
           </div>
         </div>
       )}
+
+      {/* Font Size Section */}
+      <div className={styles.sectionSpacing}>
+        <label className={styles.sectionLabel}>Display</label>
+        <div className={styles.profileContainer}>
+          <span className={styles.dropdownLabel}>Font size</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 6,
+            }}
+          >
+            <span style={{ fontSize: 14, color: "var(--oil)" }}>Size</span>
+            <span style={{ fontSize: 12, color: "var(--oslo-gray)" }}>
+              {currentFontSize}px
+            </span>
+          </div>
+          <input
+            type="range"
+            min={MIN_FONT_SIZE}
+            max={MAX_FONT_SIZE}
+            value={currentFontSize}
+            onChange={(e) => setFontSize(Number(e.target.value))}
+            style={{ width: "100%", accentColor: "var(--dust)" }}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 11,
+              color: "var(--oslo-gray)",
+              marginTop: 4,
+            }}
+          >
+            <span>Small</span>
+            <span>Large</span>
+          </div>
+        </div>
+      </div>
 
       {/* Auto-Highlight Settings Section */}
       {session?.id && <AutoHighlightSettings isLoggedIn={true} />}
