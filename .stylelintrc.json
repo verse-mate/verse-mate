@@ -1,6 +1,10 @@
 {
   "extends": ["stylelint-config-standard"],
-  "ignoreFiles": ["**/dist/**/*.css", "VerseMate/**/*.css", "apps/lovable/**/*.css"],
+  "ignoreFiles": [
+    "**/dist/**/*.css",
+    "VerseMate/**/*.css",
+    "apps/lovable/**/*.css"
+  ],
   "rules": {
     "media-feature-range-notation": null,
     "at-rule-no-unknown": [
