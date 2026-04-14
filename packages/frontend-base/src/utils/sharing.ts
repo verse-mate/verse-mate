@@ -12,11 +12,7 @@ interface ShareablePassageParams {
 }
 
 // Allowed hosts for security validation
-const ALLOWED_HOSTS = [
-  "localhost",
-  "app.versemate.org",
-  "versemate.com", // Add production domain when available
-];
+const ALLOWED_HOSTS = ["localhost", "versemate.org", "versemate.com"];
 
 /**
  * Validates and sanitizes a URL origin
