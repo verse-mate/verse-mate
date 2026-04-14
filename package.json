@@ -10,7 +10,12 @@
     "tsc": "bunx tsc",
     "validate": "bun run lint && bun run tsc && bun run test"
   },
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend-next",
+    "apps/website",
+    "packages/*"
+  ],
   "devDependencies": {
     "@biomejs/biome": "^1.8.3",
     "@types/bull": "^4.10.4",
