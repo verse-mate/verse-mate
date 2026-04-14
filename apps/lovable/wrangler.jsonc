@@ -1,0 +1,47 @@
+{
+  // Wrangler configuration for VerseMate Lovable app (Vite SPA) deployment using Workers
+  "$schema": "https://raw.githubusercontent.com/cloudflare/wrangler/main/config-schema.json",
+  "name": "verse-mate-lovable",
+  "main": "worker.js",
+  "compatibility_date": "2025-08-06",
+  "account_id": "e8f0b566ba1c8227a25e3784def4300e",
+
+  /**
+   * Workers.dev route enabled for development/testing
+   */
+  "workers_dev": true,
+
+  // Static assets configuration for Workers
+  "assets": {
+    "directory": "./dist",  // Vite build output directory
+    "binding": "ASSETS",
+    "run_worker_first": false  // Serve static assets directly
+  },
+
+  // Development settings
+  "dev": {
+    "ip": "localhost",
+    "port": 8789,
+    "local_protocol": "http"
+  },
+
+  // Environment configurations
+  "env": {
+    "preview": {
+      "name": "verse-mate-lovable-preview"
+    },
+    "staging": {
+      "name": "verse-mate-lovable-staging",
+      "routes": [
+        {
+          "pattern": "staging.versemate.org",
+          "custom_domain": true
+        }
+      ]
+    },
+    "production": {
+      "name": "verse-mate-lovable-production"
+      // Production domain TBD — add routes here when ready
+    }
+  }
+}
