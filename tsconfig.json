@@ -33,5 +33,10 @@
       "@/*": ["./apps/frontend-next/src/*"]
     }
   },
-  "exclude": ["./apps/website/*", "./apps/lovable/*", "playwright.config.ts", "VerseMate"]
+  "exclude": [
+    "./apps/website/*",
+    "./apps/lovable/*",
+    "playwright.config.ts",
+    "VerseMate"
+  ]
 }
