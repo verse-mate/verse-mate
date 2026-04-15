@@ -1,0 +1,347 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Serif:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ─── VerseMate production tokens (from packages/frontend-base/styles/vars.css) ─── */
+
+    /* Production colors */
+    --vm-night: #000;
+    --vm-snow: #fff;
+    --vm-dust: #b09a6d;
+    --vm-rodeo-dust: #c2b291;
+    --vm-fantasy: #f6f3ec;
+    --vm-snow-rock: #eae6de;
+    --vm-charcoal-grey: #3e464d;
+    --vm-oslo-gray: #818990;
+    --vm-venus: #888;
+    --vm-porcelain: #f0f0f0;
+    --vm-geyser: #dce0e3;
+    --vm-geyser-opacity: #dce0e380;
+    --vm-oil: #1B1B1B;
+    --vm-salmon: #f87171;
+
+    /* Header — black in production */
+    --header-bg: 0 0% 0%;
+    --header-fg: 0 0% 100%;
+
+    /* Reading body (production uses --fantasy #f6f3ec) */
+    --background: 39 43% 95%;          /* #f6f3ec */
+    --foreground: 210 16% 16%;         /* #212531 */
+    --card: 39 43% 95%;
+    --card-foreground: 210 16% 16%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 39 43% 95%;
+    --secondary: 39 15% 90%;
+    --secondary-foreground: 210 16% 16%;
+    --muted: 210 7% 88%;               /* #dce0e3 geyser */
+    --muted-foreground: 206 7% 53%;    /* #818990 oslo-gray */
+
+    /* Gold accent = production --dust */
+    --accent: 38 29% 56%;              /* #b09a6d */
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 7% 88%;              /* geyser */
+    --input: 210 7% 88%;
+    --ring: 38 29% 56%;
+    --radius: 0.5rem;
+
+    /* Verse number color = charcoal-grey in production, NOT gold */
+    --verse-number-color: var(--vm-charcoal-grey);
+
+    /* Highlight colors — exact production RGB values at 30% opacity */
+    --hl-yellow: rgb(255 235 59 / 30%);
+    --hl-green: rgb(76 175 80 / 30%);
+    --hl-blue: rgb(33 150 243 / 30%);
+    --hl-pink: rgb(233 30 99 / 30%);
+    --hl-purple: rgb(156 39 176 / 30%);
+    --hl-orange: rgb(255 152 0 / 30%);
+    --hl-red: rgb(244 67 54 / 30%);
+    --hl-teal: rgb(0 150 136 / 30%);
+    --hl-brown: rgb(121 85 72 / 30%);
+
+    /* Auto-highlight colors — 20% bg + underline */
+    --ahl-yellow-bg: rgb(255 255 0 / 30%);
+    --ahl-yellow-border: rgb(255 255 0 / 50%);
+    --ahl-blue-bg: rgb(173 216 230 / 30%);
+    --ahl-blue-border: rgb(173 216 230 / 50%);
+    --ahl-green-bg: rgb(144 238 144 / 30%);
+    --ahl-green-border: rgb(144 238 144 / 50%);
+    --ahl-orange-bg: rgb(255 165 0 / 30%);
+    --ahl-orange-border: rgb(255 165 0 / 50%);
+    --ahl-pink-bg: rgb(255 192 203 / 30%);
+    --ahl-pink-border: rgb(255 192 203 / 50%);
+    --ahl-purple-bg: rgb(221 160 221 / 30%);
+    --ahl-purple-border: rgb(221 160 221 / 50%);
+    --ahl-red-bg: rgb(244 67 54 / 30%);
+    --ahl-red-border: rgb(244 67 54 / 50%);
+    --ahl-teal-bg: rgb(0 150 136 / 30%);
+    --ahl-teal-border: rgb(0 150 136 / 50%);
+    --ahl-brown-bg: rgb(121 85 72 / 30%);
+    --ahl-brown-border: rgb(121 85 72 / 50%);
+
+    /* Desktop chrome */
+    --chrome-bg: 0 0% 85%;
+
+    /* Dark surface (sheets, selectors, menu drawer — overlays stay dark) */
+    --dark-surface: 0 0% 0%;           /* #000 — overlays */
+    --dark-surface-raised: 0 0% 19.6%; /* #323232 — pill containers, card bg */
+    --dark-surface-fg: 0 0% 100%;
+    --dark-surface-muted: 0 0% 60%;
+    --dark-border: 0 0% 19.6%;         /* #323232 */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 11%;
+    --sidebar-primary: 0 0% 11%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 11%;
+    --sidebar-border: 210 7% 88%;
+    --sidebar-ring: 38 29% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: Roboto, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-color: hsl(var(--chrome-bg));
+  }
+}
+
+@layer utilities {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+  .safe-top { padding-top: env(safe-area-inset-top, 0); }
+
+  /* Verse number — lighter than charcoal-grey for readability on dark bg */
+  .text-verse-number { color: #8a9199; }
+
+  .bg-dark-surface { background-color: hsl(var(--dark-surface)); }
+  .bg-dark-raised { background-color: hsl(var(--dark-surface-raised)); }
+  .text-dark-fg { color: hsl(var(--dark-surface-fg)); }
+  .text-dark-muted { color: hsl(var(--dark-surface-muted)); }
+  .border-dark { border-color: hsl(var(--dark-border)); }
+  .bg-header { background-color: hsl(var(--header-bg)); }
+  .text-header-fg { color: hsl(var(--header-fg)); }
+  .text-gold { color: var(--vm-dust); }
+  .bg-gold { background-color: var(--vm-dust); }
+
+  /* Production scripture fonts */
+  .font-scripture {
+    font-family: 'Roboto Serif', Georgia, serif;
+    font-weight: 300;
+    font-size: 20px;
+    line-height: 34px;
+  }
+
+  .font-title {
+    font-family: Roboto, system-ui, sans-serif;
+    font-style: normal;
+    font-weight: 500;
+  }
+
+  /* Production highlight classes */
+  .hl-yellow { background-color: var(--hl-yellow); }
+  .hl-green { background-color: var(--hl-green); }
+  .hl-blue { background-color: var(--hl-blue); }
+  .hl-pink { background-color: var(--hl-pink); }
+  .hl-purple { background-color: var(--hl-purple); }
+  .hl-orange { background-color: var(--hl-orange); }
+  .hl-red { background-color: var(--hl-red); }
+  .hl-teal { background-color: var(--hl-teal); }
+  .hl-brown { background-color: var(--hl-brown); }
+
+  /* Auto-highlight = lighter bg + colored underline */
+  .ahl-yellow {
+    background-color: var(--ahl-yellow-bg);
+    border-bottom: 2px solid var(--ahl-yellow-border);
+    cursor: pointer;
+  }
+
+  .ahl-blue {
+    background-color: var(--ahl-blue-bg);
+    border-bottom: 2px solid var(--ahl-blue-border);
+    cursor: pointer;
+  }
+
+  .ahl-green {
+    background-color: var(--ahl-green-bg);
+    border-bottom: 2px solid var(--ahl-green-border);
+    cursor: pointer;
+  }
+
+  .ahl-orange {
+    background-color: var(--ahl-orange-bg);
+    border-bottom: 2px solid var(--ahl-orange-border);
+    cursor: pointer;
+  }
+
+  .ahl-pink {
+    background-color: var(--ahl-pink-bg);
+    border-bottom: 2px solid var(--ahl-pink-border);
+    cursor: pointer;
+  }
+
+  .ahl-purple {
+    background-color: var(--ahl-purple-bg);
+    border-bottom: 2px solid var(--ahl-purple-border);
+    cursor: pointer;
+  }
+
+  .ahl-red {
+    background-color: var(--ahl-red-bg);
+    border-bottom: 2px solid var(--ahl-red-border);
+    cursor: pointer;
+  }
+
+  .ahl-teal {
+    background-color: var(--ahl-teal-bg);
+    border-bottom: 2px solid var(--ahl-teal-border);
+    cursor: pointer;
+  }
+
+  .ahl-brown {
+    background-color: var(--ahl-brown-bg);
+    border-bottom: 2px solid var(--ahl-brown-border);
+    cursor: pointer;
+  }
+}
+
+/* ─── Desktop: hide per-screen headers inside the split panels ─── */
+@media (min-width: 1024px) {
+  /* Reading screen header is replaced by DesktopLayout's shared header */
+  .reading-screen-header {
+    display: none !important;
+  }
+
+  /* Commentary screen header is also replaced */
+  .commentary-screen-header {
+    display: none !important;
+  }
+}
+
+/* ─── Desktop Menu Sidebar ─── */
+@media (min-width: 1024px) {
+  .menu-container {
+    /* When routed directly on desktop, constrain to a sidebar-like width */
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+
+/* ─── Responsive Shell ─── */
+#root {
+  display: flex;
+  min-height: 100dvh;
+}
+
+/* Mobile/Tablet: full viewport, column layout */
+@media (max-width: 1023px) {
+  #root {
+    flex-direction: column;
+  }
+}
+
+/* Desktop: centered content with max-width */
+@media (min-width: 1024px) {
+  #root {
+    justify-content: center;
+    background-color: #1B1B1B;
+  }
+}
+
+/* ─── Desktop: chapter nav buttons vertically centered ─── */
+@media (min-width: 1024px) {
+  .chapter-nav-btn {
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translateY(-50%);
+  }
+
+  .chapter-nav-prev {
+    left: 16px !important;
+  }
+
+  .chapter-nav-next {
+    right: 16px !important;
+  }
+}
+
+/* ─── Desktop: VerseInsightSheet narrower than Bible panel ─── */
+@media (min-width: 1024px) {
+  .verse-insight-sheet {
+    left: 10% !important;
+    right: 10% !important;
+    max-width: 480px;
+    margin: 0 auto;
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+/* ─── Desktop: interactive element hover states ─── */
+@media (min-width: 1024px) {
+  .chapter-nav-btn:hover {
+    background-color: #444 !important;
+    transition: background-color 0.15s ease;
+  }
+}
+
+/* ─── Mini-sidebar thin scrollbar ─── */
+.mini-sidebar-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.mini-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mini-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 2px;
+}
+
+.mini-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* ─── Desktop: visible thin scrollbar on all scrollable panels ─── */
+@media (min-width: 1024px) {
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #3a3a3a;
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  /* Keep mini-sidebar narrower */
+  .mini-sidebar-scroll::-webkit-scrollbar {
+    width: 3px;
+  }
+}
+
+/* prod-mobile-1775850347 */
