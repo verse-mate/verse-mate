@@ -14,7 +14,8 @@
       "./packages/backend-base/src/bible/data/NASB1995.json",
       "./apps/frontend-next/public/*",
       "./apps/website/*",
-      "./VerseMate/*"
+      "./VerseMate/*",
+      "./apps/lovable/*"
     ],
     "maxSize": 6000000
   },
