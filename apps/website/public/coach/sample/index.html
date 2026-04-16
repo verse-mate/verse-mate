@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sample Coaching Report — VerseMate</title>
+<meta name="description" content="Anonymized sample of a weekly Bible leader coaching report. Scorecard, strengths, improvements, application questions, recommendations, and appendix.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #171717;
+    --ink-dk: #000000;
+    --slate: #3E464D;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --cream: #F6F3EC;
+    --cream-dk: #EDE7D8;
+    --white: #FFFFFF;
+    --tan: #C2B291;
+    --tan-dk: #A89777;
+    --tan-soft: #E6DCC4;
+    --amber: #D9A566;
+    --green-bg: #C6EFCE; --green-tx: #006100;
+    --blue-bg: #D6E4F0;  --blue-tx: #1E3A5F;
+    --red-bg: #FFD6D6;   --red-tx: #9C0006;
+    --na-bg: #F1F1F1;    --na-tx: #6B7280;
+    --serif: 'Merriweather', Georgia, serif;
+    --arial: Arial, Helvetica, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--arial);
+    color: var(--ink);
+    background: var(--cream);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+  }
+  .serif { font-family: var(--serif); font-weight: 700; }
+  a { color: inherit; text-decoration: underline; }
+
+  /* ============ LAYOUT ============ */
+  .doc { max-width: 940px; margin: 0 auto; background: var(--white); box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+  .doc-inner { padding: 56px 64px; }
+
+  /* ============ HERO / TITLE ============ */
+  .title-banner {
+    background: var(--ink-dk);
+    color: var(--white);
+    padding: 48px 64px 44px;
+    border-bottom: 6px solid var(--tan);
+    text-align: center;
+  }
+  .title-banner .eyebrow {
+    font-family: var(--arial);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--tan);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .title-banner h1 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 42px);
+    margin-top: 10px;
+    letter-spacing: -0.5px;
+  }
+  .title-banner .subtitle {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 17px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .anon-tag {
+    display: inline-block;
+    margin-top: 18px;
+    padding: 6px 14px;
+    border: 1px solid rgba(194,178,145,0.4);
+    border-radius: 100px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--tan);
+    text-transform: uppercase;
+  }
+
+  /* ============ SCORE CARD ============ */
+  .score-card {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--tan);
+    padding: 40px 44px;
+    margin: 48px 0 40px;
+    border-radius: 4px;
+  }
+  .score-top {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  .score-big {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 72px;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: -2px;
+  }
+  .score-grade {
+    display: inline-block;
+    font-family: var(--serif);
+    font-weight: 700;
+    color: var(--amber);
+    margin-left: 8px;
+    font-size: 52px;
+  }
+  .score-label {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .score-sub {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--slate);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .score-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 32px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .score-meta .lab {
+    font-weight: 700;
+    color: var(--ink);
+    font-family: var(--serif);
+  }
+  .score-meta .val { color: var(--slate); }
+
+  /* ============ BIG IDEAS CALLOUT ============ */
+  .big-ideas {
+    background: #fffdf5;
+    border-left: 4px solid var(--tan);
+    padding: 22px 28px;
+    margin: 24px 0 40px;
+    border-radius: 0 4px 4px 0;
+  }
+  .big-ideas h3 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--tan-dk);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .big-ideas p {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink);
+    margin: 8px 0;
+    line-height: 1.5;
+  }
+
+  /* ============ SECTION HEADING ============ */
+  .section-head {
+    background: var(--ink-dk);
+    color: var(--white);
+    padding: 18px 28px;
+    margin: 56px -64px 0;
+    border-bottom: 4px solid var(--tan);
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.3px;
+  }
+  .section-head .num {
+    color: var(--tan);
+    margin-right: 10px;
+    font-weight: 900;
+  }
+
+  /* ============ CONTENT ============ */
+  .section-body { padding-top: 28px; }
+  h2.h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 19px;
+    color: var(--ink);
+    margin-top: 28px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3.h3 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+    margin-top: 22px;
+    margin-bottom: 8px;
+  }
+  p { margin: 12px 0; color: var(--slate); }
+  strong { color: var(--ink); font-weight: 700; }
+
+  /* ============ METRIC TABLE ============ */
+  .metric-title {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--ink);
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+  table.metric {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    font-size: 13px;
+  }
+  table.metric thead th {
+    background: var(--ink-dk);
+    color: var(--white);
+    text-align: left;
+    padding: 12px 14px;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    border-bottom: 3px solid var(--tan);
+  }
+  table.metric thead th.num-col { text-align: center; width: 60px; }
+  table.metric tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--slate);
+    vertical-align: middle;
+  }
+  table.metric tbody tr:nth-child(even) td { background: #fafafa; }
+  table.metric tbody tr:last-child td { border-bottom: 2px solid var(--ink-dk); }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge.strong { background: var(--green-bg); color: var(--green-tx); }
+  .badge.target { background: var(--blue-bg); color: var(--blue-tx); }
+  .badge.needs  { background: var(--red-bg);   color: var(--red-tx); }
+  .badge.na     { background: var(--na-bg);    color: var(--na-tx); }
+
+  .dok-1 { color: var(--muted); font-weight: 600; font-size: 11px; }
+  .dok-2 { color: #1E3A5F; font-weight: 700; font-size: 11px; }
+  .dok-3 { color: #006100; font-weight: 700; font-size: 11px; }
+  .dok-4 { color: #0B3D0B; font-weight: 900; font-size: 11px; }
+
+  /* ============ Q TABLE ============ */
+  table.q td.time { color: var(--muted); font-family: var(--arial); font-size: 12px; white-space: nowrap; }
+  table.q td.q-text { font-style: italic; color: var(--ink); }
+  table.q td.dok { text-align: center; }
+
+  /* ============ REC CALLOUT ============ */
+  .rec {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rec:last-child { border-bottom: none; }
+  .rec-title {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .rec-title .rnum { color: var(--tan-dk); margin-right: 6px; }
+
+  /* ============ FOOTER NOTE ============ */
+  .foot-note {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .foot-brand {
+    font-family: var(--serif);
+    font-weight: 700;
+    color: var(--tan-dk);
+    margin-top: 14px;
+    font-style: normal;
+  }
+
+  /* ============ TOP BAR ============ */
+  .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--ink-dk);
+    padding: 12px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--tan);
+  }
+  .top-bar strong { color: var(--tan); font-family: var(--serif); }
+  .top-bar a { color: var(--tan); font-weight: 700; margin-left: 14px; text-decoration: none; }
+  .top-bar a:hover { text-decoration: underline; }
+
+  /* ============ MOBILE ============ */
+  @media (max-width: 767px) {
+    .doc-inner { padding: 32px 22px; }
+    .title-banner { padding: 36px 22px 32px; }
+    .section-head { margin: 44px -22px 0; padding: 16px 22px; font-size: 18px; }
+    .score-card { padding: 26px 20px; }
+    .score-top { grid-template-columns: 1fr; gap: 12px; text-align: center; }
+    .score-big { font-size: 56px; }
+    .score-grade { font-size: 40px; }
+    .score-meta { grid-template-columns: 1fr; gap: 10px; }
+    .big-ideas { padding: 18px 20px; }
+    .big-ideas p { font-size: 15px; }
+    table.metric { font-size: 12px; }
+    table.metric thead th { padding: 10px 8px; font-size: 11px; }
+    table.metric tbody td { padding: 9px 8px; }
+    .badge { padding: 3px 8px; font-size: 9px; }
+  }
+  @media (max-width: 479px) {
+    table.metric thead th:nth-child(3),
+    table.metric tbody td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <strong>Sample Coaching Report</strong> · Anonymized excerpt from a real weekly session
+  <a href="/coach">← Back to overview</a>
+</div>
+
+<div class="doc">
+
+  <!-- TITLE BANNER -->
+  <header class="title-banner">
+    <div class="eyebrow">VerseMate · Bible Leader Coaching</div>
+    <h1>Weekly Session Report</h1>
+    <div class="subtitle">First Evaluation &nbsp;|&nbsp; Baseline Session</div>
+    <div class="anon-tag">Anonymized sample</div>
+  </header>
+
+  <div class="doc-inner">
+
+    <!-- SCORE CARD -->
+    <div class="score-card">
+      <div class="score-top">
+        <div>
+          <div class="score-big">38<span style="font-size:40px;color:var(--muted);font-weight:700;">/55</span><span class="score-grade">B+</span></div>
+          <div class="score-label" style="margin-top:6px;">Overall Coaching Score · 11 Dimensions</div>
+        </div>
+        <div>
+          <div class="score-label">Session</div>
+          <div class="score-sub">Precept Colossians Study — Chapter 4 (Final Session)</div>
+        </div>
+      </div>
+
+      <div class="score-meta">
+        <div><span class="lab">Date: </span><span class="val">Wednesday, April 8, 2026</span></div>
+        <div><span class="lab">Location: </span><span class="val">Zoom Video Call</span></div>
+        <div><span class="lab">Topic: </span><span class="val">Prayer, Walking in Wisdom, Personal Greetings</span></div>
+        <div><span class="lab">Duration: </span><span class="val">1h 36m 30s (~96.5 minutes)</span></div>
+        <div><span class="lab">Attendees: </span><span class="val">~7 members (small group)</span></div>
+        <div><span class="lab">New Attendees: </span><span class="val">0 (Dimension 2 = N/A)</span></div>
+        <div style="grid-column: 1 / -1;"><span class="lab">Passages: </span><span class="val">Colossians 4:2-18, 1 Thess 5:16-18, Phil 4:6, 1 John 5:14-15, Matt 26:41</span></div>
+      </div>
+    </div>
+
+    <!-- BIG IDEAS -->
+    <div class="big-ideas">
+      <h3>Big Ideas</h3>
+      <p>"Prayer is participation in God's work, not a vending machine."</p>
+      <p>"Abide in Him and your prayers align with His will."</p>
+    </div>
+
+    <!-- SCORECARD SECTION -->
+    <h2 class="section-head"><span class="num">1.</span>Scorecard</h2>
+    <div class="section-body">
+
+      <div class="metric-title">Attendees</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Number of Attendees</td><td>~7 members</td><td>—</td><td class="num-col">—</td></tr>
+          <tr><td>New Attendees</td><td>0</td><td>—</td><td class="num-col"><span class="badge na">N/A</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Scripture Focus</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Leader Talk (incl. reading)</td><td>38% / 62%</td><td>30% leader</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Leader Talk (discussion only)</td><td>32% / 68%</td><td>30% leader</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Statements tied to verses</td><td>72%</td><td>70%</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Time to first scripture</td><td>11 min</td><td>&lt;15 min</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Time Management</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Overall Class Time</td><td>1h 36m</td><td>1.5-2h</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Opening / Pre-session</td><td>1 min (1%)</td><td>2-5 min</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Review / Context</td><td>9 min (9%)</td><td>5-10 min</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Lesson / Teaching</td><td>54 min (56%)</td><td>50-60%</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Discussion / Application</td><td>27 min (28%)</td><td>15-20%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Closing / Next Study / Prayer</td><td>6 min (6%)</td><td>5-10%</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Time on Tangents</td><td>4 min (4%)</td><td>&lt;10%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Application Questions</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Big Idea Questions</td><td>8</td><td>8-10</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Distribution</td><td>1 every 10-12 min</td><td>Spread evenly</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Level 1 (simple recall)</td><td>0%</td><td>&lt;25%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Level 2 (compare/analyze)</td><td>25%</td><td>30-40%</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Level 3 (reason/justify)</td><td>50%</td><td>25-35%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Level 4 (apply to life)</td><td>25%</td><td>10-20%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Engagement</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Members reading Bible</td><td>4 of 6 (67%)</td><td>Multiple readers</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Members asking questions</td><td>5 of 6 (83%)</td><td>70-80%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Member questions/comments</td><td>1 every 2-3 min</td><td>1 every 3-5 min</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Member talk time</td><td>62%</td><td>50-70%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Dominant talker management</td><td>Naturally balanced</td><td>Balanced</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Quiet member engagement</td><td>Gentle prompts</td><td>Active outreach</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Wait time after questions</td><td>4-8 sec</td><td>3-5 sec</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Visual aids used</td><td>None observed</td><td>2+ aids</td><td class="num-col"><span class="badge needs">Needs Work</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Leadership</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Vulnerability moments</td><td>4 moments (medium depth)</td><td>2-3 per session</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Monologues &gt;90 sec</td><td>2 instances</td><td>0 in discussion</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Longest monologue</td><td>2 min 45 sec</td><td>&lt;90 sec</td><td class="num-col"><span class="badge needs">Needs Work</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Question Quality</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Open-ended questions</td><td>78%</td><td>80%+</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Questions requiring text</td><td>65%</td><td>70%+</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Follow-up probing questions</td><td>11</td><td>15-20</td><td class="num-col"><span class="badge needs">Needs Work</span></td></tr>
+          <tr><td>Wait before answering own Q</td><td>4-8 sec</td><td>5+ sec</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Study Method &amp; Communication</div>
+      <table class="metric"><thead><tr><th>Metric</th><th>This Session</th><th>Target</th><th class="num-col">Rating</th></tr></thead>
+        <tbody>
+          <tr><td>Questions vs statements</td><td>55% Q / 45% S</td><td>70% Q / 30% S</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Tonality/vocal variety</td><td>Conversational, steady</td><td>Varied tone</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Topic drift</td><td>4%</td><td>&lt;10%</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+          <tr><td>Periodic summaries</td><td>At key transitions</td><td>At key points</td><td class="num-col"><span class="badge target">On Target</span></td></tr>
+          <tr><td>Big Ideas at close</td><td>2 takeaways stated</td><td>1-2 takeaways</td><td class="num-col"><span class="badge strong">Strong</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- STRENGTHS -->
+    <h2 class="section-head" style="border-bottom-color:#2f7d3a;"><span class="num" style="color:#6ad07a;">2.</span>Top 5 Areas of Strength</h2>
+    <div class="section-body">
+
+      <h2 class="h2">1. Exceptional Discussion Balance (32% Leader Talk in Discussion)</h2>
+      <p>The leader's talk ratio during discussion segments was approximately 32%, nearly matching the Lifeway 30% facilitation benchmark on a very first evaluated session. Including scripture reading time, the leader spoke approximately 38% of the total session. This is a remarkable baseline. The balance was not accidental — the leader consistently asked a question and then let the group carry the conversation, stepping in only to redirect or add a connecting thought. The discussion on prayer at [12:05-17:00] exemplifies this: the leader asked "What did you learn about prayer from these verses?" and then let five different members respond organically, with the leader contributing only brief affirmations and occasional bridging comments.</p>
+      <p>The strongest evidence of facilitation instinct came during the extended discussion of 1 John 5:14-15 beginning at [46:58]. The leader introduced the passage and then let the group wrestle with the tension between "asking according to His will" and the apparent futility of prayer if God's will is fixed. Over a 12-minute stretch, six different members offered perspectives — on submission, on being part of God's plan, on alignment through abiding — with the leader weaving their contributions together rather than providing the answer. This natural ability to let the group discover meaning through dialogue rather than lecture is the single most difficult facilitation skill to develop.</p>
+
+      <h2 class="h2">2. Strong Wait Time Discipline (4-8 Seconds)</h2>
+      <p>The leader consistently waited 4-8 seconds after posing questions before speaking again, exceeding the 3-5 second benchmark established by Mary Budd Rowe's foundational 1972 research and meeting the extended 5-8 second target recommended by Robert Stahl (1994) for higher-order questions. At [02:23], the leader asked how the group would segment Colossians and waited a full 14 seconds of silence before someone spoke. No rush to fill the gap, no rephrasing of the question, no self-answer.</p>
+      <p>This patience was especially evident during the prayer application section. At [59:39], the leader asked "What needs to change in your prayer life, or what has already changed?" and waited approximately 9 seconds before a member responded with a deeply personal reflection about discerning God's will versus personal will. Rowe's research demonstrated that extending wait time from 1.4 to 3 seconds produces 300-700% longer student responses, higher cognitive-level answers, and greater participation from quieter members. A natural wait time of 4-8 seconds is already in the zone that produces the highest quality responses.</p>
+
+      <h2 class="h2">3. Participant-Driven Discussion Culture (83% of Members Speaking)</h2>
+      <p>Five of approximately six non-leader participants contributed substantive discussion comments during the session, producing an 83% participation rate that exceeds the 70-80% benchmark. More importantly, the participation was not merely responsive to leader questions — members frequently built on each other's comments without mediation. At [20:32-21:19], the conversation about being "watchful" in prayer cascaded through three participants who each added a layer without the leader directing the conversation.</p>
+      <p>The peer-to-peer interaction pattern was strongest during the discussion of "asking according to His will" at [55:18-58:18]. One member posed a provocative question — "If we need to ask according to God's will, then what's the point of asking?" — and another member immediately responded with an insight about participating in God's plan. This sequence demonstrates a group culture where members feel safe to pose hard theological questions to each other, not just to the leader.</p>
+
+      <h2 class="h2">4. Effective Cross-Referencing (8+ Passages Across 6 Books)</h2>
+      <p>The leader wove at least 8 distinct scripture passages across 6 books into the session: Colossians 4:2-18 (primary text), 1 Thessalonians 5:16-18, Philippians 4:6, 1 John 5:14-15, Matthew 26:41, Colossians 1:10, Colossians 2:6, and Colossians 3:7. The internal Colossians cross-references were particularly effective — at [38:58-42:01], the leader connected Paul's prayer request in chapter 4 back to Paul's prayer for the Colossians in chapter 1 and to the instruction in chapter 3:16, showing how the book's themes form a unified structure.</p>
+      <p>The external cross-references were introduced both by the leader and by participants, which indicates a study culture where members bring their own scripture connections to the discussion. At [28:06], a participant independently brought in 1 Peter 3:15 on being ready to give an answer, and the leader affirmed the connection and built on it rather than dismissing it as off-topic. This willingness to incorporate participant-sourced references strengthens group ownership.</p>
+
+      <h2 class="h2">5. Honest Personal Application (Vulnerability That Models Growth)</h2>
+      <p>The leader shared four vulnerability moments during the session, each grounded in honest self-assessment rather than polished testimony. The most impactful came at [50:03-51:10] when the leader shared a personal "psychological trick" for suffering. This disclosure was notable because it was not presented as settled theology but as a personal coping mechanism, acknowledging its imperfection while sharing its usefulness.</p>
+      <p>The second most significant vulnerability moment came at [63:01-64:14] when the leader admitted a personal prayer life can be "like a task" and that the content of those prayers "needs to be a little more sincere." This is a Level 2-3 vulnerability on the depth scale — not sharing a past failure that has been resolved but an ongoing struggle currently being worked through. For a new leader, this level of in-progress honesty is strong.</p>
+    </div>
+
+    <!-- IMPROVEMENTS -->
+    <h2 class="section-head" style="border-bottom-color:#b84d16;"><span class="num" style="color:#ffad70;">3.</span>Top 5 Areas for Improvement</h2>
+    <div class="section-body">
+
+      <h2 class="h2">1. No Visual Aids Used</h2>
+      <p>The session included no visual aids — no charts, maps, slides, whiteboard, screen sharing, or Blue Letter Bible word studies. For a Zoom call format, screen sharing is the primary tool for visual engagement, and it was not utilized. The Colossians 4 content offered several natural opportunities: a map showing the geographic relationship between Colossae, Laodicea, and Hierapolis, a chart organizing Paul's companions by role, or a timeline showing the Colossians-Philemon-Ephesians letter connection.</p>
+      <p>Research on multi-sensory learning (Mayer's multimedia learning principles) shows that combining verbal instruction with visual representations produces 89% better transfer than verbal-only instruction. For Zoom-based studies, screen sharing a simple slide or opening Blue Letter Bible for a Greek word study would add a visual dimension without requiring significant preparation. This is the most straightforward improvement available.</p>
+
+      <h2 class="h2">2. No Memory Reinforcement (Big Ideas Review)</h2>
+      <p>The session did not include a cumulative review of Big Ideas from prior sessions at the start. The leader moved from the opening prayer directly into a structural review question about segmenting Colossians [01:28], which was a good review activity, but it focused on book structure rather than the spiritual takeaways the group had been accumulating across the study.</p>
+      <p>The improvement is to pair structural review with a personal application review: "Before we start chapter 4, give me one Big Idea from this study that has changed something in your life." This takes 3-5 minutes and reinforces long-term retention through spaced recall (Ebbinghaus). The research on spaced repetition shows that without active recall, approximately 70% of learned material is forgotten within 48 hours.</p>
+
+      <h2 class="h2">3. Follow-Up Probing Below Target (11 vs. 15-20 Benchmark)</h2>
+      <p>The leader asked 11 follow-up probing questions across the session, below the 15-20 benchmark. Initial questions are well-framed and consistently open-ended, but there is a tendency to accept first responses without pushing deeper. At [12:05], the leader asked what they learned about prayer and received a solid answer. The leader responded with "What else?" which broadens the conversation rather than deepens it. A deepening probe: "What does that kind of laboring look like practically in your daily life?"</p>
+      <p>The research on productive struggle (Hiebert and Grouws, 2007) shows that the moment a learner is struggling to articulate an idea is precisely the moment where a well-placed probe produces the deepest learning. A natural instinct to ease the tension rather than let the group work through it is a common and correctable pattern for new leaders. The fix is to have 3-4 planned deepening follow-ups ready for each major question.</p>
+
+      <h2 class="h2">4. Opening Prayer Not Delegated</h2>
+      <p>The leader prayed the opening prayer directly at [00:51-01:25] rather than delegating it to a group member. The session's closing prayer was delegated to a member [94:26-95:47], which shows the leader understands the value of shared ownership. The 10-step session blueprint recommends delegating both opening and closing prayers to different members — it immediately establishes that this is a participatory session and develops the prayer confidence of the members.</p>
+      <p>The practical fix is simple: before the session begins, the leader can privately ask a specific member to open in prayer. Rotating this responsibility across weeks ensures every member gets practice praying aloud in front of others. The closing prayer delegation at [94:26] was a strong model — extending that same instinct to the opening prayer would complete the participatory bookend structure.</p>
+
+      <h2 class="h2">5. Greetings Section (Col 4:7-18) Covered Too Quickly</h2>
+      <p>The personal greetings section of Colossians 4:7-18 was read aloud and then discussed for only about 3 minutes before the leader moved to the closing application question. At [84:22], the leader said "I'm going to blow through this part if you're okay" which signals that the leader viewed the greetings as less important content. However, this section contains rich relational and ministry theology.</p>
+      <p>A member noticed that "these are not all the all stars — some of them deserted Paul" [83:45], which was an excellent observation that could have been explored further: "What does it say about Paul that he includes people who failed him in his greetings?" For a final session, slowing down to mine these relational insights would have given the group a model for how to read even less-obvious passages with theological curiosity.</p>
+    </div>
+
+    <!-- QUESTIONS -->
+    <h2 class="section-head" style="border-bottom-color:#1e4d9a;"><span class="num" style="color:#7cb8ff;">4.</span>Application Questions — Big Idea Questions Only</h2>
+    <div class="section-body">
+      <p>Profound, discussion-driving questions posed to provoke reflection, application, or theological wrestling. Regular classroom Q&amp;A is excluded and documented in the Appendix. Questions scored using Webb's Depth of Knowledge (DOK): DOK 1 = recall, DOK 2 = compare/analyze, DOK 3 = reason/justify, DOK 4 = apply to life.</p>
+
+      <table class="metric q" style="margin-top:18px;">
+        <thead><tr><th style="width:40px;">#</th><th style="width:90px;">Time</th><th>Question</th><th class="num-col">DOK</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="time">[01:41]</td><td class="q-text">"How would you break up Colossians into segments?"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>2</td><td class="time">[11:54]</td><td class="q-text">"What did you learn about prayer from these verses?"</td><td class="dok"><span class="dok-3">DOK 3</span></td></tr>
+          <tr><td>3</td><td class="time">[18:39]</td><td class="q-text">"That praying for an open door to the gospel — what do you think that means?"</td><td class="dok"><span class="dok-3">DOK 3</span></td></tr>
+          <tr><td>4</td><td class="time">[28:46]</td><td class="q-text">"How does praying for others to make the gospel clear benefit us?"</td><td class="dok"><span class="dok-3">DOK 3</span></td></tr>
+          <tr><td>5</td><td class="time">[33:23]</td><td class="q-text">"How does this request for prayer relate to the rest of Colossians?"</td><td class="dok"><span class="dok-3">DOK 3</span></td></tr>
+          <tr><td>6</td><td class="time">[55:18]</td><td class="q-text">"If we need to ask according to God's will, then what's the point of asking?"</td><td class="dok"><span class="dok-4">DOK 4</span></td></tr>
+          <tr><td>7</td><td class="time">[59:26]</td><td class="q-text">"What needs to change in your prayer life, or what has already changed?"</td><td class="dok"><span class="dok-4">DOK 4</span></td></tr>
+          <tr><td>8</td><td class="time">[85:28]</td><td class="q-text">"What have you learned from Colossians and how will it impact your life?"</td><td class="dok"><span class="dok-4">DOK 4</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="metric-title">Big Idea Question Summary</div>
+      <table class="metric">
+        <thead><tr><th>Statistic</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Total Big Idea Questions</td><td>8</td></tr>
+          <tr><td>DOK 4 (Apply to Life)</td><td>3 (37.5%)</td></tr>
+          <tr><td>DOK 3 (Reason/Justify)</td><td>4 (50%)</td></tr>
+          <tr><td>DOK 2 (Compare/Analyze)</td><td>1 (12.5%)</td></tr>
+          <tr><td>DOK 1 or below</td><td>0</td></tr>
+          <tr><td>Open-ended</td><td>100%</td></tr>
+          <tr><td>Avg. frequency</td><td>1 every 10-12 minutes of teaching</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <h2 class="section-head" style="border-bottom-color:#6a2a9e;"><span class="num" style="color:#c79df0;">5.</span>Recommendations for Next Session</h2>
+    <div class="section-body">
+
+      <div class="rec">
+        <div class="rec-title"><span class="rnum">1.</span>Add One Visual Aid Per Session (Screen Share).</div>
+        <p><strong>Before:</strong> At [15:35], the group discussed the Greek word for "struggle" in Colossians 4:12, noting its connection to "agonize" — but the word study remained verbal. <strong>After:</strong> Open Blue Letter Bible on screen, navigate to Colossians 4:12, and show the Greek word ἀγωνιζόμενος (agonizomai) with its definition and usage in other verses. <strong>Target:</strong> at least one screen-shared visual element during the teaching portion.</p>
+      </div>
+
+      <div class="rec">
+        <div class="rec-title"><span class="rnum">2.</span>Open Each Session with a 3-Minute Big Ideas Review.</div>
+        <p><strong>Before:</strong> The leader moved directly from prayer into a structural review question. <strong>After:</strong> "Before we start chapter 1 of James, let's recall: what's one Big Idea from Colossians that stuck with you over the break?" This takes 3-5 minutes and reinforces long-term retention through spaced recall (Ebbinghaus). <strong>Target:</strong> open every session with a cumulative Big Ideas recall before any new content.</p>
+      </div>
+
+      <div class="rec">
+        <div class="rec-title"><span class="rnum">3.</span>Add 4-5 Deepening Probes Per Session.</div>
+        <p><strong>Before:</strong> The leader asked what they learned about prayer and received "laboring for others." The leader responded with "What else?" (broadening). <strong>After:</strong> "You said laboring — what does that word tell us about what prayer should feel like? Is your prayer life a labor?" (deepening). Robert Stahl's research shows deepening probes produce responses 2-3x longer at higher cognitive levels. <strong>Target:</strong> at least 4-5 deepening follow-ups per session.</p>
+      </div>
+
+      <div class="rec">
+        <div class="rec-title"><span class="rnum">4.</span>Delegate the Opening Prayer.</div>
+        <p><strong>Before:</strong> The leader opened and immediately prayed at [00:51]. <strong>After:</strong> Privately ask a specific member beforehand: "Would you open us in prayer today?" Rotate weekly so every member gets practice. <strong>Target:</strong> delegate both opening and closing prayers to different members every session.</p>
+      </div>
+
+      <div class="rec">
+        <div class="rec-title"><span class="rnum">5.</span>Slow Down the "Boring" Passages.</div>
+        <p><strong>Before:</strong> The leader spent approximately 3 minutes on 12 verses of rich relational content. <strong>After:</strong> For James, prepare 2-3 questions that mine overlooked details. "What does it tell us about James that he calls himself a servant rather than a brother of Jesus?" <strong>Target:</strong> no passage gets fewer than 2 questions per section.</p>
+      </div>
+
+      <div class="metric-title" style="margin-top:32px;">Recommendation Targets Summary</div>
+      <table class="metric">
+        <thead><tr><th style="width:40px;">#</th><th>Recommendation</th><th>This Session</th><th>Next Session Target</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Visual Aids</td><td>0 used</td><td>1+ screen-shared visual per session</td></tr>
+          <tr><td>2</td><td>Big Ideas Review</td><td>Not present</td><td>3-min cumulative recall at session start</td></tr>
+          <tr><td>3</td><td>Follow-up Probing</td><td>11 probes</td><td>15+ probes; 4-5 deepening</td></tr>
+          <tr><td>4</td><td>Opening Prayer Delegation</td><td>Self-led</td><td>Delegated to a different member weekly</td></tr>
+          <tr><td>5</td><td>Coverage of All Passages</td><td>Greetings rushed</td><td>2+ questions per passage section</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- APPENDIX -->
+    <h2 class="section-head" style="border-bottom-color:#4A5C6B;"><span class="num" style="color:#9ab4c7;">6.</span>Appendix: Metrics Detail</h2>
+    <div class="section-body">
+
+      <h2 class="h2">A1. Attendees</h2>
+      <p>Total estimated: ~7 members including the leader. All individual identifying details have been removed for this sample. In the full report, participant identity is available only to the leader and their designated coach.</p>
+
+      <h2 class="h2">A2. Time Management Breakdown</h2>
+      <table class="metric">
+        <thead><tr><th>Segment</th><th>Timestamps</th><th>Duration</th><th class="num-col">%</th></tr></thead>
+        <tbody>
+          <tr><td>Pre-Session / Casual Talk</td><td>[00:00-00:45]</td><td>~45 sec</td><td class="num-col">1%</td></tr>
+          <tr><td>Opening Prayer</td><td>[00:51-01:25]</td><td>~34 sec</td><td class="num-col">1%</td></tr>
+          <tr><td>Review: Segmenting Colossians</td><td>[01:28-10:09]</td><td>~8m 41s</td><td class="num-col">9%</td></tr>
+          <tr><td>Col 4:2-4, 12: Prayer (Reading)</td><td>[10:48-11:54]</td><td>~1m 6s</td><td class="num-col">1%</td></tr>
+          <tr><td>Prayer Discussion (Col 4)</td><td>[11:54-33:23]</td><td>~21m 29s</td><td class="num-col">22%</td></tr>
+          <tr><td>How Prayer Relates to Colossians</td><td>[33:23-42:01]</td><td>~8m 38s</td><td class="num-col">9%</td></tr>
+          <tr><td>Cross-Reference Passages on Prayer</td><td>[42:01-59:26]</td><td>~17m 25s</td><td class="num-col">18%</td></tr>
+          <tr><td>Application: What Changed in Prayer</td><td>[59:26-68:25]</td><td>~8m 59s</td><td class="num-col">9%</td></tr>
+          <tr><td>Col 4:5-6: Wisdom Toward Outsiders</td><td>[68:25-80:29]</td><td>~12m 4s</td><td class="num-col">12%</td></tr>
+          <tr><td>Col 4:7-18: Personal Greetings</td><td>[80:29-85:28]</td><td>~4m 59s</td><td class="num-col">5%</td></tr>
+          <tr><td>Final Reflection &amp; Next Study</td><td>[85:28-94:15]</td><td>~8m 47s</td><td class="num-col">9%</td></tr>
+          <tr><td>Closing Prayer &amp; Fellowship</td><td>[94:15-96:30]</td><td>~2m 15s</td><td class="num-col">2%</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="h2">A3. Full Question Classification</h2>
+      <p><strong>Big Idea Questions (8):</strong> DOK 2-4 discussion-driving questions documented in the Application Questions section.</p>
+      <p><strong>Regular Classroom Q&amp;A (12):</strong> Navigational, reading, bridging, and scaffolding questions that supported lesson flow.</p>
+
+      <table class="metric q">
+        <thead><tr><th style="width:40px;">#</th><th style="width:90px;">Time</th><th>Question</th><th class="num-col">Level</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="time">[04:15]</td><td class="q-text">"Why would you say that? [about doctrine vs. instruction]"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>2</td><td class="time">[05:53]</td><td class="q-text">"Would you change anything about your chapter themes now?"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>3</td><td class="time">[12:30]</td><td class="q-text">"What else? [about prayer]"</td><td class="dok"><span class="dok-1">DOK 1</span></td></tr>
+          <tr><td>4</td><td class="time">[12:40]</td><td class="q-text">"How do you get specific in prayer?"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>5</td><td class="time">[16:26]</td><td class="q-text">"What else did you learn from these verses on prayer?"</td><td class="dok"><span class="dok-1">DOK 1</span></td></tr>
+          <tr><td>6</td><td class="time">[44:51]</td><td class="q-text">"How did you get that from these verses?"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>7</td><td class="time">[69:08]</td><td class="q-text">"How does this relate to the rest of the book?"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>8</td><td class="time">[70:28]</td><td class="q-text">"Where are the dots connecting here?"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>9</td><td class="time">[75:18]</td><td class="q-text">"Would someone read Colossians 1:10?"</td><td class="dok"><span class="dok-1">DOK 1</span></td></tr>
+          <tr><td>10</td><td class="time">[76:29]</td><td class="q-text">"How do these walking verses relate to how we live with unbelievers?"</td><td class="dok"><span class="dok-3">DOK 3</span></td></tr>
+          <tr><td>11</td><td class="time">[83:01]</td><td class="q-text">"What stood out to you in your study of the greetings?"</td><td class="dok"><span class="dok-2">DOK 2</span></td></tr>
+          <tr><td>12</td><td class="time">[84:20]</td><td class="q-text">"You must have had a thought on this — what is it?"</td><td class="dok"><span class="dok-1">DOK 1</span></td></tr>
+        </tbody>
+      </table>
+      <p>Level distribution of regular Q&amp;A: 4 DOK 1 questions (33%) are primarily broadening prompts. 7 DOK 2 questions (58%) involve conceptual analysis and bridging. 1 DOK 3 question (8%) served as scaffolding. The leader's regular Q&amp;A skews higher on the DOK scale than typical — most "routine" questions still require analysis rather than simple recall.</p>
+
+      <h2 class="h2">A4. Participation Distribution</h2>
+      <table class="metric">
+        <thead><tr><th>Participation Level</th><th>Est. Count</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Spoke 5+ times</td><td>3-4 members</td><td>Core contributors</td></tr>
+          <tr><td>Spoke 2-4 times</td><td>2 members</td><td>Regular contributors</td></tr>
+          <tr><td>Spoke 1 time</td><td>0-1 members</td><td>Minimal participation</td></tr>
+          <tr><td>Did not speak</td><td>0</td><td>All members contributed</td></tr>
+          <tr><td>Total verbal contributions</td><td>~65-75 segments</td><td>From ~6 non-leader participants</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="h2">A5. Monologue Inventory</h2>
+      <table class="metric">
+        <thead><tr><th>Timestamp</th><th>Duration</th><th>Content</th></tr></thead>
+        <tbody>
+          <tr><td>[50:03-52:49]</td><td>~2m 45s</td><td>Personal approach to suffering: "psychological trick" — if God allows suffering, there's something He wants me to learn</td></tr>
+          <tr><td>[56:37-58:18]</td><td>~1m 41s</td><td>Illustration on prayer as participation in God's work</td></tr>
+        </tbody>
+      </table>
+      <p>Only 2 monologues exceeded 90 seconds, totaling approximately 4 minutes and 26 seconds (4.6% of session). Well below the Stuart &amp; Rutherford threshold.</p>
+
+      <h2 class="h2">A6. Vulnerability Moments</h2>
+      <table class="metric">
+        <thead><tr><th style="width:40px;">#</th><th style="width:90px;">Time</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="time">[15:49]</td><td>Admitting a personal prayer life doesn't usually "agonize" the way Epaphras did</td></tr>
+          <tr><td>2</td><td class="time">[50:03]</td><td>Sharing a personal "psychological trick" for dealing with suffering</td></tr>
+          <tr><td>3</td><td class="time">[63:01]</td><td>"The content of my prayers needs to be a little more sincere... it's really taking the Lord's name in vain"</td></tr>
+          <tr><td>4</td><td class="time">[65:46]</td><td>"My wife said something and I said let's pray... I'm really bad at listening to her"</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="h2">A7. Session Flow Timeline</h2>
+      <table class="metric">
+        <thead><tr><th>Timestamp</th><th>Duration</th><th>Segment</th><th>Leader Talk</th><th>Mode</th></tr></thead>
+        <tbody>
+          <tr><td>[00:00-01:25]</td><td>1m 25s</td><td>Pre-session / Prayer</td><td>~95%</td><td>Leader-led</td></tr>
+          <tr><td>[01:28-10:09]</td><td>8m 41s</td><td>Colossians Review</td><td>~40%</td><td>Mixed</td></tr>
+          <tr><td>[10:48-11:54]</td><td>1m 06s</td><td>Scripture Reading</td><td>~20%</td><td>Participant-led</td></tr>
+          <tr><td>[11:54-33:23]</td><td>21m 29s</td><td>Prayer Discussion</td><td>~28%</td><td>Collaborative</td></tr>
+          <tr><td>[33:23-42:01]</td><td>8m 38s</td><td>Prayer &amp; Colossians Tie-in</td><td>~30%</td><td>Collaborative</td></tr>
+          <tr><td>[42:01-59:26]</td><td>17m 25s</td><td>Cross-Ref Prayer Passages</td><td>~35%</td><td>Collaborative</td></tr>
+          <tr><td>[59:26-68:25]</td><td>8m 59s</td><td>Personal Prayer Application</td><td>~25%</td><td>Collaborative</td></tr>
+          <tr><td>[68:25-80:29]</td><td>12m 04s</td><td>Walking in Wisdom (4:5-6)</td><td>~35%</td><td>Collaborative</td></tr>
+          <tr><td>[80:29-85:28]</td><td>4m 59s</td><td>Personal Greetings (4:7-18)</td><td>~40%</td><td>Mixed</td></tr>
+          <tr><td>[85:28-94:15]</td><td>8m 47s</td><td>Final Reflection &amp; Next Study</td><td>~30%</td><td>Collaborative</td></tr>
+          <tr><td>[94:15-96:30]</td><td>2m 15s</td><td>Closing Prayer &amp; Fellowship</td><td>~10%</td><td>Participant-led</td></tr>
+        </tbody>
+      </table>
+      <p>The timeline reveals a consistently collaborative pattern across the entire session. Nine of eleven segments (82%) show collaborative or mixed facilitation modes. A facilitative posture was maintained from the start, with the only leader-heavy segment being the brief opening prayer.</p>
+
+      <h2 class="h2">A8. 12-Dimension Scorecard Summary</h2>
+      <table class="metric">
+        <thead><tr><th style="width:40px;">#</th><th>Dimension</th><th style="width:70px;">Score</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Session Structure &amp; Flow</td><td>4 / 5</td><td>Follows Precept workbook; good transitions</td></tr>
+          <tr><td>2</td><td>Newcomer Welcome</td><td>N/A</td><td>No newcomers present</td></tr>
+          <tr><td>3</td><td>Scripture Engagement</td><td>4 / 5</td><td>12 cross-references across 8 books</td></tr>
+          <tr><td>4</td><td>Facilitation vs. Lecture</td><td>5 / 5</td><td>32% leader talk — exceptional for first evaluation</td></tr>
+          <tr><td>5</td><td>Application Questions</td><td>4 / 5</td><td>8 Big Idea questions; 87.5% at DOK 3-4</td></tr>
+          <tr><td>6</td><td>Participant Engagement</td><td>5 / 5</td><td>83% participation; strong peer-to-peer interaction</td></tr>
+          <tr><td>7</td><td>Visual Aids</td><td>1 / 5</td><td>No visual aids used; no screen sharing</td></tr>
+          <tr><td>8</td><td>Vulnerability/Authenticity</td><td>3 / 5</td><td>4 moments at moderate depth</td></tr>
+          <tr><td>9</td><td>Memory Reinforcement</td><td>2 / 5</td><td>Structural review present but no Big Ideas recall</td></tr>
+          <tr><td>10</td><td>Homework References</td><td>4 / 5</td><td>Regular workbook references; encouraged completion</td></tr>
+          <tr><td>11</td><td>Prayer</td><td>4 / 5</td><td>Opening not delegated; closing effectively delegated</td></tr>
+          <tr><td>12</td><td>Leader Development</td><td>2 / 5</td><td>No apprentice or co-leader visible</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Total Score:</strong> 38 / 55 (11 dimensions scored, Dimension 2 = N/A). <strong>Grade:</strong> B+. This is a strong baseline for a first-ever evaluation. Natural facilitation ability (Dimension 4: 5/5) and participant engagement (Dimension 6: 5/5) are the foundation strengths.</p>
+
+    </div>
+
+    <!-- FOOTER NOTE -->
+    <div class="foot-note">
+      This sample report is anonymized. All personal names have been removed. Data based on a 1,180-line Zoom transcript. Metrics grounded in: Webb DOK, Rowe/Stahl Wait Time, Lifeway Facilitation Ratio, Hiebert &amp; Grouws Productive Struggle, Mayer Multimedia Learning, Stuart &amp; Rutherford Monologue Threshold, Ebbinghaus Spaced Repetition.
+      <div class="foot-brand">— VerseMate Bible Leader Coaching</div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
