@@ -2,44 +2,31 @@ import React, { useState } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
+type Cadence = "monthly" | "once";
+
+const PRESETS = [10, 25, 50, 100, 250, 500] as const;
+
 export default function Give() {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    message: ""
-  });
+  const [cadence, setCadence] = useState<Cadence>("monthly");
+  const [amount, setAmount] = useState<number>(25);
+  const [customInput, setCustomInput] = useState<string>("");
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const effectiveAmount = customInput
+    ? Math.max(1, Number.parseInt(customInput.replace(/\D/g, ""), 10) || 0)
+    : amount;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleDonate = (e: React.FormEvent) => {
     e.preventDefault();
+    const cadenceLabel = cadence === "monthly" ? "Monthly" : "One-time";
+    const subject = `${cadenceLabel} donation — $${effectiveAmount}`;
+    const body = `Hi VerseMate Team,
 
-    const emailBody = `Hi VerseMate Team,
+I'd like to give $${effectiveAmount} ${cadence === "monthly" ? "monthly" : "as a one-time gift"} to support VerseMate.
 
-I'm interested in making a donation to support VerseMate! Here are my details:
+Please send me the next steps to complete this donation.
 
-First Name: ${formData.firstName}
-Last Name: ${formData.lastName}
-Email: ${formData.email}
-
-Additional Information:
-${formData.message || 'No additional information provided.'}
-
-Thank you for the opportunity to support your mission!
-
-Best regards,
-${formData.firstName} ${formData.lastName}`;
-
-    const subject = encodeURIComponent('Donation Inquiry - ' + formData.firstName + ' ' + formData.lastName);
-    const body = encodeURIComponent(emailBody);
-    const mailtoUrl = `mailto:info@versemate.org?subject=${subject}&body=${body}`;
+Thank you,`;
+    const mailtoUrl = `mailto:info@versemate.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailtoUrl;
   };
 
@@ -51,7 +38,8 @@ ${formData.firstName} ${formData.lastName}`;
       <section
         className="w-full bg-cover bg-center px-6 pt-24 pb-12 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-[120px] xl:py-24"
         style={{
-          backgroundImage: "linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 100%), url('/give.png')",
+          backgroundImage:
+            "linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 100%), url('/give.png')",
         }}
       >
         <div className="mx-auto flex max-w-[1440px] flex-col gap-8 md:gap-12 lg:gap-16">
@@ -68,103 +56,163 @@ ${formData.firstName} ${formData.lastName}`;
 
             <div className="flex flex-col gap-4 font-inter text-base font-light leading-6 text-white md:text-lg md:leading-7 lg:text-xl lg:leading-8 xl:text-2xl xl:leading-8">
               <p>
-                Your generosity helps us create resources and tools that make Scripture clear and accessible to people worldwide. Every gift you give makes a direct impact—whether it's supporting the translation of content, improving our technology, or helping us reach new communities with the truth of God's Word.
+                Your generosity helps us create resources and tools that make
+                Scripture clear and accessible to people worldwide. Every gift
+                you give makes a direct impact—whether it's supporting the
+                translation of content, improving our technology, or helping us
+                reach new communities with the truth of God's Word.
               </p>
               <p>
-                Through your partnership, VerseMate can continue developing simple, powerful tools that guide people not only to read the Bible, but to truly understand and apply it in their daily lives. We believe that when people engage Scripture with clarity, transformation follows—families are encouraged, faith grows stronger, and entire communities can be renewed.
+                Through your partnership, VerseMate can continue developing
+                simple, powerful tools that guide people not only to read the
+                Bible, but to truly understand and apply it in their daily
+                lives. We believe that when people engage Scripture with
+                clarity, transformation follows—families are encouraged, faith
+                grows stronger, and entire communities can be renewed.
               </p>
               <p>
-                Thank you for prayerfully considering a gift to VerseMate. Together, we can equip more people across languages and cultures to connect with God's Word in a deeper way.
+                Thank you for prayerfully considering a gift to VerseMate.
+                Together, we can equip more people across languages and
+                cultures to connect with God's Word in a deeper way.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Form Section */}
-      <section className="w-full bg-white px-6 py-12 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-[120px] xl:py-24">
-        <div className="mx-auto flex max-w-[600px] flex-col items-center gap-10">
-          {/* Form Header */}
-          <div className="flex w-full flex-col items-center gap-4">
-            <h2 className="font-inter text-xl font-bold leading-8 text-black md:text-2xl md:leading-8">
-              Connect With Us About Donations
-            </h2>
-            <p className="text-center font-inter text-sm font-light leading-6 text-black md:text-base md:leading-6">
-              We'd love to hear from you! If you're interested in supporting VerseMate with a donation, please fill out the form below. One of our team members will connect with you soon to guide you through the next steps.
+      {/* Donation Menu — mirrors the app's Giving screen */}
+      <section className="w-full bg-brand-dark-gray px-6 py-16 md:px-12 md:py-20 lg:px-16 lg:py-24 xl:px-[120px]">
+        <div className="mx-auto flex max-w-[560px] flex-col items-center gap-8">
+          {/* Kicker */}
+          <div className="flex flex-col items-center gap-3">
+            <p className="font-inter text-xs font-semibold uppercase tracking-[0.2em] text-brand-tan">
+              Give Today
             </p>
+            <div className="h-[1px] w-12 bg-brand-tan opacity-60" />
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
-            {/* First Name */}
-            <div className="flex flex-col gap-1">
-              <label className="flex items-center gap-1">
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">First Name</span>
-                <span className="font-inter text-sm font-normal leading-4 text-[#B03A42]">*</span>
-              </label>
+          {/* Headline */}
+          <h2 className="font-merriweather text-center text-3xl font-normal leading-tight text-white md:text-4xl md:leading-[52px]">
+            Give the Word to the world.
+          </h2>
+
+          {/* Lead */}
+          <p className="text-center font-inter text-base font-light leading-7 text-white/70">
+            Every gift keeps Scripture free, clear, and accessible for everyone, everywhere.
+          </p>
+
+          {/* Donation form */}
+          <form onSubmit={handleDonate} className="mt-4 flex w-full flex-col gap-5">
+            {/* Monthly / One-time toggle */}
+            <div
+              className="flex w-full rounded-full bg-black/40 p-1"
+              role="tablist"
+              aria-label="Donation frequency"
+            >
+              {(["monthly", "once"] as const).map((c) => {
+                const active = cadence === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setCadence(c)}
+                    className={`flex-1 rounded-full py-3 font-inter text-sm font-semibold transition-colors md:text-base ${
+                      active
+                        ? "bg-brand-tan text-black shadow-lg"
+                        : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    {c === "monthly" ? "Monthly" : "One-time"}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Preset amount chips */}
+            <div className="grid grid-cols-3 gap-3">
+              {PRESETS.map((v) => {
+                const selected = !customInput && v === amount;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => {
+                      setAmount(v);
+                      setCustomInput("");
+                    }}
+                    className={`flex h-14 items-center justify-center rounded-xl border font-inter text-lg font-semibold transition-all ${
+                      selected
+                        ? "border-brand-tan bg-brand-tan text-black shadow-[0_0_24px_rgba(194,178,145,0.35)]"
+                        : "border-brand-tan/40 bg-brand-tan/10 text-brand-tan hover:border-brand-tan hover:bg-brand-tan/20"
+                    }`}
+                  >
+                    ${v}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom amount */}
+            <div className="flex items-center gap-3 rounded-xl border border-dashed border-white/20 px-4 py-3">
+              <span className="font-inter text-base font-semibold text-white/60">$</span>
               <input
                 type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                required
-                className="w-full rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="Other amount"
+                value={customInput}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "");
+                  setCustomInput(v);
+                }}
+                className="w-full bg-transparent font-inter text-base text-white placeholder-white/40 outline-none"
+                aria-label="Custom donation amount"
               />
             </div>
 
-            {/* Last Name */}
-            <div className="flex flex-col gap-1">
-              <label className="flex items-center gap-1">
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">Last Name</span>
-                <span className="font-inter text-sm font-normal leading-4 text-[#B03A42]">*</span>
-              </label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                required
-                className="w-full rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
-              />
-            </div>
-
-            {/* Email */}
-            <div className="flex flex-col gap-1">
-              <label className="flex items-center gap-1">
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">Email</span>
-                <span className="font-inter text-sm font-normal leading-4 text-[#B03A42]">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                className="w-full rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
-              />
-            </div>
-
-            {/* Message */}
-            <div className="flex flex-col gap-1">
-              <label>
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">Anything You'd Like Us to Know</span>
-              </label>
-              <textarea
-                name="message"
-                value={formData.message}
-                onChange={handleInputChange}
-                rows={5}
-                className="w-full resize-none rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
-              />
-            </div>
-
-            {/* Submit Button */}
+            {/* CTA */}
             <button
               type="submit"
-              className="mx-auto flex items-center justify-center gap-2 rounded-full bg-brand-tan px-12 py-6 font-inter text-lg font-semibold leading-8 text-black md:text-xl md:leading-8 hover:bg-opacity-90 transition-opacity"
+              disabled={effectiveAmount < 1}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-brand-tan py-5 font-inter text-lg font-bold text-black shadow-lg transition-opacity hover:bg-opacity-90 disabled:opacity-40"
             >
-              Submit
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              Give ${effectiveAmount}
+              {cadence === "monthly" ? " / month" : ""}
             </button>
+
+            {/* Trust badges */}
+            <div className="mt-2 flex items-center justify-center gap-6">
+              <span className="flex items-center gap-1.5 font-inter text-xs text-white/50">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+                501(c)(3) nonprofit
+              </span>
+              <span className="flex items-center gap-1.5 font-inter text-xs text-white/50">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Secure
+              </span>
+            </div>
+
+            {/* Footer note */}
+            <p className="mt-2 text-center font-inter text-xs font-light text-white/40">
+              Click "Give" and our team will follow up with a secure donation link. Your gift is tax-deductible.
+            </p>
           </form>
         </div>
       </section>
