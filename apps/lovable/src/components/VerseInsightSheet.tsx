@@ -152,8 +152,8 @@ export default function VerseInsightSheet({
           Verse Insight
         </h2>
 
-        {/* Verse stepper — arrows pushed to edges, extra breathing room around verse ref */}
-        <div className="flex items-center justify-between px-4 mt-2 gap-6">
+        {/* Verse stepper — arrows pulled inward using justify-center + explicit gap */}
+        <div className="flex items-center justify-center mt-2 gap-10">
           <button
             onClick={() => step(-1)}
             disabled={currentVerse <= 1}
@@ -162,7 +162,7 @@ export default function VerseInsightSheet({
           >
             <ChevronLeft size={18} className="text-dark-fg" />
           </button>
-          <div className="text-[17px] font-medium text-dark-fg px-4">
+          <div className="text-[17px] font-medium text-dark-fg">
             {book} {chapter}:{currentVerse}
           </div>
           <button
@@ -182,8 +182,8 @@ export default function VerseInsightSheet({
           </p>
         )}
 
-        {/* Analysis panel — scrollable, slightly narrower grey box with more breathing room. */}
-        <div className="flex-1 overflow-y-auto px-6 mt-3 pb-2 flex flex-col" style={{ minHeight: 0 }}>
+        {/* Analysis panel — narrower grey box (more outer padding) with tighter inner padding */}
+        <div className="flex-1 overflow-y-auto px-8 mt-3 pb-2 flex flex-col" style={{ minHeight: 0 }}>
           <div className="rounded-xl bg-dark-raised border border-dark px-4 py-3 flex-1" style={{ fontSize: 15 }}>
             {insight ? (
               <MarkdownBlock text={stripDuplicateVerse(insight.historicalContext)} />
