@@ -152,8 +152,8 @@ export default function VerseInsightSheet({
           Verse Insight
         </h2>
 
-        {/* Verse stepper — arrows pulled inward using justify-center + explicit gap */}
-        <div className="flex items-center justify-center mt-2 gap-10">
+        {/* Verse stepper — arrows at the edges (justify-between) */}
+        <div className="flex items-center justify-between px-5 mt-2">
           <button
             onClick={() => step(-1)}
             disabled={currentVerse <= 1}
@@ -175,16 +175,17 @@ export default function VerseInsightSheet({
           </button>
         </div>
 
-        {/* Quoted verse — single source of truth, no duplicate below */}
+        {/* Quoted verse — pushed down for breathing room under the stepper */}
         {verseText && (
-          <p className="px-5 mt-2 text-center text-[14px] italic text-dark-muted leading-snug">
+          <p className="px-6 mt-4 text-center text-[14px] italic text-dark-muted leading-snug">
             "{verseText}"
           </p>
         )}
 
-        {/* Analysis panel — narrower grey box (more outer padding) with tighter inner padding */}
-        <div className="flex-1 overflow-y-auto px-8 mt-3 pb-2 flex flex-col" style={{ minHeight: 0 }}>
-          <div className="rounded-xl bg-dark-raised border border-dark px-4 py-3 flex-1" style={{ fontSize: 15 }}>
+        {/* Analysis panel — outer px-4 aligns with action-button row below,
+            mt-4 gap below italic verse, inner p-5 for roomier text-to-edge spacing */}
+        <div className="flex-1 overflow-y-auto px-4 mt-4 pb-2 flex flex-col" style={{ minHeight: 0 }}>
+          <div className="rounded-xl bg-dark-raised border border-dark p-5 flex-1" style={{ fontSize: 15 }}>
             {insight ? (
               <MarkdownBlock text={stripDuplicateVerse(insight.historicalContext)} />
             ) : (
