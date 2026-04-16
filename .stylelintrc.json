@@ -3,7 +3,8 @@
   "ignoreFiles": [
     "**/dist/**/*.css",
     "VerseMate/**/*.css",
-    "apps/lovable/**/*.css"
+    "apps/lovable/**/*.css",
+    "apps/website/src/styles/coach.css"
   ],
   "rules": {
     "media-feature-range-notation": null,
