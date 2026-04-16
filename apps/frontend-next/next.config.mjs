@@ -93,6 +93,14 @@ const nextConfig = {
       },
     ];
   },
+  // Marketing landing pages served as static HTML from /public/coach/
+  // Rewrites give clean URLs (/coach, /coach/sample) without .html or /index.html
+  async rewrites() {
+    return [
+      { source: "/coach", destination: "/coach/index.html" },
+      { source: "/coach/sample", destination: "/coach/sample/index.html" },
+    ];
+  },
   transpilePackages: ["@verse-mate/frontend-base"],
 };
 

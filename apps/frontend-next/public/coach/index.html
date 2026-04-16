@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>VerseMate Coaching — A coach for every Bible leader</title>
+<meta name="description" content="Weekly Bible leader coaching for study leaders, small group leaders, and church administrators. Structured feedback across 11 dimensions of Bible leadership. Request more information.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ========== VERSEMATE DESIGN TOKENS ========== */
+  :root {
+    --ink: #171717;
+    --ink-dk: #000000;
+    --slate: #3E464D;
+    --muted: #6B7280;
+    --border: #E5E7EB;
+    --cream: #F6F3EC;
+    --cream-dk: #EDE7D8;
+    --white: #FFFFFF;
+    --tan: #C2B291;           /* brand warm gold */
+    --tan-dk: #A89777;
+    --tan-soft: #E6DCC4;
+    --amber: #D9A566;
+    --green-bg: #C6EFCE; --green-tx: #006100;
+    --blue-bg: #D6E4F0;  --blue-tx: #1E3A5F;
+    --red-bg: #FFD6D6;   --red-tx: #9C0006;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Inter', Arial, Helvetica, system-ui, sans-serif;
+    --arial: Arial, Helvetica, sans-serif;
+  }
+
+  /* ========== RESET ========== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--arial);
+    color: var(--ink);
+    background: var(--white);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+  }
+  .serif { font-family: var(--serif); font-weight: 700; }
+  a { color: inherit; text-decoration: none; }
+  img, svg { display: block; max-width: 100%; height: auto; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* ========== LAYOUT ========== */
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 88px 0; }
+
+  /* ========== NAV ========== */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(194, 178, 145, 0.2);
+  }
+  .nav-inner {
+    max-width: 1200px; margin: 0 auto; padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .brand {
+    font-family: var(--serif); font-weight: 700; font-size: 18px;
+    color: var(--white); letter-spacing: 0.3px;
+  }
+  .brand em { color: var(--tan); font-style: normal; }
+  .nav-links {
+    display: flex; gap: 32px; align-items: center;
+  }
+  .nav-links a {
+    color: rgba(255,255,255,0.85); font-size: 14px; font-weight: 500;
+  }
+  .nav-links a:hover { color: var(--tan); }
+  .nav-cta {
+    background: var(--tan); color: var(--ink) !important;
+    padding: 10px 22px; border-radius: 100px; font-size: 13px; font-weight: 600;
+  }
+  .nav-cta:hover { background: var(--tan-dk); }
+  .nav-toggle { display: none; background: none; border: none; color: var(--white); font-size: 22px; padding: 4px; }
+
+  /* ========== HERO ========== */
+  .hero {
+    position: relative;
+    padding: 160px 0 100px;
+    color: var(--white);
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 80% 40%, rgba(217, 165, 102, 0.35) 0%, rgba(217, 165, 102, 0) 50%),
+      radial-gradient(ellipse at 75% 50%, rgba(255, 180, 80, 0.4) 0%, rgba(255, 180, 80, 0) 35%),
+      radial-gradient(ellipse at 85% 55%, rgba(194, 178, 145, 0.2) 0%, rgba(194, 178, 145, 0) 40%),
+      linear-gradient(135deg, #0a0a0a 0%, #171717 45%, #2a1f14 100%);
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 90% 60%, rgba(255, 200, 120, 0.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .hero-inner {
+    position: relative; z-index: 2;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 12px; font-weight: 600; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--tan);
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow::before {
+    content: ''; width: 32px; height: 1px; background: var(--tan);
+  }
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(40px, 6vw, 72px);
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.5px;
+    margin-bottom: 24px;
+  }
+  .hero h1 em { font-style: italic; color: var(--tan); font-weight: 400; }
+  .hero-sub {
+    font-family: var(--arial);
+    font-size: clamp(16px, 1.3vw, 19px);
+    line-height: 1.6;
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 40px;
+    max-width: 560px;
+  }
+  .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 18px 36px;
+    border-radius: 100px;
+    font-family: var(--arial);
+    font-size: 15px; font-weight: 600;
+    border: none; cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .btn-primary {
+    background: var(--tan); color: var(--ink);
+  }
+  .btn-primary:hover {
+    background: var(--tan-dk); transform: translateY(-1px);
+    box-shadow: 0 10px 30px rgba(194, 178, 145, 0.25);
+  }
+  .btn-dark {
+    background: var(--ink-dk); color: var(--white);
+  }
+  .btn-dark:hover { background: #222; }
+  .btn-ghost {
+    background: transparent; color: var(--white);
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .btn-ghost:hover { border-color: var(--tan); color: var(--tan); }
+  .btn-ghost-dark {
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost-dark:hover { border-color: var(--ink); }
+
+  /* HERO SCORE CARD */
+  .score-card {
+    background: var(--white); color: var(--ink);
+    padding: 28px;
+    border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.35), 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
+    transform: perspective(1400px) rotateY(-4deg) rotateX(3deg);
+    transform-style: preserve-3d;
+  }
+  .score-card::before {
+    content: 'SAMPLE REPORT';
+    position: absolute; top: -12px; left: 28px;
+    background: var(--tan); color: var(--ink);
+    font-size: 10px; font-weight: 700; letter-spacing: 1.8px;
+    padding: 5px 14px; border-radius: 4px;
+  }
+  .score-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding-bottom: 16px; border-bottom: 2px solid var(--ink-dk);
+    margin-bottom: 20px; margin-top: 10px;
+  }
+  .score-head h3 {
+    font-family: var(--serif); font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 4px;
+  }
+  .score-head .meta { font-size: 12px; color: var(--muted); }
+  .score-big {
+    font-family: var(--serif); font-size: 58px; font-weight: 900; color: var(--ink);
+    line-height: 1;
+  }
+  .score-big span { color: var(--tan-dk); font-size: 30px; margin-left: 10px; }
+  .score-label {
+    font-size: 10px; color: var(--muted); letter-spacing: 1.8px;
+    text-transform: uppercase; margin-top: 6px; margin-bottom: 18px;
+  }
+  .dim-row {
+    display: grid;
+    grid-template-columns: 1fr auto 76px;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .dim-row:last-child { border-bottom: none; }
+  .dim-row .dn { color: var(--ink); font-weight: 500; font-size: 13px; }
+  .dim-row .ds { color: var(--muted); font-size: 12px; font-weight: 700; text-align: right; }
+  .badge {
+    display: inline-block;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 4px 8px; text-align: center; border-radius: 3px;
+  }
+  .badge.strong { background: var(--green-bg); color: var(--green-tx); }
+  .badge.target { background: var(--blue-bg); color: var(--blue-tx); }
+  .badge.needs  { background: var(--red-bg);   color: var(--red-tx); }
+
+  /* ========== SECTION PATTERNS ========== */
+  .eyebrow {
+    display: inline-block;
+    font-size: 11px; font-weight: 600; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--tan-dk);
+    margin-bottom: 14px;
+  }
+  .s-title {
+    font-family: var(--serif); font-weight: 700;
+    font-size: clamp(30px, 4.2vw, 48px);
+    line-height: 1.15;
+    color: var(--ink); letter-spacing: -0.5px;
+    margin-bottom: 18px;
+  }
+  .s-title em { font-style: italic; color: var(--tan-dk); }
+  .s-lead {
+    font-family: var(--arial);
+    font-size: clamp(15px, 1.2vw, 18px);
+    color: var(--slate);
+    max-width: 680px;
+    line-height: 1.65;
+    margin-bottom: 48px;
+  }
+  .s-head-center { text-align: center; }
+  .s-head-center .s-lead { margin-left: auto; margin-right: auto; }
+
+  /* ========== WHO IT'S FOR ========== */
+  .who { background: var(--cream); }
+  .who-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .who-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 36px 28px;
+    border-top: 3px solid var(--tan);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .who-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+  }
+  .who-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--cream); color: var(--tan-dk);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 24px;
+  }
+  .who-card h3 {
+    font-family: var(--serif); font-size: 22px; font-weight: 700;
+    color: var(--ink); margin-bottom: 12px; line-height: 1.25;
+  }
+  .who-card p {
+    font-size: 15px; color: var(--slate); line-height: 1.65; margin-bottom: 20px;
+  }
+  .who-widget {
+    background: var(--cream); border-radius: 8px; padding: 14px 16px;
+  }
+  .widget-row {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 6px 0; font-size: 12px;
+    border-bottom: 1px dashed rgba(0,0,0,0.08);
+  }
+  .widget-row:last-child { border-bottom: none; }
+  .widget-row .n { color: var(--ink); font-weight: 500; }
+  .widget-row .v {
+    font-weight: 700; color: var(--tan-dk); font-size: 11px; letter-spacing: 0.5px;
+  }
+  .bar { width: 70px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--tan); border-radius: 3px; }
+
+  /* ========== BENEFITS ========== */
+  .benefits { background: var(--white); }
+  .benefit-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px;
+    margin-top: 24px;
+  }
+  .benefit {
+    padding: 24px 0;
+  }
+  .benefit-num {
+    font-family: var(--serif); font-size: 52px; font-weight: 400;
+    color: var(--tan); line-height: 1; margin-bottom: 16px;
+  }
+  .benefit h4 {
+    font-family: var(--serif); font-size: 22px; font-weight: 700;
+    color: var(--ink); margin-bottom: 10px; line-height: 1.25;
+  }
+  .benefit p { font-size: 14px; color: var(--slate); line-height: 1.65; }
+
+  /* ========== PRODUCT DETAIL (feature rows) ========== */
+  .product { background: var(--cream); }
+  .feat-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 72px; align-items: center;
+    padding: 64px 0;
+    border-bottom: 1px solid var(--cream-dk);
+  }
+  .feat-row:last-child { border-bottom: none; }
+  .feat-row.reverse .feat-copy { order: 2; }
+  .feat-row.reverse .feat-visual { order: 1; }
+  .feat-copy .eyebrow { margin-bottom: 10px; }
+  .feat-copy h3 {
+    font-family: var(--serif); font-size: clamp(24px, 2.6vw, 34px);
+    font-weight: 700; color: var(--ink); line-height: 1.2;
+    letter-spacing: -0.3px; margin-bottom: 18px;
+  }
+  .feat-copy p {
+    font-size: 16px; color: var(--slate); line-height: 1.65; margin-bottom: 20px;
+  }
+  .feat-copy ul { list-style: none; padding: 0; }
+  .feat-copy li {
+    padding: 8px 0 8px 28px;
+    position: relative;
+    font-size: 15px; color: var(--slate); line-height: 1.55;
+  }
+  .feat-copy li::before {
+    content: ''; position: absolute; left: 0; top: 16px;
+    width: 16px; height: 2px; background: var(--tan);
+  }
+  .feat-visual {
+    background: var(--white); border-radius: 16px;
+    padding: 24px; box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+    position: relative;
+  }
+  .feat-visual-label {
+    position: absolute; top: -10px; left: 24px;
+    background: var(--ink); color: var(--white);
+    font-size: 10px; font-weight: 700; letter-spacing: 1.8px;
+    padding: 5px 12px; border-radius: 4px;
+  }
+
+  /* Mini visuals inside feature rows */
+  .mini-question {
+    padding: 10px 14px;
+    border-left: 3px solid var(--border);
+    background: var(--cream);
+    font-size: 13px; color: var(--ink);
+    margin: 10px 0; border-radius: 0 6px 6px 0;
+    line-height: 1.5;
+  }
+  .mini-question.good { border-left-color: var(--tan); background: #FBF6EA; }
+  .mini-question .note {
+    display: block; font-size: 11px; color: var(--muted); margin-top: 4px; font-style: italic;
+  }
+  .mini-question.good .note { color: var(--tan-dk); font-style: normal; font-weight: 600; }
+  .mini-rec {
+    padding: 12px 14px; background: var(--cream); border-radius: 6px;
+    margin: 10px 0; font-size: 13px; color: var(--slate); line-height: 1.55;
+  }
+  .mini-rec b {
+    display: block; font-size: 10px; color: var(--tan-dk);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; font-weight: 700;
+  }
+
+  /* ========== METHOD (4 phases) ========== */
+  .method { background: var(--white); }
+  .phases-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .phase {
+    padding: 36px 28px;
+    border-right: 1px solid var(--border);
+    position: relative;
+    background: var(--white);
+  }
+  .phase:last-child { border-right: none; }
+  .phase-num {
+    font-family: var(--serif); font-size: 42px; font-weight: 700;
+    color: var(--tan); line-height: 1; margin-bottom: 12px;
+  }
+  .phase-name {
+    font-family: var(--serif); font-size: 22px; font-weight: 700;
+    color: var(--ink); margin-bottom: 12px;
+  }
+  .phase-desc { font-size: 14px; color: var(--slate); line-height: 1.6; }
+  .phase::after {
+    content: '→';
+    position: absolute; right: -14px; top: 50%;
+    transform: translateY(-50%);
+    background: var(--white); color: var(--tan);
+    font-size: 20px; font-weight: 700;
+    width: 28px; height: 28px;
+    text-align: center; line-height: 28px;
+    border-radius: 50%;
+    z-index: 2;
+  }
+  .phase:last-child::after { display: none; }
+
+  /* ========== DIMENSIONS TABLE ========== */
+  .dims { background: var(--ink-dk); color: var(--white); }
+  .dims .s-title { color: var(--white); }
+  .dims .s-lead { color: rgba(255,255,255,0.7); }
+  .dims .eyebrow { color: var(--tan); }
+  .dims-table-wrap {
+    background: rgba(255,255,255,0.03);
+    border-radius: 16px; overflow: hidden;
+    border: 1px solid rgba(194,178,145,0.15);
+  }
+  .dims-table {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+  }
+  .dims-table thead th {
+    padding: 18px 20px;
+    font-family: var(--arial);
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 1.8px; text-transform: uppercase;
+    text-align: left;
+    color: var(--tan);
+    background: rgba(194, 178, 145, 0.08);
+    border-bottom: 2px solid var(--tan);
+  }
+  .dims-table tbody td {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.9);
+  }
+  .dims-table tbody tr:last-child td { border-bottom: none; }
+  .dims-table tbody tr:hover { background: rgba(194,178,145,0.05); }
+  .dims-table td.n { font-family: var(--serif); font-weight: 700; color: var(--white); font-size: 15px; }
+  .dims-table td.d { color: rgba(255,255,255,0.65); font-size: 13px; }
+  .dims-table td.s { font-family: var(--serif); font-weight: 700; color: var(--tan); text-align: center; font-size: 15px; }
+  .dims-table td.r { text-align: right; }
+
+  /* ========== REQUEST FORM ========== */
+  .request { background: var(--cream); }
+  .request-card {
+    max-width: 820px; margin: 0 auto;
+    background: var(--white);
+    border-radius: 20px;
+    padding: 56px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    border-top: 4px solid var(--tan);
+  }
+  .request-card h2 {
+    font-family: var(--serif); font-size: clamp(26px, 3.2vw, 36px); font-weight: 700;
+    color: var(--ink); margin-bottom: 10px; line-height: 1.2;
+  }
+  .request-card .lead {
+    font-size: 16px; color: var(--slate); margin-bottom: 32px; line-height: 1.6;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .form-field { display: flex; flex-direction: column; }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-field label {
+    font-size: 11px; font-weight: 700; color: var(--ink);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    width: 100%; padding: 14px 16px;
+    font-size: 15px; font-family: inherit; color: var(--ink);
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--white); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+    outline: none; border-color: var(--tan);
+    box-shadow: 0 0 0 3px rgba(194,178,145,0.2);
+  }
+  .form-field textarea { min-height: 110px; resize: vertical; font-family: inherit; }
+  .form-actions {
+    margin-top: 32px;
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  }
+  .form-note {
+    margin-top: 16px; font-size: 13px; color: var(--muted);
+  }
+
+  /* ========== FINAL CTA ========== */
+  .final {
+    background: var(--white);
+    padding: 120px 0;
+    text-align: center;
+  }
+  .final h2 {
+    font-family: var(--serif); font-weight: 700;
+    font-size: clamp(34px, 5vw, 56px);
+    color: var(--ink); line-height: 1.1;
+    margin-bottom: 20px; letter-spacing: -0.5px;
+  }
+  .final p {
+    font-family: var(--arial);
+    font-size: clamp(16px, 1.4vw, 19px);
+    color: var(--slate);
+    max-width: 600px; margin: 0 auto 40px; line-height: 1.6;
+  }
+
+  /* ========== FOOTER ========== */
+  footer {
+    background: var(--ink-dk); color: rgba(255,255,255,0.7);
+    padding: 56px 0 32px;
+    font-size: 13px;
+    border-top: 2px solid var(--tan);
+  }
+  .ft-top {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px; margin-bottom: 40px;
+  }
+  .ft-brand {
+    font-family: var(--serif); font-weight: 700; font-size: 20px;
+    color: var(--white); margin-bottom: 12px;
+  }
+  .ft-brand em { color: var(--tan); font-style: normal; }
+  .ft-desc { font-size: 13px; line-height: 1.65; max-width: 320px; color: rgba(255,255,255,0.6); }
+  .ft-col h5 {
+    font-size: 11px; color: var(--white);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 14px; font-weight: 700;
+  }
+  .ft-col a {
+    display: block; padding: 5px 0;
+    font-size: 13px; color: rgba(255,255,255,0.6);
+    transition: color 0.15s;
+  }
+  .ft-col a:hover { color: var(--tan); }
+  .ft-bottom {
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: rgba(255,255,255,0.45);
+    flex-wrap: wrap; gap: 12px;
+  }
+
+  /* ========== RESPONSIVE — TABLET (< 1024px) ========== */
+  @media (max-width: 1023px) {
+    .wrap { padding: 0 24px; }
+    section { padding: 72px 0; }
+
+    /* HERO — stack cleanly, score card centered and compact */
+    .hero { padding: 130px 0 72px; }
+    .hero-inner { grid-template-columns: 1fr; gap: 44px; }
+    .hero h1 { font-size: clamp(38px, 5.8vw, 58px); }
+    .hero-sub { max-width: 640px; }
+    .score-card {
+      max-width: 520px;
+      margin: 0 auto;
+      transform: none !important;   /* kill 3D tilt so it doesn't feel detached */
+      width: 100%;
+    }
+    .score-big { font-size: 52px; }
+    .score-big span { font-size: 26px; }
+
+    /* WHO — 2 columns */
+    .who-grid { grid-template-columns: 1fr 1fr; }
+    .who-grid > :nth-child(3) { grid-column: 1 / -1; max-width: 520px; justify-self: center; }
+
+    /* BENEFITS — 2 columns */
+    .benefit-grid { grid-template-columns: 1fr 1fr; gap: 32px 40px; }
+
+    /* PRODUCT DETAIL — stack feat-rows so mini screenshots get breathing room */
+    .feat-row, .feat-row.reverse {
+      grid-template-columns: 1fr;
+      gap: 36px;
+      padding: 48px 0;
+    }
+    .feat-row.reverse .feat-copy { order: 1; }
+    .feat-row.reverse .feat-visual { order: 2; }
+    .feat-visual { max-width: 620px; margin: 0 auto; width: 100%; }
+    .feat-copy { max-width: 680px; }
+
+    /* METHOD — 2x2 grid */
+    .phases-grid { grid-template-columns: 1fr 1fr; }
+    .phase { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .phase:nth-child(2n) { border-right: none; }
+    .phase:nth-child(n+3) { border-bottom: none; }
+    .phase:nth-child(2n)::after { display: none; }
+    .phase:nth-child(2n-1):not(:last-child)::after { display: none; }
+
+    /* DIMENSIONS TABLE — tighter padding for narrower viewport */
+    .dims-table thead th,
+    .dims-table tbody td { padding: 14px 12px; }
+    .dims-table td.n { font-size: 14px; }
+    .dims-table td.d { font-size: 12.5px; }
+
+    /* REQUEST FORM — single column at narrower tablet to avoid tight inputs */
+    .request-card { padding: 40px 32px; }
+
+    /* FOOTER */
+    .ft-top { grid-template-columns: 1.5fr 1fr 1fr; gap: 32px; }
+  }
+
+  /* ========== RESPONSIVE — MOBILE (< 768px) ========== */
+  @media (max-width: 767px) {
+    section { padding: 56px 0; }
+    .wrap { padding: 0 20px; }
+
+    /* NAV: show hamburger, hide links */
+    .nav-links {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: rgba(0,0,0,0.97); backdrop-filter: blur(14px);
+      flex-direction: column; align-items: stretch;
+      gap: 0; padding: 16px 20px 24px;
+      border-bottom: 1px solid rgba(194,178,145,0.2);
+      transform: translateY(-20px); opacity: 0; visibility: hidden;
+      transition: all 0.2s ease;
+    }
+    .nav-toggle { display: block; }
+    .nav.open .nav-links {
+      transform: translateY(0); opacity: 1; visibility: visible;
+    }
+    .nav-links a {
+      padding: 12px 0; font-size: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav-links a:last-child { border-bottom: none; }
+    .nav-cta { margin-top: 12px; text-align: center; padding: 14px 22px; }
+
+    /* HERO */
+    .hero { padding: 120px 0 60px; }
+    .hero-eyebrow { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
+    .hero-eyebrow::before { width: 20px; }
+    .hero-sub { font-size: 16px; margin-bottom: 32px; }
+    .hero-ctas { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
+    .hero-ctas .btn { width: 100%; padding: 16px 24px; font-size: 14px; }
+    .score-card { padding: 22px; transform: none; max-width: 100%; }
+    .score-card::before { font-size: 9px; padding: 4px 10px; left: 22px; }
+    .score-big { font-size: 48px; }
+    .score-big span { font-size: 22px; }
+
+    /* SECTIONS */
+    .s-lead { font-size: 15px; }
+    .who-grid { grid-template-columns: 1fr; gap: 20px; }
+    .who-grid > :nth-child(3) { grid-column: auto; max-width: none; }
+    .who-card { padding: 28px 24px; }
+    .benefit-grid { grid-template-columns: 1fr 1fr; gap: 24px 20px; }
+    .benefit { padding: 16px 0; }
+    .benefit-num { font-size: 40px; margin-bottom: 10px; }
+    .benefit h4 { font-size: 18px; }
+
+    /* FEATURES - stack */
+    .feat-row, .feat-row.reverse {
+      grid-template-columns: 1fr; gap: 32px; padding: 40px 0;
+    }
+    .feat-row.reverse .feat-copy { order: 1; }
+    .feat-row.reverse .feat-visual { order: 2; }
+    .feat-visual { padding: 20px; }
+
+    /* METHOD - stack */
+    .phases-grid { grid-template-columns: 1fr; }
+    .phase { border-right: none; border-bottom: 1px solid var(--border); }
+    .phase:last-child { border-bottom: none; }
+    .phase::after {
+      content: '↓'; right: 50%; top: auto; bottom: -14px;
+      transform: translateX(50%);
+    }
+    .phase:last-child::after { display: none; }
+
+    /* DIMS TABLE - shown as cards on mobile (2-column grid) */
+    .dims-table thead { display: none; }
+    .dims-table, .dims-table tbody { display: block; width: 100%; border: none; }
+    .dims-table tr {
+      display: grid !important;
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "name score"
+        "desc badge";
+      column-gap: 16px;
+      row-gap: 6px;
+      padding: 18px 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      align-items: start;
+    }
+    .dims-table tr:hover { background: transparent; }
+    .dims-table td { display: block; padding: 0; border: none; }
+    .dims-table td.n {
+      grid-area: name;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+    .dims-table td.d {
+      grid-area: desc;
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.6);
+    }
+    .dims-table td.s {
+      grid-area: score;
+      font-size: 22px;
+      text-align: right;
+      line-height: 1;
+      align-self: center;
+    }
+    .dims-table td.r {
+      grid-area: badge;
+      text-align: right;
+      align-self: start;
+    }
+
+    /* REQUEST FORM */
+    .request-card { padding: 32px 24px; border-radius: 16px; }
+    .form-grid { grid-template-columns: 1fr; gap: 16px; }
+    .form-actions { flex-direction: column; align-items: stretch; gap: 14px; }
+    .form-actions .btn { width: 100%; }
+
+    /* FINAL CTA */
+    .final { padding: 72px 0; }
+
+    /* FOOTER */
+    .ft-top {
+      grid-template-columns: 1fr; gap: 28px;
+      margin-bottom: 28px;
+    }
+    .ft-bottom { flex-direction: column; text-align: center; gap: 10px; }
+  }
+
+  /* ========== RESPONSIVE — SMALL MOBILE (< 400px) ========== */
+  @media (max-width: 399px) {
+    .benefit-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 36px; }
+    .wrap { padding: 0 16px; }
+  }
+
+  /* Prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    .score-card { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="/" class="brand">VerseMate <em>Coaching</em></a>
+    <button class="nav-toggle" aria-label="Open menu" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
+    <div class="nav-links">
+      <a href="#who">Who it's for</a>
+      <a href="#product">Product</a>
+      <a href="#method">Method</a>
+      <a href="#dimensions">Dimensions</a>
+      <a class="nav-cta" href="#request">Request info</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <span class="hero-eyebrow">Bible Leader Coaching</span>
+      <h1>A coach for every <em>Bible leader.</em></h1>
+      <p class="hero-sub">Weekly feedback that makes your teaching sharper, your small groups deeper, and your ministry stronger. Structured across 11 dimensions of Bible leadership.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="#request">Request more information →</a>
+        <a class="btn btn-ghost" href="/coach/sample" target="_blank" rel="noopener">See a sample report</a>
+      </div>
+    </div>
+
+    <div class="score-card" aria-label="Sample coaching report">
+      <div class="score-head">
+        <div>
+          <h3>Bible Leader Coaching</h3>
+          <div class="meta">Colossians Ch. 4 · Sample Report</div>
+        </div>
+        <span class="badge target" style="font-size:10px; padding:5px 10px;">ON TARGET</span>
+      </div>
+      <div class="score-big">38<span>/55 &nbsp;B+</span></div>
+      <div class="score-label">Overall Coaching Score · 11 Dimensions</div>
+      <div class="dim-row"><span class="dn">Lesson Preparation</span><span class="ds">5/5</span><span class="badge strong">STRONG</span></div>
+      <div class="dim-row"><span class="dn">Biblical Accuracy</span><span class="ds">5/5</span><span class="badge strong">STRONG</span></div>
+      <div class="dim-row"><span class="dn">Question Quality</span><span class="ds">3/5</span><span class="badge target">ON TARGET</span></div>
+      <div class="dim-row"><span class="dn">Group Engagement</span><span class="ds">4/5</span><span class="badge target">ON TARGET</span></div>
+      <div class="dim-row"><span class="dn">Application</span><span class="ds">2/5</span><span class="badge needs">NEEDS WORK</span></div>
+      <div class="dim-row"><span class="dn" style="color:var(--muted); font-style:italic;">+ 6 more dimensions</span><span class="ds"></span><span class="badge" style="background:#eee; color:#666;">VIEW ALL</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- WHO IT'S FOR -->
+<section class="who" id="who">
+  <div class="wrap">
+    <div class="s-head-center">
+      <span class="eyebrow">Who it's for</span>
+      <h2 class="s-title">Built for <em>every Bible leader.</em></h2>
+      <p class="s-lead">Whether you're teaching the adult class, leading a home group, or overseeing a whole church's teaching ministry, you get coaching calibrated to your role.</p>
+    </div>
+
+    <div class="who-grid">
+      <article class="who-card">
+        <div class="who-icon" aria-hidden="true">📖</div>
+        <h3>Bible study leaders</h3>
+        <p>Teaching a class, Sunday school, or adult group? Get specific feedback on your lessons, questions, and applications. Know exactly what to try next week.</p>
+        <div class="who-widget">
+          <div class="widget-row"><span class="n">Question Quality</span><span class="bar"><span style="width:60%;"></span></span></div>
+          <div class="widget-row"><span class="n">Biblical Accuracy</span><span class="bar"><span style="width:100%;"></span></span></div>
+          <div class="widget-row"><span class="n">Application</span><span class="bar"><span style="width:40%; background:var(--amber);"></span></span></div>
+        </div>
+      </article>
+
+      <article class="who-card">
+        <div class="who-icon" aria-hidden="true">🤝</div>
+        <h3>Small group leaders</h3>
+        <p>Lead a home group or LifeGroup? Learn the patterns that turn surface-level discussions into conversations that change lives, week after week.</p>
+        <div class="who-widget">
+          <div class="widget-row"><span class="n">Group Engagement</span><span class="bar"><span style="width:80%;"></span></span></div>
+          <div class="widget-row"><span class="n">Discussion Flow</span><span class="bar"><span style="width:70%;"></span></span></div>
+          <div class="widget-row"><span class="n">Prayer &amp; Tone</span><span class="bar"><span style="width:90%;"></span></span></div>
+        </div>
+      </article>
+
+      <article class="who-card">
+        <div class="who-icon" aria-hidden="true">⛪</div>
+        <h3>Church administrators</h3>
+        <p>Equip every leader in your church with a consistent coaching framework. See growth measurably across your whole teaching ministry.</p>
+        <div class="who-widget">
+          <div class="widget-row"><span class="n">Avg score Q1</span><span class="v">32 / 55</span></div>
+          <div class="widget-row"><span class="n">Avg score Q2</span><span class="v" style="color:var(--green-tx);">38 / 55 ↑</span></div>
+          <div class="widget-row"><span class="n">Leaders coached</span><span class="v">24</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS -->
+<section class="benefits">
+  <div class="wrap s-head-center">
+    <span class="eyebrow">What you gain</span>
+    <h2 class="s-title">Four ways coaching <em>changes how you lead.</em></h2>
+    <p class="s-lead">Not a grade. A playbook. Every coaching report shows exactly where you stood out, where you stalled, and what to try this Sunday.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="benefit-grid">
+      <div class="benefit">
+        <div class="benefit-num">01</div>
+        <h4>Sharper teaching</h4>
+        <p>Get specific feedback on your questions, illustrations, and applications. Know exactly what to try next week.</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-num">02</div>
+        <h4>Deeper groups</h4>
+        <p>Learn the patterns that turn surface-level discussions into conversations that change lives.</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-num">03</div>
+        <h4>Stronger leaders</h4>
+        <p>Watch yourself grow across 11 dimensions of Bible leadership, week by week, month by month.</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-num">04</div>
+        <h4>Measurable growth</h4>
+        <p>Clear scores, clear strengths, clear next steps. No mystery. Just progress you can see.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT DETAIL -->
+<section class="product" id="product">
+  <div class="wrap">
+    <div class="s-head-center">
+      <span class="eyebrow">Inside every report</span>
+      <h2 class="s-title">Every report is a map for <em>next Sunday.</em></h2>
+      <p class="s-lead">Three parts. Every week. A scorecard that shows where you are, coaching on your craft, and three things to try next.</p>
+    </div>
+
+    <!-- Feature 1: Scorecard -->
+    <div class="feat-row">
+      <div class="feat-copy">
+        <span class="eyebrow">01 · Scorecard</span>
+        <h3>11 dimensions. One clear score.</h3>
+        <p>Every session is scored across eleven structured dimensions of Bible leadership. Color-coded ratings make strengths and gaps jump out instantly.</p>
+        <ul>
+          <li>Every dimension rated STRONG, ON TARGET, or NEEDS WORK</li>
+          <li>Trended over time so you see growth quarter by quarter</li>
+          <li>Consistent framework across every leader in your church</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <span class="feat-visual-label">SCORECARD</span>
+        <div style="padding: 12px 0;">
+          <div class="dim-row" style="font-size:13px;"><span class="dn">Lesson Preparation</span><span class="ds">5/5</span><span class="badge strong">STRONG</span></div>
+          <div class="dim-row" style="font-size:13px;"><span class="dn">Biblical Accuracy</span><span class="ds">5/5</span><span class="badge strong">STRONG</span></div>
+          <div class="dim-row" style="font-size:13px;"><span class="dn">Question Quality</span><span class="ds">3/5</span><span class="badge target">ON TARGET</span></div>
+          <div class="dim-row" style="font-size:13px;"><span class="dn">Application</span><span class="ds">2/5</span><span class="badge needs">NEEDS WORK</span></div>
+          <div class="dim-row" style="font-size:13px;"><span class="dn">Group Engagement</span><span class="ds">4/5</span><span class="badge target">ON TARGET</span></div>
+          <div class="dim-row" style="font-size:13px;"><span class="dn">Prayer &amp; Tone</span><span class="ds">4/5</span><span class="badge target">ON TARGET</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 2: Question coaching -->
+    <div class="feat-row reverse">
+      <div class="feat-copy">
+        <span class="eyebrow">02 · Question coaching</span>
+        <h3>Better questions. Every week.</h3>
+        <p>Bible teaching rises and falls on the quality of the questions. We show you every question you asked, grade them, and suggest sharper ones for next time.</p>
+        <ul>
+          <li>Specific coaching on each question you actually asked</li>
+          <li>Suggested upgrades tied to your lesson's passage</li>
+          <li>Patterns across lessons so you build the craft over time</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <span class="feat-visual-label">QUESTION COACHING</span>
+        <div style="padding: 16px 0;">
+          <div class="mini-question">
+            "What does this passage teach about God's character?"
+            <span class="note">Too broad. Try: "How does v.11 reshape your picture of God's care?"</span>
+          </div>
+          <div class="mini-question">
+            "Any thoughts?"
+            <span class="note">Dead-end. Try naming a specific person or asking a closed follow-up.</span>
+          </div>
+          <div class="mini-question good">
+            "Where in this week do you see the pattern Paul names in v.5-6?"
+            <span class="note">★ Strong. Anchors the text to real life.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3: Recommendations -->
+    <div class="feat-row">
+      <div class="feat-copy">
+        <span class="eyebrow">03 · Recommendations</span>
+        <h3>Three actions. Not thirty.</h3>
+        <p>Every report ends with three concrete things to try next time, ranked by impact, tied specifically to your session. No generic advice. No overwhelm.</p>
+        <ul>
+          <li>Three ranked actions tied to your specific lesson</li>
+          <li>Each one testable in a single session</li>
+          <li>Tracked next week so you can see if the change landed</li>
+        </ul>
+      </div>
+      <div class="feat-visual">
+        <span class="feat-visual-label">NEXT STEPS</span>
+        <div style="padding: 16px 0;">
+          <div class="mini-rec"><b>01 · Sharpen questions</b>Replace "what do you think?" with a specific follow-up tied to the text.</div>
+          <div class="mini-rec"><b>02 · Close with application</b>End each session with one specific action. Try: "Text one person by Wednesday."</div>
+          <div class="mini-rec"><b>03 · Hand off to the group</b>Try 3 minutes of silent reading before your first question. Let them meet the text first.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METHOD -->
+<section class="method" id="method">
+  <div class="wrap">
+    <div class="s-head-center">
+      <span class="eyebrow">The method</span>
+      <h2 class="s-title">Four phases. <em>One weekly loop.</em></h2>
+      <p class="s-lead">Record, analyze, coach, measure. Every Sunday becomes next Sunday's playbook. Simple enough to keep up with, thorough enough to actually grow.</p>
+    </div>
+
+    <div class="phases-grid">
+      <div class="phase">
+        <div class="phase-num">01</div>
+        <div class="phase-name">Record</div>
+        <p class="phase-desc">Share an audio recording of your lesson, small group, or teaching moment. No special equipment. A phone works.</p>
+      </div>
+      <div class="phase">
+        <div class="phase-num">02</div>
+        <div class="phase-name">Analyze</div>
+        <p class="phase-desc">A coach listens end-to-end and scores your session against the 11 dimensions of Bible leadership.</p>
+      </div>
+      <div class="phase">
+        <div class="phase-num">03</div>
+        <div class="phase-name">Coach</div>
+        <p class="phase-desc">You receive a written report with strengths, gaps, and three concrete actions for your next session.</p>
+      </div>
+      <div class="phase">
+        <div class="phase-num">04</div>
+        <div class="phase-name">Measure</div>
+        <p class="phase-desc">Scores trend over time. You see growth. Pastors see readiness. Admins see the investment pay off.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIMENSIONS TABLE -->
+<section class="dims" id="dimensions">
+  <div class="wrap">
+    <div class="s-head-center">
+      <span class="eyebrow">The framework</span>
+      <h2 class="s-title"><em>11 dimensions</em> of Bible leadership.</h2>
+      <p class="s-lead">Every session scored against the same framework, every week. Here's the full list with a sample rating from one recent lesson.</p>
+    </div>
+
+    <div class="dims-table-wrap">
+      <table class="dims-table">
+        <thead>
+          <tr>
+            <th style="width:28%;">Dimension</th>
+            <th>What it measures</th>
+            <th style="width:90px; text-align:center;">Sample</th>
+            <th style="width:140px; text-align:right;">Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="n">Lesson Preparation</td><td class="d">Structure, flow, time management</td><td class="s">5/5</td><td class="r"><span class="badge strong">STRONG</span></td></tr>
+          <tr><td class="n">Biblical Accuracy</td><td class="d">Text handling, context, doctrine</td><td class="s">5/5</td><td class="r"><span class="badge strong">STRONG</span></td></tr>
+          <tr><td class="n">Question Quality</td><td class="d">Open-ended, thought-provoking, anchored</td><td class="s">3/5</td><td class="r"><span class="badge target">ON TARGET</span></td></tr>
+          <tr><td class="n">Group Engagement</td><td class="d">Participation, listening, discussion flow</td><td class="s">4/5</td><td class="r"><span class="badge target">ON TARGET</span></td></tr>
+          <tr><td class="n">Application</td><td class="d">Life-change steps, real-world tie-ins</td><td class="s">2/5</td><td class="r"><span class="badge needs">NEEDS WORK</span></td></tr>
+          <tr><td class="n">Prayer &amp; Tone</td><td class="d">Spiritual leadership, pastoral care</td><td class="s">4/5</td><td class="r"><span class="badge target">ON TARGET</span></td></tr>
+          <tr><td class="n">Clarity</td><td class="d">Communication, illustrations, pacing</td><td class="s">4/5</td><td class="r"><span class="badge target">ON TARGET</span></td></tr>
+          <tr><td class="n">Context &amp; Cross-References</td><td class="d">Old/New Testament connections</td><td class="s">3/5</td><td class="r"><span class="badge target">ON TARGET</span></td></tr>
+          <tr><td class="n">Theological Depth</td><td class="d">Doctrine taught accurately and accessibly</td><td class="s">3/5</td><td class="r"><span class="badge target">ON TARGET</span></td></tr>
+          <tr><td class="n">Response to Questions</td><td class="d">Handling pushback, confusion, tangents</td><td class="s">3/5</td><td class="r"><span class="badge target">ON TARGET</span></td></tr>
+          <tr><td class="n">Closing &amp; Call to Action</td><td class="d">Summary, takeaway, commitment</td><td class="s">2/5</td><td class="r"><span class="badge needs">NEEDS WORK</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- REQUEST FORM -->
+<section class="request" id="request">
+  <div class="wrap">
+    <div class="request-card">
+      <div style="text-align:center;">
+        <span class="eyebrow">Get in touch</span>
+        <h2>Request more information.</h2>
+        <p class="lead">Tell us about your role and your church. A VerseMate team member will respond with a sample report and next steps within 24 hours.</p>
+      </div>
+      <form id="request-form" onsubmit="return submitRequestForm(event);">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="f-name">Name</label>
+            <input type="text" id="f-name" name="Name" required autocomplete="name">
+          </div>
+          <div class="form-field">
+            <label for="f-email">Email</label>
+            <input type="email" id="f-email" name="Email" required autocomplete="email">
+          </div>
+          <div class="form-field">
+            <label for="f-role">Role</label>
+            <select id="f-role" name="Role">
+              <option>Bible study leader</option>
+              <option>Small group leader</option>
+              <option>Church administrator</option>
+              <option>Senior pastor</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="f-church">Church size</label>
+            <select id="f-church" name="Church_size">
+              <option>Under 100</option>
+              <option>100 – 500</option>
+              <option>500 – 2,000</option>
+              <option>2,000+</option>
+            </select>
+          </div>
+          <div class="form-field full">
+            <label for="f-notes">Notes (optional)</label>
+            <textarea id="f-notes" name="Notes" placeholder="What would you like to know about Bible Leader Coaching?"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Request more information →</button>
+          <a href="mailto:info@versemate.org" class="btn btn-ghost-dark">Or email directly</a>
+        </div>
+      </form>
+      <script>
+        function submitRequestForm(e) {
+          e.preventDefault();
+          var name   = document.getElementById('f-name').value.trim();
+          var email  = document.getElementById('f-email').value.trim();
+          var role   = document.getElementById('f-role').value;
+          var church = document.getElementById('f-church').value;
+          var notes  = document.getElementById('f-notes').value.trim();
+          var subject = 'VerseMate Coaching — Request for information';
+          var body =
+            'Name: ' + name + '\n' +
+            'Email: ' + email + '\n' +
+            'Role: ' + role + '\n' +
+            'Church size: ' + church + '\n\n' +
+            'Notes:\n' + (notes || '(none)') + '\n';
+          var href = 'mailto:info@versemate.org'
+            + '?subject=' + encodeURIComponent(subject)
+            + '&body=' + encodeURIComponent(body);
+          window.location.href = href;
+          return false;
+        }
+      </script>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap">
+    <h2>Ready to grow<br>as a <em>leader?</em></h2>
+    <p>Send us a note. We'll send you a sample coaching report and walk you through exactly how it works for your church.</p>
+    <a class="btn btn-primary" href="#request" style="padding: 20px 44px; font-size: 16px;">Request more information →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="ft-top">
+      <div>
+        <div class="ft-brand">VerseMate <em>Coaching</em></div>
+        <p class="ft-desc">Weekly Bible leader coaching for study leaders, small group leaders, and the whole church. Built by believers. Guided by the Word.</p>
+      </div>
+      <div class="ft-col">
+        <h5>Product</h5>
+        <a href="#product">What's in a report</a>
+        <a href="#method">The method</a>
+        <a href="#dimensions">11 dimensions</a>
+        <a href="#who">Who it's for</a>
+      </div>
+      <div class="ft-col">
+        <h5>Resources</h5>
+        <a href="mailto:info@versemate.org?subject=Sample%20report%20request">Sample report</a>
+        <a href="mailto:info@versemate.org?subject=Pricing%20inquiry">Pricing</a>
+        <a href="#request">Request info</a>
+      </div>
+      <div class="ft-col">
+        <h5>Company</h5>
+        <a href="https://versemate.org">VerseMate.org</a>
+        <a href="mailto:info@versemate.org">info@versemate.org</a>
+        <a href="https://versemate.org/give">Donate</a>
+      </div>
+    </div>
+    <div class="ft-bottom">
+      <span>© 2026 VerseMate. A 501(c)(3) nonprofit.</span>
+      <span>Bible Leader Coaching</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
