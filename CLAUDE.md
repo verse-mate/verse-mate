@@ -50,8 +50,8 @@ cd apps/frontend-next && bun build  # Build frontend
 ```
 /apps
   /backend - Elysia API server (port 3001)
-  /frontend-next - Next.js app (port 3000)
-  /website - Marketing website
+  /frontend-next - Next.js app (port 3000) — the logged-in PWA at app.versemate.org
+  /website - Marketing website (port 3002) — the public site at versemate.org
 /packages
   /backend-api - Eden client SDK for frontend-backend communication
   /backend-base - Core backend modules (auth, bible, chat, queue, workers)
@@ -60,6 +60,15 @@ cd apps/frontend-next && bun build  # Build frontend
   /frontend-base - Shared UI components and utilities
   /frontend-envs - Frontend environment configuration
 ```
+
+### Where to put marketing / external website changes
+
+**All public-facing marketing pages go in `apps/website`, not `apps/frontend-next`.**
+
+- `apps/website` → `versemate.org` (marketing, landing pages, `/give`, `/about`, `/coach`, `/privacy`, etc.). Next.js with `output: "export"`, static export served by a Cloudflare Worker. Drop new static HTML into `apps/website/public/<route>/index.html` or add a page in `apps/website/src/pages/`.
+- `apps/frontend-next` → `app.versemate.org` (the logged-in product: Bible reader, chat, coaching reports). This app has the `MyMainPage` chrome wrapper in the root layout; it is NOT the right home for marketing content.
+
+If you're unsure, the rule is: "Would this URL make sense on versemate.org?" If yes → `apps/website`.
 
 ### Key Technologies
 - **Runtime**: Bun (replaces Node.js, npm, and more)
