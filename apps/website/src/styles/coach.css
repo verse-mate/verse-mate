@@ -1,0 +1,1054 @@
+/* =====================================================================
+   Coach pages — scoped styles
+   Preserves the bespoke marketing + report design for /coach and
+   /coach/sample. Every selector is scoped under .coach-page so the
+   styles do not bleed into the rest of the site.
+   ===================================================================== */
+
+.coach-page {
+  /* ========== DESIGN TOKENS ========== */
+  --ink: #171717;
+  --ink-dk: #000;
+  --slate: #3E464D;
+  --muted: #6B7280;
+  --border: #E5E7EB;
+  --cream: #F6F3EC;
+  --cream-dk: #EDE7D8;
+  --white: #FFF;
+  --tan: #C2B291;
+  --tan-dk: #A89777;
+  --tan-soft: #E6DCC4;
+  --amber: #D9A566;
+  --green-bg: #C6EFCE; --green-tx: #006100;
+  --blue-bg: #D6E4F0;  --blue-tx: #1E3A5F;
+  --red-bg: #FFD6D6;   --red-tx: #9C0006;
+  --na-bg: #F1F1F1;    --na-tx: #6B7280;
+  --serif: 'Merriweather', georgia, serif;
+  --sans: 'Inter', arial, helvetica, system-ui, sans-serif;
+  --arial: arial, helvetica, sans-serif;
+
+  font-family: var(--arial);
+  color: var(--ink);
+  background: var(--white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+}
+
+.coach-page .serif { font-family: var(--serif); font-weight: 700; }
+.coach-page a { color: inherit; text-decoration: none; }
+
+.coach-page img,
+.coach-page svg { display: block; max-width: 100%; height: auto; }
+.coach-page button { font-family: inherit; cursor: pointer; }
+
+/* ========== LAYOUT (landing) ========== */
+.coach-page .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.coach-page section { padding: 88px 0; }
+
+/* ========== HERO ========== */
+.coach-page .hero {
+  position: relative;
+  padding: 120px 0 100px;
+  color: var(--white);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 80% 40%, rgb(217 165 102 / 35%) 0%, rgb(217 165 102 / 0%) 50%),
+    radial-gradient(ellipse at 75% 50%, rgb(255 180 80 / 40%) 0%, rgb(255 180 80 / 0%) 35%),
+    radial-gradient(ellipse at 85% 55%, rgb(194 178 145 / 20%) 0%, rgb(194 178 145 / 0%) 40%),
+    linear-gradient(135deg, #0a0a0a 0%, #171717 45%, #2a1f14 100%);
+}
+
+.coach-page .hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 90% 60%, rgb(255 200 120 / 15%) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.coach-page .hero-inner {
+  position: relative; z-index: 2;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.coach-page .hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 12px; font-weight: 600; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--tan);
+  margin-bottom: 28px;
+}
+
+.coach-page .hero-eyebrow::before {
+  content: ''; width: 32px; height: 1px; background: var(--tan);
+}
+
+.coach-page .hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.5px;
+  margin-bottom: 24px;
+}
+.coach-page .hero h1 em { font-style: italic; color: var(--tan); font-weight: 400; }
+
+.coach-page .hero-sub {
+  font-family: var(--arial);
+  font-size: clamp(16px, 1.3vw, 19px);
+  line-height: 1.6;
+  color: rgb(255 255 255 / 82%);
+  margin-bottom: 40px;
+  max-width: 560px;
+}
+.coach-page .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+
+.coach-page .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 18px 36px;
+  border-radius: 100px;
+  font-family: var(--arial);
+  font-size: 15px; font-weight: 600;
+  border: none; cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.coach-page .btn-primary {
+  background: var(--tan); color: var(--ink);
+}
+
+.coach-page .btn-primary:hover {
+  background: var(--tan-dk); transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgb(194 178 145 / 25%);
+}
+
+.coach-page .btn-dark {
+  background: var(--ink-dk); color: var(--white);
+}
+.coach-page .btn-dark:hover { background: #222; }
+
+.coach-page .btn-ghost {
+  background: transparent; color: var(--white);
+  border: 1px solid rgb(255 255 255 / 25%);
+}
+.coach-page .btn-ghost:hover { border-color: var(--tan); color: var(--tan); }
+
+.coach-page .btn-ghost-dark {
+  background: transparent; color: var(--ink);
+  border: 1px solid var(--border);
+}
+.coach-page .btn-ghost-dark:hover { border-color: var(--ink); }
+
+/* HERO SCORE CARD */
+.coach-page .score-card-hero {
+  background: var(--white); color: var(--ink);
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 35%), 0 10px 30px rgb(0 0 0 / 20%);
+  position: relative;
+  transform: perspective(1400px) rotateY(-4deg) rotateX(3deg);
+  transform-style: preserve-3d;
+}
+
+.coach-page .score-card-hero::before {
+  content: 'SAMPLE REPORT';
+  position: absolute; top: -12px; left: 28px;
+  background: var(--tan); color: var(--ink);
+  font-size: 10px; font-weight: 700; letter-spacing: 1.8px;
+  padding: 5px 14px; border-radius: 4px;
+}
+
+.coach-page .score-card-hero .score-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding-bottom: 16px; border-bottom: 2px solid var(--ink-dk);
+  margin-bottom: 20px; margin-top: 10px;
+}
+
+.coach-page .score-card-hero .score-head h3 {
+  font-family: var(--serif); font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 4px;
+}
+.coach-page .score-card-hero .score-head .meta { font-size: 12px; color: var(--muted); }
+
+.coach-page .score-card-hero .score-big {
+  font-family: var(--serif); font-size: 58px; font-weight: 900; color: var(--ink);
+  line-height: 1;
+}
+.coach-page .score-card-hero .score-big span { color: var(--tan-dk); font-size: 30px; margin-left: 10px; }
+
+.coach-page .score-card-hero .score-label {
+  font-size: 10px; color: var(--muted); letter-spacing: 1.8px;
+  text-transform: uppercase; margin-top: 6px; margin-bottom: 18px;
+}
+
+.coach-page .dim-row {
+  display: grid;
+  grid-template-columns: 1fr auto 76px;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+.coach-page .dim-row:last-child { border-bottom: none; }
+.coach-page .dim-row .dn { color: var(--ink); font-weight: 500; font-size: 13px; }
+.coach-page .dim-row .ds { color: var(--muted); font-size: 12px; font-weight: 700; text-align: right; }
+
+.coach-page .badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 4px 8px; text-align: center; border-radius: 3px;
+}
+.coach-page .badge.strong { background: var(--green-bg); color: var(--green-tx); }
+.coach-page .badge.target { background: var(--blue-bg); color: var(--blue-tx); }
+.coach-page .badge.needs  { background: var(--red-bg);   color: var(--red-tx); }
+.coach-page .badge.na     { background: var(--na-bg);    color: var(--na-tx); }
+
+/* ========== SECTION PATTERNS ========== */
+.coach-page .eyebrow {
+  display: inline-block;
+  font-size: 11px; font-weight: 600; letter-spacing: 2.5px;
+  text-transform: uppercase; color: var(--tan-dk);
+  margin-bottom: 14px;
+}
+
+.coach-page .s-title {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(30px, 4.2vw, 48px);
+  line-height: 1.15;
+  color: var(--ink); letter-spacing: -0.5px;
+  margin-bottom: 18px;
+}
+.coach-page .s-title em { font-style: italic; color: var(--tan-dk); }
+
+.coach-page .s-lead {
+  font-family: var(--arial);
+  font-size: clamp(15px, 1.2vw, 18px);
+  color: var(--slate);
+  max-width: 680px;
+  line-height: 1.65;
+  margin-bottom: 48px;
+}
+.coach-page .s-head-center { text-align: center; }
+.coach-page .s-head-center .s-lead { margin-left: auto; margin-right: auto; }
+
+/* ========== WHO IT'S FOR ========== */
+.coach-page .who { background: var(--cream); }
+
+.coach-page .who-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.coach-page .who-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 36px 28px;
+  border-top: 3px solid var(--tan);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 3%);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.coach-page .who-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 8%);
+}
+
+.coach-page .who-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--cream); color: var(--tan-dk);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin-bottom: 24px;
+}
+
+.coach-page .who-card h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  color: var(--ink); margin-bottom: 12px; line-height: 1.25;
+}
+
+.coach-page .who-card p {
+  font-size: 15px; color: var(--slate); line-height: 1.65; margin-bottom: 20px;
+}
+
+.coach-page .who-widget {
+  background: var(--cream); border-radius: 8px; padding: 14px 16px;
+}
+
+.coach-page .widget-row {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 6px 0; font-size: 12px;
+  border-bottom: 1px dashed rgb(0 0 0 / 8%);
+}
+.coach-page .widget-row:last-child { border-bottom: none; }
+.coach-page .widget-row .n { color: var(--ink); font-weight: 500; }
+
+.coach-page .widget-row .v {
+  font-weight: 700; color: var(--tan-dk); font-size: 11px; letter-spacing: 0.5px;
+}
+.coach-page .bar { width: 70px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.coach-page .bar > span { display: block; height: 100%; background: var(--tan); border-radius: 3px; }
+
+/* ========== BENEFITS ========== */
+.coach-page .benefits { background: var(--white); }
+
+.coach-page .benefit-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px;
+  margin-top: 24px;
+}
+.coach-page .benefit { padding: 24px 0; }
+
+.coach-page .benefit-num {
+  font-family: var(--serif); font-size: 52px; font-weight: 400;
+  color: var(--tan); line-height: 1; margin-bottom: 16px;
+}
+
+.coach-page .benefit h4 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  color: var(--ink); margin-bottom: 10px; line-height: 1.25;
+}
+.coach-page .benefit p { font-size: 14px; color: var(--slate); line-height: 1.65; }
+
+/* ========== PRODUCT DETAIL (feature rows) ========== */
+.coach-page .product { background: var(--cream); }
+
+.coach-page .feat-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 72px; align-items: center;
+  padding: 64px 0;
+  border-bottom: 1px solid var(--cream-dk);
+}
+.coach-page .feat-row:last-child { border-bottom: none; }
+.coach-page .feat-row.reverse .feat-copy { order: 2; }
+.coach-page .feat-row.reverse .feat-visual { order: 1; }
+.coach-page .feat-copy .eyebrow { margin-bottom: 10px; }
+
+.coach-page .feat-copy h3 {
+  font-family: var(--serif); font-size: clamp(24px, 2.6vw, 34px);
+  font-weight: 700; color: var(--ink); line-height: 1.2;
+  letter-spacing: -0.3px; margin-bottom: 18px;
+}
+
+.coach-page .feat-copy p {
+  font-size: 16px; color: var(--slate); line-height: 1.65; margin-bottom: 20px;
+}
+.coach-page .feat-copy ul { list-style: none; padding: 0; }
+
+.coach-page .feat-copy li {
+  padding: 8px 0 8px 28px;
+  position: relative;
+  font-size: 15px; color: var(--slate); line-height: 1.55;
+}
+
+.coach-page .feat-copy li::before {
+  content: ''; position: absolute; left: 0; top: 16px;
+  width: 16px; height: 2px; background: var(--tan);
+}
+
+.coach-page .feat-visual {
+  background: var(--white); border-radius: 16px;
+  padding: 24px; box-shadow: 0 6px 20px rgb(0 0 0 / 5%);
+  position: relative;
+}
+
+.coach-page .feat-visual-label {
+  position: absolute; top: -10px; left: 24px;
+  background: var(--ink); color: var(--white);
+  font-size: 10px; font-weight: 700; letter-spacing: 1.8px;
+  padding: 5px 12px; border-radius: 4px;
+}
+
+/* Mini visuals inside feature rows */
+.coach-page .mini-question {
+  padding: 10px 14px;
+  border-left: 3px solid var(--border);
+  background: var(--cream);
+  font-size: 13px; color: var(--ink);
+  margin: 10px 0; border-radius: 0 6px 6px 0;
+  line-height: 1.5;
+}
+.coach-page .mini-question.good { border-left-color: var(--tan); background: #FBF6EA; }
+
+.coach-page .mini-question .note {
+  display: block; font-size: 11px; color: var(--muted); margin-top: 4px; font-style: italic;
+}
+.coach-page .mini-question.good .note { color: var(--tan-dk); font-style: normal; font-weight: 600; }
+
+.coach-page .mini-rec {
+  padding: 12px 14px; background: var(--cream); border-radius: 6px;
+  margin: 10px 0; font-size: 13px; color: var(--slate); line-height: 1.55;
+}
+
+.coach-page .mini-rec b {
+  display: block; font-size: 10px; color: var(--tan-dk);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; font-weight: 700;
+}
+
+/* ========== METHOD (4 phases) ========== */
+.coach-page .method { background: var(--white); }
+
+.coach-page .phases-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.coach-page .phase {
+  padding: 36px 28px;
+  border-right: 1px solid var(--border);
+  position: relative;
+  background: var(--white);
+}
+.coach-page .phase:last-child { border-right: none; }
+
+.coach-page .phase-num {
+  font-family: var(--serif); font-size: 42px; font-weight: 700;
+  color: var(--tan); line-height: 1; margin-bottom: 12px;
+}
+
+.coach-page .phase-name {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  color: var(--ink); margin-bottom: 12px;
+}
+.coach-page .phase-desc { font-size: 14px; color: var(--slate); line-height: 1.6; }
+
+.coach-page .phase::after {
+  content: '→';
+  position: absolute; right: -14px; top: 50%;
+  transform: translateY(-50%);
+  background: var(--white); color: var(--tan);
+  font-size: 20px; font-weight: 700;
+  width: 28px; height: 28px;
+  text-align: center; line-height: 28px;
+  border-radius: 50%;
+  z-index: 2;
+}
+.coach-page .phase:last-child::after { display: none; }
+
+/* ========== DIMENSIONS TABLE ========== */
+.coach-page .dims { background: var(--ink-dk); color: var(--white); }
+.coach-page .dims .s-title { color: var(--white); }
+.coach-page .dims .s-lead { color: rgb(255 255 255 / 70%); }
+.coach-page .dims .eyebrow { color: var(--tan); }
+
+.coach-page .dims-table-wrap {
+  background: rgb(255 255 255 / 3%);
+  border-radius: 16px; overflow: hidden;
+  border: 1px solid rgb(194 178 145 / 15%);
+}
+
+.coach-page .dims-table {
+  width: 100%; border-collapse: collapse; font-size: 14px;
+}
+
+.coach-page .dims-table thead th {
+  padding: 18px 20px;
+  font-family: var(--arial);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1.8px; text-transform: uppercase;
+  text-align: left;
+  color: var(--tan);
+  background: rgb(194 178 145 / 8%);
+  border-bottom: 2px solid var(--tan);
+}
+
+.coach-page .dims-table tbody td {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 90%);
+}
+.coach-page .dims-table tbody tr:last-child td { border-bottom: none; }
+.coach-page .dims-table tbody tr:hover { background: rgb(194 178 145 / 5%); }
+.coach-page .dims-table td.n { font-family: var(--serif); font-weight: 700; color: var(--white); font-size: 15px; }
+.coach-page .dims-table td.d { color: rgb(255 255 255 / 65%); font-size: 13px; }
+.coach-page .dims-table td.s { font-family: var(--serif); font-weight: 700; color: var(--tan); text-align: center; font-size: 15px; }
+.coach-page .dims-table td.r { text-align: right; }
+
+/* ========== REQUEST FORM ========== */
+.coach-page .request { background: var(--cream); }
+
+.coach-page .request-card {
+  max-width: 820px; margin: 0 auto;
+  background: var(--white);
+  border-radius: 20px;
+  padding: 56px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 4%);
+  border-top: 4px solid var(--tan);
+}
+
+.coach-page .request-card h2 {
+  font-family: var(--serif); font-size: clamp(26px, 3.2vw, 36px); font-weight: 700;
+  color: var(--ink); margin-bottom: 10px; line-height: 1.2;
+}
+
+.coach-page .request-card .lead {
+  font-size: 16px; color: var(--slate); margin-bottom: 32px; line-height: 1.6;
+}
+.coach-page .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.coach-page .form-field { display: flex; flex-direction: column; }
+.coach-page .form-field.full { grid-column: 1 / -1; }
+
+.coach-page .form-field label {
+  font-size: 11px; font-weight: 700; color: var(--ink);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px;
+}
+
+.coach-page .form-field input,
+.coach-page .form-field select,
+.coach-page .form-field textarea {
+  width: 100%; padding: 14px 16px;
+  font-size: 15px; font-family: inherit; color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--white); transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.coach-page .form-field input:focus,
+.coach-page .form-field select:focus,
+.coach-page .form-field textarea:focus {
+  outline: none; border-color: var(--tan);
+  box-shadow: 0 0 0 3px rgb(194 178 145 / 20%);
+}
+.coach-page .form-field textarea { min-height: 110px; resize: vertical; font-family: inherit; }
+
+.coach-page .form-actions {
+  margin-top: 32px;
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+}
+
+.coach-page .form-note {
+  margin-top: 16px; font-size: 13px; color: var(--muted);
+}
+
+/* ========== FINAL CTA ========== */
+.coach-page .final {
+  background: var(--white);
+  padding: 120px 0;
+  text-align: center;
+}
+
+.coach-page .final h2 {
+  font-family: var(--serif); font-weight: 700;
+  font-size: clamp(34px, 5vw, 56px);
+  color: var(--ink); line-height: 1.1;
+  margin-bottom: 20px; letter-spacing: -0.5px;
+}
+.coach-page .final h2 em { font-style: italic; color: var(--tan-dk); }
+
+.coach-page .final p {
+  font-family: var(--arial);
+  font-size: clamp(16px, 1.4vw, 19px);
+  color: var(--slate);
+  max-width: 600px; margin: 0 auto 40px; line-height: 1.6;
+}
+
+/* ========== RESPONSIVE — TABLET (< 1024px) — landing ========== */
+@media (max-width: 1023px) {
+  .coach-page .wrap { padding: 0 24px; }
+  .coach-page section { padding: 72px 0; }
+
+  .coach-page .hero { padding: 90px 0 72px; }
+  .coach-page .hero-inner { grid-template-columns: 1fr; gap: 44px; }
+  .coach-page .hero h1 { font-size: clamp(38px, 5.8vw, 58px); }
+  .coach-page .hero-sub { max-width: 640px; }
+
+  .coach-page .score-card-hero {
+    max-width: 520px;
+    margin: 0 auto;
+    transform: none !important;
+    width: 100%;
+  }
+  .coach-page .score-card-hero .score-big { font-size: 52px; }
+  .coach-page .score-card-hero .score-big span { font-size: 26px; }
+
+  .coach-page .who-grid { grid-template-columns: 1fr 1fr; }
+  .coach-page .who-grid > :nth-child(3) { grid-column: 1 / -1; max-width: 520px; justify-self: center; }
+
+  .coach-page .benefit-grid { grid-template-columns: 1fr 1fr; gap: 32px 40px; }
+
+  .coach-page .feat-row,
+  .coach-page .feat-row.reverse {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 48px 0;
+  }
+  .coach-page .feat-row.reverse .feat-copy { order: 1; }
+  .coach-page .feat-row.reverse .feat-visual { order: 2; }
+  .coach-page .feat-visual { max-width: 620px; margin: 0 auto; width: 100%; }
+  .coach-page .feat-copy { max-width: 680px; }
+
+  .coach-page .phases-grid { grid-template-columns: 1fr 1fr; }
+  .coach-page .phase { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .coach-page .phase:nth-child(2n) { border-right: none; }
+  .coach-page .phase:nth-child(n+3) { border-bottom: none; }
+  .coach-page .phase:nth-child(2n)::after { display: none; }
+  .coach-page .phase:nth-child(2n-1):not(:last-child)::after { display: none; }
+
+  .coach-page .dims-table thead th,
+  .coach-page .dims-table tbody td { padding: 14px 12px; }
+  .coach-page .dims-table td.n { font-size: 14px; }
+  .coach-page .dims-table td.d { font-size: 12.5px; }
+
+  .coach-page .request-card { padding: 40px 32px; }
+}
+
+/* ========== RESPONSIVE — MOBILE (< 768px) — landing ========== */
+@media (max-width: 767px) {
+  .coach-page section { padding: 56px 0; }
+  .coach-page .wrap { padding: 0 20px; }
+
+  .coach-page .hero { padding: 72px 0 60px; }
+  .coach-page .hero-eyebrow { font-size: 11px; letter-spacing: 2px; margin-bottom: 20px; }
+  .coach-page .hero-eyebrow::before { width: 20px; }
+  .coach-page .hero-sub { font-size: 16px; margin-bottom: 32px; }
+  .coach-page .hero-ctas { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
+  .coach-page .hero-ctas .btn { width: 100%; padding: 16px 24px; font-size: 14px; }
+  .coach-page .score-card-hero { padding: 22px; transform: none; max-width: 100%; }
+  .coach-page .score-card-hero::before { font-size: 9px; padding: 4px 10px; left: 22px; }
+  .coach-page .score-card-hero .score-big { font-size: 48px; }
+  .coach-page .score-card-hero .score-big span { font-size: 22px; }
+
+  .coach-page .s-lead { font-size: 15px; }
+  .coach-page .who-grid { grid-template-columns: 1fr; gap: 20px; }
+  .coach-page .who-grid > :nth-child(3) { grid-column: auto; max-width: none; }
+  .coach-page .who-card { padding: 28px 24px; }
+  .coach-page .benefit-grid { grid-template-columns: 1fr 1fr; gap: 24px 20px; }
+  .coach-page .benefit { padding: 16px 0; }
+  .coach-page .benefit-num { font-size: 40px; margin-bottom: 10px; }
+  .coach-page .benefit h4 { font-size: 18px; }
+
+  .coach-page .feat-row,
+  .coach-page .feat-row.reverse {
+    grid-template-columns: 1fr; gap: 32px; padding: 40px 0;
+  }
+  .coach-page .feat-row.reverse .feat-copy { order: 1; }
+  .coach-page .feat-row.reverse .feat-visual { order: 2; }
+  .coach-page .feat-visual { padding: 20px; }
+
+  .coach-page .phases-grid { grid-template-columns: 1fr; }
+  .coach-page .phase { border-right: none; border-bottom: 1px solid var(--border); }
+  .coach-page .phase:last-child { border-bottom: none; }
+
+  .coach-page .phase::after {
+    content: '↓'; right: 50%; top: auto; bottom: -14px;
+    transform: translateX(50%);
+  }
+  .coach-page .phase:last-child::after { display: none; }
+
+  /* DIMS TABLE - stacked-card layout on mobile */
+  .coach-page .dims-table thead { display: none; }
+
+  .coach-page .dims-table,
+  .coach-page .dims-table tbody { display: block; width: 100%; border: none; }
+
+  .coach-page .dims-table tr {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name score"
+      "desc badge";
+    gap: 6px 16px;
+    padding: 18px 4px;
+    border-bottom: 1px solid rgb(255 255 255 / 8%);
+    align-items: start;
+  }
+  .coach-page .dims-table tr:hover { background: transparent; }
+  .coach-page .dims-table td { display: block; padding: 0; border: none; }
+
+  .coach-page .dims-table td.n {
+    grid-area: name;
+    font-size: 15px;
+    line-height: 1.25;
+  }
+
+  .coach-page .dims-table td.d {
+    grid-area: desc;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: rgb(255 255 255 / 60%);
+  }
+
+  .coach-page .dims-table td.s {
+    grid-area: score;
+    font-size: 22px;
+    text-align: right;
+    line-height: 1;
+    align-self: center;
+  }
+
+  .coach-page .dims-table td.r {
+    grid-area: badge;
+    text-align: right;
+    align-self: start;
+  }
+
+  .coach-page .request-card { padding: 32px 24px; border-radius: 16px; }
+  .coach-page .form-grid { grid-template-columns: 1fr; gap: 16px; }
+  .coach-page .form-actions { flex-direction: column; align-items: stretch; gap: 14px; }
+  .coach-page .form-actions .btn { width: 100%; }
+
+  .coach-page .final { padding: 72px 0; }
+}
+
+/* ========== RESPONSIVE — SMALL MOBILE (< 400px) ========== */
+@media (max-width: 399px) {
+  .coach-page .benefit-grid { grid-template-columns: 1fr; }
+  .coach-page .hero h1 { font-size: 36px; }
+  .coach-page .wrap { padding: 0 16px; }
+}
+
+/* Prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .coach-page * { transition: none !important; animation: none !important; }
+  .coach-page .score-card-hero { transform: none; }
+}
+
+/* =====================================================================
+   SAMPLE REPORT PAGE STYLES
+   Scoped under .coach-page.coach-sample so the sample page has its own
+   typographic treatment (cream background, centered doc, section headers).
+   ===================================================================== */
+
+.coach-page.coach-sample { background: var(--cream); font-size: 15px; }
+.coach-page.coach-sample a { color: inherit; text-decoration: underline; }
+
+.coach-page .doc {
+  max-width: 940px;
+  margin: 0 auto;
+  background: var(--white);
+  box-shadow: 0 2px 16px rgb(0 0 0 / 6%);
+}
+.coach-page .doc-inner { padding: 56px 64px; }
+
+/* TITLE BANNER */
+.coach-page .title-banner {
+  background: var(--ink-dk);
+  color: var(--white);
+  padding: 48px 64px 44px;
+  border-bottom: 6px solid var(--tan);
+  text-align: center;
+}
+
+.coach-page .title-banner .eyebrow {
+  font-family: var(--arial);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--tan);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.coach-page .title-banner h1 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(28px, 5vw, 42px);
+  margin-top: 10px;
+  letter-spacing: -0.5px;
+  color: var(--white);
+}
+
+.coach-page .title-banner .subtitle {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 17px;
+  color: rgb(255 255 255 / 70%);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.coach-page .anon-tag {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 6px 14px;
+  border: 1px solid rgb(194 178 145 / 40%);
+  border-radius: 100px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--tan);
+  text-transform: uppercase;
+}
+
+/* SCORE CARD (sample-report variant) */
+.coach-page .sample-score-card {
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--tan);
+  padding: 40px 44px;
+  margin: 48px 0 40px;
+  border-radius: 4px;
+}
+
+.coach-page .score-top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.coach-page .sample-score-card .score-big {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 72px;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -2px;
+}
+
+.coach-page .score-grade {
+  display: inline-block;
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--amber);
+  margin-left: 8px;
+  font-size: 52px;
+}
+
+.coach-page .sample-score-card .score-label {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.coach-page .score-sub {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--slate);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.coach-page .score-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 32px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.coach-page .score-meta .lab {
+  font-weight: 700;
+  color: var(--ink);
+  font-family: var(--serif);
+}
+.coach-page .score-meta .val { color: var(--slate); }
+
+/* BIG IDEAS */
+.coach-page .big-ideas {
+  background: #fffdf5;
+  border-left: 4px solid var(--tan);
+  padding: 22px 28px;
+  margin: 24px 0 40px;
+  border-radius: 0 4px 4px 0;
+}
+
+.coach-page .big-ideas h3 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--tan-dk);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.coach-page .big-ideas p {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink);
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+/* SECTION HEAD (sample) */
+.coach-page .section-head {
+  background: var(--ink-dk);
+  color: var(--white);
+  padding: 18px 28px;
+  margin: 56px -64px 0;
+  border-bottom: 4px solid var(--tan);
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.3px;
+}
+
+.coach-page .section-head .num {
+  color: var(--tan);
+  margin-right: 10px;
+  font-weight: 900;
+}
+
+/* CONTENT */
+.coach-page .section-body { padding-top: 28px; }
+
+.coach-page .section-body h2.h2 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--ink);
+  margin-top: 28px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.coach-page .section-body h3.h3 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+  margin-top: 22px;
+  margin-bottom: 8px;
+}
+.coach-page .section-body p { margin: 12px 0; color: var(--slate); }
+.coach-page .section-body strong { color: var(--ink); font-weight: 700; }
+
+/* METRIC TABLE */
+.coach-page .metric-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
+  margin-top: 28px;
+  margin-bottom: 10px;
+}
+
+.coach-page table.metric {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--white);
+  font-size: 13px;
+}
+
+.coach-page table.metric thead th {
+  background: var(--ink-dk);
+  color: var(--white);
+  text-align: left;
+  padding: 12px 14px;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border-bottom: 3px solid var(--tan);
+}
+.coach-page table.metric thead th.num-col { text-align: center; width: 60px; }
+
+.coach-page table.metric tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--slate);
+  vertical-align: middle;
+}
+.coach-page table.metric tbody tr:nth-child(even) td { background: #fafafa; }
+.coach-page table.metric tbody tr:last-child td { border-bottom: 2px solid var(--ink-dk); }
+
+/* Sample-page badge (pill variant — different from landing's rectangular badges) */
+.coach-page .sample-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.coach-page .sample-badge.strong { background: var(--green-bg); color: var(--green-tx); }
+.coach-page .sample-badge.target { background: var(--blue-bg); color: var(--blue-tx); }
+.coach-page .sample-badge.needs  { background: var(--red-bg);   color: var(--red-tx); }
+.coach-page .sample-badge.na     { background: var(--na-bg);    color: var(--na-tx); }
+
+.coach-page .dok-1 { color: var(--muted); font-weight: 600; font-size: 11px; }
+.coach-page .dok-2 { color: #1E3A5F; font-weight: 700; font-size: 11px; }
+.coach-page .dok-3 { color: #006100; font-weight: 700; font-size: 11px; }
+.coach-page .dok-4 { color: #0B3D0B; font-weight: 900; font-size: 11px; }
+
+/* Q TABLE */
+.coach-page table.q td.time { color: var(--muted); font-family: var(--arial); font-size: 12px; white-space: nowrap; }
+.coach-page table.q td.q-text { font-style: italic; color: var(--ink); }
+.coach-page table.q td.dok { text-align: center; }
+
+/* REC CALLOUT */
+.coach-page .rec {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.coach-page .rec:last-child { border-bottom: none; }
+
+.coach-page .rec-title {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.coach-page .rec-title .rnum { color: var(--tan-dk); margin-right: 6px; }
+
+/* FOOTER NOTE */
+.coach-page .foot-note {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.coach-page .foot-brand {
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--tan-dk);
+  margin-top: 14px;
+  font-style: normal;
+}
+
+/* TOP BAR (sample — anonymized-excerpt strip) */
+.coach-page .top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--ink-dk);
+  padding: 12px 24px;
+  text-align: center;
+  font-size: 12px;
+  color: rgb(255 255 255 / 85%);
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--tan);
+}
+.coach-page .top-bar strong { color: var(--tan); font-family: var(--serif); }
+.coach-page .top-bar a { color: var(--tan); font-weight: 700; margin-left: 14px; text-decoration: none; }
+.coach-page .top-bar a:hover { text-decoration: underline; }
+
+/* Sample-page mobile */
+@media (max-width: 767px) {
+  .coach-page .doc-inner { padding: 32px 22px; }
+  .coach-page .title-banner { padding: 36px 22px 32px; }
+  .coach-page .section-head { margin: 44px -22px 0; padding: 16px 22px; font-size: 18px; }
+  .coach-page .sample-score-card { padding: 26px 20px; }
+  .coach-page .score-top { grid-template-columns: 1fr; gap: 12px; text-align: center; }
+  .coach-page .sample-score-card .score-big { font-size: 56px; }
+  .coach-page .score-grade { font-size: 40px; }
+  .coach-page .score-meta { grid-template-columns: 1fr; gap: 10px; }
+  .coach-page .big-ideas { padding: 18px 20px; }
+  .coach-page .big-ideas p { font-size: 15px; }
+  .coach-page table.metric { font-size: 12px; }
+  .coach-page table.metric thead th { padding: 10px 8px; font-size: 11px; }
+  .coach-page table.metric tbody td { padding: 9px 8px; }
+  .coach-page .sample-badge { padding: 3px 8px; font-size: 9px; }
+}
+
+@media (max-width: 479px) {
+  .coach-page table.metric thead th:nth-child(3),
+  .coach-page table.metric tbody td:nth-child(3) { display: none; }
+}
