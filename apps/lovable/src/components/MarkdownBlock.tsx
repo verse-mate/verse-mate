@@ -91,7 +91,7 @@ export default function MarkdownBlock({ text }: Props) {
   flushQuote();
 
   return (
-    <div className="space-y-2 text-[13px] text-dark-fg leading-relaxed">
+    <div className="space-y-2 text-dark-fg leading-relaxed" style={{ fontSize: 'inherit' }}>
       {elements}
     </div>
   );
