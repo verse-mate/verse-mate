@@ -148,60 +148,60 @@ export default function VerseInsightSheet({
         </div>
 
         {/* Title */}
-        <h2 className="text-center text-[14px] text-gold font-medium mt-2">
+        <h2 className="text-center text-[16px] text-gold font-medium mt-2">
           Verse Insight
         </h2>
 
-        {/* Verse stepper — compact */}
-        <div className="flex items-center justify-between px-5 mt-2">
+        {/* Verse stepper — arrows pushed to edges, extra breathing room around verse ref */}
+        <div className="flex items-center justify-between px-4 mt-2 gap-6">
           <button
             onClick={() => step(-1)}
             disabled={currentVerse <= 1}
             aria-label="Previous verse"
-            className="w-8 h-8 rounded-full bg-dark-raised border border-dark flex items-center justify-center disabled:opacity-30"
+            className="w-9 h-9 rounded-full bg-dark-raised border border-dark flex items-center justify-center disabled:opacity-30 shrink-0"
           >
-            <ChevronLeft size={16} className="text-dark-fg" />
+            <ChevronLeft size={18} className="text-dark-fg" />
           </button>
-          <div className="text-[15px] font-medium text-dark-fg">
+          <div className="text-[17px] font-medium text-dark-fg px-4">
             {book} {chapter}:{currentVerse}
           </div>
           <button
             onClick={() => step(1)}
             disabled={currentVerse >= maxVerse}
             aria-label="Next verse"
-            className="w-8 h-8 rounded-full bg-dark-raised border border-dark flex items-center justify-center disabled:opacity-30"
+            className="w-9 h-9 rounded-full bg-dark-raised border border-dark flex items-center justify-center disabled:opacity-30 shrink-0"
           >
-            <ChevronRight size={16} className="text-dark-fg" />
+            <ChevronRight size={18} className="text-dark-fg" />
           </button>
         </div>
 
         {/* Quoted verse — single source of truth, no duplicate below */}
         {verseText && (
-          <p className="px-5 mt-2 text-center text-[12px] italic text-dark-muted leading-snug">
+          <p className="px-5 mt-2 text-center text-[14px] italic text-dark-muted leading-snug">
             "{verseText}"
           </p>
         )}
 
-        {/* Analysis panel — scrollable, grey box stretches to fill all space above buttons */}
-        <div className="flex-1 overflow-y-auto px-4 mt-3 pb-2 flex flex-col" style={{ minHeight: 0 }}>
-          <div className="rounded-xl bg-dark-raised border border-dark p-4 flex-1">
+        {/* Analysis panel — scrollable, slightly narrower grey box with more breathing room. */}
+        <div className="flex-1 overflow-y-auto px-6 mt-3 pb-2 flex flex-col" style={{ minHeight: 0 }}>
+          <div className="rounded-xl bg-dark-raised border border-dark px-4 py-3 flex-1" style={{ fontSize: 15 }}>
             {insight ? (
               <MarkdownBlock text={stripDuplicateVerse(insight.historicalContext)} />
             ) : (
-              <p className="text-[13px] text-dark-muted text-center py-4">
+              <p className="text-[15px] text-dark-muted text-center py-4">
                 No insight available for this verse.
               </p>
             )}
             {insight && insight.crossReferences.length > 0 && (
               <div className="mt-3 pt-3 border-t border-dark">
-                <p className="text-[10px] uppercase tracking-wide text-dark-muted/70 mb-1.5">
+                <p className="text-[11px] uppercase tracking-wide text-dark-muted/70 mb-1.5">
                   Cross references
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {insight.crossReferences.map(ref => (
                     <span
                       key={ref}
-                      className="text-[10px] text-dark-fg/90 bg-dark-surface rounded px-1.5 py-0.5 border border-dark"
+                      className="text-[11px] text-dark-fg/90 bg-dark-surface rounded px-1.5 py-0.5 border border-dark"
                     >
                       {ref}
                     </span>
