@@ -182,10 +182,12 @@ export default function VerseInsightSheet({
           </p>
         )}
 
-        {/* Analysis panel — outer px-4 aligns with action-button row below,
-            mt-4 gap below italic verse, inner p-5 for roomier text-to-edge spacing */}
-        <div className="flex-1 overflow-y-auto px-4 mt-4 pb-2 flex flex-col" style={{ minHeight: 0 }}>
-          <div className="rounded-xl bg-dark-raised border border-dark p-5 flex-1" style={{ fontSize: 15 }}>
+        {/* Analysis panel — outer px-4 aligns with action-button row below.
+            Inner grey box is content-sized (no flex-1) so short commentary
+            doesn't stretch an empty grey card down to the buttons. Outer
+            keeps flex-1 + scroll for long commentary. */}
+        <div className="flex-1 overflow-y-auto px-4 mt-6 pb-2" style={{ minHeight: 0 }}>
+          <div className="rounded-xl bg-dark-raised border border-dark p-5" style={{ fontSize: 15 }}>
             {insight ? (
               <MarkdownBlock text={stripDuplicateVerse(insight.historicalContext)} />
             ) : (
