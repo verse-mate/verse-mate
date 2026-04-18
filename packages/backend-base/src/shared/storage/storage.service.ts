@@ -155,6 +155,56 @@ class S3Helper {
     });
   }
 
+  async putObjectAtKey({
+    key,
+    body,
+    contentType,
+  }: {
+    key: string;
+    body: Buffer;
+    contentType: string;
+  }): Promise<void> {
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new InternalServerError(
+          `putObjectAtKey failed: ${error.message}`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  async getPresignedUrlAtKey({
+    key,
+    expiresInSeconds,
+  }: {
+    key: string;
+    expiresInSeconds?: number;
+  }): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+    return getSignedUrl(this.client, command, {
+      expiresIn:
+        expiresInSeconds ??
+        storageConstants.publicObjectStorageUrlExpiresInSeconds(),
+    }).catch((error) => {
+      throw new InternalServerError(
+        `getPresignedUrlAtKey failed: ${error.message}`,
+      );
+    });
+  }
+
   async createFolder(bucket: string, folderName: string): Promise<boolean> {
     try {
       const output = await this.client.send(
@@ -273,5 +323,41 @@ export class ObjectStorageService {
 
   public async deleteFile(bucket: string, fileName: string): Promise<boolean> {
     return this.s3Helper.deleteFile(bucket, fileName);
+  }
+
+  /**
+   * Upload an object at an arbitrary key (not scoped to a user folder).
+   * Used for non-user-scoped assets such as generated audio.
+   */
+  public async putGlobalObject({
+    key,
+    body,
+    contentType,
+  }: {
+    key: string;
+    body: Buffer;
+    contentType: string;
+  }): Promise<void> {
+    await this.s3Helper.putObjectAtKey({ key, body, contentType });
+  }
+
+  /**
+   * Return a presigned GET URL for an arbitrary key.
+   */
+  public async getGlobalObjectUrl({
+    key,
+    expiresInSeconds,
+  }: {
+    key: string;
+    expiresInSeconds?: number;
+  }): Promise<string> {
+    return this.s3Helper.getPresignedUrlAtKey({ key, expiresInSeconds });
+  }
+
+  /**
+   * Delete an object by key from the default bucket.
+   */
+  public async deleteObject(key: string): Promise<boolean> {
+    return this.s3Helper.deleteFile(this.s3Helper.bucket, key);
   }
 }

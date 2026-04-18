@@ -1,0 +1,33 @@
+Explanation-Audio Stub Fixture
+==============================
+
+File: explanation-audio-stub.mp3
+
+This file is a 10-second silent MP3 placeholder used when the backend runs
+with `TTS_PROVIDER=stub`. It exercises the audio-playback UI end-to-end
+without calling a real TTS provider.
+
+Origin
+------
+Generated with ffmpeg:
+
+    ffmpeg -f lavfi -i anullsrc=r=22050:cl=mono -t 10 -b:a 128k \
+      -y explanation-audio-stub.mp3
+
+The file contains no copyrighted audio, speech, or recognizable content.
+It is released into the public domain (CC0 1.0 Universal — no rights
+reserved).
+
+Replacement
+-----------
+Before using stub mode for customer demos or screenshots, replace this
+file with a longer royalty-free narration sample (target ~90s). Suggested
+sources:
+
+- LibriVox (public domain audiobooks, CC0 in US)
+- Pixabay Audio (CC0-equivalent licence)
+- YouTube Audio Library (filter: "Attribution not required")
+
+Keep the filename and bitrate the same so the stub provider picks it up
+without configuration changes. Update this LICENSE.txt with the new
+source and license.
