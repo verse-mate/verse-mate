@@ -4302,6 +4302,26 @@ export class BatchOperationService {
   ) {
     const connection = this.db.getOrCreateConnection();
 
+    // Resolve the source language from the active Bible version.
+    // Avoids hardcoding "en" since prod uses "en-US".
+    const sourceVersion = await connection
+      .selectFrom("bible_versions")
+      .where("is_active", "=", true)
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!sourceVersion) {
+      console.error(
+        "[BATCH_AUTO_TRANS] No active bible version found — skipping auto-translations",
+      );
+      return;
+    }
+
+    const sourceLanguageCode = sourceVersion.language_code;
+    console.log(
+      `[BATCH_AUTO_TRANS] Source language resolved to "${sourceLanguageCode}"`,
+    );
+
     // Group explanations by book for processing
     const bookMap = new Map<number, typeof explanations>();
     for (const exp of explanations) {
@@ -4330,7 +4350,7 @@ export class BatchOperationService {
 
       for (const item of items) {
         // Find existing translations for this specific explanation (book, chapter, type)
-        // excluding the source language 'en'
+        // excluding the source language
         const existingTranslations = await connection
           .selectFrom("explanations")
           .innerJoin(
@@ -4341,7 +4361,7 @@ export class BatchOperationService {
           .where("chapters.book_id", "=", bookId)
           .where("chapters.chapter_number", "=", item.chapterNumber)
           .where("explanations.type", "=", item.type as any)
-          .where("explanations.language_code", "!=", "en")
+          .where("explanations.language_code", "!=", sourceLanguageCode)
           .where("explanations.is_active", "=", true)
           .select("explanations.language_code")
           .groupBy("explanations.language_code")
@@ -4377,7 +4397,7 @@ export class BatchOperationService {
             adminUserId,
             "medium",
             book.name,
-            "en",
+            sourceLanguageCode,
             langCode,
             types,
             false, // force update
@@ -4403,12 +4423,19 @@ export class BatchOperationService {
   ) {
     const connection = this.db.getOrCreateConnection();
 
+    const sourceVersion = await connection
+      .selectFrom("bible_versions")
+      .where("is_active", "=", true)
+      .select("language_code")
+      .executeTakeFirst();
+    const sourceLanguageCode = sourceVersion?.language_code ?? "en";
+
     let query = connection
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .innerJoin("books", "chapters.book_id", "books.book_id")
       .where("books.name", "=", bookName)
-      .where("explanations.language_code", "!=", "en")
+      .where("explanations.language_code", "!=", sourceLanguageCode)
       .where("explanations.type", "in", explanationTypes as any)
       .where("explanations.is_active", "=", true)
       .select([
