@@ -63,8 +63,11 @@ const tmpFixture = join(tmpDir, "stub-fixture.mp3");
 writeFileSync(tmpFixture, makeTinyMp3());
 contractTests("stub", () => new StubTtsProvider({ fixturePath: tmpFixture }));
 
-// OpenAI is only exercised when OPEN_AI_KEY is set AND SKIP_OPENAI_IT is unset.
-if (process.env.OPEN_AI_KEY && !process.env.SKIP_OPENAI_IT) {
+// OpenAI live contract test runs only when an opt-in flag is set explicitly.
+// We intentionally do NOT trigger on OPEN_AI_KEY alone — many .env files set
+// dummy or test-only keys for unrelated tests, and a 401 from OpenAI would
+// look like a regression. Set RUN_OPENAI_TTS_IT=1 (and a real key) to exercise.
+if (process.env.RUN_OPENAI_TTS_IT === "1" && process.env.OPEN_AI_KEY) {
   const { OpenAiTtsProvider } = await import("./providers/openai-tts.provider");
   contractTests("openai (live)", () => new OpenAiTtsProvider());
 }
