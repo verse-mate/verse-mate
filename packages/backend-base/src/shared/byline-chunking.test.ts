@@ -5,6 +5,8 @@ import {
   type BylineVerse,
   generateChunkedByline,
   shouldUseBylineChunking,
+  splitBylineForTranslation,
+  stitchBylineChunks,
   toBylineVerses,
 } from "./byline-chunking";
 
@@ -320,5 +322,127 @@ describe("generateChunkedByline", () => {
 
     // 2 chunks: first=true, second=false
     expect(firstFlags).toEqual([true, false]);
+  });
+});
+
+// --- splitBylineForTranslation ---
+
+function makeStitchedByline(
+  verseCount: number,
+  bookName = "Psalms",
+  chapter = 119,
+) {
+  const parts = [`# Line-by-Line Analysis of ${bookName} ${chapter}\n`];
+  for (let v = 1; v <= verseCount; v++) {
+    parts.push(
+      `## ${bookName} ${chapter}:${v}\n> {verse:${bookName} ${chapter}:${v}}\n\n### Summary\nExplanation for verse ${v}.`,
+    );
+  }
+  return parts.join("\n\n");
+}
+
+describe("splitBylineForTranslation", () => {
+  it("returns single chunk for short byline (under threshold)", () => {
+    const text = makeStitchedByline(BYLINE_CHUNK_THRESHOLD);
+    const chunks = splitBylineForTranslation(text);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].chunkIndex).toBe(0);
+    expect(chunks[0].totalChunks).toBe(1);
+    expect(chunks[0].text).toBe(text);
+  });
+
+  it("splits long byline into multiple chunks", () => {
+    const text = makeStitchedByline(176); // Psalms 119 size
+    const chunks = splitBylineForTranslation(text);
+
+    // 176 verses / 40 chunk size = ceil(4.4) = 5 chunks
+    expect(chunks).toHaveLength(5);
+    expect(chunks[0].verseCount).toBe(40);
+    expect(chunks[1].verseCount).toBe(40);
+    expect(chunks[2].verseCount).toBe(40);
+    expect(chunks[3].verseCount).toBe(40);
+    expect(chunks[4].verseCount).toBe(16);
+
+    // Total verse count matches
+    const totalVerses = chunks.reduce((s, c) => s + c.verseCount, 0);
+    expect(totalVerses).toBe(176);
+  });
+
+  it("keeps the title on chunk 0 only", () => {
+    const text = makeStitchedByline(176);
+    const chunks = splitBylineForTranslation(text);
+
+    expect(chunks[0].text).toContain("# Line-by-Line Analysis of Psalms 119");
+    for (let i = 1; i < chunks.length; i++) {
+      expect(chunks[i].text).not.toContain(
+        "# Line-by-Line Analysis of Psalms 119",
+      );
+      expect(chunks[i].text.startsWith("## ")).toBe(true);
+    }
+  });
+
+  it("preserves all verses across chunks (no gaps, no overlaps)", () => {
+    const text = makeStitchedByline(176);
+    const chunks = splitBylineForTranslation(text);
+
+    const allVerses: number[] = [];
+    for (const chunk of chunks) {
+      const matches = [...chunk.text.matchAll(/^## Psalms 119:(\d+)/gm)];
+      for (const m of matches) {
+        allVerses.push(Number.parseInt(m[1], 10));
+      }
+    }
+
+    // Exactly 176 unique verses 1..176, in order
+    expect(allVerses.length).toBe(176);
+    expect(new Set(allVerses).size).toBe(176);
+    expect(allVerses[0]).toBe(1);
+    expect(allVerses[allVerses.length - 1]).toBe(176);
+    for (let i = 1; i < allVerses.length; i++) {
+      expect(allVerses[i]).toBe(allVerses[i - 1] + 1);
+    }
+  });
+
+  it("handles exactly threshold+1 verses", () => {
+    const text = makeStitchedByline(BYLINE_CHUNK_THRESHOLD + 1);
+    const chunks = splitBylineForTranslation(text);
+    expect(chunks.length).toBeGreaterThan(1);
+  });
+
+  it("uses custom chunk size and threshold", () => {
+    const text = makeStitchedByline(100);
+    const chunks = splitBylineForTranslation(text, 25, 50);
+    // 100 verses / 25 = 4 chunks
+    expect(chunks).toHaveLength(4);
+    expect(chunks[0].verseCount).toBe(25);
+    expect(chunks[3].verseCount).toBe(25);
+  });
+
+  it("roundtrip: split then stitch recovers all headings", () => {
+    const text = makeStitchedByline(100);
+    const chunks = splitBylineForTranslation(text);
+    const stitched = stitchBylineChunks(
+      chunks.map((c) => ({ chunkIndex: c.chunkIndex, text: c.text })),
+    );
+
+    const originalHeadings = (text.match(/^## Psalms 119:\d+/gm) || []).length;
+    const stitchedHeadings = (stitched.match(/^## Psalms 119:\d+/gm) || [])
+      .length;
+    expect(stitchedHeadings).toBe(originalHeadings);
+  });
+
+  it("includes complete text content of each verse", () => {
+    const text = makeStitchedByline(50);
+    const chunks = splitBylineForTranslation(text, 20, 10); // force 3 chunks
+
+    // Every chunk should have its summaries
+    for (const chunk of chunks) {
+      const headings = (chunk.text.match(/^## Psalms 119:\d+/gm) || []).length;
+      const summaries = (chunk.text.match(/### Summary/g) || []).length;
+      const verseRefs = (chunk.text.match(/\{verse:Psalms 119:\d+\}/g) || [])
+        .length;
+      expect(summaries).toBe(headings);
+      expect(verseRefs).toBe(headings);
+    }
   });
 });
