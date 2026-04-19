@@ -420,3 +420,69 @@ export function stitchBylineChunks(
     .map((c) => c.text)
     .join("\n\n");
 }
+
+export type BylineTranslationChunk = {
+  text: string;
+  chunkIndex: number;
+  totalChunks: number;
+  verseCount: number;
+};
+
+/**
+ * Split a stitched byline (source language) into translation-friendly chunks.
+ * Each chunk contains up to `chunkSize` `## Book Ch:V` sections. Chunk 0 keeps
+ * any preamble (e.g. the `# Line-by-Line Analysis...` title). Returns a single
+ * chunk if the explanation has <= threshold verse headings.
+ */
+export function splitBylineForTranslation(
+  explanation: string,
+  chunkSize = BYLINE_CHUNK_SIZE,
+  threshold = BYLINE_CHUNK_THRESHOLD,
+): BylineTranslationChunk[] {
+  const headingRegex = /^##\s/gm;
+  const headingIndices: number[] = [];
+  for (const match of explanation.matchAll(headingRegex)) {
+    if (match.index !== undefined) headingIndices.push(match.index);
+  }
+
+  // Not long enough to chunk — return as single chunk
+  if (headingIndices.length <= threshold) {
+    return [
+      {
+        text: explanation,
+        chunkIndex: 0,
+        totalChunks: 1,
+        verseCount: headingIndices.length,
+      },
+    ];
+  }
+
+  const totalChunks = Math.ceil(headingIndices.length / chunkSize);
+  const chunks: BylineTranslationChunk[] = [];
+
+  for (let i = 0; i < totalChunks; i++) {
+    const startHeadingIdx = i * chunkSize;
+    const endHeadingIdx = Math.min(
+      startHeadingIdx + chunkSize,
+      headingIndices.length,
+    );
+
+    // Chunk 0 starts at the beginning of the explanation (keeps the title/preamble).
+    // Subsequent chunks start at their first heading.
+    const textStart = i === 0 ? 0 : headingIndices[startHeadingIdx];
+    // Text ends right before the next chunk's first heading, or at EOF for the last chunk.
+    const textEnd =
+      endHeadingIdx < headingIndices.length
+        ? headingIndices[endHeadingIdx]
+        : explanation.length;
+
+    chunks.push({
+      text: explanation.slice(textStart, textEnd).trim(),
+      chunkIndex: i,
+      totalChunks,
+      verseCount: endHeadingIdx - startHeadingIdx,
+    });
+  }
+
+  return chunks;
+}

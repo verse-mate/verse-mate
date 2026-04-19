@@ -535,3 +535,133 @@ describe("batch JSONL custom_id format", () => {
     expect(customId.match(CHUNK_PATTERN)).toBeNull();
   });
 });
+
+// --- Translate chunk parsing & stitching ---
+
+describe("translate chunked custom_id parsing", () => {
+  /** Simulates the processTranslateOutputFile detection of chunk custom_ids */
+  function parseTranslateCustomId(customId: string) {
+    const parts = customId.split("|");
+    if (parts.length === 10 && parts[6] === "chunk") {
+      const [
+        ,
+        bookName,
+        chapterNumberStr,
+        explanationType,
+        bibleVersion,
+        expId,
+        ,
+        idxStr,
+        ,
+        totalStr,
+      ] = parts;
+      return {
+        kind: "chunk" as const,
+        bookName,
+        chapterNumber: Number.parseInt(chapterNumberStr, 10),
+        explanationType,
+        bibleVersion,
+        explanationId: expId,
+        chunkIndex: Number.parseInt(idxStr, 10),
+        totalChunks: Number.parseInt(totalStr, 10),
+      };
+    }
+    if (parts.length === 6) {
+      return { kind: "normal" as const, parts };
+    }
+    return { kind: "unknown" as const, parts };
+  }
+
+  it("parses a chunked translate custom_id", () => {
+    const id = "translate|Psalms|119|byline|ro-RO|1882|chunk|2|of|5";
+    const r = parseTranslateCustomId(id);
+    expect(r.kind).toBe("chunk");
+    if (r.kind !== "chunk") return;
+    expect(r.bookName).toBe("Psalms");
+    expect(r.chapterNumber).toBe(119);
+    expect(r.explanationType).toBe("byline");
+    expect(r.bibleVersion).toBe("ro-RO");
+    expect(r.explanationId).toBe("1882");
+    expect(r.chunkIndex).toBe(2);
+    expect(r.totalChunks).toBe(5);
+  });
+
+  it("treats non-chunked translate id as normal", () => {
+    const id = "translate|Psalms|119|byline|ro-RO|1882";
+    const r = parseTranslateCustomId(id);
+    expect(r.kind).toBe("normal");
+  });
+
+  it("collects and stitches 5 chunks in order", () => {
+    const ids = [
+      "translate|Psalms|119|byline|ro-RO|1882|chunk|0|of|5",
+      "translate|Psalms|119|byline|ro-RO|1882|chunk|1|of|5",
+      "translate|Psalms|119|byline|ro-RO|1882|chunk|2|of|5",
+      "translate|Psalms|119|byline|ro-RO|1882|chunk|3|of|5",
+      "translate|Psalms|119|byline|ro-RO|1882|chunk|4|of|5",
+    ];
+    const chunkCollector = new Map<
+      string,
+      {
+        totalChunks: number;
+        chunks: Array<{ chunkIndex: number; text: string }>;
+      }
+    >();
+
+    // Feed them out-of-order to simulate parallel batch results
+    const order = [3, 0, 4, 1, 2];
+    for (const i of order) {
+      const parsed = parseTranslateCustomId(ids[i]);
+      if (parsed.kind !== "chunk") continue;
+      const key = `${parsed.bookName}|${parsed.chapterNumber}|${parsed.explanationType}|${parsed.bibleVersion}|${parsed.explanationId}`;
+      let entry = chunkCollector.get(key);
+      if (!entry) {
+        entry = { totalChunks: parsed.totalChunks, chunks: [] };
+        chunkCollector.set(key, entry);
+      }
+      entry.chunks.push({
+        chunkIndex: parsed.chunkIndex,
+        text: `Chunk ${parsed.chunkIndex} translated text`,
+      });
+    }
+
+    expect(chunkCollector.size).toBe(1);
+    const [, entry] = [...chunkCollector.entries()][0];
+    expect(entry.chunks.length).toBe(5);
+
+    const stitched = stitchBylineChunks(entry.chunks);
+    expect(stitched.startsWith("Chunk 0")).toBe(true);
+    expect(stitched.indexOf("Chunk 4")).toBeGreaterThan(
+      stitched.indexOf("Chunk 0"),
+    );
+  });
+
+  it("separates chunks from different languages", () => {
+    const ids = [
+      "translate|Psalms|119|byline|ro-RO|1882|chunk|0|of|2",
+      "translate|Psalms|119|byline|es-MX|1881|chunk|0|of|2",
+      "translate|Psalms|119|byline|ro-RO|1882|chunk|1|of|2",
+      "translate|Psalms|119|byline|es-MX|1881|chunk|1|of|2",
+    ];
+    const chunkCollector = new Map<
+      string,
+      { totalChunks: number; chunks: Array<{ chunkIndex: number }> }
+    >();
+    for (const id of ids) {
+      const parsed = parseTranslateCustomId(id);
+      if (parsed.kind !== "chunk") continue;
+      const key = `${parsed.bookName}|${parsed.chapterNumber}|${parsed.explanationType}|${parsed.bibleVersion}|${parsed.explanationId}`;
+      let entry = chunkCollector.get(key);
+      if (!entry) {
+        entry = { totalChunks: parsed.totalChunks, chunks: [] };
+        chunkCollector.set(key, entry);
+      }
+      entry.chunks.push({ chunkIndex: parsed.chunkIndex });
+    }
+
+    expect(chunkCollector.size).toBe(2);
+    for (const entry of chunkCollector.values()) {
+      expect(entry.chunks.length).toBe(2);
+    }
+  });
+});
