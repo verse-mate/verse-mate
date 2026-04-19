@@ -9,6 +9,7 @@ import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
 import {
   buildBylineChunkPrompts,
   shouldUseBylineChunking,
+  splitBylineForTranslation,
   stitchBylineChunks,
   toBylineVerses,
 } from "../../shared/byline-chunking";
@@ -1178,6 +1179,90 @@ export class BatchOperationService {
     return batch;
   }
 
+  /**
+   * Build one or more translate JSONL request objects for a single source
+   * explanation. Long bylines are split into chunks (>50 verse headings) so
+   * the model can fit each piece under max_output_tokens without truncating.
+   */
+  private buildTranslateRequests({
+    explanation,
+    bookName,
+    targetLanguageCode,
+    itemPrompt,
+    model,
+    effort,
+    maxOutputTokens,
+  }: {
+    explanation: {
+      explanation_id: number;
+      explanation: string;
+      type: string;
+      chapter_number: number;
+    };
+    bookName: string;
+    targetLanguageCode: string;
+    itemPrompt: string;
+    model: string;
+    effort: "low" | "medium" | "high";
+    maxOutputTokens: number;
+  }): BatchJobRequest[] {
+    const baseId = `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${targetLanguageCode}|${explanation.explanation_id}`;
+
+    // Only chunk byline — summary/detailed are already short enough.
+    if (explanation.type !== "byline") {
+      return [
+        {
+          custom_id: baseId,
+          method: "POST",
+          url: "/v1/responses",
+          body: {
+            model,
+            reasoning: { effort },
+            instructions: itemPrompt,
+            input: explanation.explanation,
+            max_output_tokens: maxOutputTokens,
+          },
+        },
+      ];
+    }
+
+    const chunks = splitBylineForTranslation(explanation.explanation);
+
+    if (chunks.length === 1) {
+      return [
+        {
+          custom_id: baseId,
+          method: "POST",
+          url: "/v1/responses",
+          body: {
+            model,
+            reasoning: { effort },
+            instructions: itemPrompt,
+            input: explanation.explanation,
+            max_output_tokens: maxOutputTokens,
+          },
+        },
+      ];
+    }
+
+    console.log(
+      `[BATCH] Chunking translate byline for ${bookName} ${explanation.chapter_number} (${targetLanguageCode}): ${chunks.length} chunks`,
+    );
+
+    return chunks.map((chunk) => ({
+      custom_id: `${baseId}|chunk|${chunk.chunkIndex}|of|${chunk.totalChunks}`,
+      method: "POST",
+      url: "/v1/responses",
+      body: {
+        model,
+        reasoning: { effort },
+        instructions: itemPrompt,
+        input: chunk.text,
+        max_output_tokens: maxOutputTokens,
+      },
+    }));
+  }
+
   private async createBookTranslateBatch(
     model: string,
     adminUserId: string,
@@ -1366,18 +1451,17 @@ export class BatchOperationService {
             getLocalizedTitle(explanation.type, explanation.chapter_number),
           );
 
-          batchRequests.push({
-            custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
-            method: "POST",
-            url: "/v1/responses",
-            body: {
-              model,
-              reasoning: { effort },
-              instructions: itemPrompt,
-              input: explanation.explanation,
-              max_output_tokens: maxOutputTokens,
-            },
-          });
+          for (const req of this.buildTranslateRequests({
+            explanation,
+            bookName,
+            targetLanguageCode: target_language_code,
+            itemPrompt,
+            model,
+            effort,
+            maxOutputTokens,
+          })) {
+            batchRequests.push(req);
+          }
         }
       }
       console.log(
@@ -1385,24 +1469,21 @@ export class BatchOperationService {
       );
     } else {
       console.log("[BATCH] Not skipping existing translations");
-      batchRequests = activeExplanations.map((explanation) => {
+      batchRequests = activeExplanations.flatMap((explanation) => {
         const itemPrompt = finalPrompt.replace(
           "{localized_title}",
           getLocalizedTitle(explanation.type, explanation.chapter_number),
         );
 
-        return {
-          custom_id: `translate|${bookName}|${explanation.chapter_number}|${explanation.type}|${target_language_code}|${explanation.explanation_id}`,
-          method: "POST",
-          url: "/v1/responses",
-          body: {
-            model,
-            reasoning: { effort },
-            instructions: itemPrompt,
-            input: explanation.explanation,
-            max_output_tokens: maxOutputTokens,
-          },
-        };
+        return this.buildTranslateRequests({
+          explanation,
+          bookName,
+          targetLanguageCode: target_language_code,
+          itemPrompt,
+          model,
+          effort,
+          maxOutputTokens,
+        });
       });
     }
 
@@ -3099,6 +3180,20 @@ export class BatchOperationService {
 
     const connection = this.db.getOrCreateConnection();
 
+    // Collect chunked translation responses keyed by base translate id.
+    // Chunked custom_id format: translate|book|chapter|type|version|expId|chunk|N|of|M
+    const chunkCollector = new Map<
+      string,
+      {
+        bookName: string;
+        chapterNumberStr: string;
+        explanationType: string;
+        bibleVersion: string;
+        totalChunks: number;
+        chunks: Array<{ chunkIndex: number; text: string }>;
+      }
+    >();
+
     for (const line of lines) {
       let customId = "unknown";
       try {
@@ -3138,6 +3233,42 @@ export class BatchOperationService {
           extractedText.length > 0
         ) {
           const parts = parsedLine.custom_id.split("|");
+
+          // Detect chunked format: translate|book|chapter|type|version|expId|chunk|N|of|M (10 parts)
+          if (parts.length === 10 && parts[6] === "chunk") {
+            const [
+              ,
+              bookName,
+              chapterNumberStr,
+              explanationType,
+              bibleVersion,
+              expId,
+              ,
+              idxStr,
+              ,
+              totalStr,
+            ] = parts;
+            const chunkIndex = Number.parseInt(idxStr, 10);
+            const totalChunks = Number.parseInt(totalStr, 10);
+            const key = `${bookName}|${chapterNumberStr}|${explanationType}|${bibleVersion}|${expId}`;
+            let entry = chunkCollector.get(key);
+            if (!entry) {
+              entry = {
+                bookName,
+                chapterNumberStr,
+                explanationType,
+                bibleVersion,
+                totalChunks,
+                chunks: [],
+              };
+              chunkCollector.set(key, entry);
+            }
+            entry.chunks.push({ chunkIndex, text: extractedText });
+            console.log(
+              `[BATCH] Collected translate chunk ${chunkIndex + 1}/${totalChunks} for ${bookName} ${chapterNumberStr} ${explanationType} (${bibleVersion})`,
+            );
+            continue;
+          }
 
           // Handle both new format (6 parts) and legacy format (5 parts) for backward compatibility
           let bookName: string;
@@ -3264,6 +3395,99 @@ export class BatchOperationService {
         errorCount++;
         console.error(
           `[BATCH] Error processing translate line for custom_id: ${customId}:`,
+          error,
+        );
+      }
+    }
+
+    // Stitch and save collected chunked translations
+    for (const [key, collected] of chunkCollector) {
+      try {
+        if (collected.chunks.length < collected.totalChunks) {
+          console.warn(
+            `[BATCH] Incomplete translate chunks for ${key}: got ${collected.chunks.length}/${collected.totalChunks}`,
+          );
+          errorCount++;
+          continue;
+        }
+
+        const stitchedText = stitchBylineChunks(collected.chunks);
+        const chapterNumber = Number(collected.chapterNumberStr);
+
+        const book = await connection
+          .selectFrom("books")
+          .where("name", "=", collected.bookName)
+          .select("book_id")
+          .executeTakeFirst();
+        if (!book) {
+          console.error(
+            `[BATCH] Book not found for stitched translate: ${collected.bookName}`,
+          );
+          errorCount++;
+          continue;
+        }
+
+        const chapter = await connection
+          .selectFrom("chapters")
+          .where("book_id", "=", book.book_id)
+          .where("chapter_number", "=", chapterNumber)
+          .select("chapter_id")
+          .executeTakeFirst();
+        if (!chapter) {
+          console.error(
+            `[BATCH] Chapter not found for stitched translate: ${collected.bookName} ${chapterNumber}`,
+          );
+          errorCount++;
+          continue;
+        }
+
+        const existingExplanation = await connection
+          .selectFrom("explanations")
+          .where("chapter_id", "=", chapter.chapter_id)
+          .where("type", "=", collected.explanationType as any)
+          .where("language_code", "=", collected.bibleVersion)
+          .orderBy("version", "desc")
+          .selectAll()
+          .executeTakeFirst();
+
+        const nextVersion = existingExplanation
+          ? existingExplanation.version + 1
+          : 1;
+        const parentExplanationId = existingExplanation?.explanation_id || null;
+
+        await connection.transaction().execute(async (trx) => {
+          await trx
+            .updateTable("explanations")
+            .set({ is_active: false })
+            .where("chapter_id", "=", chapter.chapter_id)
+            .where("type", "=", collected.explanationType as any)
+            .where("language_code", "=", collected.bibleVersion)
+            .execute();
+
+          await trx
+            .insertInto("explanations")
+            .values({
+              type: collected.explanationType as any,
+              explanation: stitchedText,
+              chapter_id: chapter.chapter_id,
+              language_code: collected.bibleVersion,
+              version: nextVersion,
+              is_active: true,
+              created_by_admin: false,
+              parent_explanation_id: parentExplanationId,
+              created_at: new Date(),
+            })
+            .execute();
+        });
+
+        processedCount++;
+        console.log(
+          `[BATCH] Saved stitched translate for ${collected.bookName} ${chapterNumber} ${collected.explanationType} (${collected.bibleVersion}): ${collected.chunks.length} chunks → ${stitchedText.length} chars, version ${nextVersion}`,
+        );
+      } catch (error) {
+        errorCount++;
+        console.error(
+          `[BATCH] Error stitching translate chunks for ${key}:`,
           error,
         );
       }
@@ -4302,6 +4526,26 @@ export class BatchOperationService {
   ) {
     const connection = this.db.getOrCreateConnection();
 
+    // Resolve the source language from the active Bible version.
+    // Avoids hardcoding "en" since prod uses "en-US".
+    const sourceVersion = await connection
+      .selectFrom("bible_versions")
+      .where("is_active", "=", true)
+      .select("language_code")
+      .executeTakeFirst();
+
+    if (!sourceVersion) {
+      console.error(
+        "[BATCH_AUTO_TRANS] No active bible version found — skipping auto-translations",
+      );
+      return;
+    }
+
+    const sourceLanguageCode = sourceVersion.language_code;
+    console.log(
+      `[BATCH_AUTO_TRANS] Source language resolved to "${sourceLanguageCode}"`,
+    );
+
     // Group explanations by book for processing
     const bookMap = new Map<number, typeof explanations>();
     for (const exp of explanations) {
@@ -4330,7 +4574,7 @@ export class BatchOperationService {
 
       for (const item of items) {
         // Find existing translations for this specific explanation (book, chapter, type)
-        // excluding the source language 'en'
+        // excluding the source language
         const existingTranslations = await connection
           .selectFrom("explanations")
           .innerJoin(
@@ -4341,7 +4585,7 @@ export class BatchOperationService {
           .where("chapters.book_id", "=", bookId)
           .where("chapters.chapter_number", "=", item.chapterNumber)
           .where("explanations.type", "=", item.type as any)
-          .where("explanations.language_code", "!=", "en")
+          .where("explanations.language_code", "!=", sourceLanguageCode)
           .where("explanations.is_active", "=", true)
           .select("explanations.language_code")
           .groupBy("explanations.language_code")
@@ -4377,7 +4621,7 @@ export class BatchOperationService {
             adminUserId,
             "medium",
             book.name,
-            "en",
+            sourceLanguageCode,
             langCode,
             types,
             false, // force update
@@ -4403,12 +4647,19 @@ export class BatchOperationService {
   ) {
     const connection = this.db.getOrCreateConnection();
 
+    const sourceVersion = await connection
+      .selectFrom("bible_versions")
+      .where("is_active", "=", true)
+      .select("language_code")
+      .executeTakeFirst();
+    const sourceLanguageCode = sourceVersion?.language_code ?? "en";
+
     let query = connection
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .innerJoin("books", "chapters.book_id", "books.book_id")
       .where("books.name", "=", bookName)
-      .where("explanations.language_code", "!=", "en")
+      .where("explanations.language_code", "!=", sourceLanguageCode)
       .where("explanations.type", "in", explanationTypes as any)
       .where("explanations.is_active", "=", true)
       .select([
