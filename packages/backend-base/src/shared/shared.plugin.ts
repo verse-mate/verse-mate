@@ -144,6 +144,8 @@ const setup = new Elysia({ name: "shared" })
     },
   }));
 
+import { audioGenerationQueue } from "../bible/audio/audio-generation.queue";
+import { audioGenerationWorker } from "../bible/audio/audio-generation.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
 
@@ -163,6 +165,16 @@ setup.onStart(async () => {
     console.log("[QUEUE] Processing worker started successfully");
   } else {
     console.log("[QUEUE] Processing worker already running");
+  }
+
+  if (!audioGenerationWorker.isRunning()) {
+    console.log(
+      "[QUEUE] Audio generation worker not running, starting it now...",
+    );
+    audioGenerationWorker.run();
+    console.log("[QUEUE] Audio generation worker started successfully");
+  } else {
+    console.log("[QUEUE] Audio generation worker already running");
   }
 
   // Check for existing active batches and start monitoring them
@@ -224,6 +236,8 @@ setup.onStop(async () => {
   batchMonitoringWorker.close();
   batchProcessingQueue.close();
   batchProcessingWorker.close();
+  audioGenerationQueue.close();
+  audioGenerationWorker.close();
 });
 
 export default setup;

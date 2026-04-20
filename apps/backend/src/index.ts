@@ -2,6 +2,7 @@ import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import {
   adminPlugin,
+  audioPlugin,
   authPlugin,
   biblePlugin,
   healthCheckPlugin,
@@ -21,6 +22,7 @@ const app = new Elysia()
   .use(authPlugin)
   .use(userPlugin)
   .use(biblePlugin)
+  .use(audioPlugin)
   .use(topicPlugin)
   .use(supportPlugin)
   .use(adminPlugin)

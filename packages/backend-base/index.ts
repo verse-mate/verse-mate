@@ -2,6 +2,8 @@ import adminPlugin from "./src/admin/admin.plugin";
 import type { AdminPlugin } from "./src/admin/admin.plugin";
 import authPlugin from "./src/auth/auth.plugin";
 import type { AuthPlugin } from "./src/auth/auth.plugin";
+import audioPlugin from "./src/bible/audio/audio.plugin";
+import type { AudioPlugin } from "./src/bible/audio/audio.plugin";
 import biblePlugin from "./src/bible/bible.plugin";
 import type { BiblePlugin } from "./src/bible/bible.plugin";
 import healthCheckPlugin from "./src/healthcheck/healthcheck.plugin";
@@ -35,6 +37,8 @@ export {
   userPlugin,
   type BiblePlugin,
   biblePlugin,
+  type AudioPlugin,
+  audioPlugin,
   type AdminPlugin,
   adminPlugin,
   type TopicPlugin,
