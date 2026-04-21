@@ -144,13 +144,15 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
       expect(result.kind).toBe("ready");
       if (result.kind !== "ready") throw new Error("expected ready");
 
-      expect(result.audio.tts_provider).toBe("stub");
+      // br-audio-007: reader payload is the narrow four-field shape.
+      expect(result.audio).not.toHaveProperty("tts_provider");
+      expect(result.audio).not.toHaveProperty("storage_key");
       expect(result.audio.voice).toBe("stub");
       expect(result.audio.language_code).toBe("en");
-      expect(result.audio.storage_key).toBe(
-        `explanation-audio/${testExplanationId}/stub/en/${result.audio.storage_key.split("/").pop()?.replace(".mp3", "")}.mp3`,
-      );
       expect(result.audio.url).toContain(BUCKET);
+      expect(result.audio.url).toContain(
+        `explanation-audio/${testExplanationId}/stub/en/`,
+      );
 
       // Verify the presigned URL actually resolves to the object we just
       // uploaded.
@@ -184,8 +186,12 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
       expect(first.kind).toBe("ready");
       expect(second.kind).toBe("ready");
       if (first.kind !== "ready" || second.kind !== "ready") return;
-      expect(first.audio.audio_id).toBe(second.audio.audio_id);
-      expect(first.audio.storage_key).toBe(second.audio.storage_key);
+      // Reader DTO has no audio_id/storage_key — compare the opaque URL
+      // path (content_hash-suffixed filename proves both calls hit the
+      // same cached row).
+      expect(first.audio.url.split("?")[0]).toBe(
+        second.audio.url.split("?")[0],
+      );
     });
 
     it("guest on Genesis 1 is allowed (integration path)", async () => {

@@ -309,7 +309,7 @@ describe("AudioService", () => {
         expect(result.audio.url).toContain(
           "explanation-audio/42/alloy/en/hash.mp3",
         );
-        expect(result.audio.tts_provider).toBe("openai");
+        expect(result.audio.voice).toBe("alloy");
         expect(result.audio.duration_seconds).toBe(10);
       }
       expect(queue.addCalls.length).toBe(0);
@@ -391,8 +391,11 @@ describe("AudioService", () => {
 
       expect(result.kind).toBe("ready");
       if (result.kind === "ready") {
-        expect(result.audio.tts_provider).toBe("stub");
-        expect(result.audio.tts_model).toBe("stub-fixture");
+        // br-audio-007: reader payload must NOT carry tts_provider/tts_model.
+        expect(result.audio).not.toHaveProperty("tts_provider");
+        expect(result.audio).not.toHaveProperty("tts_model");
+        expect(result.audio.voice).toBeDefined();
+        expect(result.audio.url).toContain("explanation-audio/42");
       }
       expect(queue.addCalls.length).toBe(0);
       expect(storage.uploaded.length).toBe(1);
@@ -477,7 +480,9 @@ describe("AudioService", () => {
 
       const status = await service.getJobStatus(first.job.job_id);
       expect(status.status).toBe("completed");
-      expect(status.audio?.audio_id).toBe(row.audio_id);
+      // Reader DTO doesn't expose audio_id — verify via URL + duration.
+      expect(status.audio?.url).toContain("explanation-audio/42/alloy/en");
+      expect(status.audio?.duration_seconds).toBe(10);
     });
 
     it("returns failed + error_code when job failed", async () => {
