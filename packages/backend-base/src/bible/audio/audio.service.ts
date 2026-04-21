@@ -1,5 +1,7 @@
 import type { Queue } from "bullmq";
+import type Database from "database/src/models/Database";
 import type { ExplanationAudios } from "database/src/models/public/ExplanationAudios";
+import type { Transaction } from "kysely";
 import { NotFoundError, UnauthorizedError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 import type { ObjectStorageService } from "../../shared/storage/storage.service";
@@ -22,6 +24,13 @@ const ESTIMATED_READY_SECONDS = 8;
 const GUEST_ALLOWED_BOOK_ID = 1; // Genesis (br-audio-013)
 const GUEST_ALLOWED_CHAPTER_NUMBER = 1;
 const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy"; // br-audio-009
+
+export type KyselyTransaction = Transaction<Database>;
+
+export interface AudioVariant {
+  voice: string;
+  language_code: string;
+}
 
 export interface AudioDto {
   audio_id: string;
@@ -158,6 +167,73 @@ export class AudioService {
       };
     }
     return { job_id: jobId, status: state === "active" ? "active" : "queued" };
+  }
+
+  /**
+   * TASK-003 (br-audio-001, br-audio-002): called inside the same transaction
+   * that replaces an explanation's text (or deactivates the old version).
+   * Marks every audio row for `oldExplanationId` as stale and returns the
+   * (voice, language_code) variants that existed — so the caller can, after
+   * the transaction commits, enqueue fresh generation jobs for the new id.
+   */
+  async markStaleAndCollectVariants(
+    oldExplanationId: number,
+    trx: KyselyTransaction,
+  ): Promise<AudioVariant[]> {
+    const variants = await trx
+      .selectFrom("explanation_audios")
+      .select(["voice", "language_code"])
+      .where("explanation_id", "=", oldExplanationId)
+      .execute();
+
+    if (variants.length === 0) return [];
+
+    await trx
+      .updateTable("explanation_audios")
+      .set({ is_stale: true })
+      .where("explanation_id", "=", oldExplanationId)
+      .execute();
+
+    return variants;
+  }
+
+  /**
+   * TASK-003: fire-and-forget enqueue of audio-generation jobs for every
+   * (voice, language_code) variant that previously existed. Uses the same
+   * deterministic job id as the on-demand path (br-audio-006), so a reader
+   * who hits Play between the stale-mark and the job completing receives
+   * the in-flight job id — no duplicate work.
+   */
+  async enqueueRegenForVariants(
+    newExplanationId: number,
+    variants: AudioVariant[],
+  ): Promise<string[]> {
+    // Stub provider has no queue work to do — inline short-circuit handles it.
+    if (this.provider.name === "stub") return [];
+
+    const enqueued: string[] = [];
+    for (const variant of variants) {
+      const data: AudioGenerationJobData = {
+        explanation_id: newExplanationId,
+        voice: variant.voice,
+        language_code: variant.language_code,
+      };
+      const jobId = audioGenerationJobId(data);
+      const existing = await this.queue.getJob(jobId);
+      const stillInFlight =
+        existing &&
+        !(await existing.isCompleted()) &&
+        !(await existing.isFailed());
+      if (!stillInFlight) {
+        await this.queue.add(AUDIO_GENERATION_QUEUE, data, {
+          jobId,
+          removeOnComplete: { count: 100 },
+          removeOnFail: 50,
+        });
+      }
+      enqueued.push(jobId);
+    }
+    return enqueued;
   }
 
   async synthesizeAndStore(
