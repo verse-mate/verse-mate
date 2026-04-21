@@ -65,13 +65,17 @@ export class AudioRepository {
       .execute();
   }
 
-  async listStale(olderThan: Date): Promise<ExplanationAudios[]> {
+  async listStale(olderThan: Date, limit = 500): Promise<ExplanationAudios[]> {
+    // Review: push limit into the query so a 10k-stale-row backlog doesn't
+    // load the entire set into memory on every cron tick. Caller still
+    // slices to its own batch size (100) — this is the outer ceiling.
     return this.db
       .getOrCreateConnection()
       .selectFrom("explanation_audios")
       .selectAll()
       .where("is_stale", "=", true)
       .where("generated_at", "<", olderThan)
+      .limit(limit)
       .execute();
   }
 

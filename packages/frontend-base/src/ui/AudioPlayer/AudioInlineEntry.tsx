@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Play } from "react-feather";
 import {
   $currentTrack,
@@ -35,6 +36,7 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
     useExplanationAudio(props);
   const currentTrack = useStore($currentTrack);
   const playbackState = useStore($playbackState);
+  const queryClient = useQueryClient();
   const isThisTrack = currentTrack?.explanation_id === props.explanationId;
 
   if (error) {
@@ -42,7 +44,16 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
       <button
         type="button"
         className="audio-inline-entry error"
-        onClick={() => window.location.reload()}
+        onClick={() =>
+          queryClient.invalidateQueries({
+            queryKey: [
+              "explanation-audio",
+              props.explanationId,
+              props.voice,
+              props.language,
+            ],
+          })
+        }
         aria-label={`Audio unavailable — retry (${error.message})`}
         data-state="error"
       >
