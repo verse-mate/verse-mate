@@ -4,9 +4,12 @@ import { createErrorHandler } from "../../common/error-handler";
 import { StandardErrorResponses } from "../../common/response-schemas";
 import shared from "../../shared/shared.plugin";
 import { ObjectStorageService } from "../../shared/storage/storage.service";
+import { AudioProgressService } from "./audio-progress.service";
 import {
   AudioJobQueuedSchema,
   AudioJobStatusSchema,
+  AudioProgressSaveBodySchema,
+  AudioProgressSchema,
   AudioResponseSchema,
 } from "./audio.schemas";
 import { AudioService } from "./audio.service";
@@ -17,6 +20,7 @@ const plugin = new Elysia({ name: "audio" })
   .state((state) => ({
     ...state,
     audioService: new AudioService(state.db, new ObjectStorageService()),
+    audioProgressService: new AudioProgressService(state.db),
   }))
   .group("/bible/explanation/audio", (app) =>
     app
@@ -67,6 +71,100 @@ const plugin = new Elysia({ name: "audio" })
           params: t.Object({ jobId: t.String() }),
           response: {
             200: AudioJobStatusSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // --- TASK-005: resume-progress (br-audio-004) ----------------------
+      .get(
+        "/:explanationId/progress",
+        async ({
+          params,
+          store: { audioProgressService },
+          currentUserId,
+          set,
+        }) => {
+          const progress = await audioProgressService.getPosition(
+            currentUserId,
+            params.explanationId,
+          );
+          if (!progress) {
+            set.status = 404;
+            return {
+              error: "NOT_FOUND",
+              message: "No resume progress for this explanation",
+            };
+          }
+          return progress;
+        },
+        {
+          params: t.Object({ explanationId: t.Numeric() }),
+          response: {
+            200: AudioProgressSchema,
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/:explanationId/progress",
+        async ({
+          params,
+          body,
+          store: { audioProgressService },
+          currentUserId,
+          set,
+        }) => {
+          const result = await audioProgressService.savePosition({
+            userId: currentUserId,
+            explanationId: params.explanationId,
+            positionSeconds: body.position_seconds,
+            durationSeconds: body.duration_seconds,
+            reason: body.reason,
+          });
+          if (result.kind === "saved") {
+            return {
+              position_seconds: Number(result.progress.position_seconds),
+              duration_seconds: Number(result.progress.duration_seconds),
+              updated_at:
+                result.progress.updated_at instanceof Date
+                  ? result.progress.updated_at.toISOString()
+                  : new Date(result.progress.updated_at).toISOString(),
+            };
+          }
+          // Cleared, skipped-guest, and skipped-below-minimum all map to 204.
+          set.status = 204;
+          return undefined;
+        },
+        {
+          params: t.Object({ explanationId: t.Numeric() }),
+          body: AudioProgressSaveBodySchema,
+          response: {
+            200: AudioProgressSchema,
+            204: t.Void(),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .delete(
+        "/:explanationId/progress",
+        async ({
+          params,
+          store: { audioProgressService },
+          currentUserId,
+          set,
+        }) => {
+          await audioProgressService.clearPosition(
+            currentUserId,
+            params.explanationId,
+          );
+          set.status = 204;
+          return undefined;
+        },
+        {
+          params: t.Object({ explanationId: t.Numeric() }),
+          response: {
+            204: t.Void(),
             ...StandardErrorResponses,
           },
         },

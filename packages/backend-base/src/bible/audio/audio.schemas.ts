@@ -36,3 +36,23 @@ export const AudioJobStatusSchema = t.Object({
     error_code: t.Optional(t.String()),
   }),
 });
+
+/**
+ * TASK-005 (br-audio-004): progress DTO returned from GET /progress.
+ */
+export const AudioProgressSchema = t.Object({
+  position_seconds: t.Number(),
+  duration_seconds: t.Number(),
+  updated_at: t.String(),
+});
+
+export const AudioProgressSaveBodySchema = t.Object({
+  position_seconds: t.Number({ minimum: 0 }),
+  duration_seconds: t.Number({ minimum: 0 }),
+  reason: t.Union([
+    t.Literal("pause"),
+    t.Literal("complete"),
+    t.Literal("background"),
+    t.Literal("navigation"),
+  ]),
+});
