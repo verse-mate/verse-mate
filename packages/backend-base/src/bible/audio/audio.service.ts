@@ -32,13 +32,21 @@ export interface AudioVariant {
   language_code: string;
 }
 
+/**
+ * Reader-facing DTO (br-audio-007 stub transparency). Four fields. No
+ * ttsProvider, tts_model, storage_key, or content_hash. Admin surface
+ * uses AdminAudioDto when the full payload is needed.
+ */
 export interface AudioDto {
-  audio_id: string;
   url: string;
   duration_seconds: number;
-  character_count: number;
   voice: string;
   language_code: string;
+}
+
+export interface AdminAudioDto extends AudioDto {
+  audio_id: string;
+  character_count: number;
   is_stale: boolean;
   generated_at: string;
   tts_provider: string;
@@ -289,7 +297,21 @@ export class AudioService {
     );
   }
 
+  /**
+   * Reader DTO — four fields only (br-audio-007). Internal admin /
+   * test paths call toAdminDto for the full shape.
+   */
   private async toDto(row: ExplanationAudios): Promise<AudioDto> {
+    const url = await this.storage.getGlobalObjectUrl({ key: row.storage_key });
+    return {
+      url,
+      duration_seconds: Number(row.duration_seconds),
+      voice: row.voice,
+      language_code: row.language_code,
+    };
+  }
+
+  async toAdminDto(row: ExplanationAudios): Promise<AdminAudioDto> {
     const url = await this.storage.getGlobalObjectUrl({ key: row.storage_key });
     return {
       audio_id: row.audio_id,
