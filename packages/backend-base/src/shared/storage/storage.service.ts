@@ -26,9 +26,10 @@ class S3Helper {
     bucket: string,
     accessKeyId: string,
     secretAccessKey: string,
+    forcePathStyle = false,
   ) {
     this.client = new S3Client({
-      forcePathStyle: false,
+      forcePathStyle,
       endpoint,
       region,
       credentials: {
@@ -238,6 +239,12 @@ export class ObjectStorageService {
     const bucket = process.env.OBJECT_STORAGE_BUCKET;
     const accessKeyId = process.env.OBJECT_STORAGE_ACCESS_KEY_ID;
     const secretAccessKey = process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY;
+    // MinIO (and other S3-compatible servers at localhost) need path-style
+    // addressing because virtual-hosted-style requires wildcard DNS. Opt-in
+    // via OBJECT_STORAGE_FORCE_PATH_STYLE=true. Real S3/Spaces keep the
+    // default (false) for virtual-hosted-style.
+    const forcePathStyle =
+      process.env.OBJECT_STORAGE_FORCE_PATH_STYLE === "true";
 
     if (!endpoint || !region || !bucket || !accessKeyId || !secretAccessKey) {
       console.error(
@@ -251,6 +258,7 @@ export class ObjectStorageService {
       bucket ?? "",
       accessKeyId ?? "",
       secretAccessKey ?? "",
+      forcePathStyle,
     );
   }
 

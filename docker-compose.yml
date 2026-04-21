@@ -33,6 +33,49 @@ services:
     environment:
       POSTGRES_URL: postgresql://postgres_user:postgres_password@postgres:5432/postgres_db
 
+  # S3-compatible object storage for generated explanation audio and other
+  # non-user-scoped assets. Credentials are intentionally the simple dev
+  # defaults documented in packages/backend-base/.env.example — override via
+  # OBJECT_STORAGE_ACCESS_KEY_ID / _SECRET_ACCESS_KEY if you need rotation.
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${OBJECT_STORAGE_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_SECRET_ACCESS_KEY:-minioadmin}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # web console
+    volumes:
+      - ./.docker/minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # One-shot init: creates the bucket ObjectStorageService expects. Runs after
+  # MinIO is healthy, exits cleanly. Idempotent — safe to re-run on `up`.
+  minio-setup:
+    image: minio/mc:latest
+    container_name: minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_USER $$MINIO_PASSWORD &&
+      mc mb --ignore-existing local/$$MINIO_BUCKET &&
+      echo 'bucket ready'
+      "
+    environment:
+      MINIO_USER: ${OBJECT_STORAGE_ACCESS_KEY_ID:-minioadmin}
+      MINIO_PASSWORD: ${OBJECT_STORAGE_SECRET_ACCESS_KEY:-minioadmin}
+      MINIO_BUCKET: ${OBJECT_STORAGE_BUCKET:-saas-starter-dev}
+    restart: "no"
+
   # verse-mate-backend:
   #   container_name: verse-mate-backend
   #   build:
