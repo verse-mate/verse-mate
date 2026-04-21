@@ -36,6 +36,15 @@ export interface BibleVerseData {
   text: string;
 }
 
+export interface CommentaryAudioData {
+  explanation_id: number;
+  voice: string;
+  language_code: string;
+  content_hash: string;
+  duration_seconds: number;
+  storage_key: string;
+}
+
 export interface CommentaryData {
   explanation_id: number;
   book_id: number;
@@ -45,6 +54,12 @@ export interface CommentaryData {
   type: string;
   explanation: string;
   language_code: string;
+  /**
+   * TASK-010: non-stale audio variants for this explanation. Populated by
+   * offline.service so each variant's `storage_key` is turned into a
+   * presigned `audio_url` before the manifest ships to the client.
+   */
+  audios?: CommentaryAudioData[];
 }
 
 export interface TopicData {
@@ -320,6 +335,38 @@ export class OfflineRepository {
       .orderBy("chapters.chapter_number")
       .execute();
 
+    if (explanations.length === 0) return [];
+
+    // Load non-stale audio variants for these explanations (TASK-010).
+    const explanationIds = explanations.map((e) => e.explanation_id);
+    const audios = await connection
+      .selectFrom("explanation_audios")
+      .select([
+        "explanation_id",
+        "voice",
+        "language_code",
+        "content_hash",
+        "duration_seconds",
+        "storage_key",
+      ])
+      .where("explanation_id", "in", explanationIds)
+      .where("is_stale", "=", false)
+      .execute();
+
+    const audiosByExplanation = new Map<number, CommentaryAudioData[]>();
+    for (const a of audios) {
+      const list = audiosByExplanation.get(a.explanation_id) ?? [];
+      list.push({
+        explanation_id: a.explanation_id,
+        voice: a.voice,
+        language_code: a.language_code,
+        content_hash: a.content_hash,
+        duration_seconds: Number(a.duration_seconds),
+        storage_key: a.storage_key,
+      });
+      audiosByExplanation.set(a.explanation_id, list);
+    }
+
     return explanations.map((e) => ({
       explanation_id: e.explanation_id,
       book_id: e.book_id,
@@ -329,6 +376,7 @@ export class OfflineRepository {
       type: e.type,
       explanation: e.explanation,
       language_code: e.language_code,
+      audios: audiosByExplanation.get(e.explanation_id) ?? [],
     }));
   }
 
@@ -355,7 +403,48 @@ export class OfflineRepository {
       .select(sql<string>`MAX(COALESCE(created_at, NOW()))`.as("updated_at"))
       .executeTakeFirst();
 
-    return result?.updated_at ? new Date(result.updated_at) : null;
+    // TASK-010: also factor in the most recent (non-stale) audio generation
+    // for this language — if audio regenerated but explanation text didn't,
+    // the manifest still needs to return 200 so clients pick up the new URLs.
+    const audioResult = await connection
+      .selectFrom("explanation_audios")
+      .innerJoin(
+        "explanations",
+        "explanations.explanation_id",
+        "explanation_audios.explanation_id",
+      )
+      .where("explanation_audios.is_stale", "=", false)
+      .where("explanations.is_active", "=", true)
+      .where((eb) =>
+        eb.or([
+          eb(
+            eb.fn("lower", ["explanations.language_code"]),
+            "=",
+            normalizedLanguageCode,
+          ),
+          eb(
+            eb.fn("lower", ["explanations.language_code"]),
+            "=",
+            baseLanguageCode,
+          ),
+        ]),
+      )
+      .select(
+        sql<string>`MAX(explanation_audios.generated_at)`.as("generated_at"),
+      )
+      .executeTakeFirst();
+
+    const explanationDate = result?.updated_at
+      ? new Date(result.updated_at)
+      : null;
+    const audioDate = audioResult?.generated_at
+      ? new Date(audioResult.generated_at)
+      : null;
+
+    if (explanationDate && audioDate) {
+      return explanationDate > audioDate ? explanationDate : audioDate;
+    }
+    return explanationDate ?? audioDate;
   }
 
   /**
