@@ -193,3 +193,7 @@ apps/backend/batch_files/
 VerseMate/
 FIGMA_MIGRATION_PROGRESS.md
 FIGMA_MIGRATION_SPEC.md
+
+# Playwright artifacts
+playwright-report/
+test-results/
