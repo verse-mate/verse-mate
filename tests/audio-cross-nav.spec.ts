@@ -9,7 +9,7 @@
  *     completes synchronously without OpenAI cost.
  *   - Frontend running on :3000.
  *   - A seeded reader account whose credentials are passed via
- *     `E2E_USER_EMAIL` and `E2E_USER_PASSWORD`.
+ *     `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD`.
  *
  * The test deliberately uses the real backend (rather than mocking
  * fetch) because the value here is catching real regressions in the
@@ -18,21 +18,21 @@
 import { expect, test } from "@playwright/test";
 
 const HAS_CREDS = Boolean(
-  process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD,
+  process.env.E2E_TEST_EMAIL && process.env.E2E_TEST_PASSWORD,
 );
 
 test.describe("Explanation audio — cross-navigation continuity", () => {
   test.skip(
     !HAS_CREDS,
-    "E2E_USER_EMAIL and E2E_USER_PASSWORD env vars required",
+    "E2E_TEST_EMAIL and E2E_TEST_PASSWORD env vars required",
   );
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel(/email/i).fill(process.env.E2E_USER_EMAIL as string);
+    await page.getByLabel(/email/i).fill(process.env.E2E_TEST_EMAIL as string);
     await page
       .getByLabel(/password/i)
-      .fill(process.env.E2E_USER_PASSWORD as string);
+      .fill(process.env.E2E_TEST_PASSWORD as string);
     await page.getByRole("button", { name: /sign in|log in/i }).click();
     await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
       timeout: 15_000,
