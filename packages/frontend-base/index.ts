@@ -71,3 +71,14 @@ export { Explanation } from "./src/ui/Explanation";
 export { HighlightsList } from "./src/ui/Highlights";
 export { ExplanationRegeneration } from "./src/ui/admin/ExplanationRegeneration/ExplanationRegeneration";
 export { UserManagement } from "./src/ui/admin/UserManagement/UserManagement";
+export {
+  AudioDockBar,
+  AudioFullSheet,
+  AudioInlineEntry,
+  AudioPlayerRoot,
+  AudioResumeChip,
+} from "./src/ui/AudioPlayer";
+export {
+  AudioManagement,
+  AudioStatusBadge,
+} from "./src/ui/admin/AudioManagement";

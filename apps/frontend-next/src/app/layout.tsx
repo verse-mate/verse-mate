@@ -1,5 +1,5 @@
 import "frontend-base/styles/global.css";
-import { CookieConsent } from "frontend-base";
+import { AudioPlayerRoot, CookieConsent } from "frontend-base";
 import { $env, type Env, StoreInitializer } from "frontend-envs";
 import { PWAServiceWorkerRegistration } from "../components/PWAServiceWorkerRegistration";
 import { PostHogProvider } from "../providers/PostHogProvider";
@@ -60,6 +60,9 @@ export default function RootLayout({
         <PostHogProvider>
           <PWAServiceWorkerRegistration />
           <MyMainPage>{children}</MyMainPage>
+          {/* TASK-007 br-audio-011: single <audio> element at layout root
+              so navigating chapters does not unmount mid-playback. */}
+          <AudioPlayerRoot />
           <CookieConsent privacyPolicyUrl="/privacy" />
         </PostHogProvider>
       </body>

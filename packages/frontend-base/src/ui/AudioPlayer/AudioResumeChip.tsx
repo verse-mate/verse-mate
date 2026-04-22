@@ -1,10 +1,12 @@
 /**
  * TASK-008: "Resume at mm:ss" chip shown beside Play when a stored
- * position exists. Clicking it seeks to the stored position and starts
- * playback.
+ * position exists. Clicking Resume seeks + plays; Restart starts from 0.
+ *
+ * Styling: CSS modules + open-props.
  */
 import { audioPlayerActions } from "../../hooks/useAudioPlayerStore";
 import type { ResumeProgress } from "../../hooks/useAudioProgress";
+import styles from "./audio-player.module.css";
 
 function formatTime(seconds: number): string {
   const mm = Math.floor(seconds / 60);
@@ -30,12 +32,10 @@ export interface AudioResumeChipProps {
 export function AudioResumeChip(props: AudioResumeChipProps) {
   const { progress } = props;
   return (
-    <div
-      className="audio-resume-chip"
-      style={{ display: "inline-flex", gap: "0.5rem", alignItems: "center" }}
-    >
+    <div className={styles.resumeChip}>
       <button
         type="button"
+        className={styles.resumeButton}
         onClick={() => {
           audioPlayerActions.seekToResumePosition(progress.position_seconds);
           audioPlayerActions.play();
@@ -45,19 +45,18 @@ export function AudioResumeChip(props: AudioResumeChipProps) {
             resumePositionSeconds: progress.position_seconds,
           });
         }}
-        style={{ minHeight: 44 }}
       >
         Resume at {formatTime(progress.position_seconds)}
       </button>
       <button
         type="button"
+        className={styles.restartButton}
         onClick={() => {
           audioPlayerActions.seek(0);
           audioPlayerActions.play();
           props.onRestart?.();
           props.onPlaybackStartedCallback?.({ isResume: false });
         }}
-        style={{ minHeight: 44 }}
       >
         Restart
       </button>

@@ -1,3 +1,9 @@
+/**
+ * TASK-007: full-screen player sheet. ±15s seek buttons, speed menu,
+ * "Go to source" deep link. Opens from AudioDockBar tap.
+ *
+ * Styling: CSS modules + open-props.
+ */
 import { ChevronDown, ExternalLink, Pause, Play } from "react-feather";
 import {
   $currentTrack,
@@ -8,11 +14,8 @@ import {
   $speed,
   audioPlayerActions,
 } from "../../hooks/useAudioPlayerStore";
-/**
- * TASK-007: full-screen player sheet. ±15s seek buttons, speed menu,
- * "Go to source" deep link. Opens from AudioDockBar tap.
- */
 import { useStore } from "../../utils/use-store";
+import styles from "./audio-player.module.css";
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -37,55 +40,31 @@ export function AudioFullSheet() {
       role="dialog"
       aria-modal="true"
       aria-label="Full audio player"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "var(--color-surface, #fff)",
-        zIndex: 50,
-        display: "flex",
-        flexDirection: "column",
-        padding: "2rem 1rem",
-      }}
+      className={styles.fullSheet}
     >
-      <header style={{ display: "flex", justifyContent: "space-between" }}>
+      <header className={styles.fullHeader}>
         <button
           type="button"
+          className={styles.iconButton}
           onClick={() => audioPlayerActions.closeFullSheet()}
           aria-label="Close full player"
-          style={{ minHeight: 44, minWidth: 44 }}
         >
           <ChevronDown size={24} />
         </button>
         <a
           href={track.source_href}
+          className={styles.goToSource}
           onClick={() => audioPlayerActions.closeFullSheet()}
           aria-label="Go to source explanation"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.25em",
-            minHeight: 44,
-          }}
         >
           Go to source <ExternalLink size={16} />
         </a>
       </header>
 
-      <main
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: "1.5rem",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "1.25rem", fontWeight: 600 }}>
-            {track.explanation_type}
-          </div>
-          <div style={{ color: "var(--color-text-muted, #666)" }}>
+      <main className={styles.fullMain}>
+        <div className={styles.fullTitleBlock}>
+          <div className={styles.fullType}>{track.explanation_type}</div>
+          <div className={styles.fullChapter}>
             Chapter {track.chapter_number}
           </div>
         </div>
@@ -98,58 +77,54 @@ export function AudioFullSheet() {
           value={elapsed}
           onChange={(e) => audioPlayerActions.seek(Number(e.target.value))}
           aria-label="Playback position"
-          style={{ width: "100%", maxWidth: 480 }}
+          className={styles.scrubber}
         />
-        <div style={{ display: "flex", gap: "2rem", alignItems: "center" }}>
+        <div className={styles.controlsRow}>
           <button
             type="button"
+            className={styles.iconButton}
             onClick={() => audioPlayerActions.seekRelative(-15)}
             aria-label="Rewind 15 seconds"
-            style={{ minHeight: 44, minWidth: 44 }}
           >
             -15s
           </button>
           <button
             type="button"
+            className={`${styles.iconButton} ${styles.playLarge}`}
             onClick={() =>
               state === "playing"
                 ? audioPlayerActions.pause()
                 : audioPlayerActions.play()
             }
             aria-label={state === "playing" ? "Pause" : "Play"}
-            style={{ minHeight: 60, minWidth: 60 }}
           >
             {state === "playing" ? <Pause size={28} /> : <Play size={28} />}
           </button>
           <button
             type="button"
+            className={styles.iconButton}
             onClick={() => audioPlayerActions.seekRelative(15)}
             aria-label="Forward 15 seconds"
-            style={{ minHeight: 44, minWidth: 44 }}
           >
             +15s
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div className={styles.speedRow}>
           {SPEEDS.map((s) => (
             <button
               type="button"
               key={s}
+              className={styles.speedButton}
               onClick={() => audioPlayerActions.setSpeed(s)}
               aria-pressed={speed === s}
-              style={{
-                minHeight: 44,
-                minWidth: 44,
-                fontWeight: speed === s ? 700 : 400,
-              }}
             >
               {s}×
             </button>
           ))}
         </div>
 
-        <div style={{ color: "var(--color-text-muted, #666)" }}>
+        <div className={styles.timeCounter}>
           {formatTime(elapsed)} / {formatTime(duration)}
         </div>
       </main>
