@@ -2,6 +2,7 @@ import { fetchExplanation } from "../../hooks/useBible";
 import { useRating } from "../../hooks/useRating";
 import { useGetSearchParams } from "../../hooks/useSearchParams";
 import { userSession } from "../../hooks/userSession";
+import { AudioInlineEntry } from "../AudioPlayer";
 import * as Icons from "../Icons";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { Rating } from "../Rating";
@@ -72,6 +73,17 @@ export const Content = ({
             A new explanation is being generated, please wait...
           </span>
         </div>
+      )}
+
+      {explanation?.explanation_id && (
+        <AudioInlineEntry
+          explanationId={explanation.explanation_id}
+          explanationType={explanation.type ?? "summary"}
+          bookId={Number(bookId)}
+          chapterNumber={Number(verseId)}
+          language={explanation.language_code}
+          sourceHref={`/bible/${bookId}/${verseId}`}
+        />
       )}
 
       {explanation?.explanation && (

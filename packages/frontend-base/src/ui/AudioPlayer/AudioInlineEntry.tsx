@@ -14,9 +14,12 @@ import {
  * TASK-007: inline "Listen · 3:47" chip shown above each explanation tab.
  *
  * Surfaces all 5 spec-D1 states (loading / empty / error / populated /
- * partial) from useExplanationAudio + the player store.
+ * partial) from useExplanationAudio + the player store. Styling goes
+ * through the project's CSS-module + open-props pattern — no inline
+ * styles, no hardcoded px/hex.
  */
 import { useStore } from "../../utils/use-store";
+import styles from "./audio-player.module.css";
 
 export interface AudioInlineEntryProps extends UseExplanationAudioArgs {
   explanationType: string;
@@ -43,7 +46,8 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
     return (
       <button
         type="button"
-        className="audio-inline-entry error"
+        className={styles.inlineEntry}
+        data-state="error"
         onClick={() =>
           queryClient.invalidateQueries({
             queryKey: [
@@ -55,7 +59,6 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
           })
         }
         aria-label={`Audio unavailable — retry (${error.message})`}
-        data-state="error"
       >
         Audio unavailable — Retry
       </button>
@@ -66,11 +69,11 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
     const secs = estimatedReadySeconds ?? 8;
     return (
       <div
-        className="audio-inline-entry loading"
+        className={styles.inlineEntry}
         data-state="loading"
         aria-live="polite"
       >
-        <span className="spinner" aria-hidden="true" />
+        <span className={styles.spinner} aria-hidden="true" />
         Generating… ~{secs}s
       </div>
     );
@@ -83,7 +86,7 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
 
   const startTrack = () => {
     const track: AudioTrack = {
-      audio_id: audio.audio_id,
+      audio_id: `exp-${props.explanationId}`,
       explanation_id: props.explanationId as number,
       url: audio.url,
       duration_seconds: audio.duration_seconds,
@@ -92,7 +95,7 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
       explanation_type: props.explanationType,
       book_id: props.bookId,
       chapter_number: props.chapterNumber,
-      tts_provider: audio.tts_provider,
+      tts_provider: "server",
       source_href: props.sourceHref,
     };
     if (!isThisTrack) audioPlayerActions.load(track);
@@ -102,15 +105,9 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
   return (
     <button
       type="button"
-      className="audio-inline-entry populated"
-      onClick={startTrack}
+      className={styles.inlineEntry}
       data-state={playingThis ? "playing" : "populated"}
-      style={{
-        minHeight: "44px",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "0.5em",
-      }}
+      onClick={startTrack}
     >
       <Play size={16} aria-hidden="true" />
       {label}
