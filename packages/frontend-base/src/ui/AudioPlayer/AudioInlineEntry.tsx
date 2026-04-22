@@ -95,7 +95,9 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
       explanation_type: props.explanationType,
       book_id: props.bookId,
       chapter_number: props.chapterNumber,
-      tts_provider: "server",
+      // br-audio-007: Reader DTO does not expose provider; analytics
+      // surfaces "unknown" rather than misreporting.
+      tts_provider: "unknown",
       source_href: props.sourceHref,
     };
     if (!isThisTrack) audioPlayerActions.load(track);

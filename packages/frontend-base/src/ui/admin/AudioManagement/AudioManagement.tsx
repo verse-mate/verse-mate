@@ -1,11 +1,14 @@
 /**
- * TASK-006 (frontend): admin audio control panel.
+ * TASK-006 (frontend) / TASK-014 (styling + admin route mount):
+ * admin audio control panel. Each row shows an explanation + its audio
+ * status, with per-row Regenerate / Delete actions and a toolbar
+ * "Regenerate (filtered)" bulk button.
  *
- * Standalone page showing every explanation + its audio status, with
- * per-row Regenerate / Delete actions and a toolbar "Regenerate
- * (filtered)" bulk button. Designed to be mounted as a new admin route;
- * integrating the audio *column* into the existing Explanations admin
- * table is a separate polish step flagged in tasks.md.
+ * Mounted as a tab in AdminDashboard so admins can reach it from
+ * /admin (br-audio-016).
+ *
+ * Styling: CSS modules + open-props — no inline styles, no hardcoded
+ * px / hex.
  */
 import { Fragment, useState } from "react";
 import {
@@ -15,6 +18,7 @@ import {
   useAdminAudioRegenerate,
 } from "../../../hooks/useAdminAudio";
 import { AudioStatusBadge } from "./AudioStatusBadge";
+import styles from "./audio-management.module.css";
 
 function formatDuration(seconds: number | null): string {
   if (seconds === null) return "—";
@@ -51,22 +55,9 @@ export function AudioManagement(props: AudioManagementProps = {}) {
 
   return (
     <section aria-label="Admin audio management">
-      <header
-        style={{
-          display: "flex",
-          gap: "0.75rem",
-          alignItems: "center",
-          padding: "1rem 0",
-        }}
-      >
-        <h2 style={{ flex: 1, margin: 0 }}>Explanation audio</h2>
-        <label
-          style={{
-            display: "inline-flex",
-            gap: "0.25rem",
-            alignItems: "center",
-          }}
-        >
+      <header className={styles.toolbar}>
+        <h2 className={styles.title}>Explanation audio</h2>
+        <label className={styles.filterLabel}>
           Language
           <input
             value={filters.language ?? ""}
@@ -78,16 +69,10 @@ export function AudioManagement(props: AudioManagementProps = {}) {
               }))
             }
             placeholder="en"
-            style={{ minHeight: 44 }}
+            className={styles.filterInput}
           />
         </label>
-        <label
-          style={{
-            display: "inline-flex",
-            gap: "0.25rem",
-            alignItems: "center",
-          }}
-        >
+        <label className={styles.filterLabel}>
           Stale only
           <input
             type="checkbox"
@@ -113,7 +98,7 @@ export function AudioManagement(props: AudioManagementProps = {}) {
           }
           disabled={regen.isPending}
           aria-label="Regenerate audio for all rows matching the current filters"
-          style={{ minHeight: 44 }}
+          className={styles.bulkButton}
         >
           {regen.isPending ? "Queuing…" : "Regenerate audio (filtered)"}
         </button>
@@ -126,18 +111,18 @@ export function AudioManagement(props: AudioManagementProps = {}) {
       ) : !data || data.rows.length === 0 ? (
         <div>No explanations match the current filters.</div>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <caption style={{ textAlign: "left", padding: "0.5rem 0" }}>
+        <table className={styles.table}>
+          <caption className={styles.caption}>
             {data.total} explanations
           </caption>
           <thead>
             <tr>
-              <th style={{ textAlign: "left" }}>Book / Chapter</th>
-              <th style={{ textAlign: "left" }}>Type</th>
-              <th style={{ textAlign: "left" }}>Language</th>
-              <th style={{ textAlign: "left" }}>Status</th>
-              <th style={{ textAlign: "left" }}>Duration</th>
-              <th style={{ textAlign: "left" }}>Actions</th>
+              <th className={styles.cellLeft}>Book / Chapter</th>
+              <th className={styles.cellLeft}>Type</th>
+              <th className={styles.cellLeft}>Language</th>
+              <th className={styles.cellLeft}>Status</th>
+              <th className={styles.cellLeft}>Duration</th>
+              <th className={styles.cellLeft}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -169,7 +154,7 @@ export function AudioManagement(props: AudioManagementProps = {}) {
                           })
                         }
                         aria-label={`Regenerate audio for explanation ${row.explanation_id}`}
-                        style={{ minHeight: 44, marginRight: "0.5rem" }}
+                        className={styles.actionButton}
                         disabled={regen.isPending}
                       >
                         Regenerate
@@ -179,7 +164,7 @@ export function AudioManagement(props: AudioManagementProps = {}) {
                           type="button"
                           onClick={() => del.mutate(row.audio_id as string)}
                           aria-label={`Delete audio ${row.audio_id}`}
-                          style={{ minHeight: 44, marginRight: "0.5rem" }}
+                          className={styles.actionButton}
                           disabled={del.isPending}
                         >
                           Delete
@@ -190,7 +175,7 @@ export function AudioManagement(props: AudioManagementProps = {}) {
                         onClick={() => toggleExpanded(rowKey)}
                         aria-expanded={expanded}
                         aria-controls={`details-${rowKey}`}
-                        style={{ minHeight: 44 }}
+                        className={styles.actionButton}
                       >
                         {expanded ? "Hide" : "Details"}
                       </button>
@@ -199,13 +184,7 @@ export function AudioManagement(props: AudioManagementProps = {}) {
                   {expanded ? (
                     <tr id={`details-${rowKey}`}>
                       <td colSpan={6}>
-                        <dl
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "max-content 1fr",
-                            gap: "0.25rem 1rem",
-                          }}
-                        >
+                        <dl className={styles.detailsList}>
                           <dt>Audio id</dt>
                           <dd>{row.audio_id ?? "—"}</dd>
                           <dt>Voice</dt>
@@ -218,7 +197,7 @@ export function AudioManagement(props: AudioManagementProps = {}) {
                           </dd>
                           <dt>Content hash</dt>
                           <dd>
-                            <code style={{ fontSize: "0.875em" }}>
+                            <code className={styles.contentHash}>
                               {row.content_hash ?? "—"}
                             </code>
                           </dd>

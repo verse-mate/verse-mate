@@ -1,0 +1,88 @@
+/* TASK-014 admin audio panel styles.
+   Open-props tokens via global.css — no hardcoded px / hex.
+   Mirrors the pattern in audio-player.module.css. */
+
+.toolbar {
+  display: flex;
+  gap: var(--size-3);
+  align-items: center;
+  padding: var(--size-3) 0;
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+}
+
+.filterLabel {
+  display: inline-flex;
+  gap: var(--size-1);
+  align-items: center;
+}
+
+.filterInput {
+  min-height: var(--size-6);
+}
+
+.bulkButton {
+  min-height: var(--size-6);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.caption {
+  text-align: left;
+  padding: var(--size-2) 0;
+}
+
+.cellLeft {
+  text-align: left;
+}
+
+.actionButton {
+  min-height: var(--size-6);
+  margin-right: var(--size-2);
+}
+
+.detailsList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--size-1) var(--size-3);
+}
+
+.contentHash {
+  font-size: var(--font-size-0);
+}
+
+/* Status badge — one rule per status; consumes data-status. */
+.badge {
+  display: inline-flex;
+  padding: var(--size-1) var(--size-2);
+  border-radius: var(--radius-2);
+  font-size: var(--font-size-0);
+  font-weight: var(--font-weight-6, 600);
+  min-height: var(--size-5);
+}
+
+.badge[data-status='current'] {
+  background: color-mix(in srgb, var(--color-success, var(--green-9)) 15%, transparent);
+  color: var(--color-success, var(--green-9));
+}
+
+.badge[data-status='stale'] {
+  background: color-mix(in srgb, var(--color-warning, var(--yellow-9)) 15%, transparent);
+  color: var(--color-warning, var(--yellow-9));
+}
+
+.badge[data-status='missing'] {
+  background: color-mix(in srgb, var(--color-text-muted, var(--gray-9)) 15%, transparent);
+  color: var(--color-text-muted, var(--gray-9));
+}
+
+.badge[data-status='failed'] {
+  background: color-mix(in srgb, var(--color-danger, var(--red-9)) 15%, transparent);
+  color: var(--color-danger, var(--red-9));
+}

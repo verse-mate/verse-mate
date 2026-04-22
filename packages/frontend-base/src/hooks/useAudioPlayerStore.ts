@@ -41,6 +41,17 @@ export const $dockVisible = atom<boolean>(false);
 export const $fullSheetOpen = atom<boolean>(false);
 
 /**
+ * Context for the next playing transition, consumed by AudioPlayerRoot
+ * when it fires AUDIO_PLAYBACK_STARTED. Set by playFromResume() to mark
+ * the next play as a Resume; defaults to non-resume otherwise.
+ */
+export interface PlayContext {
+  isResume: boolean;
+  resumePositionSeconds?: number;
+}
+export const $lastPlayContext = atom<PlayContext | null>(null);
+
+/**
  * Non-React controller so tests + the portal can drive the same state.
  * audioElementRef is set by AudioPlayerRoot on mount.
  */
@@ -71,6 +82,9 @@ export const audioPlayerActions = {
 
   async play() {
     if (!audioElementRef || !$currentTrack.get()) return;
+    if ($lastPlayContext.get() === null) {
+      $lastPlayContext.set({ isResume: false });
+    }
     try {
       await audioElementRef.play();
       $playbackState.set("playing");
@@ -78,6 +92,19 @@ export const audioPlayerActions = {
       $playbackState.set("error");
       $error.set(err instanceof Error ? err.message : String(err));
     }
+  },
+
+  /**
+   * Resume-chip entry point: marks the next playing transition as a
+   * resume so AUDIO_PLAYBACK_STARTED carries isResume=true.
+   */
+  async playFromResume(positionSeconds: number) {
+    $lastPlayContext.set({
+      isResume: true,
+      resumePositionSeconds: positionSeconds,
+    });
+    this.seek(positionSeconds);
+    await this.play();
   },
 
   pause() {
@@ -120,6 +147,7 @@ export const audioPlayerActions = {
     $dockVisible.set(false);
     $fullSheetOpen.set(false);
     $elapsedSeconds.set(0);
+    $lastPlayContext.set(null);
   },
 
   _onTimeUpdate(currentTime: number) {
@@ -168,5 +196,6 @@ export function _resetAudioPlayerStore() {
   $error.set(null);
   $dockVisible.set(false);
   $fullSheetOpen.set(false);
+  $lastPlayContext.set(null);
   audioElementRef = null;
 }
