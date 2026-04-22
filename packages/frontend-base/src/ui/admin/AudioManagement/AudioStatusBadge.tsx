@@ -1,9 +1,10 @@
 /**
- * TASK-006 (frontend): reusable status badge for the admin audio panel.
- * Semantic colors via CSS vars so overrides live in the host app's
- * design tokens (no hardcoded hex).
+ * TASK-006 (frontend) / TASK-014 (styling): status badge for the admin
+ * audio panel. Status colors live in the CSS module via [data-status]
+ * selectors — no hardcoded hex, no inline styles.
  */
 import type { AdminAudioStatus } from "../../../hooks/useAdminAudio";
+import styles from "./audio-management.module.css";
 
 export interface AudioStatusBadgeProps {
   status: AdminAudioStatus;
@@ -18,13 +19,6 @@ const STATUS_LABEL: Record<AdminAudioStatus, string> = {
   failed: "Failed",
 };
 
-const STATUS_VAR: Record<AdminAudioStatus, string> = {
-  current: "var(--color-success, #10b981)",
-  stale: "var(--color-warning, #f59e0b)",
-  missing: "var(--color-text-muted, #9ca3af)",
-  failed: "var(--color-danger, #ef4444)",
-};
-
 export function AudioStatusBadge(props: AudioStatusBadgeProps) {
   const { status, voice, languageCode } = props;
   const label =
@@ -36,16 +30,8 @@ export function AudioStatusBadge(props: AudioStatusBadgeProps) {
     <span
       role="status"
       aria-label={`Audio status: ${label}`}
-      style={{
-        display: "inline-flex",
-        padding: "0.25rem 0.5rem",
-        borderRadius: "0.25rem",
-        backgroundColor: `color-mix(in srgb, ${STATUS_VAR[status]} 15%, transparent)`,
-        color: STATUS_VAR[status],
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        minHeight: "1.5rem",
-      }}
+      className={styles.badge}
+      data-status={status}
     >
       {label}
     </span>

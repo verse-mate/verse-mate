@@ -1,6 +1,11 @@
 /**
  * TASK-008: "Resume at mm:ss" chip shown beside Play when a stored
- * position exists. Clicking Resume seeks + plays; Restart starts from 0.
+ * position exists. Clicking Resume seeks + plays via the store's
+ * playFromResume action so AudioPlayerRoot can mark the resulting
+ * AUDIO_PLAYBACK_STARTED event with isResume=true (br-audio-014).
+ *
+ * Restart starts from 0 — analytics flows through the same
+ * STARTED-on-transition path with isResume=false.
  *
  * Styling: CSS modules + open-props.
  */
@@ -18,15 +23,6 @@ export interface AudioResumeChipProps {
   progress: ResumeProgress;
   onResume?: (progress: ResumeProgress) => void;
   onRestart?: () => void;
-  /**
-   * Analytics callback — fires with isResume=true when the user takes
-   * the Resume branch, false when they Restart. Wired to
-   * AUDIO_PLAYBACK_STARTED by the consumer.
-   */
-  onPlaybackStartedCallback?: (args: {
-    isResume: boolean;
-    resumePositionSeconds?: number;
-  }) => void;
 }
 
 export function AudioResumeChip(props: AudioResumeChipProps) {
@@ -37,13 +33,8 @@ export function AudioResumeChip(props: AudioResumeChipProps) {
         type="button"
         className={styles.resumeButton}
         onClick={() => {
-          audioPlayerActions.seekToResumePosition(progress.position_seconds);
-          audioPlayerActions.play();
+          audioPlayerActions.playFromResume(progress.position_seconds);
           props.onResume?.(progress);
-          props.onPlaybackStartedCallback?.({
-            isResume: true,
-            resumePositionSeconds: progress.position_seconds,
-          });
         }}
       >
         Resume at {formatTime(progress.position_seconds)}
@@ -55,7 +46,6 @@ export function AudioResumeChip(props: AudioResumeChipProps) {
           audioPlayerActions.seek(0);
           audioPlayerActions.play();
           props.onRestart?.();
-          props.onPlaybackStartedCallback?.({ isResume: false });
         }}
       >
         Restart
