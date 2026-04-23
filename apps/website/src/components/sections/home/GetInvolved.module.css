@@ -30,6 +30,10 @@
   background-image: url("/volunteer.png");
 }
 
+.coachImage {
+  background-image: url("/coach.png");
+}
+
 .giveImage {
   background-image: url("/give.png");
 }

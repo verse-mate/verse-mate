@@ -61,13 +61,27 @@ export default function Header() {
             </button>
           </nav> */}
 
-          {/* Volunteer Button - Always visible */}
-          <Link
-            href="/volunteer"
-            className="flex items-center justify-center rounded-full border-none bg-black px-5 py-3 font-inter text-[11px] font-semibold leading-4 text-white no-underline whitespace-nowrap md:px-8 md:py-4 md:text-base md:font-normal md:leading-6 md:min-w-[208px] md:h-[56px]"
-          >
-            Join as a Volunteer
-          </Link>
+          {/* CTA Buttons - Volunteer, Coach, Give */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <Link
+              href="/volunteer"
+              className="flex items-center justify-center rounded-full border-none bg-black px-3 py-3 font-inter text-[11px] font-semibold leading-4 text-white no-underline whitespace-nowrap md:px-6 md:py-4 md:text-base md:font-normal md:leading-6 md:h-[56px]"
+            >
+              Volunteer
+            </Link>
+            <Link
+              href="/coach"
+              className="flex items-center justify-center rounded-full border-none bg-black px-3 py-3 font-inter text-[11px] font-semibold leading-4 text-white no-underline whitespace-nowrap md:px-6 md:py-4 md:text-base md:font-normal md:leading-6 md:h-[56px]"
+            >
+              Coach
+            </Link>
+            <Link
+              href="/give"
+              className="flex items-center justify-center rounded-full border-none bg-black px-3 py-3 font-inter text-[11px] font-semibold leading-4 text-white no-underline whitespace-nowrap md:px-6 md:py-4 md:text-base md:font-normal md:leading-6 md:h-[56px]"
+            >
+              Give
+            </Link>
+          </div>
 
           {/* Mobile Hamburger Menu - Temporarily disabled */}
           {/* <button
