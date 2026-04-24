@@ -9,6 +9,27 @@
  * and get back { audio, jobStatus, isLoading, isGenerating, error }.
  */
 import { useQuery } from "@tanstack/react-query";
+import { getAccessToken } from "backend-api";
+import { $env } from "frontend-envs";
+
+/**
+ * Wraps a fetch call to attach the Bearer token from the access-token
+ * cookie — same scheme the Eden fetcher uses. Needed because this hook
+ * deliberately uses raw fetch (br-audio-017 exception for the poll
+ * pattern) and must still authenticate.
+ */
+function authedFetch(
+  fetchFn: typeof fetch,
+): (url: string, init?: RequestInit) => Promise<Response> {
+  return async (url: string, init?: RequestInit) => {
+    const token = getAccessToken();
+    const headers = new Headers(init?.headers);
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return fetchFn(url, { ...init, headers });
+  };
+}
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 30_000;
@@ -142,7 +163,9 @@ export function useExplanationAudio(
     voice,
     language,
     fetchFn = typeof fetch === "function" ? fetch.bind(globalThis) : undefined,
-    baseUrl = "/api",
+    // Default to the shared frontend-envs apiUrl so the hook works in
+    // the real app without a Next.js rewrite; tests inject their own.
+    baseUrl = $env.get().apiUrl,
     enabled = true,
   } = args;
 
@@ -155,7 +178,7 @@ export function useExplanationAudio(
         explanationId: explanationId as number,
         voice,
         language,
-        fetchFn: fetchFn as typeof fetch,
+        fetchFn: authedFetch(fetchFn as typeof fetch) as typeof fetch,
       }),
     staleTime: 5 * 60 * 1000,
     retry: false,

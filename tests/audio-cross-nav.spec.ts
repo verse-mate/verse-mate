@@ -1,19 +1,23 @@
 /**
- * TASK-015: web E2E for audio first-play + cross-navigation.
+ * TASK-015: web E2E for the audio plumbing.
  *
- * Acts as the regression guard for br-audio-011 (cross-nav continuity)
- * and br-audio-003 (lazy first-play 202→200 polling).
+ * Acts as the regression guard for:
+ *   - br-audio-003 — lazy first-play (202→200 polling in stub mode)
+ *   - br-audio-007 — Reader DTO shape (audio object with url field)
+ *   - TASK-016 a11y — Esc closes the full sheet
+ *
+ * Cross-nav continuity (br-audio-011) is NOT tested end-to-end here —
+ * `page.goto()` is a hard reload that resets in-memory nanostore state,
+ * which doesn't represent a real user navigation. Unit-level check:
+ * <AudioPlayerRoot /> is mounted at `apps/frontend-next/src/app/layout.tsx`
+ * above the route outlet, so Next.js soft-nav preserves the <audio>
+ * element. A future test can exercise this via an in-app next-chapter
+ * button once we expose a stable selector for it.
  *
  * Prerequisites for the test to run (otherwise skipped):
- *   - Backend running on :3001 with `TTS_PROVIDER=stub` so first-play
- *     completes synchronously without OpenAI cost.
- *   - Frontend running on :3000.
- *   - A seeded reader account whose credentials are passed via
- *     `E2E_TEST_EMAIL` and `E2E_TEST_PASSWORD`.
- *
- * The test deliberately uses the real backend (rather than mocking
- * fetch) because the value here is catching real regressions in the
- * audio plumbing — not just the React layer.
+ *   - Backend on :4000 with `TTS_PROVIDER=stub` (synchronous fixture response)
+ *   - Frontend on :3000
+ *   - A seeded reader account passed via `E2E_TEST_EMAIL` / `E2E_TEST_PASSWORD`
  */
 import { expect, test } from "@playwright/test";
 
@@ -21,7 +25,22 @@ const HAS_CREDS = Boolean(
   process.env.E2E_TEST_EMAIL && process.env.E2E_TEST_PASSWORD,
 );
 
-test.describe("Explanation audio — cross-navigation continuity", () => {
+/**
+ * All three tabs (Summary / By Line / Detailed) mount their own chip,
+ * but only the active tab's is visible — filter to visible + take first.
+ */
+function inlineEntryLocator(page: import("@playwright/test").Page) {
+  return page
+    .getByTestId("audio-inline-entry")
+    .filter({ visible: true })
+    .first();
+}
+
+function dockBarLocator(page: import("@playwright/test").Page) {
+  return page.locator('[data-testid="audio-dock-bar"]');
+}
+
+test.describe("Explanation audio — first-play + full sheet", () => {
   test.skip(
     !HAS_CREDS,
     "E2E_TEST_EMAIL and E2E_TEST_PASSWORD env vars required",
@@ -29,86 +48,68 @@ test.describe("Explanation audio — cross-navigation continuity", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel(/email/i).fill(process.env.E2E_TEST_EMAIL as string);
+    // SignIn uses non-associated labels — target inputs by type.
     await page
-      .getByLabel(/password/i)
+      .locator('input[type="email"]')
+      .fill(process.env.E2E_TEST_EMAIL as string);
+    await page
+      .locator('input[type="password"]')
       .fill(process.env.E2E_TEST_PASSWORD as string);
-    await page.getByRole("button", { name: /sign in|log in/i }).click();
+    await page.getByRole("button", { name: /^login$/i }).click();
     await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
       timeout: 15_000,
     });
   });
 
-  test("first-play loads audio, dock survives chapter navigation", async ({
+  test("first-play: 202→200 flow loads audio and mounts the dock", async ({
     page,
   }) => {
-    // Open Genesis 1, Summary tab.
     await page.goto("/bible/genesis/1?explanationType=summary");
-    const inlineEntry = page.getByRole("button", {
-      name: /listen|generating/i,
+
+    // Wait for the chip to settle into the "populated" (or "playing")
+    // state — i.e. audio is ready. Stub mode returns the fixture
+    // synchronously, so this should happen in a few seconds.
+    const entry = inlineEntryLocator(page);
+    await expect(entry).toBeVisible({ timeout: 30_000 });
+    await expect(entry).toHaveAttribute("data-state", /populated|playing/, {
+      timeout: 30_000,
     });
-    await expect(inlineEntry).toBeVisible({ timeout: 30_000 });
 
-    // Tap to start playback. Stub provider returns the fixture audio
-    // synchronously so the chip transitions to "playing" within a
-    // few seconds of the click.
-    await inlineEntry.click();
+    // Tap Play → dock appears, audio element gets a src.
+    await entry.click();
 
-    const dockBar = page.getByRole("region", { name: /audio player/i });
-    await expect(dockBar).toBeVisible({ timeout: 30_000 });
+    const dock = dockBarLocator(page);
+    await expect(dock).toBeVisible({ timeout: 15_000 });
 
-    // Confirm playback actually started — the <audio> element should
-    // have a non-empty src, and the dock title shows the chapter.
     const audioSrc = await page
       .locator("audio")
       .first()
       .evaluate((el: HTMLAudioElement) => el.src);
     expect(audioSrc.length).toBeGreaterThan(0);
-
-    // Navigate to Genesis 2 — the audio root is mounted ABOVE the
-    // route outlet (br-audio-011) so the <audio> element should not
-    // unmount.
-    await page.goto("/bible/genesis/2?explanationType=summary");
-    await expect(dockBar).toBeVisible();
-
-    const audioSrcAfterNav = await page
-      .locator("audio")
-      .first()
-      .evaluate((el: HTMLAudioElement) => el.src);
-    // Same element → same src.
-    expect(audioSrcAfterNav).toBe(audioSrc);
-
-    // currentTime should still be advancing (or at minimum non-zero
-    // if playback has had a moment to run).
-    await page.waitForTimeout(1500);
-    const currentTime = await page
-      .locator("audio")
-      .first()
-      .evaluate((el: HTMLAudioElement) => el.currentTime);
-    expect(currentTime).toBeGreaterThan(0);
+    // The presigned MinIO URL contains the stub fixture path.
+    expect(audioSrc).toMatch(/explanation-audio\/\d+/);
   });
 
-  test("full sheet opens from dock body tap", async ({ page }) => {
+  test("full sheet opens from dock, Esc closes it (TASK-016 a11y)", async ({
+    page,
+  }) => {
     await page.goto("/bible/genesis/1?explanationType=summary");
-    const inlineEntry = page.getByRole("button", {
-      name: /listen|generating/i,
+
+    const entry = inlineEntryLocator(page);
+    await expect(entry).toBeVisible({ timeout: 30_000 });
+    await expect(entry).toHaveAttribute("data-state", /populated|playing/, {
+      timeout: 30_000,
     });
-    await expect(inlineEntry).toBeVisible({ timeout: 30_000 });
-    await inlineEntry.click();
+    await entry.click();
 
-    const dockBar = page.getByRole("region", { name: /audio player/i });
-    await expect(dockBar).toBeVisible({ timeout: 30_000 });
+    const dock = dockBarLocator(page);
+    await expect(dock).toBeVisible({ timeout: 15_000 });
 
-    // Tap the dock body (not its play/close icons) to open full sheet.
-    await page
-      .locator("button", { hasText: /chapter/i })
-      .first()
-      .click();
+    await page.getByRole("button", { name: /open full player/i }).click();
 
     const fullSheet = page.getByRole("dialog", { name: /full audio player/i });
     await expect(fullSheet).toBeVisible();
 
-    // Esc closes it (TASK-016 a11y).
     await page.keyboard.press("Escape");
     await expect(fullSheet).toBeHidden();
   });
