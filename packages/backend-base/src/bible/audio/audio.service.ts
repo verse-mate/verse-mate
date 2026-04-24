@@ -70,15 +70,34 @@ export interface AudioJobStatusDto {
 
 export class AudioService {
   private readonly repository: AudioRepository;
+  private readonly providerOverride?: TtsProvider;
+  private _cachedProvider?: TtsProvider;
 
   constructor(
     private readonly db: db,
     private readonly storage: ObjectStorageService,
-    private readonly provider: TtsProvider = createTtsProvider(),
+    provider?: TtsProvider,
     private readonly queue: Queue<AudioGenerationJobData> = audioGenerationQueue,
     repository?: AudioRepository,
   ) {
+    this.providerOverride = provider;
     this.repository = repository ?? new AudioRepository(db);
+  }
+
+  /**
+   * Lazy provider accessor. Holding a live OpenAI client inside Elysia's
+   * plugin state triggers a boot hang on Bun (the plugin chain never
+   * continues to the next `.use(...)`). Deferring construction until
+   * the first request keeps plugin init free of the SDK instance and
+   * matches real access patterns — only the stub short-circuit inside
+   * `getOrQueueAudio` and the worker's synthesis path need a provider.
+   * Tests inject a provider explicitly (third constructor arg) and
+   * bypass the factory.
+   */
+  private get provider(): TtsProvider {
+    if (this.providerOverride) return this.providerOverride;
+    this._cachedProvider ??= createTtsProvider();
+    return this._cachedProvider;
   }
 
   async getOrQueueAudio(params: {
