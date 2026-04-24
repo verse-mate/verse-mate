@@ -13,8 +13,20 @@
  * a track is loaded; the store's $currentTrack + $playbackState atoms
  * drive when the hook is active.
  */
+import { getAccessToken } from "backend-api";
+import { $env } from "frontend-envs";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "../utils/use-store";
+
+/** Same Bearer-injection pattern as useExplanationAudio. */
+function attachAuthHeader(init?: RequestInit): RequestInit {
+  const token = getAccessToken();
+  if (!token) return init ?? {};
+  const headers = new Headers(init?.headers);
+  if (!headers.has("Authorization"))
+    headers.set("Authorization", `Bearer ${token}`);
+  return { ...init, headers };
+}
 import {
   $currentTrack,
   $elapsedSeconds,
@@ -63,7 +75,7 @@ export function useAudioProgress(
     sendBeaconFn = typeof navigator !== "undefined" && navigator.sendBeacon
       ? navigator.sendBeacon.bind(navigator)
       : undefined,
-    baseUrl = "/api",
+    baseUrl = $env.get().apiUrl,
     saveIntervalMs = 15_000,
     disabled = false,
   } = args;
@@ -87,7 +99,10 @@ export function useAudioProgress(
 
     let cancelled = false;
     setIsLoading(true);
-    fetchFn(endpoint(baseUrl, explanationId), { credentials: "include" })
+    fetchFn(
+      endpoint(baseUrl, explanationId),
+      attachAuthHeader({ credentials: "include" }),
+    )
       .then(async (res) => {
         if (cancelled) return;
         if (res.status === 404) {
@@ -119,16 +134,19 @@ export function useAudioProgress(
       const currentTrack = $currentTrack.get();
       if (!currentTrack) return;
       const elapsed = $elapsedSeconds.get();
-      fetchFn(endpoint(baseUrl, currentTrack.explanation_id), {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          position_seconds: elapsed,
-          duration_seconds: currentTrack.duration_seconds,
-          reason: "pause" as SaveReason,
+      fetchFn(
+        endpoint(baseUrl, currentTrack.explanation_id),
+        attachAuthHeader({
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            position_seconds: elapsed,
+            duration_seconds: currentTrack.duration_seconds,
+            reason: "pause" as SaveReason,
+          }),
         }),
-      }).catch(() => {});
+      ).catch(() => {});
     }, saveIntervalMs);
     return () => window.clearInterval(interval);
   }, [playbackState, track, fetchFn, baseUrl, disabled, saveIntervalMs]);
@@ -140,28 +158,34 @@ export function useAudioProgress(
     prevStateRef.current = playbackState;
     if (disabled || !track || !fetchFn) return;
     if (prev === "playing" && playbackState === "paused") {
-      fetchFn(endpoint(baseUrl, track.explanation_id), {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          position_seconds: $elapsedSeconds.get(),
-          duration_seconds: track.duration_seconds,
-          reason: "pause" as SaveReason,
+      fetchFn(
+        endpoint(baseUrl, track.explanation_id),
+        attachAuthHeader({
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            position_seconds: $elapsedSeconds.get(),
+            duration_seconds: track.duration_seconds,
+            reason: "pause" as SaveReason,
+          }),
         }),
-      }).catch(() => {});
+      ).catch(() => {});
     }
     if (playbackState === "ended") {
-      fetchFn(endpoint(baseUrl, track.explanation_id), {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          position_seconds: $elapsedSeconds.get(),
-          duration_seconds: track.duration_seconds,
-          reason: "complete" as SaveReason,
+      fetchFn(
+        endpoint(baseUrl, track.explanation_id),
+        attachAuthHeader({
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            position_seconds: $elapsedSeconds.get(),
+            duration_seconds: track.duration_seconds,
+            reason: "complete" as SaveReason,
+          }),
         }),
-      }).catch(() => {});
+      ).catch(() => {});
     }
   }, [playbackState, track, fetchFn, baseUrl, disabled]);
 

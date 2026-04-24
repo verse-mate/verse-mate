@@ -64,7 +64,10 @@
   padding: var(--size-3) var(--size-4);
   background: var(--color-surface, var(--surface-1));
   border-top: 1px solid var(--color-border, var(--gray-4));
-  z-index: var(--layer-3, 40);
+
+  /* Sit above the Bible reader's split-view content (z-index 1000)
+     so the dock stays clickable when a chapter is open. */
+  z-index: 1001;
 }
 
 .dockInner {
@@ -139,7 +142,9 @@
   position: fixed;
   inset: 0;
   background: var(--color-surface, var(--surface-1));
-  z-index: var(--layer-4, 50);
+
+  /* Above the dock (1001) + the split-view content (1000). */
+  z-index: 1002;
   display: flex;
   flex-direction: column;
   padding: var(--size-6) var(--size-4);

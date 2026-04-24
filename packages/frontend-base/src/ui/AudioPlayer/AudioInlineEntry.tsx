@@ -48,6 +48,7 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
         type="button"
         className={styles.inlineEntry}
         data-state="error"
+        data-testid="audio-inline-entry"
         onClick={() =>
           queryClient.invalidateQueries({
             queryKey: [
@@ -71,6 +72,7 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
       <div
         className={styles.inlineEntry}
         data-state="loading"
+        data-testid="audio-inline-entry"
         aria-live="polite"
       >
         <span className={styles.spinner} aria-hidden="true" />
@@ -109,6 +111,7 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
       type="button"
       className={styles.inlineEntry}
       data-state={playingThis ? "playing" : "populated"}
+      data-testid="audio-inline-entry"
       onClick={startTrack}
     >
       <Play size={16} aria-hidden="true" />
