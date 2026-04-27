@@ -4,6 +4,7 @@ import type { Job } from "bullmq";
 import { db } from "database";
 import OpenAI from "openai";
 import { BatchOperationService } from "../../admin/services/batch-operations.service";
+import { replaceExplanationWithAudioHook } from "../../bible/audio/audio-regen-hook";
 import { stitchBylineChunks } from "../../shared/byline-chunking";
 import {
   BATCH_MONITORING_QUEUE,
@@ -540,33 +541,15 @@ export const batchMonitoringConsumer = async (job: Job) => {
                 ? existingExplanation.version + 1
                 : 1;
 
-              await db
-                .getOrCreateConnection()
-                .transaction()
-                .execute(async (trx) => {
-                  // Deactivate all existing versions of this specific explanation
-                  await trx
-                    .updateTable("explanations")
-                    .set({ is_active: false })
-                    .where("chapter_id", "=", chapter.chapter_id)
-                    .where("type", "=", explanationType as any)
-                    .where("language_code", "=", version.language_code)
-                    .execute();
-
-                  // Insert the new, active version
-                  await trx
-                    .insertInto("explanations")
-                    .values({
-                      type: explanationType as any,
-                      explanation: explanationContent,
-                      chapter_id: chapter.chapter_id,
-                      language_code: version.language_code,
-                      version: nextVersion,
-                      is_active: true,
-                      created_at: new Date(),
-                    })
-                    .execute();
-                });
+              // TASK-003: replacement + audio stale-mark happen atomically;
+              // eager regen jobs are enqueued post-commit.
+              await replaceExplanationWithAudioHook({
+                chapter_id: chapter.chapter_id,
+                type: explanationType as any,
+                language_code: version.language_code,
+                new_explanation: explanationContent,
+                version: nextVersion,
+              });
 
               successfulExplanations++;
               if (batchJob.book_id) {
@@ -646,31 +629,15 @@ export const batchMonitoringConsumer = async (job: Job) => {
               ? existingExplanation.version + 1
               : 1;
 
-            await db
-              .getOrCreateConnection()
-              .transaction()
-              .execute(async (trx) => {
-                await trx
-                  .updateTable("explanations")
-                  .set({ is_active: false })
-                  .where("chapter_id", "=", chapter.chapter_id)
-                  .where("type", "=", "byline" as any)
-                  .where("language_code", "=", version.language_code)
-                  .execute();
-
-                await trx
-                  .insertInto("explanations")
-                  .values({
-                    type: "byline" as any,
-                    explanation: stitchedText,
-                    chapter_id: chapter.chapter_id,
-                    language_code: version.language_code,
-                    version: nextVersion,
-                    is_active: true,
-                    created_at: new Date(),
-                  })
-                  .execute();
-              });
+            // TASK-003: replacement + audio stale-mark happen atomically;
+            // eager regen jobs are enqueued post-commit.
+            await replaceExplanationWithAudioHook({
+              chapter_id: chapter.chapter_id,
+              type: "byline" as any,
+              language_code: version.language_code,
+              new_explanation: stitchedText,
+              version: nextVersion,
+            });
 
             successfulExplanations++;
             if (batchJob.book_id) {

@@ -58,16 +58,51 @@ model explanation_ratings {
 }
 
 model explanations {
-  explanation_id      Int                   @id @default(autoincrement())
-  type                explanation_type_enum
-  explanation         String
-  chapter_id          Int
-  version_id          String                @db.Uuid
-  explanation_ratings explanation_ratings[]
-  chapters            chapters              @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
-  bible_versions      bible_versions        @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  explanation_id             Int                          @id @default(autoincrement())
+  type                       explanation_type_enum
+  explanation                String
+  chapter_id                 Int
+  version_id                 String                       @db.Uuid
+  explanation_ratings        explanation_ratings[]
+  explanation_audios         explanation_audios[]
+  explanation_audio_progress explanation_audio_progress[]
+  chapters                   chapters                     @relation(fields: [chapter_id], references: [chapter_id], onDelete: Cascade, onUpdate: NoAction)
+  bible_versions             bible_versions               @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([chapter_id, type, version_id], map: "idx_explanations_chap_type_version")
+}
+
+model explanation_audios {
+  audio_id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  explanation_id   Int
+  voice            String       @db.VarChar(50)
+  language_code    String       @db.VarChar(10)
+  storage_key      String
+  duration_seconds Decimal      @db.Decimal(8, 2)
+  character_count  Int
+  content_hash     String       @db.VarChar(64)
+  tts_provider     String       @db.VarChar(50)
+  tts_model        String       @db.VarChar(100)
+  is_stale         Boolean      @default(false)
+  generated_at     DateTime     @default(now()) @db.Timestamp(6)
+  explanations     explanations @relation(fields: [explanation_id], references: [explanation_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([explanation_id, voice, language_code], map: "idx_explanation_audios_variant")
+  @@index([is_stale, generated_at], map: "idx_explanation_audios_stale_generated")
+}
+
+model explanation_audio_progress {
+  progress_id      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String       @db.Uuid
+  explanation_id   Int
+  position_seconds Decimal      @db.Decimal(8, 2)
+  duration_seconds Decimal      @db.Decimal(8, 2)
+  updated_at       DateTime     @default(now()) @db.Timestamp(6)
+  user             user         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  explanations     explanations @relation(fields: [explanation_id], references: [explanation_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, explanation_id], map: "idx_explanation_audio_progress_user_explanation")
+  @@index([user_id, updated_at], map: "idx_explanation_audio_progress_user_updated")
 }
 
 model favorites {
@@ -138,6 +173,7 @@ model user {
   bible_versions             bible_versions?              @relation(fields: [preferred_bible_version], references: [version_key], onDelete: NoAction, onUpdate: NoAction)
   user_progress              user_progress[]
   user_recently_viewed_books user_recently_viewed_books[]
+  explanation_audio_progress explanation_audio_progress[]
 
   @@index([preferred_language], map: "idx_user_language")
 }

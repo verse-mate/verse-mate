@@ -15,6 +15,7 @@ import { StandardErrorResponses } from "../common/response-schemas";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { TopicService } from "../topics/services/topic.service";
+import adminAudioPlugin from "./admin-audio.plugin";
 import {
   AdminStatusUpdateSchema,
   BatchCancelSchema,
@@ -1296,6 +1297,7 @@ const plugin = new Elysia()
             )
 
             .use(adminTopicPlugin)
+            .use(adminAudioPlugin)
             // Auto-highlight admin endpoints
             .post(
               "/batch-auto-highlights",

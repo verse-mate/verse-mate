@@ -1,5 +1,21 @@
 import type { cache } from "../shared/shared.plugin";
-import type { OfflineManifest, OfflineRepository } from "./offline.repository";
+import type { ObjectStorageService } from "../shared/storage/storage.service";
+import type {
+  CommentaryData,
+  OfflineManifest,
+  OfflineRepository,
+} from "./offline.repository";
+
+export interface OfflineCommentaryEntry extends Omit<CommentaryData, "audios"> {
+  audios: Array<{
+    explanation_id: number;
+    voice: string;
+    language_code: string;
+    content_hash: string;
+    duration_seconds: number;
+    audio_url: string;
+  }>;
+}
 
 const MANIFEST_CACHE_KEY = "offline:manifest";
 const MANIFEST_CACHE_TTL = 300; // 5 minutes
@@ -8,6 +24,7 @@ export class OfflineService {
   constructor(
     private readonly offlineRepository: OfflineRepository,
     private readonly cache: cache,
+    private readonly storage?: ObjectStorageService,
   ) {}
 
   /**
@@ -63,10 +80,43 @@ export class OfflineService {
   }
 
   /**
-   * Get all commentaries for a language
+   * Get all commentaries for a language, including presigned audio URLs
+   * for every non-stale variant (TASK-010). Each request regenerates the
+   * URLs; clients cache the blobs by content_hash, not by URL.
    */
-  async getCommentaryData(languageCode: string) {
-    return this.offlineRepository.getAllExplanations(languageCode);
+  async getCommentaryData(
+    languageCode: string,
+  ): Promise<OfflineCommentaryEntry[]> {
+    const explanations =
+      await this.offlineRepository.getAllExplanations(languageCode);
+    return Promise.all(
+      explanations.map(async (e) => {
+        const audios = e.audios ?? [];
+        const withUrls = await Promise.all(
+          audios.map(async (a) => ({
+            explanation_id: a.explanation_id,
+            voice: a.voice,
+            language_code: a.language_code,
+            content_hash: a.content_hash,
+            duration_seconds: a.duration_seconds,
+            audio_url: this.storage
+              ? await this.storage.getGlobalObjectUrl({ key: a.storage_key })
+              : "",
+          })),
+        );
+        return {
+          explanation_id: e.explanation_id,
+          book_id: e.book_id,
+          chapter_number: e.chapter_number,
+          verse_start: e.verse_start,
+          verse_end: e.verse_end,
+          type: e.type,
+          explanation: e.explanation,
+          language_code: e.language_code,
+          audios: withUrls,
+        };
+      }),
+    );
   }
 
   /**
