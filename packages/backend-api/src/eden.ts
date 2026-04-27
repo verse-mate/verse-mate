@@ -2,7 +2,12 @@ import { treaty } from "@elysiajs/eden";
 import type { App } from "backend";
 import { $env } from "frontend-envs";
 
-const getAccessToken = (): string | null => {
+/**
+ * Reads the current access-token cookie. Exported so raw-fetch hooks
+ * (e.g. the audio poll — br-audio-017 exception) can set the same
+ * Authorization header that the Eden fetcher attaches.
+ */
+export const getAccessToken = (): string | null => {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/(?:^|;\s*)accessToken=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : null;

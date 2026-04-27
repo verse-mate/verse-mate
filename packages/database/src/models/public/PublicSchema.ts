@@ -9,6 +9,8 @@ import type { default as BookIntroductionsTable } from "./BookIntroductions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
 import type { default as ConversationsTable } from "./Conversations";
+import type { default as ExplanationAudioProgressTable } from "./ExplanationAudioProgress";
+import type { default as ExplanationAudiosTable } from "./ExplanationAudios";
 import type { default as ExplanationLanguagesTable } from "./ExplanationLanguages";
 import type { default as ExplanationRatingsTable } from "./ExplanationRatings";
 import type { default as ExplanationsTable } from "./Explanations";
@@ -92,6 +94,8 @@ export default interface PublicSchema {
 
   notes: NotesTable;
 
+  refresh_tokens: RefreshTokensTable;
+
   highlight_themes: HighlightThemesTable;
 
   auto_highlights: AutoHighlightsTable;
@@ -99,8 +103,6 @@ export default interface PublicSchema {
   user_theme_preferences: UserThemePreferencesTable;
 
   auto_highlight_settings: AutoHighlightSettingsTable;
-
-  refresh_tokens: RefreshTokensTable;
 
   user_sso_accounts: UserSsoAccountsTable;
 
@@ -113,4 +115,8 @@ export default interface PublicSchema {
   support_messages: SupportMessagesTable;
 
   translation_templates: TranslationTemplatesTable;
+
+  explanation_audios: ExplanationAudiosTable;
+
+  explanation_audio_progress: ExplanationAudioProgressTable;
 }

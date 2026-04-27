@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "../../Button/Button";
 import { HomeIcon } from "../../Icons";
+import { AudioManagement } from "../AudioManagement";
 import { AutoHighlights } from "../AutoHighlights";
 import { BatchOperations } from "../BatchOperations/BatchOperations";
 import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration";
@@ -20,7 +21,8 @@ type AdminSection =
   | "playground"
   | "explanations"
   | "topics"
-  | "auto-highlights";
+  | "auto-highlights"
+  | "audio";
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("batch");
@@ -43,6 +45,8 @@ export const AdminDashboard = () => {
         return <TopicsAdmin />;
       case "auto-highlights":
         return <AutoHighlights />;
+      case "audio":
+        return <AudioManagement />;
       default:
         return <BatchOperations />;
     }
@@ -91,6 +95,12 @@ export const AdminDashboard = () => {
               onClick={() => setActiveSection("auto-highlights")}
             >
               Auto-Highlights
+            </Button>
+            <Button
+              variant={activeSection === "audio" ? "contained" : "outlined"}
+              onClick={() => setActiveSection("audio")}
+            >
+              Audio
             </Button>
             <Button
               variant={activeSection === "users" ? "contained" : "outlined"}

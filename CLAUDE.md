@@ -142,6 +142,33 @@ const result = await db.selectFrom('users').where('id', '=', userId).selectAll()
 - Uses BullMQ with Valkey for job processing
 - Example: `batch-processing.queue.ts` and `batch-processing.worker.ts`
 
+### Frontend state — nanostores
+We don't use `@nanostores/react`. Subscribe to atoms via the local
+helper:
+
+```ts
+import { useStore } from '../utils/use-store'
+```
+
+The helper is in `packages/frontend-base/src/utils/use-store.ts` and
+mirrors `@nanostores/react`'s API via `useSyncExternalStore`.
+
+### useEffect deps on nullable objects
+Biome's react-hooks rule rejects `[obj?.field]` as "more specific than
+its captures". Two options:
+
+```ts
+// Option A: depend on the object; effect re-runs on identity change.
+useEffect(() => { ... }, [track, otherDep]);
+
+// Option B: memoize the derived value above the effect.
+const explanationId = track?.explanation_id;
+useEffect(() => { ... }, [explanationId, otherDep]);
+```
+
+Don't reach for `// biome-ignore` — the lint rule catches a real
+staleness class of bug.
+
 ## Docker and Local Development
 
 ### Docker Services

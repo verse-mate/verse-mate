@@ -3,6 +3,7 @@ import { authDerive, authGuard } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
 import { NotFoundError, UnauthorizedError } from "../common/errors";
 import shared from "../shared/shared.plugin";
+import { ObjectStorageService } from "../shared/storage/storage.service";
 import { OfflineRepository } from "./offline.repository";
 import { OfflineService } from "./offline.service";
 import { OfflineManifestSchema } from "./schemas/offline-response.schema";
@@ -14,7 +15,11 @@ const plugin = new Elysia()
     const offlineRepository = new OfflineRepository(state.db);
     return {
       ...state,
-      offlineService: new OfflineService(offlineRepository, state.cache),
+      offlineService: new OfflineService(
+        offlineRepository,
+        state.cache,
+        new ObjectStorageService(),
+      ),
     };
   })
   .group("/offline", (app) =>

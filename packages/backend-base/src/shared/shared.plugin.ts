@@ -144,6 +144,13 @@ const setup = new Elysia({ name: "shared" })
     },
   }));
 
+import { audioCleanupQueue } from "../bible/audio/audio-cleanup.queue";
+import {
+  audioCleanupWorker,
+  registerAudioCleanupCron,
+} from "../bible/audio/audio-cleanup.worker";
+import { audioGenerationQueue } from "../bible/audio/audio-generation.queue";
+import { audioGenerationWorker } from "../bible/audio/audio-generation.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
 
@@ -163,6 +170,30 @@ setup.onStart(async () => {
     console.log("[QUEUE] Processing worker started successfully");
   } else {
     console.log("[QUEUE] Processing worker already running");
+  }
+
+  if (!audioGenerationWorker.isRunning()) {
+    console.log(
+      "[QUEUE] Audio generation worker not running, starting it now...",
+    );
+    audioGenerationWorker.run();
+    console.log("[QUEUE] Audio generation worker started successfully");
+  } else {
+    console.log("[QUEUE] Audio generation worker already running");
+  }
+
+  if (!audioCleanupWorker.isRunning()) {
+    console.log("[QUEUE] Audio cleanup worker not running, starting it now...");
+    audioCleanupWorker.run();
+    console.log("[QUEUE] Audio cleanup worker started successfully");
+  } else {
+    console.log("[QUEUE] Audio cleanup worker already running");
+  }
+
+  try {
+    await registerAudioCleanupCron();
+  } catch (error) {
+    console.error("[QUEUE] Failed to register audio cleanup cron:", error);
   }
 
   // Check for existing active batches and start monitoring them
@@ -224,6 +255,10 @@ setup.onStop(async () => {
   batchMonitoringWorker.close();
   batchProcessingQueue.close();
   batchProcessingWorker.close();
+  audioGenerationQueue.close();
+  audioGenerationWorker.close();
+  audioCleanupQueue.close();
+  audioCleanupWorker.close();
 });
 
 export default setup;

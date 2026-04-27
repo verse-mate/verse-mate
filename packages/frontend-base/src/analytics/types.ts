@@ -40,6 +40,54 @@ export enum AnalyticsEvent {
   SIGNUP_COMPLETED = "SIGNUP_COMPLETED",
   LOGIN_COMPLETED = "LOGIN_COMPLETED",
   LOGOUT = "LOGOUT",
+
+  // Explanation Audio Events (feat-explanation-audio)
+  AUDIO_PLAYBACK_STARTED = "AUDIO_PLAYBACK_STARTED",
+  AUDIO_PLAYBACK_PAUSED = "AUDIO_PLAYBACK_PAUSED",
+  AUDIO_PLAYBACK_COMPLETED = "AUDIO_PLAYBACK_COMPLETED",
+  AUDIO_PLAYBACK_SEEK = "AUDIO_PLAYBACK_SEEK",
+  AUDIO_SPEED_CHANGED = "AUDIO_SPEED_CHANGED",
+}
+
+// ============================================================================
+// Explanation audio event properties (feat-explanation-audio)
+// ============================================================================
+export interface AudioPlaybackStartedProperties {
+  explanationId: number;
+  explanationType: string;
+  bookId: number;
+  chapterNumber: number;
+  voice: string;
+  languageCode: string;
+  isResume: boolean;
+  resumePositionSeconds?: number;
+  ttsProvider: string;
+}
+
+export interface AudioPlaybackPausedProperties {
+  explanationId: number;
+  positionSeconds: number;
+  durationSeconds: number;
+  reason: "user" | "background" | "navigation";
+}
+
+export interface AudioPlaybackCompletedProperties {
+  explanationId: number;
+  durationSeconds: number;
+  completedBy: "natural" | "skipped";
+}
+
+export interface AudioPlaybackSeekProperties {
+  explanationId: number;
+  fromSeconds: number;
+  toSeconds: number;
+  direction: "forward" | "backward";
+}
+
+export interface AudioSpeedChangedProperties {
+  explanationId: number;
+  fromSpeed: number;
+  toSpeed: number;
 }
 
 // ============================================================================
@@ -222,6 +270,11 @@ export interface EventProperties {
   [AnalyticsEvent.NOTE_EDITED]: NoteEditedProperties;
   [AnalyticsEvent.NOTE_DELETED]: NoteDeletedProperties;
   [AnalyticsEvent.DICTIONARY_LOOKUP]: DictionaryLookupProperties;
+  [AnalyticsEvent.AUDIO_PLAYBACK_STARTED]: AudioPlaybackStartedProperties;
+  [AnalyticsEvent.AUDIO_PLAYBACK_PAUSED]: AudioPlaybackPausedProperties;
+  [AnalyticsEvent.AUDIO_PLAYBACK_COMPLETED]: AudioPlaybackCompletedProperties;
+  [AnalyticsEvent.AUDIO_PLAYBACK_SEEK]: AudioPlaybackSeekProperties;
+  [AnalyticsEvent.AUDIO_SPEED_CHANGED]: AudioSpeedChangedProperties;
   [AnalyticsEvent.AUTO_HIGHLIGHT_SETTING_CHANGED]: AutoHighlightSettingChangedProperties;
   [AnalyticsEvent.BIBLE_VERSION_CHANGED]: BibleVersionChangedProperties;
   [AnalyticsEvent.CHAPTER_SHARED]: ChapterSharedProperties;

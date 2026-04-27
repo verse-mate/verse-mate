@@ -1,0 +1,256 @@
+/* TASK-007 + TASK-008 audio player styles.
+   Uses project design tokens (open-props variables via global.css) —
+   no hardcoded px / hex. Matches the pattern in Badge.module.css. */
+
+/* Inline entry chip shown above the explanation body. */
+.inlineEntry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-2);
+  min-height: var(--size-6); /* 44px target */
+  padding: var(--size-2) var(--size-3);
+  border-radius: var(--radius-2);
+  font-size: var(--font-size-1);
+  border: 1px solid var(--color-border, var(--gray-4));
+  background: var(--color-surface, var(--surface-1));
+  color: var(--color-text, var(--gray-12));
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.inlineEntry:hover {
+  background: var(--color-surface-hover, var(--gray-2));
+}
+
+.inlineEntry[data-state='loading'] {
+  color: var(--color-text-muted, var(--gray-9));
+  cursor: progress;
+}
+
+.inlineEntry[data-state='error'] {
+  color: var(--color-danger, var(--red-9));
+  border-color: var(--color-danger, var(--red-9));
+}
+
+.inlineEntry[data-state='playing'] {
+  color: var(--color-primary, var(--indigo-9));
+  border-color: var(--color-primary, var(--indigo-9));
+}
+
+.spinner {
+  display: inline-block;
+  width: var(--size-3);
+  height: var(--size-3);
+  border: 2px solid var(--color-border, var(--gray-4));
+  border-top-color: var(--color-primary, var(--indigo-9));
+  border-radius: var(--radius-round);
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Persistent dock bar at the bottom of the viewport. */
+.dockBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: var(--size-3) var(--size-4);
+  background: var(--color-surface, var(--surface-1));
+  border-top: 1px solid var(--color-border, var(--gray-4));
+
+  /* Sit above the Bible reader's split-view content (z-index 1000)
+     so the dock stays clickable when a chapter is open. */
+  z-index: 1001;
+}
+
+.dockInner {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  align-items: center;
+  gap: var(--size-3);
+}
+
+.dockBody {
+  flex: 1;
+  text-align: left;
+  min-height: var(--size-6);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dockTitle {
+  font-size: var(--font-size-1);
+  font-weight: var(--font-weight-6, 600);
+}
+
+.progressTrack {
+  height: var(--size-1);
+  background: var(--color-border, var(--gray-4));
+  border-radius: var(--radius-1);
+  margin-top: var(--size-1);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--color-primary, var(--indigo-9));
+}
+
+.dockTimes {
+  font-size: var(--font-size-0, 0.75rem);
+  color: var(--color-text-muted, var(--gray-9));
+  margin-top: var(--size-1);
+}
+
+.iconButton {
+  min-width: var(--size-6);
+  min-height: var(--size-6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-2);
+}
+
+.iconButton:hover {
+  background: var(--color-surface-hover, var(--gray-2));
+}
+
+/* Responsive: per spec D3, inline entry is full-width on mobile,
+   680px column on desktop.  */
+@media (min-width: 48em) {
+  .inlineEntry {
+    max-width: 680px;
+  }
+}
+
+/* Full-sheet dialog. */
+.fullSheet {
+  position: fixed;
+  inset: 0;
+  background: var(--color-surface, var(--surface-1));
+
+  /* Above the dock (1001) + the split-view content (1000). */
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  padding: var(--size-6) var(--size-4);
+}
+
+.fullHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fullMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--size-5);
+  align-items: center;
+}
+
+.fullTitleBlock {
+  text-align: center;
+}
+
+.fullType {
+  font-size: var(--font-size-3, 1.25rem);
+  font-weight: var(--font-weight-6, 600);
+}
+
+.fullChapter {
+  color: var(--color-text-muted, var(--gray-9));
+  font-size: var(--font-size-1);
+}
+
+.scrubber {
+  width: 100%;
+  max-width: 480px;
+}
+
+.controlsRow {
+  display: flex;
+  gap: var(--size-5);
+  align-items: center;
+}
+
+.playLarge {
+  min-height: var(--size-8, 60px);
+  min-width: var(--size-8, 60px);
+}
+
+.speedRow {
+  display: flex;
+  gap: var(--size-2);
+}
+
+.speedButton {
+  min-height: var(--size-6);
+  min-width: var(--size-6);
+  border-radius: var(--radius-2);
+  background: transparent;
+  border: 1px solid var(--color-border, var(--gray-4));
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--font-size-1);
+}
+
+.speedButton[aria-pressed='true'] {
+  background: var(--color-primary, var(--indigo-9));
+  color: var(--color-on-primary, var(--gray-0));
+  font-weight: var(--font-weight-7, 700);
+}
+
+.timeCounter {
+  color: var(--color-text-muted, var(--gray-9));
+  font-size: var(--font-size-1);
+}
+
+.goToSource {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-1);
+  min-height: var(--size-6);
+  color: var(--color-primary, var(--indigo-9));
+}
+
+/* Resume chip shown beside Play. */
+.resumeChip {
+  display: inline-flex;
+  gap: var(--size-2);
+  align-items: center;
+}
+
+.resumeButton,
+.restartButton {
+  min-height: var(--size-6);
+  padding: var(--size-1) var(--size-3);
+  border-radius: var(--radius-2);
+  background: var(--color-surface, var(--surface-1));
+  border: 1px solid var(--color-border, var(--gray-4));
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--font-size-1);
+}
+
+.resumeButton {
+  background: var(--color-primary, var(--indigo-9));
+  color: var(--color-on-primary, var(--gray-0));
+  border-color: var(--color-primary, var(--indigo-9));
+}
