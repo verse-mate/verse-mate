@@ -52,7 +52,14 @@ export class OpenAiTtsProvider implements TtsProvider {
     // buffers of each chunk's response produces a valid, playable MP3
     // for the whole text. There can be a barely-perceptible click at
     // the seam, which we accept for narration.
-    const audioBuffers: Buffer[] = [];
+    //
+    // Typed as Uint8Array[] (not Buffer[]) so Buffer.concat's overload
+    // resolves cleanly under both backend (Node) and frontend (DOM)
+    // tsconfigs — the `apps/frontend-next` typecheck pulls in
+    // `backend-base` and trips on the `ArrayBufferLike` vs `ArrayBuffer`
+    // mismatch when the array is declared as Buffer[]. Buffer extends
+    // Uint8Array so the runtime is identical.
+    const audioBuffers: Uint8Array[] = [];
     for (const chunk of chunks) {
       const response = await this.client.audio.speech.create({
         model: this.model,
@@ -61,7 +68,7 @@ export class OpenAiTtsProvider implements TtsProvider {
         response_format: input.format,
       });
       const arrayBuffer = await response.arrayBuffer();
-      audioBuffers.push(Buffer.from(arrayBuffer));
+      audioBuffers.push(new Uint8Array(arrayBuffer));
     }
     const audio = Buffer.concat(audioBuffers);
 
