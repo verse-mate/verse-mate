@@ -147,9 +147,27 @@ export class AudioService {
     }
 
     // br-audio-006: dedup via deterministic job id.
+    //
+    // Caveat: BullMQ's `queue.add({ jobId })` is a no-op when a job with
+    // that id already exists in the queue, regardless of state. Combined
+    // with `removeOnFail: 50` (we keep the last 50 failed jobs for
+    // observability), a single failed job permanently blocks retries on
+    // the same (explanation_id, voice, language) variant — every fresh
+    // request gets the cached failed job back, the chip flips to error,
+    // and the user can never recover even after the underlying problem
+    // (e.g., transient OpenAI 5xx) clears. Observed on prod for Genesis
+    // 1 (explanation 10170) on 2026-04-28: any guest hitting the chip
+    // saw "Audio unavailable" for hours.
+    //
+    // Remove the failed job before re-enqueue so the new request gets a
+    // fresh attempt. Completed jobs remain dedup'd as before; in-flight
+    // jobs (waiting/active/delayed) still short-circuit.
     const data: AudioGenerationJobData = variantKey;
     const jobId = audioGenerationJobId(data);
     const existing = await this.queue.getJob(jobId);
+    if (existing && (await existing.isFailed())) {
+      await existing.remove();
+    }
     const stillInFlight =
       existing &&
       !(await existing.isCompleted()) &&
@@ -247,6 +265,10 @@ export class AudioService {
       };
       const jobId = audioGenerationJobId(data);
       const existing = await this.queue.getJob(jobId);
+      // See getOrQueueAudio for why we drop failed jobs before re-add.
+      if (existing && (await existing.isFailed())) {
+        await existing.remove();
+      }
       const stillInFlight =
         existing &&
         !(await existing.isCompleted()) &&
