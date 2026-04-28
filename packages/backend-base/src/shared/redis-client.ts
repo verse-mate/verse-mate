@@ -12,11 +12,16 @@ class RedisClient {
     const password = url.password || undefined;
     const useSSL = isSSLUrl(redisUrl);
 
-    // For SSL connections, use separate socket config to handle self-signed certs
+    // For SSL connections, use separate socket config to handle self-signed certs.
+    // `keepAlive: 30_000` keeps the connection alive against DigitalOcean's
+    // 5-minute idle TCP timeout; without it the cache client cycles
+    // through "Socket closed unexpectedly → reconnect" every 5 minutes
+    // and the in-flight commands during the reset throw transient errors.
     const socketConfig = useSSL
       ? {
           tls: true as const,
           rejectUnauthorized: false,
+          keepAlive: 30_000,
           reconnectStrategy: (retries: number) => {
             if (retries > 10) {
               console.log(
@@ -29,6 +34,7 @@ class RedisClient {
           },
         }
       : {
+          keepAlive: 30_000,
           reconnectStrategy: (retries: number) => {
             if (retries > 10) {
               console.log(
