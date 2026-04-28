@@ -18,6 +18,14 @@ export const bullmqRedisConnection = new IORedis(redisUrl, {
   },
   enableReadyCheck: true,
   lazyConnect: true,
+  // DigitalOcean Managed Redis (and most cloud LBs) reap idle TCP
+  // sockets after ~5 minutes. BullMQ workers hold long-lived blocking
+  // connections (BRPOPLPUSH) that look idle to the LB; without
+  // OS-level TCP keepalives, the worker's socket gets closed mid-job
+  // and any active job is left stuck in `active` state until manual
+  // intervention. Sending a keepalive every 30s keeps the connection
+  // healthy.
+  keepAlive: 30_000,
   reconnectOnError: (err: Error) => {
     const targetError = "READONLY";
     if ((err as any).message?.includes?.(targetError)) {
