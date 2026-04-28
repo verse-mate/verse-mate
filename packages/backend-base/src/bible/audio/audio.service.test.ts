@@ -160,6 +160,11 @@ class FakeJob {
   async isFailed() {
     return this.state === "failed";
   }
+
+  // Mirror BullMQ's Job.remove(): drops the entry from the queue so a
+  // future `queue.add` with the same jobId is allowed to insert a
+  // brand-new job. The owning FakeQueue calls back via `_remove`.
+  remove?: () => Promise<void>;
 }
 
 class FakeQueue {
@@ -171,7 +176,15 @@ class FakeQueue {
   }[] = [];
 
   async getJob(jobId: string): Promise<FakeJob | undefined> {
-    return this.jobs.get(jobId);
+    const job = this.jobs.get(jobId);
+    if (job) {
+      // Wire `remove()` lazily so each returned job knows how to drop
+      // itself from this queue's map — matching BullMQ's Job.remove().
+      job.remove = async () => {
+        this.jobs.delete(jobId);
+      };
+    }
+    return job;
   }
 
   async add(
@@ -179,6 +192,14 @@ class FakeQueue {
     data: AudioGenerationJobData,
     opts: { jobId: string },
   ): Promise<FakeJob> {
+    // Critical: BullMQ's `Queue.add({ jobId })` is a no-op when a job
+    // with that id already exists in the queue, regardless of state.
+    // The earlier FakeQueue silently overwrote, hiding the prod bug
+    // where a failed deterministic-id job permanently blocks retries.
+    const prior = this.jobs.get(opts.jobId);
+    if (prior) {
+      return prior;
+    }
     this.addCalls.push({ name, data, jobId: opts.jobId });
     const job = new FakeJob(opts.jobId);
     this.jobs.set(opts.jobId, job);
