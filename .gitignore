@@ -197,3 +197,4 @@ FIGMA_MIGRATION_SPEC.md
 # Playwright artifacts
 playwright-report/
 test-results/
+.gstack/
