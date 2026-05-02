@@ -47,18 +47,20 @@ jobs:
           token: ${{ secrets.GH_PAT }}
 
       - name: Calculate and Push Tag
+        env:
+          REF: ${{ github.ref }}
+          EVENT: ${{ github.event_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          BUMP_INPUT: ${{ inputs.bump_type }}
+          MANUAL_VERSION: ${{ inputs.manual_version }}
         run: |
-          REF="${{ github.ref }}"
-          EVENT="${{ github.event_name }}"
-
           echo "Triggered by $EVENT on $REF"
 
           BUMP_TYPE="none"
 
           if [ "$EVENT" = "workflow_dispatch" ]; then
-            BUMP_TYPE="${{ inputs.bump_type }}"
+            BUMP_TYPE="$BUMP_INPUT"
           elif [ "$EVENT" = "push" ]; then
-            COMMIT_MSG="${{ github.event.head_commit.message }}"
             echo "Commit message: $COMMIT_MSG"
 
             if [[ "$COMMIT_MSG" == *"[major]"* ]]; then
@@ -82,7 +84,7 @@ jobs:
 
             VERSION=""
             if [ "$BUMP_TYPE" = "manual" ]; then
-              VERSION="${{ inputs.manual_version }}"
+              VERSION="$MANUAL_VERSION"
             else
               CLEAN_TAG=${LATEST_TAG#v}
               IFS='.' read -r major minor patch <<< "$CLEAN_TAG"
