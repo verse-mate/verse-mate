@@ -14,7 +14,7 @@ export default function GetInvolved() {
         </div>
 
         {/* Group of cards */}
-        <div className="flex w-full max-w-[1200px] flex-col items-start gap-8 p-0 md:gap-12 lg:flex-row lg:gap-16 xl:gap-20">
+        <div className="flex w-full max-w-[1200px] flex-col items-start gap-8 p-0 md:gap-12 lg:flex-row lg:gap-10 xl:gap-14">
           {/* Volunteer */}
           <div className="flex w-full flex-1 flex-col items-center gap-4 p-0 md:gap-6">
             {/* Volunteer Title */}
@@ -47,6 +47,45 @@ export default function GetInvolved() {
                 >
                   <span className="font-inter text-base font-semibold leading-7 text-brand-black md:text-lg md:leading-8 lg:text-xl">
                     Join the Volunteer Team
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Coach */}
+          <div className="flex w-full flex-1 flex-col items-center gap-4 p-0 md:gap-6">
+            {/* Coach Title */}
+            <h2 className="w-full font-merriweather text-3xl font-bold leading-tight text-center text-brand-white md:text-4xl lg:text-5xl lg:leading-[64px]">
+              Coach
+            </h2>
+
+            {/* Content */}
+            <div className={`${styles.cardContent} flex w-full flex-col items-center gap-6 rounded-[30px] pb-12 pt-0 md:gap-8 md:rounded-[40px] md:pb-14 lg:gap-10 lg:rounded-[50px] lg:pb-16`}>
+              {/* Image */}
+              <div className={`${styles.cardImage} ${styles.coachImage} w-full`} />
+
+              {/* Text */}
+              <div className="flex w-full flex-col items-start gap-3 px-4 py-0 md:gap-4 md:px-6">
+                <h3 className="w-full font-inter text-lg font-bold leading-7 text-center text-brand-white md:text-xl md:leading-8 lg:text-2xl">
+                  Are You a Bible Leader?
+                </h3>
+
+                <p className={`${styles.cardDescription} w-full font-inter text-lg font-normal leading-7 text-center text-brand-white md:text-xl md:leading-8 lg:text-2xl`}>
+                  Weekly structured feedback across 11 dimensions that sharpens
+                  your teaching, deepens your small groups, and strengthens your
+                  ministry.
+                </p>
+              </div>
+
+              {/* Button Container */}
+              <div className="flex w-full flex-col items-center justify-center gap-2 px-6 py-0 md:px-12 lg:px-20 xl:px-[100px]">
+                <Link
+                  href="/coach"
+                  className="flex w-full max-w-[360px] flex-row items-center justify-center gap-2 rounded-full bg-brand-tan px-8 py-4 no-underline md:px-10 md:py-5 lg:px-12 lg:py-6"
+                >
+                  <span className="font-inter text-base font-semibold leading-7 text-brand-black md:text-lg md:leading-8 lg:text-xl">
+                    Request Coaching
                   </span>
                 </Link>
               </div>
