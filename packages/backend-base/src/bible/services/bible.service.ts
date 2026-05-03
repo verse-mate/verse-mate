@@ -2,6 +2,7 @@ import type ExplanationTypeEnum from "database/src/models/public/ExplanationType
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { NotFoundError, ValidationError } from "../../common/errors";
+import { resolveLanguageCode, withEnglishFallback } from "../../shared/i18n";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { BookDto } from "../dto/book/book.dto";
@@ -162,16 +163,35 @@ export class BibleService {
       }
     }
 
-    const { explanation } = await this.bibleRepository.getExplanation({
-      book_id,
-      chapter_number,
+    // Per spec feat-i18n br-i18n-002 (D-013) + br-i18n-004 (D-014):
+    //   1) Try the user's language (alias-aware: en ↔ en-US, pt ↔ pt-BR)
+    //   2) Fall back to English with `translated: false` flag if missing
+    const result = await withEnglishFallback(
       language_code,
-      type,
-    });
+      async (lang: string) => {
+        const codes = resolveLanguageCode(lang);
+        // Try each alias form in order of specificity
+        for (const code of codes) {
+          const { explanation } = await this.bibleRepository.getExplanation({
+            book_id,
+            chapter_number,
+            language_code: code,
+            type,
+          });
+          if (explanation?.explanation_id) return explanation;
+        }
+        return null;
+      },
+    );
 
-    if (!explanation?.explanation_id) {
+    if (!result) {
       return null;
     }
+
+    const explanation = result.content;
+    // Attach D-014 translation metadata to the response object
+    (explanation as any).translated = result.translated;
+    (explanation as any).source_language = result.source_language;
 
     if (explanation.explanation) {
       explanation.explanation = await parseAndInjectVerses(
