@@ -32,17 +32,13 @@ type BunS3Client = ReturnType<
 /**
  * Bun-native S3 helper.
  *
- * Per spec feat-integrations br-int-003 (Phase 1 decision D-002): replace
- * @aws-sdk/client-s3 with Bun's built-in S3 client. Smaller dependency surface,
- * faster cold starts, identical S3-compatible behavior against MinIO local +
- * DigitalOcean Spaces production.
+ * Per spec feat-integrations br-int-003 (Phase 1 decision D-002): the
+ * production object-storage path. `ObjectStorageService` delegates to this
+ * helper; @aws-sdk is no longer used. Identical S3-compatible behavior
+ * against MinIO local and DigitalOcean Spaces production.
  *
- * This file is the migration scaffolding. It mirrors the public surface of
- * S3Helper (legacy) so callers can switch import sites incrementally.
- *
- * Migration status: scaffolding ready, unit tests cover put/get/delete/exists.
- * Bucket-level operations (createBucket, putBucketPolicy) deferred since
- * MinIO/Spaces buckets are pre-provisioned at infrastructure level.
+ * Bucket-level provisioning (createBucket, putBucketPolicy) is intentionally
+ * not modeled here — buckets are pre-provisioned at the infrastructure layer.
  */
 export class BunS3Helper {
   private readonly client: BunS3Client;
