@@ -1,8 +1,8 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import { Elysia, t } from "elysia";
-import OpenAI from "openai";
 import { authDerive } from "../auth/auth.utils";
+import { type AiProvider, getAiProvider } from "../shared/ai";
 import { createErrorHandler } from "../common/error-handler";
 import {
   NotFoundError,
@@ -42,10 +42,15 @@ import { AutoHighlightService } from "./services/auto-highlight.service";
 import { BibleService } from "./services/bible.service";
 import { PromptService } from "./services/prompt.service";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_KEY, // This is the default and can be omitted
-});
 const model = "gpt-5-nano";
+
+// Lazy AiProvider singleton — module-level use means we can't construct in
+// the constructor body; eager init would fail in test envs without OPEN_AI_KEY.
+let _ai: AiProvider | null = null;
+function ai(): AiProvider {
+  if (!_ai) _ai = getAiProvider();
+  return _ai;
+}
 
 async function gpt5Text({
   system,
@@ -54,15 +59,15 @@ async function gpt5Text({
   system?: string;
   user: string;
 }) {
-  const response = await openai.responses.create({
+  const response = await ai().responsesCreate({
     model,
-    reasoning: { effort: "medium" },
+    reasoningEffort: "medium",
     instructions: system,
     input: user,
-    max_output_tokens: 20000,
+    maxOutputTokens: 20000,
   });
 
-  return response.output_text ?? "oopsies";
+  return response.outputText || "oopsies";
 }
 
 /**
