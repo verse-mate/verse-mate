@@ -1,4 +1,8 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
+// TODO(D-001): direct OpenAI usage. Migrate to AiProvider abstraction in `../shared/ai`
+// once the abstraction supports OpenAI Responses API + Batch API + Files API. Tracked
+// as follow-up to feat-integrations br-int-001.
+
 import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { NotFoundError } from "../../common/errors";
