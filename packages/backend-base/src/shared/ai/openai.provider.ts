@@ -3,6 +3,8 @@ import type {
   AiChatOptions,
   AiChatResponse,
   AiProvider,
+  AiResponseOptions,
+  AiResponseResult,
 } from "./ai-provider.interface";
 
 /**
@@ -48,6 +50,28 @@ export class OpenAiProvider implements AiProvider {
           totalTokens: completion.usage.total_tokens,
         },
       }),
+    };
+  }
+
+  async responsesCreate(opts: AiResponseOptions): Promise<AiResponseResult> {
+    // biome-ignore lint/suspicious/noExplicitAny: OpenAI Responses API types lag SDK
+    const response = await (this.client as any).responses.create({
+      model: opts.model,
+      ...(opts.instructions !== undefined && {
+        instructions: opts.instructions,
+      }),
+      input: opts.input,
+      ...(opts.reasoningEffort && {
+        reasoning: { effort: opts.reasoningEffort },
+      }),
+      ...(opts.maxOutputTokens !== undefined && {
+        max_output_tokens: opts.maxOutputTokens,
+      }),
+    });
+
+    return {
+      outputText: response.output_text || "",
+      model: response.model || opts.model,
     };
   }
 }
