@@ -1,4 +1,8 @@
 import type { Static } from "elysia";
+// TODO(D-001): direct OpenAI usage. Migrate to AiProvider abstraction in `../shared/ai`
+// once the abstraction supports OpenAI Responses API + Batch API + Files API. Tracked
+// as follow-up to feat-integrations br-int-001.
+
 import OpenAI from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";

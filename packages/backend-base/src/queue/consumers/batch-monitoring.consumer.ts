@@ -2,6 +2,10 @@
 import * as fs from "node:fs";
 import type { Job } from "bullmq";
 import { db } from "database";
+// TODO(D-001): direct OpenAI usage. Migrate to AiProvider abstraction in `../shared/ai`
+// once the abstraction supports OpenAI Responses API + Batch API + Files API. Tracked
+// as follow-up to feat-integrations br-int-001.
+
 import OpenAI from "openai";
 import { BatchOperationService } from "../../admin/services/batch-operations.service";
 import { replaceExplanationWithAudioHook } from "../../bible/audio/audio-regen-hook";
