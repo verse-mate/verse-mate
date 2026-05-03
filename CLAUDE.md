@@ -66,9 +66,21 @@ cd apps/frontend-next && bun build  # Build frontend
 **All public-facing marketing pages go in `apps/website`, not `apps/frontend-next`.**
 
 - `apps/website` → `versemate.org` (marketing, landing pages, `/give`, `/about`, `/coach`, `/privacy`, etc.). Next.js with `output: "export"`, static export served by a Cloudflare Worker. Drop new static HTML into `apps/website/public/<route>/index.html` or add a page in `apps/website/src/pages/`.
-- `apps/frontend-next` → `app.versemate.org` (the logged-in product: Bible reader, chat, coaching reports). This app has the `MyMainPage` chrome wrapper in the root layout; it is NOT the right home for marketing content.
+- `apps/frontend-next` → **`admin.versemate.org` (admin-only — staff content management).** Per [versemate-meta constitution CONST-002 "mobile-first"](../versemate-meta/constitution.md), the canonical user-facing surface is `verse-mate-mobile` (iOS, Android, web export). frontend-next is no longer a user product. New user-facing features go in mobile, NOT here.
 
-If you're unsure, the rule is: "Would this URL make sense on versemate.org?" If yes → `apps/website`.
+  Allowed in `apps/frontend-next`:
+  - `(admin)/admin` — admin dashboard, content management, prompts editor, batch ops
+  - `(auth)` — admin login + SSO callbacks (admins authenticate here)
+  - `(bible)` — read-only Bible preview for admin QA (per spec [feat-admin-bible-preview](../versemate-meta/specs/feat-admin-bible-preview/spec.md))
+  - `topic/[category]/[slug]` — read-only topic preview for admin QA
+
+  **NOT allowed in `apps/frontend-next`** (deprecated, removal pending):
+  - User signup flows (mobile owns signup; admin gets `is_admin = true` via manual SQL per D-014 in feat-auth-platform)
+  - Chat / Q&A UI (Q&A feature removed entirely per D-009)
+  - User input bars / Bible reader composing tools
+  - Anything wrapped by `useChat`, `useConversationManager`, `useInput`, `Chat`, `ConversationHistory`, `InputBar`
+
+If you're unsure, the rule is: "Would this URL make sense on versemate.org?" If yes → `apps/website`. "Would a user (not admin) need this?" If yes → mobile, not frontend-next.
 
 ### Key Technologies
 - **Runtime**: Bun (replaces Node.js, npm, and more)
