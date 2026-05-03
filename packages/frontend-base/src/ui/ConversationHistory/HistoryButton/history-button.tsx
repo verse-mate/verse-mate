@@ -1,5 +1,4 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "backend-api";
 import {
   useGetSearchParams,
   useSaveSearchParams,
@@ -29,21 +28,11 @@ export const HistoryButton = ({
 
   const selectedChat = conversationId === String(conversation_id);
 
-  const deleteChat = async (conversation_id: string) => {
-    const responseDeleteChat = await api.bible.book["delete-chat"]({
-      conversation_id,
-    })
-      .delete()
-      .then((response) => response.data?.disabledChat);
-    if (responseDeleteChat) {
-      saveSearchParams({ conversationId: "newChat" });
-      queryClient.invalidateQueries({
-        queryKey: ["conversationMessages"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["conversationsHistory"],
-      });
-    }
+  const deleteChat = async (_conversation_id: string) => {
+    // @deprecated D-009 — Q&A removed. Stub: no-op.
+    throw new Error(
+      "deleteChat called after Q&A feature removal. Remove the caller.",
+    );
   };
 
   const handleActionClick = (actionName: string) => {

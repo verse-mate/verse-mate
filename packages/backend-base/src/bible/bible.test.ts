@@ -211,28 +211,7 @@ describe("Bible Plugin", () => {
     });
   });
 
-  describe("Conversation Endpoints", () => {
-    it("POST /bible/book/conversation-exists - check if chat exists", async () => {
-      const { data, error } = await testClient.bible.book[
-        "conversation-exists"
-      ].post(
-        {
-          user_id: testUser.userId,
-          book_id: 1,
-          chapter_number: 1,
-        },
-        {
-          headers: {
-            authorization: `Bearer ${testUser.accessToken}`,
-          },
-        },
-      );
-
-      expect(error).toBeFalsy();
-      expect(data).toBeTruthy();
-      expect(typeof data?.chatExists).toBe("boolean");
-    });
-  });
+  // Conversation/Chat endpoints removed per D-009 — Q&A feature dropped.
 
   // Notes table doesn't exist in database yet
   describe.skip("Notes CRUD", () => {

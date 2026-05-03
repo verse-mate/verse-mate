@@ -34,7 +34,7 @@ export const CardContent = () => {
       <RadixTabs.Content value="chat">
         <ScrollArea>
           <Conversation.Content>
-            {conversationMessages?.map((data, index) => {
+            {conversationMessages?.map((data: any, index: number) => {
               if (data.role === "user" && typeof data.content === "string") {
                 return (
                   <Conversation.UserMessageBlock
@@ -74,7 +74,7 @@ export const CardContent = () => {
       <RadixTabs.Content value="newChat">
         <ScrollArea>
           <Conversation.Content>
-            {conversationMessages?.map((data, index) => {
+            {conversationMessages?.map((data: any, index: number) => {
               if (data.role === "user" && typeof data.content === "string") {
                 return (
                   <Conversation.UserMessageBlock
@@ -120,10 +120,10 @@ export const CardContent = () => {
                 <span className={styles.simpleText}>no chats</span>
               ) : (
                 Object.entries(conversationsHistory).map(
-                  ([key, conversation]) => (
+                  ([key, conversation]: [string, any]) => (
                     <div key={key} className={styles.groupContainer}>
                       <History.HistoryLabel date={key} />
-                      {conversation.map((data) => (
+                      {conversation.map((data: any) => (
                         <History.HistoryButton
                           key={data.conversation_id}
                           onClick={() => {
