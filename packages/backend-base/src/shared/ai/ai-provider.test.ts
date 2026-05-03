@@ -98,3 +98,47 @@ describe("StubAiProvider", () => {
     expect(a.model).toBe(b.model);
   });
 });
+
+describe("StubAiProvider responsesCreate", () => {
+  const provider = new StubAiProvider();
+
+  it("returns deterministic output for given input", async () => {
+    const response = await provider.responsesCreate({
+      model: "gpt-5",
+      input: "Tell me about Genesis 1.",
+    });
+
+    expect(response.outputText).toContain("[stub-responses:gpt-5]");
+    expect(response.outputText).toContain("Tell me about Genesis 1.");
+    expect(response.model).toBe("stub-gpt-5");
+  });
+
+  it("identical input produces identical output", async () => {
+    const opts = {
+      model: "gpt-5",
+      input: "test input",
+      instructions: "follow these instructions",
+      reasoningEffort: "medium" as const,
+      maxOutputTokens: 1000,
+    };
+    const a = await provider.responsesCreate(opts);
+    const b = await provider.responsesCreate(opts);
+    expect(a.outputText).toBe(b.outputText);
+    expect(a.model).toBe(b.model);
+  });
+
+  it("ignores instructions/reasoningEffort/maxOutputTokens for output (deterministic)", async () => {
+    const a = await provider.responsesCreate({
+      model: "gpt-5",
+      input: "same input",
+    });
+    const b = await provider.responsesCreate({
+      model: "gpt-5",
+      input: "same input",
+      instructions: "different",
+      reasoningEffort: "high",
+      maxOutputTokens: 5000,
+    });
+    expect(a.outputText).toBe(b.outputText);
+  });
+});
