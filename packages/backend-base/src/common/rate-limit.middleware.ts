@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import type { cache } from "../shared/shared.plugin";
 
 interface RateLimitOptions {
@@ -102,21 +101,7 @@ export const authRateLimiters = {
     message: "Too many password reset requests, please try again later",
   }),
 
-  /**
-   * Refresh token rate limiter: 20 refreshes per minute per user
-   */
-  refresh: createRateLimit({
-    windowSeconds: 60,
-    max: 20,
-    keyGenerator: (context) => {
-      // Use refresh token as key (unique per session)
-      const token: string = context.body.refreshToken || "unknown";
-      // Hash to avoid storing full token in cache key and prevent token leakage
-      const digest = createHash("sha256").update(token).digest("hex");
-      return `refresh:${digest}`;
-    },
-    message: "Too many refresh attempts, please try again later",
-  }),
+  // refresh limiter removed per D-005 — /auth/refresh endpoint deleted.
 
   /**
    * SSO rate limiter: 10 SSO attempts per IP per minute
