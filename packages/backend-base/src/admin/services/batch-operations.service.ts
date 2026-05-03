@@ -1,15 +1,12 @@
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
-// TODO(D-001): direct OpenAI usage. Migrate to AiProvider abstraction in `../shared/ai`
-// once the abstraction supports OpenAI Responses API + Batch API + Files API. Tracked
-// as follow-up to feat-integrations br-int-001.
-
-import OpenAI, { APIError } from "openai";
+import { APIError } from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
 import { ValidationError } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
+import { type AiProvider, getAiProvider } from "../../shared/ai";
 import {
   buildBylineChunkPrompts,
   shouldUseBylineChunking,
@@ -33,10 +30,6 @@ interface BatchJobRequest {
     max_output_tokens: number;
   };
 }
-
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_KEY,
-});
 
 export const DEFAULT_MAX_OUTPUT_TOKENS = 50000;
 
@@ -94,6 +87,14 @@ const getUserPrompt = ({
 
 export class BatchOperationService {
   private promptRepository: PromptRepository;
+  // Lazy: BatchOperationService instantiates eagerly via admin.plugin state
+  // wiring; OpenAiProvider's constructor demands OPEN_AI_KEY which is empty
+  // in test envs. Resolve on first use to keep test bootstrap working.
+  private _ai: AiProvider | null = null;
+  private get ai(): AiProvider {
+    if (!this._ai) this._ai = getAiProvider();
+    return this._ai;
+  }
 
   constructor(
     private readonly db: db,
@@ -147,7 +148,7 @@ export class BatchOperationService {
     }
 
     // Create a proper File object for OpenAI API
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `topic_discovery_${discoveryTopicType}_${Date.now()}.jsonl`,
@@ -155,10 +156,10 @@ export class BatchOperationService {
       purpose: "batch",
     });
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     await this.db
@@ -265,7 +266,7 @@ export class BatchOperationService {
     }
 
     // Create a proper File object for OpenAI API
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `topic_references_${Date.now()}.jsonl`,
@@ -273,10 +274,10 @@ export class BatchOperationService {
       purpose: "batch",
     });
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     await this.db
@@ -534,7 +535,7 @@ export class BatchOperationService {
     }
 
     // Create a proper File object for OpenAI API
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `topic_explanations_${topic.topic_id}_${languageCode}_${Date.now()}.jsonl`,
@@ -542,10 +543,10 @@ export class BatchOperationService {
       purpose: "batch",
     });
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     await this.db
@@ -664,7 +665,7 @@ export class BatchOperationService {
     }
 
     // Create a proper File object for OpenAI API
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `batch_${bookId}_${bibleVersion}_${Date.now()}.jsonl`,
@@ -672,10 +673,10 @@ export class BatchOperationService {
       purpose: "batch",
     });
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     console.log(
@@ -1143,7 +1144,7 @@ export class BatchOperationService {
     }
 
     // Create a proper File object for OpenAI API
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `rephrase_batch_${book.book_id}_${Date.now()}.jsonl`,
@@ -1151,10 +1152,10 @@ export class BatchOperationService {
       purpose: "batch",
     });
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     await connection
@@ -1528,7 +1529,7 @@ export class BatchOperationService {
     }
 
     // Create a proper File object for OpenAI API
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `translate_batch_${book.book_id}_${Date.now()}.jsonl`,
@@ -1538,10 +1539,10 @@ export class BatchOperationService {
 
     console.log(`[BATCH] Created OpenAI file: ${file.id}`);
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     console.log(`[BATCH] Created OpenAI batch: ${batch.id}`);
@@ -1581,7 +1582,7 @@ export class BatchOperationService {
   }
 
   async getBatchStatus(batchId: string) {
-    const batchStatus = await openai.batches.retrieve(batchId);
+    const batchStatus = await this.ai.batchesRetrieve(batchId);
 
     if (batchStatus.status === "failed" && batchStatus.errors) {
       console.error(
@@ -1615,8 +1616,8 @@ export class BatchOperationService {
       ])
       .executeTakeFirst();
 
-    if (currentBatchJob && batchStatus.request_counts) {
-      const { total, completed, failed } = batchStatus.request_counts;
+    if (currentBatchJob && batchStatus.requestCounts) {
+      const { total, completed, failed } = batchStatus.requestCounts;
 
       let correctStatus: string = batchStatus.status;
 
@@ -1665,7 +1666,7 @@ export class BatchOperationService {
         );
         await this.batchProcessingQueue.add("process-batch", {
           batchId,
-          outputFileId: batchStatus.output_file_id,
+          outputFileId: batchStatus.outputFileId,
         });
       }
     }
@@ -1676,16 +1677,16 @@ export class BatchOperationService {
   async processBatch(batchId: string, outputFileId: string) {
     console.log(`[BATCH] Processing batch ${batchId} from queue.`);
 
-    const batchStatus = await openai.batches.retrieve(batchId);
+    const batchStatus = await this.ai.batchesRetrieve(batchId);
 
     if (
-      batchStatus.request_counts &&
-      batchStatus.request_counts.failed > 0 &&
-      batchStatus.error_file_id
+      batchStatus.requestCounts &&
+      batchStatus.requestCounts.failed > 0 &&
+      batchStatus.errorFileId
     ) {
       try {
-        const errorFileContent = await openai.files.content(
-          batchStatus.error_file_id,
+        const errorFileContent = await this.ai.filesContent(
+          batchStatus.errorFileId,
         );
         const errorText = await errorFileContent.text();
         await this.db
@@ -1696,7 +1697,7 @@ export class BatchOperationService {
           .execute();
       } catch (error) {
         console.error(
-          `[BATCH] Could not download error file ${batchStatus.error_file_id}:`,
+          `[BATCH] Could not download error file ${batchStatus.errorFileId}:`,
           error,
         );
       }
@@ -1742,7 +1743,7 @@ export class BatchOperationService {
             child.status === "finalizing")
         ) {
           try {
-            const openaiBatch = await openai.batches.cancel(
+            const openaiBatch = await this.ai.batchesCancel(
               child.openai_batch_id,
             );
             console.log(
@@ -1837,7 +1838,7 @@ export class BatchOperationService {
         `Book batch ${batchId} does not have an OpenAI batch ID.`,
       );
     }
-    const openaiBatch = await openai.batches.cancel(batchJob.openai_batch_id);
+    const openaiBatch = await this.ai.batchesCancel(batchJob.openai_batch_id);
     console.log(
       `[BATCH] Successfully cancelled single book batch ${batchJob.openai_batch_id}`,
     );
@@ -2491,7 +2492,7 @@ export class BatchOperationService {
         return;
       }
 
-      const fileContent = await openai.files.content(outputFileId);
+      const fileContent = await this.ai.filesContent(outputFileId);
       const jsonl = await fileContent.text();
       const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
@@ -2887,7 +2888,7 @@ export class BatchOperationService {
     outputFileId: string,
     batchJob: { model: string },
   ) {
-    const fileContent = await openai.files.content(outputFileId);
+    const fileContent = await this.ai.filesContent(outputFileId);
     const jsonData =
       typeof (fileContent as any).text === "function"
         ? await (fileContent as any).text()
@@ -3166,7 +3167,7 @@ export class BatchOperationService {
       book_id?: number | null;
     },
   ) {
-    const fileContent = await openai.files.content(outputFileId);
+    const fileContent = await this.ai.filesContent(outputFileId);
     const jsonData =
       typeof (fileContent as any).text === "function"
         ? await (fileContent as any).text()
@@ -3530,7 +3531,7 @@ export class BatchOperationService {
     );
 
     try {
-      const fileContent = await openai.files.content(outputFileId);
+      const fileContent = await this.ai.filesContent(outputFileId);
       const jsonl = await fileContent.text();
       const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
@@ -3619,7 +3620,7 @@ export class BatchOperationService {
     );
 
     try {
-      const fileContent = await openai.files.content(outputFileId);
+      const fileContent = await this.ai.filesContent(outputFileId);
       const jsonl = await fileContent.text();
       const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
@@ -3791,7 +3792,7 @@ export class BatchOperationService {
     );
 
     try {
-      const fileContent = await openai.files.content(outputFileId);
+      const fileContent = await this.ai.filesContent(outputFileId);
       const jsonl = await fileContent.text();
       const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
@@ -3933,7 +3934,7 @@ export class BatchOperationService {
       `[BATCH] Processing topic name translation output for batch ${batchId}`,
     );
 
-    const fileContent = await openai.files.content(outputFileId);
+    const fileContent = await this.ai.filesContent(outputFileId);
     const jsonData =
       typeof (fileContent as any).text === "function"
         ? await (fileContent as any).text()
@@ -4148,7 +4149,7 @@ export class BatchOperationService {
       `[BATCH] Processing topic explanation translation output for batch ${batchId}`,
     );
 
-    const fileContent = await openai.files.content(outputFileId);
+    const fileContent = await this.ai.filesContent(outputFileId);
     const jsonData =
       typeof (fileContent as any).text === "function"
         ? await (fileContent as any).text()
@@ -4361,7 +4362,7 @@ export class BatchOperationService {
       const connection = this.db.getOrCreateConnection();
 
       // Parse custom_id to get book name: "auto-highlight-Genesis-1234567890"
-      const fileContent = await openai.files.content(outputFileId);
+      const fileContent = await this.ai.filesContent(outputFileId);
       const jsonl = await fileContent.text();
       const lines = jsonl.split("\n").filter((line) => line.trim() !== "");
 
@@ -4939,7 +4940,7 @@ export class BatchOperationService {
     }
 
     // Create OpenAI file
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `translate_topic_names_${target_language_code}_${Date.now()}.jsonl`,
@@ -4950,10 +4951,10 @@ export class BatchOperationService {
     console.log(`[BATCH] Created OpenAI file: ${file.id}`);
 
     // Create OpenAI batch
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     console.log(`[BATCH] Created OpenAI batch: ${batch.id}`);
@@ -5149,7 +5150,7 @@ export class BatchOperationService {
       throw new ValidationError("Batch file size exceeds OpenAI's 100MB limit");
     }
 
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `translate_topic_explanations_${target_language_code}_${Date.now()}.jsonl`,
@@ -5159,10 +5160,10 @@ export class BatchOperationService {
 
     console.log(`[BATCH] Created OpenAI file: ${file.id}`);
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     console.log(`[BATCH] Created OpenAI batch: ${batch.id}`);
@@ -5563,7 +5564,7 @@ export class BatchOperationService {
       );
     }
 
-    const file = await openai.files.create({
+    const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
         `auto_highlight_${book.book_id}_${Date.now()}.jsonl`,
@@ -5571,10 +5572,10 @@ export class BatchOperationService {
       purpose: "batch",
     });
 
-    const batch = await openai.batches.create({
-      input_file_id: file.id,
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
       endpoint: "/v1/responses",
-      completion_window: "24h",
+      completionWindow: "24h",
     });
 
     await connection
@@ -5645,15 +5646,15 @@ export class BatchOperationService {
 
     try {
       // Retrieve batch status from OpenAI
-      const batchStatus = await openai.batches.retrieve(
+      const batchStatus = await this.ai.batchesRetrieve(
         batchJob.openai_batch_id,
       );
 
       console.log(
-        `[BATCH] Batch ${batchJob.openai_batch_id} status: ${batchStatus.status}, has error_file_id: ${!!batchStatus.error_file_id}`,
+        `[BATCH] Batch ${batchJob.openai_batch_id} status: ${batchStatus.status}, has error_file_id: ${!!batchStatus.errorFileId}`,
       );
 
-      if (!batchStatus.error_file_id) {
+      if (!batchStatus.errorFileId) {
         return {
           success: false,
           message: `Batch ${batchJobId} (${batchJob.openai_batch_id}) does not have an error file. Status: ${batchStatus.status}`,
@@ -5662,10 +5663,10 @@ export class BatchOperationService {
 
       // Download the error file
       console.log(
-        `[BATCH] Downloading error file ${batchStatus.error_file_id}...`,
+        `[BATCH] Downloading error file ${batchStatus.errorFileId}...`,
       );
-      const errorFileContent = await openai.files.content(
-        batchStatus.error_file_id,
+      const errorFileContent = await this.ai.filesContent(
+        batchStatus.errorFileId,
       );
       const errorText = await errorFileContent.text();
 
