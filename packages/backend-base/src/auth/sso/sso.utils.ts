@@ -75,7 +75,6 @@ export function buildAppleOAuthUrl(state: string): string {
  */
 export interface FrontendCallbackParams {
   accessToken?: string;
-  refreshToken?: string;
   verified?: boolean;
   error?: string;
   errorDescription?: string;
@@ -97,9 +96,6 @@ export function buildFrontendCallbackUrl(
 
   if (params.accessToken) {
     searchParams.set("accessToken", params.accessToken);
-  }
-  if (params.refreshToken) {
-    searchParams.set("refreshToken", params.refreshToken);
   }
   if (params.verified !== undefined) {
     searchParams.set("verified", String(params.verified));

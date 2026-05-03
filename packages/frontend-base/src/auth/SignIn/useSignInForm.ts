@@ -11,7 +11,7 @@ import { AnalyticsEvent, analytics } from "../../analytics";
 import useMutation from "../../hooks/useMutation";
 import { decodeJwtPayload, setCookie } from "../../utils/auth-utils";
 import { type ErrorState, processError } from "../../utils/error-handling";
-import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE, zodEmail } from "../lib";
+import { ACCESS_TOKEN_COOKIE, zodEmail } from "../lib";
 
 export interface SignInData {
   email: string;
@@ -42,11 +42,8 @@ export function useSignInForm() {
       if (!data?.accessToken) {
         return console.error("Empty access token");
       }
-      setCookie(ACCESS_TOKEN_COOKIE, data.accessToken, 7);
-
-      if (data?.refreshToken) {
-        setCookie(REFRESH_TOKEN_COOKIE, data.refreshToken, 90);
-      }
+      // Per D-005: access token is the persistent session (90-day TTL).
+      setCookie(ACCESS_TOKEN_COOKIE, data.accessToken, 90);
 
       // Identify user in PostHog after successful login
       const email = getValues("email");

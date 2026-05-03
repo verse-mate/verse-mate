@@ -406,40 +406,7 @@ describe("Auth - Rate Limiting", () => {
     await cacheService.delete(`rate-limit:login:${loginEmail}`);
   });
 
-  it("refresh rate limit - returns 429 after 20 attempts", async () => {
-    const fakeRefreshToken = "fake-refresh-token-for-rate-limit-test";
-
-    // Make 20 failed refresh attempts (rate limit max)
-    for (let i = 0; i < 20; i++) {
-      const { error } = await client.auth.refresh.post({
-        refreshToken: fakeRefreshToken,
-      });
-      // These should fail with UNAUTHORIZED, not rate limit
-      expect(error).toBeTruthy();
-      expect((error as any)?.status).not.toBe(429);
-    }
-
-    // 21st attempt should hit rate limit
-    const { data, error } = await client.auth.refresh.post({
-      refreshToken: fakeRefreshToken,
-    });
-
-    expect(data).toBeNull();
-    expect(error).toBeTruthy();
-    expect((error as any)?.status).toBe(429);
-    expect((error as any)?.value?.error).toBe("TOO_MANY_REQUESTS");
-    expect((error as any)?.value?.message).toBe(
-      "Too many refresh attempts, please try again later",
-    );
-    expect((error as any)?.value?.retryAfter).toBeDefined();
-    expect((error as any)?.value?.retryAfter).toBeGreaterThan(0);
-    expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(60);
-
-    // Clean up rate limit cache key (hashed token)
-    const { createHash } = await import("node:crypto");
-    const digest = createHash("sha256").update(fakeRefreshToken).digest("hex");
-    await cacheService.delete(`rate-limit:refresh:${digest}`);
-  });
+  // refresh rate-limit test removed per D-005 — /auth/refresh endpoint deleted.
 
   it("forgot-password rate limit - returns 429 after 3 attempts", async () => {
     const testEmail = faker.internet.email().toLocaleLowerCase();
