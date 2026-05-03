@@ -28,19 +28,34 @@ const app = new Elysia()
   .use(adminPlugin)
   .use(offlinePlugin)
   .use(healthCheckPlugin)
-  .use(cors())
+  .use(
+    cors({
+      // Per spec feat-api-contract br-api (D-028): production allowlist; dev permissive.
+      // App.versemate.org (mobile web export, future), admin.versemate.org (admin web),
+      // versemate.org and www.versemate.org (marketing). Native apps don't need CORS.
+      origin:
+        process.env.ENVIRONMENT === "production"
+          ? [
+              "https://app.versemate.org",
+              "https://admin.versemate.org",
+              "https://versemate.org",
+              "https://www.versemate.org",
+            ]
+          : true, // dev/test: allow all (mobile dev client uses dynamic ports)
+    }),
+  )
   .use(
     openapi({
       documentation: {
         info: {
           title: "VerseMate API",
           version: "1.0.0",
-          description:
-            "Bible reading platform API with AI-driven translations and interactive Q&A",
+          description: "Bible reading platform API with AI-driven translations",
         },
         servers: [
           { url: "http://localhost:4000", description: "Development" },
-          { url: "https://api.versemate.com", description: "Production" },
+          // Per spec feat-api-contract D-027: canonical production host is .org (matches mobile)
+          { url: "https://api.versemate.org", description: "Production" },
         ],
       },
     }),
