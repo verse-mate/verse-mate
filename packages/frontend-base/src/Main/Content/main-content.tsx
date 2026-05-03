@@ -873,7 +873,7 @@ export const MainContent = () => {
     const chats = await handleChatExists({
       book_id: Number(bookId),
       chapter_number: verseId,
-    }).then((data) => data?.chatExists);
+    }).then((data: any) => data?.chatExists);
 
     const hasChat =
       Array.isArray(chats) &&
