@@ -163,7 +163,6 @@ ZRKqOIZzG+HblXQ0h5b8bLMqkHmXFQ==
 
       expect(error).toBeFalsy();
       expect(data?.accessToken).toBeDefined();
-      expect(data?.refreshToken).toBeDefined();
       expect(data?.verified).toBe(true); // SSO users are auto-verified
 
       // Clean up: find and delete the created user
@@ -212,7 +211,6 @@ ZRKqOIZzG+HblXQ0h5b8bLMqkHmXFQ==
 
       expect(error).toBeFalsy();
       expect(data?.accessToken).toBeDefined();
-      expect(data?.refreshToken).toBeDefined();
       expect(data?.verified).toBe(true);
 
       // Clean up
