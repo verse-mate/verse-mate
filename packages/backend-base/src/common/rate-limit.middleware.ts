@@ -66,11 +66,12 @@ export const createRateLimit = (options: RateLimitOptions) => {
 // Predefined rate limiters
 export const authRateLimiters = {
   /**
-   * Login rate limiter: 10000 attempts per email per minute (TEMPORARILY INCREASED)
+   * Login rate limiter: 5 attempts per email per minute.
+   * Per spec feat-auth-platform br-auth-006b (D-004 — restored from "TEMPORARILY INCREASED" 10000).
    */
   login: createRateLimit({
     windowSeconds: 60,
-    max: 10000,
+    max: 5,
     keyGenerator: (context) => `login:${context.body.email}`,
     message: "Too many login attempts, please try again in a minute",
   }),
