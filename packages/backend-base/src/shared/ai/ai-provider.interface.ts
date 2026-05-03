@@ -47,10 +47,42 @@ export interface AiChatResponse {
   };
 }
 
+/**
+ * Options for the Responses API (newer Assistants-style API).
+ * Used by admin prompt playground + explanation regeneration + topic
+ * translation where instruction-style input is preferred over messages.
+ */
+export interface AiResponseOptions {
+  /** Model identifier (e.g. "gpt-5", "gpt-5-nano"). */
+  model: string;
+  /** Free-form instruction string (system role equivalent). */
+  instructions?: string;
+  /** Free-form input (user role equivalent). */
+  input: string;
+  /** Reasoning effort hint: "low" | "medium" | "high". */
+  reasoningEffort?: "low" | "medium" | "high";
+  /** Max output tokens. */
+  maxOutputTokens?: number;
+}
+
+export interface AiResponseResult {
+  /** Generated text content. */
+  outputText: string;
+  /** Provider/model that generated this. */
+  model: string;
+}
+
 export interface AiProvider {
   /** Provider identifier (e.g. "openai", "stub"). */
   readonly name: string;
 
   /** Send a chat completion request. */
   chatComplete(opts: AiChatOptions): Promise<AiChatResponse>;
+
+  /**
+   * Send a Responses-API style request (instructions + input). Used by admin
+   * prompt iteration + regeneration + topic translation flows. On OpenAI maps
+   * to the Responses API; on stub returns a deterministic fixture.
+   */
+  responsesCreate(opts: AiResponseOptions): Promise<AiResponseResult>;
 }

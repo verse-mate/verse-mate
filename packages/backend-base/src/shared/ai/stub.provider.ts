@@ -2,6 +2,8 @@ import type {
   AiChatOptions,
   AiChatResponse,
   AiProvider,
+  AiResponseOptions,
+  AiResponseResult,
 } from "./ai-provider.interface";
 
 /**
@@ -30,8 +32,15 @@ export class StubAiProvider implements AiProvider {
           0,
         ),
         completionTokens: 16,
-        totalTokens: 0, // recomputed below
+        totalTokens: 0,
       },
+    };
+  }
+
+  async responsesCreate(opts: AiResponseOptions): Promise<AiResponseResult> {
+    return {
+      outputText: `[stub-responses:${opts.model}] ${opts.input.slice(0, 80)}`,
+      model: `stub-${opts.model}`,
     };
   }
 }
