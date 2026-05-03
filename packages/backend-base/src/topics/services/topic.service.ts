@@ -1,12 +1,8 @@
 import type { Static } from "elysia";
-// TODO(D-001): direct OpenAI usage. Migrate to AiProvider abstraction in `../shared/ai`
-// once the abstraction supports OpenAI Responses API + Batch API + Files API. Tracked
-// as follow-up to feat-integrations br-int-001.
-
-import OpenAI from "openai";
 import { BibleRepository } from "../../bible/repository/bible.repository";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { SubtitleService } from "../../bible/services/subtitle.service";
+import { type AiProvider, getAiProvider } from "../../shared/ai";
 import type { db } from "../../shared/shared.plugin";
 import { parseAndInjectVerses } from "../../shared/verse-parser";
 import type { TopicDto, UpdateTopicDto } from "../dto/topic.dto";
@@ -18,6 +14,13 @@ export class TopicService {
   private bibleRepository: BibleRepository;
   private subtitleService: SubtitleService;
   private promptRepository: PromptRepository;
+  // Lazy: TopicService is instantiated eagerly at plugin load time, but
+  // OpenAiProvider's constructor requires OPEN_AI_KEY. Resolve on first use.
+  private _ai: AiProvider | null = null;
+  private get ai(): AiProvider {
+    if (!this._ai) this._ai = getAiProvider();
+    return this._ai;
+  }
 
   constructor(private readonly db: db) {
     this.topicRepository = new TopicRepository(this.db);
@@ -365,23 +368,19 @@ export class TopicService {
         )
         .join("\n");
 
-      // Call GPT-5 synchronously using the same pattern as bible.plugin.ts
-      const openaiClient = new OpenAI({
-        apiKey: process.env.OPEN_AI_KEY,
-      });
-
-      const response = await openaiClient.responses.create({
+      // Call GPT-5 via the AiProvider abstraction (D-001)
+      const response = await this.ai.responsesCreate({
         model: "gpt-5",
-        reasoning: { effort: "medium" },
+        reasoningEffort: "medium",
         instructions: "", // We leave instructions empty as requested
         input: prompt.prompt
           .replace("{category_name}", category.toLowerCase())
           .replace("{topics_list}", topicsData),
-        max_output_tokens: 50000,
+        maxOutputTokens: 50000,
       });
 
       // Parse the response - expect format: "1. Topic Name\n2. Topic Name\n..."
-      const sortedLines = (response.output_text || "")
+      const sortedLines = response.outputText
         .split("\n")
         .filter((line: string) => line.trim() !== "");
       const sortedTopicNames = sortedLines.map((line: string) => {
