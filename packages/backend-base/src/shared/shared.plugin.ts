@@ -18,7 +18,12 @@ export type db = typeof Database;
 const jwt = ElysiaJwt({
   name: "jwt",
   secret: process.env.AUTH_ACCESS_TOKEN_SECRET ?? "my-super-secret",
-  exp: "15m", // Short-lived access token, refresh token handles long sessions
+  // Per spec feat-auth-platform br-auth-001 (D-005): access token IS the
+  // persistent session token; refresh tokens eliminated. Backend Redis cache
+  // validates every token so server-side logout immediately revokes regardless
+  // of JWT expiry. 90-day TTL matches what the prior refresh-token lifespan
+  // enabled, while keeping single-token simplicity.
+  exp: "90d",
 });
 
 export type JWT = (typeof jwt)["decorator"]["jwt"];
