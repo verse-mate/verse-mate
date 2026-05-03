@@ -1,13 +1,9 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
-// TODO(D-001): direct OpenAI usage. Migrate to AiProvider abstraction in `../shared/ai`
-// once the abstraction supports OpenAI Responses API + Batch API + Files API. Tracked
-// as follow-up to feat-integrations br-int-001.
-
-import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
 import { ForbiddenError, NotFoundError } from "../../common/errors";
+import { type AiProvider, getAiProvider } from "../../shared/ai";
 import {
   generateChunkedBylineParallel,
   shouldUseBylineChunking,
@@ -33,18 +29,13 @@ interface PlaygroundRequest {
 export class AdminPromptService {
   private promptRepository: PromptRepository;
   private userPromptRepository: UserPromptRepository;
-  private openai: OpenAI;
+  private ai: AiProvider;
 
   constructor(private readonly db: db) {
     this.promptRepository = new PromptRepository(this.db);
     this.userPromptRepository = new UserPromptRepository(this.db);
-    const apiKey = process.env.OPEN_AI_KEY;
-    if (!apiKey) {
-      console.error(
-        "ERROR: OPEN_AI_KEY is not set. OpenAI client will not be initialized.",
-      );
-    }
-    this.openai = new OpenAI({ apiKey });
+    // Per spec feat-integrations br-int-001 (D-001): consume AI through abstraction.
+    this.ai = getAiProvider();
   }
 
   // --- System Prompt Methods ---
@@ -347,14 +338,14 @@ export class AdminPromptService {
     effort?: "low" | "medium" | "high";
     max_output_tokens?: number;
   }) {
-    const response = await this.openai.responses.create({
+    const response = await this.ai.responsesCreate({
       model,
-      reasoning: { effort },
+      reasoningEffort: effort,
       instructions,
       input,
-      max_output_tokens: max_output_tokens || 50000,
+      maxOutputTokens: max_output_tokens || 50000,
     });
-    return response.output_text || "";
+    return response.outputText;
   }
 
   private getLanguageName(code: string, locale = "en"): string {
