@@ -1,7 +1,12 @@
 import OpenAI from "openai";
 import type {
+  AiBatchCreateOptions,
+  AiBatchResult,
+  AiBatchStatus,
   AiChatOptions,
   AiChatResponse,
+  AiFileCreateOptions,
+  AiFileResult,
   AiProvider,
   AiResponseOptions,
   AiResponseResult,
@@ -74,4 +79,78 @@ export class OpenAiProvider implements AiProvider {
       model: response.model || opts.model,
     };
   }
+
+  async filesCreate(opts: AiFileCreateOptions): Promise<AiFileResult> {
+    const file = await this.client.files.create({
+      file: opts.file,
+      purpose: opts.purpose,
+    });
+    return mapOpenAiFile(file);
+  }
+
+  async filesRetrieve(fileId: string): Promise<AiFileResult> {
+    const file = await this.client.files.retrieve(fileId);
+    return mapOpenAiFile(file);
+  }
+
+  async filesContent(fileId: string): Promise<Response> {
+    return this.client.files.content(fileId);
+  }
+
+  async batchesCreate(opts: AiBatchCreateOptions): Promise<AiBatchResult> {
+    const batch = await this.client.batches.create({
+      input_file_id: opts.inputFileId,
+      endpoint: opts.endpoint,
+      completion_window: opts.completionWindow ?? "24h",
+      ...(opts.metadata && { metadata: opts.metadata }),
+    });
+    return mapOpenAiBatch(batch);
+  }
+
+  async batchesRetrieve(batchId: string): Promise<AiBatchResult> {
+    const batch = await this.client.batches.retrieve(batchId);
+    return mapOpenAiBatch(batch);
+  }
+
+  async batchesCancel(batchId: string): Promise<AiBatchResult> {
+    const batch = await this.client.batches.cancel(batchId);
+    return mapOpenAiBatch(batch);
+  }
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: openai SDK types vary by version
+function mapOpenAiFile(file: any): AiFileResult {
+  return {
+    id: file.id,
+    filename: file.filename,
+    bytes: file.bytes,
+    status: file.status,
+    purpose: file.purpose,
+    createdAt: file.created_at,
+  };
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: openai SDK types vary by version
+function mapOpenAiBatch(batch: any): AiBatchResult {
+  return {
+    id: batch.id,
+    status: batch.status as AiBatchStatus,
+    inputFileId: batch.input_file_id,
+    outputFileId: batch.output_file_id ?? undefined,
+    errorFileId: batch.error_file_id ?? undefined,
+    endpoint: batch.endpoint,
+    requestCounts: batch.request_counts
+      ? {
+          total: batch.request_counts.total,
+          completed: batch.request_counts.completed,
+          failed: batch.request_counts.failed,
+        }
+      : undefined,
+    createdAt: batch.created_at,
+    completedAt: batch.completed_at ?? undefined,
+    cancelledAt: batch.cancelled_at ?? undefined,
+    failedAt: batch.failed_at ?? undefined,
+    metadata: batch.metadata ?? null,
+    errors: batch.errors ?? null,
+  };
 }
