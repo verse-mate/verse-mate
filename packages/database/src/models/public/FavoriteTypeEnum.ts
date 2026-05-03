@@ -4,7 +4,7 @@
 /** Represents the enum public.favorite_type_enum */
 enum FavoriteTypeEnum {
   chapter = "chapter",
-  message = "message",
+  insight = "insight",
 }
 
 export default FavoriteTypeEnum;
