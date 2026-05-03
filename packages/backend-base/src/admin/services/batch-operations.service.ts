@@ -1,6 +1,10 @@
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
+// TODO(D-001): direct OpenAI usage. Migrate to AiProvider abstraction in `../shared/ai`
+// once the abstraction supports OpenAI Responses API + Batch API + Files API. Tracked
+// as follow-up to feat-integrations br-int-001.
+
 import OpenAI, { APIError } from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
