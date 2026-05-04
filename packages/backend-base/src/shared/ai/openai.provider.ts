@@ -59,7 +59,6 @@ export class OpenAiProvider implements AiProvider {
   }
 
   async responsesCreate(opts: AiResponseOptions): Promise<AiResponseResult> {
-    // biome-ignore lint/suspicious/noExplicitAny: OpenAI Responses API types lag SDK
     const response = await (this.client as any).responses.create({
       model: opts.model,
       ...(opts.instructions !== undefined && {
@@ -118,7 +117,6 @@ export class OpenAiProvider implements AiProvider {
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: openai SDK types vary by version
 function mapOpenAiFile(file: any): AiFileResult {
   return {
     id: file.id,
@@ -130,7 +128,6 @@ function mapOpenAiFile(file: any): AiFileResult {
   };
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: openai SDK types vary by version
 function mapOpenAiBatch(batch: any): AiBatchResult {
   return {
     id: batch.id,
