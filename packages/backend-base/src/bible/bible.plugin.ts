@@ -3,7 +3,6 @@ import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
-import { type AiProvider, getAiProvider } from "../shared/ai";
 import { createErrorHandler } from "../common/error-handler";
 import {
   NotFoundError,
@@ -11,6 +10,7 @@ import {
   ValidationError,
 } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
+import { type AiProvider, getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
 import { ChapterDto } from "./dto/book/chapter.dto";

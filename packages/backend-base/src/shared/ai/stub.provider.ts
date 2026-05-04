@@ -53,7 +53,10 @@ export class StubAiProvider implements AiProvider {
   // should mock this provider directly rather than rely on these stubs.
   private fileCounter = 0;
   private batchCounter = 0;
-  private files = new Map<string, { name: string; bytes: number; content: string }>();
+  private files = new Map<
+    string,
+    { name: string; bytes: number; content: string }
+  >();
   private batches = new Map<string, AiBatchResult>();
 
   async filesCreate(opts: AiFileCreateOptions): Promise<AiFileResult> {
