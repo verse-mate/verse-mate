@@ -15,7 +15,7 @@ make install  # Sets up Docker, env files, installs dependencies, runs migration
 
 ### Development
 ```bash
-bun dev       # Runs both backend (port 3001) and frontend (port 3000) concurrently
+bun dev       # Runs both backend (port 4000) and frontend (port 3000) concurrently
 ```
 
 ### Code Quality
@@ -49,7 +49,7 @@ cd apps/frontend-next && bun build  # Build frontend
 ### Monorepo Structure
 ```
 /apps
-  /backend - Elysia API server (port 3001)
+  /backend - Elysia API server (port 4000)
   /frontend-next - Next.js app (port 3000) — the logged-in PWA at app.versemate.org
   /website - Marketing website (port 3002) — the public site at versemate.org
 /packages
