@@ -28,10 +28,11 @@ bun dev
 - [dayjs](https://day.js.org/): Day.js is a minimalist JavaScript library that parses, validates, manipulates, and displays dates and times for modern browsers with a largely Moment.js-compatible API.
 - [redis](https://github.com/redis/node-redis): node-redis is a modern, high performance Redis client for Node.js.
 
-### Object storage dependencies
-- [@aws-sdk/client-s3](https://www.npmjs.com/package/@aws-sdk/client-s3): AWS SDK for JavaScript S3 Client for Node.js, Browser and React Native.
-- [@aws-sdk/lib-storage](https://www.npmjs.com/package/@aws-sdk/lib-storage): Upload allows for easy and efficient uploading of buffers, blobs, or streams, using a configurable amount of concurrency to perform multipart uploads where possible.
-- [@aws-sdk/s3-request-presigner](https://www.npmjs.com/package/@aws-sdk/s3-request-presigner): This package provides a presigner based on signature V4 that will attempt to generate signed url for S3.
+### Object storage
+Object storage uses Bun's built-in S3 client (no external SDK). See
+`src/shared/storage/bun-s3.helper.ts` and `storage.service.ts`. Works against
+MinIO local and DigitalOcean Spaces production with the same code path
+(per Phase 1 decision D-002).
 
 ### Development Dependencies
 
