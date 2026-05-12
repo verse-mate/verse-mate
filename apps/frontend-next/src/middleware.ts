@@ -4,6 +4,14 @@ import { ACCESS_TOKEN_COOKIE } from "./lib/utils";
 const LOGIN_PATH = "/login";
 const ADMIN_HOME = "/admin";
 const ADMIN_REQUIRED_REDIRECT = `${LOGIN_PATH}?error=admin_required`;
+// Admin app — never cache HTML at the CDN. Overrides the default
+// s-maxage=31536000 that OpenNext applies to statically prerendered routes.
+const NO_STORE = "private, no-store";
+
+function withNoStore(response: NextResponse): NextResponse {
+  response.headers.set("Cache-Control", NO_STORE);
+  return response;
+}
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === LOGIN_PATH) return true;
@@ -17,7 +25,7 @@ function redirectToLogin(request: NextRequest): NextResponse {
   const url = request.nextUrl.clone();
   url.pathname = LOGIN_PATH;
   url.search = "";
-  return NextResponse.redirect(url);
+  return withNoStore(NextResponse.redirect(url));
 }
 
 function redirectAdminRequired(request: NextRequest): NextResponse {
@@ -26,7 +34,7 @@ function redirectAdminRequired(request: NextRequest): NextResponse {
   url.search = "?error=admin_required";
   const response = NextResponse.redirect(url);
   response.cookies.delete(ACCESS_TOKEN_COOKIE);
-  return response;
+  return withNoStore(response);
 }
 
 async function fetchIsAdmin(accessToken: string): Promise<boolean | null> {
@@ -59,13 +67,13 @@ export async function middleware(request: NextRequest) {
         const url = request.nextUrl.clone();
         url.pathname = ADMIN_HOME;
         url.search = "";
-        return NextResponse.redirect(url);
+        return withNoStore(NextResponse.redirect(url));
       }
       if (isAdmin === false) {
         return redirectAdminRequired(request);
       }
     }
-    return NextResponse.next();
+    return withNoStore(NextResponse.next());
   }
 
   if (!accessToken) {
@@ -86,10 +94,10 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = ADMIN_HOME;
     url.search = "";
-    return NextResponse.redirect(url);
+    return withNoStore(NextResponse.redirect(url));
   }
 
-  return NextResponse.next();
+  return withNoStore(NextResponse.next());
 }
 
 export const config = {
