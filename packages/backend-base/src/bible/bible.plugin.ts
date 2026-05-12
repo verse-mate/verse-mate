@@ -1,6 +1,5 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
-import RoleEnum from "database/src/models/public/RoleEnum";
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
@@ -13,14 +12,8 @@ import { StandardErrorResponses } from "../common/response-schemas";
 import { type AiProvider, getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
-import { ChapterDto } from "./dto/book/chapter.dto";
 import { RatingDto } from "./dto/book/rating.dto";
-import { AddMessageDto } from "./dto/chat/add-message.dto";
-import { ChatHistoryDto } from "./dto/chat/chat-history.dto";
-import { MessageHistoryDto } from "./dto/chat/message-history.dto";
-import { NewChatDto } from "./dto/chat/new-chat.dto";
 import { BibleRepository } from "./repository/bible.repository";
-import { ChatRepository } from "./repository/chat.repository";
 import { PromptRepository } from "./repository/prompt.repository";
 import {
   BookSchema,
@@ -28,8 +21,6 @@ import {
   BookmarksSchema,
   ChapterIdSchema,
   ChapterSchema,
-  ChatExistsSchema,
-  DisabledChatSchema,
   ExplanationSchema,
   HighlightAddSchema,
   HighlightDeleteSchema,
@@ -38,8 +29,6 @@ import {
   LanguagesSchema,
   LastChapterReadSaveSchema,
   LastChapterReadSchema,
-  MessagesHistorySchema,
-  NewConversationSchema,
   NoteAddSchema,
   NoteDeleteSchema,
   type NoteFromDatabase,
@@ -47,13 +36,10 @@ import {
   NotesSchema,
   RatingSaveSchema,
   RatingsSchema,
-  SavedMessageSchema,
   TestamentsSchema,
-  UserChatHistorySchema,
 } from "./schemas/bible-response.schema";
 import { AutoHighlightService } from "./services/auto-highlight.service";
 import { BibleService } from "./services/bible.service";
-import { ChatService } from "./services/chat.service";
 import { PromptService } from "./services/prompt.service";
 
 const model = "gpt-5-nano";
@@ -102,10 +88,6 @@ const plugin = new Elysia()
     return {
       ...state,
       bibleService: new BibleService(state.db, bibleRepository),
-      chatService: new ChatService(
-        new ChatRepository(state.db),
-        bibleRepository,
-      ),
       promptService: new PromptService(
         new BibleService(state.db, bibleRepository),
         new PromptRepository(state.db),
@@ -350,179 +332,6 @@ const plugin = new Elysia()
         },
       )
       .post(
-        "/book/conversations-history",
-        async ({ body, store: { chatService } }) => {
-          const userChatHistory = await chatService.getUserChatHistory({
-            id: body.session.id,
-          });
-          return { userChatHistory };
-        },
-        {
-          body: ChatHistoryDto,
-          response: {
-            200: UserChatHistorySchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .post(
-        "/book/messages-history",
-        async ({ body, store: { chatService } }) => {
-          const chatMessageHistory =
-            await chatService.getUserChatMessageHistory({
-              conversation_id: body.conversation_id,
-              user_id: body.session.id,
-            });
-
-          // Transform to message format and serialize dates
-          const messagesHistory = chatMessageHistory
-            .filter((msg) => msg.message_id && msg.content && msg.role)
-            .map((msg) => ({
-              conversation_id: msg.conversation_id,
-              message_id: msg.message_id as number,
-              content: msg.content as string,
-              role: msg.role as RoleEnum,
-              created_at:
-                msg.created_at instanceof Date
-                  ? msg.created_at.toISOString()
-                  : msg.created_at || new Date().toISOString(),
-            }));
-
-          return { messagesHistory };
-        },
-        {
-          body: MessageHistoryDto,
-          response: {
-            200: MessagesHistorySchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .post(
-        "/book/conversation-exists",
-        async ({ body, store: { chatService } }) => {
-          const { chatExists } = await chatService.checkIfChatExists({
-            user_id: body.user_id,
-            book_id: body.book_id,
-            chapter_number: body.chapter_number,
-          });
-          return {
-            chatExists: Array.isArray(chatExists) && chatExists.length > 0,
-          };
-        },
-        {
-          body: t.Intersect([
-            t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
-          ]),
-          response: {
-            200: ChatExistsSchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .post(
-        "/book/new-conversation",
-        async ({ body, store: { chatService, bibleService, db }, query }) => {
-          if (!body.user_id) {
-            throw new ValidationError("User ID is required");
-          }
-          const { versionKey = "NASB1995" } = query;
-
-          const version = await db
-            .getOrCreateConnection()
-            .selectFrom("bible_versions")
-            .select(["id", "language_code"])
-            .where("version_key", "=", versionKey)
-            .executeTakeFirst();
-
-          if (!version) {
-            throw new NotFoundError("Invalid bible version");
-          }
-
-          const { book } = await bibleService.getBook({
-            book_id: body.book_id,
-            chapter_number: body.chapter_number,
-            version_id: version.id,
-          });
-
-          if (!book) {
-            throw new NotFoundError("Book not found");
-          }
-
-          const testamentMap = {
-            OT: "Old Testament",
-            NT: "New Testament",
-          };
-
-          const testament =
-            book.testament !== null ? testamentMap[book.testament] : "";
-
-          const bookAsContext = `
-            Book ID: ${book.bookId}
-            Book Name: ${book.name}
-            Testament: ${testament}
-            Genre: ${book.genre.n}
-            Chapter Number: ${body.chapter_number}
-          `;
-
-          const prompt = `
-            Answer my question in markdown format, limiting yourself to the context below.
-
-            My question: ${body.content}
-
-            Context: ${bookAsContext}
-          `;
-
-          const chatText = await gpt5Text({ user: prompt });
-
-          const promptCreateChatTitle = `
-          - Create a short title for this chat based on the chat below:
-          ${chatText}
-          `;
-
-          const generatedTitleText = await gpt5Text({
-            user: promptCreateChatTitle,
-          });
-          // await new Promise((resolve) => setTimeout(resolve, 3000));
-          // const generatedTitle = {
-          //   choices: [{ message: { content: "Fake title, test only" } }],
-          // };
-
-          const newConversation = await chatService.createNewChat({
-            user_id: body.user_id,
-            title: generatedTitleText || "",
-            book_id: body.book_id,
-            chapter_number: body.chapter_number,
-          });
-
-          // Ensure chat_id is present
-          if ("message" in newConversation && !("chat_id" in newConversation)) {
-            throw new Error(newConversation.message);
-          }
-          if (!newConversation.chat_id) {
-            throw new Error("Failed to create conversation");
-          }
-
-          return {
-            newConversation: {
-              chat_id: newConversation.chat_id,
-              message: newConversation.message,
-            },
-            generatedTitle: generatedTitleText,
-          };
-        },
-        {
-          body: t.Intersect([
-            t.Pick(NewChatDto, ["user_id", "book_id", "chapter_number"]),
-            t.Pick(AddMessageDto, ["content"]),
-          ]),
-          response: {
-            200: NewConversationSchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .post(
         "/book/explanation/save-rating",
         async ({ body, store: { bibleService } }) => {
           const saveRating = await bibleService.saveRating({
@@ -638,151 +447,6 @@ const plugin = new Elysia()
           }),
           response: {
             200: LastChapterReadSchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .post(
-        "/book/ask-verse-mate/save-user-message",
-        async ({ body, store: { chatService } }) => {
-          const saveUserMessage = await chatService.addMessageToChat({
-            chat_id: body.chat_id,
-            role: RoleEnum.user,
-            content: body.content,
-          });
-
-          // Serialize Date to ISO string and return only required fields
-          const message = saveUserMessage.newMessage;
-          if (!message) {
-            throw new Error("Failed to save message");
-          }
-          return {
-            result: {
-              message_id: message.message_id,
-              conversation_id: message.conversation_id,
-              content: message.content,
-              role: message.role,
-              created_at:
-                message.generated_at instanceof Date
-                  ? message.generated_at.toISOString()
-                  : message.generated_at || new Date().toISOString(),
-            },
-          };
-        },
-        {
-          body: t.Pick(AddMessageDto, ["chat_id", "content"]),
-          response: {
-            200: SavedMessageSchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .post(
-        "/book/ask-verse-mate/save-ai-message",
-        async ({ body, store: { chatService, bibleService, db }, query }) => {
-          const { versionKey = "NASB1995" } = query;
-
-          const version = await db
-            .getOrCreateConnection()
-            .selectFrom("bible_versions")
-            .select(["id", "language_code"])
-            .where("version_key", "=", versionKey)
-            .executeTakeFirst();
-
-          if (!version) {
-            throw new NotFoundError("Invalid bible version");
-          }
-
-          const { book } = await bibleService.getBook({
-            book_id: body.book_id,
-            chapter_number: body.chapter_number,
-            version_id: version.id,
-          });
-
-          if (!book) {
-            throw new NotFoundError("Book not found");
-          }
-
-          const testamentMap = {
-            OT: "Old Testament",
-            NT: "New Testament",
-          };
-
-          const testament =
-            book.testament !== null ? testamentMap[book.testament] : "";
-
-          const bookAsContext = `
-            Book ID: ${book.bookId}
-            Book Name: ${book.name}
-            Testament: ${testament}
-            Genre: ${book.genre.n}
-            Chapter Number: ${body.chapter_number}
-          `;
-
-          const prompt = `
-            Answer my question in markdown format, limiting yourself to the context below.
-
-            My question: ${body.content}
-
-            Context: ${bookAsContext}
-          `;
-
-          const chatText = await gpt5Text({ user: prompt });
-          // await new Promise((resolve) => setTimeout(resolve, 3000));
-          // const chat = {
-          //   choices: [{ message: { content: "Fake message, test only" } }],
-          // };
-
-          const saveAiMessage = await chatService.addMessageToChat({
-            chat_id: body.chat_id,
-            role: RoleEnum.assistant,
-            content: chatText || "",
-          });
-
-          // Serialize Date to ISO string and return only required fields
-          const message = saveAiMessage.newMessage;
-          if (!message) {
-            throw new Error("Failed to save AI message");
-          }
-          return {
-            result: {
-              message_id: message.message_id,
-              conversation_id: message.conversation_id,
-              content: message.content,
-              role: message.role,
-              created_at:
-                message.generated_at instanceof Date
-                  ? message.generated_at.toISOString()
-                  : message.generated_at || new Date().toISOString(),
-            },
-          };
-        },
-        {
-          body: t.Intersect([
-            t.Pick(AddMessageDto, ["chat_id", "content"]),
-            t.Pick(ChapterDto, ["book_id", "chapter_number"]),
-          ]),
-          response: {
-            200: SavedMessageSchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .delete(
-        "/book/delete-chat/:conversation_id",
-        async ({ params, store: { chatService } }) => {
-          const { conversation_id } = params;
-          const disabledChat = await chatService.disableChat({
-            conversation_id: conversation_id,
-          });
-          return { disabledChat: disabledChat.chat_id ?? 0 };
-        },
-        {
-          params: t.Object({
-            conversation_id: t.Numeric(),
-          }),
-          response: {
-            200: DisabledChatSchema,
             ...StandardErrorResponses,
           },
         },

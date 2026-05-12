@@ -20,7 +20,6 @@ import {
 } from "../../hooks/useBible";
 import { useBookIntroduction } from "../../hooks/useBookIntroduction";
 import { useChapter } from "../../hooks/useChapter";
-import { useConversationManager } from "../../hooks/useConversationManager";
 import { useHandleTab } from "../../hooks/useHandleTab";
 import { useLastRead } from "../../hooks/useLastRead";
 import { useProgressBar } from "../../hooks/useProgressBar";
@@ -40,7 +39,6 @@ import { ModalContainer } from "../../modal/ModalContainer";
 import { updateSelectedBook } from "../../store/book-selection";
 import { Accordion } from "../../ui/Accordion";
 import { BookIntroduction } from "../../ui/BookIntroduction";
-import { Chat } from "../../ui/Chat";
 import { Explanation } from "../../ui/Explanation";
 import { ProfileButton } from "../../ui/Header/UserProfile/user-profile";
 import * as Icon from "../../ui/Icons";
@@ -700,8 +698,7 @@ export const MainContent = () => {
     };
   }, [setActiveTab]);
 
-  const { conversationsHistory, selectConversation, handleChatExists } =
-    useConversationManager(session);
+  // useConversationManager removed per D-009 — Q&A feature dropped.
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -869,24 +866,7 @@ export const MainContent = () => {
     scrollToBottom();
   });
 
-  const handleChat = async () => {
-    const chats = await handleChatExists({
-      book_id: Number(bookId),
-      chapter_number: verseId,
-    }).then((data) => data?.chatExists);
-
-    const hasChat =
-      Array.isArray(chats) &&
-      chats.find((chat) => chat.conversation_id === Number(conversationId));
-
-    if (hasChat) {
-      saveSearchParams({ conversationId: String(hasChat.conversation_id) });
-    } else {
-      saveSearchParams({ conversationId: "newChat" });
-    }
-  };
-
-  const askVerseMate = process.env.NEXT_PUBLIC_ASK_VERSE_MATE === "true";
+  // handleChat + askVerseMate flag removed per D-009 — Q&A feature dropped.
 
   const { containerRef, leftWidth, startResize, rightWidth } =
     useResizeHandler();
@@ -1824,17 +1804,7 @@ export const MainContent = () => {
                 />
               </RadixTabs.Trigger>
 
-              {askVerseMate && (
-                <RadixTabs.Trigger
-                  className={`${styles.trigger}`}
-                  value="chat"
-                  onClick={handleChat}
-                >
-                  <Icon.ChatIcon
-                    className={` ${styles.active} ${styles.iconSize}`}
-                  />
-                </RadixTabs.Trigger>
-              )}
+              {/* Q&A chat trigger removed per D-009 — feature dropped. */}
 
               <button
                 type="button"
@@ -2023,38 +1993,7 @@ export const MainContent = () => {
               )}
             </RadixTabs.Content>
 
-            {askVerseMate && (
-              <>
-                <RadixTabs.Content value="chat">
-                  {session?.id ? (
-                    <>
-                      <Chat.Card>
-                        <Chat.ChatHeader />
-                        <Chat.CardContent />
-                      </Chat.Card>
-                    </>
-                  ) : (
-                    <LoginCard.Root>
-                      <LoginCard.Content />
-                    </LoginCard.Root>
-                  )}
-                </RadixTabs.Content>
-
-                <RadixTabs.Content value="newChat">
-                  <Chat.Card>
-                    <Chat.ChatHeader />
-                    <Chat.CardContent />
-                  </Chat.Card>
-                </RadixTabs.Content>
-
-                <RadixTabs.Content value="chatHistory">
-                  <Chat.Card>
-                    <Chat.ChatHeader />
-                    <Chat.CardContent />
-                  </Chat.Card>
-                </RadixTabs.Content>
-              </>
-            )}
+            {/* Q&A chat content blocks removed per D-009 — feature dropped. */}
 
             <RadixTabs.Content value="menu">
               <div className={styles.moreOptionsContainer}>
@@ -2204,9 +2143,6 @@ export const MainContent = () => {
               topicId={currentTopicInfo?.topic_id}
               session={session}
               explanation={explanation}
-              conversationsHistory={conversationsHistory}
-              selectConversation={selectConversation}
-              askVerseMate={askVerseMate}
               rightPanelContent={rightPanelContent}
               setRightPanelContent={setRightPanelContent}
               selectedBibleVersion={bibleVersionSelected}
