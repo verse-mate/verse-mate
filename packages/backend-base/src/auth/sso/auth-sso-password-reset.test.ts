@@ -158,7 +158,6 @@ describe("SSO Password Reset Integration", () => {
 
         expect(authPayload).toBeDefined();
         expect(authPayload.accessToken).toBeDefined();
-        expect(authPayload.refreshToken).toBeDefined();
       } finally {
         // Clean up
         await db
@@ -226,7 +225,6 @@ describe("SSO Password Reset Integration", () => {
 
         expect(ssoAuthPayload).toBeDefined();
         expect(ssoAuthPayload.accessToken).toBeDefined();
-        expect(ssoAuthPayload.refreshToken).toBeDefined();
       } finally {
         // Clean up
         await db

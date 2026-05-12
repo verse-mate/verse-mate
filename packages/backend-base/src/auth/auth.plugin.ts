@@ -90,7 +90,6 @@ const plugin = new Elysia()
             "/logout",
             async ({
               bearer,
-              body,
               store: { authService },
               jwt,
             }): Promise<boolean> => {
@@ -98,18 +97,9 @@ const plugin = new Elysia()
                 return false;
               }
 
-              return authService.logout(
-                bearer,
-                body?.refreshToken || null,
-                jwt,
-              );
+              return authService.logout(bearer, jwt);
             },
             {
-              body: t.Optional(
-                t.Object({
-                  refreshToken: t.Optional(t.String()),
-                }),
-              ),
               response: {
                 200: BooleanResponse,
                 ...StandardErrorResponses,
@@ -279,22 +269,7 @@ const plugin = new Elysia()
           },
         },
       )
-      .post(
-        "/refresh",
-        async ({ body, store: { authService }, jwt }): Promise<AuthPayload> => {
-          return authService.refresh(body.refreshToken, jwt);
-        },
-        {
-          body: t.Object({
-            refreshToken: t.String(),
-          }),
-          beforeHandle: authRateLimiters.refresh,
-          response: {
-            200: AuthPayloadSchema,
-            ...StandardErrorResponses,
-          },
-        },
-      )
+      // /refresh endpoint removed per D-005 — access token is the persistent session.
       .post(
         "/forgot-password",
         async ({ body, store: { authService } }) => {
@@ -525,7 +500,6 @@ const plugin = new Elysia()
             return createRedirectResponse(
               buildFrontendCallbackUrl("google", {
                 accessToken: authPayload.accessToken,
-                refreshToken: authPayload.refreshToken,
                 verified: authPayload.verified,
               }),
             );
@@ -678,7 +652,6 @@ const plugin = new Elysia()
             return createRedirectResponse(
               buildFrontendCallbackUrl("apple", {
                 accessToken: authPayload.accessToken,
-                refreshToken: authPayload.refreshToken,
                 verified: authPayload.verified,
               }),
             );
@@ -824,7 +797,6 @@ const plugin = new Elysia()
             return createRedirectResponse(
               buildFrontendCallbackUrl("apple", {
                 accessToken: authPayload.accessToken,
-                refreshToken: authPayload.refreshToken,
                 verified: authPayload.verified,
               }),
             );

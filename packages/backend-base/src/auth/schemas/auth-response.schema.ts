@@ -16,11 +16,12 @@ export const UserSchema = t.Object({
 });
 
 /**
- * Auth payload schema for login/signup/refresh responses
+ * Auth payload schema for login/signup responses.
+ * Per spec feat-auth-platform br-auth-001 (D-005): no refreshToken — access
+ * token IS the persistent session.
  */
 export const AuthPayloadSchema = t.Object({
   accessToken: t.String(),
-  refreshToken: t.Optional(t.String()),
   verified: t.Boolean(),
 });
 
