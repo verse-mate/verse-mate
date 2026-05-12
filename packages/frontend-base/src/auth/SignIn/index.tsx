@@ -18,9 +18,11 @@ import { useSignInForm } from "./useSignInForm";
 
 export interface SignInProps {
   onSwitch?: (mode: "signup") => void;
+  mode?: "admin" | "end_user";
 }
 
-export function SignIn({ onSwitch }: SignInProps) {
+export function SignIn({ onSwitch, mode = "end_user" }: SignInProps) {
+  const isAdmin = mode === "admin";
   const { ssoGoogleEnabled, ssoAppleEnabled, apiUrl } = useStore($env, {
     keys: ["ssoGoogleEnabled", "ssoAppleEnabled", "apiUrl"],
   });
@@ -207,23 +209,27 @@ export function SignIn({ onSwitch }: SignInProps) {
           Login
         </Button>
       </form>
-      <Text align="center" color="var(--gray)">
-        Don't have account?{" "}
-        {onSwitch ? (
-          <button
-            type="button"
-            onClick={() => onSwitch("signup")}
-            className={sharedStyles.switchButton}
-          >
-            Create New Account
-          </button>
-        ) : (
-          <Link href="/create-account">Create New Account</Link>
-        )}
-      </Text>
-      <Text align="center" color="var(--gray)">
-        <Link href="/">Continue without an account</Link>
-      </Text>
+      {!isAdmin && (
+        <Text align="center" color="var(--gray)">
+          Don't have account?{" "}
+          {onSwitch ? (
+            <button
+              type="button"
+              onClick={() => onSwitch("signup")}
+              className={sharedStyles.switchButton}
+            >
+              Create New Account
+            </button>
+          ) : (
+            <Link href="/create-account">Create New Account</Link>
+          )}
+        </Text>
+      )}
+      {!isAdmin && (
+        <Text align="center" color="var(--gray)">
+          <Link href="/">Continue without an account</Link>
+        </Text>
+      )}
     </div>
   );
 }
