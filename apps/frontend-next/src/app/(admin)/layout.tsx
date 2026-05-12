@@ -1,5 +1,5 @@
 "use client";
-import { AdminGuard, Notifications } from "frontend-base";
+import { AdminGuard } from "frontend-base/admin";
 import type { ReactNode } from "react";
 
 export default function AdminLayout({
@@ -7,10 +7,5 @@ export default function AdminLayout({
 }: {
   children: ReactNode;
 }) {
-  return (
-    <AdminGuard>
-      {children}
-      <Notifications />
-    </AdminGuard>
-  );
+  return <AdminGuard>{children}</AdminGuard>;
 }

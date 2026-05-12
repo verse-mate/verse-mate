@@ -1,5 +1,5 @@
 "use client";
-import { AdminDashboard } from "frontend-base";
+import { AdminDashboard } from "frontend-base/admin";
 
 export default function AdminPage() {
   return <AdminDashboard />;

@@ -1,9 +1,12 @@
 import "frontend-base/styles/global.css";
-import { AudioPlayerRoot, CookieConsent } from "frontend-base";
+import { Notifications } from "frontend-base/admin";
 import { $env, type Env, StoreInitializer } from "frontend-envs";
-import { PWAServiceWorkerRegistration } from "../components/PWAServiceWorkerRegistration";
-import { PostHogProvider } from "../providers/PostHogProvider";
-import MyMainPage from "./components/MainPage";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "VerseMate Admin",
+  robots: { index: false, follow: false },
+};
 
 export default function RootLayout({
   children,
@@ -12,19 +15,18 @@ export default function RootLayout({
 }>) {
   const envValues: Env = {
     apiUrl: process.env.API_URL ?? "http://localhost:4000",
-    askVerseMate: process.env.NEXT_PUBLIC_ASK_VERSE_MATE === "true",
+    askVerseMate: false,
     ssoGoogleEnabled: process.env.NEXT_PUBLIC_SSO_GOOGLE_ENABLED === "true",
     ssoAppleEnabled: process.env.NEXT_PUBLIC_SSO_APPLE_ENABLED === "true",
-    posthogKey: process.env.POSTHOG_KEY ?? "",
-    posthogHost: process.env.POSTHOG_HOST ?? "https://app.posthog.com",
-    posthogSessionReplay: process.env.POSTHOG_SESSION_REPLAY === "true",
+    posthogKey: "",
+    posthogHost: "",
+    posthogSessionReplay: false,
   };
   $env.set(envValues);
 
   return (
     <html lang="en">
       <head>
-        {/* Favicon - multiple formats for browser compatibility */}
         <link rel="icon" type="image/x-icon" href="/favicon_io/favicon.ico" />
         <link
           rel="icon"
@@ -38,33 +40,11 @@ export default function RootLayout({
           sizes="32x32"
           href="/favicon_io/favicon-32x32.png"
         />
-
-        {/* Apple iOS */}
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="/favicon_io/apple-touch-icon.png"
-        />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="VerseMate" />
-
-        {/* Android / Chrome */}
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#1a365d" />
       </head>
       <StoreInitializer {...envValues} />
-
       <body>
-        <PostHogProvider>
-          <PWAServiceWorkerRegistration />
-          <MyMainPage>{children}</MyMainPage>
-          {/* TASK-007 br-audio-011: single <audio> element at layout root
-              so navigating chapters does not unmount mid-playback. */}
-          <AudioPlayerRoot />
-          <CookieConsent privacyPolicyUrl="/privacy" />
-        </PostHogProvider>
+        {children}
+        <Notifications />
       </body>
     </html>
   );
