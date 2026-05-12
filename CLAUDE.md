@@ -191,6 +191,15 @@ The project uses Docker Compose for local infrastructure:
 
 Start services: `docker compose up -d` (or use `make install` for full setup)
 
+**Before starting services from a fresh clone or new workspace path:** the compose file uses fixed container names (`postgres`, `redis`, `minio`) with bind mounts to the *repo path that first started them*. If a prior workspace path still has those containers running, `docker compose up -d` silently no-ops while Postgres reads the wrong data dir — and an unclean shutdown can corrupt the volume. Run the cleanup ritual:
+
+```sh
+docker rm -f postgres redis minio prisma-studio minio-setup 2>/dev/null
+docker compose up -d
+```
+
+Cheap pre-flight: `bun scripts/check-docker-paths.ts`. Full background and Postgres-corruption recovery: see `repos/versemate-meta/CLAUDE.md` → "Stale container cleanup (macOS bind-mount trap)".
+
 ### CI/CD Pipeline
 GitHub Actions (`.github/workflows/`) runs on push to `main` or version tags:
 1. Install dependencies and compile
