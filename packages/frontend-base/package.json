@@ -1,6 +1,15 @@
 {
   "name": "frontend-base",
   "module": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./admin": "./admin/index.ts",
+    "./styles/*": "./styles/*",
+    "./src/analytics": "./src/analytics/index.ts",
+    "./src/auth/lib": "./src/auth/lib.ts",
+    "./src/utils/auth-utils": "./src/utils/auth-utils.ts",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "build": "ladle build -o dist",
     "dev": "concurrently 'ladle serve' 'tcm -w src'",
