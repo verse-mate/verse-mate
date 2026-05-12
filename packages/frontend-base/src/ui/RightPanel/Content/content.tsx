@@ -1,18 +1,13 @@
 import * as RadixTabs from "@radix-ui/react-tabs";
 import { useQuery } from "@tanstack/react-query";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import type RoleEnum from "database/src/models/public/RoleEnum";
-import type StatusEnum from "database/src/models/public/StatusEnum";
-import type TestamentEnum from "database/src/models/public/TestamentEnum";
 import { getTopicDetails } from "../../../api/topics";
 import { SignIn } from "../../../auth/SignIn";
 import { SignUp } from "../../../auth/SignUp";
 import type { UserSession } from "../../../hooks/session";
 import { useGetSearchParams } from "../../../hooks/useSearchParams";
-import { History } from "../../../ui/ConversationHistory";
 import { homeOptions } from "../../../utils/home-options";
 import { Accordion } from "../../Accordion";
-import { Chat } from "../../Chat";
 import { Explanation } from "../../Explanation";
 import explanationStyles from "../../Explanation/explanation.module.css";
 import { ProfileButton } from "../../Header/UserProfile/user-profile";
@@ -37,99 +32,7 @@ type Props = {
       }
     | null
     | undefined;
-  conversationsHistory:
-    | never[]
-    | {
-        today: {
-          title: string;
-          conversation_id: number;
-          chapter_number: number | null;
-          messages: {
-            role: RoleEnum;
-            content: string;
-            message_id: number;
-          }[];
-          book: {
-            book_id: number | null;
-            testament: TestamentEnum | null;
-            name: string | null;
-            genre_id: number | null;
-          };
-          user_id: string;
-          status: StatusEnum;
-          updated_at: string;
-        }[];
-        yesterday: {
-          title: string;
-          conversation_id: number;
-          chapter_number: number | null;
-          messages: {
-            role: RoleEnum;
-            content: string;
-            message_id: number;
-          }[];
-          book: {
-            book_id: number | null;
-            testament: TestamentEnum | null;
-            name: string | null;
-            genre_id: number | null;
-          };
-          user_id: string;
-          status: StatusEnum;
-          updated_at: string;
-        }[];
-        lastSevenDays: {
-          title: string;
-          conversation_id: number;
-          chapter_number: number | null;
-          messages: {
-            role: RoleEnum;
-            content: string;
-            message_id: number;
-          }[];
-          book: {
-            book_id: number | null;
-            testament: TestamentEnum | null;
-            name: string | null;
-            genre_id: number | null;
-          };
-          user_id: string;
-          status: StatusEnum;
-          updated_at: string;
-        }[];
-        older: {
-          title: string;
-          conversation_id: number;
-          chapter_number: number | null;
-          messages: {
-            role: RoleEnum;
-            content: string;
-            message_id: number;
-          }[];
-          book: {
-            book_id: number | null;
-            testament: TestamentEnum | null;
-            name: string | null;
-            genre_id: number | null;
-          };
-          user_id: string;
-          status: StatusEnum;
-          updated_at: string;
-        }[];
-      }
-    | undefined;
-  selectConversation: ({
-    conversationId,
-    bookId,
-    verseId,
-    testament,
-  }: {
-    conversationId: string;
-    bookId: string;
-    verseId: string;
-    testament: TestamentEnum;
-  }) => void;
-  askVerseMate: boolean;
+  // Q&A props (conversationsHistory, selectConversation, askVerseMate) removed per D-009
   rightPanelContent: string;
   setRightPanelContent: (value: string) => void;
   selectedBibleVersion: string;
@@ -142,9 +45,6 @@ export const Content = ({
   topicId,
   session,
   explanation,
-  conversationsHistory,
-  selectConversation,
-  askVerseMate,
   rightPanelContent,
   setRightPanelContent,
   selectedBibleVersion,
@@ -181,90 +81,7 @@ export const Content = ({
         </div>
       </RadixTabs.Content>
 
-      {askVerseMate && (
-        <>
-          <RadixTabs.Content className={styles.content} value="chat">
-            {session?.id ? (
-              <Chat.Card>
-                <Chat.CardContent />
-              </Chat.Card>
-            ) : (
-              <LoginCard.Root>
-                <LoginCard.Content
-                  setRightPanelContent={setRightPanelContent}
-                />
-              </LoginCard.Root>
-            )}
-          </RadixTabs.Content>
-
-          <RadixTabs.Content className={styles.content} value="newChat">
-            {session?.id ? (
-              <Chat.Card>
-                <Chat.CardContent />
-              </Chat.Card>
-            ) : (
-              <LoginCard.Root>
-                <LoginCard.Content
-                  setRightPanelContent={setRightPanelContent}
-                />
-              </LoginCard.Root>
-            )}
-          </RadixTabs.Content>
-
-          <RadixTabs.Content className={styles.content} value="chatHistory">
-            {session?.id ? (
-              <div className={styles.historyContainer}>
-                <History.Root>
-                  <History.Content>
-                    {!conversationsHistory ||
-                    Object.keys(conversationsHistory).length === 0 ? (
-                      <span>no chats</span>
-                    ) : (
-                      Object.entries(conversationsHistory).map(
-                        ([key, conversation]) => (
-                          <div key={key} className={styles.groupContainer}>
-                            <History.HistoryLabel date={key} />
-                            {conversation.map((data) => (
-                              <History.HistoryButton
-                                key={data.conversation_id}
-                                onClick={() =>
-                                  selectConversation({
-                                    bookId: String(data.book.book_id),
-                                    verseId: String(data.chapter_number),
-                                    conversationId: String(
-                                      data.conversation_id,
-                                    ),
-                                    testament: data.book
-                                      .testament as TestamentEnum,
-                                  })
-                                }
-                                label={
-                                  data.messages && data.messages.length > 0
-                                    ? data.messages[data.messages.length - 1]
-                                        .content
-                                    : "No messages"
-                                }
-                                title={data.title}
-                                conversation_id={data.conversation_id}
-                              />
-                            ))}
-                          </div>
-                        ),
-                      )
-                    )}
-                  </History.Content>
-                </History.Root>
-              </div>
-            ) : (
-              <LoginCard.Root>
-                <LoginCard.Content
-                  setRightPanelContent={setRightPanelContent}
-                />
-              </LoginCard.Root>
-            )}
-          </RadixTabs.Content>
-        </>
-      )}
+      {/* Q&A chat + chat-history tabs removed per D-009 — feature dropped. */}
 
       <RadixTabs.Content className={styles.content} value="menu">
         <div
