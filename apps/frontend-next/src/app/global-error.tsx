@@ -3,18 +3,12 @@
 /**
  * Global Error Boundary
  *
- * Catches errors in the root layout.tsx component.
- * This is a special Next.js error boundary that:
- * - Must include its own <html> and <body> tags (root layout is replaced)
- * - Initializes PostHog directly (provider may not be available)
- * - Provides minimal recovery UI
+ * Catches errors in the root layout. Admin-only app — no analytics capture.
  *
  * @see https://nextjs.org/docs/app/building-your-application/routing/error-handling#handling-errors-in-root-layouts
- * @see Spec: agent-os/specs/2025-12-17-posthog-frontend-exception-tracking/spec.md
  */
 
-import posthog from "posthog-js";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -22,71 +16,18 @@ interface GlobalErrorProps {
 }
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
-  const capturedRef = useRef(false);
-
-  // Initialize PostHog directly and capture exception on mount
   useEffect(() => {
-    // Prevent double capture in strict mode
-    if (capturedRef.current) return;
-
-    // Log error to console
     console.error("Global error boundary caught error:", error);
-
-    // Initialize PostHog directly since the provider may not be available
-    // when root layout errors occur
-    try {
-      const posthogKey =
-        process.env.POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY;
-      const posthogHost =
-        process.env.POSTHOG_HOST ||
-        process.env.NEXT_PUBLIC_POSTHOG_HOST ||
-        "https://app.posthog.com";
-
-      if (posthogKey && typeof window !== "undefined") {
-        // Check if PostHog is already initialized
-        if (!posthog.__loaded) {
-          posthog.init(posthogKey, {
-            api_host: posthogHost,
-            // Minimal config for error capture only
-            autocapture: false,
-            capture_pageview: false,
-            capture_pageleave: false,
-            disable_session_recording: true,
-          });
-        }
-
-        // Capture the exception
-        posthog.capture("$exception", {
-          $exception_type: error.name || "Error",
-          $exception_message: error.message || "Unknown error",
-          $exception_stack_trace_raw: error.stack || "",
-          source: "global-error-boundary",
-          pathname: window.location.pathname,
-          timestamp: new Date().toISOString(),
-          ...(error.digest && { error_digest: error.digest }),
-        });
-
-        capturedRef.current = true;
-      }
-    } catch (captureError) {
-      // Fail silently - we don't want error capture to cause more errors
-      console.error("Failed to capture global error to PostHog:", captureError);
-    }
   }, [error]);
 
   const handleRefresh = () => {
-    // Attempt to recover by refreshing the page
     window.location.reload();
-  };
-
-  const handleReset = () => {
-    reset();
   };
 
   return (
     <html lang="en">
       <head>
-        <title>Error - VerseMate</title>
+        <title>Error - VerseMate Admin</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body style={styles.body}>
@@ -103,7 +44,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               <button
                 type="button"
                 style={styles.primaryButton}
-                onClick={handleReset}
+                onClick={reset}
               >
                 Try Again
               </button>
@@ -117,7 +58,6 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               </button>
             </div>
 
-            {/* Development-only debug information */}
             {process.env.NODE_ENV === "development" && (
               <div style={styles.debugContainer}>
                 <p style={styles.debugTitle}>
@@ -147,10 +87,6 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   );
 }
 
-/**
- * Inline styles for global error boundary
- * Must be inline since CSS files/modules won't be loaded when root layout fails
- */
 const styles: Record<string, React.CSSProperties> = {
   body: {
     margin: 0,
