@@ -1,237 +1,18 @@
-import {
-  CreateBucketCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-  HeadBucketCommand,
-  ListObjectsV2Command,
-  PutBucketPolicyCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { InternalServerError } from "../../common/errors";
-
+import { BunS3Helper } from "./bun-s3.helper";
 import storageConstants from "./storage.constants";
 
-const ACL_PUBLIC_READ = "public-read";
-const POLICY_VERSION = "2012-10-17";
-
-class S3Helper {
-  private readonly client: S3Client;
-  readonly bucket: string;
-
-  constructor(
-    endpoint: string,
-    region: string,
-    bucket: string,
-    accessKeyId: string,
-    secretAccessKey: string,
-    forcePathStyle = false,
-  ) {
-    this.client = new S3Client({
-      forcePathStyle,
-      endpoint,
-      region,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
-
-    this.bucket = bucket;
-  }
-
-  async sendPutObjectCommand(command: PutObjectCommand): Promise<void> {
-    try {
-      await this.client.send(command);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new InternalServerError(`Operation failed: ${error.message}`);
-      }
-      throw error;
-    }
-  }
-
-  async sendPutBucketPolicyCommand(
-    command: PutBucketPolicyCommand,
-  ): Promise<void> {
-    try {
-      await this.client.send(command);
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new InternalServerError(
-          `Bucket policy update failed: ${error.message}`,
-        );
-      }
-      throw error;
-    }
-  }
-
-  async bucketExists(bucketName: string): Promise<boolean> {
-    try {
-      await this.client.send(new HeadBucketCommand({ Bucket: bucketName }));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async createBucket(bucketName: string): Promise<void> {
-    if (await this.bucketExists(bucketName)) {
-      return;
-    }
-
-    await this.client.send(
-      new CreateBucketCommand({ Bucket: bucketName, ACL: ACL_PUBLIC_READ }),
-    );
-  }
-
-  async deleteFile(bucket: string, fileName: string): Promise<boolean> {
-    try {
-      await this.client.send(
-        new DeleteObjectCommand({
-          Bucket: bucket,
-          Key: fileName,
-        }),
-      );
-      return true;
-    } catch (error) {
-      console.log(error);
-      return false;
-    }
-  }
-
-  public async createPresignedPost({
-    bucket,
-    userId,
-    folder,
-    fileName,
-  }: {
-    bucket: string;
-    userId: string;
-    folder: string;
-    fileName: string;
-  }): Promise<string> {
-    // @ts-ignore
-    const filename = fileName.replaceAll(/\s/gu, "_");
-    const mainFolder = storageConstants.mainFolder;
-
-    const folderToUpload = `${mainFolder}/${userId}/${folder}`;
-    await this.createFolder(bucket, folderToUpload);
-
-    const command = new PutObjectCommand({
-      Bucket: bucket,
-      Key: `${folderToUpload}/${filename}`,
-    });
-
-    await this.sendPutObjectCommand(command);
-
-    return getSignedUrl(this.client, command, {
-      expiresIn: storageConstants.privateObjectStorageUrlExpiresInSeconds(),
-    }).catch((error) => {
-      throw new InternalServerError(`Operation failed: ${error.message}`);
-    });
-  }
-
-  async createPresignedGet({
-    bucketName,
-    fileName,
-    isPublic,
-  }: {
-    bucketName: string;
-    fileName: string;
-    isPublic: boolean;
-  }): Promise<string> {
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: fileName,
-    });
-
-    return getSignedUrl(this.client, command, {
-      expiresIn: isPublic
-        ? storageConstants.publicObjectStorageUrlExpiresInSeconds()
-        : storageConstants.privateObjectStorageUrlExpiresInSeconds(),
-    }).catch((error) => {
-      throw new InternalServerError(`Operation failed: ${error.message}`);
-    });
-  }
-
-  async putObjectAtKey({
-    key,
-    body,
-    contentType,
-  }: {
-    key: string;
-    body: Buffer;
-    contentType: string;
-  }): Promise<void> {
-    try {
-      await this.client.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: body,
-          ContentType: contentType,
-        }),
-      );
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new InternalServerError(
-          `putObjectAtKey failed: ${error.message}`,
-        );
-      }
-      throw error;
-    }
-  }
-
-  async getPresignedUrlAtKey({
-    key,
-    expiresInSeconds,
-  }: {
-    key: string;
-    expiresInSeconds?: number;
-  }): Promise<string> {
-    const command = new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-    });
-    return getSignedUrl(this.client, command, {
-      expiresIn:
-        expiresInSeconds ??
-        storageConstants.publicObjectStorageUrlExpiresInSeconds(),
-    }).catch((error) => {
-      throw new InternalServerError(
-        `getPresignedUrlAtKey failed: ${error.message}`,
-      );
-    });
-  }
-
-  async createFolder(bucket: string, folderName: string): Promise<boolean> {
-    try {
-      const output = await this.client.send(
-        new ListObjectsV2Command({
-          Bucket: bucket,
-          Prefix: folderName,
-        }),
-      );
-
-      if (output.KeyCount === 0) {
-        const putCommand = new PutObjectCommand({
-          Bucket: bucket,
-          Key: `${folderName}/`,
-        });
-
-        await this.client.send(putCommand);
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  }
-}
-
+/**
+ * Object storage service backed by Bun's built-in S3 client.
+ *
+ * Per spec feat-integrations br-int-003 (Phase 1 decision D-002): the legacy
+ * @aws-sdk/client-s3 implementation has been replaced by `BunS3Helper`. The
+ * surface exposed here is the actual surface in use across the codebase
+ * (audio.service, audio-cleanup.service, offline.service): putGlobalObject,
+ * getGlobalObjectUrl, deleteObject. Bucket-level provisioning is handled by
+ * infrastructure (MinIO local, DigitalOcean Spaces production).
+ */
 export class ObjectStorageService {
-  private readonly s3Helper: S3Helper;
+  private readonly helper: BunS3Helper;
 
   constructor() {
     const endpoint = process.env.OBJECT_STORAGE_ENDPOINT;
@@ -239,12 +20,6 @@ export class ObjectStorageService {
     const bucket = process.env.OBJECT_STORAGE_BUCKET;
     const accessKeyId = process.env.OBJECT_STORAGE_ACCESS_KEY_ID;
     const secretAccessKey = process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY;
-    // MinIO (and other S3-compatible servers at localhost) need path-style
-    // addressing because virtual-hosted-style requires wildcard DNS. Opt-in
-    // via OBJECT_STORAGE_FORCE_PATH_STYLE=true. Real S3/Spaces keep the
-    // default (false) for virtual-hosted-style.
-    const forcePathStyle =
-      process.env.OBJECT_STORAGE_FORCE_PATH_STYLE === "true";
 
     if (!endpoint || !region || !bucket || !accessKeyId || !secretAccessKey) {
       console.error(
@@ -252,89 +27,17 @@ export class ObjectStorageService {
       );
     }
 
-    this.s3Helper = new S3Helper(
+    this.helper = new BunS3Helper(
       endpoint ?? "",
       region ?? "",
       bucket ?? "",
       accessKeyId ?? "",
       secretAccessKey ?? "",
-      forcePathStyle,
     );
   }
 
-  public async makeBucket(bucketName: string): Promise<void> {
-    return this.s3Helper.createBucket(bucketName).catch((error) => {
-      throw new InternalServerError(`Operation failed: ${error.message}`);
-    });
-  }
-
-  public async setBucketPolicy(bucketName: string): Promise<void> {
-    const policy = {
-      Version: POLICY_VERSION,
-      Statement: [
-        {
-          Sid: "AddPerm",
-          Effect: "Allow",
-          Principal: "*",
-          Action: ["s3:GetObject"],
-          Resource: [`arn:aws:s3:::${bucketName}/*`],
-        },
-      ],
-    };
-
-    const command = new PutBucketPolicyCommand({
-      Bucket: bucketName,
-      Policy: JSON.stringify(policy),
-    });
-
-    return this.s3Helper.sendPutBucketPolicyCommand(command);
-  }
-
-  public async getLinkToUploadImage({
-    folder,
-    imageExtension,
-    userId,
-  }: {
-    folder: string;
-    imageExtension: string;
-    userId: string;
-  }): Promise<string> {
-    const fileName = `${Date.now().toString()}.${imageExtension}`;
-
-    return await this.s3Helper.createPresignedPost({
-      bucket: this.s3Helper.bucket,
-      userId,
-      folder,
-      fileName,
-    });
-  }
-
-  public async getImage({
-    userId,
-    isPublic,
-    folder,
-    file,
-  }: {
-    userId: string;
-    isPublic: boolean;
-    folder: string;
-    file: string | null | undefined;
-  }): Promise<string | null> {
-    return file
-      ? await this.s3Helper.createPresignedGet({
-          bucketName: this.s3Helper.bucket,
-          fileName: `${storageConstants.mainFolder}/${userId}/${folder}/${file}`,
-          isPublic,
-        })
-      : null;
-  }
-
-  public async deleteFile(bucket: string, fileName: string): Promise<boolean> {
-    return this.s3Helper.deleteFile(bucket, fileName);
-  }
-
   /**
-   * Upload an object at an arbitrary key (not scoped to a user folder).
+   * Upload an object at an arbitrary key.
    * Used for non-user-scoped assets such as generated audio.
    */
   public async putGlobalObject({
@@ -346,7 +49,7 @@ export class ObjectStorageService {
     body: Buffer;
     contentType: string;
   }): Promise<void> {
-    await this.s3Helper.putObjectAtKey({ key, body, contentType });
+    await this.helper.putObject(key, body, contentType);
   }
 
   /**
@@ -359,13 +62,23 @@ export class ObjectStorageService {
     key: string;
     expiresInSeconds?: number;
   }): Promise<string> {
-    return this.s3Helper.getPresignedUrlAtKey({ key, expiresInSeconds });
+    const ttl =
+      expiresInSeconds ??
+      storageConstants.publicObjectStorageUrlExpiresInSeconds();
+    return this.helper.presignUrl(key, ttl, "GET");
   }
 
   /**
-   * Delete an object by key from the default bucket.
+   * Delete an object by key from the default bucket. Returns false if the
+   * underlying call throws (callers retry the DB row on the next sweep).
    */
   public async deleteObject(key: string): Promise<boolean> {
-    return this.s3Helper.deleteFile(this.s3Helper.bucket, key);
+    try {
+      await this.helper.deleteObject(key);
+      return true;
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
   }
 }
