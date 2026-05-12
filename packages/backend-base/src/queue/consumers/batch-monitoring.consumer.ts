@@ -2,9 +2,9 @@
 import * as fs from "node:fs";
 import type { Job } from "bullmq";
 import { db } from "database";
-import OpenAI from "openai";
 import { BatchOperationService } from "../../admin/services/batch-operations.service";
 import { replaceExplanationWithAudioHook } from "../../bible/audio/audio-regen-hook";
+import { type AiProvider, getAiProvider } from "../../shared/ai";
 import { stitchBylineChunks } from "../../shared/byline-chunking";
 import {
   BATCH_MONITORING_QUEUE,
@@ -12,9 +12,13 @@ import {
 } from "../batch-monitoring.queue";
 import { batchProcessingQueue } from "../batch-processing.queue";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_KEY,
-});
+// Lazy: OpenAiProvider's constructor demands OPEN_AI_KEY which is empty in
+// test envs. Resolve on first call so the module loads cleanly.
+let _ai: AiProvider | null = null;
+function ai(): AiProvider {
+  if (!_ai) _ai = getAiProvider();
+  return _ai;
+}
 
 async function calculateActualCost(
   promptTokens: number,
@@ -235,7 +239,7 @@ export const batchMonitoringConsumer = async (job: Job) => {
       return; // Don't re-queue if already finished
     }
 
-    const batch = await openai.batches.retrieve(batchId);
+    const batch = await ai().batchesRetrieve(batchId);
 
     console.log(`[BATCH_MONITORING] Batch ${batchId} status: ${batch.status}`);
 
@@ -249,11 +253,11 @@ export const batchMonitoringConsumer = async (job: Job) => {
 
     if (batch.status === "completed") {
       console.log(`[BATCH_MONITORING] Batch ${batchId} completed.`);
-      const outputFileId = batch.output_file_id;
+      const outputFileId = batch.outputFileId;
       if (outputFileId) {
         let fileContent: Response;
         try {
-          fileContent = await openai.files.content(outputFileId);
+          fileContent = await ai().filesContent(outputFileId);
         } catch (fileError) {
           console.error(
             `[BATCH_MONITORING] Failed to retrieve output file ${outputFileId} for batch ${batchId}:`,
@@ -768,18 +772,18 @@ export const batchMonitoringConsumer = async (job: Job) => {
       }
 
       // If validating for more than 10 minutes, log additional debug info
-      const timeSinceCreation = Date.now() - batch.created_at * 1000;
+      const timeSinceCreation = Date.now() - (batch.createdAt ?? 0) * 1000;
       if (batch.status === "validating" && timeSinceCreation > 10 * 60 * 1000) {
         console.warn(
           `[BATCH_MONITORING] Batch ${batchId} has been validating for ${Math.round(timeSinceCreation / 60000)} minutes`,
         );
         console.warn(
-          `[BATCH_MONITORING] This may indicate a file format issue. Check input file: ${batch.input_file_id}`,
+          `[BATCH_MONITORING] This may indicate a file format issue. Check input file: ${batch.inputFileId}`,
         );
 
         // Try to get file info for debugging
         try {
-          const fileInfo = await openai.files.retrieve(batch.input_file_id);
+          const fileInfo = await ai().filesRetrieve(batch.inputFileId);
           console.warn(
             `[BATCH_MONITORING] Input file status: ${fileInfo.status}, size: ${fileInfo.bytes} bytes`,
           );
