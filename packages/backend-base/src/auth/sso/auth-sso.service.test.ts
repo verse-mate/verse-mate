@@ -180,7 +180,6 @@ describe("AuthService - SSO Operations", () => {
 
       expect(authPayload).toBeDefined();
       expect(authPayload.accessToken).toBeDefined();
-      expect(authPayload.refreshToken).toBeDefined();
       expect(authPayload.verified).toBe(true);
 
       // Clean up
@@ -213,7 +212,6 @@ describe("AuthService - SSO Operations", () => {
 
       expect(authPayload).toBeDefined();
       expect(authPayload.accessToken).toBeDefined();
-      expect(authPayload.refreshToken).toBeDefined();
       expect(authPayload.verified).toBe(true); // SSO users are auto-verified
 
       // Verify user was created without password

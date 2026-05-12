@@ -575,11 +575,11 @@ const plugin = new Elysia()
                   id: batchStatus.id,
                   status: batchStatus.status,
                   progress:
-                    (batchStatus.request_counts?.completed || 0) /
-                    (batchStatus.request_counts?.total || 1),
-                  total: batchStatus.request_counts?.total || 0,
-                  completed: batchStatus.request_counts?.completed || 0,
-                  failed: batchStatus.request_counts?.failed || 0,
+                    (batchStatus.requestCounts?.completed || 0) /
+                    (batchStatus.requestCounts?.total || 1),
+                  total: batchStatus.requestCounts?.total || 0,
+                  completed: batchStatus.requestCounts?.completed || 0,
+                  failed: batchStatus.requestCounts?.failed || 0,
                 };
               },
               {

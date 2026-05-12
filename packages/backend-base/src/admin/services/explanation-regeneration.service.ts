@@ -1,7 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import OpenAI from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { NotFoundError } from "../../common/errors";
+import { type AiProvider, getAiProvider } from "../../shared/ai";
 import {
   generateChunkedBylineParallel,
   shouldUseBylineChunking,
@@ -11,13 +11,12 @@ import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
 
 export class ExplanationRegenerationService {
-  private readonly openai: OpenAI;
+  private readonly ai: AiProvider;
   private readonly promptRepository: PromptRepository;
 
   constructor(private readonly db: db) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPEN_AI_KEY,
-    });
+    // Per spec feat-integrations br-int-001 (D-001): consume AI through abstraction.
+    this.ai = getAiProvider();
     this.promptRepository = new PromptRepository(this.db);
   }
 
@@ -34,15 +33,15 @@ export class ExplanationRegenerationService {
     effort?: "low" | "medium" | "high";
     maxTokens?: number;
   }) {
-    const response = await this.openai.responses.create({
+    const response = await this.ai.responsesCreate({
       model,
-      reasoning: { effort },
+      reasoningEffort: effort,
       instructions,
       input,
-      max_output_tokens: maxTokens,
+      maxOutputTokens: maxTokens,
     });
 
-    return response.output_text || "";
+    return response.outputText;
   }
 
   private getLanguageName(code: string, locale = "en"): string {

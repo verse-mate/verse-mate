@@ -15,7 +15,7 @@ make install  # Sets up Docker, env files, installs dependencies, runs migration
 
 ### Development
 ```bash
-bun dev       # Runs both backend (port 3001) and frontend (port 3000) concurrently
+bun dev       # Runs both backend (port 4000) and frontend (port 3000) concurrently
 ```
 
 ### Code Quality
@@ -49,7 +49,7 @@ cd apps/frontend-next && bun build  # Build frontend
 ### Monorepo Structure
 ```
 /apps
-  /backend - Elysia API server (port 3001)
+  /backend - Elysia API server (port 4000)
   /frontend-next - Next.js app (port 3000) — the logged-in PWA at app.versemate.org
   /website - Marketing website (port 3002) — the public site at versemate.org
 /packages
@@ -66,9 +66,21 @@ cd apps/frontend-next && bun build  # Build frontend
 **All public-facing marketing pages go in `apps/website`, not `apps/frontend-next`.**
 
 - `apps/website` → `versemate.org` (marketing, landing pages, `/give`, `/about`, `/coach`, `/privacy`, etc.). Next.js with `output: "export"`, static export served by a Cloudflare Worker. Drop new static HTML into `apps/website/public/<route>/index.html` or add a page in `apps/website/src/pages/`.
-- `apps/frontend-next` → `app.versemate.org` (the logged-in product: Bible reader, chat, coaching reports). This app has the `MyMainPage` chrome wrapper in the root layout; it is NOT the right home for marketing content.
+- `apps/frontend-next` → **`admin.versemate.org` (admin-only — staff content management).** Per [versemate-meta constitution CONST-002 "mobile-first"](../versemate-meta/constitution.md), the canonical user-facing surface is `verse-mate-mobile` (iOS, Android, web export). frontend-next is no longer a user product. New user-facing features go in mobile, NOT here.
 
-If you're unsure, the rule is: "Would this URL make sense on versemate.org?" If yes → `apps/website`.
+  Allowed in `apps/frontend-next`:
+  - `(admin)/admin` — admin dashboard, content management, prompts editor, batch ops
+  - `(auth)` — admin login + SSO callbacks (admins authenticate here)
+  - `(bible)` — read-only Bible preview for admin QA (per spec [feat-admin-bible-preview](../versemate-meta/specs/feat-admin-bible-preview/spec.md))
+  - `topic/[category]/[slug]` — read-only topic preview for admin QA
+
+  **NOT allowed in `apps/frontend-next`** (deprecated, removal pending):
+  - User signup flows (mobile owns signup; admin gets `is_admin = true` via manual SQL per D-014 in feat-auth-platform)
+  - Chat / Q&A UI (Q&A feature removed entirely per D-009)
+  - User input bars / Bible reader composing tools
+  - Anything wrapped by `useChat`, `useConversationManager`, `useInput`, `Chat`, `ConversationHistory`, `InputBar`
+
+If you're unsure, the rule is: "Would this URL make sense on versemate.org?" If yes → `apps/website`. "Would a user (not admin) need this?" If yes → mobile, not frontend-next.
 
 ### Key Technologies
 - **Runtime**: Bun (replaces Node.js, npm, and more)
@@ -178,6 +190,15 @@ The project uses Docker Compose for local infrastructure:
 - **Prisma Studio** (port 5555): Database GUI tool
 
 Start services: `docker compose up -d` (or use `make install` for full setup)
+
+**Before starting services from a fresh clone or new workspace path:** the compose file uses fixed container names (`postgres`, `redis`, `minio`) with bind mounts to the *repo path that first started them*. If a prior workspace path still has those containers running, `docker compose up -d` silently no-ops while Postgres reads the wrong data dir — and an unclean shutdown can corrupt the volume. Run the cleanup ritual:
+
+```sh
+docker rm -f postgres redis minio prisma-studio minio-setup 2>/dev/null
+docker compose up -d
+```
+
+Cheap pre-flight: `bun scripts/check-docker-paths.ts`. Full background and Postgres-corruption recovery: see `repos/versemate-meta/CLAUDE.md` → "Stale container cleanup (macOS bind-mount trap)".
 
 ### CI/CD Pipeline
 GitHub Actions (`.github/workflows/`) runs on push to `main` or version tags:

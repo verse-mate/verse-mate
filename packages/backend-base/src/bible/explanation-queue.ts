@@ -1,16 +1,16 @@
 import Queue from "bull";
 import { db } from "database";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
-import OpenAI from "openai";
+import { type AiChatMessage, getAiProvider } from "../shared/ai";
 import {
   generateChunkedByline,
   shouldUseBylineChunking,
   toBylineVerses,
 } from "../shared/byline-chunking";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPEN_AI_KEY,
-});
+// Per spec feat-integrations br-int-001 (D-001): use the provider abstraction.
+// Resolved per AI_PROVIDER env (default: openai).
+const ai = getAiProvider();
 
 const getExplanationTypePrompt = (
   type: ExplanationTypeEnum,
@@ -100,20 +100,18 @@ async function gpt5Text({
   user: string;
   maxTokens?: number;
 }) {
-  const messages: OpenAI.ChatCompletionMessageParam[] = [];
+  const messages: AiChatMessage[] = [];
   if (system) {
     messages.push({ role: "system", content: system });
   }
   messages.push({ role: "user", content: user });
 
-  const options: any = {
+  const response = await ai.chatComplete({
     model: "gpt-5",
     messages,
-    max_completion_tokens: maxTokens,
-  };
-
-  const chat = await openai.chat.completions.create(options);
-  return chat.choices[0].message.content || "";
+    maxTokens,
+  });
+  return response.content;
 }
 
 // Create explanation generation queue

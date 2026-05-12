@@ -86,7 +86,7 @@
 ### Monorepo Organization
 ```
 /apps
-  /backend - Elysia API server (port 3001)
+  /backend - Elysia API server (port 4000)
   /frontend-next - Next.js application (port 3000)
   /website - Marketing website
 
