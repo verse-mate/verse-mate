@@ -30,7 +30,7 @@ export default function Login() {
       <Suspense fallback={null}>
         <AdminRequiredBanner />
       </Suspense>
-      <SignIn />
+      <SignIn mode="admin" />
     </AuthWrapperPage>
   );
 }
