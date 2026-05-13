@@ -1,5 +1,12 @@
 {
-  // Wrangler configuration for VerseMate frontend deployment using OpenNext
+  // Wrangler configuration for the VerseMate admin dashboard (Next.js + OpenNext).
+  //
+  // ADMIN-ONLY since VERA-18: the end-user app moved to verse-mate-web /
+  // verse-mate-mobile. This worker serves the /admin surface (gated by
+  // AdminGuard + middleware) and nothing else. Production domain is
+  // admin.versemate.org. Worker names + staging/preview domains are kept
+  // as-is to preserve Cloudflare DNS bindings and the CI preview-URL
+  // formula in .github/workflows/build.yml.
   "$schema": "https://raw.githubusercontent.com/cloudflare/wrangler/main/config-schema.json",
   "name": "verse-mate-production",
   "main": ".open-next/worker.js",
@@ -14,19 +21,15 @@
   // Environment variables
   "vars": {
     "API_URL": "https://api.versemate.org",
-    "APP_URL": "https://verse-mate.xyz",
-    "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
+    "APP_URL": "https://admin.versemate.org",
     "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
-    "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true",
-    "POSTHOG_KEY": "phc_UhHXkLHgiD6916hYZgaKy9pjOOlZi9sTRic3RhWWLRC",
-    "POSTHOG_HOST": "https://us.i.posthog.com",
-    "POSTHOG_SESSION_REPLAY": "false"
+    "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true"
   },
 
   // Custom domain routes
   "routes": [
     {
-      "pattern": "verse-mate.xyz",
+      "pattern": "admin.versemate.org",
       "custom_domain": true
     }
   ],
@@ -50,14 +53,6 @@
     }
   ],
 
-  // R2 bucket for static assets (optional, more efficient than site.bucket)
-  // "r2_buckets": [
-  //   {
-  //     "binding": "ASSETS",
-  //     "bucket_name": "verse-mate-assets"
-  //   }
-  // ],
-
   // Development settings
   "dev": {
     "ip": "localhost",
@@ -73,12 +68,8 @@
       "vars": {
         "API_URL": "https://api.versemate.org",
         "APP_URL": "https://v-m-preview-app.verse-mate.workers.dev",
-        "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
         "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
-        "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true",
-        "POSTHOG_KEY": "phc_UhHXkLHgiD6916hYZgaKy9pjOOlZi9sTRic3RhWWLRC",
-        "POSTHOG_HOST": "https://us.i.posthog.com",
-        "POSTHOG_SESSION_REPLAY": "false"
+        "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true"
       }
     },
     "staging": {
@@ -86,12 +77,8 @@
       "vars": {
         "API_URL": "https://api.versemate.org",
         "APP_URL": "https://staging.app.verse-mate.xyz",
-        "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
         "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
-        "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true",
-        "POSTHOG_KEY": "phc_UhHXkLHgiD6916hYZgaKy9pjOOlZi9sTRic3RhWWLRC",
-        "POSTHOG_HOST": "https://us.i.posthog.com",
-        "POSTHOG_SESSION_REPLAY": "false"
+        "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true"
       },
       "routes": [
         {
@@ -104,18 +91,9 @@
       "name": "verse-mate-production",
       "vars": {
         "API_URL": "https://api.versemate.org",
-        // Repointed from app.versemate.org → admin.versemate.org. The
-        // admin dashboard (/admin, gated by AdminGuard) is the only
-        // surface that stays on this Next.js Worker — the user-facing
-        // app moves to verse-mate-web. See verse-mate-web PR #28 +
-        // its docs/CUTOVER.md for the full handoff plan.
         "APP_URL": "https://admin.versemate.org",
-        "NEXT_PUBLIC_ASK_VERSE_MATE": "false",
         "NEXT_PUBLIC_SSO_GOOGLE_ENABLED": "true",
-        "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true",
-        "POSTHOG_KEY": "phc_UhHXkLHgiD6916hYZgaKy9pjOOlZi9sTRic3RhWWLRC",
-        "POSTHOG_HOST": "https://us.i.posthog.com",
-        "POSTHOG_SESSION_REPLAY": "true"
+        "NEXT_PUBLIC_SSO_APPLE_ENABLED": "true"
       },
       "routes": [
         {
