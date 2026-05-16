@@ -36,4 +36,7 @@
   --salmon: #f87171;
   --vivid-burgundy: #9f1b2f;
   --spring-wood: #fef2f2;
+
+  /* VER-81: brand gold used for the inline circular play button. */
+  --color-gold: var(--dust);
 }
