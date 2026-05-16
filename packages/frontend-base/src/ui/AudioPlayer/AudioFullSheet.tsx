@@ -29,8 +29,7 @@ import { useStore } from "../../utils/use-store";
 import { AudioPlayerContext } from "./AudioPlayerContext";
 import { AudioResumeChip } from "./AudioResumeChip";
 import styles from "./audio-player.module.css";
-
-const SPEEDS = [0.5, 1, 1.25, 1.5, 2];
+import { SPEEDS } from "./constants";
 
 function formatTime(seconds: number): string {
   const mm = Math.floor(seconds / 60);

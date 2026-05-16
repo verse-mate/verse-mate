@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Play } from "react-feather";
+import { Pause, Play } from "react-feather";
 import {
   $currentTrack,
   $playbackState,
+  $speed,
   type AudioTrack,
   audioPlayerActions,
 } from "../../hooks/useAudioPlayerStore";
@@ -13,13 +14,17 @@ import {
 /**
  * TASK-007: inline "Listen · 3:47" chip shown above each explanation tab.
  *
- * Surfaces all 5 spec-D1 states (loading / empty / error / populated /
- * partial) from useExplanationAudio + the player store. Styling goes
- * through the project's CSS-module + open-props pattern — no inline
- * styles, no hardcoded px/hex.
+ * VER-81 redesign: in the populated/playing states the entry renders as
+ * a YouVersion-style row — circular play/pause button, label, and a
+ * speed cycler chip that appears once the track is loaded. Loading and
+ * error states keep the existing chip treatment to match mobile.
+ *
+ * Styling goes through the project's CSS-module + open-props pattern —
+ * no inline styles, no hardcoded px/hex.
  */
 import { useStore } from "../../utils/use-store";
 import styles from "./audio-player.module.css";
+import { SPEEDS, formatSpeed, nextSpeed } from "./constants";
 
 export interface AudioInlineEntryProps extends UseExplanationAudioArgs {
   explanationType: string;
@@ -39,6 +44,7 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
     useExplanationAudio(props);
   const currentTrack = useStore($currentTrack);
   const playbackState = useStore($playbackState);
+  const speed = useStore($speed);
   const queryClient = useQueryClient();
   const isThisTrack = currentTrack?.explanation_id === props.explanationId;
 
@@ -106,16 +112,46 @@ export function AudioInlineEntry(props: AudioInlineEntryProps) {
     audioPlayerActions.play();
   };
 
+  const handlePlayPause = () => {
+    if (playingThis) {
+      audioPlayerActions.pause();
+    } else {
+      startTrack();
+    }
+  };
+
   return (
-    <button
-      type="button"
-      className={styles.inlineEntry}
+    <div
+      className={styles.inlineRow}
       data-state={playingThis ? "playing" : "populated"}
       data-testid="audio-inline-entry"
-      onClick={startTrack}
     >
-      <Play size={16} aria-hidden="true" />
-      {label}
-    </button>
+      <button
+        type="button"
+        className={styles.playCircle}
+        data-playing={playingThis ? "true" : undefined}
+        aria-label={
+          playingThis ? "Pause audio explanation" : "Play audio explanation"
+        }
+        onClick={handlePlayPause}
+      >
+        {playingThis ? (
+          <Pause size={18} aria-hidden="true" />
+        ) : (
+          <Play size={18} aria-hidden="true" />
+        )}
+      </button>
+      <span className={styles.inlineLabel}>{label}</span>
+      {isThisTrack && (
+        <button
+          type="button"
+          className={styles.speedChip}
+          aria-label={`Playback speed ${formatSpeed(speed)}, tap to change`}
+          onClick={() => audioPlayerActions.setSpeed(nextSpeed(speed, SPEEDS))}
+        >
+          {formatSpeed(speed)}
+        </button>
+      )}
+    </div>
   );
 }

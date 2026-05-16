@@ -53,6 +53,67 @@
   }
 }
 
+/* VER-81: YouVersion-style circular inline play button + speed cycler. */
+.inlineRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-3);
+  align-self: flex-start;
+}
+
+.playCircle {
+  width: var(--size-6);
+  height: var(--size-6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-gold, var(--color-primary, var(--indigo-9)));
+  color: var(--color-on-primary, var(--gray-0));
+  border: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 120ms ease;
+}
+
+.playCircle:hover {
+  opacity: 0.88;
+}
+
+.playCircle[data-playing='true'] {
+  box-shadow:
+    0 0 0 3px var(--color-gold, var(--color-primary, var(--indigo-9))),
+    0 0 0 5px var(--color-surface, var(--surface-1));
+}
+
+.inlineLabel {
+  font-size: var(--font-size-1);
+  color: var(--color-text, var(--gray-12));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+
+.speedChip {
+  min-width: var(--size-6);
+  min-height: var(--size-5, 32px);
+  padding: 0 var(--size-2);
+  border-radius: var(--radius-round);
+  border: 1px solid var(--color-border, var(--gray-4));
+  background: var(--color-surface, var(--surface-1));
+  color: var(--color-text, var(--gray-12));
+  font-size: var(--font-size-1);
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms ease;
+}
+
+.speedChip:hover {
+  background: var(--color-surface-hover, var(--gray-2));
+}
+
 /* Persistent dock bar at the bottom of the viewport. */
 .dockBar {
   position: fixed;
