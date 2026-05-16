@@ -36,6 +36,21 @@ export const $playbackState = atom<AudioPlaybackState>("idle");
 export const $elapsedSeconds = atom<number>(0);
 export const $durationSeconds = atom<number>(0);
 export const $speed = atom<number>(1);
+
+// VER-91: hydrate $speed from localStorage. Guarded for SSR — Next.js
+// imports this store on the server during render, where localStorage
+// is undefined. Invalid/legacy values (e.g. 0.75) silently fall through
+// to the default of 1.
+const VALID_SPEEDS = [0.5, 1, 1.25, 1.5, 2];
+if (typeof window !== "undefined") {
+  const stored = Number.parseFloat(
+    window.localStorage.getItem("vm_audio_speed") ?? "",
+  );
+  if (VALID_SPEEDS.includes(stored)) {
+    $speed.set(stored);
+  }
+}
+
 export const $error = atom<string | null>(null);
 export const $dockVisible = atom<boolean>(false);
 export const $fullSheetOpen = atom<boolean>(false);
@@ -134,6 +149,9 @@ export const audioPlayerActions = {
   setSpeed(speed: number) {
     $speed.set(speed);
     if (audioElementRef) audioElementRef.playbackRate = speed;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("vm_audio_speed", String(speed));
+    }
   },
 
   close() {
