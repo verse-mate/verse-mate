@@ -3,11 +3,15 @@ import {
   BYLINE_CHUNK_SIZE,
   BYLINE_CHUNK_THRESHOLD,
   type BylineVerse,
+  MIN_SUMMARY_SENTENCES,
+  countSentences,
+  extractVerseSummaries,
   generateChunkedByline,
   shouldUseBylineChunking,
   splitBylineForTranslation,
   stitchBylineChunks,
   toBylineVerses,
+  validateSummaryLengths,
 } from "./byline-chunking";
 
 // --- toBylineVerses ---
@@ -444,5 +448,240 @@ describe("splitBylineForTranslation", () => {
       expect(summaries).toBe(headings);
       expect(verseRefs).toBe(headings);
     }
+  });
+});
+
+// --- countSentences ---
+
+describe("countSentences", () => {
+  it("returns 0 for empty/whitespace input", () => {
+    expect(countSentences("")).toBe(0);
+    expect(countSentences("   \n\t  ")).toBe(0);
+  });
+
+  it("counts simple terminal punctuation", () => {
+    expect(countSentences("One sentence.")).toBe(1);
+    expect(countSentences("First. Second. Third.")).toBe(3);
+    expect(countSentences("Hi! Bye? Done.")).toBe(3);
+  });
+
+  it("does not count abbreviations as sentence ends", () => {
+    expect(
+      countSentences(
+        "Paul cites the Law (e.g. Deuteronomy) repeatedly. He calls believers to faith. He concludes with a doxology.",
+      ),
+    ).toBe(3);
+    expect(
+      countSentences(
+        "Compare vs. 5. The author makes a sharp pivot. Then he restates the claim.",
+      ),
+    ).toBe(3);
+  });
+
+  it("ignores blockquoted verse text", () => {
+    const block =
+      '> "God spoke long ago."\nThis verse opens the chapter. It introduces the theme. It anchors the rest.';
+    expect(countSentences(block)).toBe(3);
+  });
+
+  it("strips markdown emphasis before counting", () => {
+    expect(countSentences("**Bold thing.** *italic thing.* Plain thing.")).toBe(
+      3,
+    );
+  });
+
+  it("handles a trailing fragment with no punctuation as zero extra", () => {
+    // We do not count fragments without terminal punctuation.
+    expect(countSentences("One sentence. trailing fragment")).toBe(1);
+  });
+});
+
+// --- extractVerseSummaries ---
+
+describe("extractVerseSummaries", () => {
+  it("extracts per-verse Summary blocks", () => {
+    const out = [
+      "# Line-by-Line Analysis of Hebrews 1",
+      "",
+      "## Hebrews 1:1",
+      '> "God, after He spoke long ago"',
+      "",
+      "### Summary",
+      "This verse opens the letter. It declares God's past speech. It anchors the chapter.",
+      "",
+      "### Analysis",
+      "**Point one:**",
+      "- bullet",
+      "",
+      "## Hebrews 1:2",
+      '> "in these last days"',
+      "",
+      "### Summary",
+      "Short.",
+      "",
+      "### Analysis",
+      "- bullet",
+    ].join("\n");
+
+    const summaries = extractVerseSummaries(out);
+    expect(summaries).toHaveLength(2);
+    expect(summaries[0].verseHeading).toBe("Hebrews 1:1");
+    expect(summaries[1].verseHeading).toBe("Hebrews 1:2");
+    expect(summaries[0].summary).toContain("It anchors the chapter.");
+    expect(summaries[1].summary).toBe("Short.");
+  });
+
+  it("returns empty array when no ### Summary blocks exist", () => {
+    const out = "# Summary of Hebrews 1\n\nThis is a summary explanation type.";
+    expect(extractVerseSummaries(out)).toEqual([]);
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(extractVerseSummaries("")).toEqual([]);
+  });
+});
+
+// --- validateSummaryLengths ---
+
+describe("validateSummaryLengths", () => {
+  function makeBylineSection(verseRef: string, summary: string) {
+    return [
+      `## ${verseRef}`,
+      "> verse text",
+      "",
+      "### Summary",
+      summary,
+      "",
+      "### Analysis",
+      "- bullet",
+    ].join("\n");
+  }
+
+  it("passes when every Summary has at least MIN_SUMMARY_SENTENCES sentences", () => {
+    const out = [
+      makeBylineSection(
+        "Hebrews 1:1",
+        "First sentence. Second sentence. Third sentence.",
+      ),
+      makeBylineSection(
+        "Hebrews 1:2",
+        "Alpha sentence. Beta sentence. Gamma sentence.",
+      ),
+    ].join("\n\n");
+
+    const v = validateSummaryLengths(out);
+    expect(v.valid).toBe(true);
+    expect(v.shortSummaries).toEqual([]);
+  });
+
+  it("fails when any Summary has fewer than MIN_SUMMARY_SENTENCES sentences", () => {
+    const out = [
+      makeBylineSection(
+        "Hebrews 1:1",
+        "First sentence. Second sentence. Third sentence.",
+      ),
+      makeBylineSection("Hebrews 1:2", "Just one short sentence."),
+    ].join("\n\n");
+
+    const v = validateSummaryLengths(out);
+    expect(v.valid).toBe(false);
+    expect(v.reason).toBe("summary-too-short");
+    expect(v.shortSummaries).toHaveLength(1);
+    expect(v.shortSummaries[0].verseHeading).toBe("Hebrews 1:2");
+    expect(v.shortSummaries[0].sentenceCount).toBe(1);
+  });
+
+  it("treats no `### Summary` sections as valid (non-byline output)", () => {
+    const out = "# Summary of Hebrews 1\n\nThis is the chapter-level summary.";
+    const v = validateSummaryLengths(out);
+    expect(v.valid).toBe(true);
+    expect(v.reason).toBe("no-summaries");
+  });
+
+  it("respects custom minSentences param", () => {
+    const out = makeBylineSection("Hebrews 1:1", "Short. Sentence.");
+    expect(validateSummaryLengths(out, 2).valid).toBe(true);
+    expect(validateSummaryLengths(out, 3).valid).toBe(false);
+  });
+
+  it("MIN_SUMMARY_SENTENCES is 3 per VER-120", () => {
+    expect(MIN_SUMMARY_SENTENCES).toBe(3);
+  });
+});
+
+// --- generateChunkedByline summary-quality retry ---
+
+describe("generateChunkedByline summary-length validation", () => {
+  function verseSection(verseRef: string, summary: string) {
+    return [
+      `## ${verseRef}`,
+      "> verse text",
+      "",
+      "### Summary",
+      summary,
+      "",
+      "### Analysis",
+      "- a",
+    ].join("\n");
+  }
+
+  it("retries when a per-verse Summary is too short and accepts the corrected output", async () => {
+    let callCount = 0;
+    const verses = makeVerses(2);
+
+    const result = await generateChunkedByline({
+      verses,
+      bookName: "Genesis",
+      chapterNumber: 1,
+      bylineTemplate: "test template",
+      maxRetries: 1,
+      generateChunk: async () => {
+        callCount++;
+        if (callCount === 1) {
+          // First attempt has the right verse boundaries but a short Summary on verse 2.
+          return [
+            verseSection("Genesis 1:1", "First. Second. Third."),
+            verseSection("Genesis 1:2", "Only one."),
+          ].join("\n\n");
+        }
+        // Retry returns valid summaries.
+        return [
+          verseSection(
+            "Genesis 1:1",
+            "First sentence. Second sentence. Third sentence.",
+          ),
+          verseSection(
+            "Genesis 1:2",
+            "Alpha sentence. Beta sentence. Gamma sentence.",
+          ),
+        ].join("\n\n");
+      },
+    });
+
+    expect(callCount).toBe(2);
+    expect(result).toContain("Alpha sentence.");
+  });
+
+  it("throws after exhausting retries when summaries remain short", async () => {
+    const verses = makeVerses(2);
+
+    await expect(
+      generateChunkedByline({
+        verses,
+        bookName: "Genesis",
+        chapterNumber: 1,
+        bylineTemplate: "test template",
+        maxRetries: 1,
+        generateChunk: async () => {
+          return [
+            verseSection(
+              "Genesis 1:1",
+              "First sentence. Second sentence. Third sentence.",
+            ),
+            verseSection("Genesis 1:2", "Still too short."),
+          ].join("\n\n");
+        },
+      }),
+    ).rejects.toThrow("summary-too-short");
   });
 });
