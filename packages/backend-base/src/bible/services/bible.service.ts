@@ -36,6 +36,12 @@ export class BibleService {
     const { book } = await this.bibleRepository.getBook({ book_id });
     if (!book) return { message: "Book not found" };
 
+    // Use the version's localized book name when available; otherwise the
+    // shared (English) books.name. NASB1995 has no localized override.
+    const { name: localizedName } =
+      await this.bibleRepository.getLocalizedBookName({ version_id, book_id });
+    if (localizedName) book.name = localizedName;
+
     const { chapter } = await this.bibleRepository.getChapter({
       book_id,
       chapter_number,
@@ -53,6 +59,11 @@ export class BibleService {
     });
 
     return { book: this.formattedBook({ book, chapter, subtitles, verses }) };
+  }
+
+  async getBibleVersions() {
+    const versions = await this.bibleRepository.getBibleVersions();
+    return { versions };
   }
 
   async getTestaments() {

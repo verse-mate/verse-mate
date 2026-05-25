@@ -82,6 +82,36 @@ describe("Bible Plugin", () => {
       expect(firstChapter?.chapterNumber).toBeDefined();
       expect(typeof firstChapter?.chapterNumber).toBe("number");
     });
+
+    it("GET /bible/book/:bookId/:chapterNumber - accepts bible_version alias", async () => {
+      // @ts-ignore - Dynamic path parameter
+      const { data, error } = await testClient.bible.book[1][1].get({
+        query: { bible_version: "NASB1995" },
+      });
+
+      expect(error).toBeFalsy();
+      expect(data?.book).toBeDefined();
+      expect(Array.isArray(data?.book?.chapters)).toBe(true);
+    });
+
+    it("GET /bible/versions - lists active versions with license metadata", async () => {
+      const { data, error } = await testClient.bible.versions.get();
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(Array.isArray(data?.versions)).toBe(true);
+
+      const nasb = data?.versions.find((v) => v.version_key === "NASB1995");
+      expect(nasb).toBeDefined();
+      expect(nasb?.language_code).toBe("en");
+      expect(nasb?.testament_coverage).toBeDefined();
+
+      // Curated open versions seeded by migration are discoverable, including
+      // the NT-only Ukrainian translation.
+      const ukrkl = data?.versions.find((v) => v.version_key === "UKRKL");
+      expect(ukrkl).toBeDefined();
+      expect(ukrkl?.testament_coverage).toBe("nt");
+    });
   });
 
   describe("Bookmarks CRUD", () => {
