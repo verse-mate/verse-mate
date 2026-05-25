@@ -20,6 +20,9 @@ import type { SupportPlugin } from "./src/support/support.plugin";
 import offlinePlugin from "./src/offline/offline.plugin";
 import type { OfflinePlugin } from "./src/offline/offline.plugin";
 
+import versionPolicyPlugin from "./src/versionPolicy.plugin";
+import type { VersionPolicyPlugin } from "./src/versionPolicy.plugin";
+
 export {
   ApiError,
   UnauthorizedError,
@@ -49,4 +52,6 @@ export {
   supportPlugin,
   type OfflinePlugin,
   offlinePlugin,
+  type VersionPolicyPlugin,
+  versionPolicyPlugin,
 };

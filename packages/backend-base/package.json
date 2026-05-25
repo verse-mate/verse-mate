@@ -25,6 +25,7 @@
     "@elysiajs/eden": "1.4.1",
     "@faker-js/faker": "^8.4.1",
     "@types/bun": "^1.1.11",
-    "@types/ms": "^0.7.34"
+    "@types/ms": "^0.7.34",
+    "@types/semver": "^7.7.1"
   }
 }

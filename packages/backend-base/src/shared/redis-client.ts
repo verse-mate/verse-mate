@@ -136,6 +136,16 @@ class RedisClient {
     }
   }
 
+  async setPersistent(key: string, value: object): Promise<string | null> {
+    await this.connect();
+    try {
+      return await this.client.set(key, JSON.stringify(value));
+    } catch (error) {
+      console.error("Error setting persistent value in Redis:", error);
+      throw error;
+    }
+  }
+
   async delete(key: string): Promise<number> {
     await this.connect();
     try {
