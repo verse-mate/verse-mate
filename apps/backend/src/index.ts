@@ -10,11 +10,13 @@ import {
   supportPlugin,
   topicPlugin,
   userPlugin,
+  versionPolicyPlugin,
 } from "backend-base";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
 import { Elysia } from "elysia";
+import redis from "./lib/redis";
 
 const app = new Elysia()
   // Handle favicon.ico requests to prevent NOT_FOUND errors from browsers
@@ -28,6 +30,7 @@ const app = new Elysia()
   .use(adminPlugin)
   .use(offlinePlugin)
   .use(healthCheckPlugin)
+  .use(versionPolicyPlugin)
   .use(cors())
   .use(
     openapi({
@@ -53,6 +56,10 @@ app.listen(process.env.PORT || 3000, async () => {
   console.log(
     `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
   );
+
+  redis.connect().catch((err) => {
+    console.error("❌ Redis connect failed on startup:", err);
+  });
 
   // Asynchronously refresh language stats on startup (fire-and-forget with timeout)
   console.log("🚀 Triggering initial language stats refresh on startup...");
