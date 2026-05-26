@@ -1,5 +1,4 @@
-import type { Kysely } from "kysely";
-import { sql } from "kysely";
+import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
 
 /**
@@ -43,6 +42,8 @@ import type Database from "../src/models/Database";
  * tapped anyway.
  */
 export async function up(db: Kysely<Database>): Promise<void> {
+  console.log("Creating lemmas table...");
+
   // 1. lemmas — universal + English baseline. Same pattern as `topics`:
   //    English content lives directly on the row; non-English rendered
   //    via lemma_translations join.
@@ -62,14 +63,24 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("semantic_range", "jsonb")
     .addColumn("notes", "text")
     .addColumn("related", "jsonb")
-    .addColumn("created_at", "timestamp", (col) => col.defaultTo(sql`now()`))
-    .addColumn("updated_at", "timestamp", (col) => col.defaultTo(sql`now()`))
+    .addColumn("created_at", "timestamp", (col) =>
+      col.defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
+    .addColumn("updated_at", "timestamp", (col) =>
+      col.defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
     .execute();
 
+  // Partial index — frontend filter only surfaces `loaded = true` lemmas,
+  // so the index covers ~2K tap-worthy rows instead of all 18K. Raw SQL
+  // because Kysely's createIndex builder doesn't expose WHERE.
   await db.executeQuery(
     sql`CREATE INDEX IF NOT EXISTS idx_lemmas_loaded
         ON lemmas (loaded) WHERE loaded = true`.compile(db),
   );
+
+  console.log("Successfully created lemmas table.");
+  console.log("Creating lemma_translations table...");
 
   // 2. lemma_translations — non-English rows only. Mirrors
   //    topic_translations: id PK, FK to parent, language_code, translated_*
@@ -80,9 +91,9 @@ export async function up(db: Kysely<Database>): Promise<void> {
       col.primaryKey().defaultTo(sql`gen_random_uuid()`),
     )
     .addColumn("strongs", "varchar(8)", (col) =>
-      col.notNull().references("lemmas.strongs").onDelete("cascade"),
+      col.references("lemmas.strongs").onDelete("cascade").notNull(),
     )
-    .addColumn("language_code", "varchar(5)", (col) => col.notNull())
+    .addColumn("language_code", "varchar(10)", (col) => col.notNull())
     .addColumn("translated_pos", "varchar(64)")
     .addColumn("translated_basic_gloss", "text")
     .addColumn("translated_semantic_range", "jsonb")
@@ -90,34 +101,35 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("translated_related", "jsonb")
     .addColumn("source", "varchar(32)")
     .addColumn("is_active", "boolean", (col) => col.defaultTo(true))
-    .addColumn("created_at", "timestamp", (col) => col.defaultTo(sql`now()`))
-    .addColumn("updated_at", "timestamp", (col) => col.defaultTo(sql`now()`))
+    .addColumn("created_at", "timestamp", (col) =>
+      col.defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
+    .addColumn("updated_at", "timestamp", (col) =>
+      col.defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
+    .addUniqueConstraint("unique_lemma_translation", [
+      "strongs",
+      "language_code",
+    ])
     .execute();
 
-  // Unique constraint on (strongs, language_code) — one translation per
-  // (lemma, language). Same conceptual key as topic_translations'
-  // (topic_id, language_code).
-  await db.executeQuery(
-    sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_lemma_translations_strongs_lang
-        ON lemma_translations (strongs, language_code)`.compile(db),
-  );
   // Language-only lookups (e.g. "all Spanish translations").
-  await db.executeQuery(
-    sql`CREATE INDEX IF NOT EXISTS idx_lemma_translations_lang
-        ON lemma_translations (language_code)`.compile(db),
-  );
+  await db.schema
+    .createIndex("idx_lemma_translations_language")
+    .on("lemma_translations")
+    .column("language_code")
+    .execute();
+
+  console.log("Successfully created lemma_translations table.");
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
-  await db.executeQuery(
-    sql`DROP INDEX IF EXISTS idx_lemma_translations_lang`.compile(db),
-  );
-  await db.executeQuery(
-    sql`DROP INDEX IF EXISTS idx_lemma_translations_strongs_lang`.compile(db),
-  );
-  await db.schema.dropTable("lemma_translations").execute();
+  console.log("Dropping lemma_translations table...");
+  await db.schema.dropTable("lemma_translations").ifExists().execute();
+  console.log("Dropping lemmas table...");
   await db.executeQuery(
     sql`DROP INDEX IF EXISTS idx_lemmas_loaded`.compile(db),
   );
-  await db.schema.dropTable("lemmas").execute();
+  await db.schema.dropTable("lemmas").ifExists().execute();
+  console.log("Successfully dropped lemma tables.");
 }
