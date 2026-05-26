@@ -31,8 +31,32 @@ bun dev
 ```
 |-- backend/
 |   |-- src/                 # Main source code
-|       |-- index.ts         # Entry point of the application
+|       |-- index.ts             # Elysia API server entry
+|       |-- ingest-versions.ts   # Multi-version Bible ingest CLI (bundled to dist/)
 ```
+
+## Bible ingest in production
+
+After a deploy, the multi-version Bible ingest loader can be run from inside
+the backend container. It is bundled into the production image as
+`dist/ingest-versions.js`:
+
+```bash
+# Inside the running backend container, with $POSTGRES_URL already set:
+bun ./dist/ingest-versions.js --input /path/to/output [--version KEY]
+```
+
+The `--input` directory must follow the layout produced by `verse-mate-web`'s
+`scripts/bible-ingest/build.py --all` (per-version `manifest.json` + per-book
+`<bookId>/<chapter>.json` files). Place that directory inside the container
+first — for example with `docker cp`, a mounted volume, or by downloading a
+tarball — since the loader reads from the local filesystem and does not
+fetch the data itself.
+
+The loader is idempotent: re-running updates existing verse text in place
+rather than duplicating rows. Use `--version KEY` to ingest one version at a
+time. Implementation lives in
+`packages/backend-base/src/bible/ingest-versions.ts`.
 
 ## Available Scripts
 
