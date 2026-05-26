@@ -44,6 +44,14 @@ import type { NewLemmaTranslations } from "database/src/models/public/LemmaTrans
 import type { NewLemmas, RelatedWord } from "database/src/models/public/Lemmas";
 import { sql } from "kysely";
 
+// node-postgres serializes a JS array as a Postgres array literal, not JSON,
+// so a plain `.values({ jsonbCol: [...] })` fails jsonb parsing (22P02).
+// Stringify + cast writes valid jsonb. Same fix as ingest-strongs-tokens.ts.
+function toJsonb<T>(v: T | null | undefined): T | null {
+  if (v == null) return null;
+  return sql`${JSON.stringify(v)}::jsonb` as unknown as T;
+}
+
 interface LemmaSeedRow {
   strongs: string;
   lemma: string;
@@ -141,9 +149,9 @@ async function loadLemmas(file: string): Promise<LoadStats> {
       loaded: row.loaded === true,
       pos: row.pos ?? null,
       basic_gloss: row.basic_gloss ?? null,
-      semantic_range: row.semantic_range ?? null,
+      semantic_range: toJsonb<string[]>(row.semantic_range),
       notes: row.notes ?? null,
-      related: row.related ?? null,
+      related: toJsonb<RelatedWord[]>(row.related),
     });
     if (batch.length >= 500) await flush();
     if (stats.rows_read % 5000 === 0) {
@@ -223,9 +231,9 @@ async function loadLemmaTranslations(file: string): Promise<LoadStats> {
       language_code: row.language_code,
       translated_pos: row.translated_pos ?? null,
       translated_basic_gloss: row.translated_basic_gloss ?? null,
-      translated_semantic_range: row.translated_semantic_range ?? null,
+      translated_semantic_range: toJsonb<string[]>(row.translated_semantic_range),
       translated_notes: row.translated_notes ?? null,
-      translated_related: row.translated_related ?? null,
+      translated_related: toJsonb<RelatedWord[]>(row.translated_related),
       source: row.source ?? null,
     });
     if (batch.length >= 500) await flush();
