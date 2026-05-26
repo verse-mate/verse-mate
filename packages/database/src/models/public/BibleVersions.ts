@@ -15,6 +15,14 @@ export default interface BibleVersionsTable {
 
   language_code: ColumnType<string, string, string>;
 
+  license: ColumnType<string | null, string | null, string | null>;
+
+  license_url: ColumnType<string | null, string | null, string | null>;
+
+  attribution: ColumnType<string | null, string | null, string | null>;
+
+  testament_coverage: ColumnType<string, string | undefined, string>;
+
   is_active: ColumnType<boolean | null, boolean | null, boolean | null>;
 
   created_at: ColumnType<

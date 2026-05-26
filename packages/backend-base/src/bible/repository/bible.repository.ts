@@ -117,6 +117,51 @@ export class BibleRepository {
     return { verses: verses ?? null };
   }
 
+  /**
+   * Localized book name for a given version (USFM \h). Falls back to null when
+   * the version has no localized name (e.g. NASB1995, which uses books.name).
+   */
+  async getLocalizedBookName({
+    version_id,
+    book_id,
+  }: {
+    version_id: string;
+    book_id: number;
+  }) {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("version_book_names")
+      .where("version_id", "=", version_id)
+      .where("book_id", "=", book_id)
+      .select("name")
+      .executeTakeFirst();
+
+    return { name: row?.name ?? null };
+  }
+
+  /**
+   * Active Bible versions with license/attribution metadata, for the picker
+   * and credits screen. Grouped client-side by language_code.
+   */
+  async getBibleVersions() {
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("is_active", "=", true)
+      .select([
+        "version_key",
+        "version_name",
+        "language_code",
+        "license",
+        "license_url",
+        "attribution",
+        "testament_coverage",
+      ])
+      .orderBy("language_code", "asc")
+      .orderBy("version_name", "asc")
+      .execute();
+  }
+
   async getVersionBykey(versionKey: string) {
     return this.db
       .getOrCreateConnection()

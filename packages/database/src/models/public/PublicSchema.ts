@@ -40,6 +40,7 @@ import type { default as UserThemePreferencesTable } from "./UserThemePreference
 import type { default as UserViewedBookIntroductionsTable } from "./UserViewedBookIntroductions";
 import type { default as VerseHighlightsTable } from "./VerseHighlights";
 import type { default as VersesTable } from "./Verses";
+import type { default as VersionBookNamesTable } from "./VersionBookNames";
 
 export default interface PublicSchema {
   kysely_migration: KyselyMigrationTable;
@@ -119,4 +120,6 @@ export default interface PublicSchema {
   explanation_audios: ExplanationAudiosTable;
 
   explanation_audio_progress: ExplanationAudioProgressTable;
+
+  version_book_names: VersionBookNamesTable;
 }
