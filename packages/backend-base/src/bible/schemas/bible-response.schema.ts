@@ -73,10 +73,24 @@ const ChapterBookType = t.Object({
           end_verse: t.Number(),
         }),
       ),
+      // Per-verse: `text` is always present (back-compat). `tokens` is
+      // additive — populated only when the caller passes `?tagged=1` AND
+      // the row has Strong's data seeded. Joining `tokens[*].text`
+      // reproduces `text` byte-for-byte.
       verses: t.Array(
         t.Object({
           verseNumber: t.Number(),
           text: t.String(),
+          tokens: t.Optional(
+            t.Array(
+              t.Object({
+                text: t.String(),
+                strongs: t.Optional(t.String()),
+                strongs_alt: t.Optional(t.Array(t.String())),
+                confidence: t.Optional(t.Number()),
+              }),
+            ),
+          ),
         }),
       ),
     }),
