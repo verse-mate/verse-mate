@@ -102,15 +102,29 @@ export class BibleRepository {
   async getVerses({
     chapter_id,
     version_id,
+    withTokens = false,
   }: Pick<ChapterDto, "chapter_id"> & {
     version_id: string;
+    /**
+     * When true, also fetch `verses.tokens` JSONB. Rows where tokens IS
+     * NULL still flow through with text only — the service layer decides
+     * per-row whether to emit the tagged or legacy shape. Default false
+     * keeps the read narrow for the untagged path.
+     */
+    withTokens?: boolean;
   }) {
+    const baseSelect = [
+      "verses.verse_number as verseNumber",
+      "verses.text",
+    ] as const;
+    const taggedSelect = [...baseSelect, "verses.tokens"] as const;
+
     const verses = await this.db
       .getOrCreateConnection()
       .selectFrom("verses")
       .where("chapter_id", "=", chapter_id)
       .where("version_id", "=", version_id)
-      .select(["verses.verse_number as verseNumber", "verses.text"])
+      .select(withTokens ? taggedSelect : baseSelect)
       .orderBy("verseNumber", "asc")
       .execute();
 

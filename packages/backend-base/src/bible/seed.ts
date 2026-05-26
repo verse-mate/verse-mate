@@ -108,7 +108,7 @@ async function saveVerse({
   verse_number,
   text,
   version_id,
-}: Omit<Verses, "verse_id">) {
+}: Omit<Verses, "verse_id" | "tokens">) {
   await db
     .getOrCreateConnection()
     .insertInto("verses")
