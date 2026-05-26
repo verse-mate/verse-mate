@@ -112,6 +112,32 @@ describe("Bible Plugin", () => {
       expect(ukrkl).toBeDefined();
       expect(ukrkl?.testament_coverage).toBe("nt");
     });
+
+    it("GET /bible/book/explanation/:bookId/:chapterNumber - returns the explanation shape", async () => {
+      const { data, error } =
+        // @ts-ignore - Dynamic path parameters
+        await testClient.bible.book.explanation[1][1].get({
+          query: { explanationType: "summary" },
+        });
+
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data).toHaveProperty("explanation");
+    });
+
+    it("GET /bible/book/explanation/:bookId/:chapterNumber - accepts optional lang query param", async () => {
+      const { data, error } =
+        // @ts-ignore - Dynamic path parameters
+        await testClient.bible.book.explanation[1][1].get({
+          query: { explanationType: "summary", lang: "es" },
+        });
+
+      // The endpoint accepts the language selector; when no Spanish translation
+      // exists it falls back to English rather than erroring.
+      expect(error).toBeFalsy();
+      expect(data).toBeTruthy();
+      expect(data).toHaveProperty("explanation");
+    });
   });
 
   describe("Bookmarks CRUD", () => {

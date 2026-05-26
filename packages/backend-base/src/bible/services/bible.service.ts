@@ -142,10 +142,12 @@ export class BibleService {
     version_id,
     user_id,
     type,
+    lang,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     version_id: string;
     user_id?: string;
     type?: ExplanationTypeEnum;
+    lang?: string;
   }) {
     // Get language_code from version_id
     const version = await this.db
@@ -172,6 +174,12 @@ export class BibleService {
       if (user?.preferred_language) {
         language_code = user.preferred_language;
       }
+    }
+
+    // An explicit request param wins over both the version's language and the
+    // signed-in user's stored preference (mirrors GET /topics/:id/explanation).
+    if (lang) {
+      language_code = lang;
     }
 
     // Per spec feat-i18n br-i18n-002 (D-013) + br-i18n-004 (D-014):

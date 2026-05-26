@@ -267,7 +267,7 @@ const plugin = new Elysia()
           currentUserId,
         }) => {
           const { bookId, chapterNumber } = params;
-          const { explanationType } = query;
+          const { explanationType, lang } = query;
           const versionKey =
             query.bible_version ?? query.versionKey ?? "NASB1995";
 
@@ -288,6 +288,7 @@ const plugin = new Elysia()
             version_id: version.id,
             type: explanationType as ExplanationTypeEnum | undefined,
             user_id: currentUserId || undefined,
+            lang,
           });
 
           return { explanation };
@@ -301,6 +302,12 @@ const plugin = new Elysia()
             bible_version: t.Optional(t.String()),
             versionKey: t.Optional(t.String()),
             explanationType: t.Optional(t.String()),
+            lang: t.Optional(
+              t.String({
+                description:
+                  "BCP-47 language code (e.g. 'es', 'pt-BR') for the AI commentary. Selects the active explanation in that language, falling back to English when no translation exists. Takes precedence over the bible version's language and the signed-in user's preferred_language.",
+              }),
+            ),
           }),
           response: {
             200: ExplanationSchema,
