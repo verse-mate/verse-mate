@@ -1,6 +1,7 @@
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import type HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import type TestamentEnum from "database/src/models/public/TestamentEnum";
+import type { VerseToken } from "database/src/models/public/Verses";
 import { NotFoundError, ValidationError } from "../../common/errors";
 import { resolveLanguageCode, withEnglishFallback } from "../../shared/i18n";
 import type { db } from "../../shared/shared.plugin";
@@ -30,8 +31,17 @@ export class BibleService {
     book_id,
     chapter_number,
     version_id,
+    tagged = false,
   }: Pick<ChapterDto, "book_id" | "chapter_number"> & {
     version_id: string;
+    /**
+     * When true, fetch `verses.tokens` and emit the Strong's-tagged shape
+     * (`{verseNumber, tokens}`) for rows where tokens IS NOT NULL. Rows
+     * without tokens still emit the legacy shape (`{verseNumber, text}`),
+     * so mixed-coverage chapters stay safe on the wire. Default false
+     * preserves the legacy response byte-for-byte.
+     */
+    tagged?: boolean;
   }) {
     const { book } = await this.bibleRepository.getBook({ book_id });
     if (!book) return { message: "Book not found" };
@@ -56,9 +66,12 @@ export class BibleService {
     const { verses } = await this.bibleRepository.getVerses({
       chapter_id: chapter.chapter_id,
       version_id,
+      withTokens: tagged,
     });
 
-    return { book: this.formattedBook({ book, chapter, subtitles, verses }) };
+    return {
+      book: this.formattedBook({ book, chapter, subtitles, verses, tagged }),
+    };
   }
 
   async getBibleVersions() {
@@ -696,11 +709,21 @@ export class BibleService {
     chapter,
     subtitles,
     verses,
+    tagged = false,
   }: {
     book: BookDto;
     chapter: Pick<ChapterDto, "chapter_id" | "chapter_number">;
     subtitles: Omit<SubtitlesDto, "chapter_id">[];
-    verses: VersesDto;
+    /**
+     * Raw verse rows from `getVerses`. When tagged=true the rows may also
+     * carry a `tokens` field (null for verses we haven't seeded yet).
+     */
+    verses: Array<{
+      verseNumber: number;
+      text: string;
+      tokens?: unknown;
+    }>;
+    tagged?: boolean;
   }) {
     if (
       !book ||
@@ -717,6 +740,23 @@ export class BibleService {
       return null;
     }
 
+    // `text` is always emitted (back-compat — every existing client reads
+    // it). When `tagged=true` AND the row has a non-null tokens array we
+    // also include `tokens` so Strong's-aware clients can render the
+    // tagged shape. Clients that ignore the new field keep working
+    // exactly as before. Mixed-coverage chapters are valid: some verses
+    // get `tokens`, others don't.
+    const formattedVerses: VersesDto = verses.map((v) => {
+      if (tagged && Array.isArray(v.tokens) && v.tokens.length > 0) {
+        return {
+          verseNumber: v.verseNumber,
+          text: v.text,
+          tokens: v.tokens as VerseToken[],
+        };
+      }
+      return { verseNumber: v.verseNumber, text: v.text };
+    });
+
     return {
       bookId: book.book_id,
       name: book.name,
@@ -729,7 +769,7 @@ export class BibleService {
         {
           chapterNumber: chapter.chapter_number,
           subtitles: subtitles,
-          verses: verses,
+          verses: formattedVerses,
         },
       ], //the first array is always "truthy"
     };

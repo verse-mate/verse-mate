@@ -81,6 +81,18 @@ function validateBookId(bookId: number): void {
   }
 }
 
+/**
+ * Parse an opt-in boolean query flag. Permissive on the truthy side ("1",
+ * "true", "yes" — case-insensitive) and silent on everything else, so the
+ * back-compat contract holds: an unrecognized value is treated as omitted
+ * rather than 400'd.
+ */
+function isTruthyQueryFlag(raw: string | undefined): boolean {
+  if (!raw) return false;
+  const v = raw.toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 const plugin = new Elysia()
   .use(shared)
   .onError(createErrorHandler("bible plugin"))
@@ -149,6 +161,13 @@ const plugin = new Elysia()
           const versionKey =
             query.bible_version ?? query.versionKey ?? "NASB1995";
 
+          // Strong's-tagged rendering is opt-in. Truthy values ("1" / "true" /
+          // "yes") flip per-verse output to {verseNumber, tokens} for rows
+          // that have been seeded via ingest-strongs-tokens. Untagged rows
+          // (and the entire NASB1995 / KJV path) still serve the legacy
+          // {verseNumber, text} shape — back-compat is silent.
+          const tagged = isTruthyQueryFlag(query.tagged);
+
           const version = await db
             .getOrCreateConnection()
             .selectFrom("bible_versions")
@@ -164,6 +183,7 @@ const plugin = new Elysia()
             book_id: bookId,
             chapter_number: chapterNumber,
             version_id: version.id,
+            tagged,
           });
 
           return result;
@@ -176,6 +196,12 @@ const plugin = new Elysia()
           query: t.Object({
             bible_version: t.Optional(t.String()),
             versionKey: t.Optional(t.String()),
+            /**
+             * Opt-in flag for Strong's-tagged verse rendering. Accepts
+             * "1", "true", or "yes" (case-insensitive). Anything else
+             * (or omitted) returns the legacy `{verseNumber, text}` shape.
+             */
+            tagged: t.Optional(t.String()),
           }),
           response: {
             200: ChapterSchema,
