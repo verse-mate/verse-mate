@@ -16,6 +16,7 @@ import { RatingDto } from "./dto/book/rating.dto";
 import { BibleRepository } from "./repository/bible.repository";
 import { PromptRepository } from "./repository/prompt.repository";
 import {
+  BibleVersionsSchema,
   BookSchema,
   BookmarkActionSchema,
   BookmarksSchema,
@@ -128,10 +129,25 @@ const plugin = new Elysia()
         },
       )
       .get(
+        "/versions",
+        async ({ store: { bibleService } }) => {
+          return await bibleService.getBibleVersions();
+        },
+        {
+          response: {
+            200: BibleVersionsSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
         "/book/:bookId/:chapterNumber",
         async ({ params, store: { bibleService, db }, query }) => {
           const { bookId, chapterNumber } = params;
-          const { versionKey = "NASB1995" } = query;
+          // `bible_version` is preferred (consistent with /topics); `versionKey`
+          // is kept as a back-compat alias. Defaults to NASB1995.
+          const versionKey =
+            query.bible_version ?? query.versionKey ?? "NASB1995";
 
           const version = await db
             .getOrCreateConnection()
@@ -158,6 +174,7 @@ const plugin = new Elysia()
             chapterNumber: t.Numeric(),
           }),
           query: t.Object({
+            bible_version: t.Optional(t.String()),
             versionKey: t.Optional(t.String()),
           }),
           response: {
@@ -250,7 +267,9 @@ const plugin = new Elysia()
           currentUserId,
         }) => {
           const { bookId, chapterNumber } = params;
-          const { versionKey = "NASB1995", explanationType } = query;
+          const { explanationType } = query;
+          const versionKey =
+            query.bible_version ?? query.versionKey ?? "NASB1995";
 
           const version = await db
             .getOrCreateConnection()
@@ -279,6 +298,7 @@ const plugin = new Elysia()
             chapterNumber: t.Numeric(),
           }),
           query: t.Object({
+            bible_version: t.Optional(t.String()),
             versionKey: t.Optional(t.String()),
             explanationType: t.Optional(t.String()),
           }),

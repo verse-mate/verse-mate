@@ -93,6 +93,21 @@ export const LanguagesSchema = t.Array(
   }),
 );
 
+// Bible versions response - available translations with license/attribution
+export const BibleVersionsSchema = t.Object({
+  versions: t.Array(
+    t.Object({
+      version_key: t.String(),
+      version_name: t.String(),
+      language_code: t.String(),
+      license: t.Union([t.String(), t.Null()]),
+      license_url: t.Union([t.String(), t.Null()]),
+      attribution: t.Union([t.String(), t.Null()]),
+      testament_coverage: t.String(),
+    }),
+  ),
+});
+
 // Chapter response - returns book object with chapter details
 // Can return either { book: ..., message?: string } or { message: string }
 export const ChapterSchema = t.Union([

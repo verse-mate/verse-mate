@@ -417,16 +417,20 @@ export async function main() {
   const metadataFile = Bun.file(`${import.meta.dir}/data/key_english.json`);
   const bibleFile = Bun.file(`${import.meta.dir}/data/NASB1995.json`);
   const bible = await parseBibleData(bibleFile, metadataFile);
+  // Pin to NASB1995: the bible_versions table now holds many translations
+  // (seeded by migration), so an unordered executeTakeFirst() could return
+  // the wrong version and assign NASB text to another version's id.
   const version = await db
     .getOrCreateConnection()
     .selectFrom("bible_versions")
     .selectAll()
+    .where("version_key", "=", "NASB1995")
     .executeTakeFirst();
 
   // Add a check to ensure version exists
   if (!version) {
     throw new Error(
-      "No Bible version found in database. Please run the initial seed first.",
+      "No NASB1995 Bible version found in database. Please run migrations first.",
     );
   }
 
