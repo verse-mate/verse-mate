@@ -38,6 +38,7 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { db } from "database";
 import type { VerseToken } from "database/src/models/public/Verses";
+import { sql } from "kysely";
 
 interface SeedRow {
   version_key: string;
@@ -105,6 +106,25 @@ async function loadChapterIndex(): Promise<Map<string, number>> {
   return idx;
 }
 
+/**
+ * Load every verse for one version up front, keyed by
+ * `${chapter_id}:${verse_number}`. The per-row existence check then resolves
+ * in-memory instead of issuing a SELECT per verse — on prod-managed Postgres
+ * each round trip is ~50-100ms, so this collapses ~30k round trips per Bible
+ * into a single query.
+ */
+async function loadVerseIndex(versionId: string) {
+  const rows = await db
+    .getOrCreateConnection()
+    .selectFrom("verses")
+    .where("version_id", "=", versionId)
+    .select(["verse_id", "chapter_id", "verse_number", "text"])
+    .execute();
+  const idx = new Map<string, (typeof rows)[number]>();
+  for (const r of rows) idx.set(`${r.chapter_id}:${r.verse_number}`, r);
+  return idx;
+}
+
 async function loadOneVersion(file: string): Promise<LoadStats> {
   const stats: LoadStats = {
     version_key: "",
@@ -116,6 +136,7 @@ async function loadOneVersion(file: string): Promise<LoadStats> {
   };
 
   let versionId: string | null = null;
+  let verseIndex: Awaited<ReturnType<typeof loadVerseIndex>> | null = null;
   const chapterIndex = await loadChapterIndex();
   const conn = db.getOrCreateConnection();
 
@@ -144,6 +165,7 @@ async function loadOneVersion(file: string): Promise<LoadStats> {
         );
         return stats;
       }
+      verseIndex = await loadVerseIndex(versionId);
     } else if (row.version_key !== stats.version_key) {
       stats.rows_skipped_invalid += 1;
       continue;
@@ -157,13 +179,7 @@ async function loadOneVersion(file: string): Promise<LoadStats> {
 
     // Lossless-join gate: confirm the joined tokens reproduce the served
     // text byte-for-byte before writing. Drifted rows stay untagged.
-    const existing = await conn
-      .selectFrom("verses")
-      .where("chapter_id", "=", chapterId)
-      .where("verse_number", "=", row.verse_number)
-      .where("version_id", "=", versionId)
-      .select(["verse_id", "text"])
-      .executeTakeFirst();
+    const existing = verseIndex?.get(`${chapterId}:${row.verse_number}`);
 
     if (!existing) {
       stats.rows_skipped_missing_verse += 1;
@@ -177,7 +193,10 @@ async function loadOneVersion(file: string): Promise<LoadStats> {
 
     await conn
       .updateTable("verses")
-      .set({ tokens: row.tokens })
+      // node-postgres serializes a JS array as a Postgres array literal, not
+      // JSON, so a plain `.set({ tokens })` fails jsonb parsing (22P02).
+      // Stringify + cast writes valid jsonb.
+      .set({ tokens: sql`${JSON.stringify(row.tokens)}::jsonb` })
       .where("verse_id", "=", existing.verse_id)
       .execute();
     stats.rows_written += 1;
