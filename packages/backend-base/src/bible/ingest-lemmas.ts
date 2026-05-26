@@ -1,48 +1,48 @@
 /**
  * Lemma + lemma-translations seed loader.
  *
+ * Same schema convention as topics + topic_translations: English content
+ * lives on the `lemmas` row directly; `lemma_translations` is ONLY for
+ * non-English languages.
+ *
  * Reads two JSONL files:
  *
- *   lemmas.jsonl                — one row per Strong's, universal fields.
- *                                 {strongs, lemma, translit, pronunciation,
- *                                  nt_frequency, ot_frequency, loaded}
+ *   lemmas.jsonl                — one row per Strong's. Universal fields
+ *                                 + English baseline (pos, basic_gloss,
+ *                                 semantic_range, notes, related).
  *
- *   lemma_translations.jsonl    — one row per (strongs, language_code), holds
- *                                 the translatable fields.
- *                                 {strongs, language_code, pos, basic_gloss,
- *                                  semantic_range, notes, related, source}
+ *   lemma_translations.jsonl    — one row per (strongs, language_code) for
+ *                                 NON-English languages. Rows with
+ *                                 language_code='en' are rejected — those
+ *                                 belong on lemmas.
  *
- * Both are upserted (idempotent) — re-running overwrites existing rows in
- * place. lemma_translations rows for a strongs that doesn't exist in lemmas
- * are skipped + counted, because the FK would fail.
+ * Both upsert (idempotent). lemma_translations rows whose strongs isn't in
+ * lemmas are skipped + counted because the FK would fail.
  *
- * Wire format example (lemmas.jsonl):
+ * Wire format (lemmas.jsonl):
  *
  *   {"strongs":"G2385","lemma":"Ἰάκωβος","translit":"Iakōbos",
- *    "pronunciation":null,"nt_frequency":42,"ot_frequency":0,"loaded":false}
+ *    "pronunciation":null,"nt_frequency":42,"ot_frequency":0,"loaded":true,
+ *    "pos":"Proper noun (person)","basic_gloss":"James",
+ *    "semantic_range":["..."],"notes":"...","related":[{"translit":"...","note":"..."}]}
  *
- * Wire format example (lemma_translations.jsonl):
+ * Wire format (lemma_translations.jsonl):
  *
- *   {"strongs":"G2385","language_code":"es","pos":"Sustantivo propio (persona)",
- *    "basic_gloss":"Santiago","semantic_range":["Jacobo, hijo de Zebedeo", ...],
- *    "notes":"…","related":[{"translit":"iesous","note":"…"}],"source":"llm:haiku-4.5"}
+ *   {"strongs":"G2385","language_code":"es","translated_pos":"...",
+ *    "translated_basic_gloss":"Santiago","translated_semantic_range":[...],
+ *    "translated_notes":"...","translated_related":[...],"source":"llm:..."}
  *
  * Usage (from the deployed image):
  *   bun ./dist/ingest-lemmas.js --input <dir>
- *
- * The <dir> must contain `lemmas.jsonl` and optionally `lemma_translations.jsonl`.
- * Either file is optional; runs of one alone are fine.
  */
 import { createReadStream } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { db } from "database";
-import type {
-  NewLemmaTranslations,
-  RelatedWord,
-} from "database/src/models/public/LemmaTranslations";
-import type { NewLemmas } from "database/src/models/public/Lemmas";
+import type { NewLemmaTranslations } from "database/src/models/public/LemmaTranslations";
+import type { NewLemmas, RelatedWord } from "database/src/models/public/Lemmas";
+import { sql } from "kysely";
 
 interface LemmaSeedRow {
   strongs: string;
@@ -52,16 +52,22 @@ interface LemmaSeedRow {
   nt_frequency?: number | null;
   ot_frequency?: number | null;
   loaded?: boolean;
-}
-
-interface TranslationSeedRow {
-  strongs: string;
-  language_code: string;
+  // English baseline (optional — non-loaded lemmas have null content)
   pos?: string | null;
   basic_gloss?: string | null;
   semantic_range?: string[] | null;
   notes?: string | null;
   related?: RelatedWord[] | null;
+}
+
+interface TranslationSeedRow {
+  strongs: string;
+  language_code: string;
+  translated_pos?: string | null;
+  translated_basic_gloss?: string | null;
+  translated_semantic_range?: string[] | null;
+  translated_notes?: string | null;
+  translated_related?: RelatedWord[] | null;
   source?: string | null;
 }
 
@@ -70,6 +76,7 @@ interface LoadStats {
   rows_written: number;
   rows_skipped_invalid: number;
   rows_skipped_orphan: number; // for translations whose strongs isn't in lemmas
+  rows_skipped_english: number; // English in translations file → belongs on lemmas
 }
 
 async function* streamJsonl<T>(file: string): AsyncIterable<T> {
@@ -89,9 +96,9 @@ async function loadLemmas(file: string): Promise<LoadStats> {
     rows_written: 0,
     rows_skipped_invalid: 0,
     rows_skipped_orphan: 0,
+    rows_skipped_english: 0,
   };
   const conn = db.getOrCreateConnection();
-  // Upsert in batches of 500 to keep query size sensible.
   const batch: NewLemmas[] = [];
   const flush = async (): Promise<void> => {
     if (batch.length === 0) return;
@@ -106,6 +113,12 @@ async function loadLemmas(file: string): Promise<LoadStats> {
           nt_frequency: (eb) => eb.ref("excluded.nt_frequency"),
           ot_frequency: (eb) => eb.ref("excluded.ot_frequency"),
           loaded: (eb) => eb.ref("excluded.loaded"),
+          pos: (eb) => eb.ref("excluded.pos"),
+          basic_gloss: (eb) => eb.ref("excluded.basic_gloss"),
+          semantic_range: (eb) => eb.ref("excluded.semantic_range"),
+          notes: (eb) => eb.ref("excluded.notes"),
+          related: (eb) => eb.ref("excluded.related"),
+          updated_at: sql`now()`,
         }),
       )
       .execute();
@@ -126,6 +139,11 @@ async function loadLemmas(file: string): Promise<LoadStats> {
       nt_frequency: row.nt_frequency ?? null,
       ot_frequency: row.ot_frequency ?? null,
       loaded: row.loaded === true,
+      pos: row.pos ?? null,
+      basic_gloss: row.basic_gloss ?? null,
+      semantic_range: row.semantic_range ?? null,
+      notes: row.notes ?? null,
+      related: row.related ?? null,
     });
     if (batch.length >= 500) await flush();
     if (stats.rows_read % 5000 === 0) {
@@ -145,6 +163,7 @@ async function loadLemmaTranslations(file: string): Promise<LoadStats> {
     rows_written: 0,
     rows_skipped_invalid: 0,
     rows_skipped_orphan: 0,
+    rows_skipped_english: 0,
   };
   const conn = db.getOrCreateConnection();
   // Build a set of valid strongs once so we can skip orphan rows in O(1).
@@ -165,12 +184,15 @@ async function loadLemmaTranslations(file: string): Promise<LoadStats> {
       .values(batch)
       .onConflict((oc) =>
         oc.columns(["strongs", "language_code"]).doUpdateSet({
-          pos: (eb) => eb.ref("excluded.pos"),
-          basic_gloss: (eb) => eb.ref("excluded.basic_gloss"),
-          semantic_range: (eb) => eb.ref("excluded.semantic_range"),
-          notes: (eb) => eb.ref("excluded.notes"),
-          related: (eb) => eb.ref("excluded.related"),
+          translated_pos: (eb) => eb.ref("excluded.translated_pos"),
+          translated_basic_gloss: (eb) =>
+            eb.ref("excluded.translated_basic_gloss"),
+          translated_semantic_range: (eb) =>
+            eb.ref("excluded.translated_semantic_range"),
+          translated_notes: (eb) => eb.ref("excluded.translated_notes"),
+          translated_related: (eb) => eb.ref("excluded.translated_related"),
           source: (eb) => eb.ref("excluded.source"),
+          updated_at: sql`now()`,
         }),
       )
       .execute();
@@ -186,6 +208,12 @@ async function loadLemmaTranslations(file: string): Promise<LoadStats> {
       stats.rows_skipped_invalid += 1;
       continue;
     }
+    if (row.language_code === "en") {
+      // English baseline belongs on the `lemmas` row directly (same as
+      // topics.name/description). Reject rather than silently misplace.
+      stats.rows_skipped_english += 1;
+      continue;
+    }
     if (!validStrongs.has(row.strongs)) {
       stats.rows_skipped_orphan += 1;
       continue;
@@ -193,11 +221,11 @@ async function loadLemmaTranslations(file: string): Promise<LoadStats> {
     batch.push({
       strongs: row.strongs,
       language_code: row.language_code,
-      pos: row.pos ?? null,
-      basic_gloss: row.basic_gloss ?? null,
-      semantic_range: row.semantic_range ?? null,
-      notes: row.notes ?? null,
-      related: row.related ?? null,
+      translated_pos: row.translated_pos ?? null,
+      translated_basic_gloss: row.translated_basic_gloss ?? null,
+      translated_semantic_range: row.translated_semantic_range ?? null,
+      translated_notes: row.translated_notes ?? null,
+      translated_related: row.translated_related ?? null,
       source: row.source ?? null,
     });
     if (batch.length >= 500) await flush();
@@ -244,7 +272,8 @@ export async function main(inputDir: string): Promise<void> {
     console.log(
       `  done: ${stats.rows_written.toLocaleString()} written, ` +
         `${stats.rows_skipped_invalid.toLocaleString()} skipped (invalid), ` +
-        `${stats.rows_skipped_orphan.toLocaleString()} skipped (orphan strongs)`,
+        `${stats.rows_skipped_orphan.toLocaleString()} skipped (orphan strongs), ` +
+        `${stats.rows_skipped_english.toLocaleString()} skipped (English — belongs on lemmas)`,
     );
   }
 }

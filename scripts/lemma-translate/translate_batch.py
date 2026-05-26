@@ -3,19 +3,20 @@
 Translate the ~2,166 loaded lemmas into N target languages via the
 Anthropic Message Batches API.
 
-Reads the English baseline emitted by extract_baseline.py:
-  out/lemma_translations.jsonl   (language_code="en", source="lexicon-en")
+Reads the lemma baseline emitted by extract_baseline.py:
+  out/lemmas.jsonl   (English content lives on the lemma row directly,
+                     matching the topics + topic_translations schema)
 
-Builds one batch request per (strongs × target language). For each, the
-model receives the English entry as the source-of-truth + translation
+Builds one batch request per (loaded-lemma × target language). For each,
+the model receives the English entry as the source-of-truth + translation
 instructions targeting one specific language, and returns:
 
   {
-    "pos": "<translated>",
-    "basic_gloss": "<translated>",
-    "semantic_range": ["<translated>", ...],
-    "notes": "<translated>",
-    "related": [{"translit": "<unchanged>", "note": "<translated>"}, ...]
+    "translated_pos": "<translated>",
+    "translated_basic_gloss": "<translated>",
+    "translated_semantic_range": ["<translated>", ...],
+    "translated_notes": "<translated>",
+    "translated_related": [{"translit": "<unchanged>", "note": "<translated>"}, ...]
   }
 
 `translit` (transliteration slug) stays in Latin script — it's a lookup
@@ -23,13 +24,12 @@ key, not user-facing prose.
 
 Cost: ~$0.001 per request at Haiku 4.5 batch pricing.
   2,166 lemmas × 10 langs × $0.001 ≈ $22.
-Wall clock: usually 30-90 min batch processing for a job this size.
+Wall clock: usually 30-90 min batch processing.
 
-Output: lemma_translations.jsonl (additive — append to or replace whatever
-the loader picks up).
+Output: lemma_translations.jsonl — drop-in for ingest-lemmas.
 
 Usage:
-  python3 translate_batch.py --baseline ./out/lemma_translations.jsonl \\
+  python3 translate_batch.py --baseline ./out/lemmas.jsonl \\
                              --langs es,de,fr,ru,it,pt,ro,hi,tl,uk \\
                              --out-dir ./out \\
                              [--no-api | --submit | --status | --collect | --run]
@@ -87,13 +87,14 @@ matching the granularity of the English source.
 7. For Hindi: respond in Devanagari script. For Russian/Ukrainian: Cyrillic. \
 For Tagalog: Latin script (modern Tagalog convention).
 
-Return ONLY JSON, no prose, no code fence. Schema:
+Return ONLY JSON, no prose, no code fence. Schema (note the `translated_`
+prefix — these become the column names in lemma_translations):
 {
-  "pos": "<translated part-of-speech label>",
-  "basic_gloss": "<1-10 word translated headword>",
-  "semantic_range": ["<sense 1>", "<sense 2>", ...],
-  "notes": "<translated 1-3 sentence note>",
-  "related": [{"translit": "<unchanged-slug>", "note": "<translated>"}, ...]
+  "translated_pos": "<translated part-of-speech label>",
+  "translated_basic_gloss": "<1-10 word translated headword>",
+  "translated_semantic_range": ["<sense 1>", "<sense 2>", ...],
+  "translated_notes": "<translated 1-3 sentence note>",
+  "translated_related": [{"translit": "<unchanged-slug>", "note": "<translated>"}, ...]
 }
 
 Fields the English entry doesn't have? Omit them from the response."""
@@ -157,19 +158,38 @@ def build_user_prompt(en_entry: dict, lang_label: str) -> str:
 
 
 def build_records(baseline_path: Path, langs: list[str]) -> list[dict]:
-    baseline: list[dict] = []
+    """Read lemmas.jsonl, build one batch request per (loaded_lemma × lang).
+
+    Skips lemmas without English content (loaded=false or null basic_gloss) —
+    those have nothing for the LLM to translate.
+    """
+    loaded: list[dict] = []
+    skipped_no_english = 0
     for line in baseline_path.open(encoding="utf-8"):
-        if line.strip():
-            baseline.append(json.loads(line))
-    print(f"  loaded {len(baseline)} English baseline entries", file=sys.stderr)
+        if not line.strip():
+            continue
+        entry = json.loads(line)
+        if not entry.get("loaded"):
+            continue
+        if entry.get("basic_gloss") is None and entry.get("notes") is None:
+            skipped_no_english += 1
+            continue
+        loaded.append(entry)
+    print(f"  loaded {len(loaded)} loaded lemmas with English content",
+          file=sys.stderr)
+    if skipped_no_english:
+        print(f"  skipped {skipped_no_english} loaded lemmas missing English content",
+              file=sys.stderr)
 
     records: list[dict] = []
-    for entry in baseline:
+    for entry in loaded:
         strongs = entry["strongs"]
-        # The source row we hand to the model — strip the DB-only fields.
+        # The source row we hand to the model. `lemma` (Greek/Hebrew script)
+        # is included so the model picks the right proper-noun spelling in
+        # the target language.
         en_payload = {
             "strongs": strongs,
-            "lemma": entry.get("lemma", ""),  # carried from lemmas.jsonl below
+            "lemma": entry.get("lemma", ""),
             "pos": entry.get("pos"),
             "basic_gloss": entry.get("basic_gloss"),
             "semantic_range": entry.get("semantic_range"),
@@ -231,14 +251,24 @@ def collect(batch_id: str, out_path: Path) -> tuple[int, int, int]:
                 parse_fail += 1
                 continue
             strongs, lang = parts
+            # Output shape uses `translated_*` field names to match the
+            # backend's lemma_translations table columns (mirrors
+            # topic_translations convention). Accept either prefixed or
+            # unprefixed keys from the model — the system prompt asks for
+            # prefixed but the model occasionally drops the prefix.
             out_row = {
                 "strongs": strongs,
                 "language_code": lang,
-                "pos": parsed.get("pos"),
-                "basic_gloss": parsed.get("basic_gloss"),
-                "semantic_range": parsed.get("semantic_range"),
-                "notes": parsed.get("notes"),
-                "related": parsed.get("related"),
+                "translated_pos":
+                    parsed.get("translated_pos") or parsed.get("pos"),
+                "translated_basic_gloss":
+                    parsed.get("translated_basic_gloss") or parsed.get("basic_gloss"),
+                "translated_semantic_range":
+                    parsed.get("translated_semantic_range") or parsed.get("semantic_range"),
+                "translated_notes":
+                    parsed.get("translated_notes") or parsed.get("notes"),
+                "translated_related":
+                    parsed.get("translated_related") or parsed.get("related"),
                 "source": f"llm:{MODEL_ID}",
             }
             f.write(json.dumps(out_row, ensure_ascii=False) + "\n")
@@ -266,7 +296,7 @@ def main() -> int:
     langs = [s.strip() for s in args.langs.split(",") if s.strip()]
     state_file = args.out_dir / ".batch_id"
     batch_jsonl = args.out_dir / "translate_batch.jsonl"
-    out_translations = args.out_dir / "lemma_translations.llm.jsonl"
+    out_translations = args.out_dir / "lemma_translations.jsonl"
 
     # Build records (offline)
     records = build_records(args.baseline, langs)

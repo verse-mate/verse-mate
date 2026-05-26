@@ -4,52 +4,79 @@
 // `bun run model:generate` after deploy to confirm.)
 
 import type { ColumnType, Insertable, Selectable, Updateable } from "kysely";
-import type { LemmasStrongs } from "./Lemmas";
+import type { LemmasStrongs, RelatedWord } from "./Lemmas";
+
+export type LemmaTranslationsTranslationId = string;
 
 /**
- * One related-lemma cross-reference attached to a lemma's `related` array.
- * Always shown alongside the parent lemma's card, so its `note` needs to
- * follow the same translation as the parent.
+ * `lemma_translations` holds per-language renderings of the translatable
+ * fields. Mirrors `topic_translations`: English is NOT stored here (it's
+ * on the `lemmas` row directly). One row per (lemma, language) for every
+ * non-English language we serve.
+ *
+ * Field-name convention follows `topic_translations`'s `translated_*`
+ * prefix so query code reads identically across both tables:
+ *
+ *   SELECT translated_basic_gloss FROM lemma_translations WHERE ...
+ *   SELECT translated_name        FROM topic_translations WHERE ...
  */
-export interface RelatedWord {
-  /** Transliteration slug of the related lemma (lookup key into lemmas). */
-  translit: string;
-  /** Translator-supplied note explaining the relationship. */
-  note: string;
-}
-
 export default interface LemmaTranslationsTable {
+  translation_id: ColumnType<
+    LemmaTranslationsTranslationId,
+    LemmaTranslationsTranslationId | undefined,
+    LemmaTranslationsTranslationId
+  >;
+
   strongs: ColumnType<LemmasStrongs, LemmasStrongs, LemmasStrongs>;
 
-  /** ISO 639-1 (e.g. "en", "es") or language-region ("en-US", "pt-BR"). */
+  /** ISO 639-1 (e.g. "es", "de") or language-region ("pt-BR"). */
   language_code: ColumnType<string, string, string>;
 
-  /** "Noun (masc.)", "Verb", etc. — translated. */
-  pos: ColumnType<string | null, string | null, string | null>;
+  translated_pos: ColumnType<string | null, string | null, string | null>;
 
-  /** Short 1-10 word gloss for the popover header. */
-  basic_gloss: ColumnType<string | null, string | null, string | null>;
+  translated_basic_gloss: ColumnType<
+    string | null,
+    string | null,
+    string | null
+  >;
 
-  /** Ordered list of senses, broadest to narrowest. Stored as JSONB array. */
-  semantic_range: ColumnType<string[] | null, string[] | null, string[] | null>;
+  translated_semantic_range: ColumnType<
+    string[] | null,
+    string[] | null,
+    string[] | null
+  >;
 
-  /** Long-form lexicon note shown in the expanded card view. */
-  notes: ColumnType<string | null, string | null, string | null>;
+  translated_notes: ColumnType<string | null, string | null, string | null>;
 
-  /** Cross-references to related lemmas. */
-  related: ColumnType<
+  translated_related: ColumnType<
     RelatedWord[] | null,
     RelatedWord[] | null,
     RelatedWord[] | null
   >;
 
   /**
-   * Origin of this translation row — "hand" (lexicon team), "generated"
-   * (production _lemmas.json baseline), "llm:<model>" (LLM-translated),
-   * "uw" (unfoldingWord overlay). Lets us prioritize hand entries on
-   * collision and audit LLM-translated coverage later.
+   * Origin of this translation row — "hand", "llm:<model>", "uw"
+   * (unfoldingWord). Lets us prioritize hand entries on collision and
+   * audit LLM-translated coverage later.
    */
   source: ColumnType<string | null, string | null, string | null>;
+
+  is_active: ColumnType<
+    boolean | null,
+    boolean | null | undefined,
+    boolean | null
+  >;
+
+  created_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
+  updated_at: ColumnType<
+    Date | null,
+    Date | string | null,
+    Date | string | null
+  >;
 }
 
 export type LemmaTranslations = Selectable<LemmaTranslationsTable>;
