@@ -231,7 +231,9 @@ async function loadLemmaTranslations(file: string): Promise<LoadStats> {
       language_code: row.language_code,
       translated_pos: row.translated_pos ?? null,
       translated_basic_gloss: row.translated_basic_gloss ?? null,
-      translated_semantic_range: toJsonb<string[]>(row.translated_semantic_range),
+      translated_semantic_range: toJsonb<string[]>(
+        row.translated_semantic_range,
+      ),
       translated_notes: row.translated_notes ?? null,
       translated_related: toJsonb<RelatedWord[]>(row.translated_related),
       source: row.source ?? null,
