@@ -143,7 +143,6 @@ function sampleRow(overrides: Partial<ExplanationAudios>): ExplanationAudios {
 // Repository stub that isn't exercised directly but is required by the
 // AudioService constructor.
 class NoopRepository extends AudioRepository {
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
   constructor() {
     super({} as any);
   }
