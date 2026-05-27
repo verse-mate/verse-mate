@@ -33,17 +33,23 @@ const LemmaCardSchema = t.Object({
   related: t.Union([t.Array(RelatedWordSchema), t.Null()]),
   /**
    * Language actually represented by the payload. Equals the requested
-   * `lang` query param when a translation row exists, else "en"
-   * (English baseline fallback). Frontend can use this to render a
-   * subtle "translated by AI" badge or skip it for English.
+   * `lang` query param (normalized to its base ISO code) whenever a
+   * translation row exists — even a partial one — else "en" (English
+   * baseline fallback).
    */
   language_code: t.String(),
   /**
-   * Origin of the translation — "llm:claude-haiku-4-5", "uw"
-   * (unfoldingWord), "hand", or null when no translation row exists
-   * (`is_translated: false`).
+   * Origin of the translation row — "llm:claude-haiku-4-5", "uw"
+   * (unfoldingWord), "hand", or null when no translation row exists.
    */
   source: t.Union([t.String(), t.Null()]),
+  /**
+   * True only when the card reads as fully translated — every English
+   * prose field present on the baseline has a translation, so nothing
+   * leaks back to English via the field-by-field fallback. A row that
+   * translates only some fields stays `false` (the "Translated" badge
+   * shouldn't claim a half-English card).
+   */
   is_translated: t.Boolean(),
 });
 
@@ -68,8 +74,9 @@ const plugin = new Elysia()
         }
         const strongs = `${m[1]}${Number.parseInt(m[2], 10).toString().padStart(4, "0")}`;
 
-        const lang = (query.lang ?? "en").trim();
-        const card = await lemmaService.getLemma(strongs, lang);
+        // Pass the raw query value through — the repository normalizes it
+        // to the bare ISO base code (es-MX/ES → es) before matching.
+        const card = await lemmaService.getLemma(strongs, query.lang ?? "en");
         if (!card) throw new NotFoundError(`Lemma not found: ${strongs}`);
         return card;
       },
@@ -84,7 +91,7 @@ const plugin = new Elysia()
           lang: t.Optional(
             t.String({
               description:
-                "ISO 639-1 language code (es, de, fr, ru, it, pt, ro, hi, tl, uk). Defaults to 'en'. Falls back to English baseline if no translation exists for the requested language.",
+                "ISO 639-1 language code (es, de, fr, ru, it, pt, ro, hi, tl, uk). Defaults to 'en'. Case-insensitive; a region suffix (es-MX) is stripped to its base code server-side. Falls back to English baseline if no translation exists for the requested language.",
             }),
           ),
         }),
