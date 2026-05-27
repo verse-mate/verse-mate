@@ -138,11 +138,9 @@ describe("replaceExplanationWithAudioHook — integration", () => {
     // the .env for this repo uses TTS_PROVIDER=stub.
     class NoopOpenAi {
       readonly name = "openai";
-      // biome-ignore lint/suspicious/noExplicitAny: test stub
       async synthesize(_: any): Promise<any> {
         throw new Error("not called in this test");
       }
-      // biome-ignore lint/suspicious/noExplicitAny: test stub
       async listVoices(_: any): Promise<any[]> {
         return [];
       }
