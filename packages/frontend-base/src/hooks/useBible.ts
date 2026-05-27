@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "backend-api";
 import { getBookVerse, getExplanation } from "../api/bible";
+import {
+  preferredLanguageStore,
+  resolveExplanationLang,
+} from "../store/preferred-language";
+import { useStore } from "../utils/use-store";
 
 export const fetchAllTestaments = () => {
   const {
@@ -69,15 +74,23 @@ export const fetchExplanation = (
   explanationType?: string,
   bibleVersion?: string,
 ) => {
+  const lang = resolveExplanationLang(useStore(preferredLanguageStore));
   const {
     data: explanation,
     error,
     isFetching,
     isLoading,
   } = useQuery({
-    queryKey: ["explanation", bookId, chapterId, explanationType, bibleVersion],
+    queryKey: [
+      "explanation",
+      bookId,
+      chapterId,
+      explanationType,
+      bibleVersion,
+      lang ?? "automatic",
+    ],
     queryFn: () =>
-      getExplanation(bookId, chapterId, explanationType, bibleVersion),
+      getExplanation(bookId, chapterId, explanationType, bibleVersion, lang),
     enabled:
       !!bookId &&
       !!chapterId &&
