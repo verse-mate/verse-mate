@@ -1,6 +1,10 @@
 import type { RelatedWord } from "database/src/models/public/Lemmas";
 import { sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
+import {
+  isLemmaFullyTranslated,
+  normalizeLanguageCode,
+} from "../lemma-language";
 
 /**
  * Merged lemma row returned from the DB after LEFT JOIN on
@@ -49,12 +53,19 @@ export class LemmaRepository {
   ): Promise<LemmaCard | null> {
     const connection = this.db.getOrCreateConnection();
 
+    // Match on the bare lowercase ISO base code the translation rows are
+    // keyed on (es, de, ...). Without this an `es-MX` / `ES` request misses
+    // every `es` row and silently falls back to English. The normalized
+    // value is also guaranteed `^[a-z]{2,3}$` (or "en"), so it stays safe
+    // to inline as the `sql.lit` literal below.
+    const lang = normalizeLanguageCode(languageCode);
+
     const row = await connection
       .selectFrom("lemmas")
       .leftJoin("lemma_translations", (join) =>
         join
           .onRef("lemmas.strongs", "=", "lemma_translations.strongs")
-          .on("lemma_translations.language_code", "=", sql.lit(languageCode))
+          .on("lemma_translations.language_code", "=", sql.lit(lang))
           .on("lemma_translations.is_active", "=", true),
       )
       .where("lemmas.strongs", "=", strongs)
@@ -71,6 +82,7 @@ export class LemmaRepository {
         "lemmas.semantic_range as base_semantic_range",
         "lemmas.notes as base_notes",
         "lemmas.related as base_related",
+        "lemma_translations.translation_id",
         "lemma_translations.translated_pos",
         "lemma_translations.translated_basic_gloss",
         "lemma_translations.translated_semantic_range",
@@ -82,7 +94,33 @@ export class LemmaRepository {
 
     if (!row) return null;
 
-    const isTranslated = row.translated_basic_gloss != null;
+    // A translation row exists for this language. `translation_id` is
+    // non-nullable on the row, so it reliably distinguishes "row present
+    // but some fields null" from "no row at all".
+    const hasTranslationRow = row.translation_id != null;
+
+    // `is_translated` means "this card reads as translated" — true only
+    // when the row covers every English prose field present on the
+    // baseline, so the "Translated" badge never shows over English prose
+    // leaked in via the field-by-field fallback below.
+    const isTranslated =
+      hasTranslationRow &&
+      isLemmaFullyTranslated(
+        {
+          pos: row.base_pos,
+          basic_gloss: row.base_basic_gloss,
+          semantic_range: row.base_semantic_range,
+          notes: row.base_notes,
+          related: row.base_related,
+        },
+        {
+          pos: row.translated_pos,
+          basic_gloss: row.translated_basic_gloss,
+          semantic_range: row.translated_semantic_range,
+          notes: row.translated_notes,
+          related: row.translated_related,
+        },
+      );
 
     return {
       strongs: row.strongs,
@@ -101,7 +139,11 @@ export class LemmaRepository {
       semantic_range: row.translated_semantic_range ?? row.base_semantic_range,
       notes: row.translated_notes ?? row.base_notes,
       related: row.translated_related ?? row.base_related,
-      language_code: isTranslated ? languageCode : "en",
+      // Which language's data the payload represents. Equals the requested
+      // (normalized) code whenever a translation row exists — even a
+      // partial one — else "en". `is_translated` separately signals whether
+      // that row is complete.
+      language_code: hasTranslationRow ? lang : "en",
       source: row.source,
       is_translated: isTranslated,
     };

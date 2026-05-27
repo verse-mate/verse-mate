@@ -59,6 +59,23 @@ python3 translate_batch.py \
 
 After steps 1 + 2, `out/` is ready to feed the loader.
 
+## Measure coverage
+
+To see how much of each language is translated (and prioritize a
+backfill), run the read-only coverage report inside the deployed
+container — it queries the live DB, no inputs needed:
+
+```sh
+bun ./dist/lemma-coverage.js            # all known languages
+bun ./dist/lemma-coverage.js --lang es  # one language
+bun ./dist/lemma-coverage.js --json     # machine-readable
+```
+
+`complete` counts lemmas whose translation covers every English prose
+field (this is exactly what flips `is_translated: true` on `/lemma`);
+`partial` rows exist but still leak some English; `missing` rows have no
+translation at all. Source: `apps/backend/src/lemma-coverage.ts`.
+
 ## Deploy
 
 Hand the `out/` directory to the operator who can run inside the prod
