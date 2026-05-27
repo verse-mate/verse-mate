@@ -12,7 +12,12 @@ import {
   fontSizeStore,
   setFontSize,
 } from "../../store/font-size";
+import {
+  preferredLanguageStore,
+  setPreferredLanguage,
+} from "../../store/preferred-language";
 import { bibleVersions } from "../../utils/bible-versions";
+import { useStore } from "../../utils/use-store";
 import { Button } from "../Button/Button";
 import {
   CheckIcon,
@@ -53,9 +58,9 @@ export const Settings = ({
   const [firstName, setFirstName] = useState(session?.firstName || "");
   const [lastName, setLastName] = useState(session?.lastName || "");
   const [email, setEmail] = useState(session?.email || "");
-  const [selectedLanguage, setSelectedLanguage] = useState(
-    session?.preferred_language || "automatic",
-  );
+  // The chosen commentary language is persisted client-side (localStorage) so
+  // it works for guests too; signed-in users additionally sync it server-side.
+  const selectedLanguage = useStore(preferredLanguageStore);
 
   // Global form state
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -101,7 +106,10 @@ export const Settings = ({
       setFirstName(session.firstName || "");
       setLastName(session.lastName || "");
       setEmail(session.email || "");
-      setSelectedLanguage(session.preferred_language || "automatic");
+      // Reflect the signed-in user's saved preference into the client store.
+      if (session.preferred_language) {
+        setPreferredLanguage(session.preferred_language);
+      }
     }
   }, [session]);
 
@@ -157,31 +165,36 @@ export const Settings = ({
 
   const handleLanguageChange = async (val: any) => {
     const newLanguage = val as string;
-    setSelectedLanguage(newLanguage);
 
-    // Auto-save language preference immediately
-    try {
-      const languageToSave = newLanguage === "automatic" ? null : newLanguage;
-      await updateLanguagePreference(languageToSave);
-      await fetchSession(true);
+    // Persist client-side first so the choice applies immediately for guests
+    // and signed-in users alike (the explanation fetch reads this store).
+    setPreferredLanguage(newLanguage);
 
-      // Invalidate topic-related queries to refresh with new language
-      queryClient.invalidateQueries({
-        predicate: (q) => {
-          const k = q.queryKey as unknown as (string | undefined)[];
-          return (
-            Array.isArray(k) &&
-            (k[0] === "topic-details" ||
-              k[0] === "topic-references" ||
-              k[0] === "topic-details-explanation" ||
-              k[0] === "topic-explanation" ||
-              k[0] === "topics")
-          );
-        },
-      });
-    } catch (error) {
-      console.error("Failed to save language preference:", error);
-      // Optionally show an error message to the user
+    // Refresh language-dependent content for the new language.
+    queryClient.invalidateQueries({
+      predicate: (q) => {
+        const k = q.queryKey as unknown as (string | undefined)[];
+        return (
+          Array.isArray(k) &&
+          (k[0] === "explanation" ||
+            k[0] === "topic-details" ||
+            k[0] === "topic-references" ||
+            k[0] === "topic-details-explanation" ||
+            k[0] === "topic-explanation" ||
+            k[0] === "topics")
+        );
+      },
+    });
+
+    // Signed-in users also save the choice as their server-side default.
+    if (session?.id) {
+      try {
+        const languageToSave = newLanguage === "automatic" ? null : newLanguage;
+        await updateLanguagePreference(languageToSave);
+        await fetchSession(true);
+      } catch (error) {
+        console.error("Failed to save language preference:", error);
+      }
     }
   };
 
@@ -320,67 +333,63 @@ export const Settings = ({
       </div>
 
       {/* Language Preferences Section */}
-      {session?.id && (
-        <div className={styles.sectionSpacing}>
-          <label className={styles.sectionLabel}>Language Preferences:</label>
+      <div className={styles.sectionSpacing}>
+        <label className={styles.sectionLabel}>Language Preferences:</label>
 
-          <div className={styles.languageContainer}>
-            <div className={styles.languageDropdownContainer}>
-              <label className={styles.dropdownLabel}>
-                Preferred Language:
-              </label>
-              <div className={styles.languageDropdownWrapper}>
-                <SelectDropdown.Root
-                  key={selectedLanguage} // Force re-render when language changes
-                  defaultValue={selectedLanguage}
-                  onValueChange={handleLanguageChange}
-                  open={isLanguageDropdownOpen}
-                  onOpenChange={setIsLanguageDropdownOpen}
+        <div className={styles.languageContainer}>
+          <div className={styles.languageDropdownContainer}>
+            <label className={styles.dropdownLabel}>Preferred Language:</label>
+            <div className={styles.languageDropdownWrapper}>
+              <SelectDropdown.Root
+                key={selectedLanguage} // Force re-render when language changes
+                defaultValue={selectedLanguage}
+                onValueChange={handleLanguageChange}
+                open={isLanguageDropdownOpen}
+                onOpenChange={setIsLanguageDropdownOpen}
+              >
+                <SelectDropdown.Trigger
+                  selectedBook={null}
+                  selectedVerse={null}
+                  defaultPlaceholder={
+                    selectedLanguage === "automatic"
+                      ? "Automatic (Based on Bible Version)"
+                      : (() => {
+                          const selectedLang = availableLanguages.find(
+                            (lang) => lang.code === selectedLanguage,
+                          );
+                          if (!selectedLang) return "Select Language";
+
+                          // Apply the same formatting logic as in the dropdown items
+                          return formatLanguageDisplay(selectedLang);
+                        })()
+                  }
+                  icon={<ChevronDownIcon />}
+                  theme="light" // Explicitly set light theme for settings context
+                  context="settings" // Add settings context for mobile visibility
+                  expandText={true} // Enable text expansion for better readability
+                />
+                <SelectDropdown.Content
+                  align="start"
+                  style={{
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                  }}
                 >
-                  <SelectDropdown.Trigger
-                    selectedBook={null}
-                    selectedVerse={null}
-                    defaultPlaceholder={
-                      selectedLanguage === "automatic"
-                        ? "Automatic (Based on Bible Version)"
-                        : (() => {
-                            const selectedLang = availableLanguages.find(
-                              (lang) => lang.code === selectedLanguage,
-                            );
-                            if (!selectedLang) return "Select Language";
-
-                            // Apply the same formatting logic as in the dropdown items
-                            return formatLanguageDisplay(selectedLang);
-                          })()
-                    }
-                    icon={<ChevronDownIcon />}
-                    theme="light" // Explicitly set light theme for settings context
-                    context="settings" // Add settings context for mobile visibility
-                    expandText={true} // Enable text expansion for better readability
-                  />
-                  <SelectDropdown.Content
-                    align="start"
-                    style={{
-                      maxHeight: "300px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    {availableLanguages.map((language) => (
-                      <SelectDropdown.Item
-                        key={`lang-${language.code}`}
-                        value={language.code}
-                        icon={<CheckIcon />}
-                      >
-                        {formatLanguageDisplay(language)}
-                      </SelectDropdown.Item>
-                    ))}
-                  </SelectDropdown.Content>
-                </SelectDropdown.Root>
-              </div>
+                  {availableLanguages.map((language) => (
+                    <SelectDropdown.Item
+                      key={`lang-${language.code}`}
+                      value={language.code}
+                      icon={<CheckIcon />}
+                    >
+                      {formatLanguageDisplay(language)}
+                    </SelectDropdown.Item>
+                  ))}
+                </SelectDropdown.Content>
+              </SelectDropdown.Root>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Font Size Section */}
       <div className={styles.sectionSpacing}>

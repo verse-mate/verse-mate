@@ -1,0 +1,51 @@
+import { atom } from "nanostores";
+
+const STORAGE_KEY = "versemate-preferred-language";
+// "automatic" means "let the server decide" (signed-in user's saved preference
+// or the bible version's language), matching the Settings picker's default.
+const DEFAULT_LANGUAGE = "automatic";
+
+function loadPreferredLanguage(): string {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return stored;
+    }
+  } catch {
+    // localStorage not available (e.g. during SSR)
+  }
+  return DEFAULT_LANGUAGE;
+}
+
+export const preferredLanguageStore = atom<string>(loadPreferredLanguage());
+
+export function setPreferredLanguage(language: string) {
+  const value = language || DEFAULT_LANGUAGE;
+  preferredLanguageStore.set(value);
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    // localStorage not available
+  }
+}
+
+/**
+ * Resolve a stored selection to the `lang` value sent to the explanation
+ * endpoint, or `undefined` when no explicit language is chosen ("automatic")
+ * so the request falls back to server-side resolution.
+ *
+ * The picker's options come from `GET /bible/languages`, whose codes are the
+ * exact `language_code` values stored in the `explanations` table (full
+ * BCP-47, e.g. "es-MX", "pt-BR", "ro-RO", "en-US", plus bare "ru"/"uk"). The
+ * backend matches on that code, so we pass it through verbatim — stripping the
+ * region (e.g. "es-MX" → "es") would no longer match the stored row and would
+ * silently fall back to English.
+ */
+export function resolveExplanationLang(language: string): string | undefined {
+  if (!language || language === DEFAULT_LANGUAGE) {
+    return undefined;
+  }
+  return language;
+}
+
+export { DEFAULT_LANGUAGE };

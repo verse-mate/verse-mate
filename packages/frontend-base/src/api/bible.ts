@@ -44,6 +44,7 @@ export const getExplanation = async (
   chapterId: number,
   explanationType?: string,
   bibleVersion?: string,
+  lang?: string,
 ) => {
   const parsedBookId = String(bookId).padStart(2, "0");
   const parsedChapterId = String(chapterId).padStart(2, "0");
@@ -57,6 +58,7 @@ export const getExplanation = async (
       query: {
         versionKey,
         ...(explanationType && { explanationType }),
+        ...(lang && { lang }),
       },
     });
 
