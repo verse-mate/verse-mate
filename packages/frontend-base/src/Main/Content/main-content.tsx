@@ -37,6 +37,10 @@ import {
 import { userSession } from "../../hooks/userSession";
 import { ModalContainer } from "../../modal/ModalContainer";
 import { updateSelectedBook } from "../../store/book-selection";
+import {
+  preferredLanguageStore,
+  resolveExplanationLang,
+} from "../../store/preferred-language";
 import { Accordion } from "../../ui/Accordion";
 import { BookIntroduction } from "../../ui/BookIntroduction";
 import { Explanation } from "../../ui/Explanation";
@@ -57,6 +61,7 @@ import { bibleVersions } from "../../utils/bible-versions";
 import { explanationTypes } from "../../utils/commentary-options";
 import { homeOptions } from "../../utils/home-options";
 import { getTopicBySortOrder } from "../../utils/topic-utils";
+import { useStore } from "../../utils/use-store";
 import { TopicContent } from "./TopicContent";
 import { TopicExplanationContainer } from "./TopicExplanationContainer";
 import { TopicView } from "./TopicView";
@@ -65,6 +70,9 @@ import styles from "./main-content.module.css";
 export const MainContent = () => {
   const { session } = userSession();
   const queryClient = useQueryClient();
+  const explanationLang = resolveExplanationLang(
+    useStore(preferredLanguageStore),
+  );
 
   const {
     bookId,
@@ -1112,6 +1120,7 @@ export const MainContent = () => {
             nextChapterVerseId,
             explanationType,
             bibleVersion,
+            explanationLang ?? "automatic",
           ],
           queryFn: () =>
             getExplanation(
@@ -1119,6 +1128,7 @@ export const MainContent = () => {
               nextChapterVerseId,
               explanationType,
               bibleVersion,
+              explanationLang,
             ),
         });
       }
@@ -1144,6 +1154,7 @@ export const MainContent = () => {
             previousChapterVerseId,
             explanationType,
             bibleVersion,
+            explanationLang ?? "automatic",
           ],
           queryFn: () =>
             getExplanation(
@@ -1151,11 +1162,20 @@ export const MainContent = () => {
               previousChapterVerseId,
               explanationType,
               bibleVersion,
+              explanationLang,
             ),
         });
       }
     }
-  }, [bookId, verseId, chapters, bibleVersion, explanationType, queryClient]);
+  }, [
+    bookId,
+    verseId,
+    chapters,
+    bibleVersion,
+    explanationType,
+    explanationLang,
+    queryClient,
+  ]);
 
   return (
     <NotesProvider>
