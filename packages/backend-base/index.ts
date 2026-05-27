@@ -14,6 +14,9 @@ import type { UserPlugin } from "./src/user/user.plugin";
 import topicPlugin from "./src/topics/topic.plugin";
 import type { TopicPlugin } from "./src/topics/topic.plugin";
 
+import lemmaPlugin from "./src/lemmas/lemma.plugin";
+import type { LemmaPlugin } from "./src/lemmas/lemma.plugin";
+
 import supportPlugin from "./src/support/support.plugin";
 import type { SupportPlugin } from "./src/support/support.plugin";
 
@@ -46,6 +49,8 @@ export {
   adminPlugin,
   type TopicPlugin,
   topicPlugin,
+  type LemmaPlugin,
+  lemmaPlugin,
   type HealthCheckPlugin,
   healthCheckPlugin,
   type SupportPlugin,
