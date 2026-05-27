@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { createErrorHandler } from "../common/error-handler";
 import { NotFoundError } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
@@ -48,6 +49,7 @@ const LemmaCardSchema = t.Object({
 
 const plugin = new Elysia()
   .use(shared)
+  .onError(createErrorHandler("lemma plugin"))
   .state((state) => ({
     ...state,
     lemmaService: new LemmaService(state.db),
