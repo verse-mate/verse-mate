@@ -30,15 +30,22 @@ export function setPreferredLanguage(language: string) {
 }
 
 /**
- * Collapse a stored selection to the base ISO 639-1 code the explanation
- * endpoint expects (e.g. "pt-BR" → "pt"), or `undefined` when no explicit
- * language is chosen so the request falls back to server-side resolution.
+ * Resolve a stored selection to the `lang` value sent to the explanation
+ * endpoint, or `undefined` when no explicit language is chosen ("automatic")
+ * so the request falls back to server-side resolution.
+ *
+ * The picker's options come from `GET /bible/languages`, whose codes are the
+ * exact `language_code` values stored in the `explanations` table (full
+ * BCP-47, e.g. "es-MX", "pt-BR", "ro-RO", "en-US", plus bare "ru"/"uk"). The
+ * backend matches on that code, so we pass it through verbatim — stripping the
+ * region (e.g. "es-MX" → "es") would no longer match the stored row and would
+ * silently fall back to English.
  */
 export function resolveExplanationLang(language: string): string | undefined {
   if (!language || language === DEFAULT_LANGUAGE) {
     return undefined;
   }
-  return language.split("-")[0].toLowerCase();
+  return language;
 }
 
 export { DEFAULT_LANGUAGE };
