@@ -19,6 +19,8 @@ import type { default as GenresTable } from "./Genres";
 import type { default as HighlightThemesTable } from "./HighlightThemes";
 import type { default as KyselyMigrationTable } from "./KyselyMigration";
 import type { default as KyselyMigrationLockTable } from "./KyselyMigrationLock";
+import type { default as LemmaTranslationsTable } from "./LemmaTranslations";
+import type { default as LemmasTable } from "./Lemmas";
 import type { default as MessagesTable } from "./Messages";
 import type { default as NotesTable } from "./Notes";
 import type { default as PromptsTable } from "./Prompts";
@@ -74,6 +76,10 @@ export default interface PublicSchema {
   prompts: PromptsTable;
 
   bible_versions: BibleVersionsTable;
+
+  lemmas: LemmasTable;
+
+  lemma_translations: LemmaTranslationsTable;
 
   user_prompt_templates: UserPromptTemplatesTable;
 

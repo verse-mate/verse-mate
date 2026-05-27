@@ -6,6 +6,7 @@ import {
   authPlugin,
   biblePlugin,
   healthCheckPlugin,
+  lemmaPlugin,
   offlinePlugin,
   supportPlugin,
   topicPlugin,
@@ -27,6 +28,7 @@ const app = new Elysia()
   .use(biblePlugin)
   .use(audioPlugin)
   .use(topicPlugin)
+  .use(lemmaPlugin)
   .use(supportPlugin)
   .use(adminPlugin)
   .use(offlinePlugin)

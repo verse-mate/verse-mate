@@ -22,7 +22,6 @@ class FakeRepository extends AudioRepository {
   public listStaleCalls: Date[] = [];
   public throwOnDeleteIds = new Set<string>();
 
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
   constructor() {
     super({} as any);
   }

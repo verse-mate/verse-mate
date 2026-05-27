@@ -20,7 +20,6 @@ class FakeProgressRepo extends AudioProgressRepository {
   public upsertCalls = 0;
   public deleteCalls: Array<{ user_id: string; explanation_id: number }> = [];
 
-  // biome-ignore lint/suspicious/noExplicitAny: test stub
   constructor() {
     super({} as any);
   }

@@ -17,11 +17,11 @@ import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum"
 import { ObjectStorageService } from "../../shared/storage/storage.service";
 import { AudioCleanupService } from "./audio-cleanup.service";
 
-const BUCKET = process.env.OBJECT_STORAGE_BUCKET ?? "saas-starter-dev";
+const _BUCKET = process.env.OBJECT_STORAGE_BUCKET ?? "saas-starter-dev";
 const TEST_LANG = `y${(Date.now() % 1_000_000).toString(36)}`.slice(0, 10);
 
 let testExplanationId: number;
-let testChapterId: number;
+let _testChapterId: number;
 let storage: ObjectStorageService;
 
 async function ensureMinioHealthy(): Promise<void> {
@@ -43,7 +43,7 @@ async function seed(): Promise<void> {
     .where("book_id", "=", 1)
     .where("chapter_number", "=", 1)
     .executeTakeFirstOrThrow();
-  testChapterId = chapter.chapter_id;
+  _testChapterId = chapter.chapter_id;
 
   const inserted = await conn
     .insertInto("explanations")
