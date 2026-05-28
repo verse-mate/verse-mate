@@ -3,11 +3,9 @@ import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { NotFoundError } from "../../common/errors";
 import { type AiProvider, getAiProvider } from "../../shared/ai";
 import {
-  MIN_SUMMARY_SENTENCES,
   generateChunkedBylineParallel,
   shouldUseBylineChunking,
   toBylineVerses,
-  validateSummaryLengths,
 } from "../../shared/byline-chunking";
 import { getExplanationTypePrompt } from "../../shared/prompt-utils";
 import type { db } from "../../shared/shared.plugin";
@@ -59,72 +57,6 @@ export class ExplanationRegenerationService {
       .replaceAll("{verseRange}", "all verses")
       .replaceAll("{verseRangeContext}", "");
     return `${cleaned}\n\nThe response should be in ${language} using Markdown format only.`;
-  }
-
-  /**
-   * Run a single-shot generation. For byline output, enforce the
-   * VER-120 per-verse summary quality gate (≥ MIN_SUMMARY_SENTENCES per
-   * `### Summary`) by retrying once with a corrective hint. Non-byline
-   * outputs (summary/detailed) pass through without the per-verse check.
-   */
-  private async generateSingleShotWithSummaryGate({
-    explanationType,
-    systemPromptText,
-    userPrompt,
-    model,
-    effort,
-    logLabel,
-    maxRetries = 1,
-  }: {
-    explanationType: ExplanationTypeEnum;
-    systemPromptText: string;
-    userPrompt: string;
-    model: string;
-    effort: "low" | "medium" | "high";
-    logLabel: string;
-    maxRetries?: number;
-  }): Promise<string> {
-    let lastReason = "unknown";
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const promptForAttempt =
-        attempt === 0
-          ? userPrompt
-          : `${userPrompt}\n\n- Previous attempt produced one or more verses whose "### Summary" was shorter than ${MIN_SUMMARY_SENTENCES} sentences. Each per-verse "### Summary" MUST contain at least ${MIN_SUMMARY_SENTENCES} complete sentences of prose.`;
-
-      console.log(
-        `${logLabel} attempt ${attempt + 1}/${maxRetries + 1} generating`,
-      );
-
-      const output = await this.gpt5Text({
-        instructions: systemPromptText,
-        input: promptForAttempt,
-        model,
-        effort,
-      });
-
-      if (explanationType !== "byline") {
-        return output;
-      }
-
-      const summaryCheck = validateSummaryLengths(output);
-      if (summaryCheck.valid) {
-        return output;
-      }
-
-      lastReason = summaryCheck.reason;
-      const shortDetail = summaryCheck.shortSummaries
-        .slice(0, 5)
-        .map((s) => `${s.verseHeading} (${s.sentenceCount})`)
-        .join(", ");
-      console.warn(
-        `${logLabel} attempt ${attempt + 1} invalid (${summaryCheck.reason}), short summaries: ${shortDetail}`,
-      );
-    }
-
-    throw new Error(
-      `Single-shot byline regeneration failed quality gate after ${maxRetries + 1} attempt(s): ${lastReason}`,
-    );
   }
 
   async generateNewExplanation({
@@ -255,13 +187,11 @@ export class ExplanationRegenerationService {
           });
         }
 
-        newExplanationContent = await this.generateSingleShotWithSummaryGate({
-          explanationType,
-          systemPromptText: systemPrompt.prompt,
-          userPrompt,
+        newExplanationContent = await this.gpt5Text({
+          instructions: systemPrompt.prompt,
+          input: userPrompt,
           model,
           effort,
-          logLabel: `[REGENERATION_SINGLESHOT] ${book.name} ${chapterNumber} ${explanationType}`,
         });
       }
 
