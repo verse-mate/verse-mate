@@ -343,11 +343,22 @@ const plugin = new Elysia()
       )
       .get(
         "/testaments",
-        async ({ store: { bibleService } }) => {
-          const { testaments } = await bibleService.getTestaments();
+        async ({ store: { bibleService }, query }) => {
+          // `bible_version` is the canonical query param across the Bible
+          // routes; `versionKey` is kept as the back-compat alias used by
+          // the generated mobile SDK. Unknown keys fall back to default
+          // English names in the service layer.
+          const versionKey = query.bible_version ?? query.versionKey;
+          const { testaments } = await bibleService.getTestaments({
+            versionKey,
+          });
           return { testaments: testaments.keys };
         },
         {
+          query: t.Object({
+            bible_version: t.Optional(t.String()),
+            versionKey: t.Optional(t.String()),
+          }),
           response: {
             200: TestamentsSchema,
             ...StandardErrorResponses,

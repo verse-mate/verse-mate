@@ -19,21 +19,38 @@ export class BibleRepository {
   constructor(private readonly db: db) {}
 
   /**
-   * Testaments and their books, chapters, verses and explanations
+   * Testaments and their books, chapters, verses and explanations.
+   *
+   * When `versionId` is provided, book names are taken from the per-version
+   * localized `version_book_names` table (e.g. "Geneza" for VDC, "Genesi"
+   * for RIV, "1. Mose" for SCH51). The LEFT JOIN + COALESCE means missing
+   * entries quietly fall back to the canonical English name on books, so
+   * incomplete localizations degrade gracefully instead of returning null.
+   * When `versionId` is omitted, the legacy English-name behaviour is
+   * preserved.
    */
-  async getTestaments() {
+  async getTestaments(versionId?: string | null) {
     const testaments = await this.db
       .getOrCreateConnection()
       .selectFrom("books")
       .leftJoin("chapters", "chapters.book_id", "books.book_id")
+      .leftJoin("version_book_names", (join) =>
+        join
+          .onRef("version_book_names.book_id", "=", "books.book_id")
+          .on("version_book_names.version_id", "=", versionId ?? null),
+      )
       .select([
         "books.book_id",
-        "books.name",
         "books.testament",
         "books.genre_id",
       ])
+      .select((eb) =>
+        eb.fn
+          .coalesce("version_book_names.name", "books.name")
+          .as("name"),
+      )
       .select((eb) => eb.fn.count("chapters.chapter_id").as("total_chapters"))
-      .groupBy("books.book_id")
+      .groupBy(["books.book_id", "version_book_names.name"])
       .orderBy("books.book_id")
       .execute();
 
