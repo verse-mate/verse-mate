@@ -39,15 +39,9 @@ export class BibleRepository {
           .onRef("version_book_names.book_id", "=", "books.book_id")
           .on("version_book_names.version_id", "=", versionId ?? null),
       )
-      .select([
-        "books.book_id",
-        "books.testament",
-        "books.genre_id",
-      ])
+      .select(["books.book_id", "books.testament", "books.genre_id"])
       .select((eb) =>
-        eb.fn
-          .coalesce("version_book_names.name", "books.name")
-          .as("name"),
+        eb.fn.coalesce("version_book_names.name", "books.name").as("name"),
       )
       .select((eb) => eb.fn.count("chapters.chapter_id").as("total_chapters"))
       .groupBy(["books.book_id", "version_book_names.name"])
