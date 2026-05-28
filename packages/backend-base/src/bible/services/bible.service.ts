@@ -35,6 +35,11 @@ const LANGUAGE_NAME_OVERRIDES: Record<
 > = {
   "en-US": { name: "English", native_name: "English" },
   "es-MX": { name: "Spanish", native_name: "Español" },
+  // Intl derives "Romanian (Romania)" / "română (România)" — verbose
+  // country suffix + lowercased native_name (Romanian conventionally
+  // writes language names lowercase, but Title Case reads cleaner in
+  // the picker alongside the other language labels).
+  "ro-RO": { name: "Romanian", native_name: "Română" },
 };
 
 export class BibleService {
