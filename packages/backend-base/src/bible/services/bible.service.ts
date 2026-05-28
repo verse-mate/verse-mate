@@ -79,8 +79,26 @@ export class BibleService {
     return { versions };
   }
 
-  async getTestaments() {
-    const { testaments } = await this.bibleRepository.getTestaments();
+  /**
+   * Resolve a Bible-version key (e.g. "VDC", "RIV") to its UUID, or return
+   * `null` for unknown/empty input. Unknown keys fall back to default
+   * (English) book names rather than throwing — same posture as the public
+   * `/bible/book` endpoint when the lexicon/Strong's data is missing.
+   */
+  private async resolveVersionId(versionKey?: string): Promise<string | null> {
+    if (!versionKey) return null;
+    const v = await this.db
+      .getOrCreateConnection()
+      .selectFrom("bible_versions")
+      .where("version_key", "=", versionKey)
+      .select("id")
+      .executeTakeFirst();
+    return v?.id ?? null;
+  }
+
+  async getTestaments({ versionKey }: { versionKey?: string } = {}) {
+    const versionId = await this.resolveVersionId(versionKey);
+    const { testaments } = await this.bibleRepository.getTestaments(versionId);
 
     const keys: TestamentDto[] = [];
 
