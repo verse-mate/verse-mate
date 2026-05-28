@@ -1,11 +1,5 @@
 export const BYLINE_CHUNK_SIZE = 40;
 export const BYLINE_CHUNK_THRESHOLD = 50;
-/**
- * Minimum number of sentences required in a byline per-verse `### Summary`
- * section. Below this we treat the chunk as invalid and retry. The product
- * quality bar is "at least 3 sentences" — see VER-120.
- */
-export const MIN_SUMMARY_SENTENCES = 3;
 
 export type BylineVerse = {
   verseNumber: number;
@@ -32,16 +26,10 @@ type GenerateChunkedBylineParams = {
   generateChunk: (params: GenerateBylineChunkParams) => Promise<string>;
 };
 
-export type ShortSummary = {
-  verseHeading: string;
-  sentenceCount: number;
-};
-
 type ChunkCoverage = {
   valid: boolean;
   reason: string;
   mentionsInRange: number[];
-  shortSummaries?: ShortSummary[];
 };
 
 const REFUSAL_PATTERN =
@@ -95,7 +83,7 @@ function buildRangePrompt({
       "\n\n- Do NOT include the title heading — this is a continuation of a chunked generation.";
   }
   if (isRetry) {
-    prompt += `\n\n- Previous attempt did not fully cover the required range. Ensure you include every verse from ${startVerse} to ${endVerse}, and that each verse's "### Summary" section contains at least ${MIN_SUMMARY_SENTENCES} complete sentences of prose.`;
+    prompt += `\n\n- Previous attempt did not fully cover the required range. Ensure you include every verse from ${startVerse} to ${endVerse}.`;
   }
 
   return prompt;
@@ -120,135 +108,6 @@ function collectVerseMentionsForChapter(
     .filter((n) => Number.isFinite(n));
 
   return [...chapterMentions, ...simpleMentions];
-}
-
-/**
- * Abbreviations whose internal `.` should not be treated as a sentence
- * terminator when counting sentences. Tuned for the prose style of biblical
- * commentary (citations, scholarly hedging).
- */
-const SENTENCE_COUNT_ABBREVIATIONS = [
-  "e.g.",
-  "i.e.",
-  "cf.",
-  "etc.",
-  "vs.",
-  "v.",
-  "vv.",
-  "ch.",
-  "chap.",
-  "Mr.",
-  "Mrs.",
-  "Ms.",
-  "Dr.",
-  "St.",
-];
-
-/**
- * Count terminal-punctuation sentences in a prose block. Strips markdown
- * formatting and `>` blockquotes (verse-text quotes) first, then masks common
- * abbreviations so their internal periods don't get counted.
- *
- * Heuristic: counts runs of `.!?` (possibly followed by close-quote/paren)
- * that are followed by whitespace or end-of-string. Intentionally simple — we
- * only need to reliably flag obviously-short summaries (1–2 sentences).
- */
-export function countSentences(text: string): number {
-  if (!text) return 0;
-
-  let cleaned = text
-    // Strip blockquote lines (verse-text quotes are rendered as `> ...`).
-    .replace(/^>.*$/gm, "")
-    // Strip markdown emphasis markers.
-    .replace(/[*_`]/g, "")
-    // Collapse whitespace.
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!cleaned) return 0;
-
-  for (const abbr of SENTENCE_COUNT_ABBREVIATIONS) {
-    cleaned = cleaned.split(abbr).join(abbr.replace(/\./g, "·"));
-  }
-
-  const matches = cleaned.match(/[.!?]+["')\]]*(?=\s|$)/g);
-  return matches ? matches.length : 0;
-}
-
-export type VerseSummary = {
-  verseHeading: string;
-  summary: string;
-};
-
-/**
- * Extract per-verse `### Summary` blocks from a byline explanation chunk.
- * Each `## Book Ch:V` section is expected to contain a `### Summary` block
- * (followed optionally by `### Analysis`).
- */
-export function extractVerseSummaries(output: string): VerseSummary[] {
-  if (!output) return [];
-
-  const results: VerseSummary[] = [];
-  const sections = output.split(/(?=^##\s)/m);
-
-  for (const section of sections) {
-    const headingMatch = section.match(/^##\s+(.+)$/m);
-    if (!headingMatch) continue;
-
-    const summaryMatch = section.match(
-      /^###\s*Summary\s*\n([\s\S]*?)(?=^###\s|^##\s|$)/m,
-    );
-    if (!summaryMatch) continue;
-
-    const summary = summaryMatch[1].trim();
-    if (!summary) continue;
-
-    results.push({
-      verseHeading: headingMatch[1].trim(),
-      summary,
-    });
-  }
-
-  return results;
-}
-
-export type SummaryValidation = {
-  valid: boolean;
-  reason: string;
-  shortSummaries: ShortSummary[];
-};
-
-/**
- * Validate that every per-verse `### Summary` in a byline output meets the
- * minimum sentence count. Returns `valid: true` with reason `no-summaries`
- * when no `### Summary` sections are present (e.g. non-byline output) — the
- * caller decides whether that's acceptable.
- */
-export function validateSummaryLengths(
-  output: string,
-  minSentences: number = MIN_SUMMARY_SENTENCES,
-): SummaryValidation {
-  const summaries = extractVerseSummaries(output);
-  if (summaries.length === 0) {
-    return { valid: true, reason: "no-summaries", shortSummaries: [] };
-  }
-
-  const shortSummaries = summaries
-    .map((s) => ({
-      verseHeading: s.verseHeading,
-      sentenceCount: countSentences(s.summary),
-    }))
-    .filter((s) => s.sentenceCount < minSentences);
-
-  if (shortSummaries.length === 0) {
-    return { valid: true, reason: "ok", shortSummaries: [] };
-  }
-
-  return {
-    valid: false,
-    reason: "summary-too-short",
-    shortSummaries,
-  };
 }
 
 function validateChunkCoverage({
@@ -288,16 +147,6 @@ function validateChunkCoverage({
             ? "missing-start-verse"
             : "missing-end-verse",
       mentionsInRange,
-    };
-  }
-
-  const summaryCheck = validateSummaryLengths(output);
-  if (!summaryCheck.valid) {
-    return {
-      valid: false,
-      reason: summaryCheck.reason,
-      mentionsInRange,
-      shortSummaries: summaryCheck.shortSummaries,
     };
   }
 
@@ -384,11 +233,8 @@ export async function generateChunkedByline({
       }
 
       lastReason = coverage.reason;
-      const shortDetail = coverage.shortSummaries?.length
-        ? `, short summaries: ${formatShortSummaryList(coverage.shortSummaries)}`
-        : "";
       console.warn(
-        `${attemptLabel} invalid (${coverage.reason}), mentions in range: [${coverage.mentionsInRange.join(", ")}]${shortDetail}`,
+        `${attemptLabel} invalid (${coverage.reason}), mentions in range: [${coverage.mentionsInRange.join(", ")}]`,
       );
     }
 
@@ -402,13 +248,6 @@ export async function generateChunkedByline({
   }
 
   return chunks.join("\n\n");
-}
-
-function formatShortSummaryList(short: ShortSummary[]): string {
-  return short
-    .slice(0, 5)
-    .map((s) => `${s.verseHeading} (${s.sentenceCount})`)
-    .join(", ");
 }
 
 /**
@@ -468,11 +307,8 @@ export async function generateChunkedBylineParallel({
         }
 
         lastReason = coverage.reason;
-        const shortDetail = coverage.shortSummaries?.length
-          ? `, short summaries: ${formatShortSummaryList(coverage.shortSummaries)}`
-          : "";
         console.warn(
-          `${attemptLabel} invalid (${coverage.reason}), mentions: [${coverage.mentionsInRange.join(", ")}]${shortDetail}`,
+          `${attemptLabel} invalid (${coverage.reason}), mentions: [${coverage.mentionsInRange.join(", ")}]`,
         );
       }
 

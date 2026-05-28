@@ -13,7 +13,6 @@ import {
   userPlugin,
   versionPolicyPlugin,
 } from "backend-base";
-import { remediateVer120ShortSummaries } from "backend-base/src/bible/remediate-ver-120";
 import { BibleRepository } from "backend-base/src/bible/repository/bible.repository";
 import { BibleService } from "backend-base/src/bible/services/bible.service";
 import { db } from "database";
@@ -96,13 +95,4 @@ app.listen(process.env.PORT || 3000, async () => {
       console.error("❌ Language stats refresh failed:", error);
     }
   });
-
-  // VER-120: one-time idempotent remediation of short byline summaries.
-  // Runs only when AI is configured; exits immediately if no short content exists.
-  if (process.env.OPEN_AI_KEY) {
-    console.log("🔍 VER-120: checking for short byline summaries...");
-    remediateVer120ShortSummaries().catch((err) => {
-      console.error("❌ VER-120 remediation error:", err);
-    });
-  }
 });
