@@ -2,10 +2,11 @@
   "name": "database",
   "module": "index.ts",
   "scripts": {
-    "build": "bun build ./src/migrator.ts ./src/seeder.ts --target bun --minify --outdir ./dist",
+    "build": "bun build ./src/migrator.ts ./src/seeder.ts ./src/actions/fix-migration.ts --target bun --minify --outdir ./dist",
     "migrate:deploy": "bun ./src/migrator.ts migrate-deploy",
     "migrate:dev": "bun ./src/migrator.ts migrate-dev",
     "migrate:down": "bun ./src/migrator.ts migrate-down",
+    "migrate:fix": "bun ./src/actions/fix-migration.ts",
     "model:generate": "kanel && biome check --write ./src/models",
     "dbml:generate": "prisma db pull && prisma generate",
     "db:seed": "bun ./src/seeder.ts",
