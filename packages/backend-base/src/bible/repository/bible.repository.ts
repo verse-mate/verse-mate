@@ -143,6 +143,26 @@ export class BibleRepository {
   }
 
   /**
+   * Of the given Strong's numbers, return the subset that has an actual
+   * lemma card (a non-empty `basic_gloss`). Used to gate Strong's-tagged
+   * rendering so the reader only underlines words the user can actually
+   * tap into a definition for — ~12k of the ~14k tagged Strong's numbers
+   * have no card content, and underlining those produced empty popovers.
+   */
+  async getStrongsWithContent(strongs: string[]): Promise<Set<string>> {
+    if (strongs.length === 0) return new Set();
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("lemmas")
+      .where("strongs", "in", strongs)
+      .where("basic_gloss", "is not", null)
+      .where(sql<boolean>`trim(basic_gloss) <> ''`)
+      .select("strongs")
+      .execute();
+    return new Set(rows.map((r) => r.strongs));
+  }
+
+  /**
    * Localized book name for a given version (USFM \h). Falls back to null when
    * the version has no localized name (e.g. NASB1995, which uses books.name).
    */
