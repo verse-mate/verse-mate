@@ -69,6 +69,43 @@ export class BibleService {
       withTokens: tagged,
     });
 
+    // Strong's-tagged rendering: only keep the tag on tokens whose lemma
+    // actually has a definition card. ~12k of the ~14k tagged Strong's
+    // numbers have no `basic_gloss`, and tagging those underlined words
+    // the user couldn't get a definition for (empty popover). Stripping
+    // `strongs`/`strongs_alt` here demotes them back to plain-text tokens,
+    // so the reader only underlines tap-worthy words. Untouched when not
+    // tagged (legacy path) or when a chapter has no token coverage.
+    if (tagged && verses) {
+      const allStrongs = new Set<string>();
+      for (const v of verses) {
+        const tokens = (v as { tokens?: VerseToken[] }).tokens;
+        if (!Array.isArray(tokens)) continue;
+        for (const tok of tokens) {
+          if (tok.strongs) allStrongs.add(tok.strongs);
+          for (const alt of tok.strongs_alt ?? []) allStrongs.add(alt);
+        }
+      }
+      if (allStrongs.size > 0) {
+        const withContent = await this.bibleRepository.getStrongsWithContent([
+          ...allStrongs,
+        ]);
+        for (const v of verses) {
+          const tokens = (v as { tokens?: VerseToken[] }).tokens;
+          if (!Array.isArray(tokens)) continue;
+          for (const tok of tokens) {
+            if (tok.strongs && !withContent.has(tok.strongs)) {
+              tok.strongs = undefined;
+            }
+            if (tok.strongs_alt) {
+              const keptAlt = tok.strongs_alt.filter((s) => withContent.has(s));
+              tok.strongs_alt = keptAlt.length > 0 ? keptAlt : undefined;
+            }
+          }
+        }
+      }
+    }
+
     return {
       book: this.formattedBook({ book, chapter, subtitles, verses, tagged }),
     };
