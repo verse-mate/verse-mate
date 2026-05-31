@@ -5726,22 +5726,6 @@ export class BatchOperationService {
   // ===========================================================================
 
   /**
-   * Default inline instruction for translating an InductiveStudy JSON document.
-   * Used when no active `prompt_type = 'translate-study'` row exists in the
-   * `prompts` table; if one does exist it takes precedence (with `{language}`
-   * substituted), matching the explanation translate path's DB-prompt pattern.
-   */
-  private buildStudyTranslateInstruction(languageName: string): string {
-    return [
-      `You are translating a Bible inductive-study (Precept method) JSON document into ${languageName}.`,
-      "You will receive a single JSON object. Return ONLY a valid JSON object with the EXACT same structure, keys, array lengths and ordering.",
-      `Translate into ${languageName} every human-readable text value: title, subtitle, themeOneLine; each step's title, summary, intro, note and body; all q, a, text, truth, pairing, definition and excerpt fields; movement titles, excerpt and body; application questions; and segment titles, bodies and themeHeadline.`,
-      'Do NOT translate or alter: any JSON key; numeric values (number, chapter, count, bookId); the "kind", "type" and "tag" discriminator strings; scripture references (e.g. "1:2-4", "Acts 15:13"); the "greek" transliteration field; and any markdown / formatting characters (*, #, _, backticks). Preserve markdown emphasis exactly.',
-      "Output strictly the JSON object — no surrounding prose, no explanation, no code fences.",
-    ].join("\n");
-  }
-
-  /**
    * Generate study-translation batch(es).
    *  - type "book": one batch for the named book (optionally filtered to
    *    specific chapter numbers — this is the single-chapter test path).
@@ -5878,17 +5862,24 @@ export class BatchOperationService {
       return null;
     }
 
-    // Prefer a DB-managed prompt (admin-editable) over the inline default.
+    // Load the active study-translate prompt from the `prompts` table — same
+    // DB-managed, admin-editable convention as every other batch (the
+    // `translate` batch loads `prompt_type='translate'` the same way). The
+    // prompt text lives in the DB (managed via the admin prompts UI), NOT in
+    // code; `{language}` is substituted with the target language name.
     const languageName = getLanguageName(target_language_code);
-    const dbPrompt = await connection
+    const studyPrompt = await connection
       .selectFrom("prompts")
       .where("prompt_type", "=", "translate-study")
       .where("status", "=", PromptStatusEnum.active)
       .select("prompt")
       .executeTakeFirst();
-    const instruction = dbPrompt
-      ? dbPrompt.prompt.replace("{language}", languageName)
-      : this.buildStudyTranslateInstruction(languageName);
+    if (!studyPrompt) {
+      const error = "No active translate-study prompt found in the database.";
+      console.error(`[BATCH] ${error}`);
+      throw new Error(error);
+    }
+    const instruction = studyPrompt.prompt.replace("{language}", languageName);
 
     const batchRequests: BatchJobRequest[] = toTranslate.map((study) => ({
       custom_id: `study|${bookName}|${study.chapter}|${target_language_code}|${study.study_id}`,
