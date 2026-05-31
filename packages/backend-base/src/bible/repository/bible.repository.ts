@@ -1613,4 +1613,72 @@ export class BibleRepository {
       throw error;
     }
   }
+
+  /**
+   * Fetch the inductive study for a chapter in the requested language.
+   *
+   * English (en-US) is the baseline stored on `studies`. Non-English content
+   * lives in `study_translations`; when a requested language has no active
+   * translation we fall back to the English baseline — same convention as
+   * topics/lemmas (feat-i18n / br-i18n-002). Returns null when the chapter
+   * has no study at all.
+   */
+  async getStudy({
+    book_id,
+    chapter,
+    language_code,
+  }: {
+    book_id: number;
+    chapter: number;
+    language_code?: string;
+  }): Promise<{
+    book_id: number;
+    chapter: number;
+    language_code: string;
+    content: unknown;
+  } | null> {
+    const connection = this.db.getOrCreateConnection();
+
+    const study = await connection
+      .selectFrom("studies")
+      .select(["study_id", "content"])
+      .where("book_id", "=", book_id)
+      .where("chapter", "=", chapter)
+      .executeTakeFirst();
+
+    if (!study) return null;
+
+    const normalized = (language_code ?? "en-US").trim();
+    const isEnglish =
+      !normalized ||
+      normalized.toLowerCase() === "en" ||
+      normalized.toLowerCase().startsWith("en-");
+
+    if (!isEnglish) {
+      const translation = await connection
+        .selectFrom("study_translations")
+        .select(["language_code", "translated_content"])
+        .where("study_id", "=", study.study_id)
+        .where("language_code", "=", normalized)
+        .where("is_active", "=", true)
+        .executeTakeFirst();
+
+      if (translation) {
+        return {
+          book_id,
+          chapter,
+          language_code: translation.language_code,
+          content: translation.translated_content,
+        };
+      }
+      // No translation for this language → fall through to English baseline.
+    }
+
+    return {
+      book_id,
+      chapter,
+      language_code: "en-US",
+      content: study.content,
+    };
+  }
 }

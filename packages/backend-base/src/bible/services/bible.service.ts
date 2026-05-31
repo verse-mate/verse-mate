@@ -1364,4 +1364,24 @@ export class BibleService {
   async markIntroductionAsViewed(userId: string, bookId: number) {
     return this.bibleRepository.markIntroductionAsViewed(userId, bookId);
   }
+
+  /**
+   * Inductive study for a chapter, localized with English fallback.
+   * Returns null when the chapter has no study.
+   */
+  async getStudy({
+    book_id,
+    chapter,
+    lang,
+  }: {
+    book_id: number;
+    chapter: number;
+    lang?: string;
+  }) {
+    return this.bibleRepository.getStudy({
+      book_id,
+      chapter,
+      language_code: lang,
+    });
+  }
 }
