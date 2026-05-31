@@ -153,6 +153,24 @@ export const ChapterIdSchema = t.Object({
   chapter_id: t.Union([t.Number(), t.Null()]),
 });
 
+// Inductive-study response. `content` is the full InductiveStudy object
+// (steps + interpretation + application) — an opaque JSON document mirrored
+// from the @versemate/studies shape, so it's typed as Unknown rather than
+// re-declaring the deeply nested discriminated union here. `language_code`
+// is the language actually served after English fallback. `null` when no
+// study exists for the chapter.
+export const StudySchema = t.Object({
+  study: t.Union([
+    t.Object({
+      book_id: t.Number(),
+      chapter: t.Number(),
+      language_code: t.String(),
+      content: t.Unknown(),
+    }),
+    t.Null(),
+  ]),
+});
+
 /**
  * Chat and conversation schemas
  */

@@ -1613,4 +1613,82 @@ export class BibleRepository {
       throw error;
     }
   }
+
+  /**
+   * Fetch the inductive study for a chapter in the requested language.
+   *
+   * English (en-US) is the baseline stored on `studies`. Non-English content
+   * lives in `study_translations`; when a requested language has no active
+   * translation we fall back to the English baseline — same convention as
+   * topics/lemmas (feat-i18n / br-i18n-002). Returns null when the chapter
+   * has no study at all.
+   */
+  async getStudy({
+    book_id,
+    chapter,
+    language_code,
+  }: {
+    book_id: number;
+    chapter: number;
+    language_code?: string;
+  }): Promise<{
+    book_id: number;
+    chapter: number;
+    language_code: string;
+    content: unknown;
+  } | null> {
+    const connection = this.db.getOrCreateConnection();
+
+    const study = await connection
+      .selectFrom("studies")
+      .select(["study_id", "content"])
+      .where("book_id", "=", book_id)
+      .where("chapter", "=", chapter)
+      .executeTakeFirst();
+
+    if (!study) return null;
+
+    const requested = (language_code ?? "en-US").trim().toLowerCase();
+    const isEnglish =
+      !requested || requested === "en" || requested.startsWith("en-");
+
+    if (!isEnglish) {
+      // Match by language FAMILY, not exact code: web sends the base ISO code
+      // (`ro`, `es` — usePreferredLanguage collapses `ro-RO`→`ro`) while mobile
+      // and the translate batch use full BCP-47 (`ro-RO`). Prefer an exact
+      // (case-insensitive) match, then fall back to the same base-ISO family,
+      // mirroring the explanation repo's normalize+base logic. Falls through to
+      // the English baseline when neither matches.
+      const requestedBase = requested.split("-")[0];
+      const translations = await connection
+        .selectFrom("study_translations")
+        .select(["language_code", "translated_content"])
+        .where("study_id", "=", study.study_id)
+        .where("is_active", "=", true)
+        .execute();
+
+      const match =
+        translations.find((t) => t.language_code.toLowerCase() === requested) ??
+        translations.find(
+          (t) => t.language_code.toLowerCase().split("-")[0] === requestedBase,
+        );
+
+      if (match) {
+        return {
+          book_id,
+          chapter,
+          language_code: match.language_code,
+          content: match.translated_content,
+        };
+      }
+      // No translation for this language family → fall through to English.
+    }
+
+    return {
+      book_id,
+      chapter,
+      language_code: "en-US",
+      content: study.content,
+    };
+  }
 }
