@@ -24,7 +24,7 @@ import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { getAiProvider } from "../shared/ai";
 
-const MODEL = "gpt-5-nano";
+const MODEL = "gpt-5-mini";
 const TARGET_LANG = "ro-RO";
 const BOOK_NAME = "James";
 const BOOK_ID = 59;
