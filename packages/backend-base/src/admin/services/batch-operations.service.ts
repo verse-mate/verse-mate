@@ -1,6 +1,7 @@
 import type { Queue } from "bullmq";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
+import { sql } from "kysely";
 import { APIError } from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
@@ -28,6 +29,9 @@ interface BatchJobRequest {
     instructions?: string;
     input: string;
     max_output_tokens: number;
+    // Optional Responses-API structured-output control. Used by the study
+    // translate batch to force valid JSON ({ format: { type: "json_object" } }).
+    text?: { format: { type: string; [key: string]: unknown } };
   };
 }
 
@@ -2434,6 +2438,13 @@ export class BatchOperationService {
         batchJob.batch_type === "auto-translate"
       ) {
         return this.processTranslateOutputFile(batchId, outputFileId, batchJob);
+      }
+      if (batchJob.batch_type === "translate-study") {
+        return this.processStudyTranslateOutputFile(
+          batchId,
+          outputFileId,
+          batchJob,
+        );
       }
       if (batchJob.batch_type === "topic-discovery") {
         return this.processTopicDiscoveryOutputFile(
@@ -5696,5 +5707,463 @@ export class BatchOperationService {
         message: `Failed to retrieve error file: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
     }
+  }
+
+  // ===========================================================================
+  // STUDY TRANSLATION BATCH
+  //
+  // Translates inductive-study content (the `studies` table, en-US baseline)
+  // into a target language, writing rows into `study_translations`. Built as a
+  // standalone batch (batch_type = "translate-study") rather than overloading
+  // the explanation translate path, because the unit of work is a single
+  // self-contained JSON document per chapter (no byline chunking, no per-type
+  // fan-out, upsert instead of version history).
+  //
+  // Mirrors the explanation translate pipeline's mechanics: build BatchJobRequest[]
+  // → JSONL → ai.filesCreate → ai.batchesCreate → batch_jobs row → monitoring
+  // queue. Writeback dispatched from processOutputFile via the "translate-study"
+  // branch.
+  // ===========================================================================
+
+  /**
+   * Default inline instruction for translating an InductiveStudy JSON document.
+   * Used when no active `prompt_type = 'translate-study'` row exists in the
+   * `prompts` table; if one does exist it takes precedence (with `{language}`
+   * substituted), matching the explanation translate path's DB-prompt pattern.
+   */
+  private buildStudyTranslateInstruction(languageName: string): string {
+    return [
+      `You are translating a Bible inductive-study (Precept method) JSON document into ${languageName}.`,
+      "You will receive a single JSON object. Return ONLY a valid JSON object with the EXACT same structure, keys, array lengths and ordering.",
+      `Translate into ${languageName} every human-readable text value: title, subtitle, themeOneLine; each step's title, summary, intro, note and body; all q, a, text, truth, pairing, definition and excerpt fields; movement titles, excerpt and body; application questions; and segment titles, bodies and themeHeadline.`,
+      'Do NOT translate or alter: any JSON key; numeric values (number, chapter, count, bookId); the "kind", "type" and "tag" discriminator strings; scripture references (e.g. "1:2-4", "Acts 15:13"); the "greek" transliteration field; and any markdown / formatting characters (*, #, _, backticks). Preserve markdown emphasis exactly.',
+      "Output strictly the JSON object — no surrounding prose, no explanation, no code fences.",
+    ].join("\n");
+  }
+
+  /**
+   * Generate study-translation batch(es).
+   *  - type "book": one batch for the named book (optionally filtered to
+   *    specific chapter numbers — this is the single-chapter test path).
+   *  - type "bible": one independent child batch per book that has studies
+   *    (no parent aggregate row; kept intentionally simple).
+   */
+  async generateStudyTranslateBatch(
+    model: string,
+    adminUserId: string,
+    type: "bible" | "book",
+    target_language_code: string,
+    skipExisting = false,
+    effort: "low" | "medium" | "high" = "medium",
+    bookName?: string,
+    chapterNumbers?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+  ) {
+    if (type === "book" && !bookName) {
+      throw new ValidationError("bookName is required when type is 'book'");
+    }
+
+    if (type === "book") {
+      const batch = await this.createStudyTranslateBatch(
+        model,
+        adminUserId,
+        effort,
+        bookName as string,
+        target_language_code,
+        skipExisting,
+        chapterNumbers,
+        maxOutputTokens,
+      );
+      return {
+        success: true,
+        message: batch
+          ? `Study translate batch created for ${bookName} → ${target_language_code}`
+          : `No studies to translate for ${bookName} (nothing pending)`,
+        batchId: batch?.id,
+      };
+    }
+
+    const connection = this.db.getOrCreateConnection();
+    // Distinct book names from the studies' own content (the @versemate/studies
+    // canonical id space), NOT the `books` table — those id spaces differ.
+    const bookRows = await connection
+      .selectFrom("studies")
+      .select(sql<string>`content->>'bookName'`.as("book_name"))
+      .distinct()
+      .orderBy(sql`content->>'bookName'`)
+      .execute();
+    const bookNames = bookRows
+      .map((r) => r.book_name)
+      .filter((n): n is string => !!n);
+
+    const createdBatchIds: string[] = [];
+    for (const name of bookNames) {
+      try {
+        const batch = await this.createStudyTranslateBatch(
+          model,
+          adminUserId,
+          effort,
+          name,
+          target_language_code,
+          skipExisting,
+          undefined,
+          maxOutputTokens,
+        );
+        if (batch) createdBatchIds.push(batch.id);
+      } catch (error) {
+        console.error(`[BATCH][study-translate] book ${name} failed:`, error);
+      }
+    }
+    return {
+      success: true,
+      message: `Created ${createdBatchIds.length} study translate batches for ${target_language_code}`,
+      batchIds: createdBatchIds,
+    };
+  }
+
+  private async createStudyTranslateBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high",
+    bookName: string,
+    target_language_code: string,
+    skipExisting: boolean,
+    chapterNumbers?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    // Select studies by the book name stored in their own content, NOT via the
+    // `books` table — `studies.book_id` is the canonical @versemate/studies id
+    // space (James=59), which does not align with `books.book_id` (James=28).
+    let studiesQuery = connection
+      .selectFrom("studies")
+      .where(sql`content->>'bookName'`, "=", bookName)
+      .select(["study_id", "chapter", "content", "content_hash"]);
+    if (chapterNumbers && chapterNumbers.length > 0) {
+      studiesQuery = studiesQuery.where("chapter", "in", chapterNumbers);
+    }
+    const studies = await studiesQuery.execute();
+
+    if (studies.length === 0) {
+      console.log(
+        `[BATCH][study-translate] no studies for ${bookName}${
+          chapterNumbers ? ` chapters=${chapterNumbers.join(",")}` : ""
+        }`,
+      );
+      return null;
+    }
+
+    let toTranslate = studies;
+    if (skipExisting) {
+      const existing = await connection
+        .selectFrom("study_translations")
+        .select(["study_id"])
+        .where("language_code", "=", target_language_code)
+        .where("is_active", "=", true)
+        .where(
+          "study_id",
+          "in",
+          studies.map((s) => s.study_id),
+        )
+        .execute();
+      const have = new Set(existing.map((e) => e.study_id));
+      toTranslate = studies.filter((s) => !have.has(s.study_id));
+    }
+
+    if (toTranslate.length === 0) {
+      console.log(
+        `[BATCH][study-translate] all ${studies.length} studies already translated to ${target_language_code} for ${bookName}`,
+      );
+      return null;
+    }
+
+    // Prefer a DB-managed prompt (admin-editable) over the inline default.
+    const languageName = getLanguageName(target_language_code);
+    const dbPrompt = await connection
+      .selectFrom("prompts")
+      .where("prompt_type", "=", "translate-study")
+      .where("status", "=", PromptStatusEnum.active)
+      .select("prompt")
+      .executeTakeFirst();
+    const instruction = dbPrompt
+      ? dbPrompt.prompt.replace("{language}", languageName)
+      : this.buildStudyTranslateInstruction(languageName);
+
+    const batchRequests: BatchJobRequest[] = toTranslate.map((study) => ({
+      custom_id: `study|${bookName}|${study.chapter}|${target_language_code}|${study.study_id}`,
+      method: "POST",
+      url: "/v1/responses",
+      body: {
+        model,
+        reasoning: { effort },
+        instructions: instruction,
+        // The Responses API requires the literal word "json" in the input when
+        // text.format is json_object, hence the lead line.
+        input: `Translate the following study JSON document and return a single valid JSON object:\n${JSON.stringify(study.content)}`,
+        max_output_tokens: maxOutputTokens,
+        // Force syntactically valid JSON output — gpt-5-nano otherwise emits
+        // occasionally-malformed JSON for large documents.
+        text: { format: { type: "json_object" } },
+      },
+    }));
+
+    const validation = this.validateCustomIdUniqueness(batchRequests);
+    if (!validation.isValid) {
+      throw new Error(
+        `Custom ID validation failed for study translate batch: ${validation.summary}. Duplicate IDs: ${validation.duplicates.join(", ")}`,
+      );
+    }
+
+    const jsonlContent = batchRequests
+      .map((request) => JSON.stringify(request))
+      .join("\n");
+    const buffer = Buffer.from(jsonlContent, "utf8");
+    if (buffer.length > 100 * 1024 * 1024) {
+      throw new ValidationError(
+        `Batch file size (${Math.round(
+          buffer.length / (1024 * 1024),
+        )}MB) exceeds OpenAI's 100MB limit.`,
+      );
+    }
+
+    const safeBook = bookName.replace(/[^a-z0-9]/gi, "_");
+    const file = await this.ai.filesCreate({
+      file: new File(
+        [new Uint8Array(buffer)],
+        `study_translate_${safeBook}_${Date.now()}.jsonl`,
+      ),
+      purpose: "batch",
+    });
+
+    const batch = await this.ai.batchesCreate({
+      inputFileId: file.id,
+      endpoint: "/v1/responses",
+      completionWindow: "24h",
+    });
+
+    await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "translate-study",
+        openai_batch_id: batch.id,
+        status: "validating",
+        model,
+        total_requests: batchRequests.length,
+        created_by: adminUserId,
+        // book_id intentionally null: studies use a different id space than
+        // the `books` table this column FK-references (see migration comment).
+        book_id: null,
+        bible_version: target_language_code,
+        source_language_code: "en-US",
+        target_language_code,
+        explanation_types: [],
+        max_output_tokens: maxOutputTokens,
+      })
+      .execute();
+
+    await this.batchMonitoringQueue.add(
+      BATCH_MONITORING_QUEUE,
+      { batchId: batch.id, model },
+      { jobId: batch.id, removeOnComplete: true, removeOnFail: 100 },
+    );
+
+    console.log(
+      `[BATCH][study-translate] created ${batch.id}: ${batchRequests.length} requests for ${bookName} → ${target_language_code}`,
+    );
+    return batch;
+  }
+
+  /**
+   * Tolerant JSON extraction from a model response: strips code fences and, as
+   * a last resort, slices from the first "{" to the last "}".
+   */
+  private parseStudyJson(text: string): Record<string, unknown> | null {
+    let candidate = text.trim();
+    const fence = candidate.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    if (fence) candidate = fence[1].trim();
+    try {
+      return JSON.parse(candidate) as Record<string, unknown>;
+    } catch {
+      // fall through
+    }
+    const first = candidate.indexOf("{");
+    const last = candidate.lastIndexOf("}");
+    if (first !== -1 && last > first) {
+      try {
+        return JSON.parse(candidate.slice(first, last + 1)) as Record<
+          string,
+          unknown
+        >;
+      } catch {
+        // fall through
+      }
+    }
+    return null;
+  }
+
+  /** Structural sanity check that a translated object is still an InductiveStudy. */
+  private isValidStudyShape(obj: unknown): boolean {
+    if (!obj || typeof obj !== "object") return false;
+    const o = obj as Record<string, unknown>;
+    const interp = o.interpretation as Record<string, unknown> | undefined;
+    const app = o.application as Record<string, unknown> | undefined;
+    return (
+      Array.isArray(o.steps) &&
+      !!interp &&
+      Array.isArray(interp.movements) &&
+      !!app &&
+      Array.isArray(app.questions)
+    );
+  }
+
+  /**
+   * Writeback for "translate-study" batches: parse each result line, validate
+   * the translated study JSON, and upsert into study_translations
+   * (unique on study_id + language_code).
+   */
+  async processStudyTranslateOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+  ) {
+    const fileResponse = await this.ai.filesContent(outputFileId);
+    let content: string;
+    try {
+      content = await fileResponse.text();
+    } catch {
+      const buf = await fileResponse.arrayBuffer();
+      content = new TextDecoder().decode(buf);
+    }
+
+    const lines = content.split("\n").filter((l) => l.trim());
+    const connection = this.db.getOrCreateConnection();
+
+    let successCount = 0;
+    let errorCount = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+
+    for (const line of lines) {
+      let parsed: {
+        custom_id?: string;
+        response?: {
+          status_code?: number;
+          body?: {
+            usage?: { input_tokens?: number; output_tokens?: number };
+            output?: Array<{ content?: Array<{ text?: string }> }>;
+            output_text?: string;
+          };
+        };
+      };
+      try {
+        parsed = JSON.parse(line);
+      } catch {
+        errorCount++;
+        continue;
+      }
+
+      const customId = parsed.custom_id;
+      if (!customId || !customId.startsWith("study|")) continue;
+
+      const responseBody = parsed.response?.body;
+      const usage = responseBody?.usage;
+      if (usage) {
+        totalPromptTokens += usage.input_tokens ?? 0;
+        totalCompletionTokens += usage.output_tokens ?? 0;
+      }
+
+      if (parsed.response?.status_code !== 200) {
+        console.error(
+          `[BATCH][study-translate] non-200 for ${customId}: ${parsed.response?.status_code}`,
+        );
+        errorCount++;
+        continue;
+      }
+
+      let extractedText: string | undefined;
+      const output = responseBody?.output;
+      if (Array.isArray(output)) {
+        for (const item of output) {
+          const text = item?.content?.[0]?.text;
+          if (typeof text === "string") {
+            extractedText = text;
+            break;
+          }
+        }
+      }
+      if (!extractedText && typeof responseBody?.output_text === "string") {
+        extractedText = responseBody.output_text;
+      }
+      if (!extractedText) {
+        errorCount++;
+        continue;
+      }
+
+      // custom_id = study|<bookName>|<chapter>|<lang>|<studyId>
+      const parts = customId.split("|");
+      if (parts.length < 5) {
+        console.error(`[BATCH][study-translate] bad custom_id: ${customId}`);
+        errorCount++;
+        continue;
+      }
+      const languageCode = parts[3];
+      const studyId = Number.parseInt(parts[4], 10);
+      if (!Number.isFinite(studyId)) {
+        errorCount++;
+        continue;
+      }
+
+      const translated = this.parseStudyJson(extractedText);
+      if (!translated || !this.isValidStudyShape(translated)) {
+        console.error(
+          `[BATCH][study-translate] invalid translated JSON/shape for study_id=${studyId} (${languageCode})`,
+        );
+        errorCount++;
+        continue;
+      }
+
+      await connection
+        .insertInto("study_translations")
+        .values({
+          study_id: studyId,
+          language_code: languageCode,
+          translated_content: translated as unknown as object,
+          source: batchJob.model,
+          is_active: true,
+        })
+        .onConflict((oc) =>
+          oc.columns(["study_id", "language_code"]).doUpdateSet({
+            translated_content: translated as unknown as object,
+            source: batchJob.model,
+            is_active: true,
+            updated_at: new Date(),
+          }),
+        )
+        .execute();
+      successCount++;
+    }
+
+    const actualCost = await calculateActualCost(
+      totalPromptTokens,
+      totalCompletionTokens,
+      batchJob.model,
+    );
+
+    await connection
+      .updateTable("batch_jobs")
+      .set({
+        explanations_processed: true,
+        actual_cost: actualCost,
+        prompt_tokens: totalPromptTokens,
+        completion_tokens: totalCompletionTokens,
+        total_tokens: totalPromptTokens + totalCompletionTokens,
+      })
+      .where("openai_batch_id", "=", batchId)
+      .execute();
+
+    console.log(
+      `[BATCH][study-translate] processed ${batchId}: success=${successCount} errors=${errorCount}`,
+    );
   }
 }

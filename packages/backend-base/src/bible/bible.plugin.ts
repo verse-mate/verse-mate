@@ -37,6 +37,7 @@ import {
   NotesSchema,
   RatingSaveSchema,
   RatingsSchema,
+  StudySchema,
   TestamentsSchema,
 } from "./schemas/bible-response.schema";
 import { AutoHighlightService } from "./services/auto-highlight.service";
@@ -391,6 +392,36 @@ const plugin = new Elysia()
           }),
           response: {
             200: ChapterIdSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/study/:bookId/:chapterNumber",
+        async ({ params, store: { bibleService }, query }) => {
+          const { bookId, chapterNumber } = params;
+          const study = await bibleService.getStudy({
+            book_id: bookId,
+            chapter: chapterNumber,
+            lang: query.lang,
+          });
+          return { study };
+        },
+        {
+          params: t.Object({
+            bookId: t.Numeric(),
+            chapterNumber: t.Numeric(),
+          }),
+          query: t.Object({
+            lang: t.Optional(
+              t.String({
+                description:
+                  "BCP-47 language code (e.g. 'es-MX', 'ro-RO') for the inductive study. Selects the active translation in that language, falling back to the English baseline when no translation exists.",
+              }),
+            ),
+          }),
+          response: {
+            200: StudySchema,
             ...StandardErrorResponses,
           },
         },
