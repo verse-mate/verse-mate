@@ -1648,30 +1648,40 @@ export class BibleRepository {
 
     if (!study) return null;
 
-    const normalized = (language_code ?? "en-US").trim();
+    const requested = (language_code ?? "en-US").trim().toLowerCase();
     const isEnglish =
-      !normalized ||
-      normalized.toLowerCase() === "en" ||
-      normalized.toLowerCase().startsWith("en-");
+      !requested || requested === "en" || requested.startsWith("en-");
 
     if (!isEnglish) {
-      const translation = await connection
+      // Match by language FAMILY, not exact code: web sends the base ISO code
+      // (`ro`, `es` — usePreferredLanguage collapses `ro-RO`→`ro`) while mobile
+      // and the translate batch use full BCP-47 (`ro-RO`). Prefer an exact
+      // (case-insensitive) match, then fall back to the same base-ISO family,
+      // mirroring the explanation repo's normalize+base logic. Falls through to
+      // the English baseline when neither matches.
+      const requestedBase = requested.split("-")[0];
+      const translations = await connection
         .selectFrom("study_translations")
         .select(["language_code", "translated_content"])
         .where("study_id", "=", study.study_id)
-        .where("language_code", "=", normalized)
         .where("is_active", "=", true)
-        .executeTakeFirst();
+        .execute();
 
-      if (translation) {
+      const match =
+        translations.find((t) => t.language_code.toLowerCase() === requested) ??
+        translations.find(
+          (t) => t.language_code.toLowerCase().split("-")[0] === requestedBase,
+        );
+
+      if (match) {
         return {
           book_id,
           chapter,
-          language_code: translation.language_code,
-          content: translation.translated_content,
+          language_code: match.language_code,
+          content: match.translated_content,
         };
       }
-      // No translation for this language → fall through to English baseline.
+      // No translation for this language family → fall through to English.
     }
 
     return {
