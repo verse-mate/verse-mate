@@ -537,6 +537,48 @@ const plugin = new Elysia()
               },
             )
             .post(
+              "/batch-translate-study",
+              async ({ body, currentUserId, store }) => {
+                if (!currentUserId) {
+                  throw new UnauthorizedError("User authentication required");
+                }
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.generateStudyTranslateBatch(
+                  body.model,
+                  currentUserId,
+                  body.type,
+                  body.target_language_code,
+                  body.skipExisting || false,
+                  body.effort || "medium",
+                  body.bookName,
+                  body.chapters,
+                  body.maxOutputTokens,
+                );
+              },
+              {
+                body: t.Object({
+                  type: t.Union([t.Literal("book"), t.Literal("bible")]),
+                  bookName: t.Optional(t.String()),
+                  model: t.String(),
+                  effort: t.Optional(
+                    t.Union([
+                      t.Literal("low"),
+                      t.Literal("medium"),
+                      t.Literal("high"),
+                    ]),
+                  ),
+                  target_language_code: t.String(),
+                  skipExisting: t.Optional(t.Boolean()),
+                  chapters: t.Optional(t.Array(t.Number())),
+                  maxOutputTokens: t.Optional(t.Number()),
+                }),
+                response: {
+                  200: BatchOperationSchema,
+                  ...StandardErrorResponses,
+                },
+              },
+            )
+            .post(
               "/batch-explanations/impact-preview",
               async ({ body, store }) => {
                 const batchOperationService = store.getBatchOperationService();

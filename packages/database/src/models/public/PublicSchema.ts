@@ -25,6 +25,8 @@ import type { default as MessagesTable } from "./Messages";
 import type { default as NotesTable } from "./Notes";
 import type { default as PromptsTable } from "./Prompts";
 import type { default as RefreshTokensTable } from "./RefreshTokens";
+import type { default as StudiesTable } from "./Studies";
+import type { default as StudyTranslationsTable } from "./StudyTranslations";
 import type { default as SubtitlesTable } from "./Subtitles";
 import type { default as SupportConversationsTable } from "./SupportConversations";
 import type { default as SupportMessagesTable } from "./SupportMessages";
@@ -128,4 +130,8 @@ export default interface PublicSchema {
   explanation_audio_progress: ExplanationAudioProgressTable;
 
   version_book_names: VersionBookNamesTable;
+
+  studies: StudiesTable;
+
+  study_translations: StudyTranslationsTable;
 }
