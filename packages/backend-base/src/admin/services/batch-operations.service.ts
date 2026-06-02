@@ -51,24 +51,24 @@ async function calculateActualCost(
   let inputCostPerMillion = 0;
   let outputCostPerMillion = 0;
 
-  switch (model) {
-    case "gpt-5":
-    case "gpt-5-chat-latest":
-      inputCostPerMillion = 1.25;
-      outputCostPerMillion = 10;
-      break;
-    case "gpt-5-mini":
-      inputCostPerMillion = 0.25;
-      outputCostPerMillion = 2;
-      break;
-    case "gpt-5-nano":
-      inputCostPerMillion = 0.05;
-      outputCostPerMillion = 0.4;
-      break;
-    default:
-      inputCostPerMillion = 1.25;
-      outputCostPerMillion = 10;
-      break;
+  // Match tolerant of date suffixes ("gpt-5.4-nano-2026-03-17") and version
+  // variants — OpenAI model ids carry a trailing date, so an exact switch
+  // silently fell through to the flagship gpt-5 default and over-billed nano
+  // ~20x. Check nano/mini before the generic "gpt-5" substring.
+  // (Cached-input tier — gpt-5.4-nano $0.02/M — isn't separately tracked here;
+  // it only applies to the small repeated prompt prefix, ~0.3% of cost since
+  // these batches are output-dominated.)
+  const m = model.toLowerCase();
+  if (m.includes("nano")) {
+    inputCostPerMillion = m.includes("5.4") ? 0.2 : 0.05;
+    outputCostPerMillion = m.includes("5.4") ? 1.25 : 0.4;
+  } else if (m.includes("mini")) {
+    inputCostPerMillion = 0.25;
+    outputCostPerMillion = 2;
+  } else {
+    // gpt-5 / gpt-5-chat-latest / unknown → flagship rate
+    inputCostPerMillion = 1.25;
+    outputCostPerMillion = 10;
   }
 
   const inputCost = (promptTokens / 1_000_000) * inputCostPerMillion;
