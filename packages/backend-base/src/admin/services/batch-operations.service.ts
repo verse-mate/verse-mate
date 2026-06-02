@@ -5,6 +5,12 @@ import { sql } from "kysely";
 import { APIError } from "openai";
 import { PromptRepository } from "../../bible/repository/prompt.repository";
 import { UserPromptRepository } from "../../bible/repository/user-prompt.repository";
+import {
+  type StudyTermDict,
+  type StudyTermRow,
+  applyStudyTermDictionary,
+  buildStudyTermDictMap,
+} from "../../bible/services/study-term-dictionary";
 import { ValidationError } from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
 import { type AiProvider, getAiProvider } from "../../shared/ai";
@@ -6030,6 +6036,29 @@ export class BatchOperationService {
     const lines = content.split("\n").filter((l) => l.trim());
     const connection = this.db.getOrCreateConnection();
 
+    // Load the deterministic term dictionary once (all languages), then build a
+    // per-language lookup lazily. Best-effort: a dictionary failure must never
+    // break the writeback (translations still land, just un-normalized).
+    let termRows: StudyTermRow[] = [];
+    try {
+      termRows = await connection
+        .selectFrom("study_term_translations")
+        .select(["language_code", "term_type", "source_en", "target_term"])
+        .where("is_active", "=", true)
+        .execute();
+    } catch (e) {
+      console.error("[BATCH][study-translate] term dictionary load failed:", e);
+    }
+    const dictCache = new Map<string, StudyTermDict>();
+    const dictFor = (lang: string): StudyTermDict => {
+      let d = dictCache.get(lang);
+      if (!d) {
+        d = buildStudyTermDictMap(termRows, lang);
+        dictCache.set(lang, d);
+      }
+      return d;
+    };
+
     let successCount = 0;
     let errorCount = 0;
     let totalPromptTokens = 0;
@@ -6114,18 +6143,30 @@ export class BatchOperationService {
         continue;
       }
 
+      // Deterministically fix any label-like field the model left in English
+      // (pills/contrast-type/columns/title book name) from the DB dictionary.
+      const { content: normalized, replaced } = applyStudyTermDictionary(
+        translated,
+        dictFor(languageCode),
+      );
+      if (replaced > 0) {
+        console.log(
+          `[BATCH][study-translate] normalized ${replaced} term(s) for study_id=${studyId} (${languageCode})`,
+        );
+      }
+
       await connection
         .insertInto("study_translations")
         .values({
           study_id: studyId,
           language_code: languageCode,
-          translated_content: translated as unknown as object,
+          translated_content: normalized as object,
           source: batchJob.model,
           is_active: true,
         })
         .onConflict((oc) =>
           oc.columns(["study_id", "language_code"]).doUpdateSet({
-            translated_content: translated as unknown as object,
+            translated_content: normalized as object,
             source: batchJob.model,
             is_active: true,
             updated_at: new Date(),

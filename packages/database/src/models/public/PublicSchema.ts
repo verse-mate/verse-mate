@@ -27,6 +27,7 @@ import type { default as PromptsTable } from "./Prompts";
 import type { default as RefreshTokensTable } from "./RefreshTokens";
 import type { default as StudiesTable } from "./Studies";
 import type { default as StudyLabelsTable } from "./StudyLabels";
+import type { default as StudyTermTranslationsTable } from "./StudyTermTranslations";
 import type { default as StudyTranslationsTable } from "./StudyTranslations";
 import type { default as SubtitlesTable } from "./Subtitles";
 import type { default as SupportConversationsTable } from "./SupportConversations";
@@ -135,6 +136,8 @@ export default interface PublicSchema {
   studies: StudiesTable;
 
   study_labels: StudyLabelsTable;
+
+  study_term_translations: StudyTermTranslationsTable;
 
   study_translations: StudyTranslationsTable;
 }
