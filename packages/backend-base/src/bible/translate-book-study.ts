@@ -128,19 +128,28 @@ async function main() {
     .innerJoin("studies as s", "s.study_id", "t.study_id")
     .select(["s.chapter", "t.translated_content", "t.source"])
     .where("t.language_code", "=", TARGET_LANG)
-    .where("s.study_id", "in", sources.map((s) => s.study_id))
+    .where(
+      "s.study_id",
+      "in",
+      sources.map((s) => s.study_id),
+    )
     .where("t.is_active", "=", true)
     .execute();
   rows.sort((a, b) => a.chapter - b.chapter);
   console.log(`\nStored ${rows.length}/${sources.length} ${TARGET_LANG} rows:`);
   for (const r of rows) {
-    const tc = r.translated_content as { title?: string; themeOneLine?: string };
+    const tc = r.translated_content as {
+      title?: string;
+      themeOneLine?: string;
+    };
     console.log(
       `  ch ${r.chapter}: "${tc.title}" — ${(tc.themeOneLine || "").slice(0, 80)}  [${r.source}]`,
     );
   }
   if (rows.length < sources.length) {
-    console.log("⚠️  Some chapters missing a translation row — check errors above.");
+    console.log(
+      "⚠️  Some chapters missing a translation row — check errors above.",
+    );
   }
   console.log("\n✅ DONE.");
   await db.closeConnection();
