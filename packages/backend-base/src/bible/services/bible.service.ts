@@ -1384,4 +1384,8 @@ export class BibleService {
       language_code: lang,
     });
   }
+
+  async getStudyLabels({ lang }: { lang?: string }) {
+    return this.bibleRepository.getStudyLabels({ language_code: lang });
+  }
 }

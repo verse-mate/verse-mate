@@ -1691,4 +1691,40 @@ export class BibleRepository {
       content: study.content,
     };
   }
+
+  /**
+   * UI chrome labels for the inductive-study renderer, in the requested
+   * language. Returns null for English / unknown languages so the client
+   * uses its bundled `getStudyLabels` fallback. Matches by language FAMILY
+   * (exact code first, then base ISO) exactly like `getStudy` — web sends the
+   * base ISO (`ro`) while mobile sends full BCP-47 (`ro-RO`).
+   */
+  async getStudyLabels({
+    language_code,
+  }: {
+    language_code?: string;
+  }): Promise<{ language_code: string; labels: unknown } | null> {
+    const requested = (language_code ?? "").trim().toLowerCase();
+    const isEnglish =
+      !requested || requested === "en" || requested.startsWith("en-");
+    if (isEnglish) return null;
+
+    const connection = this.db.getOrCreateConnection();
+    const rows = await connection
+      .selectFrom("study_labels")
+      .select(["language_code", "labels"])
+      .where("is_active", "=", true)
+      .execute();
+
+    const requestedBase = requested.split("-")[0];
+    const match =
+      rows.find((r) => r.language_code.toLowerCase() === requested) ??
+      rows.find(
+        (r) => r.language_code.toLowerCase().split("-")[0] === requestedBase,
+      );
+
+    return match
+      ? { language_code: match.language_code, labels: match.labels }
+      : null;
+  }
 }
