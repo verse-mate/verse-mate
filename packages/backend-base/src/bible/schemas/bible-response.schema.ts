@@ -171,6 +171,16 @@ export const StudySchema = t.Object({
   ]),
 });
 
+// UI chrome labels for the inductive-study renderer in the requested language.
+// `labels` is the StudyLabels object (a flat string→string map of the chrome
+// strings) — kept as a Record rather than re-declaring the exact key set here,
+// so adding a label key doesn't require a schema bump. `null` for English /
+// unknown languages → the client uses its bundled `getStudyLabels` fallback.
+export const StudyLabelsSchema = t.Object({
+  language_code: t.Union([t.String(), t.Null()]),
+  labels: t.Union([t.Record(t.String(), t.String()), t.Null()]),
+});
+
 /**
  * Chat and conversation schemas
  */

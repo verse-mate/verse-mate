@@ -37,6 +37,7 @@ import {
   NotesSchema,
   RatingSaveSchema,
   RatingsSchema,
+  StudyLabelsSchema,
   StudySchema,
   TestamentsSchema,
 } from "./schemas/bible-response.schema";
@@ -422,6 +423,33 @@ const plugin = new Elysia()
           }),
           response: {
             200: StudySchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/study-labels",
+        async ({ store: { bibleService }, query }) => {
+          const result = await bibleService.getStudyLabels({
+            lang: query.lang,
+          });
+          return {
+            language_code: result?.language_code ?? null,
+            labels: (result?.labels as Record<string, string> | undefined) ??
+              null,
+          };
+        },
+        {
+          query: t.Object({
+            lang: t.Optional(
+              t.String({
+                description:
+                  "BCP-47 language code (e.g. 'pt-BR', 'ro-RO') for the inductive-study UI chrome labels. Family-matched; returns null for English/unknown languages so the client uses its bundled getStudyLabels fallback.",
+              }),
+            ),
+          }),
+          response: {
+            200: StudyLabelsSchema,
             ...StandardErrorResponses,
           },
         },
