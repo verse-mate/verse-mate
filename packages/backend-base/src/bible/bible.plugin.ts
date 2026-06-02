@@ -435,8 +435,8 @@ const plugin = new Elysia()
           });
           return {
             language_code: result?.language_code ?? null,
-            labels: (result?.labels as Record<string, string> | undefined) ??
-              null,
+            labels:
+              (result?.labels as Record<string, string> | undefined) ?? null,
           };
         },
         {
