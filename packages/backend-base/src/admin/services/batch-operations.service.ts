@@ -41,7 +41,11 @@ interface BatchJobRequest {
   };
 }
 
-export const DEFAULT_MAX_OUTPUT_TOKENS = 50000;
+// Ceiling, not a target — only allows longer output when the model needs it.
+// Bumped 50k→90k after long study chapters (e.g. ru Matthew 25, uk Jeremiah 41)
+// truncated: high-effort reasoning tokens count toward this limit, so big
+// documents hit 50k and returned incomplete JSON. 90k lands them.
+export const DEFAULT_MAX_OUTPUT_TOKENS = 90000;
 
 async function calculateActualCost(
   promptTokens: number,
