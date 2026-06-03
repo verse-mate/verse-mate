@@ -21,6 +21,27 @@ import type { UpdateHighlightDto } from "../dto/highlight/update-highlight.dto";
 import type { UserDto } from "../dto/user/user.dto";
 import type { BibleRepository } from "../repository/bible.repository";
 
+/**
+ * Curated overrides for the language picker labels. `refreshLanguageStats`
+ * (which runs on every backend boot) derives `name`/`native_name` from
+ * `Intl.DisplayNames`, which produces things like "American English" and
+ * "Mexican Spanish" — verbose for our picker UI. The overrides win here:
+ * any code not in the map keeps the Intl-derived names. Update this when
+ * a new locale needs a cleaner label.
+ */
+const LANGUAGE_NAME_OVERRIDES: Record<
+  string,
+  { name?: string; native_name?: string }
+> = {
+  "en-US": { name: "English", native_name: "English" },
+  "es-MX": { name: "Spanish", native_name: "Español" },
+  // Intl derives "Romanian (Romania)" / "română (România)" — verbose
+  // country suffix + lowercased native_name (Romanian conventionally
+  // writes language names lowercase, but Title Case reads cleaner in
+  // the picker alongside the other language labels).
+  "ro-RO": { name: "Romanian", native_name: "Română" },
+};
+
 export class BibleService {
   constructor(
     private readonly db: db,
@@ -1315,8 +1336,10 @@ export class BibleService {
           nativeNameGetter = () => undefined;
         }
 
-        const name = enNameGetter(code) || code;
-        const native_name = nativeNameGetter(code) || code;
+        const override = LANGUAGE_NAME_OVERRIDES[code];
+        const name = override?.name ?? enNameGetter(code) ?? code;
+        const native_name =
+          override?.native_name ?? nativeNameGetter(code) ?? code;
 
         if (existingLang) {
           // UPDATE existing language
