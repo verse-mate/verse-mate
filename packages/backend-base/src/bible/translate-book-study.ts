@@ -76,6 +76,7 @@ async function main() {
     EFFORT,
     BOOK_NAME,
     CHAPTERS,
+    Number(process.env.MAX_OUTPUT_TOKENS) || undefined,
   );
   console.log("  result:", JSON.stringify(result));
   const openaiBatchId = (result as { batchId?: string }).batchId;
