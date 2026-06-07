@@ -36,6 +36,7 @@ import type { default as TopicExplanationsTable } from "./TopicExplanations";
 import type { default as TopicReferencesTable } from "./TopicReferences";
 import type { default as TopicTranslationsTable } from "./TopicTranslations";
 import type { default as TopicsTable } from "./Topics";
+import type { default as TranslationJobsTable } from "./TranslationJobs";
 import type { default as TranslationTemplatesTable } from "./TranslationTemplates";
 import type { default as UserTable } from "./User";
 import type { default as UserProgressTable } from "./UserProgress";
@@ -140,4 +141,6 @@ export default interface PublicSchema {
   study_term_translations: StudyTermTranslationsTable;
 
   study_translations: StudyTranslationsTable;
+
+  translation_jobs: TranslationJobsTable;
 }
