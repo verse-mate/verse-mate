@@ -15,6 +15,22 @@
 import { runClaudeTranslate } from "./study-claude-translator";
 
 /**
+ * Appended to every instruction. The DB translate prompts read conversationally
+ * (examples, asides) and lack a strict "output only the translation" close, so
+ * chatty models — haiku especially — narrate their work or ask a clarifying
+ * question instead of emitting the translation. gpt-nano tolerated this; Claude
+ * does not. This forces output discipline. Harmless for the study prompt (which
+ * is already strict) — it just reinforces it.
+ */
+const OUTPUT_DISCIPLINE =
+  "\n\n# OUTPUT — STRICT\n" +
+  "Return ONLY the finished translation itself: the complete translated document " +
+  "(the markdown commentary, or the single JSON object for a study), with the exact " +
+  "structure and markdown of the input preserved. Output NOTHING else — no preamble, " +
+  "no greeting, no questions, no closing summary, no checklist, no notes about what " +
+  "you did. Begin your reply directly with the translated content.";
+
+/**
  * Minimal compatible shape of the request objects the batch services build.
  * The full `BatchJobRequest` interface in `batch-operations.service.ts` is not
  * exported; we only read these fields here, so a structurally-compatible local
@@ -82,7 +98,7 @@ export async function executeBatchRequestsViaClaude(
 
     try {
       const result = await runClaudeTranslate({
-        instruction: req.body.instructions ?? "",
+        instruction: (req.body.instructions ?? "") + OUTPUT_DISCIPLINE,
         input: req.body.input,
         model,
         configDir,

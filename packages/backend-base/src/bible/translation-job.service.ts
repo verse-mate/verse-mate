@@ -37,7 +37,9 @@ const COMMENTARY_TYPES = ["summary", "byline", "detailed"] as const;
 type CommentaryType = (typeof COMMENTARY_TYPES)[number];
 
 const DEFAULT_MODEL = "haiku";
-const DEFAULT_SOURCE_LANG = "en";
+// Commentary explanations store their English source under "en-US" (verified
+// in prod), not "en". The studies path has no source-lang filter.
+const DEFAULT_SOURCE_LANG = "en-US";
 const DEFAULT_PAUSE_RETRY_MS = 30 * 60_000;
 const DEFAULT_EFFORT: "low" | "medium" | "high" = "low";
 

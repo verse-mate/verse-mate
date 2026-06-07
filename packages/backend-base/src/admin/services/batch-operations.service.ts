@@ -1370,7 +1370,13 @@ export class BatchOperationService {
     console.log("[BATCH] Found active translate prompt");
 
     const language = getLanguageName(targetLanguageCode);
-    const finalPrompt = translatePrompt.prompt.replace("{language}", language);
+    // replaceAll: the prompt contains {language} MANY times. Single .replace
+    // left stray {language} placeholders that gpt-nano tolerated but confused
+    // claude (it asked "translate into which language?"). Fix benefits both.
+    const finalPrompt = translatePrompt.prompt.replaceAll(
+      "{language}",
+      language,
+    );
 
     console.log(`[BATCH] Target language name: ${language}`);
 
@@ -1470,7 +1476,7 @@ export class BatchOperationService {
       for (const explanation of activeExplanations) {
         const key = `${explanation.chapter_number}-${explanation.type}`;
         if (!existingSet.has(key)) {
-          const itemPrompt = finalPrompt.replace(
+          const itemPrompt = finalPrompt.replaceAll(
             "{localized_title}",
             getLocalizedTitle(explanation.type, explanation.chapter_number),
           );
@@ -1494,7 +1500,7 @@ export class BatchOperationService {
     } else {
       console.log("[BATCH] Not skipping existing translations");
       batchRequests = activeExplanations.flatMap((explanation) => {
-        const itemPrompt = finalPrompt.replace(
+        const itemPrompt = finalPrompt.replaceAll(
           "{localized_title}",
           getLocalizedTitle(explanation.type, explanation.chapter_number),
         );
