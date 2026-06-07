@@ -39,7 +39,7 @@ const CHAPTERS = process.env.CHAPTERS
   : undefined;
 const CLAUDE_MODEL = process.env.CLAUDE_MODEL || "haiku";
 const CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR_TRANSLATE || undefined;
-const SOURCE_LANG = process.env.SOURCE_LANG || "en";
+const SOURCE_LANG = process.env.SOURCE_LANG || "en-US";
 const PAUSE_RETRY_MS = process.env.PAUSE_RETRY_MS
   ? Number(process.env.PAUSE_RETRY_MS)
   : undefined;

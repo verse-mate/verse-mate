@@ -20,7 +20,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     .addColumn("target_language_code", "varchar(10)", (col) => col.notNull())
     .addColumn("source_language_code", "varchar(10)", (col) =>
-      col.notNull().defaultTo("en"),
+      col.notNull().defaultTo("en-US"),
     )
     // Array of kind strings: commentary types (summary/byline/detailed) and/or
     // the literal "study".
