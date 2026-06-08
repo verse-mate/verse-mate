@@ -9,6 +9,10 @@ import type { default as BookIntroductionsTable } from "./BookIntroductions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
 import type { default as ConversationsTable } from "./Conversations";
+import type { default as DailyVerseHistoryTable } from "./DailyVerseHistory";
+import type { default as DailyVerseTagsTable } from "./DailyVerseTags";
+import type { default as DailyVerseToTagTable } from "./DailyVerseToTag";
+import type { default as DailyVersesTable } from "./DailyVerses";
 import type { default as ExplanationAudioProgressTable } from "./ExplanationAudioProgress";
 import type { default as ExplanationAudiosTable } from "./ExplanationAudios";
 import type { default as ExplanationLanguagesTable } from "./ExplanationLanguages";
@@ -140,4 +144,12 @@ export default interface PublicSchema {
   study_term_translations: StudyTermTranslationsTable;
 
   study_translations: StudyTranslationsTable;
+
+  daily_verse_tags: DailyVerseTagsTable;
+
+  daily_verses: DailyVersesTable;
+
+  daily_verse_to_tag: DailyVerseToTagTable;
+
+  daily_verse_history: DailyVerseHistoryTable;
 }
