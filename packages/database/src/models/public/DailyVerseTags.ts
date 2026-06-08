@@ -7,7 +7,11 @@ export type DailyVerseTagsId = string;
 
 /** Represents the table public.daily_verse_tags */
 export default interface DailyVerseTagsTable {
-  id: ColumnType<DailyVerseTagsId, DailyVerseTagsId | undefined, DailyVerseTagsId>;
+  id: ColumnType<
+    DailyVerseTagsId,
+    DailyVerseTagsId | undefined,
+    DailyVerseTagsId
+  >;
 
   slug: ColumnType<string, string, string>;
 

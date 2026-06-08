@@ -54,7 +54,13 @@ const VERSES: SeedVerse[] = [
   { book: "Genesis", chapter: 1, start: 1, tags: ["wisdom", "faith"] },
   { book: "Genesis", chapter: 1, start: 27, tags: ["love", "hope"] },
   { book: "Genesis", chapter: 1, start: 31, tags: ["joy", "gratitude"] },
-  { book: "Genesis", chapter: 2, start: 2, end: 3, tags: ["peace", "gratitude"] },
+  {
+    book: "Genesis",
+    chapter: 2,
+    start: 2,
+    end: 3,
+    tags: ["peace", "gratitude"],
+  },
   { book: "Genesis", chapter: 9, start: 13, tags: ["hope", "faith"] },
   { book: "Genesis", chapter: 12, start: 2, tags: ["hope", "faith"] },
   { book: "Genesis", chapter: 15, start: 1, tags: ["courage", "faith"] },
@@ -64,13 +70,25 @@ const VERSES: SeedVerse[] = [
   { book: "Matthew", chapter: 5, start: 3, end: 4, tags: ["comfort", "hope"] },
   { book: "Matthew", chapter: 5, start: 6, tags: ["hope", "encouraging"] },
   { book: "Matthew", chapter: 5, start: 9, tags: ["peace"] },
-  { book: "Matthew", chapter: 5, start: 14, end: 16, tags: ["courage", "encouraging"] },
+  {
+    book: "Matthew",
+    chapter: 5,
+    start: 14,
+    end: 16,
+    tags: ["courage", "encouraging"],
+  },
   { book: "Matthew", chapter: 6, start: 26, tags: ["comfort", "faith"] },
   { book: "Matthew", chapter: 6, start: 33, tags: ["faith", "wisdom"] },
   { book: "Matthew", chapter: 6, start: 34, tags: ["peace", "comfort"] },
   { book: "Matthew", chapter: 7, start: 7, tags: ["prayer", "faith"] },
   { book: "Matthew", chapter: 7, start: 11, tags: ["love", "prayer"] },
-  { book: "Matthew", chapter: 11, start: 28, end: 30, tags: ["comfort", "peace"] },
+  {
+    book: "Matthew",
+    chapter: 11,
+    start: 28,
+    end: 30,
+    tags: ["comfort", "peace"],
+  },
   { book: "Matthew", chapter: 19, start: 26, tags: ["faith", "hope"] },
   { book: "Matthew", chapter: 22, start: 37, end: 39, tags: ["love"] },
   { book: "Matthew", chapter: 28, start: 20, tags: ["comfort", "courage"] },
@@ -90,7 +108,13 @@ const VERSES: SeedVerse[] = [
   { book: "Psalms", chapter: 103, start: 2, end: 4, tags: ["gratitude"] },
   { book: "Psalms", chapter: 118, start: 24, tags: ["joy", "gratitude"] },
   { book: "Psalms", chapter: 119, start: 105, tags: ["wisdom"] },
-  { book: "Psalms", chapter: 121, start: 1, end: 2, tags: ["comfort", "faith"] },
+  {
+    book: "Psalms",
+    chapter: 121,
+    start: 1,
+    end: 2,
+    tags: ["comfort", "faith"],
+  },
   { book: "Psalms", chapter: 139, start: 14, tags: ["gratitude", "hope"] },
   { book: "Psalms", chapter: 143, start: 8, tags: ["hope", "prayer"] },
   // Proverbs
@@ -108,7 +132,13 @@ const VERSES: SeedVerse[] = [
   { book: "Jeremiah", chapter: 29, start: 11, tags: ["hope", "encouraging"] },
   { book: "Jeremiah", chapter: 33, start: 3, tags: ["prayer", "hope"] },
   // Lamentations
-  { book: "Lamentations", chapter: 3, start: 22, end: 23, tags: ["hope", "comfort"] },
+  {
+    book: "Lamentations",
+    chapter: 3,
+    start: 22,
+    end: 23,
+    tags: ["hope", "comfort"],
+  },
   // Joshua
   { book: "Joshua", chapter: 1, start: 9, tags: ["courage", "faith"] },
   // Deuteronomy
@@ -119,7 +149,13 @@ const VERSES: SeedVerse[] = [
   { book: "John", chapter: 14, start: 27, tags: ["peace", "comfort"] },
   { book: "John", chapter: 16, start: 33, tags: ["courage", "peace"] },
   // Romans
-  { book: "Romans", chapter: 5, start: 3, end: 4, tags: ["hope", "encouraging"] },
+  {
+    book: "Romans",
+    chapter: 5,
+    start: 3,
+    end: 4,
+    tags: ["hope", "encouraging"],
+  },
   { book: "Romans", chapter: 8, start: 28, tags: ["hope", "faith"] },
   { book: "Romans", chapter: 8, start: 38, end: 39, tags: ["love", "comfort"] },
   { book: "Romans", chapter: 12, start: 12, tags: ["hope", "prayer"] },
@@ -128,31 +164,78 @@ const VERSES: SeedVerse[] = [
   { book: "1 Corinthians", chapter: 13, start: 4, end: 7, tags: ["love"] },
   { book: "1 Corinthians", chapter: 16, start: 14, tags: ["love"] },
   // 2 Corinthians
-  { book: "2 Corinthians", chapter: 4, start: 16, end: 18, tags: ["hope", "courage"] },
+  {
+    book: "2 Corinthians",
+    chapter: 4,
+    start: 16,
+    end: 18,
+    tags: ["hope", "courage"],
+  },
   { book: "2 Corinthians", chapter: 5, start: 7, tags: ["faith"] },
   { book: "2 Corinthians", chapter: 12, start: 9, tags: ["comfort", "faith"] },
   // Galatians
-  { book: "Galatians", chapter: 5, start: 22, end: 23, tags: ["love", "joy", "peace"] },
+  {
+    book: "Galatians",
+    chapter: 5,
+    start: 22,
+    end: 23,
+    tags: ["love", "joy", "peace"],
+  },
   { book: "Galatians", chapter: 6, start: 9, tags: ["encouraging", "hope"] },
   // Ephesians
-  { book: "Ephesians", chapter: 2, start: 8, end: 9, tags: ["faith", "gratitude"] },
+  {
+    book: "Ephesians",
+    chapter: 2,
+    start: 8,
+    end: 9,
+    tags: ["faith", "gratitude"],
+  },
   { book: "Ephesians", chapter: 3, start: 20, tags: ["faith", "hope"] },
   // Philippians
-  { book: "Philippians", chapter: 4, start: 6, end: 7, tags: ["peace", "prayer"] },
+  {
+    book: "Philippians",
+    chapter: 4,
+    start: 6,
+    end: 7,
+    tags: ["peace", "prayer"],
+  },
   { book: "Philippians", chapter: 4, start: 8, tags: ["wisdom", "peace"] },
   { book: "Philippians", chapter: 4, start: 13, tags: ["courage", "faith"] },
   { book: "Philippians", chapter: 4, start: 19, tags: ["comfort", "faith"] },
   // Colossians
   { book: "Colossians", chapter: 3, start: 15, tags: ["peace", "gratitude"] },
-  { book: "Colossians", chapter: 3, start: 23, tags: ["encouraging", "wisdom"] },
+  {
+    book: "Colossians",
+    chapter: 3,
+    start: 23,
+    tags: ["encouraging", "wisdom"],
+  },
   // 1 Thessalonians
-  { book: "1 Thessalonians", chapter: 5, start: 16, end: 18, tags: ["joy", "gratitude", "prayer"] },
+  {
+    book: "1 Thessalonians",
+    chapter: 5,
+    start: 16,
+    end: 18,
+    tags: ["joy", "gratitude", "prayer"],
+  },
   // 2 Timothy
   { book: "2 Timothy", chapter: 1, start: 7, tags: ["courage"] },
   // Hebrews
   { book: "Hebrews", chapter: 11, start: 1, tags: ["faith", "hope"] },
-  { book: "Hebrews", chapter: 12, start: 1, end: 2, tags: ["courage", "faith"] },
-  { book: "Hebrews", chapter: 13, start: 5, end: 6, tags: ["comfort", "courage"] },
+  {
+    book: "Hebrews",
+    chapter: 12,
+    start: 1,
+    end: 2,
+    tags: ["courage", "faith"],
+  },
+  {
+    book: "Hebrews",
+    chapter: 13,
+    start: 5,
+    end: 6,
+    tags: ["comfort", "courage"],
+  },
   { book: "Hebrews", chapter: 13, start: 8, tags: ["faith", "comfort"] },
   // James
   { book: "James", chapter: 1, start: 2, end: 3, tags: ["joy", "hope"] },
@@ -169,7 +252,13 @@ const VERSES: SeedVerse[] = [
   // Zephaniah
   { book: "Zephaniah", chapter: 3, start: 17, tags: ["love", "joy"] },
   // Numbers
-  { book: "Numbers", chapter: 6, start: 24, end: 26, tags: ["peace", "comfort"] },
+  {
+    book: "Numbers",
+    chapter: 6,
+    start: 24,
+    end: 26,
+    tags: ["peace", "comfort"],
+  },
 ];
 
 async function main() {
@@ -181,7 +270,9 @@ async function main() {
       .insertInto("daily_verse_tags")
       .values({ slug: tag.slug, label: tag.label, is_active: true })
       .onConflict((oc) =>
-        oc.column("slug").doUpdateSet({ label: tag.label, updated_at: new Date() }),
+        oc
+          .column("slug")
+          .doUpdateSet({ label: tag.label, updated_at: new Date() }),
       )
       .execute();
   }
@@ -199,7 +290,9 @@ async function main() {
     .select("id")
     .executeTakeFirst();
   if (!baseline) {
-    console.error(`Baseline version ${DEFAULT_VERSION_KEY} not found. Aborting.`);
+    console.error(
+      `Baseline version ${DEFAULT_VERSION_KEY} not found. Aborting.`,
+    );
     await db.closeConnection();
     process.exit(1);
   }
