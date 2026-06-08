@@ -25,6 +25,12 @@ describe("Daily Verse Plugin (integration)", () => {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
   })();
 
+  // The server returns `date` as a plain "YYYY-MM-DD" string, but the Eden
+  // Treaty client auto-parses date-shaped strings into Date objects. Normalize
+  // either form back to "YYYY-MM-DD" for comparison.
+  const ymd = (d: unknown): string =>
+    d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10);
+
   it("GET /bible/verse-of-the-day returns a verse or an empty payload", async () => {
     const { data, error } = await testClient.bible["verse-of-the-day"].get({
       query: { date: today, bible_version: "NASB1995" },
@@ -36,7 +42,7 @@ describe("Daily Verse Plugin (integration)", () => {
     expect(typeof data.empty).toBe("boolean");
     if (data.empty) {
       expect(data.fallbackMessage).toBeTruthy();
-      expect(data.date).toBe(today);
+      expect(ymd(data.date)).toBe(today);
     } else {
       expect(Array.isArray(data.verses)).toBe(true);
       expect(data.referenceText).toBeTruthy();
@@ -51,7 +57,7 @@ describe("Daily Verse Plugin (integration)", () => {
     });
     expect(error).toBeFalsy();
     expect(data).toBeTruthy();
-    if (data && data.empty) expect(data.date).toBe(today);
+    if (data?.empty) expect(ymd(data.date)).toBe(today);
   });
 
   it("rejects a malformed date with 400 (D-32)", async () => {

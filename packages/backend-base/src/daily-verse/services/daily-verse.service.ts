@@ -348,9 +348,7 @@ export class DailyVerseService {
     }
 
     const range =
-      verseEnd > verseStart
-        ? `${verseStart}-${verseEnd}`
-        : `${verseStart}`;
+      verseEnd > verseStart ? `${verseStart}-${verseEnd}` : `${verseStart}`;
 
     return {
       referenceText: `${bookName} ${chapterNumber}:${range}`,

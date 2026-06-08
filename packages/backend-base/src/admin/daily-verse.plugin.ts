@@ -76,7 +76,8 @@ const adminDailyVersePlugin = new Elysia()
             ...body,
             tag_ids: body.tag_ids,
           });
-          if (!verse) throw new NotFoundError(`Daily verse ${params.id} not found`);
+          if (!verse)
+            throw new NotFoundError(`Daily verse ${params.id} not found`);
           await store.dailyVerseService.invalidatePickForToday();
           return { verse };
         },
@@ -89,7 +90,8 @@ const adminDailyVersePlugin = new Elysia()
         "/:id",
         async ({ params, store }: any) => {
           const ok = await store.dailyVerseService.deleteCurated(params.id);
-          if (!ok) throw new NotFoundError(`Daily verse ${params.id} not found`);
+          if (!ok)
+            throw new NotFoundError(`Daily verse ${params.id} not found`);
           await store.dailyVerseService.invalidatePickForToday();
           return { success: true };
         },

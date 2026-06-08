@@ -48,7 +48,7 @@ export class DailyVerseRepository {
     let query = this.db
       .getOrCreateConnection()
       .selectFrom("daily_verse_history")
-      .where("pick_date", ">=", sql<Date>`${date}::date - ${days}`)
+      .where("pick_date", ">=", sql<Date>`${date}::date - ${days}::int`)
       .where("pick_date", "<", sql<Date>`${date}::date`)
       .select("daily_verse_id");
 
@@ -72,7 +72,7 @@ export class DailyVerseRepository {
     let query = this.db
       .getOrCreateConnection()
       .selectFrom("daily_verse_history")
-      .where("pick_date", "=", date)
+      .where("pick_date", "=", sql<Date>`${date}::date`)
       .selectAll();
 
     query =

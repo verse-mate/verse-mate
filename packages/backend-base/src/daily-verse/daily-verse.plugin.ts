@@ -27,11 +27,7 @@ const plugin = new Elysia()
   .use(shared)
   .state((state) => ({
     ...state,
-    dailyVerseService: new DailyVerseService(
-      state.db,
-      undefined,
-      state.cache,
-    ),
+    dailyVerseService: new DailyVerseService(state.db, undefined, state.cache),
   }))
   .group("/bible", (app) =>
     app.resolve({ as: "scoped" }, authDerive).get(

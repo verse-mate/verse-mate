@@ -45,9 +45,7 @@ interface FakeOptions {
 function makeFakeRepo(opts: FakeOptions) {
   const recorded: { date: string; dailyVerseId: string }[] = [];
   let existingPickId = opts.existingPickId ?? null;
-  const verseById = new Map(
-    (opts.active ?? []).map((v) => [v.id, v] as const),
-  );
+  const verseById = new Map((opts.active ?? []).map((v) => [v.id, v] as const));
 
   const repo = {
     recordedCalls: recorded,
@@ -86,7 +84,9 @@ function makeFakeRepo(opts: FakeOptions) {
     },
     async getVersionByKey(key: string) {
       const v = opts.versions?.[key];
-      return v ? { id: v.id, version_key: key, language_code: v.language_code } : undefined;
+      return v
+        ? { id: v.id, version_key: key, language_code: v.language_code }
+        : undefined;
     },
     async getChapterId() {
       return opts.chapterId ?? 100;
@@ -129,7 +129,8 @@ describe("DailyVerseService.pickForDate", () => {
       {} as any,
       makeFakeRepo({ active }),
     ).pickForDate("2026-06-08", null);
-    expect(first?.verse.id).toBe(second?.verse.id);
+    if (!first || !second) throw new Error("expected a pick from both");
+    expect(first.verse.id).toBe(second.verse.id);
   });
 
   it("relaxes the cooldown and flags poolTooSmall when all are recent (D-28)", async () => {
@@ -163,7 +164,14 @@ describe("DailyVerseService.getVerseOfTheDay", () => {
 
   it("renders verses + localized reference for the happy path", async () => {
     const repo = makeFakeRepo({
-      active: [makeVerse("a", { book_id: 1, chapter_number: 1, verse_start: 1, verse_end: 2 })],
+      active: [
+        makeVerse("a", {
+          book_id: 1,
+          chapter_number: 1,
+          verse_start: 1,
+          verse_end: 2,
+        }),
+      ],
       versions,
       versesInRange: {
         "ver-nasb": [
