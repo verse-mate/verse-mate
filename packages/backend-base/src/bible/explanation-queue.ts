@@ -43,17 +43,23 @@ passage in a clear, organized way, summarize based on section sub-titles (e.g. B
       return {
         prompt: `# ${bookName} ${chapterNumber}: Verse-by-Verse Analysis
 
-Provide a verse-by-verse explanation of this chapter. For each verse:
+Provide a rich, verse-by-verse explanation of this chapter. For each verse:
 1. Quote the verse using blockquote format (>)
-2. Provide a clear summary
-3. Include relevant key takeaways
-4. Add key definitions as appropriate
-5. Highlight theological themes as appropriate
+2. Provide a substantial summary — at least 3-4 full sentences that explain what the
+   verse says, what it means in its immediate context, and why it matters. Do NOT
+   write one-line or superficial summaries; every verse deserves genuine depth,
+   including short, transitional, or greeting verses.
+3. Include relevant key takeaways as full sentences
+4. Add key definitions of important Hebrew/Greek terms, names, or places as appropriate
+5. Highlight theological themes and, where helpful, cross-references to related passages
 
 CRITICAL INSTRUCTIONS:
+- Aim for consistent richness across the whole chapter — do not let later verses become
+  thinner than earlier ones, and never reduce a verse to a single short sentence.
 - Keep chronological order at all times
 - Do not group verses unless absolutely necessary
 - Ensure takeaways and themes are full sentences
+- Explain the meaning and significance, not just a paraphrase of the wording
 - Use proper markdown formatting with line breaks`,
         temperature: 0.2,
       };
