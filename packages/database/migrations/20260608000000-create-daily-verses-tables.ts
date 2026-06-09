@@ -124,7 +124,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("daily_verse_id", "uuid", (col) =>
       col.references("daily_verses.id").onDelete("cascade").notNull(),
     )
-    // Reserved for v2 per-user picks; v1 always NULL.
+    // Per-user picks (PD-7); NULL is the shared global / anonymous pick.
     .addColumn("user_id", "uuid", (col) =>
       col.references("user.id").onDelete("cascade"),
     )
@@ -141,6 +141,15 @@ export async function up(db: Kysely<Database>): Promise<void> {
     ON daily_verse_history (pick_date, user_id)
     NULLS NOT DISTINCT
   `.execute(db);
+
+  // Per-user recent-pick lookup for the cooldown / no-repeat read
+  // ("this user's picks in the last N days"), so lead with user_id (PD-6).
+  // Dropped implicitly with the table in down().
+  await db.schema
+    .createIndex("idx_daily_verse_history_user_recent")
+    .on("daily_verse_history")
+    .columns(["user_id", "pick_date"])
+    .execute();
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {

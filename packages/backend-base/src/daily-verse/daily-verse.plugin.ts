@@ -12,6 +12,8 @@ import {
 
 const DEFAULT_VERSION_KEY = "NASB1995";
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Public verse-of-the-day endpoint is limited to 60 requests/min per IP (spec).
 const verseOfTheDayRateLimit = createIpRateLimit(60);
@@ -59,8 +61,8 @@ const plugin = new Elysia()
           };
         }
 
-        // Resolve the requesting user (for preferred version + future
-        // personalization). v1 only reads preferred_bible_version.
+        // Resolve the requesting user for their preferred version. Selection
+        // personalization keys on the principal id resolved below.
         let user = null;
         if (currentUserId) {
           user =
@@ -77,15 +79,30 @@ const plugin = new Elysia()
           user?.preferred_bible_version ??
           DEFAULT_VERSION_KEY;
 
+        // Personalization principal (PD-7): an authenticated session always
+        // wins; otherwise honor a widget-supplied `pid` only when it's a
+        // well-formed id of a real user (else the history FK would reject the
+        // record). Anything else falls back to the shared global pick.
+        let userId: string | null = currentUserId ?? null;
+        if (!userId && query.pid && UUID_PATTERN.test(query.pid)) {
+          const pidUser = await db
+            .getOrCreateConnection()
+            .selectFrom("user")
+            .where("id", "=", query.pid)
+            .select("id")
+            .executeTakeFirst();
+          if (pidUser) userId = query.pid;
+        }
+
         const result = await dailyVerseService.getVerseOfTheDay({
           date,
           versionKey,
-          user,
+          userId,
         });
 
         // Server-side observability via PostHog (D-40).
         if (posthog.isInitialized()) {
-          const distinctId = currentUserId ?? "anonymous";
+          const distinctId = userId ?? "anonymous";
           posthog.capture({
             distinctId,
             event: "DAILY_VERSE_SERVED",

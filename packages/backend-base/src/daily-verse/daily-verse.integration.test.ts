@@ -51,6 +51,21 @@ describe("Daily Verse Plugin (integration)", () => {
     }
   });
 
+  it("accepts a personalization id (pid) and falls back to global for an unknown one (PD-7)", async () => {
+    // A well-formed but non-existent user id must not error the widget — the
+    // endpoint ignores it (no history FK violation) and serves the global verse.
+    const { data, error } = await testClient.bible["verse-of-the-day"].get({
+      query: {
+        date: today,
+        bible_version: "NASB1995",
+        pid: "00000000-0000-0000-0000-000000000000",
+      },
+    });
+    expect(error).toBeFalsy();
+    expect(data).toBeTruthy();
+    if (data) expect(typeof data.empty).toBe("boolean");
+  });
+
   it("defaults the date to today when omitted", async () => {
     const { data, error } = await testClient.bible["verse-of-the-day"].get({
       query: {},
