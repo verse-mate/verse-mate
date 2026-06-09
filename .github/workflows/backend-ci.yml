@@ -19,6 +19,8 @@ on:
   push:
     branches: [main]
     tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
 
 jobs:
   # ============================================
@@ -152,8 +154,6 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     needs: [compile]
-    # Remove continue-on-error to make blocking
-    continue-on-error: true
 
     services:
       postgres:
@@ -222,8 +222,7 @@ jobs:
           cd packages/database && bun migrate:deploy && bun db:seed && bun seed:themes
 
       - name: Run tests
-        # TODO: Remove "|| true" once tests are fixed - currently ignoring failures
-        run: cd packages/backend-base && bun test || true
+        run: cd packages/backend-base && bun test
 
       - name: Cleanup environment files
         if: always()

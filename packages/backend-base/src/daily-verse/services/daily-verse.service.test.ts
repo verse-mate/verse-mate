@@ -154,6 +154,72 @@ describe("DailyVerseService.pickForDate", () => {
     // No new pick recorded — it read the existing one.
     expect(repo.recordedCalls.length).toBe(0);
   });
+
+  it("honors the recorded winner when it loses the ON CONFLICT race (D-31)", async () => {
+    // Concurrency scenario: there is no existing pick when we read history
+    // (so we proceed to choose deterministically), but by the time we INSERT,
+    // a concurrent request already won. recordPick's ON CONFLICT DO NOTHING
+    // re-read returns that *different* winner — which we must honor.
+    const active = [makeVerse("a"), makeVerse("b"), makeVerse("c")];
+    const verseById = new Map(active.map((v) => [v.id, v] as const));
+    const recorded: { date: string; dailyVerseId: string }[] = [];
+
+    let chosenId: string | null = null;
+    const winnerId = "winner-other";
+    verseById.set(winnerId, makeVerse(winnerId));
+
+    const cacheSets: { key: string; value: { id: string } }[] = [];
+    const cache = {
+      async get() {
+        return null;
+      },
+      async set(key: string, value: { id: string }) {
+        cacheSets.push({ key, value });
+      },
+    };
+
+    const repo = {
+      async getActiveVerses() {
+        return active;
+      },
+      async getRecentPickIds() {
+        return [];
+      },
+      // No pick recorded yet at read-time — forces a deterministic choice.
+      async findPickForDate() {
+        return chosenId
+          ? { id: "h1", daily_verse_id: winnerId, user_id: null }
+          : null;
+      },
+      async recordPick({
+        date,
+        dailyVerseId,
+      }: {
+        date: string;
+        dailyVerseId: string;
+      }) {
+        // Capture the deterministic candidate, then simulate having lost the
+        // race: the persisted (winning) row points at a *different* verse.
+        chosenId = dailyVerseId;
+        recorded.push({ date, dailyVerseId });
+        return { id: "h1", daily_verse_id: winnerId, user_id: null };
+      },
+      async getById(id: string) {
+        return verseById.get(id) ?? null;
+      },
+    } as unknown as DailyVerseRepository;
+
+    const service = new DailyVerseService({} as any, repo, cache as any);
+    const result = await service.pickForDate("2026-06-08", null);
+
+    // We attempted to record our deterministic candidate...
+    expect(recorded.length).toBe(1);
+    // ...but the recorded winner differed, so we returned the winner's row.
+    expect(recorded[0].dailyVerseId).not.toBe(winnerId);
+    expect(result?.verse.id).toBe(winnerId);
+    // And the winner was cached.
+    expect(cacheSets.some((c) => c.value.id === winnerId)).toBe(true);
+  });
 });
 
 describe("DailyVerseService.getVerseOfTheDay", () => {
