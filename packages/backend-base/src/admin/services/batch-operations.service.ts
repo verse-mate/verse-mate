@@ -1282,23 +1282,28 @@ export class BatchOperationService {
     }));
   }
 
-  private async createBookTranslateBatch(
+  /**
+   * Build the translate `BatchJobRequest[]` for a book + target language +
+   * explanation types, WITHOUT submitting anything to OpenAI. This is the pure
+   * request-building half of `createBookTranslateBatch`, extracted so the local
+   * `claude -p` path can obtain the exact same requests and run them itself.
+   *
+   * Returns the requests plus the resolved `bookId` (the caller's OpenAI path
+   * needs it for the file name + batch_jobs row). `skipExisting` filtering is
+   * applied internally so there is a single source of truth for the query +
+   * prompt/title loading + per-explanation `buildTranslateRequests` mapping.
+   */
+  private async buildBookTranslateRequestsInternal(
     model: string,
-    adminUserId: string,
-    effort: "low" | "medium" | "high",
-    bookName: string,
-    source_language_code: string,
-    target_language_code: string,
+    sourceLanguageCode: string,
+    targetLanguageCode: string,
     explanationTypes: string[],
+    bookName: string,
+    effort: "low" | "medium" | "high",
+    maxOutputTokens: number,
     skipExisting: boolean,
-    parentBatchId?: number,
     chapterNumbers?: number[],
-    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
-    batchType = "translate",
-  ) {
-    console.log(
-      `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}${chapterNumbers ? `, chapters: ${chapterNumbers.join(", ")}` : ""}`,
-    );
+  ): Promise<{ batchRequests: BatchJobRequest[]; bookId: number }> {
     const connection = this.db.getOrCreateConnection();
 
     const book = await connection
@@ -1317,12 +1322,12 @@ export class BatchOperationService {
 
     const sourceVersion = await connection
       .selectFrom("bible_versions")
-      .where("language_code", "=", source_language_code)
+      .where("language_code", "=", sourceLanguageCode)
       .select("language_code")
       .executeTakeFirst();
 
     if (!sourceVersion) {
-      const error = `Source Bible version with language "${source_language_code}" not found.`;
+      const error = `Source Bible version with language "${sourceLanguageCode}" not found.`;
       console.error(`[BATCH] ${error}`);
       throw new Error(error);
     }
@@ -1333,7 +1338,7 @@ export class BatchOperationService {
 
     const targetVersion = await connection
       .selectFrom("bible_versions")
-      .where("language_code", "=", target_language_code)
+      .where("language_code", "=", targetLanguageCode)
       .select(["id", "language_code"])
       .executeTakeFirst();
 
@@ -1341,7 +1346,7 @@ export class BatchOperationService {
     // We can create explanations for any valid language code
     if (!targetVersion) {
       console.log(
-        `[BATCH] Target Bible version with language "${target_language_code}" not found in database, but continuing with translation to custom language.`,
+        `[BATCH] Target Bible version with language "${targetLanguageCode}" not found in database, but continuing with translation to custom language.`,
       );
     } else {
       console.log(
@@ -1364,7 +1369,7 @@ export class BatchOperationService {
 
     console.log("[BATCH] Found active translate prompt");
 
-    const language = getLanguageName(target_language_code);
+    const language = getLanguageName(targetLanguageCode);
     const finalPrompt = translatePrompt.prompt.replace("{language}", language);
 
     console.log(`[BATCH] Target language name: ${language}`);
@@ -1372,7 +1377,7 @@ export class BatchOperationService {
     // Fetch localized title templates for the target language
     const titleTemplates = await connection
       .selectFrom("translation_templates")
-      .where("language_code", "=", target_language_code)
+      .where("language_code", "=", targetLanguageCode)
       .select(["type", "title_template"])
       .execute();
 
@@ -1403,7 +1408,7 @@ export class BatchOperationService {
       .selectFrom("explanations")
       .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
       .where("chapters.book_id", "=", book.book_id)
-      .where("explanations.language_code", "=", source_language_code)
+      .where("explanations.language_code", "=", sourceLanguageCode)
       .where("is_active", "=", true);
 
     if (chapterNumbers && chapterNumbers.length > 0) {
@@ -1427,7 +1432,7 @@ export class BatchOperationService {
       .execute();
 
     console.log(
-      `[BATCH] Found ${activeExplanations.length} active explanations for ${bookName} in ${source_language_code}`,
+      `[BATCH] Found ${activeExplanations.length} active explanations for ${bookName} in ${sourceLanguageCode}`,
     );
 
     let batchRequests: BatchJobRequest[] = [];
@@ -1438,7 +1443,7 @@ export class BatchOperationService {
         .selectFrom("explanations")
         .innerJoin("chapters", "explanations.chapter_id", "chapters.chapter_id")
         .where("chapters.book_id", "=", book.book_id)
-        .where("explanations.language_code", "=", target_language_code)
+        .where("explanations.language_code", "=", targetLanguageCode)
         .where("explanations.type", "in", explanationTypes as any)
         .where("explanations.is_active", "=", true);
 
@@ -1473,7 +1478,7 @@ export class BatchOperationService {
           for (const req of this.buildTranslateRequests({
             explanation,
             bookName,
-            targetLanguageCode: target_language_code,
+            targetLanguageCode,
             itemPrompt,
             model,
             effort,
@@ -1497,7 +1502,7 @@ export class BatchOperationService {
         return this.buildTranslateRequests({
           explanation,
           bookName,
-          targetLanguageCode: target_language_code,
+          targetLanguageCode,
           itemPrompt,
           model,
           effort,
@@ -1505,6 +1510,75 @@ export class BatchOperationService {
         });
       });
     }
+
+    return { batchRequests, bookId: book.book_id };
+  }
+
+  /**
+   * Public pure request-builder for the explanation translate path: returns the
+   * `BatchJobRequest[]` for a book + target language + explanation types without
+   * any OpenAI submission. Used by the local `claude -p` executor (Part B).
+   *
+   * `skipExisting` (default false) forwards to the internal helper so the queue
+   * worker can build only the still-undone requests; existing callers that omit
+   * it keep the prior full-set behavior.
+   */
+  async buildBookTranslateRequests(
+    model: string,
+    sourceLanguageCode: string,
+    targetLanguageCode: string,
+    explanationTypes: string[],
+    bookName: string,
+    effort: "low" | "medium" | "high",
+    maxOutputTokens: number,
+    chapterNumbers?: number[],
+    skipExisting = false,
+  ): Promise<BatchJobRequest[]> {
+    const { batchRequests } = await this.buildBookTranslateRequestsInternal(
+      model,
+      sourceLanguageCode,
+      targetLanguageCode,
+      explanationTypes,
+      bookName,
+      effort,
+      maxOutputTokens,
+      skipExisting,
+      chapterNumbers,
+    );
+    return batchRequests;
+  }
+
+  private async createBookTranslateBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high",
+    bookName: string,
+    source_language_code: string,
+    target_language_code: string,
+    explanationTypes: string[],
+    skipExisting: boolean,
+    parentBatchId?: number,
+    chapterNumbers?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+    batchType = "translate",
+  ) {
+    console.log(
+      `[BATCH] Creating translate batch for book: ${bookName}, source: ${source_language_code}, target: ${target_language_code}${chapterNumbers ? `, chapters: ${chapterNumbers.join(", ")}` : ""}`,
+    );
+    const connection = this.db.getOrCreateConnection();
+
+    const { batchRequests, bookId } =
+      await this.buildBookTranslateRequestsInternal(
+        model,
+        source_language_code,
+        target_language_code,
+        explanationTypes,
+        bookName,
+        effort,
+        maxOutputTokens,
+        skipExisting,
+        chapterNumbers,
+      );
 
     if (batchRequests.length === 0) {
       console.log(
@@ -1546,7 +1620,7 @@ export class BatchOperationService {
     const file = await this.ai.filesCreate({
       file: new File(
         [new Uint8Array(buffer)],
-        `translate_batch_${book.book_id}_${Date.now()}.jsonl`,
+        `translate_batch_${bookId}_${Date.now()}.jsonl`,
       ),
       purpose: "batch",
     });
@@ -1570,7 +1644,7 @@ export class BatchOperationService {
         model,
         total_requests: batchRequests.length,
         created_by: adminUserId,
-        book_id: book.book_id,
+        book_id: bookId,
         parent_batch_id: parentBatchId,
         bible_version: target_language_code,
         source_language_code,
@@ -3179,7 +3253,7 @@ export class BatchOperationService {
     );
   }
 
-  private async processTranslateOutputFile(
+  async processTranslateOutputFile(
     batchId: string,
     outputFileId: string,
     batchJob: {
@@ -3187,14 +3261,23 @@ export class BatchOperationService {
       bible_version?: string;
       book_id?: number | null;
     },
+    localContent?: string,
   ) {
-    const fileContent = await this.ai.filesContent(outputFileId);
-    const jsonData =
-      typeof (fileContent as any).text === "function"
-        ? await (fileContent as any).text()
-        : typeof (fileContent as any).arrayBuffer === "function"
-          ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
-          : String(fileContent);
+    // When `localContent` is provided (local `claude -p` path), use it directly
+    // as the output file content and skip the OpenAI download entirely.
+    // Otherwise behave exactly as before.
+    let jsonData: string;
+    if (localContent != null) {
+      jsonData = localContent;
+    } else {
+      const fileContent = await this.ai.filesContent(outputFileId);
+      jsonData =
+        typeof (fileContent as any).text === "function"
+          ? await (fileContent as any).text()
+          : typeof (fileContent as any).arrayBuffer === "function"
+            ? new TextDecoder().decode(await (fileContent as any).arrayBuffer())
+            : String(fileContent);
+    }
     const lines = jsonData
       .split("\n")
       .filter((line: string) => line.trim() !== "");
@@ -5815,16 +5898,24 @@ export class BatchOperationService {
     };
   }
 
-  private async createStudyTranslateBatch(
+  /**
+   * Pure request-builder for the study translate path: returns the
+   * `BatchJobRequest[]` for a book + target language without any OpenAI
+   * submission. Extracted from `createStudyTranslateBatch` (the studies query +
+   * `skipExisting` filter + prompt load + per-study request mapping) so the
+   * local `claude -p` executor (Part B) can obtain the exact same requests.
+   * Returns `[]` when there is nothing to translate (no studies, or all already
+   * translated under `skipExisting`).
+   */
+  async buildStudyTranslateRequests(
     model: string,
-    adminUserId: string,
+    targetLanguageCode: string,
     effort: "low" | "medium" | "high",
     bookName: string,
-    target_language_code: string,
     skipExisting: boolean,
     chapterNumbers?: number[],
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
-  ) {
+  ): Promise<BatchJobRequest[]> {
     const connection = this.db.getOrCreateConnection();
 
     // Select studies by the book name stored in their own content, NOT via the
@@ -5845,7 +5936,7 @@ export class BatchOperationService {
           chapterNumbers ? ` chapters=${chapterNumbers.join(",")}` : ""
         }`,
       );
-      return null;
+      return [];
     }
 
     let toTranslate = studies;
@@ -5853,7 +5944,7 @@ export class BatchOperationService {
       const existing = await connection
         .selectFrom("study_translations")
         .select(["study_id"])
-        .where("language_code", "=", target_language_code)
+        .where("language_code", "=", targetLanguageCode)
         .where("is_active", "=", true)
         .where(
           "study_id",
@@ -5867,9 +5958,9 @@ export class BatchOperationService {
 
     if (toTranslate.length === 0) {
       console.log(
-        `[BATCH][study-translate] all ${studies.length} studies already translated to ${target_language_code} for ${bookName}`,
+        `[BATCH][study-translate] all ${studies.length} studies already translated to ${targetLanguageCode} for ${bookName}`,
       );
-      return null;
+      return [];
     }
 
     // Load the active study-translate prompt from the `prompts` table — same
@@ -5877,7 +5968,7 @@ export class BatchOperationService {
     // `translate` batch loads `prompt_type='translate'` the same way). The
     // prompt text lives in the DB (managed via the admin prompts UI), NOT in
     // code; `{language}` is substituted with the target language name.
-    const languageName = getLanguageName(target_language_code);
+    const languageName = getLanguageName(targetLanguageCode);
     const studyPrompt = await connection
       .selectFrom("prompts")
       .where("prompt_type", "=", "translate-study")
@@ -5891,8 +5982,8 @@ export class BatchOperationService {
     }
     const instruction = studyPrompt.prompt.replace("{language}", languageName);
 
-    const batchRequests: BatchJobRequest[] = toTranslate.map((study) => ({
-      custom_id: `study|${bookName}|${study.chapter}|${target_language_code}|${study.study_id}`,
+    return toTranslate.map((study) => ({
+      custom_id: `study|${bookName}|${study.chapter}|${targetLanguageCode}|${study.study_id}`,
       method: "POST",
       url: "/v1/responses",
       body: {
@@ -5908,6 +5999,35 @@ export class BatchOperationService {
         text: { format: { type: "json_object" } },
       },
     }));
+  }
+
+  private async createStudyTranslateBatch(
+    model: string,
+    adminUserId: string,
+    effort: "low" | "medium" | "high",
+    bookName: string,
+    target_language_code: string,
+    skipExisting: boolean,
+    chapterNumbers?: number[],
+    maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
+  ) {
+    const connection = this.db.getOrCreateConnection();
+
+    const batchRequests = await this.buildStudyTranslateRequests(
+      model,
+      target_language_code,
+      effort,
+      bookName,
+      skipExisting,
+      chapterNumbers,
+      maxOutputTokens,
+    );
+
+    // Nothing to translate (no studies, or all already translated under
+    // skipExisting) — the builder already logged the reason. Skip submission.
+    if (batchRequests.length === 0) {
+      return null;
+    }
 
     const validation = this.validateCustomIdUniqueness(batchRequests);
     if (!validation.isValid) {
@@ -6019,30 +6139,13 @@ export class BatchOperationService {
   }
 
   /**
-   * Writeback for "translate-study" batches: parse each result line, validate
-   * the translated study JSON, and upsert into study_translations
-   * (unique on study_id + language_code).
+   * Load the deterministic term dictionary once (all languages) and return a
+   * lazy per-language resolver. Best-effort: a dictionary failure must never
+   * break a writeback (translations still land, just un-normalized). Shared by
+   * the OpenAI batch writeback and the local `claude -p` path.
    */
-  async processStudyTranslateOutputFile(
-    batchId: string,
-    outputFileId: string,
-    batchJob: { model: string },
-  ) {
-    const fileResponse = await this.ai.filesContent(outputFileId);
-    let content: string;
-    try {
-      content = await fileResponse.text();
-    } catch {
-      const buf = await fileResponse.arrayBuffer();
-      content = new TextDecoder().decode(buf);
-    }
-
-    const lines = content.split("\n").filter((l) => l.trim());
+  async loadStudyTermDictResolver(): Promise<(lang: string) => StudyTermDict> {
     const connection = this.db.getOrCreateConnection();
-
-    // Load the deterministic term dictionary once (all languages), then build a
-    // per-language lookup lazily. Best-effort: a dictionary failure must never
-    // break the writeback (translations still land, just un-normalized).
     let termRows: StudyTermRow[] = [];
     try {
       termRows = await connection
@@ -6054,7 +6157,7 @@ export class BatchOperationService {
       console.error("[BATCH][study-translate] term dictionary load failed:", e);
     }
     const dictCache = new Map<string, StudyTermDict>();
-    const dictFor = (lang: string): StudyTermDict => {
+    return (lang: string): StudyTermDict => {
       let d = dictCache.get(lang);
       if (!d) {
         d = buildStudyTermDictMap(termRows, lang);
@@ -6062,6 +6165,95 @@ export class BatchOperationService {
       }
       return d;
     };
+  }
+
+  /**
+   * Parse + validate one model response and upsert it into study_translations
+   * (unique on study_id + language_code). Shared by the OpenAI batch writeback
+   * and the local `claude -p` path so the saving logic can never drift.
+   * Returns true on success, false if the text failed to parse or had an
+   * invalid study shape.
+   */
+  async writeStudyTranslation(
+    studyId: number,
+    languageCode: string,
+    rawText: string,
+    model: string,
+    dictFor: (lang: string) => StudyTermDict,
+  ): Promise<boolean> {
+    const translated = this.parseStudyJson(rawText);
+    if (!translated || !this.isValidStudyShape(translated)) {
+      console.error(
+        `[BATCH][study-translate] invalid translated JSON/shape for study_id=${studyId} (${languageCode})`,
+      );
+      return false;
+    }
+
+    // Deterministically fix any label-like field the model left in English
+    // (pills/contrast-type/columns/title book name) from the DB dictionary.
+    const { content: normalized, replaced } = applyStudyTermDictionary(
+      translated,
+      dictFor(languageCode),
+    );
+    if (replaced > 0) {
+      console.log(
+        `[BATCH][study-translate] normalized ${replaced} term(s) for study_id=${studyId} (${languageCode})`,
+      );
+    }
+
+    const connection = this.db.getOrCreateConnection();
+    await connection
+      .insertInto("study_translations")
+      .values({
+        study_id: studyId,
+        language_code: languageCode,
+        translated_content: normalized as object,
+        source: model,
+        is_active: true,
+      })
+      .onConflict((oc) =>
+        oc.columns(["study_id", "language_code"]).doUpdateSet({
+          translated_content: normalized as object,
+          source: model,
+          is_active: true,
+          updated_at: new Date(),
+        }),
+      )
+      .execute();
+    return true;
+  }
+
+  /**
+   * Writeback for "translate-study" batches: parse each result line, validate
+   * the translated study JSON, and upsert into study_translations
+   * (unique on study_id + language_code).
+   */
+  async processStudyTranslateOutputFile(
+    batchId: string,
+    outputFileId: string,
+    batchJob: { model: string },
+    localContent?: string,
+  ) {
+    // When `localContent` is provided (local `claude -p` path), use it directly
+    // as the output file content and skip the OpenAI download entirely.
+    // Otherwise behave exactly as before.
+    let content: string;
+    if (localContent != null) {
+      content = localContent;
+    } else {
+      const fileResponse = await this.ai.filesContent(outputFileId);
+      try {
+        content = await fileResponse.text();
+      } catch {
+        const buf = await fileResponse.arrayBuffer();
+        content = new TextDecoder().decode(buf);
+      }
+    }
+
+    const lines = content.split("\n").filter((l) => l.trim());
+    const connection = this.db.getOrCreateConnection();
+
+    const dictFor = await this.loadStudyTermDictResolver();
 
     let successCount = 0;
     let errorCount = 0;
@@ -6138,46 +6330,18 @@ export class BatchOperationService {
         continue;
       }
 
-      const translated = this.parseStudyJson(extractedText);
-      if (!translated || !this.isValidStudyShape(translated)) {
-        console.error(
-          `[BATCH][study-translate] invalid translated JSON/shape for study_id=${studyId} (${languageCode})`,
-        );
-        errorCount++;
-        continue;
-      }
-
-      // Deterministically fix any label-like field the model left in English
-      // (pills/contrast-type/columns/title book name) from the DB dictionary.
-      const { content: normalized, replaced } = applyStudyTermDictionary(
-        translated,
-        dictFor(languageCode),
+      const ok = await this.writeStudyTranslation(
+        studyId,
+        languageCode,
+        extractedText,
+        batchJob.model,
+        dictFor,
       );
-      if (replaced > 0) {
-        console.log(
-          `[BATCH][study-translate] normalized ${replaced} term(s) for study_id=${studyId} (${languageCode})`,
-        );
+      if (ok) {
+        successCount++;
+      } else {
+        errorCount++;
       }
-
-      await connection
-        .insertInto("study_translations")
-        .values({
-          study_id: studyId,
-          language_code: languageCode,
-          translated_content: normalized as object,
-          source: batchJob.model,
-          is_active: true,
-        })
-        .onConflict((oc) =>
-          oc.columns(["study_id", "language_code"]).doUpdateSet({
-            translated_content: normalized as object,
-            source: batchJob.model,
-            is_active: true,
-            updated_at: new Date(),
-          }),
-        )
-        .execute();
-      successCount++;
     }
 
     const actualCost = await calculateActualCost(
