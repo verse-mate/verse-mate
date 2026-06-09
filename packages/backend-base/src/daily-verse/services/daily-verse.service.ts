@@ -1,5 +1,4 @@
 import type { DailyVerses } from "database/src/models/public/DailyVerses";
-import type { User } from "database/src/models/public/User";
 import { ValidationError } from "../../common/errors";
 import cacheConstants from "../../shared/cache.constants";
 import type { cache, db } from "../../shared/shared.plugin";
@@ -99,7 +98,15 @@ export class DailyVerseService {
     this.repo = repo ?? new DailyVerseRepository(db);
   }
 
-  /** Best-effort cache invalidation of today's pick (D-39 post-commit hook). */
+  /**
+   * Best-effort cache invalidation of today's pick (D-39 post-commit hook).
+   *
+   * PD-5: this only DELs the global (user_id NULL) key. With per-user picks
+   * (PD-7) there can be one cache entry per user, which we deliberately do not
+   * fan-out a DEL across — a user who already has today's verse keeps it, while
+   * not-yet-served users and anonymous callers reflect a curator's edit on
+   * their next request. Per-user entries self-heal at the 24h TTL.
+   */
   async invalidatePickForToday(): Promise<void> {
     if (!this.cache) return;
     const today = todayServerLocal();
@@ -112,8 +119,12 @@ export class DailyVerseService {
   }
 
   /**
-   * Pick (or read) the curated verse for a date. v1 ignores `user` but takes
-   * it from day one so v2 personalization is a one-method change (D-18).
+   * Pick (or read) the curated verse for a date, personalized to `userId` when
+   * present (PD-1 / PD-7). An authenticated user gets their own deterministic,
+   * non-repeating sequence — the per-user cooldown excludes their recent picks
+   * and the selection seed includes their id, so two users see different verses
+   * the same day. `userId === null` is the shared global pick (anonymous), the
+   * "this is God's message for me" personalization being the whole point.
    *
    * Returns null when the active pool is empty. `poolTooSmall` is true when
    * the cooldown filter had to be relaxed because every active verse was
@@ -121,10 +132,8 @@ export class DailyVerseService {
    */
   async pickForDate(
     date: string,
-    _user: User | null,
+    userId: string | null,
   ): Promise<{ verse: DailyVerses; poolTooSmall: boolean } | null> {
-    // v1: global pick (user_id NULL). v2 will key on user.id.
-    const userId = null;
     const cacheKey = cacheConstants.dailyVersePick(date, userId);
 
     // Fast path: cached selection id → load + return.
@@ -166,7 +175,11 @@ export class DailyVerseService {
       poolTooSmall = true;
     }
 
-    const index = hashString(date) % candidates.length;
+    // Personalize the choice: seed with the user so two users get different
+    // verses the same day, while staying deterministic per (user, date) for
+    // idempotency + caching (PD-1). Anonymous keeps the global date-only seed.
+    const seed = userId ? `${date}:${userId}` : date;
+    const index = hashString(seed) % candidates.length;
     const chosen = candidates[index];
 
     // Idempotent record; on concurrent race the winner's row is returned.
@@ -205,13 +218,13 @@ export class DailyVerseService {
   async getVerseOfTheDay({
     date,
     versionKey,
-    user,
+    userId,
   }: {
     date: string;
     versionKey: string;
-    user: User | null;
+    userId: string | null;
   }): Promise<VerseOfTheDayResult | EmptyVerseOfTheDayResult> {
-    const picked = await this.pickForDate(date, user);
+    const picked = await this.pickForDate(date, userId);
     if (!picked) {
       return { empty: true, date, fallbackMessage: EMPTY_FALLBACK_MESSAGE };
     }

@@ -43,16 +43,23 @@ interface FakeOptions {
 
 /** Build a fake repository capturing recordPick calls. */
 function makeFakeRepo(opts: FakeOptions) {
-  const recorded: { date: string; dailyVerseId: string }[] = [];
+  const recorded: {
+    date: string;
+    dailyVerseId: string;
+    userId: string | null;
+  }[] = [];
+  const recentPickUserIds: (string | null)[] = [];
   let existingPickId = opts.existingPickId ?? null;
   const verseById = new Map((opts.active ?? []).map((v) => [v.id, v] as const));
 
   const repo = {
     recordedCalls: recorded,
+    recentPickUserIds,
     async getActiveVerses() {
       return opts.active ?? [];
     },
-    async getRecentPickIds() {
+    async getRecentPickIds(args: { userId: string | null }) {
+      recentPickUserIds.push(args?.userId ?? null);
       return opts.recentPickIds ?? [];
     },
     async findPickForDate() {
@@ -63,17 +70,19 @@ function makeFakeRepo(opts: FakeOptions) {
     async recordPick({
       date,
       dailyVerseId,
+      userId,
     }: {
       date: string;
       dailyVerseId: string;
+      userId: string | null;
     }) {
-      recorded.push({ date, dailyVerseId });
+      recorded.push({ date, dailyVerseId, userId: userId ?? null });
       // Simulate the row being persisted so subsequent reads are idempotent.
       existingPickId = existingPickId ?? dailyVerseId;
       return {
         id: "h1",
         daily_verse_id: existingPickId,
-        user_id: null,
+        user_id: userId ?? null,
       };
     },
     async getById(id: string) {
@@ -108,6 +117,7 @@ function makeFakeRepo(opts: FakeOptions) {
 
   return repo as unknown as DailyVerseRepository & {
     recordedCalls: typeof recorded;
+    recentPickUserIds: (string | null)[];
   };
 }
 
@@ -222,6 +232,54 @@ describe("DailyVerseService.pickForDate", () => {
   });
 });
 
+describe("DailyVerseService.pickForDate — personalization (PD-1/PD-7)", () => {
+  const pool = ["a", "b", "c", "d", "e", "f", "g", "h"].map((id) =>
+    makeVerse(id),
+  );
+
+  it("gives different users different verses on the same date", async () => {
+    const pickFor = (userId: string) =>
+      new DailyVerseService({} as any, makeFakeRepo({ active: pool }))
+        .pickForDate("2026-06-08", userId)
+        .then((r) => r?.verse.id);
+    const ids = await Promise.all(
+      ["u1", "u2", "u3", "u4", "u5", "u6", "u7", "u8"].map(pickFor),
+    );
+    // Deterministic per user, but not all identical — personalization works.
+    expect(new Set(ids).size).toBeGreaterThan(1);
+  });
+
+  it("is stable for the same user across the day (idempotent)", async () => {
+    const service = new DailyVerseService(
+      {} as any,
+      makeFakeRepo({ active: pool }),
+    );
+    const first = await service.pickForDate("2026-06-08", "u1");
+    const second = await service.pickForDate("2026-06-08", "u1");
+    expect(first?.verse.id).toBe(second?.verse.id);
+  });
+
+  it("threads the user id to the per-user history + cooldown reads", async () => {
+    const repo = makeFakeRepo({ active: pool });
+    await new DailyVerseService({} as any, repo).pickForDate(
+      "2026-06-08",
+      "user-42",
+    );
+    expect(repo.recordedCalls[0]?.userId).toBe("user-42");
+    expect(repo.recentPickUserIds).toContain("user-42");
+  });
+
+  it("uses the global principal (null) for anonymous callers", async () => {
+    const repo = makeFakeRepo({ active: pool });
+    await new DailyVerseService({} as any, repo).pickForDate(
+      "2026-06-08",
+      null,
+    );
+    expect(repo.recordedCalls[0]?.userId).toBeNull();
+    expect(repo.recentPickUserIds).toContain(null);
+  });
+});
+
 describe("DailyVerseService.getVerseOfTheDay", () => {
   const versions = {
     NASB1995: { id: "ver-nasb", language_code: "en-US" },
@@ -251,7 +309,7 @@ describe("DailyVerseService.getVerseOfTheDay", () => {
     const result = await service.getVerseOfTheDay({
       date: "2026-06-08",
       versionKey: "NASB1995",
-      user: null,
+      userId: null,
     });
     expect(result.empty).toBe(false);
     if (result.empty) return;
@@ -277,7 +335,7 @@ describe("DailyVerseService.getVerseOfTheDay", () => {
     const result = await service.getVerseOfTheDay({
       date: "2026-06-08",
       versionKey: "VDC",
-      user: null,
+      userId: null,
     });
     if (result.empty) throw new Error("expected non-empty");
     expect(result.verses).toHaveLength(2);
@@ -296,7 +354,7 @@ describe("DailyVerseService.getVerseOfTheDay", () => {
     const result = await service.getVerseOfTheDay({
       date: "2026-06-08",
       versionKey: "VDC",
-      user: null,
+      userId: null,
     });
     if (result.empty) throw new Error("expected non-empty");
     expect(result.metrics.missingBookNameLocalization).toBe(true);
@@ -309,7 +367,7 @@ describe("DailyVerseService.getVerseOfTheDay", () => {
     const result = await service.getVerseOfTheDay({
       date: "2026-06-08",
       versionKey: "NASB1995",
-      user: null,
+      userId: null,
     });
     expect(result.empty).toBe(true);
     if (!result.empty) return;

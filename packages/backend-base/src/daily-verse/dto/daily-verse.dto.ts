@@ -6,6 +6,11 @@ export const VerseOfTheDayQueryDto = t.Object({
   // honored. Validated server-side against the [today-1, today] window.
   date: t.Optional(t.String()),
   bible_version: t.Optional(t.String()),
+  // Personalization id for unauthenticated callers — the home-screen widget
+  // passes the user's own id here so it gets their personal verse (PD-7).
+  // Validated as a UUID and only honored when there is no session; an
+  // unknown/malformed value is ignored (falls back to the global verse).
+  pid: t.Optional(t.String()),
 });
 
 /** Body for creating a curated verse (admin). */
