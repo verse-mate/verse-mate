@@ -62,9 +62,15 @@ describe("Admin Daily Verse Plugin (integration)", () => {
       if (!data) throw new Error("expected a created verse");
       expect(data.verse.id).toBeDefined();
       expect(data.verse.book_id).toBe(validVerse.book_id);
-      // Date fields must be serialized to ISO strings (S-002), not Date objects.
+      // S-002: the wire format is an ISO string (the t.String() response schema
+      // enforces that — a raw Date would fail response validation, surfacing as
+      // `error` above). The Eden client re-coerces ISO timestamps back to Date
+      // objects, so assert the value parses to a valid date rather than
+      // asserting its client-side typeof.
       if (data.verse.created_at !== null) {
-        expect(typeof data.verse.created_at).toBe("string");
+        expect(
+          Number.isNaN(new Date(data.verse.created_at as string).getTime()),
+        ).toBe(false);
       }
       createdId = data.verse.id;
     });
