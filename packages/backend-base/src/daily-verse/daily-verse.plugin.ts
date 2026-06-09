@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { StandardErrorResponses } from "../common/response-schemas";
-import { ipRateLimit } from "../middleware/rate-limit";
+import { createIpRateLimit } from "../middleware/rate-limit";
 import shared from "../shared/shared.plugin";
 import { VerseOfTheDayQueryDto } from "./dto/daily-verse.dto";
 import { VerseOfTheDayResponseSchema } from "./schemas/daily-verse-response.schema";
@@ -12,6 +12,9 @@ import {
 
 const DEFAULT_VERSION_KEY = "NASB1995";
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+// Public verse-of-the-day endpoint is limited to 60 requests/min per IP (spec).
+const verseOfTheDayRateLimit = createIpRateLimit(60);
 
 /** Yesterday (server-local) as YYYY-MM-DD. */
 function yesterdayServerLocal(): string {
@@ -127,7 +130,7 @@ const plugin = new Elysia()
         };
       },
       {
-        beforeHandle: ipRateLimit,
+        beforeHandle: verseOfTheDayRateLimit,
         query: VerseOfTheDayQueryDto,
         response: {
           200: VerseOfTheDayResponseSchema,
