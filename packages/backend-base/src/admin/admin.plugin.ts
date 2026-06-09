@@ -12,10 +12,10 @@ import {
   ValidationError,
 } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
+import { DailyVerseService } from "../daily-verse/services/daily-verse.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { TopicService } from "../topics/services/topic.service";
-import { DailyVerseService } from "../daily-verse/services/daily-verse.service";
 import adminAudioPlugin from "./admin-audio.plugin";
 import adminDailyVersePlugin from "./daily-verse.plugin";
 import {
