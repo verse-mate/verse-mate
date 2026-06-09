@@ -256,7 +256,8 @@ describe("DailyVerseService.pickForDate — personalization (PD-1/PD-7)", () => 
     );
     const first = await service.pickForDate("2026-06-08", "u1");
     const second = await service.pickForDate("2026-06-08", "u1");
-    expect(first?.verse.id).toBe(second?.verse.id);
+    if (!first || !second) throw new Error("expected a pick from both");
+    expect(first.verse.id).toBe(second.verse.id);
   });
 
   it("threads the user id to the per-user history + cooldown reads", async () => {
