@@ -5,6 +5,7 @@ import { HomeIcon } from "../../Icons";
 import { AudioManagement } from "../AudioManagement";
 import { AutoHighlights } from "../AutoHighlights";
 import { BatchOperations } from "../BatchOperations/BatchOperations";
+import { DailyVerses } from "../DailyVerses";
 import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration";
 import { Explanations } from "../Explanations/Explanations";
 import { Playground } from "../Playground/Playground";
@@ -22,7 +23,8 @@ type AdminSection =
   | "explanations"
   | "topics"
   | "auto-highlights"
-  | "audio";
+  | "audio"
+  | "daily-verses";
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("batch");
@@ -47,6 +49,8 @@ export const AdminDashboard = () => {
         return <AutoHighlights />;
       case "audio":
         return <AudioManagement />;
+      case "daily-verses":
+        return <DailyVerses />;
       default:
         return <BatchOperations />;
     }
@@ -101,6 +105,14 @@ export const AdminDashboard = () => {
               onClick={() => setActiveSection("audio")}
             >
               Audio
+            </Button>
+            <Button
+              variant={
+                activeSection === "daily-verses" ? "contained" : "outlined"
+              }
+              onClick={() => setActiveSection("daily-verses")}
+            >
+              Daily Verses
             </Button>
             <Button
               variant={activeSection === "users" ? "contained" : "outlined"}

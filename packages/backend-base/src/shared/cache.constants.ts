@@ -21,11 +21,21 @@ function ssoState(state: string): string {
   return `${env}:ssoState:${state}`;
 }
 
+/**
+ * Verse-of-the-Day selected pick for a date. `userId` is null in v1 (global
+ * pick) and carries the user id in v2 personalization, so the key shape is
+ * forward-compatible without a re-plumb (D-36).
+ */
+function dailyVersePick(date: string, userId: string | null): string {
+  return `dailyVersePick:${date}:${userId ?? "global"}`;
+}
+
 const cacheConstants = {
   resetPassword,
   accessToken,
   verifyEmail,
   ssoState,
+  dailyVersePick,
 };
 
 export default cacheConstants;

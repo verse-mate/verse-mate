@@ -12,10 +12,12 @@ import {
   ValidationError,
 } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
+import { DailyVerseService } from "../daily-verse/services/daily-verse.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import shared from "../shared/shared.plugin";
 import { TopicService } from "../topics/services/topic.service";
 import adminAudioPlugin from "./admin-audio.plugin";
+import adminDailyVersePlugin from "./daily-verse.plugin";
 import {
   AdminStatusUpdateSchema,
   BatchCancelSchema,
@@ -78,6 +80,11 @@ const plugin = new Elysia()
       topicService: new TopicService(state.db),
       getAutoHighlightService: () =>
         new AutoHighlightService(state.db, bibleRepository),
+      dailyVerseService: new DailyVerseService(
+        state.db,
+        undefined,
+        state.cache,
+      ),
     };
   })
   .guard(authGuard, (app) =>
@@ -1340,6 +1347,7 @@ const plugin = new Elysia()
 
             .use(adminTopicPlugin)
             .use(adminAudioPlugin)
+            .use(adminDailyVersePlugin)
             // Auto-highlight admin endpoints
             .post(
               "/batch-auto-highlights",
