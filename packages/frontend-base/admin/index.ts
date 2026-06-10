@@ -26,6 +26,7 @@ export {
   AudioStatusBadge,
 } from "../src/ui/admin/AudioManagement";
 export { AutoHighlights } from "../src/ui/admin/AutoHighlights";
+export { DailyVerses } from "../src/ui/admin/DailyVerses";
 export { Explanations } from "../src/ui/admin/Explanations/Explanations";
 export { Playground } from "../src/ui/admin/Playground/Playground";
 export { PromptManagement } from "../src/ui/admin/PromptManagement/PromptManagement";

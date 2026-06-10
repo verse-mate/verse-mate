@@ -26,6 +26,9 @@ import type { OfflinePlugin } from "./src/offline/offline.plugin";
 import versionPolicyPlugin from "./src/versionPolicy.plugin";
 import type { VersionPolicyPlugin } from "./src/versionPolicy.plugin";
 
+import dailyVersePlugin from "./src/daily-verse/daily-verse.plugin";
+import type { DailyVersePlugin } from "./src/daily-verse/daily-verse.plugin";
+
 export {
   ApiError,
   UnauthorizedError,
@@ -59,4 +62,6 @@ export {
   offlinePlugin,
   type VersionPolicyPlugin,
   versionPolicyPlugin,
+  type DailyVersePlugin,
+  dailyVersePlugin,
 };
