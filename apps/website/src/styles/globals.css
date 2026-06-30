@@ -37,10 +37,8 @@ html {
   --brand-line: 220 224 227;
   --brand-surface: 247 247 247;
   --brand-danger: 176 58 66;
-
   --font-inter: "Inter", system-ui, sans-serif;
   --font-merriweather: "Merriweather", Georgia, serif;
-
   --background: rgb(var(--brand-white));
   --foreground: rgb(var(--brand-dark-gray));
   --ring: rgb(var(--brand-gold));
@@ -77,6 +75,7 @@ body {
   text-decoration: none;
   transition: top 0.15s ease;
 }
+
 .skip-link:focus {
   top: 1rem;
 }
@@ -96,7 +95,7 @@ select:focus-visible,
 textarea:focus-visible {
   outline: none;
   border-color: rgb(var(--brand-tan));
-  box-shadow: 0 0 0 3px rgb(var(--brand-tan) / 0.2);
+  box-shadow: 0 0 0 3px rgb(var(--brand-tan) / 20%);
 }
 
 /* Custom scrollbar styling to prevent white squares */
