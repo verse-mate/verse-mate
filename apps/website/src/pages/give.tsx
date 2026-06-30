@@ -1,6 +1,12 @@
 import React, { useState } from "react";
+import { ShieldCheck, Lock } from "lucide-react";
+import Seo from "@/components/Seo";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import PageHero from "@/components/ui/PageHero";
+import Section from "@/components/ui/Section";
+import Reveal from "@/components/ui/Reveal";
+import Eyebrow from "@/components/ui/Eyebrow";
 
 type Cadence = "monthly" | "once";
 
@@ -32,72 +38,60 @@ Thank you,`;
 
   return (
     <div className="flex min-h-screen flex-col">
+      <Seo
+        title="Give — VerseMate"
+        description="Support VerseMate. Your gift keeps Scripture free, clear, and accessible for everyone, everywhere. Donations are tax-deductible in the U.S."
+      />
       <Header />
 
+      <main id="main-content" className="flex-1">
       {/* Hero Section */}
-      <section
-        className="w-full bg-cover bg-center px-6 pt-24 pb-12 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-[120px] xl:py-24"
-        style={{
-          backgroundImage:
-            "linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 100%), url('/give.png')",
-        }}
+      <PageHero
+        eyebrow="Support VerseMate"
+        title="Help People Everywhere Engage with God's Word"
+        image="/give.png"
       >
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-8 md:gap-12 lg:gap-16">
-          {/* Title */}
-          <h1 className="font-inter text-2xl font-bold uppercase leading-8 tracking-[0.1em] text-white inline-block py-2 border-b-[6px] border-brand-tan w-fit">
-            SUPPORT VERSEMATE
-          </h1>
+        <p className="m-0">
+          Your generosity helps us create resources and tools that make
+          Scripture clear and accessible to people worldwide. Every gift you
+          give makes a direct impact—whether it's supporting the translation of
+          content, improving our technology, or helping us reach new communities
+          with the truth of God's Word.
+        </p>
+        <p className="m-0">
+          Through your partnership, VerseMate can continue developing simple,
+          powerful tools that guide people not only to read the Bible, but to
+          truly understand and apply it in their daily lives. We believe that
+          when people engage Scripture with clarity, transformation
+          follows—families are encouraged, faith grows stronger, and entire
+          communities can be renewed.
+        </p>
+        <p className="m-0">
+          Thank you for prayerfully considering a gift to VerseMate. Together,
+          we can equip more people across languages and cultures to connect with
+          God's Word in a deeper way.
+        </p>
+      </PageHero>
 
-          {/* Content */}
-          <div className="flex flex-col gap-4 max-w-full lg:max-w-[1200px]">
-            <h2 className="font-merriweather text-3xl font-bold leading-tight text-white md:text-4xl md:leading-tight lg:text-5xl lg:leading-[64px]">
-              Help People Everywhere Engage with God's Word
-            </h2>
-
-            <div className="flex flex-col gap-4 font-inter text-base font-light leading-6 text-white md:text-lg md:leading-7 lg:text-xl lg:leading-8 xl:text-2xl xl:leading-8">
-              <p>
-                Your generosity helps us create resources and tools that make
-                Scripture clear and accessible to people worldwide. Every gift
-                you give makes a direct impact—whether it's supporting the
-                translation of content, improving our technology, or helping us
-                reach new communities with the truth of God's Word.
-              </p>
-              <p>
-                Through your partnership, VerseMate can continue developing
-                simple, powerful tools that guide people not only to read the
-                Bible, but to truly understand and apply it in their daily
-                lives. We believe that when people engage Scripture with
-                clarity, transformation follows—families are encouraged, faith
-                grows stronger, and entire communities can be renewed.
-              </p>
-              <p>
-                Thank you for prayerfully considering a gift to VerseMate.
-                Together, we can equip more people across languages and
-                cultures to connect with God's Word in a deeper way.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Donation Menu — mirrors the app's Giving screen */}
-      <section className="w-full bg-brand-dark-gray px-6 py-16 md:px-12 md:py-20 lg:px-16 lg:py-24 xl:px-[120px]">
-        <div className="mx-auto flex max-w-[560px] flex-col items-center gap-8">
-          {/* Kicker */}
-          <div className="flex flex-col items-center gap-3">
-            <p className="font-inter text-xs font-semibold uppercase tracking-[0.2em] text-brand-tan">
-              Give Today
-            </p>
-            <div className="h-[1px] w-12 bg-brand-tan opacity-60" />
-          </div>
+      {/* Donation Menu — mirrors the app's Giving screen.
+          Uses the shared Section for vertical rhythm; bare keeps the
+          dark full-bleed bg + the constrained 560px form. */}
+      <Section
+        bare
+        className="bg-brand-dark-gray px-6 md:px-12 lg:px-16 xl:px-[120px]"
+      >
+        <Reveal className="mx-auto flex max-w-[560px] flex-col items-center gap-8">
+          {/* Eyebrow */}
+          <Eyebrow variant="light">Give Today</Eyebrow>
 
           {/* Headline */}
-          <h2 className="font-merriweather text-center text-3xl font-normal leading-tight text-white md:text-4xl md:leading-[52px]">
-            Give the Word to the world.
+          <h2 className="m-0 text-center font-merriweather text-section-title text-white">
+            Give the Word to{" "}
+            <span className="italic text-brand-tan">the world.</span>
           </h2>
 
           {/* Lead */}
-          <p className="text-center font-inter text-base font-light leading-7 text-white/70">
+          <p className="text-center font-inter text-base font-normal leading-7 text-white/70">
             Every gift keeps Scripture free, clear, and accessible for everyone, everywhere.
           </p>
 
@@ -144,7 +138,7 @@ Thank you,`;
                     }}
                     className={`flex h-14 items-center justify-center rounded-xl border font-inter text-lg font-semibold transition-all ${
                       selected
-                        ? "border-brand-tan bg-brand-tan text-black shadow-[0_0_24px_rgba(194,178,145,0.35)]"
+                        ? "border-brand-tan bg-brand-tan text-black shadow-[0_0_24px_rgb(var(--brand-tan)/0.35)]"
                         : "border-brand-tan/40 bg-brand-tan/10 text-brand-tan hover:border-brand-tan hover:bg-brand-tan/20"
                     }`}
                   >
@@ -155,7 +149,7 @@ Thank you,`;
             </div>
 
             {/* Custom amount */}
-            <div className="flex items-center gap-3 rounded-xl border border-dashed border-white/20 px-4 py-3">
+            <div className="flex items-center gap-3 rounded-xl border border-dashed border-white/20 px-4 py-3 transition-colors focus-within:border-brand-tan">
               <span className="font-inter text-base font-semibold text-white/60">$</span>
               <input
                 type="text"
@@ -167,7 +161,7 @@ Thank you,`;
                   const v = e.target.value.replace(/\D/g, "");
                   setCustomInput(v);
                 }}
-                className="w-full bg-transparent font-inter text-base text-white placeholder-white/40 outline-none"
+                className="w-full bg-transparent font-inter text-base text-white placeholder-white/40 outline-none focus-visible:border-transparent focus-visible:shadow-none"
                 aria-label="Custom donation amount"
               />
             </div>
@@ -176,17 +170,8 @@ Thank you,`;
             <button
               type="submit"
               disabled={effectiveAmount < 1}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-brand-tan py-5 font-inter text-lg font-bold text-black shadow-lg transition-opacity hover:bg-opacity-90 disabled:opacity-40"
+              className="mt-2 flex w-full items-center justify-center rounded-full bg-brand-tan py-5 font-inter text-lg font-bold text-black shadow-lg transition-[background-color,opacity] duration-200 hover:bg-brand-tan-hover disabled:opacity-40"
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
               Give ${effectiveAmount}
               {cadence === "monthly" ? " / month" : ""}
             </button>
@@ -194,28 +179,23 @@ Thank you,`;
             {/* Trust badges */}
             <div className="mt-2 flex items-center justify-center gap-6">
               <span className="flex items-center gap-1.5 font-inter text-xs text-white/50">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  <path d="m9 12 2 2 4-4" />
-                </svg>
+                <ShieldCheck size={14} strokeWidth={1.75} aria-hidden="true" />
                 501(c)(3) nonprofit
               </span>
               <span className="flex items-center gap-1.5 font-inter text-xs text-white/50">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+                <Lock size={14} strokeWidth={1.75} aria-hidden="true" />
                 Secure
               </span>
             </div>
 
             {/* Footer note */}
-            <p className="mt-2 text-center font-inter text-xs font-light text-white/40">
+            <p className="mt-2 text-center font-inter text-xs font-normal text-white/55">
               Click "Give" and our team will follow up with a secure donation link. Your gift is tax-deductible.
             </p>
           </form>
-        </div>
-      </section>
+        </Reveal>
+      </Section>
+      </main>
 
       <Footer />
     </div>

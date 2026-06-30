@@ -9,14 +9,16 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-white px-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Redirecting to login...</h1>
-        <p className="text-gray-600">
+        <h1 className="mb-4 font-merriweather text-2xl font-bold text-brand-black">
+          Redirecting to login&hellip;
+        </h1>
+        <p className="font-inter text-base text-brand-muted">
           You will be redirected to{" "}
           <a
             href={`${getAppUrl()}/login`}
-            className="text-purple-600 underline"
+            className="font-medium text-brand-gold underline"
           >
             app.versemate.org
           </a>

@@ -1,23 +1,20 @@
 import React from "react";
-import Head from "next/head";
 import Link from "next/link";
+import Seo from "@/components/Seo";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
 export default function CoachSample() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Head>
-        <title>Sample Coaching Report — VerseMate</title>
-        <meta
-          name="description"
-          content="Anonymized sample of a weekly Bible leader coaching report. Scorecard, strengths, improvements, application questions, recommendations, and appendix."
-        />
-      </Head>
+      <Seo
+        title="Sample Coaching Report — VerseMate"
+        description="Anonymized sample of a weekly Bible leader coaching report. Scorecard, strengths, improvements, application questions, recommendations, and appendix."
+      />
 
       <Header />
 
-      <main className="coach-page coach-sample">
+      <main id="main-content" className="coach-page coach-sample">
         <div className="top-bar">
           <strong>Sample Coaching Report</strong> · Anonymized excerpt from a
           real weekly session

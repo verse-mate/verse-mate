@@ -3,46 +3,100 @@
 @tailwind utilities;
 
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
   box-sizing: border-box;
+  scroll-behavior: smooth;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: inherit;
 }
 
 :root {
-  --background: #fff;
-  --foreground: #171717;
-}
+  /* ============================================================
+     SINGLE SOURCE OF TRUTH for design tokens.
+     Brand palette stored as space-separated RGB channels so both
+     Tailwind (rgb(var(--x) / <alpha-value>)) and coach.css
+     (rgb(var(--x))) read the exact same values. Change a color
+     here and it updates everywhere.
+     ============================================================ */
+  --brand-gold: 147 110 43;
+  --brand-gold-hover: 125 93 36;
+  --brand-black: 0 0 0;
+  --brand-white: 255 255 255;
+  --brand-dark-gray: 27 27 27;
+  --brand-cream: 241 237 227;
+  --brand-light-cream: 246 243 236;
+  --brand-tan: 194 178 145;
+  --brand-tan-hover: 179 160 121;
+  --brand-slate: 62 70 77;
+  --brand-muted: 107 114 128;
+  --brand-line: 220 224 227;
+  --brand-surface: 247 247 247;
+  --brand-danger: 176 58 66;
 
-:root {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, monospace;
   --font-inter: "Inter", system-ui, sans-serif;
-  
-}
+  --font-merriweather: "Merriweather", Georgia, serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: rgb(var(--brand-white));
+  --foreground: rgb(var(--brand-dark-gray));
+  --ring: rgb(var(--brand-gold));
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  overflow-x: hidden;
+  font-family: var(--font-inter);
+  overflow-x: clip;
   max-width: 100vw;
   margin: 0;
   padding: 0;
   min-width: 100%;
   width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Skip-to-content link — first focusable element, hidden until focused so
+   keyboard/screen-reader users can bypass the header nav (WCAG 2.4.1). */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 2000;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  background: rgb(var(--brand-black));
+  color: rgb(var(--brand-white));
+  font-family: var(--font-inter);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Accessible, brand-coloured focus ring for keyboard users only. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Form fields get a visible focus ring on keyboard AND pointer focus. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: rgb(var(--brand-tan));
+  box-shadow: 0 0 0 3px rgb(var(--brand-tan) / 0.2);
 }
 
 /* Custom scrollbar styling to prevent white squares */
@@ -57,12 +111,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(255 255 255 / 10%);
+  background: rgb(0 0 0 / 15%);
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(255 255 255 / 20%);
+  background: rgb(0 0 0 / 25%);
 }
 
 ::-webkit-scrollbar-corner {
@@ -72,107 +126,37 @@ body {
 /* Firefox scrollbar styling */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(255 255 255 / 10%) transparent;
+  scrollbar-color: rgb(0 0 0 / 15%) transparent;
 }
 
-/* Additional mobile-specific overrides */
-.adaptive-component {
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
+/*
+ * Scroll-reveal animation. Hidden state is gated behind `.js` (set by the
+ * inline script in _document) so no-JS visitors always see content. Users
+ * who prefer reduced motion get the content immediately, no transform.
+ */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
-/* Ensure mobile components take full width */
-.adaptive-component--mobile {
-  width: 100vw;
-  max-width: 100vw;
-  position: relative;
+.js [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
 }
 
-/* Ensure all adaptive components are viewport-safe */
-.adaptive-component--tablet,
-.adaptive-component--desktop {
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-  box-sizing: border-box;
-}
-
-/* Smooth transitions for adaptive components */
-.adaptive-component > div {
-  transition: opacity 0.15s ease-in-out;
-}
-
-/* Make all layout headers responsive and viewport-safe */
-.adaptive-component header {
-  width: 100%;
-  max-width: 100vw;
-  box-sizing: border-box;
-  padding-left: clamp(16px, 4vw, 48px);
-  padding-right: clamp(16px, 4vw, 48px);
-  overflow: hidden;
-}
-
-/* Ensure logo is always visible and never disappears */
-.adaptive-component header > div:first-child {
-  flex-shrink: 0 !important;
-  min-width: fit-content !important;
-  white-space: nowrap !important;
-  position: relative !important;
-  z-index: 999 !important;
-}
-
-/* Ensure components always have proper positioning */
-.adaptive-component--mobile,
-.adaptive-component--tablet, 
-.adaptive-component--desktop {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-}
-
-/* Prevent hydration flash by using CSS media queries to hide components until hydrated */
-
-/* Default: show mobile component, hide others */
-.adaptive-component:not(.hydrated) .adaptive-component--mobile {
-  display: block;
-}
-
-.adaptive-component:not(.hydrated) .adaptive-component--tablet {
-  display: none;
-}
-
-.adaptive-component:not(.hydrated) .adaptive-component--desktop {
-  display: none;
-}
-
-/* Tablet breakpoint: show tablet, hide mobile and desktop */
-@media (min-width: 768px) and (max-width: 1279px) {
-  .adaptive-component:not(.hydrated) .adaptive-component--mobile {
-    display: none;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 
-  .adaptive-component:not(.hydrated) .adaptive-component--tablet {
-    display: block;
-  }
-
-  .adaptive-component:not(.hydrated) .adaptive-component--desktop {
-    display: none;
-  }
-}
-
-/* Desktop breakpoint: show desktop, hide mobile and tablet */
-@media (min-width: 1280px) {
-  .adaptive-component:not(.hydrated) .adaptive-component--mobile {
-    display: none;
-  }
-
-  .adaptive-component:not(.hydrated) .adaptive-component--tablet {
-    display: none;
-  }
-
-  .adaptive-component:not(.hydrated) .adaptive-component--desktop {
-    display: block;
+  .js [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }
 
@@ -180,5 +164,5 @@ body {
 #__next {
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
 }

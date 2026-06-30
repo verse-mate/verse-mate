@@ -1,32 +1,33 @@
+import Section from "@/components/ui/Section";
+import Reveal from "@/components/ui/Reveal";
 import styles from "./About2.module.css";
 
 export default function About2() {
   return (
-    <section className="w-full bg-brand-light-cream">
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-center gap-12 px-8 py-12 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-[120px]">
-        {/* Content */}
-        <div className="flex w-full max-w-[1200px] flex-col items-center gap-8 md:gap-10 lg:flex-row lg:gap-12">
-          {/* Text */}
-          <div className="flex w-full flex-col items-start justify-center gap-4 lg:flex-1">
-            {/* Main Heading */}
-            <h2 className="w-full font-merriweather text-3xl font-bold leading-tight text-brand-black md:text-4xl md:leading-snug lg:text-5xl lg:leading-[64px]">
-              Illuminating God&rsquo;s Word for Everyone
-            </h2>
+    <Section className="bg-brand-light-cream">
+      <div className="flex w-full flex-col items-center gap-10 lg:flex-row lg:gap-16">
+        <Reveal className="flex w-full flex-col gap-5 lg:flex-1">
+          <h2 className="m-0 font-merriweather text-section-title text-brand-black">
+            Illuminating{" "}
+            <span className="italic text-brand-tan-hover">God&rsquo;s Word</span>{" "}
+            for Everyone
+          </h2>
 
-            {/* Description Text */}
-            <p className="w-full font-inter text-lg font-normal leading-7 text-brand-slate md:text-xl md:leading-relaxed lg:text-2xl lg:leading-8">
-              We believe the Bible isn&rsquo;t just for scholars or clergy -
-              it&rsquo;s for everyone. Whether you&rsquo;re discovering Scripture
-              for the first time or leading a study group, Versemate helps
-              illuminate God&rsquo;s Word for real understanding and lasting
-              transformation.
-            </p>
-          </div>
+          <p className="m-0 font-inter text-body-lg text-brand-slate">
+            We believe the Bible isn&rsquo;t just for scholars or clergy -
+            it&rsquo;s for everyone. Whether you&rsquo;re discovering Scripture
+            for the first time or leading a study group, Versemate helps
+            illuminate God&rsquo;s Word for real understanding and lasting
+            transformation.
+          </p>
+        </Reveal>
 
-          {/* Image */}
-          <div className={`${styles.image} w-full max-w-[400px] rounded-[50px] md:max-w-[450px] lg:w-[480px] lg:max-w-none lg:flex-shrink-0`} />
-        </div>
+        <Reveal delayMs={120} className="flex w-full justify-center lg:w-auto lg:flex-shrink-0">
+          <div
+            className={`${styles.image} w-full max-w-[400px] rounded-[40px] md:max-w-[450px] lg:w-[480px] lg:max-w-none`}
+          />
+        </Reveal>
       </div>
-    </section>
+    </Section>
   );
 }
