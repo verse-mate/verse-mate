@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import Head from "next/head";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { BookOpen, Users, Church } from "lucide-react";
+import Seo from "@/components/Seo";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -18,6 +19,31 @@ export default function CoachLanding() {
   const [role, setRole] = useState<Role>("Bible study leader");
   const [churchSize, setChurchSize] = useState<ChurchSize>("Under 100");
   const [notes, setNotes] = useState("");
+
+  // Scroll-reveal for coach sections — same fade-up as the rest of the site
+  // (gated behind the global `.js [data-reveal]` styles in globals.css).
+  useEffect(() => {
+    const els = Array.from(
+      document.querySelectorAll<HTMLElement>(".coach-page [data-reveal]"),
+    );
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      els.forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,17 +63,14 @@ export default function CoachLanding() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Head>
-        <title>VerseMate Coaching — A coach for every Bible leader</title>
-        <meta
-          name="description"
-          content="Weekly Bible leader coaching for study leaders, small group leaders, and church administrators. Structured feedback across 11 dimensions of Bible leadership. Request more information."
-        />
-      </Head>
+      <Seo
+        title="VerseMate Coaching — A coach for every Bible leader"
+        description="Weekly Bible leader coaching for study leaders, small group leaders, and church administrators. Structured feedback across 11 dimensions of Bible leadership. Request more information."
+      />
 
       <Header />
 
-      <main className="coach-page">
+      <main id="main-content" className="coach-page">
         {/* HERO */}
         <header className="hero">
           <div className="wrap hero-inner">
@@ -63,7 +86,7 @@ export default function CoachLanding() {
               </p>
               <div className="hero-ctas">
                 <a className="btn btn-primary" href="#request">
-                  Request more information →
+                  Request more information
                 </a>
                 <Link
                   href="/coach/sample"
@@ -133,7 +156,7 @@ export default function CoachLanding() {
                 <span className="ds"></span>
                 <span
                   className="badge"
-                  style={{ background: "#eee", color: "#666" }}
+                  style={{ background: "var(--cream)", color: "var(--muted)" }}
                 >
                   VIEW ALL
                 </span>
@@ -144,7 +167,7 @@ export default function CoachLanding() {
 
         {/* WHO IT'S FOR */}
         <section className="who" id="who">
-          <div className="wrap">
+          <div data-reveal className="wrap">
             <div className="s-head-center">
               <span className="eyebrow">Who it&apos;s for</span>
               <h2 className="s-title">
@@ -160,7 +183,7 @@ export default function CoachLanding() {
             <div className="who-grid">
               <article className="who-card">
                 <div className="who-icon" aria-hidden="true">
-                  📖
+                  <BookOpen size={38} strokeWidth={2} />
                 </div>
                 <h3>Bible study leaders</h3>
                 <p>
@@ -197,7 +220,7 @@ export default function CoachLanding() {
 
               <article className="who-card">
                 <div className="who-icon" aria-hidden="true">
-                  🤝
+                  <Users size={38} strokeWidth={2} />
                 </div>
                 <h3>Small group leaders</h3>
                 <p>
@@ -229,7 +252,7 @@ export default function CoachLanding() {
 
               <article className="who-card">
                 <div className="who-icon" aria-hidden="true">
-                  ⛪
+                  <Church size={38} strokeWidth={2} />
                 </div>
                 <h3>Church administrators</h3>
                 <p>
@@ -263,7 +286,7 @@ export default function CoachLanding() {
 
         {/* BENEFITS */}
         <section className="benefits">
-          <div className="wrap s-head-center">
+          <div data-reveal className="wrap s-head-center">
             <span className="eyebrow">What you gain</span>
             <h2 className="s-title">
               Four ways coaching <em>changes how you lead.</em>
@@ -274,7 +297,7 @@ export default function CoachLanding() {
             </p>
           </div>
 
-          <div className="wrap">
+          <div data-reveal className="wrap">
             <div className="benefit-grid">
               <div className="benefit">
                 <div className="benefit-num">01</div>
@@ -314,7 +337,7 @@ export default function CoachLanding() {
 
         {/* PRODUCT DETAIL */}
         <section className="product" id="product">
-          <div className="wrap">
+          <div data-reveal className="wrap">
             <div className="s-head-center">
               <span className="eyebrow">Inside every report</span>
               <h2 className="s-title">
@@ -467,7 +490,7 @@ export default function CoachLanding() {
 
         {/* METHOD */}
         <section className="method" id="method">
-          <div className="wrap">
+          <div data-reveal className="wrap">
             <div className="s-head-center">
               <span className="eyebrow">The method</span>
               <h2 className="s-title">
@@ -519,7 +542,7 @@ export default function CoachLanding() {
 
         {/* DIMENSIONS TABLE */}
         <section className="dims" id="dimensions">
-          <div className="wrap">
+          <div data-reveal className="wrap">
             <div className="s-head-center">
               <span className="eyebrow">The framework</span>
               <h2 className="s-title">
@@ -655,7 +678,7 @@ export default function CoachLanding() {
 
         {/* REQUEST FORM */}
         <section className="request" id="request">
-          <div className="wrap">
+          <div data-reveal className="wrap">
             <div className="request-card">
               <div style={{ textAlign: "center" }}>
                 <span className="eyebrow">Get in touch</span>
@@ -736,7 +759,7 @@ export default function CoachLanding() {
                 </div>
                 <div className="form-actions">
                   <button type="submit" className="btn btn-primary">
-                    Request more information →
+                    Request more information
                   </button>
                   <a
                     href="mailto:info@versemate.org"
@@ -752,7 +775,7 @@ export default function CoachLanding() {
 
         {/* FINAL CTA */}
         <section className="final">
-          <div className="wrap">
+          <div data-reveal className="wrap">
             <h2>
               Ready to grow
               <br />
@@ -767,7 +790,7 @@ export default function CoachLanding() {
               href="#request"
               style={{ padding: "20px 44px", fontSize: "16px" }}
             >
-              Request more information →
+              Request more information
             </a>
           </div>
         </section>
