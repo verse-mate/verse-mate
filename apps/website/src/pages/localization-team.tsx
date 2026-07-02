@@ -53,6 +53,7 @@ export default function LocalizationTeam() {
 
       {/* Why Versemate */}
       <div
+        id="main-content"
         style={{
           display: "flex",
           flexDirection: "column",

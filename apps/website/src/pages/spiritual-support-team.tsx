@@ -53,6 +53,7 @@ export default function SpiritualSupportTeam() {
 
       {/* Why Versemate */}
       <div
+        id="main-content"
         style={{
           display: "flex",
           flexDirection: "column",
