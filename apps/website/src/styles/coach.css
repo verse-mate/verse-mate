@@ -6,28 +6,30 @@
    ===================================================================== */
 
 .coach-page {
-  /* ========== DESIGN TOKENS ========== */
+  /* ========== DESIGN TOKENS ==========
+     Shared brand colors + fonts consume the single source of truth in
+     globals.css :root (rgb(var(--brand-*)) / var(--font-*)). Only the
+     coach-specific colors (ink, status badges) are defined locally. */
   --ink: #171717;
   --ink-dk: #000;
-  --slate: #3E464D;
-  --muted: #6B7280;
-  --border: #E5E7EB;
-  --cream: #F6F3EC;
+  --slate: rgb(var(--brand-slate));
+  --muted: rgb(var(--brand-muted));
+  --border: rgb(var(--brand-line));
+  --cream: rgb(var(--brand-light-cream));
   --cream-dk: #EDE7D8;
-  --white: #FFF;
-  --tan: #C2B291;
-  --tan-dk: #A89777;
+  --white: rgb(var(--brand-white));
+  --tan: rgb(var(--brand-tan));
+  --tan-dk: rgb(var(--brand-tan-hover));
   --tan-soft: #E6DCC4;
   --amber: #D9A566;
   --green-bg: #C6EFCE; --green-tx: #006100;
   --blue-bg: #D6E4F0;  --blue-tx: #1E3A5F;
   --red-bg: #FFD6D6;   --red-tx: #9C0006;
   --na-bg: #F1F1F1;    --na-tx: #6B7280;
-  --serif: 'Merriweather', georgia, serif;
-  --sans: 'Inter', arial, helvetica, system-ui, sans-serif;
-  --arial: arial, helvetica, sans-serif;
+  --serif: var(--font-merriweather);
+  --sans: var(--font-inter);
 
-  font-family: var(--arial);
+  font-family: var(--sans);
   color: var(--ink);
   background: var(--white);
   line-height: 1.6;
@@ -76,14 +78,16 @@
 }
 
 .coach-page .hero-eyebrow {
-  display: inline-flex; align-items: center; gap: 10px;
-  font-size: 12px; font-weight: 600; letter-spacing: 2.5px;
-  text-transform: uppercase; color: var(--tan);
+  display: inline-block;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--white);
+  border-bottom: 2px solid var(--tan);
+  padding-bottom: 6px;
   margin-bottom: 28px;
 }
 
 .coach-page .hero-eyebrow::before {
-  content: ''; width: 32px; height: 1px; background: var(--tan);
+  content: none;
 }
 
 .coach-page .hero h1 {
@@ -94,10 +98,10 @@
   letter-spacing: -0.5px;
   margin-bottom: 24px;
 }
-.coach-page .hero h1 em { font-style: italic; color: var(--tan); font-weight: 400; }
+.coach-page .hero h1 em { font-style: italic; color: var(--tan); font-weight: 700; }
 
 .coach-page .hero-sub {
-  font-family: var(--arial);
+  font-family: var(--sans);
   font-size: clamp(16px, 1.3vw, 19px);
   line-height: 1.6;
   color: rgb(255 255 255 / 82%);
@@ -110,8 +114,8 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 18px 36px;
   border-radius: 100px;
-  font-family: var(--arial);
-  font-size: 15px; font-weight: 600;
+  font-family: var(--sans);
+  font-size: 16px; font-weight: 600;
   border: none; cursor: pointer;
   text-decoration: none;
   transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
@@ -122,8 +126,7 @@
 }
 
 .coach-page .btn-primary:hover {
-  background: var(--tan-dk); transform: translateY(-1px);
-  box-shadow: 0 10px 30px rgb(194 178 145 / 25%);
+  background: var(--tan-dk);
 }
 
 .coach-page .btn-dark {
@@ -150,8 +153,6 @@
   border-radius: 16px;
   box-shadow: 0 30px 80px rgb(0 0 0 / 35%), 0 10px 30px rgb(0 0 0 / 20%);
   position: relative;
-  transform: perspective(1400px) rotateY(-4deg) rotateX(3deg);
-  transform-style: preserve-3d;
 }
 
 .coach-page .score-card-hero::before {
@@ -210,9 +211,11 @@
 /* ========== SECTION PATTERNS ========== */
 .coach-page .eyebrow {
   display: inline-block;
-  font-size: 11px; font-weight: 600; letter-spacing: 2.5px;
-  text-transform: uppercase; color: var(--tan-dk);
-  margin-bottom: 14px;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--ink);
+  border-bottom: 2px solid var(--tan);
+  padding-bottom: 6px;
+  margin-bottom: 48px;
 }
 
 .coach-page .s-title {
@@ -225,7 +228,7 @@
 .coach-page .s-title em { font-style: italic; color: var(--tan-dk); }
 
 .coach-page .s-lead {
-  font-family: var(--arial);
+  font-family: var(--sans);
   font-size: clamp(15px, 1.2vw, 18px);
   color: var(--slate);
   max-width: 680px;
@@ -248,7 +251,6 @@
   background: var(--white);
   border-radius: 16px;
   padding: 36px 28px;
-  border-top: 3px solid var(--tan);
   box-shadow: 0 4px 12px rgb(0 0 0 / 3%);
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -259,15 +261,16 @@
 }
 
 .coach-page .who-icon {
-  width: 56px; height: 56px; border-radius: 50%;
+  width: 76px; height: 76px; border-radius: 50%;
   background: var(--cream); color: var(--tan-dk);
   display: flex; align-items: center; justify-content: center;
-  font-size: 24px; margin-bottom: 24px;
+  margin: 0 auto 24px;
 }
 
 .coach-page .who-card h3 {
   font-family: var(--serif); font-size: 22px; font-weight: 700;
   color: var(--ink); margin-bottom: 12px; line-height: 1.25;
+  text-align: center;
 }
 
 .coach-page .who-card p {
@@ -435,7 +438,7 @@
 .coach-page .dims { background: var(--ink-dk); color: var(--white); }
 .coach-page .dims .s-title { color: var(--white); }
 .coach-page .dims .s-lead { color: rgb(255 255 255 / 70%); }
-.coach-page .dims .eyebrow { color: var(--tan); }
+.coach-page .dims .eyebrow { color: var(--white); }
 
 .coach-page .dims-table-wrap {
   background: rgb(255 255 255 / 3%);
@@ -449,7 +452,7 @@
 
 .coach-page .dims-table thead th {
   padding: 18px 20px;
-  font-family: var(--arial);
+  font-family: var(--sans);
   font-size: 11px; font-weight: 700;
   letter-spacing: 1.8px; text-transform: uppercase;
   text-align: left;
@@ -479,7 +482,6 @@
   border-radius: 20px;
   padding: 56px;
   box-shadow: 0 4px 24px rgb(0 0 0 / 4%);
-  border-top: 4px solid var(--tan);
 }
 
 .coach-page .request-card h2 {
@@ -516,6 +518,18 @@
 }
 .coach-page .form-field textarea { min-height: 110px; resize: vertical; font-family: inherit; }
 
+/* Native select: hide default arrow, add a custom chevron with breathing room */
+.coach-page .form-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
 .coach-page .form-actions {
   margin-top: 32px;
   display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
@@ -541,7 +555,7 @@
 .coach-page .final h2 em { font-style: italic; color: var(--tan-dk); }
 
 .coach-page .final p {
-  font-family: var(--arial);
+  font-family: var(--sans);
   font-size: clamp(16px, 1.4vw, 19px);
   color: var(--slate);
   max-width: 600px; margin: 0 auto 40px; line-height: 1.6;
@@ -735,7 +749,7 @@
 }
 
 .coach-page .title-banner .eyebrow {
-  font-family: var(--arial);
+  font-family: var(--sans);
   font-size: 11px;
   letter-spacing: 2px;
   color: var(--tan);
@@ -778,7 +792,6 @@
 .coach-page .sample-score-card {
   background: var(--cream);
   border: 1px solid var(--border);
-  border-top: 4px solid var(--tan);
   padding: 40px 44px;
   margin: 48px 0 40px;
   border-radius: 4px;
@@ -974,7 +987,7 @@
 .coach-page .dok-4 { color: #0B3D0B; font-weight: 900; font-size: 11px; }
 
 /* Q TABLE */
-.coach-page table.q td.time { color: var(--muted); font-family: var(--arial); font-size: 12px; white-space: nowrap; }
+.coach-page table.q td.time { color: var(--muted); font-family: var(--sans); font-size: 12px; white-space: nowrap; }
 .coach-page table.q td.q-text { font-style: italic; color: var(--ink); }
 .coach-page table.q td.dok { text-align: center; }
 
