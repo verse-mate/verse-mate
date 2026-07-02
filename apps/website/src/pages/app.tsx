@@ -1,22 +1,26 @@
 import { useEffect } from "react";
+import { getAppUrl, navigateToApp } from "@/lib/navigation";
 
 export default function App() {
   useEffect(() => {
-    // Redirect to app subdomain
-    if (typeof window !== 'undefined') {
-      window.location.href = "https://app.versemate.org";
-    }
+    // Redirect to the app (helper guards for SSR + resolves the right origin).
+    navigateToApp();
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div
+      id="main-content"
+      className="flex min-h-screen items-center justify-center bg-white px-6"
+    >
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Redirecting to app...</h1>
-        <p className="text-gray-600">
+        <h1 className="mb-4 font-merriweather text-2xl font-bold text-brand-black">
+          Redirecting to app&hellip;
+        </h1>
+        <p className="font-inter text-base text-brand-muted">
           You will be redirected to{" "}
           <a
-            href="https://app.versemate.org"
-            className="text-purple-600 underline"
+            href={getAppUrl()}
+            className="font-medium text-brand-gold underline"
           >
             app.versemate.org
           </a>

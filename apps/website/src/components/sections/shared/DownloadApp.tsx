@@ -1,31 +1,28 @@
+import Image from "next/image";
+import Section from "@/components/ui/Section";
+import Reveal from "@/components/ui/Reveal";
+
 export default function DownloadApp() {
   return (
-    <section className="w-full bg-[#F6F3EC] relative pt-[120px] min-h-screen">
-      {/* Content Container */}
-      <div className="mx-auto flex w-full flex-col items-start px-4 pb-12 gap-8 md:max-w-[1024px] md:px-16 md:pb-[91px] md:flex-row md:justify-between md:items-start md:gap-0 xl:max-w-[1440px] xl:px-[120px] xl:pb-[80px] relative">
-        {/* Text Line - Always free (Desktop Only) */}
-        <div className="hidden md:flex absolute left-0 right-0 bottom-10 flex-row justify-center items-center gap-2 h-8 z-0">
-          <span className="font-inter font-normal text-2xl leading-8 text-center tracking-[0.2em] text-[#3E464D]">
-            Always free. For everyone. Forever.
-          </span>
-        </div>
-
-        {/* Text Content */}
-        <div className="flex flex-col justify-center items-start gap-8 w-full md:max-w-[523px] md:gap-10 xl:max-w-[651px] z-[1]">
-          {/* Main Content */}
-          <div className="flex flex-col items-start gap-4 w-full">
-            {/* Main Heading */}
-            <h1 className="font-merriweather font-bold text-[32px] leading-[40px] text-black m-0 w-full md:text-5xl md:leading-[64px]">
-              Understand God&rsquo;s Word with VerseMate
+    <Section
+      className="bg-brand-light-cream"
+      containerClassName="flex flex-col gap-12"
+    >
+      <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
+        {/* Text content */}
+        <Reveal className="flex w-full max-w-[640px] flex-col items-start gap-8">
+          <div className="flex flex-col items-start gap-4">
+            <h1 className="m-0 font-merriweather text-display text-brand-black">
+              Understand{" "}
+              <span className="italic text-brand-tan-hover">
+                God&rsquo;s Word
+              </span>{" "}
+              with VerseMate
             </h1>
-
-            {/* Subheading */}
-            <p className="font-inter font-normal text-base leading-6 text-[#3E464D] m-0 w-full md:text-2xl md:leading-8">
+            <p className="m-0 font-inter text-body-lg text-brand-slate">
               When people truly understand Scripture, lives change.
             </p>
-
-            {/* Description */}
-            <p className="font-inter font-normal text-base leading-6 text-[#3E464D] m-0 w-full md:text-2xl md:leading-8">
+            <p className="m-0 font-inter text-body-lg text-brand-slate">
               VerseMate helps anyone, anywhere explore God&rsquo;s Word with
               clarity and faithful insight. Choose your depth—Summary,
               Line-by-Line, or In-Depth Study. Available in multiple Bible
@@ -33,69 +30,70 @@ export default function DownloadApp() {
             </p>
           </div>
 
-          {/* Download Section */}
-          <div className="flex flex-col items-start gap-2 w-full">
-            {/* Download VerseMate Now */}
-            <h2 className="font-inter font-bold text-xl leading-6 text-black m-0 w-full md:text-2xl md:leading-8">
+          <div className="flex w-full flex-col items-start gap-3">
+            <h2 className="m-0 font-inter text-heading-3 text-brand-black">
               Download VerseMate Now
             </h2>
-
-            {/* Description */}
-            <p className="font-inter font-normal text-base leading-6 text-[#3E464D] m-0 w-full md:text-2xl md:leading-8">
+            <p className="m-0 font-inter text-body text-brand-slate">
               No paywalls. No clutter.
               <br />
               Just the truth of God&rsquo;s Word, made simple.
             </p>
 
-            {/* App Store Buttons Container */}
-            <div className="flex flex-row items-center gap-3.5 w-full h-[58px]">
-              {/* App Store Button */}
+            <div className="mt-2 flex flex-row items-center gap-4">
               <a
                 href="https://apps.apple.com/us/app/verse-mate/id6756897180"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col justify-center items-center py-2 gap-2 flex-1 h-[58px] bg-black rounded-lg no-underline"
+                className="inline-flex items-center justify-center rounded-lg bg-black no-underline transition-transform duration-200 hover:-translate-y-0.5"
               >
-                <img
+                <Image
                   src="/appStore.png"
                   alt="Download on the App Store"
-                  className="w-[140px] h-[42px] rounded-lg"
+                  width={197}
+                  height={58}
+                  className="h-[52px] w-auto rounded-lg"
                 />
               </a>
-
-              {/* Google Play Button */}
               <a
                 href="https://play.google.com/store/apps/details?id=org.versemate.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col justify-center items-center py-2 gap-2 flex-1 h-[58px] bg-black rounded-lg no-underline"
+                className="inline-flex items-center justify-center rounded-lg bg-black no-underline transition-transform duration-200 hover:-translate-y-0.5"
               >
-                <img
+                <Image
                   src="/googleStore.png"
                   alt="Get it on Google Play"
-                  className="w-[140px] h-[42px] rounded-lg"
+                  width={197}
+                  height={58}
+                  className="h-[52px] w-auto rounded-lg"
                 />
               </a>
             </div>
           </div>
-        </div>
+        </Reveal>
 
-        {/* Phone Mockup */}
-        <div className="w-full mx-auto md:mt-0 md:w-full md:max-w-[499px] md:mx-0 z-[2]">
-          <img
+        {/* Phone mockup */}
+        <Reveal
+          delayMs={120}
+          className="w-full max-w-[420px] flex-shrink-0 lg:max-w-[460px]"
+        >
+          <Image
             src="/versemate-app-mockup.png"
-            alt="VerseMate App Interface"
-            className="w-full h-auto object-contain"
+            alt="VerseMate app interface on a phone"
+            width={499}
+            height={649}
+            priority
+            sizes="(max-width: 1024px) 80vw, 460px"
+            className="h-auto w-full object-contain"
           />
-        </div>
-
-        {/* Text Line - Always free (Mobile Only) */}
-        <div className="flex md:hidden flex-row justify-center items-center gap-2 h-8 w-full">
-          <span className="font-inter font-normal text-base leading-6 text-center tracking-[0.2em] text-[#3E464D]">
-            Always free. For everyone. Forever.
-          </span>
-        </div>
+        </Reveal>
       </div>
-    </section>
+
+      {/* Tagline — centered at the bottom, matching the home hero */}
+      <p className="m-0 text-center font-inter text-tagline text-brand-slate">
+        Always free. For everyone. Forever.
+      </p>
+    </Section>
   );
 }

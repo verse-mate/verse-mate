@@ -1,6 +1,11 @@
 import React, { useState } from "react";
+import Seo from "@/components/Seo";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import PageHero from "@/components/ui/PageHero";
+import Section from "@/components/ui/Section";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
 
 export default function Volunteer() {
   const [formData, setFormData] = useState({
@@ -45,51 +50,44 @@ ${formData.firstName} ${formData.lastName}`;
 
   return (
     <div className="flex min-h-screen flex-col">
+      <Seo
+        title="Volunteer — VerseMate"
+        description="Serve with VerseMate and help people everywhere truly understand God's Word. Developers, testers, translators, and people of faith welcome."
+      />
       <Header />
 
+      <main id="main-content" className="flex-1">
       {/* Hero Section */}
-      <section
-        className="w-full bg-cover bg-center px-6 pt-24 pb-12 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-[120px] xl:py-24"
-        style={{
-          backgroundImage: "linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 100%), url('/ServeWithVersemate.png')",
-        }}
+      <PageHero
+        eyebrow="Serve with VerseMate"
+        title="Versemate exists to help people everywhere truly understand God's Word - not just read it."
+        image="/ServeWithVersemate.png"
       >
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-8 md:gap-12 lg:gap-16">
-          {/* Title */}
-          <h1 className="font-inter text-2xl font-bold uppercase leading-8 tracking-[0.1em] text-white inline-block py-2 border-b-[6px] border-brand-tan w-fit">
-            SERVE WITH VERSEMATE
-          </h1>
-
-          {/* Content */}
-          <div className="flex flex-col gap-4 max-w-full lg:max-w-[1200px]">
-            <h2 className="font-merriweather text-3xl font-bold leading-tight text-white md:text-4xl md:leading-tight lg:text-5xl lg:leading-[64px]">
-              Versemate exists to help people everywhere truly understand God's Word - not just read it.
-            </h2>
-
-            <div className="flex flex-col gap-4 font-inter text-base font-light leading-6 text-white md:text-lg md:leading-7 lg:text-xl lg:leading-8 xl:text-2xl xl:leading-8">
-              <p>
-                Every day, volunteers play a vital role in making this mission possible.
-              </p>
-              <p>
-                God created you with unique gifts, passions, and talents. When you serve with Versemate, you'll use them to help others encounter Scripture clearly and grow deeper in faith.
-              </p>
-              <p>
-                Whether you love languages, prayer, or problem-solving, there's a place for you here. And don't worry - we'll provide training and support so you can serve with confidence.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+        <p className="m-0">
+          Every day, volunteers play a vital role in making this mission
+          possible.
+        </p>
+        <p className="m-0">
+          God created you with unique gifts, passions, and talents. When you
+          serve with Versemate, you'll use them to help others encounter
+          Scripture clearly and grow deeper in faith.
+        </p>
+        <p className="m-0">
+          Whether you love languages, prayer, or problem-solving, there's a
+          place for you here. And don't worry - we'll provide training and
+          support so you can serve with confidence.
+        </p>
+      </PageHero>
 
       {/* Form Section */}
-      <section className="w-full bg-white px-6 py-12 md:px-12 md:py-16 lg:px-16 lg:py-20 xl:px-[120px] xl:py-24">
-        <div className="mx-auto flex max-w-[600px] flex-col items-center gap-10">
+      <Section className="bg-white" containerClassName="max-w-[600px]">
+        <Reveal className="flex w-full flex-col items-center gap-10">
           {/* Form Header */}
           <div className="flex w-full flex-col items-center gap-4">
-            <h2 className="font-inter text-xl font-bold leading-8 text-black md:text-2xl md:leading-8">
+            <h2 className="m-0 text-center font-merriweather text-section-title text-brand-black">
               Join the VerseMate Volunteer Team
             </h2>
-            <p className="text-center font-inter text-sm font-light leading-6 text-black md:text-base md:leading-6">
+            <p className="text-center font-inter text-body text-brand-slate">
               We'd love to hear from you! If you're interested in getting involved with VerseMate, please fill out the form below. Tell us a bit about yourself, your skills, and what excites you about getting involved. Our team will connect with you soon to help you find the best fit.
             </p>
           </div>
@@ -98,76 +96,81 @@ ${formData.firstName} ${formData.lastName}`;
           <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
             {/* First Name */}
             <div className="flex flex-col gap-1">
-              <label className="flex items-center gap-1">
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">First Name</span>
-                <span className="font-inter text-sm font-normal leading-4 text-[#B03A42]">*</span>
+              <label htmlFor="vol-firstName" className="flex items-center gap-1">
+                <span className="font-inter text-sm font-normal leading-4 text-brand-muted">First Name</span>
+                <span className="font-inter text-sm font-normal leading-4 text-brand-danger">*</span>
               </label>
               <input
+                id="vol-firstName"
                 type="text"
                 name="firstName"
+                autoComplete="given-name"
                 value={formData.firstName}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
+                className="w-full rounded-input border border-brand-line bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
               />
             </div>
 
             {/* Last Name */}
             <div className="flex flex-col gap-1">
-              <label className="flex items-center gap-1">
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">Last Name</span>
-                <span className="font-inter text-sm font-normal leading-4 text-[#B03A42]">*</span>
+              <label htmlFor="vol-lastName" className="flex items-center gap-1">
+                <span className="font-inter text-sm font-normal leading-4 text-brand-muted">Last Name</span>
+                <span className="font-inter text-sm font-normal leading-4 text-brand-danger">*</span>
               </label>
               <input
+                id="vol-lastName"
                 type="text"
                 name="lastName"
+                autoComplete="family-name"
                 value={formData.lastName}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
+                className="w-full rounded-input border border-brand-line bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
               />
             </div>
 
             {/* Email */}
             <div className="flex flex-col gap-1">
-              <label className="flex items-center gap-1">
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">Email</span>
-                <span className="font-inter text-sm font-normal leading-4 text-[#B03A42]">*</span>
+              <label htmlFor="vol-email" className="flex items-center gap-1">
+                <span className="font-inter text-sm font-normal leading-4 text-brand-muted">Email</span>
+                <span className="font-inter text-sm font-normal leading-4 text-brand-danger">*</span>
               </label>
               <input
+                id="vol-email"
                 type="email"
                 name="email"
+                autoComplete="email"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
+                className="w-full rounded-input border border-brand-line bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
               />
             </div>
 
             {/* Message */}
             <div className="flex flex-col gap-1">
-              <label>
-                <span className="font-inter text-sm font-normal leading-4 text-[#818991]">Anything You'd Like Us to Know</span>
+              <label htmlFor="vol-message">
+                <span className="font-inter text-sm font-normal leading-4 text-brand-muted">Anything You'd Like Us to Know</span>
               </label>
               <textarea
+                id="vol-message"
                 name="message"
                 value={formData.message}
                 onChange={handleInputChange}
                 rows={5}
-                className="w-full resize-none rounded-[5px] border border-[#DCE0E3] bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
+                className="w-full resize-none rounded-input border border-brand-line bg-white px-4 py-4 font-inter text-base font-normal leading-6 text-black"
               />
             </div>
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              className="mx-auto flex items-center justify-center gap-2 rounded-full bg-brand-tan px-12 py-6 font-inter text-lg font-semibold leading-8 text-black md:text-xl md:leading-8 hover:bg-opacity-90 transition-opacity"
-            >
+            <Button type="submit" className="mx-auto">
               Submit
-            </button>
+            </Button>
           </form>
-        </div>
-      </section>
+        </Reveal>
+      </Section>
+      </main>
 
       <Footer />
     </div>

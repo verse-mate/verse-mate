@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/sections/home/Hero";
@@ -11,8 +12,12 @@ import About2 from "@/components/sections/about/About2";
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
+      <Seo
+        title="VerseMate — Understand God's Word"
+        description="VerseMate helps anyone, anywhere connect with God's Word clearly — with summary, line-by-line, and in-depth study. Always free, for everyone, forever."
+      />
       <Header />
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <Hero />
         <HowItWorks />
         <WhyVersemate />
