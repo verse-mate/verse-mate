@@ -8,7 +8,10 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-6">
+    <div
+      id="main-content"
+      className="flex min-h-screen items-center justify-center bg-white px-6"
+    >
       <div className="text-center">
         <h1 className="mb-4 font-merriweather text-2xl font-bold text-brand-black">
           Redirecting to app&hellip;
