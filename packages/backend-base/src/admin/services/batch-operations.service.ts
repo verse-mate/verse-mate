@@ -16,6 +16,7 @@ import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
 import { type AiProvider, getAiProvider } from "../../shared/ai";
 import {
   buildBylineChunkPrompts,
+  findVersesMissingSummary,
   shouldUseBylineChunking,
   splitBylineForTranslation,
   stitchBylineChunks,
@@ -2609,6 +2610,8 @@ export class BatchOperationService {
           chapterNumber: number;
           chapterId: number;
           totalChunks: number;
+          firstVerse: number;
+          lastVerse: number;
           chunks: Array<{ chunkIndex: number; text: string }>;
         }
       >();
@@ -2658,15 +2661,29 @@ export class BatchOperationService {
               const chapterId = Number.parseInt(chunkMatch[3], 10);
               const chunkIndex = Number.parseInt(chunkMatch[4], 10);
               const totalChunks = Number.parseInt(chunkMatch[5], 10);
+              const chunkStartVerse = Number.parseInt(chunkMatch[6], 10);
+              const chunkEndVerse = Number.parseInt(chunkMatch[7], 10);
 
               const key = `${chapterId}`;
-              if (!bylineChunkCollector.has(key)) {
+              const existing = bylineChunkCollector.get(key);
+              if (!existing) {
                 bylineChunkCollector.set(key, {
                   chapterNumber,
                   chapterId,
                   totalChunks,
+                  firstVerse: chunkStartVerse,
+                  lastVerse: chunkEndVerse,
                   chunks: [],
                 });
+              } else {
+                existing.firstVerse = Math.min(
+                  existing.firstVerse,
+                  chunkStartVerse,
+                );
+                existing.lastVerse = Math.max(
+                  existing.lastVerse,
+                  chunkEndVerse,
+                );
               }
 
               bylineChunkCollector
@@ -2848,6 +2865,26 @@ export class BatchOperationService {
           }
 
           const stitchedText = stitchBylineChunks(collected.chunks);
+
+          // Never let an incomplete blob become the active version: the batch
+          // path only checks chunk *count* above, so a verse whose summary the
+          // model dropped inside a chunk (the Mark 10:29 bug) would otherwise be
+          // stitched and saved verbatim. Skip the save so the previous good
+          // version stays active; the chapter can be regenerated via
+          // POST /admin/batch-explanations (skipExisting: false).
+          const missingSummaries = findVersesMissingSummary(
+            stitchedText,
+            collected.chapterNumber,
+            collected.firstVerse,
+            collected.lastVerse,
+          );
+          if (missingSummaries.length > 0) {
+            console.warn(
+              `[BATCH] Incomplete byline for chapter ${collected.chapterNumber} (ID: ${collected.chapterId}): missing per-verse summaries for [${missingSummaries.slice(0, 15).join(", ")}${missingSummaries.length > 15 ? ", …" : ""}] — skipping save.`,
+            );
+            errorCount++;
+            continue;
+          }
 
           const chapter = await this.db
             .getOrCreateConnection()

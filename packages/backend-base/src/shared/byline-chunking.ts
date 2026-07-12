@@ -110,6 +110,62 @@ function collectVerseMentionsForChapter(
   return [...chapterMentions, ...simpleMentions];
 }
 
+/**
+ * Returns the verse numbers in [startVerse, endVerse] that either have no
+ * `## …:V` heading or whose heading is not followed by any non-empty summary
+ * prose (the `>` blockquote verse text and `###` sub-headers such as
+ * `### Summary` / `### Analysis` do not count as prose). An empty array means
+ * every requested verse has a non-empty summary.
+ *
+ * This is the completeness guard that was missing when Mark 10:29 shipped
+ * without a summary — the mobile "Verse Insight" tooltip then showed
+ * "No specific insight available for this verse". Unlike the reverted VER-120
+ * quality gate (which required ≥3 sentences and, worse, wired a remediation
+ * loop into backend startup — see PR #253), this only checks *presence* of a
+ * non-empty summary, never rejects legitimately short content, and runs purely
+ * at generation time.
+ */
+export function findVersesMissingSummary(
+  output: string,
+  chapterNumber: number,
+  startVerse: number,
+  endVerse: number,
+): number[] {
+  const chapterHeading = new RegExp(
+    `\\b${chapterNumber}\\s*[:\\-]\\s*(\\d{1,3})\\b`,
+  );
+  const simpleHeading = /^##\s*(\d{1,3})\b/;
+  const proseLength = new Map<number, number>();
+  let current: number | null = null;
+
+  for (const line of output.replace(/\r\n/g, "\n").split("\n")) {
+    if (line.startsWith("## ")) {
+      const cv = line.match(chapterHeading);
+      const simple = line.match(simpleHeading);
+      current = cv
+        ? Number.parseInt(cv[1], 10)
+        : simple
+          ? Number.parseInt(simple[1], 10)
+          : null;
+      if (current !== null && !proseLength.has(current)) {
+        proseLength.set(current, 0);
+      }
+      continue;
+    }
+    if (current === null) continue;
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith(">") || trimmed.startsWith("#"))
+      continue;
+    proseLength.set(current, (proseLength.get(current) ?? 0) + trimmed.length);
+  }
+
+  const missing: number[] = [];
+  for (let v = startVerse; v <= endVerse; v++) {
+    if ((proseLength.get(v) ?? 0) === 0) missing.push(v);
+  }
+  return missing;
+}
+
 function validateChunkCoverage({
   output,
   chapterNumber,
@@ -146,6 +202,20 @@ function validateChunkCoverage({
           : !hasStart
             ? "missing-start-verse"
             : "missing-end-verse",
+      mentionsInRange,
+    };
+  }
+
+  const missingSummaries = findVersesMissingSummary(
+    output,
+    chapterNumber,
+    startVerse,
+    endVerse,
+  );
+  if (missingSummaries.length > 0) {
+    return {
+      valid: false,
+      reason: `missing-verse-summaries:${missingSummaries.slice(0, 12).join(",")}`,
       mentionsInRange,
     };
   }
