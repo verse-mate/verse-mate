@@ -3,6 +3,7 @@ import {
   BYLINE_CHUNK_SIZE,
   BYLINE_CHUNK_THRESHOLD,
   type BylineVerse,
+  findVersesMissingSummary,
   generateChunkedByline,
   shouldUseBylineChunking,
   splitBylineForTranslation,
@@ -444,5 +445,103 @@ describe("splitBylineForTranslation", () => {
       expect(summaries).toBe(headings);
       expect(verseRefs).toBe(headings);
     }
+  });
+});
+
+// --- findVersesMissingSummary (completeness guard for the Mark 10:29 bug) ---
+
+describe("findVersesMissingSummary", () => {
+  const complete = `# Line-by-Line Analysis of Mark 10
+
+## Mark 10:1
+> Getting up, He went...
+### Summary
+Jesus travels to Judea and teaches the crowds.
+### Analysis
+Sets the scene for the teaching that follows.
+
+## Mark 10:2
+> Some Pharisees came...
+### Summary
+The Pharisees test Jesus with a question about divorce.
+`;
+
+  it("returns [] when every requested verse has a non-empty summary", () => {
+    expect(findVersesMissingSummary(complete, 10, 1, 2)).toEqual([]);
+  });
+
+  it("flags a verse whose heading has no summary prose (only blockquote)", () => {
+    const md = `## Mark 10:1
+> a
+### Summary
+Real summary.
+
+## Mark 10:2
+> b
+### Summary
+
+## Mark 10:3
+> c
+### Summary
+Another.`;
+    expect(findVersesMissingSummary(md, 10, 1, 3)).toEqual([2]);
+  });
+
+  it("flags a verse whose heading is missing entirely", () => {
+    const md = `## Mark 10:1
+> a
+### Summary
+First.
+
+## Mark 10:3
+> c
+### Summary
+Third.`;
+    expect(findVersesMissingSummary(md, 10, 1, 3)).toEqual([2]);
+  });
+
+  it("does NOT flag a verse that has prose under a renamed sub-header only", () => {
+    const md = `## Mark 10:1
+> a
+### Analysis
+Analysis-only prose still counts as content.`;
+    expect(findVersesMissingSummary(md, 10, 1, 1)).toEqual([]);
+  });
+
+  it("recognises simple '## N' headings without a book/chapter prefix", () => {
+    const md = `## 1
+> a
+### Summary
+First.
+
+## 2
+> b
+### Summary
+`;
+    expect(findVersesMissingSummary(md, 10, 1, 2)).toEqual([2]);
+  });
+
+  it("only checks the requested [start, end] range", () => {
+    const md = `## Mark 10:1
+> a
+### Summary
+
+## Mark 10:2
+> b
+### Summary
+Present.`;
+    // verse 1's summary is empty but out of range → only verse 2 is checked
+    expect(findVersesMissingSummary(md, 10, 2, 2)).toEqual([]);
+  });
+
+  it("flags a trailing verse whose summary was truncated away", () => {
+    const md = `## Mark 10:51
+> a
+### Summary
+Bartimaeus asks to see.
+
+## Mark 10:52
+> b`;
+    expect(findVersesMissingSummary(md, 10, 51, 52)).toEqual([52]);
   });
 });
