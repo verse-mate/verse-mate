@@ -1,6 +1,10 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
-import { ForbiddenError, UnauthorizedError } from "../common/errors";
+import {
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { CoachService } from "./coach.service";
@@ -44,20 +48,49 @@ const ReportSchema = t.Object({
 });
 
 const MeSchema = t.Object({
-  isCoach: t.Literal(true),
-  profile: t.Object({
-    id: t.String(),
-    name: t.String(),
-    email: t.String(),
-    group: t.String(),
-    coachName: t.String(),
-  }),
+  isCoach: t.Boolean(),
+  isAdmin: t.Boolean(),
+  profile: t.Union([
+    t.Object({
+      id: t.String(),
+      name: t.String(),
+      email: t.String(),
+      group: t.String(),
+      coachName: t.String(),
+    }),
+    t.Null(),
+  ]),
   zoomLink: t.String(),
   model: t.String(),
   clusters: t.Array(t.Object({ name: t.String(), weight: t.Number() })),
   statusBands: t.Array(
     t.Object({ min: t.Number(), label: t.String(), emoji: t.String() }),
   ),
+});
+
+const ProfileHeaderSchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+  group: t.String(),
+  coachName: t.String(),
+});
+
+const CoachSummarySchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+  group: t.String(),
+  coachName: t.String(),
+  sessionCount: t.Number(),
+  latest: t.Union([
+    t.Object({
+      date: t.String(),
+      dateLabel: t.String(),
+      score: t.Number(),
+      status: t.String(),
+      statusEmoji: t.String(),
+    }),
+    t.Null(),
+  ]),
 });
 
 const TrendRowSchema = t.Record(
@@ -162,6 +195,69 @@ const plugin = new Elysia()
           body: UpdateZoomLinkDto,
           response: {
             200: t.Object({ zoomLink: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // ─── Admin oversight (program admins only) ──────────────────────────
+      // Every /coach/admin/* route requires isAdmin(); non-admin coaches get
+      // 403 so the web client keeps them in their own dashboard.
+      .get(
+        "/admin/coaches",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return { coaches: coachService.listCoaches() };
+        },
+        {
+          response: {
+            200: t.Object({ coaches: t.Array(CoachSummarySchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/coaches/:id/reports",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const profile = coachService.getProfileById(params.id);
+          const reports = coachService.getReportsById(params.id);
+          if (!profile || !reports) throw new NotFoundError("Coach not found");
+          return { profile, reports };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({
+              profile: ProfileHeaderSchema,
+              reports: t.Array(ReportSchema),
+            }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/coaches/:id/trends",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const trends = coachService.getTrendsById(params.id);
+          if (!trends) throw new NotFoundError("Coach not found");
+          return trends;
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: TrendsSchema,
+            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
           },
         },

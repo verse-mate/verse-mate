@@ -57,12 +57,29 @@ interface CoachDataset {
   schemaVersion: number;
   generatedAt: string;
   model: string;
+  admins?: string[];
   clusters: { name: string; weight: number }[];
   statusBands: { min: number; label: string; emoji: string }[];
   coaches: CoachRecord[];
 }
 
 const coachData = coachDataJson as unknown as CoachDataset;
+
+/** Compact roster row for the admin oversight view. */
+export interface CoachSummary {
+  id: string;
+  name: string;
+  group: string;
+  coachName: string;
+  sessionCount: number;
+  latest: {
+    date: string;
+    dateLabel: string;
+    score: number;
+    status: string;
+    statusEmoji: string;
+  } | null;
+}
 
 export interface TrendRow {
   date: string;
@@ -105,33 +122,64 @@ export class CoachService {
     return coachData.coaches.find((c) => c.email === target) ?? null;
   }
 
+  private findById(coachId: string): CoachRecord | null {
+    return coachData.coaches.find((c) => c.id === coachId) ?? null;
+  }
+
+  private static isAdminEmail(email: string): boolean {
+    const target = email.trim().toLowerCase();
+    return (coachData.admins ?? []).includes(target);
+  }
+
+  /** The signed-in user's email (lowercased), or null. */
+  private async emailFor(userId: string): Promise<string | null> {
+    const user = await this.userService.findOne(userId);
+    return user?.email ? user.email.trim().toLowerCase() : null;
+  }
+
   /** Resolve the signed-in user to their coaching record, or null if the
    *  account is not in the roster (authenticated but not a coach). */
   private async recordFor(userId: string): Promise<CoachRecord | null> {
-    const user = await this.userService.findOne(userId);
-    if (!user?.email) return null;
-    return this.findByEmail(user.email);
+    const email = await this.emailFor(userId);
+    return email ? this.findByEmail(email) : null;
   }
 
   async isCoach(userId: string): Promise<boolean> {
     return (await this.recordFor(userId)) !== null;
   }
 
-  async getMe(userId: string) {
-    const record = await this.recordFor(userId);
-    if (!record) return null;
+  /** True when the signed-in user is a program admin (oversight over every
+   *  leader). Admins need not be coachees. */
+  async isAdmin(userId: string): Promise<boolean> {
+    const email = await this.emailFor(userId);
+    return email ? CoachService.isAdminEmail(email) : false;
+  }
 
-    const stored = await this.coachRepository.getZoomLink(userId);
+  async getMe(userId: string) {
+    const email = await this.emailFor(userId);
+    if (!email) return null;
+
+    const record = this.findByEmail(email);
+    const admin = CoachService.isAdminEmail(email);
+    // Authenticated but neither a coachee nor an admin → not a coaching account.
+    if (!record && !admin) return null;
+
+    const stored = record
+      ? await this.coachRepository.getZoomLink(userId)
+      : null;
     return {
-      isCoach: true as const,
-      profile: {
-        id: record.id,
-        name: record.name,
-        email: record.email,
-        group: record.group,
-        coachName: record.coachName,
-      },
-      zoomLink: stored ?? record.zoomLink ?? "",
+      isCoach: !!record,
+      isAdmin: admin,
+      profile: record
+        ? {
+            id: record.id,
+            name: record.name,
+            email: record.email,
+            group: record.group,
+            coachName: record.coachName,
+          }
+        : null,
+      zoomLink: stored ?? record?.zoomLink ?? "",
       model: coachData.model,
       clusters: coachData.clusters,
       statusBands: coachData.statusBands,
@@ -148,6 +196,57 @@ export class CoachService {
     const record = await this.recordFor(userId);
     if (!record) return null;
     return CoachService.buildTrends(record.reports);
+  }
+
+  // ─── Admin oversight (every leader) ──────────────────────────────────────
+
+  /** Roster summary for the admin landing view. Pure over the dataset —
+   *  the plugin gates access on isAdmin(). */
+  listCoaches(): CoachSummary[] {
+    return coachData.coaches.map((c) => {
+      // reports are stored newest-first.
+      const latest = c.reports[0] ?? null;
+      return {
+        id: c.id,
+        name: c.name,
+        group: c.group,
+        coachName: c.coachName,
+        sessionCount: c.reports.length,
+        latest: latest
+          ? {
+              date: latest.date,
+              dateLabel: latest.dateLabel,
+              score: latest.score,
+              status: latest.status,
+              statusEmoji: latest.statusEmoji,
+            }
+          : null,
+      };
+    });
+  }
+
+  /** A specific coach's reports by id (admin drill-in). null → unknown id. */
+  getReportsById(coachId: string): CoachReport[] | null {
+    return this.findById(coachId)?.reports ?? null;
+  }
+
+  /** A specific coach's trends by id (admin drill-in). null → unknown id. */
+  getTrendsById(coachId: string): CoachTrends | null {
+    const record = this.findById(coachId);
+    return record ? CoachService.buildTrends(record.reports) : null;
+  }
+
+  /** Profile header for an admin viewing a specific coach. */
+  getProfileById(coachId: string): {
+    id: string;
+    name: string;
+    group: string;
+    coachName: string;
+  } | null {
+    const c = this.findById(coachId);
+    return c
+      ? { id: c.id, name: c.name, group: c.group, coachName: c.coachName }
+      : null;
   }
 
   async setZoomLink(userId: string, zoomLink: string): Promise<string | null> {

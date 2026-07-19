@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { type CoachReport, CoachService } from "./coach.service";
 
+// listCoaches / getReportsById / getTrendsById are pure over the bundled
+// dataset — the constructor only stores `db`, so a dummy is safe here.
+// biome-ignore lint/suspicious/noExplicitAny: test-only dummy db
+const svc = new CoachService(undefined as any);
+
 // buildTrends is a pure static — exercise it without a DB connection.
 
 function report(over: Partial<CoachReport>): CoachReport {
@@ -74,5 +79,26 @@ describe("CoachService.buildTrends", () => {
   it("keys cluster series rows by cluster name", () => {
     const trends = CoachService.buildTrends([report({})]);
     expect(trends.clusterSeries[0]["Teaching Craft"]).toBe(23.1);
+  });
+});
+
+describe("CoachService admin oversight", () => {
+  it("lists every coach with a newest-first latest summary", () => {
+    const coaches = svc.listCoaches();
+    expect(coaches.length).toBeGreaterThan(0);
+    const jeff = coaches.find((c) => c.id === "jeff-ward");
+    expect(jeff).toBeDefined();
+    expect(jeff?.sessionCount).toBeGreaterThanOrEqual(1);
+    // latest.date must be >= every other report date for that coach.
+    const reports = svc.getReportsById("jeff-ward") ?? [];
+    const maxDate = reports.reduce((m, r) => (r.date > m ? r.date : m), "");
+    expect(jeff?.latest?.date).toBe(maxDate);
+  });
+
+  it("returns reports for a known coach id and null for an unknown one", () => {
+    expect(svc.getReportsById("jeff-ward")).not.toBeNull();
+    expect(svc.getReportsById("nope")).toBeNull();
+    expect(svc.getTrendsById("nope")).toBeNull();
+    expect(svc.getProfileById("nope")).toBeNull();
   });
 });
