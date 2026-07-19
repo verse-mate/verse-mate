@@ -1,0 +1,1227 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-19",
+  "model": "v3-weighted-100",
+  "admins": ["andytryba@gmail.com"],
+  "clusters": [
+    {
+      "name": "Teaching Craft",
+      "weight": 33
+    },
+    {
+      "name": "Building Ministry",
+      "weight": 31
+    },
+    {
+      "name": "Engaging People",
+      "weight": 18
+    },
+    {
+      "name": "Being Real",
+      "weight": 18
+    }
+  ],
+  "statusBands": [
+    {
+      "min": 85,
+      "label": "Exceptional",
+      "emoji": "🔷"
+    },
+    {
+      "min": 72,
+      "label": "Strong",
+      "emoji": "🟢"
+    },
+    {
+      "min": 60,
+      "label": "On Target",
+      "emoji": "🟡"
+    },
+    {
+      "min": 45,
+      "label": "Developing",
+      "emoji": "🟠"
+    },
+    {
+      "min": 0,
+      "label": "Early Stage",
+      "emoji": "🔴"
+    }
+  ],
+  "coaches": [
+    {
+      "id": "bryan-bailey",
+      "name": "Bryan Bailey",
+      "email": "bryanbailey59@gmail.com",
+      "group": "Saturday Morning Study — Austin Ridge",
+      "coachName": "Andy Tryba",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "bryan-bailey-2026-06-13-james-lesson-5-saturday-morning-",
+          "date": "2026-06-13",
+          "dateLabel": "June 13, 2026",
+          "session": "James, Lesson 5 — Saturday Morning Group",
+          "topic": "James 2:14-26 — Faith and Works",
+          "duration": "~2 hr 7 min",
+          "attendees": 20,
+          "newcomers": 3,
+          "score": 93.02,
+          "base": 87.52,
+          "newcomerBonus": 3,
+          "sizeBonus": 2.5,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 84,
+              "contribution": 27.72
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 100,
+              "contribution": 31
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 5
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 4
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 4
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 5
+            }
+          ],
+          "bigIdeas": [
+            "We are not saved by our deeds — we are saved for them",
+            "You can have accurate theology and be a corpse",
+            "Apples don't make trees alive — they prove they are alive",
+            "What you do is what you believe"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-05-30-james-lesson-4-saturday-morning-",
+          "date": "2026-05-30",
+          "dateLabel": "May 30, 2026",
+          "session": "James, Lesson 4 — Saturday Morning Group",
+          "topic": "James 2:1-13 — Favoritism and the Royal Law",
+          "duration": "~2 hr 9 min",
+          "attendees": 25,
+          "newcomers": 5,
+          "score": 86.11,
+          "base": 78.11,
+          "newcomerBonus": 5,
+          "sizeBonus": 3,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 68,
+              "contribution": 22.44
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 86.7,
+              "contribution": 26.87
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 5
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 3
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 4
+            }
+          ],
+          "bigIdeas": [
+            "Faith and favoritism cannot coexist",
+            "Mercy triumphs over judgment",
+            "The royal law is love your neighbor"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-05-16-james-lesson-3-saturday-morning-",
+          "date": "2026-05-16",
+          "dateLabel": "May 16, 2026",
+          "session": "James, Lesson 3 — Saturday Morning Group",
+          "topic": "James 1:19-27 — Quick to Listen, Doers of the Word",
+          "duration": "~2 hr 4 min",
+          "attendees": 22,
+          "newcomers": 2,
+          "score": 84.43,
+          "base": 79.43,
+          "newcomerBonus": 2,
+          "sizeBonus": 3,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 72,
+              "contribution": 23.76
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 86.7,
+              "contribution": 26.87
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 5
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 4
+            }
+          ],
+          "bigIdeas": [
+            "Be quick to listen, slow to speak",
+            "Religion that God accepts is active",
+            "The mirror you forget is a wasted word"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        }
+      ]
+    },
+    {
+      "id": "jeff-ward",
+      "name": "Jeff Ward",
+      "email": "jeff.ward@example.com",
+      "group": "Colossians (Precept)",
+      "coachName": "Bryan Bailey",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "jeff-ward-2026-04-08-colossians-ch-4-precept",
+          "date": "2026-04-08",
+          "dateLabel": "April 8, 2026",
+          "session": "Colossians Ch. 4 (Precept)",
+          "topic": "Colossians 4 — Devote Yourselves to Prayer",
+          "duration": "~1 hr 32 min",
+          "attendees": 11,
+          "newcomers": 0,
+          "score": 69.34,
+          "base": 69.34,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "On Target",
+          "statusEmoji": "🟡",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 68,
+              "contribution": 22.44
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 70,
+              "contribution": 21.7
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 3
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [
+            "Devote yourselves to prayer",
+            "Let your speech be seasoned with salt"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "jeff-ward-2026-04-01-colossians-3-18-4-1-philemon-pre",
+          "date": "2026-04-01",
+          "dateLabel": "April 1, 2026",
+          "session": "Colossians 3:18-4:1 + Philemon (Precept)",
+          "topic": "Household Codes and the Letter to Philemon",
+          "duration": "~1 hr 35 min",
+          "attendees": 10,
+          "newcomers": 1,
+          "score": 63.07,
+          "base": 62.07,
+          "newcomerBonus": 1,
+          "sizeBonus": 0,
+          "status": "On Target",
+          "statusEmoji": "🟡",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 60,
+              "contribution": 19.8
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 66.7,
+              "contribution": 20.67
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 3
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 3
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 3
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 3
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 2
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 3
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [
+            "Work as unto the Lord",
+            "Philemon: welcome him as you would welcome me"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "jeff-ward-2026-03-18-colossians-3-1-4-precept",
+          "date": "2026-03-18",
+          "dateLabel": "March 18, 2026",
+          "session": "Colossians 3:1-4 (Precept)",
+          "topic": "Colossians 3:1-4 — Set Your Minds on Things Above",
+          "duration": "~1 hr 30 min",
+          "attendees": 9,
+          "newcomers": 0,
+          "score": 54.24,
+          "base": 54.24,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Developing",
+          "statusEmoji": "🟠",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 48,
+              "contribution": 15.84
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 60,
+              "contribution": 18.6
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 50,
+              "contribution": 9
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 3
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 3
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 2
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 2
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 3
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 2
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 2
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 3
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 2
+            }
+          ],
+          "bigIdeas": [
+            "You died and your life is hidden with Christ",
+            "Set your mind on things above"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        }
+      ]
+    },
+    {
+      "id": "joel-hurt",
+      "name": "Joel Hurt",
+      "email": "joel.hurt@example.com",
+      "group": "Thursday Men’s Study",
+      "coachName": "Bryan Bailey",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "joel-hurt-2026-03-14-zephaniah-1-3",
+          "date": "2026-03-14",
+          "dateLabel": "March 14, 2026",
+          "session": "Zephaniah 1-3",
+          "topic": "Zephaniah — The Day of the Lord",
+          "duration": "~1 hr 40 min",
+          "attendees": 14,
+          "newcomers": 1,
+          "score": 77.35,
+          "base": 76.35,
+          "newcomerBonus": 1,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 76,
+              "contribution": 25.08
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 66.7,
+              "contribution": 20.67
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 3
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 5
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 3
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 4
+            }
+          ],
+          "bigIdeas": [
+            "The Day of the Lord is near",
+            "Seek the Lord, all you humble of the land",
+            "God rejoices over you with singing"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        }
+      ]
+    },
+    {
+      "id": "russell-reed",
+      "name": "Russell Reed",
+      "email": "russell.reed@example.com",
+      "group": "Kings Study",
+      "coachName": "Bryan Bailey",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "russell-reed-2026-03-21-2-kings-22-23-josiah",
+          "date": "2026-03-21",
+          "dateLabel": "March 21, 2026",
+          "session": "2 Kings 22-23 (Josiah)",
+          "topic": "King Josiah — Rediscovering the Law",
+          "duration": "~1 hr 25 min",
+          "attendees": 12,
+          "newcomers": 0,
+          "score": 72.96,
+          "base": 72.96,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 72,
+              "contribution": 23.76
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 60,
+              "contribution": 18.6
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 5
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 3
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [
+            "Mercy didn't make Josiah comfortable — it made him urgent",
+            "Tear your clothes, turn your heart",
+            "Partial reform is not reform"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        }
+      ]
+    },
+    {
+      "id": "cole-strong",
+      "name": "Cole Strong",
+      "email": "cole.strong@example.com",
+      "group": "Kings Study",
+      "coachName": "Bryan Bailey",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "cole-strong-2026-03-28-kings-p10-l4-2-kings-23-31-24-9",
+          "date": "2026-03-28",
+          "dateLabel": "March 28, 2026",
+          "session": "Kings P10.L4 — 2 Kings 23:31-24:9",
+          "topic": "The Final Kings of Judah",
+          "duration": "~1 hr 30 min",
+          "attendees": 13,
+          "newcomers": 1,
+          "score": 71.2,
+          "base": 70.2,
+          "newcomerBonus": 1,
+          "sizeBonus": 0,
+          "status": "On Target",
+          "statusEmoji": "🟡",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 80,
+              "contribution": 26.4
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 60,
+              "contribution": 18.6
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 3
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 4
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 3
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 3
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [
+            "God's word does not die",
+            "The kings fall but the promise holds",
+            "Exile is discipline, not abandonment"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        }
+      ]
+    },
+    {
+      "id": "ken-ture",
+      "name": "Ken Ture",
+      "email": "ken.ture@example.com",
+      "group": "Jeremiah Study",
+      "coachName": "Bryan Bailey",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "ken-ture-2026-03-25-jeremiah-lesson-4",
+          "date": "2026-03-25",
+          "dateLabel": "March 25, 2026",
+          "session": "Jeremiah Lesson 4",
+          "topic": "Jeremiah — The Weeping Prophet",
+          "duration": "~1 hr 28 min",
+          "attendees": 11,
+          "newcomers": 0,
+          "score": 72.48,
+          "base": 72.48,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 76,
+              "contribution": 25.08
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 60,
+              "contribution": 18.6
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 3
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [
+            "His mercies are new every morning",
+            "The heart is deceitful above all things",
+            "Seek the welfare of the city"
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        }
+      ]
+    }
+  ]
+}
