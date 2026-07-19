@@ -6,6 +6,8 @@ import audioPlugin from "./src/bible/audio/audio.plugin";
 import type { AudioPlugin } from "./src/bible/audio/audio.plugin";
 import biblePlugin from "./src/bible/bible.plugin";
 import type { BiblePlugin } from "./src/bible/bible.plugin";
+import coachPlugin from "./src/coach/coach.plugin";
+import type { CoachPlugin } from "./src/coach/coach.plugin";
 import healthCheckPlugin from "./src/healthcheck/healthcheck.plugin";
 import type { HealthCheckPlugin } from "./src/healthcheck/healthcheck.plugin";
 import userPlugin from "./src/user/user.plugin";
@@ -46,6 +48,8 @@ export {
   userPlugin,
   type BiblePlugin,
   biblePlugin,
+  type CoachPlugin,
+  coachPlugin,
   type AudioPlugin,
   audioPlugin,
   type AdminPlugin,
