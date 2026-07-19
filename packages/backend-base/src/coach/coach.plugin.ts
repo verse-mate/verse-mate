@@ -44,6 +44,12 @@ const ReportSchema = t.Object({
   clusters: t.Array(ClusterSchema),
   dimensions: t.Array(DimensionSchema),
   bigIdeas: t.Array(t.String()),
+  feedback: t.Object({
+    headline: t.String(),
+    strengths: t.Array(t.String()),
+    improvements: t.Array(t.String()),
+    recommendations: t.Array(t.String()),
+  }),
   docUrl: t.String(),
   pdfUrl: t.String(),
 });
