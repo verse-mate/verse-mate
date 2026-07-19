@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
+import { createErrorHandler } from "../common/error-handler";
 import {
   ForbiddenError,
   NotFoundError,
@@ -131,6 +132,7 @@ const TrendsSchema = t.Object({
 
 const plugin = new Elysia()
   .use(shared)
+  .onError(createErrorHandler("coach plugin"))
   .state((state) => ({
     ...state,
     coachService: new CoachService(state.db),
