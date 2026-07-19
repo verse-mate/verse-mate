@@ -57,19 +57,19 @@ export default function Header() {
             Coach
           </Link>
           <Link
-            href="/login"
-            className={cn(NAV_LINK, isActive("/login") && "text-brand-gold")}
-            aria-current={isActive("/login") ? "page" : undefined}
-          >
-            Log in
-          </Link>
-          <Button
             href="/give"
-            variant="dark"
-            size="sm"
+            className={cn(NAV_LINK, isActive("/give") && "text-brand-gold")}
             aria-current={isActive("/give") ? "page" : undefined}
           >
             Give
+          </Link>
+          <Button
+            href="/login"
+            variant="dark"
+            size="sm"
+            aria-current={isActive("/login") ? "page" : undefined}
+          >
+            Log in
           </Button>
         </nav>
       </div>
