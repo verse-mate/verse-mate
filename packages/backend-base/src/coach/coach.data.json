@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-19",
+  "generatedAt": "2026-07-20",
   "model": "v3-weighted-100",
   "admins": ["andytryba@gmail.com"],
   "clusters": [
@@ -59,16 +59,146 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "bryan-bailey-2026-07-16-james-lesson-9-thursday-evening-",
+          "date": "2026-07-16",
+          "dateLabel": "July 16, 2026",
+          "session": "James, Lesson 9 — Thursday Evening Group (Zoom)",
+          "topic": "James 4:13–5:12 — Wealth, Patience, and the Last Days",
+          "duration": "~2 hr 10 min  ·  Precept study — Zoom / online (solo, no mentor)",
+          "attendees": 13,
+          "newcomers": 9,
+          "score": 78.8,
+          "base": 73.8,
+          "newcomerBonus": 5,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 80,
+              "contribution": 26.4
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 60,
+              "contribution": 18.6
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 3
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [
+            "You can't take it with you — but you'll have to answer for it",
+            "We're living in the last blink of time, not the long haul",
+            "Your treasure today may testify against you tomorrow",
+            "Let your yes be yes — a sales superpower before it was scripture"
+          ],
+          "feedback": {
+            "headline": "A strong session — strongest in Scripture Engagement and Application Questions, with the clearest next step in Facilitation vs. Lecture.",
+            "strengths": [
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "Application questions pushed members from concept to life, several at the reason/apply level.",
+              "Prayer was delegated to members, opening and closing the group in shared voice."
+            ],
+            "improvements": [
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "The session leaned audio-only; a visual anchor would aid retention.",
+              "Prior Big Ideas weren’t reviewed, so last week’s themes faded."
+            ],
+            "recommendations": [
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, put one word-study lookup or a simple table on screen during the key term.",
+              "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
           "id": "bryan-bailey-2026-06-13-james-lesson-5-saturday-morning-",
           "date": "2026-06-13",
           "dateLabel": "June 13, 2026",
           "session": "James, Lesson 5 — Saturday Morning Group",
-          "topic": "James 2:14-26 — Faith and Works",
+          "topic": "James 2:14-26 — Faith and Works: Dead Faith vs. Demonstrated Faith",
           "duration": "~2 hr 7 min",
           "attendees": 20,
           "newcomers": 3,
-          "score": 93.02,
-          "base": 87.52,
+          "score": 86.25,
+          "base": 80.75,
           "newcomerBonus": 3,
           "sizeBonus": 2.5,
           "status": "Exceptional",
@@ -77,14 +207,14 @@
             {
               "name": "Teaching Craft",
               "weight": 33,
-              "scorePct": 84,
-              "contribution": 27.72
+              "scorePct": 76,
+              "contribution": 25.08
             },
             {
               "name": "Building Ministry",
               "weight": 31,
-              "scorePct": 100,
-              "contribution": 31
+              "scorePct": 86.7,
+              "contribution": 26.87
             },
             {
               "name": "Engaging People",
@@ -113,7 +243,7 @@
             {
               "n": 3,
               "name": "Scripture Engagement",
-              "score": 4
+              "score": 5
             },
             {
               "n": 4,
@@ -123,7 +253,138 @@
             {
               "n": 5,
               "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
               "score": 5
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 4
+            }
+          ],
+          "bigIdeas": [
+            "We are not saved by our deeds — we are saved for them",
+            "You can have accurate theology and be a corpse",
+            "Apples don't make trees alive — they prove they are alive",
+            "Works without faith is bad, just like faith without works is bad",
+            "What you do is what you believe"
+          ],
+          "feedback": {
+            "headline": "An exceptional session — strongest in Newcomer Welcome and Scripture Engagement, with the clearest next step in Visual Aids.",
+            "strengths": [
+              "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "Prayer was delegated to members, opening and closing the group in shared voice."
+            ],
+            "improvements": [
+              "The session leaned audio-only; a visual anchor would aid retention.",
+              "Teaching stayed at arm’s length; little personal cost was modeled.",
+              "Prior Big Ideas weren’t reviewed, so last week’s themes faded."
+            ],
+            "recommendations": [
+              "Next time, put one word-study lookup or a simple table on screen during the key term.",
+              "Next time, open one teaching point with a first-person example that cost you something.",
+              "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-06-06-james-lesson-4-saturday-morning-",
+          "date": "2026-06-06",
+          "dateLabel": "June 6, 2026",
+          "session": "James, Lesson 4 — Saturday Morning Group",
+          "topic": "James 2:1-13 — Partiality, the Royal Law, and Mercy Triumphant",
+          "duration": "~2 hr 10 min",
+          "attendees": 15,
+          "newcomers": 2,
+          "score": 74.27,
+          "base": 72.27,
+          "newcomerBonus": 2,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 80,
+              "contribution": 26.4
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 66.7,
+              "contribution": 20.67
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 4
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
             },
             {
               "n": 6,
@@ -143,45 +404,165 @@
             {
               "n": 9,
               "name": "Memory Reinforcement",
-              "score": 4
+              "score": 3
             },
             {
               "n": 10,
               "name": "Homework References",
-              "score": 5
+              "score": 3
             },
             {
               "n": 11,
               "name": "Prayer",
-              "score": 4
+              "score": 3
             },
             {
               "n": 12,
               "name": "Leader Development",
-              "score": 5
+              "score": 3
             }
           ],
-          "bigIdeas": [
-            "We are not saved by our deeds — we are saved for them",
-            "You can have accurate theology and be a corpse",
-            "Apples don't make trees alive — they prove they are alive",
-            "What you do is what you believe"
-          ],
+          "bigIdeas": [],
           "feedback": {
-            "headline": "An exceptional session — strongest in Newcomer Welcome and Application Questions, with the clearest next step in Session Structure & Flow.",
+            "headline": "A strong session — strongest in Scripture Engagement and Session Structure & Flow, with the clearest next step in Facilitation vs. Lecture.",
             "strengths": [
-              "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
-              "Application questions pushed members from concept to life, several at the reason/apply level.",
-              "Homework was referenced and rewarded, differentiating the members who prepared."
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+              "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began."
             ],
             "improvements": [
-              "Transitions between segments lost momentum, so the session’s shape was harder to feel.",
-              "Discussion drifted from the text; a few more passages would ground the teaching.",
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+              "Homework went unmentioned, reducing its pull on the group."
+            ],
+            "recommendations": [
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+              "Next time, ask two members to share one thing from their homework in the first 10 minutes."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-06-04-james-lesson-4-weeknight-group",
+          "date": "2026-06-04",
+          "dateLabel": "June 4, 2026",
+          "session": "James, Lesson 4 — Weeknight Group",
+          "topic": "James 2:1-13 — Partiality, the Royal Law, and the Law of Liberty (with riches cross-reference arc)",
+          "duration": "~2 hr 7 min",
+          "attendees": 17,
+          "newcomers": 2,
+          "score": 76.36,
+          "base": 73.36,
+          "newcomerBonus": 2,
+          "sizeBonus": 1,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 72,
+              "contribution": 23.76
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 70,
+              "contribution": 21.7
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 85,
+              "contribution": 15.3
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 3
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 2
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 5
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 3.5
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3.5
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "A strong session — strongest in Scripture Engagement and Vulnerability / Authenticity, with the clearest next step in Visual Aids.",
+            "strengths": [
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "Costly personal honesty set a tone of safety, and members disclosed in turn.",
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place."
+            ],
+            "improvements": [
+              "The session leaned audio-only; a visual anchor would aid retention.",
+              "The newcomer welcome was brief, missing a chance to enfold guests into the room.",
               "Leader talk crowded out discussion; the balance leaned toward lecture."
             ],
             "recommendations": [
-              "Next time, jot the 5 segment beats on a card and glance at it to keep hand-offs crisp.",
-              "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
+              "Next time, put one word-study lookup or a simple table on screen during the key term.",
+              "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds."
             ]
           },
@@ -189,20 +570,20 @@
           "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
-          "id": "bryan-bailey-2026-05-30-james-lesson-4-saturday-morning-",
+          "id": "bryan-bailey-2026-05-30-james-lesson-3-saturday-morning-",
           "date": "2026-05-30",
           "dateLabel": "May 30, 2026",
-          "session": "James, Lesson 4 — Saturday Morning Group",
-          "topic": "James 2:1-13 — Favoritism and the Royal Law",
-          "duration": "~2 hr 9 min",
+          "session": "James, Lesson 3 — Saturday Morning Group",
+          "topic": "James 1:1-27 — Trials, Temptation, True Religion",
+          "duration": "~2 hr 11 min (7:00 AM – 9:11 AM CT)",
           "attendees": 25,
           "newcomers": 5,
-          "score": 86.11,
-          "base": 78.11,
+          "score": 84.31,
+          "base": 76.31,
           "newcomerBonus": 5,
           "sizeBonus": 3,
-          "status": "Exceptional",
-          "statusEmoji": "🔷",
+          "status": "Strong",
+          "statusEmoji": "🟢",
           "clusters": [
             {
               "name": "Teaching Craft",
@@ -219,8 +600,8 @@
             {
               "name": "Engaging People",
               "weight": 18,
-              "scorePct": 80,
-              "contribution": 14.4
+              "scorePct": 70,
+              "contribution": 12.6
             },
             {
               "name": "Being Real",
@@ -248,7 +629,7 @@
             {
               "n": 4,
               "name": "Facilitation vs. Lecture",
-              "score": 4
+              "score": 3
             },
             {
               "n": 5,
@@ -291,25 +672,146 @@
               "score": 4
             }
           ],
-          "bigIdeas": [
-            "Faith and favoritism cannot coexist",
-            "Mercy triumphs over judgment",
-            "The royal law is love your neighbor"
-          ],
+          "bigIdeas": [],
           "feedback": {
-            "headline": "An exceptional session — strongest in Newcomer Welcome and Session Structure & Flow, with the clearest next step in Scripture Engagement.",
+            "headline": "A strong session — strongest in Newcomer Welcome and Session Structure & Flow, with the clearest next step in Scripture Engagement.",
             "strengths": [
               "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
               "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
-              "Discussion outweighed lecture — the room did the thinking, not just the leader."
+              "Application questions pushed members from concept to life, several at the reason/apply level."
             ],
             "improvements": [
               "Discussion drifted from the text; a few more passages would ground the teaching.",
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "The session leaned audio-only; a visual anchor would aid retention."
+            ],
+            "recommendations": [
+              "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, put one word-study lookup or a simple table on screen during the key term."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-05-28-james-lesson-3-temptation-doers-",
+          "date": "2026-05-28",
+          "dateLabel": "May 28, 2026",
+          "session": "James, Lesson 3 — Temptation, Doers of the Word, True Religion (Jas 1:12–27)",
+          "topic": "Crown of life; temptation vs. trials; sin conceived before committed; doers not hearers; bridling the tongue; pure religion",
+          "duration": "~2h 7m (7:00 PM – 9:07 PM CT)",
+          "attendees": 18,
+          "newcomers": 0,
+          "score": 75.28,
+          "base": 73.78,
+          "newcomerBonus": 0,
+          "sizeBonus": 1.5,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 76,
+              "contribution": 25.08
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 70,
+              "contribution": 21.7
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 3
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 4
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "A strong session — strongest in Scripture Engagement and Session Structure & Flow, with the clearest next step in Facilitation vs. Lecture.",
+            "strengths": [
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+              "Application questions pushed members from concept to life, several at the reason/apply level."
+            ],
+            "improvements": [
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
               "The session leaned audio-only; a visual anchor would aid retention.",
               "Prior Big Ideas weren’t reviewed, so last week’s themes faded."
             ],
             "recommendations": [
-              "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
             ]
@@ -318,17 +820,17 @@
           "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
-          "id": "bryan-bailey-2026-05-16-james-lesson-3-saturday-morning-",
-          "date": "2026-05-16",
-          "dateLabel": "May 16, 2026",
-          "session": "James, Lesson 3 — Saturday Morning Group",
-          "topic": "James 1:19-27 — Quick to Listen, Doers of the Word",
-          "duration": "~2 hr 4 min",
-          "attendees": 22,
-          "newcomers": 2,
-          "score": 84.43,
-          "base": 79.43,
-          "newcomerBonus": 2,
+          "id": "bryan-bailey-2026-05-23-james-lesson-2-testing-of-faith-",
+          "date": "2026-05-23",
+          "dateLabel": "May 23, 2026",
+          "session": "James, Lesson 2 — Testing of Faith, Wisdom, Double-Mindedness, Rich & Poor (Jas 1:1–11)",
+          "topic": "Count trials as joy; tested faith produces endurance; ask God for wisdom in faith; double-mindedness; rich vs. poor perspective",
+          "duration": "~2h 8m (approx. 7:00 AM – 9:08 AM CT, ran over)",
+          "attendees": 25,
+          "newcomers": 24,
+          "score": 77.05,
+          "base": 69.05,
+          "newcomerBonus": 5,
           "sizeBonus": 3,
           "status": "Strong",
           "statusEmoji": "🟢",
@@ -336,8 +838,133 @@
             {
               "name": "Teaching Craft",
               "weight": 33,
-              "scorePct": 72,
-              "contribution": 23.76
+              "scorePct": 64,
+              "contribution": 21.12
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 73.3,
+              "contribution": 22.73
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 3
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 4
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 3
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 3
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "A strong session — strongest in Newcomer Welcome and Application Questions, with the clearest next step in Session Structure & Flow.",
+            "strengths": [
+              "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+              "Application questions pushed members from concept to life, several at the reason/apply level.",
+              "A high share of the room contributed substantively, called on by name."
+            ],
+            "improvements": [
+              "Transitions between segments lost momentum, so the session’s shape was harder to feel.",
+              "Discussion drifted from the text; a few more passages would ground the teaching.",
+              "Leader talk crowded out discussion; the balance leaned toward lecture."
+            ],
+            "recommendations": [
+              "Next time, jot the 5 segment beats on a card and glance at it to keep hand-offs crisp.",
+              "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-05-22-james-lesson-2-trials-wisdom-ric",
+          "date": "2026-05-22",
+          "dateLabel": "May 22, 2026",
+          "session": "James, Lesson 2 — Trials, Wisdom, Rich & Poor, Crown of Life (Jas 1:1–12)",
+          "topic": "Consider it all joy; testing produces endurance; ask God for wisdom; double-mindedness; humble vs. rich perspective",
+          "duration": "~2h 10m (approx. 6:30 PM – 8:40 PM CT)",
+          "attendees": 17,
+          "newcomers": 0,
+          "score": 81.75,
+          "base": 80.75,
+          "newcomerBonus": 0,
+          "sizeBonus": 1,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 76,
+              "contribution": 25.08
             },
             {
               "name": "Building Ministry",
@@ -348,14 +975,14 @@
             {
               "name": "Engaging People",
               "weight": 18,
-              "scorePct": 80,
-              "contribution": 14.4
+              "scorePct": 70,
+              "contribution": 12.6
             },
             {
               "name": "Being Real",
               "weight": 18,
-              "scorePct": 80,
-              "contribution": 14.4
+              "scorePct": 90,
+              "contribution": 16.2
             }
           ],
           "dimensions": [
@@ -372,12 +999,12 @@
             {
               "n": 3,
               "name": "Scripture Engagement",
-              "score": 4
+              "score": 5
             },
             {
               "n": 4,
               "name": "Facilitation vs. Lecture",
-              "score": 4
+              "score": 3
             },
             {
               "n": 5,
@@ -407,6 +1034,256 @@
             {
               "n": 10,
               "name": "Homework References",
+              "score": 5
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "A strong session — strongest in Newcomer Welcome and Scripture Engagement, with the clearest next step in Facilitation vs. Lecture.",
+            "strengths": [
+              "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "Homework was referenced and rewarded, differentiating the members who prepared."
+            ],
+            "improvements": [
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "The session leaned audio-only; a visual anchor would aid retention.",
+              "Prior Big Ideas weren’t reviewed, so last week’s themes faded."
+            ],
+            "recommendations": [
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, put one word-study lookup or a simple table on screen during the key term.",
+              "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-05-16-james-lesson-1-full-book-overvie",
+          "date": "2026-05-16",
+          "dateLabel": "May 16, 2026",
+          "session": "James, Lesson 1 — Full-book overview, bumper sticker survey (all 5 chapters)",
+          "topic": "Faith that Works: Trials, Wisdom, Tongue, Two Wisdoms, Prayer — What is wholehearted faith?",
+          "duration": "~2h 14m (approx. 7:00 AM – 9:14 AM)",
+          "attendees": 25,
+          "newcomers": 8,
+          "score": 82.51,
+          "base": 74.51,
+          "newcomerBonus": 5,
+          "sizeBonus": 3,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 68,
+              "contribution": 22.44
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 86.7,
+              "contribution": 26.87
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 5
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 2
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "A strong session — strongest in Newcomer Welcome and Homework References, with the clearest next step in Visual Aids.",
+            "strengths": [
+              "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+              "Homework was referenced and rewarded, differentiating the members who prepared.",
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place."
+            ],
+            "improvements": [
+              "The session leaned audio-only; a visual anchor would aid retention.",
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "Teaching stayed at arm’s length; little personal cost was modeled."
+            ],
+            "recommendations": [
+              "Next time, put one word-study lookup or a simple table on screen during the key term.",
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, open one teaching point with a first-person example that cost you something."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-04-18-2-kings-21-25-lesson-6-final-les",
+          "date": "2026-04-18",
+          "dateLabel": "April 18, 2026",
+          "session": "2 Kings 21–25, Lesson 6 (final lesson in 6-lesson arc)",
+          "topic": "Destruction of Jerusalem, Yoke of Babylon, True vs. False Prophets, Pride Blocks Repentance, Goal of Discipline is Restoration",
+          "duration": "2h 08m 42s (approx. 7:00 AM – 9:09 AM)",
+          "attendees": 17,
+          "newcomers": 0,
+          "score": 76.92,
+          "base": 75.92,
+          "newcomerBonus": 0,
+          "sizeBonus": 1,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 84,
+              "contribution": 27.72
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 80,
+              "contribution": 24.8
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 4
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 3
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 5
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 3
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
               "score": 4
             },
             {
@@ -420,27 +1297,148 @@
               "score": 4
             }
           ],
-          "bigIdeas": [
-            "Be quick to listen, slow to speak",
-            "Religion that God accepts is active",
-            "The mirror you forget is a wasted word"
-          ],
+          "bigIdeas": [],
           "feedback": {
-            "headline": "A strong session — strongest in Newcomer Welcome and Session Structure & Flow, with the clearest next step in Visual Aids.",
+            "headline": "A strong session — strongest in Scripture Engagement and Visual Aids, with the clearest next step in Facilitation vs. Lecture.",
             "strengths": [
-              "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
-              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
-              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse."
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "On-screen word study and visuals reinforced the teaching multi-modally.",
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place."
             ],
             "improvements": [
-              "The session leaned audio-only; a visual anchor would aid retention.",
-              "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
-              "Transitions between segments lost momentum, so the session’s shape was harder to feel."
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "A few voices carried the discussion; quieter members went unheard.",
+              "Teaching stayed at arm’s length; little personal cost was modeled."
             ],
             "recommendations": [
-              "Next time, put one word-study lookup or a simple table on screen during the key term.",
-              "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
-              "Next time, jot the 5 segment beats on a card and glance at it to keep hand-offs crisp."
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, name one quiet regular early and invite their read on a passage.",
+              "Next time, open one teaching point with a first-person example that cost you something."
+            ]
+          },
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "bryan-bailey-2026-04-11-2-kings-21-25-lesson-5",
+          "date": "2026-04-11",
+          "dateLabel": "April 11, 2026",
+          "session": "2 Kings 21-25, Lesson 5",
+          "topic": "The Fall of Judah, Jeremiah’s Letters to the Exiles, The New Covenant",
+          "duration": "2h 06m (7:00 AM - 9:06 AM)",
+          "attendees": 16,
+          "newcomers": 0,
+          "score": 87.58,
+          "base": 87.08,
+          "newcomerBonus": 0,
+          "sizeBonus": 0.5,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 96,
+              "contribution": 31.68
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 80,
+              "contribution": 24.8
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 5
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 4
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 4
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "An exceptional session — strongest in Session Structure & Flow and Scripture Engagement, with the clearest next step in Facilitation vs. Lecture.",
+            "strengths": [
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "Application questions pushed members from concept to life, several at the reason/apply level."
+            ],
+            "improvements": [
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "A few voices carried the discussion; quieter members went unheard.",
+              "The session leaned audio-only; a visual anchor would aid retention."
+            ],
+            "recommendations": [
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, name one quiet regular early and invite their read on a passage.",
+              "Next time, put one word-study lookup or a simple table on screen during the key term."
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
