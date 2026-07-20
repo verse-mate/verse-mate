@@ -139,6 +139,11 @@ export class NotificationsService {
     await this.repo.softDeleteDeviceToken({ userId, token });
   }
 
+  /** Active-device count for the admin broadcast preview (D-14). */
+  async getActiveRecipientCount(): Promise<number> {
+    return this.repo.countActiveTokens();
+  }
+
   /**
    * Send today's personalized verse to every device not yet notified today.
    *

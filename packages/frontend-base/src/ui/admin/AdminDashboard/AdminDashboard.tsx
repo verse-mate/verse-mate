@@ -8,6 +8,7 @@ import { BatchOperations } from "../BatchOperations/BatchOperations";
 import { DailyVerses } from "../DailyVerses";
 import { ExplanationRegeneration } from "../ExplanationRegeneration/ExplanationRegeneration";
 import { Explanations } from "../Explanations/Explanations";
+import { Notifications } from "../Notifications";
 import { Playground } from "../Playground/Playground";
 import { PromptManagement } from "../PromptManagement/PromptManagement";
 import { TopicsAdmin } from "../Topics";
@@ -24,7 +25,8 @@ type AdminSection =
   | "topics"
   | "auto-highlights"
   | "audio"
-  | "daily-verses";
+  | "daily-verses"
+  | "notifications";
 
 export const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>("batch");
@@ -51,6 +53,8 @@ export const AdminDashboard = () => {
         return <AudioManagement />;
       case "daily-verses":
         return <DailyVerses />;
+      case "notifications":
+        return <Notifications />;
       default:
         return <BatchOperations />;
     }
@@ -113,6 +117,14 @@ export const AdminDashboard = () => {
               onClick={() => setActiveSection("daily-verses")}
             >
               Daily Verses
+            </Button>
+            <Button
+              variant={
+                activeSection === "notifications" ? "contained" : "outlined"
+              }
+              onClick={() => setActiveSection("notifications")}
+            >
+              Notifications
             </Button>
             <Button
               variant={activeSection === "users" ? "contained" : "outlined"}
