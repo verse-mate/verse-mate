@@ -8,52 +8,15 @@ import {
 } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
+import { ReportSchema } from "./coach.schema";
 import { CoachService } from "./coach.service";
 import { UpdateZoomLinkDto } from "./dto/coach.dto";
 
 // ─── Response schemas ──────────────────────────────────────────────────────
-
-const ClusterSchema = t.Object({
-  name: t.String(),
-  weight: t.Number(),
-  scorePct: t.Union([t.Number(), t.Null()]),
-  contribution: t.Number(),
-});
-
-const DimensionSchema = t.Object({
-  n: t.Number(),
-  name: t.String(),
-  score: t.Union([t.Number(), t.Null()]),
-  note: t.Optional(t.String()),
-});
-
-const ReportSchema = t.Object({
-  id: t.String(),
-  date: t.String(),
-  dateLabel: t.String(),
-  session: t.String(),
-  topic: t.String(),
-  duration: t.String(),
-  attendees: t.Number(),
-  newcomers: t.Number(),
-  score: t.Number(),
-  base: t.Number(),
-  newcomerBonus: t.Number(),
-  sizeBonus: t.Number(),
-  status: t.String(),
-  statusEmoji: t.String(),
-  clusters: t.Array(ClusterSchema),
-  dimensions: t.Array(DimensionSchema),
-  bigIdeas: t.Array(t.String()),
-  feedback: t.Object({
-    headline: t.String(),
-    strengths: t.Array(t.String()),
-    improvements: t.Array(t.String()),
-    recommendations: t.Array(t.String()),
-  }),
-  docUrl: t.String(),
-  pdfUrl: t.String(),
-});
+// ReportSchema (and its parts) live in coach.schema.ts — a side-effect-free
+// module so the response contract can be unit-tested without booting the
+// plugin. Elysia strips any response field not declared in that schema, which
+// is why the coaching prose must be present there to reach the portal.
 
 const MeSchema = t.Object({
   isCoach: t.Boolean(),

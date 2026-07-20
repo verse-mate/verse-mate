@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedAt": "2026-07-20",
   "model": "v3-weighted-100",
   "admins": ["andytryba@gmail.com"],
@@ -195,6 +195,85 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ],
+            "overview": [
+              "A strong session — strongest in Scripture Engagement and Application Questions, with the clearest next step in Facilitation vs. Lecture. It scored 78.8/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Application Questions; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 20+ cross-references across 13 books — the widest book range of the arc to date (James, Hebrews, Acts, 2 Peter, Jude, 1 John, Matthew ×3, 1 Thessalonians, Job, Psalms, 2 Corinthians, Leviticus, Deuteronomy)"
+                ]
+              },
+              {
+                "title": "Application Questions anchored the session (5/5)",
+                "paragraphs": [
+                  "Application questions pushed members from concept to life, several at the reason/apply level.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
+                  "From the session: 6 DOK-scored questions (within 5–7 target); 50/50 DOK 4/DOK 3 split; 5+ first-person confessions including the leader's own unresolved disclosure"
+                ]
+              },
+              {
+                "title": "Prayer anchored the session (5/5)",
+                "paragraphs": [
+                  "Prayer was delegated to members, opening and closing the group in shared voice.",
+                  "Delegated opening and closing prayer, plus a living prayer chain, is the relational infrastructure that shepherds a group between meetings.",
+                  "From the session: Opening (Hunter) AND closing (Cole) delegated and both captured in the recording"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: ~40–45% discussion-only, above target; the ~6-min uninterrupted prophecy-chart narration is the main driver. Socratic technique excellent elsewhere (Psalm 73 walk-through, wealth discussion) but this dip is real, not just optics"
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: One prophecy-timeline chart ultimately delivered via screen-share, but a ~5-min failed live-whiteboard attempt preceded it; no on-screen Greek/Hebrew word-study tool this week (a step back from L8's word studies)"
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
+                  "From the session: Brief, functional book-level review at open (~5 min), but the formal cold cumulative recall drill was skipped for a 2nd consecutive week despite being named as the arc's top priority gap"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -338,6 +417,85 @@
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, open one teaching point with a first-person example that cost you something.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ],
+            "overview": [
+              "An exceptional session — strongest in Newcomer Welcome and Scripture Engagement, with the clearest next step in Visual Aids. It scored 86.25/100 under the v3 weighted model.",
+              "The session played to its strengths in Newcomer Welcome and Scripture Engagement; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Newcomer Welcome anchored the session (5/5)",
+                "paragraphs": [
+                  "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF).",
+                  "From the session: John (first-timer), Eric, Mike welcomed with full member testimonies and Guarantee; Bryan personally engaged John ('why did you decide to show up?'); +3.0 newcomer bonus applied"
+                ]
+              },
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 19 cross-references across 12+ books — James primary + Titus 1, Rom 3/5/6, Heb 11, Eph 2, 2 Cor 5/13, 1 Cor 6, Matt 7, Gal 5, John 3/13; 80%+ of discussion scripture-grounded"
+                ]
+              },
+              {
+                "title": "Prayer anchored the session (5/5)",
+                "paragraphs": [
+                  "Prayer was delegated to members, opening and closing the group in shared voice.",
+                  "Delegated opening and closing prayer, plus a living prayer chain, is the relational infrastructure that shepherds a group between meetings.",
+                  "From the session: Opening prayer delegated (member at 00:00); group commissioning prayer for Brendan and Glenn (3+ spontaneous member prayers at close); one of the strongest prayer moments of the James arc"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: Blue Letter Bible used on-screen for G1344 word study (resolves James/Paul discrepancy); no color-coded chart, no two-column reference board; improvement from 2/5"
+                ]
+              },
+              {
+                "title": "Vulnerability / Authenticity is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Teaching stayed at arm’s length; little personal cost was modeled.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
+                  "From the session: 3 vulnerability moments (personal guarantee story 3/5, Christmas tree theft 2/5, naming rights 3/5); one below baseline; +/-1 cap applied; no high-cost disclosure"
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
+                  "From the session: Informal James tests recall at open (Bryan-led); new bumper sticks generated by members; no formal Ebbinghaus retrieval drill; 9th consecutive session without it"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Vulnerability / Authenticity",
+                "paragraphs": [
+                  "Next time, open one teaching point with a first-person example that cost you something.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -475,6 +633,85 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
               "Next time, ask two members to share one thing from their homework in the first 10 minutes."
+            ],
+            "overview": [
+              "A strong session — strongest in Scripture Engagement and Session Structure & Flow, with the clearest next step in Facilitation vs. Lecture. It scored 74.27/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Session Structure & Flow; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 15 confirmed cross-references across 8 books; Romans 2:11 ('God shows no partiality') as concise closing anchor; discussion 75-80% scripture-grounded"
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Full 10-step blueprint executed; closing prayer not delegated (Bryan ran it himself, session overran); ran ~10 min long"
+                ]
+              },
+              {
+                "title": "Newcomer Welcome anchored the session (4/5)",
+                "paragraphs": [
+                  "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF).",
+                  "From the session: Jordan, Caleb, Matt welcomed; 12-min intro with 4-5 member testimonies + Bryan's full origin story; The Guarantee not formally delivered"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: ~33-38% leader talk (discussion only); strong Socratic calling by name; 3-4 longer teaching sections pull ratio above target"
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
+                  "From the session: Comprehensive James ch.1 Big Ideas review (~14 min, 6 ideas, member-participatory); bumper sticker generation at close; guided not unsupported Ebbinghaus recall"
+                ]
+              },
+              {
+                "title": "Homework References is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Homework went unmentioned, reducing its pull on the group.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement.",
+                  "From the session: Directed Caleb and Jordan to contact Lance or John for homework materials; explained 5-day format at close [02:04]; The Guarantee not formally delivered"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Homework References",
+                "paragraphs": [
+                  "Next time, ask two members to share one thing from their homework in the first 10 minutes.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -612,6 +849,85 @@
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds."
+            ],
+            "overview": [
+              "A strong session — strongest in Scripture Engagement and Vulnerability / Authenticity, with the clearest next step in Visual Aids. It scored 76.36/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Vulnerability / Authenticity; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 22+ cross-references — arc high; 80-85% discussion grounded in scripture; first scripture within 15 min"
+                ]
+              },
+              {
+                "title": "Vulnerability / Authenticity anchored the session (5/5)",
+                "paragraphs": [
+                  "Costly personal honesty set a tone of safety, and members disclosed in turn.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
+                  "From the session: 4 disclosures: Muslim partiality [01:07:38]; political/car partiality [01:04:08]; pornography/social media trap [01:30:02]; shorts ministry backstory [~00:50]"
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Full 10-step blueprint executed; Big Ideas review in Q&A/guided-themes format (not unsupported Ebbinghaus recall)"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Visual Aids is the clearest growth area (2/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: None used — no whiteboard, no BLB word studies, no diagrams in the arc's highest-density content session"
+                ]
+              },
+              {
+                "title": "Newcomer Welcome is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The newcomer welcome was brief, missing a chance to enfold guests into the room.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF).",
+                  "From the session: Chris and John welcomed; homework instructions given at close; The Guarantee and formal member testimony protocol not executed"
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: ~32-35% leader talk (discussion only); three theological bridge monologues pulled ratio up in middle third"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Newcomer Welcome",
+                "paragraphs": [
+                  "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -749,6 +1065,85 @@
               "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, put one word-study lookup or a simple table on screen during the key term."
+            ],
+            "overview": [
+              "A strong session — strongest in Newcomer Welcome and Session Structure & Flow, with the clearest next step in Scripture Engagement. It scored 84.31/100 under the v3 weighted model.",
+              "The session played to its strengths in Newcomer Welcome and Session Structure & Flow; the recommendations below turn Scripture Engagement into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Newcomer Welcome anchored the session (5/5)",
+                "paragraphs": [
+                  "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF).",
+                  "From the session: 5 newcomers; 3 member testimonies (Keith, Brendan, Russ); Bryan testimony + The Guarantee delivered"
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Full 10-step blueprint executed; Big Ideas review Q&A style rather than formal retrieval"
+                ]
+              },
+              {
+                "title": "Application Questions anchored the session (4/5)",
+                "paragraphs": [
+                  "Application questions pushed members from concept to life, several at the reason/apply level.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
+                  "From the session: 8-10 Big Idea questions; DOK 3-4 majority; Weston application at highest DOK 4 quality"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Scripture Engagement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Discussion drifted from the text; a few more passages would ground the teaching.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 4 cross-references vs. 6+ benchmark; newcomer welcome consumed cross-referencing time"
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: ~38-42% leader talk (discussion only); consistent growth lever across all sessions"
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: Sin progression diagram (collaborative); no BLB word studies; no maps"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Scripture Engagement",
+                "paragraphs": [
+                  "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -886,6 +1281,85 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ],
+            "overview": [
+              "A strong session — strongest in Scripture Engagement and Session Structure & Flow, with the clearest next step in Facilitation vs. Lecture. It scored 75.28/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Session Structure & Flow; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 9 cross-references; 2 BLB Greek word studies; exceeds 6+ benchmark"
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Strong blueprint adherence; Big Ideas review informal but present; both prayers captured"
+                ]
+              },
+              {
+                "title": "Application Questions anchored the session (4/5)",
+                "paragraphs": [
+                  "Application questions pushed members from concept to life, several at the reason/apply level.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
+                  "From the session: 11 Big Idea questions; DOK 2–4; 36% DOK 4; distributed throughout + full go-around"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: ~41% leader talk; first-half teaching blocks pull above 30% benchmark; second half recovers"
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: BLB for 2 word studies; no slides, whiteboard, or maps"
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
+                  "From the session: Informal review at start (not formal recall drill); 6 bumper stickers surfaced; no formal closing drill"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -1023,6 +1497,85 @@
               "Next time, jot the 5 segment beats on a card and glance at it to keep hand-offs crisp.",
               "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds."
+            ],
+            "overview": [
+              "A strong session — strongest in Newcomer Welcome and Application Questions, with the clearest next step in Session Structure & Flow. It scored 77.05/100 under the v3 weighted model.",
+              "The session played to its strengths in Newcomer Welcome and Application Questions; the recommendations below turn Session Structure & Flow into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Newcomer Welcome anchored the session (4/5)",
+                "paragraphs": [
+                  "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF).",
+                  "From the session: 4 newcomers, all engaged. Strong existing-member testimonies (Brendan, Andy Truebert, Austin). The Guarantee delivered. Personal challenge to Mauricio. Missed: Eddie’s hurt not acknowledged before theological pivot."
+                ]
+              },
+              {
+                "title": "Application Questions anchored the session (4/5)",
+                "paragraphs": [
+                  "Application questions pushed members from concept to life, several at the reason/apply level.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
+                  "From the session: 9 Big Idea questions, all DOK 2–4. DOK distribution: 33% Level 4, 45% Level 3, 22% Level 2. Questions distributed throughout; strong synthesis round at close. No DOK 1 questions scored. Matches Bryan’s best recent sessions on question quality."
+                ]
+              },
+              {
+                "title": "Participant Engagement anchored the session (4/5)",
+                "paragraphs": [
+                  "A high share of the room contributed substantively, called on by name.",
+                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room.",
+                  "From the session: 20+ named voices; 10+ with substantive contributions; >40% of named participants contributed. Quiet members called on directly. All 4 newcomers gave substantive introductions. Estimated participation rate ~75–80%."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Session Structure & Flow is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Transitions between segments lost momentum, so the session’s shape was harder to feel.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Blueprint followed (newcomer welcome → overview → scripture → application → Big Ideas → closing prayer). Opening prayer not captured. No formal cumulative Big Ideas review from L1. Ran over by ~8 min."
+                ]
+              },
+              {
+                "title": "Scripture Engagement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Discussion drifted from the text; a few more passages would ground the teaching.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 1 cross-reference passage (Rom 5:3–5) plus 7 Greek word studies via BLB. Cross-ref count (2 passages) is well below the 6+ benchmark. Bryan acknowledged skipping prepared cross-refs. Word study depth is excellent but doesn’t substitute for parallel-text density."
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: Leader talk ratio ~45% with reading, ~38% discussion-only. Above the Lifeway 30% target. BLB teaching block (~5 min) and Guarantee pitch (~4 min) are the primary drivers. Strong back-and-forth throughout; 20+ distinct voices compensate partially."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Session Structure & Flow",
+                "paragraphs": [
+                  "Next time, jot the 5 segment beats on a card and glance at it to keep hand-offs crisp.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Scripture Engagement",
+                "paragraphs": [
+                  "Next time, pre-mark 3 cross-references to pull in during the densest teaching block.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -1160,6 +1713,85 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ],
+            "overview": [
+              "A strong session — strongest in Newcomer Welcome and Scripture Engagement, with the clearest next step in Facilitation vs. Lecture. It scored 81.75/100 under the v3 weighted model.",
+              "The session played to its strengths in Newcomer Welcome and Scripture Engagement; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Newcomer Welcome anchored the session (5/5)",
+                "paragraphs": [
+                  "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF).",
+                  "From the session: Two newcomers (Anthony, Graham). Members gave testimonies before newcomers spoke. Bryan shared personal story. Both newcomers introduced with follow-up commitments (Luke’s number; Tristan for Anthony). Homework push at close."
+                ]
+              },
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 9 cross-references cited and read (benchmark: 6+). Blue Letter Bible with Strong’s Concordance on shared screen. Greek word studies for “consider” and “joy.” All 12 James verses read and interrogated."
+                ]
+              },
+              {
+                "title": "Homework References anchored the session (5/5)",
+                "paragraphs": [
+                  "Homework was referenced and rewarded, differentiating the members who prepared.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement.",
+                  "From the session: “The Guarantee” invoked multiple times. Bryan’s 25-year personal testimony to homework at close. “Best 25 bucks you’ll ever spend” to Anthony. 5-day homework framing delivered. Next session assignment implied (last verses of chapter 1)."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: Discussion-only ratio ~33% leader talk; above 30% Lifeway benchmark. Three monologues exceeded 90 sec. Consistent with all prior sessions in this arc."
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: BLB shared on screen with Strong’s Concordance; Greek word studies presented. No color-coded charts or structural diagrams. Ernest photo used for humor/engagement. Better than L1 (2/5 overview session), below full-study benchmark."
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
+                  "From the session: No audible Big Ideas review from L1 at session start. Closing application round (“tell your wife”) functioned as strong memory anchoring. Four memorable bumper stickers surfaced. Consistent with L1 score."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -1297,6 +1929,85 @@
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, open one teaching point with a first-person example that cost you something."
+            ],
+            "overview": [
+              "A strong session — strongest in Newcomer Welcome and Homework References, with the clearest next step in Visual Aids. It scored 82.51/100 under the v3 weighted model.",
+              "The session played to its strengths in Newcomer Welcome and Homework References; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Newcomer Welcome anchored the session (5/5)",
+                "paragraphs": [
+                  "Newcomers were welcomed warmly, with members sharing testimonies before the lesson began.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF).",
+                  "From the session: 8–9 newcomers; 2 member testimonials before introductions; Bryan personally organized follow-up calls (Steven, Bryce, Mike, Thomas each assigned a newcomer). Best of the series."
+                ]
+              },
+              {
+                "title": "Homework References anchored the session (5/5)",
+                "paragraphs": [
+                  "Homework was referenced and rewarded, differentiating the members who prepared.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement.",
+                  "From the session: “The Guarantee” delivered in full; 5-day hard-work framing; workbooks distributed at close; next-week assignment (James 1:1–11, memorize vv. 2–11) given explicitly. Highest Dim 10 score of the series."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Blueprint well-executed: newcomer welcome, context overview, full-book reading, closing prayer. No Big Ideas review (appropriate for L1). Ran 14 min over target duration."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Visual Aids is the clearest growth area (2/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: Scripture screen only; no BLB, no structural chart, no color-coded visual. Chiasm described verbally without a diagram. Lowest single score; directly addressable in L2."
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: Discussion-only ratio ~38% leader talk; above 30% benchmark. Three extended monologues; context-setting demands partly justify the gap. Same dimension score as L6 and L7."
+                ]
+              },
+              {
+                "title": "Vulnerability / Authenticity is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Teaching stayed at arm’s length; little personal cost was modeled.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
+                  "From the session: 3 moderate-depth moments. Brother-in-law disclosure is Bryan’s highest-cost personal share this session; depth slightly below L7’s peak. Weight: 1 family share + 1 relational directness + 1 personal-story entry."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Vulnerability / Authenticity",
+                "paragraphs": [
+                  "Next time, open one teaching point with a first-person example that cost you something.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -1434,6 +2145,85 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, name one quiet regular early and invite their read on a passage.",
               "Next time, open one teaching point with a first-person example that cost you something."
+            ],
+            "overview": [
+              "A strong session — strongest in Scripture Engagement and Visual Aids, with the clearest next step in Facilitation vs. Lecture. It scored 76.92/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Visual Aids; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 7 passages across 4 books; 82% verse-grounded; every teaching move anchored to text"
+                ]
+              },
+              {
+                "title": "Visual Aids anchored the session (5/5)",
+                "paragraphs": [
+                  "On-screen word study and visuals reinforced the teaching multi-modally.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: Three aids deployed synchronously — best of the arc (chart + live text + Big Ideas slide)"
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Strong open (newcomer + chart + Big Ideas); closing truncated by run-over past 9:00 target"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: 62% leader talk (discussion only); regressed from L5 (58%); middle hour heavily leader-led"
+                ]
+              },
+              {
+                "title": "Participant Engagement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "A few voices carried the discussion; quieter members went unheard.",
+                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room.",
+                  "From the session: 53% contribution rate; same core 5–6; Walker not pulled into substantive Q&A"
+                ]
+              },
+              {
+                "title": "Vulnerability / Authenticity is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Teaching stayed at arm’s length; little personal cost was modeled.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
+                  "From the session: 3 moderate moments; depth regressed from L5 (no marital-accountability-level disclosure)"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Participant Engagement",
+                "paragraphs": [
+                  "Next time, name one quiet regular early and invite their read on a passage.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Vulnerability / Authenticity",
+                "paragraphs": [
+                  "Next time, open one teaching point with a first-person example that cost you something.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -1571,6 +2361,85 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, name one quiet regular early and invite their read on a passage.",
               "Next time, put one word-study lookup or a simple table on screen during the key term."
+            ],
+            "overview": [
+              "An exceptional session — strongest in Session Structure & Flow and Scripture Engagement, with the clearest next step in Facilitation vs. Lecture. It scored 87.58/100 under the v3 weighted model.",
+              "The session played to its strengths in Session Structure & Flow and Scripture Engagement; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Session Structure & Flow anchored the session (5/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "From the session: Excellent 10-step adherence"
+                ]
+              },
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "From the session: 7 passages across 6 books, OT-NT bridge"
+                ]
+              },
+              {
+                "title": "Application Questions anchored the session (5/5)",
+                "paragraphs": [
+                  "Application questions pushed members from concept to life, several at the reason/apply level.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
+                  "From the session: 11 Big Ideas, 45% DOK 4"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (4/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "From the session: 58% discussion-only; improved but above target"
+                ]
+              },
+              {
+                "title": "Participant Engagement is the clearest growth area (4/5)",
+                "paragraphs": [
+                  "A few voices carried the discussion; quieter members went unheard.",
+                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room.",
+                  "From the session: 50% asking questions; improved but below 70-80%"
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (4/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "From the session: Kings chart used effectively"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Participant Engagement",
+                "paragraphs": [
+                  "Next time, name one quiet regular early and invite their read on a passage.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -1722,6 +2591,79 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, pre-write 3 \"what does this look like for you this week?\" probes.",
               "Next time, put one word-study lookup or a simple table on screen during the key term."
+            ],
+            "overview": [
+              "An on target session — strongest in Session Structure & Flow and Scripture Engagement, with the clearest next step in Facilitation vs. Lecture. It scored 69.34/100 under the v3 weighted model.",
+              "The session played to its strengths in Session Structure & Flow and Scripture Engagement; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              },
+              {
+                "title": "Scripture Engagement anchored the session (4/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session."
+                ]
+              },
+              {
+                "title": "Participant Engagement anchored the session (4/5)",
+                "paragraphs": [
+                  "A high share of the room contributed substantively, called on by name.",
+                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking."
+                ]
+              },
+              {
+                "title": "Application Questions is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Questions stayed heady; few moved the group to first-person, personal application.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application."
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Application Questions",
+                "paragraphs": [
+                  "Next time, pre-write 3 \"what does this look like for you this week?\" probes.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -1862,6 +2804,79 @@
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, jot the 5 segment beats on a card and glance at it to keep hand-offs crisp.",
               "Next time, open by inviting two regulars to give a 60-second testimony before introductions."
+            ],
+            "overview": [
+              "An on target session — strongest in Scripture Engagement and Homework References, with the clearest next step in Visual Aids. It scored 63.07/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Homework References; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (4/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session."
+                ]
+              },
+              {
+                "title": "Homework References anchored the session (4/5)",
+                "paragraphs": [
+                  "Homework was referenced and rewarded, differentiating the members who prepared.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (3/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Visual Aids is the clearest growth area (2/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Transitions between segments lost momentum, so the session’s shape was harder to feel.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              },
+              {
+                "title": "Newcomer Welcome is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The newcomer welcome was brief, missing a chance to enfold guests into the room.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF)."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Session Structure & Flow",
+                "paragraphs": [
+                  "Next time, jot the 5 segment beats on a card and glance at it to keep hand-offs crisp.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Newcomer Welcome",
+                "paragraphs": [
+                  "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -2002,6 +3017,79 @@
               "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
               "Next time, pre-write 3 \"what does this look like for you this week?\" probes.",
               "Next time, put one word-study lookup or a simple table on screen during the key term."
+            ],
+            "overview": [
+              "A developing session — strongest in Homework References and Session Structure & Flow, with the clearest next step in Facilitation vs. Lecture. It scored 54.24/100 under the v3 weighted model.",
+              "The session played to its strengths in Homework References and Session Structure & Flow; the recommendations below turn Facilitation vs. Lecture into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Homework References anchored the session (4/5)",
+                "paragraphs": [
+                  "Homework was referenced and rewarded, differentiating the members who prepared.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (3/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              },
+              {
+                "title": "Scripture Engagement anchored the session (3/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Facilitation vs. Lecture is the clearest growth area (2/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking."
+                ]
+              },
+              {
+                "title": "Application Questions is the clearest growth area (2/5)",
+                "paragraphs": [
+                  "Questions stayed heady; few moved the group to first-person, personal application.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application."
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (2/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Application Questions",
+                "paragraphs": [
+                  "Next time, pre-write 3 \"what does this look like for you this week?\" probes.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -2154,6 +3242,79 @@
               "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ],
+            "overview": [
+              "A strong session — strongest in Facilitation vs. Lecture and Application Questions, with the clearest next step in Newcomer Welcome. It scored 77.35/100 under the v3 weighted model.",
+              "The session played to its strengths in Facilitation vs. Lecture and Application Questions; the recommendations below turn Newcomer Welcome into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Facilitation vs. Lecture anchored the session (5/5)",
+                "paragraphs": [
+                  "Discussion outweighed lecture — the room did the thinking, not just the leader.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking."
+                ]
+              },
+              {
+                "title": "Application Questions anchored the session (5/5)",
+                "paragraphs": [
+                  "Application questions pushed members from concept to life, several at the reason/apply level.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Newcomer Welcome is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The newcomer welcome was brief, missing a chance to enfold guests into the room.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF)."
+                ]
+              },
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention."
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Newcomer Welcome",
+                "paragraphs": [
+                  "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -2306,6 +3467,79 @@
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
               "Next time, ask two members to share one thing from their homework in the first 10 minutes."
+            ],
+            "overview": [
+              "A strong session — strongest in Vulnerability / Authenticity and Session Structure & Flow, with the clearest next step in Visual Aids. It scored 72.96/100 under the v3 weighted model.",
+              "The session played to its strengths in Vulnerability / Authenticity and Session Structure & Flow; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Vulnerability / Authenticity anchored the session (5/5)",
+                "paragraphs": [
+                  "Costly personal honesty set a tone of safety, and members disclosed in turn.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              },
+              {
+                "title": "Scripture Engagement anchored the session (4/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention."
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session."
+                ]
+              },
+              {
+                "title": "Homework References is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Homework went unmentioned, reducing its pull on the group.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Homework References",
+                "paragraphs": [
+                  "Next time, ask two members to share one thing from their homework in the first 10 minutes.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -2458,6 +3692,79 @@
               "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
               "Next time, open one teaching point with a first-person example that cost you something.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas."
+            ],
+            "overview": [
+              "An on target session — strongest in Scripture Engagement and Session Structure & Flow, with the clearest next step in Newcomer Welcome. It scored 71.2/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Session Structure & Flow; the recommendations below turn Newcomer Welcome into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture anchored the session (4/5)",
+                "paragraphs": [
+                  "Discussion outweighed lecture — the room did the thinking, not just the leader.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Newcomer Welcome is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The newcomer welcome was brief, missing a chance to enfold guests into the room.",
+                  "A 7–25 minute welcome with member testimonies before the lesson is enrollment, not overhead — the apex Building-Ministry signal (Precept, BSF)."
+                ]
+              },
+              {
+                "title": "Vulnerability / Authenticity is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Teaching stayed at arm’s length; little personal cost was modeled.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn."
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Newcomer Welcome",
+                "paragraphs": [
+                  "Next time, open by inviting two regulars to give a 60-second testimony before introductions.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Vulnerability / Authenticity",
+                "paragraphs": [
+                  "Next time, open one teaching point with a first-person example that cost you something.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
@@ -2610,6 +3917,79 @@
               "Next time, put one word-study lookup or a simple table on screen during the key term.",
               "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
               "Next time, ask two members to share one thing from their homework in the first 10 minutes."
+            ],
+            "overview": [
+              "A strong session — strongest in Scripture Engagement and Session Structure & Flow, with the clearest next step in Visual Aids. It scored 72.48/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Session Structure & Flow; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session."
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding."
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture anchored the session (4/5)",
+                "paragraphs": [
+                  "Discussion outweighed lecture — the room did the thinking, not just the leader.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Visual Aids is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention."
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session."
+                ]
+              },
+              {
+                "title": "Homework References is the clearest growth area (3/5)",
+                "paragraphs": [
+                  "Homework went unmentioned, reducing its pull on the group.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              },
+              {
+                "title": "Next session — Homework References",
+                "paragraphs": [
+                  "Next time, ask two members to share one thing from their homework in the first 10 minutes.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one."
+                ]
+              }
             ]
           },
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
