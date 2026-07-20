@@ -29,6 +29,24 @@ export const FeedbackPointSchema = t.Object({
   paragraphs: t.Array(t.String()),
 });
 
+// A timestamped moment inside a report section (e.g. a Key Moment or a Session
+// Flow Timeline entry). `timestamp` is a display string ("[50:03]"), optional.
+export const MomentSchema = t.Object({
+  timestamp: t.Optional(t.String()),
+  detail: t.String(),
+});
+
+// A generic, ordered report section (Key Moments, Session Flow Timeline,
+// Vulnerability Moments, Question Classification, Score Composition, …). Any
+// mix of paragraphs, bullets, and timestamped moments. Declared so Elysia
+// passes `report.sections` through instead of stripping it.
+export const SectionSchema = t.Object({
+  title: t.String(),
+  paragraphs: t.Optional(t.Array(t.String())),
+  bullets: t.Optional(t.Array(t.String())),
+  moments: t.Optional(t.Array(MomentSchema)),
+});
+
 export const ReportSchema = t.Object({
   id: t.String(),
   date: t.String(),
@@ -58,6 +76,9 @@ export const ReportSchema = t.Object({
     improvementsProse: t.Optional(t.Array(FeedbackPointSchema)),
     recommendationsProse: t.Optional(t.Array(FeedbackPointSchema)),
   }),
+  // Ordered PDF-parity sections rendered after Recommendations. Optional so
+  // reports generated before this feature still validate.
+  sections: t.Optional(t.Array(SectionSchema)),
   docUrl: t.String(),
   pdfUrl: t.String(),
 });

@@ -41,6 +41,9 @@ export interface CoachReport {
   dimensions: CoachDimension[];
   bigIdeas: string[];
   feedback: CoachFeedback;
+  /** Ordered PDF-parity sections rendered after Recommendations. Optional so
+   *  reports generated before prose/sections export still type-check. */
+  sections?: CoachSection[];
   docUrl: string;
   pdfUrl: string;
 }
@@ -50,6 +53,22 @@ export interface CoachReport {
 export interface CoachFeedbackPoint {
   title: string;
   paragraphs: string[];
+}
+
+/** A timestamped moment inside a report section (Key Moment, timeline entry). */
+export interface CoachMoment {
+  timestamp?: string;
+  detail: string;
+}
+
+/** A generic, ordered report section — Key Moments, Session Flow Timeline,
+ *  Score Composition, per-dimension notes, etc. Any mix of paragraphs,
+ *  bullets, and timestamped moments. */
+export interface CoachSection {
+  title: string;
+  paragraphs?: string[];
+  bullets?: string[];
+  moments?: CoachMoment[];
 }
 
 /** Coaching feedback rendered directly on the portal (no Google Docs hop). */
