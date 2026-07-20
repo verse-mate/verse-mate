@@ -31,6 +31,9 @@ import type { VersionPolicyPlugin } from "./src/versionPolicy.plugin";
 import dailyVersePlugin from "./src/daily-verse/daily-verse.plugin";
 import type { DailyVersePlugin } from "./src/daily-verse/daily-verse.plugin";
 
+import notificationsPlugin from "./src/notifications/notifications.plugin";
+import type { NotificationsPlugin } from "./src/notifications/notifications.plugin";
+
 export {
   ApiError,
   UnauthorizedError,
@@ -68,4 +71,6 @@ export {
   versionPolicyPlugin,
   type DailyVersePlugin,
   dailyVersePlugin,
+  type NotificationsPlugin,
+  notificationsPlugin,
 };

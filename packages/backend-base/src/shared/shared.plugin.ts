@@ -156,6 +156,11 @@ import {
 } from "../bible/audio/audio-cleanup.worker";
 import { audioGenerationQueue } from "../bible/audio/audio-generation.queue";
 import { audioGenerationWorker } from "../bible/audio/audio-generation.worker";
+import { verseNotificationQueue } from "../notifications/verse-notification.queue";
+import {
+  registerVerseNotificationCron,
+  verseNotificationWorker,
+} from "../notifications/verse-notification.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
 
@@ -199,6 +204,22 @@ setup.onStart(async () => {
     await registerAudioCleanupCron();
   } catch (error) {
     console.error("[QUEUE] Failed to register audio cleanup cron:", error);
+  }
+
+  if (!verseNotificationWorker.isRunning()) {
+    console.log(
+      "[QUEUE] Verse notification worker not running, starting it now...",
+    );
+    verseNotificationWorker.run();
+    console.log("[QUEUE] Verse notification worker started successfully");
+  } else {
+    console.log("[QUEUE] Verse notification worker already running");
+  }
+
+  try {
+    await registerVerseNotificationCron();
+  } catch (error) {
+    console.error("[QUEUE] Failed to register verse notification cron:", error);
   }
 
   // Check for existing active batches and start monitoring them
@@ -264,6 +285,8 @@ setup.onStop(async () => {
   audioGenerationWorker.close();
   audioCleanupQueue.close();
   audioCleanupWorker.close();
+  verseNotificationQueue.close();
+  verseNotificationWorker.close();
 });
 
 export default setup;

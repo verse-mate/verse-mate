@@ -131,6 +131,42 @@ const plugin = new Elysia()
             },
           },
         )
+        .post(
+          "/preferred-bible-version",
+          async ({ currentUserId, body, store: { db } }) => {
+            if (!currentUserId) {
+              throw new UnauthorizedError("Authentication required");
+            }
+
+            const result = await db
+              .getOrCreateConnection()
+              .updateTable("user")
+              .set({ preferred_bible_version: body.version })
+              .where("id", "=", currentUserId)
+              .executeTakeFirst();
+
+            if (!result || result.numUpdatedRows === BigInt(0)) {
+              throw new NotFoundError("User not found or update failed");
+            }
+
+            return true;
+          },
+          {
+            detail: {
+              summary: "Set preferred Bible version",
+              description:
+                "Persists the user's preferred Bible version — the source of truth the daily verse-of-the-day notification renders in (GH-281).",
+              tags: ["User"],
+            },
+            body: t.Object({
+              version: t.String({ minLength: 1, maxLength: 50 }),
+            }),
+            response: {
+              200: BooleanResponse,
+              ...StandardErrorResponses,
+            },
+          },
+        )
         .get(
           "/recently-viewed-books",
           async ({ currentUserId, store: { userService } }) => {
