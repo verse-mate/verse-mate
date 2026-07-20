@@ -45,12 +45,25 @@ export interface CoachReport {
   pdfUrl: string;
 }
 
+/** One fully-written coaching point: a short title plus prose paragraphs.
+ *  Emitted directly by the Bible-Coach pipeline (no Google Docs hop). */
+export interface CoachFeedbackPoint {
+  title: string;
+  paragraphs: string[];
+}
+
 /** Coaching feedback rendered directly on the portal (no Google Docs hop). */
 export interface CoachFeedback {
   headline: string;
   strengths: string[];
   improvements: string[];
   recommendations: string[];
+  /** Full prose from the pipeline — the expanded (desktop) presentation.
+   *  Optional so reports generated before prose export still type-check. */
+  overview?: string[];
+  strengthsProse?: CoachFeedbackPoint[];
+  improvementsProse?: CoachFeedbackPoint[];
+  recommendationsProse?: CoachFeedbackPoint[];
 }
 
 interface CoachRecord {

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { Value } from "@sinclair/typebox/value";
+import { ReportSchema } from "./coach.schema";
 import { type CoachReport, CoachService } from "./coach.service";
 
 // listCoaches / getReportsById / getTrendsById are pure over the bundled
@@ -85,6 +87,66 @@ describe("CoachService.buildTrends", () => {
   it("keys cluster series rows by cluster name", () => {
     const trends = CoachService.buildTrends([report({})]);
     expect(trends.clusterSeries[0]["Teaching Craft"]).toBe(23.1);
+  });
+});
+
+describe("ReportSchema prose fields", () => {
+  // Elysia enforces the response schema by CLEANING the value against it —
+  // any property not declared in the schema is stripped before it is sent.
+  // Value.Clean reproduces that exact step, so this guards the regression the
+  // prose feature was built to prevent: the pipeline emits *Prose fields, and
+  // if they were absent from ReportSchema the API would silently delete them.
+  it("keeps overview + *Prose on a report carrying prose (not stripped)", () => {
+    const withProse = report({
+      feedback: {
+        headline: "A strong session.",
+        strengths: ["terse"],
+        improvements: ["terse"],
+        recommendations: ["terse"],
+        overview: ["Overall paragraph one.", "Overall paragraph two."],
+        strengthsProse: [
+          {
+            title: "Exceptional discussion balance (32% leader talk)",
+            paragraphs: ["Para one.", "Para two."],
+          },
+        ],
+        improvementsProse: [{ title: "Growth", paragraphs: ["Para."] }],
+        recommendationsProse: [{ title: "Next", paragraphs: ["Para."] }],
+      },
+    });
+
+    // structuredClone so Clean doesn't mutate the fixture in place.
+    const cleaned = Value.Clean(
+      ReportSchema,
+      structuredClone(withProse),
+    ) as CoachReport;
+
+    expect(cleaned.feedback.overview).toEqual([
+      "Overall paragraph one.",
+      "Overall paragraph two.",
+    ]);
+    expect(cleaned.feedback.strengthsProse?.[0]).toEqual({
+      title: "Exceptional discussion balance (32% leader talk)",
+      paragraphs: ["Para one.", "Para two."],
+    });
+    expect(cleaned.feedback.improvementsProse?.[0]?.title).toBe("Growth");
+    expect(cleaned.feedback.recommendationsProse?.[0]?.paragraphs).toEqual([
+      "Para.",
+    ]);
+    // Terse arrays (mobile) still pass through untouched.
+    expect(cleaned.feedback.strengths).toEqual(["terse"]);
+    // And a valid report validates against the schema.
+    expect(Value.Check(ReportSchema, withProse)).toBe(true);
+  });
+
+  it("a prose-free report still validates (fields are optional)", () => {
+    const noProse = report({});
+    expect(Value.Check(ReportSchema, noProse)).toBe(true);
+    const cleaned = Value.Clean(
+      ReportSchema,
+      structuredClone(noProse),
+    ) as CoachReport;
+    expect(cleaned.feedback.strengthsProse).toBeUndefined();
   });
 });
 
