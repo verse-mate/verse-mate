@@ -18,6 +18,8 @@ export interface CoachDimension {
   n: number;
   name: string;
   score: number | null;
+  /** Coach's per-dimension rationale ("why this score"); may be empty. */
+  note?: string;
 }
 
 export interface CoachReport {
