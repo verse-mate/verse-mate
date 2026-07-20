@@ -9,6 +9,7 @@ import {
   dailyVersePlugin,
   healthCheckPlugin,
   lemmaPlugin,
+  notificationsPlugin,
   offlinePlugin,
   supportPlugin,
   topicPlugin,
@@ -29,6 +30,7 @@ const app = new Elysia()
   .use(biblePlugin)
   .use(coachPlugin)
   .use(dailyVersePlugin)
+  .use(notificationsPlugin)
   .use(audioPlugin)
   .use(topicPlugin)
   .use(lemmaPlugin)
