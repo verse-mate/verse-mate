@@ -130,6 +130,17 @@ export class NotificationsRepository {
     return rows as ActiveToken[];
   }
 
+  /** Count of live tokens (broadcast recipient-count preview). */
+  async countActiveTokens(): Promise<number> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("device_tokens")
+      .where("deleted_at", "is", null)
+      .select((eb) => eb.fn.countAll<string>().as("count"))
+      .executeTakeFirst();
+    return Number(row?.count ?? 0);
+  }
+
   /** Soft-delete dead tokens (Expo reported DeviceNotRegistered). */
   async softDeleteTokensByValues(tokens: string[]): Promise<void> {
     if (tokens.length === 0) return;

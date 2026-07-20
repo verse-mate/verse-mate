@@ -14,7 +14,10 @@ import {
   RegisterDeviceDto,
   UnregisterDeviceDto,
 } from "./dto/notifications.dto";
-import { BroadcastResponseSchema } from "./schemas/notifications-response.schema";
+import {
+  BroadcastResponseSchema,
+  RecipientCountResponseSchema,
+} from "./schemas/notifications-response.schema";
 import { NotificationsService } from "./services/notifications.service";
 
 // Token writes are an abuse target — cap per IP like the daily-verse endpoint (D-17).
@@ -85,28 +88,49 @@ const plugin = new Elysia()
   )
   // Admin broadcast — admins only.
   .guard(adminGuard, (app) =>
-    app.resolve({ as: "scoped" }, authDerive).post(
-      "/admin/notifications/broadcast",
-      async ({ currentUserId, body, store: { notificationsService } }) => {
-        return notificationsService.broadcast(
-          { title: body.title, body: body.body, deepLink: body.deepLink },
-          currentUserId,
-        );
-      },
-      {
-        body: BroadcastDto,
-        response: {
-          200: BroadcastResponseSchema,
-          ...StandardErrorResponses,
+    app
+      .resolve({ as: "scoped" }, authDerive)
+      .get(
+        "/admin/notifications/recipient-count",
+        async ({ store: { notificationsService } }) => {
+          const count = await notificationsService.getActiveRecipientCount();
+          return { count };
         },
-        detail: {
-          tags: ["Notifications"],
-          summary: "Broadcast a notification to all users",
-          description:
-            "Sends an ad-hoc push to every active device. deepLink must use the versemate:// scheme. Audited in notification_broadcasts.",
+        {
+          response: {
+            200: RecipientCountResponseSchema,
+            ...StandardErrorResponses,
+          },
+          detail: {
+            tags: ["Notifications"],
+            summary: "Active push recipient count",
+            description:
+              "Number of active device tokens a broadcast would reach (preview before sending).",
+          },
         },
-      },
-    ),
+      )
+      .post(
+        "/admin/notifications/broadcast",
+        async ({ currentUserId, body, store: { notificationsService } }) => {
+          return notificationsService.broadcast(
+            { title: body.title, body: body.body, deepLink: body.deepLink },
+            currentUserId,
+          );
+        },
+        {
+          body: BroadcastDto,
+          response: {
+            200: BroadcastResponseSchema,
+            ...StandardErrorResponses,
+          },
+          detail: {
+            tags: ["Notifications"],
+            summary: "Broadcast a notification to all users",
+            description:
+              "Sends an ad-hoc push to every active device. deepLink must use the versemate:// scheme. Audited in notification_broadcasts.",
+          },
+        },
+      ),
   );
 
 export type NotificationsPlugin = typeof plugin;
