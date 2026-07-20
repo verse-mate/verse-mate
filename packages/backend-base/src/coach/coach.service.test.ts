@@ -150,6 +150,61 @@ describe("ReportSchema prose fields", () => {
   });
 });
 
+describe("ReportSchema sections field", () => {
+  // Same Elysia-stripping guard as the prose fields: report.sections must be
+  // declared in ReportSchema or the response clean step deletes it. Covers a
+  // section carrying paragraphs, bullets, and timestamped moments.
+  it("keeps report.sections (paragraphs, bullets, moments) through the schema", () => {
+    const withSections = report({
+      sections: [
+        {
+          title: "Key moments",
+          moments: [
+            {
+              timestamp: "[50:03]",
+              detail: "Leader shared a coping mechanism.",
+            },
+            { detail: "A moment with no timestamp still survives." },
+          ],
+        },
+        {
+          title: "Monologue inventory",
+          bullets: ["3 stretches over 90s (max 2:40) — all teaching."],
+          paragraphs: ["Optional narrative context for the section."],
+        },
+      ],
+    });
+
+    expect(Value.Check(ReportSchema, withSections)).toBe(true);
+    const cleaned = Value.Clean(
+      ReportSchema,
+      structuredClone(withSections),
+    ) as CoachReport;
+
+    expect(cleaned.sections?.length).toBe(2);
+    expect(cleaned.sections?.[0]).toEqual({
+      title: "Key moments",
+      moments: [
+        { timestamp: "[50:03]", detail: "Leader shared a coping mechanism." },
+        { detail: "A moment with no timestamp still survives." },
+      ],
+    });
+    expect(cleaned.sections?.[1]?.bullets).toEqual([
+      "3 stretches over 90s (max 2:40) — all teaching.",
+    ]);
+  });
+
+  it("a report without sections still validates (optional)", () => {
+    const noSections = report({});
+    expect(Value.Check(ReportSchema, noSections)).toBe(true);
+    const cleaned = Value.Clean(
+      ReportSchema,
+      structuredClone(noSections),
+    ) as CoachReport;
+    expect(cleaned.sections).toBeUndefined();
+  });
+});
+
 describe("CoachService admin oversight", () => {
   it("lists every coach with a newest-first latest summary", () => {
     const coaches = svc.listCoaches();
