@@ -32,6 +32,12 @@ function report(over: Partial<CoachReport>): CoachReport {
       { n: 2, name: "Newcomer Welcome", score: null },
     ],
     bigIdeas: [],
+    feedback: {
+      headline: "",
+      strengths: [],
+      improvements: [],
+      recommendations: [],
+    },
     docUrl: "",
     pdfUrl: "",
     ...over,
