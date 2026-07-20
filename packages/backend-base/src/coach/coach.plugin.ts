@@ -24,6 +24,7 @@ const DimensionSchema = t.Object({
   n: t.Number(),
   name: t.String(),
   score: t.Union([t.Number(), t.Null()]),
+  note: t.Optional(t.String()),
 });
 
 const ReportSchema = t.Object({
