@@ -74,6 +74,7 @@ const plugin = new Elysia()
             return true;
           },
           {
+            beforeHandle: deviceRateLimit,
             body: UnregisterDeviceDto,
             response: { 200: BooleanResponse, ...StandardErrorResponses },
             detail: {
@@ -86,51 +87,54 @@ const plugin = new Elysia()
         ),
     ),
   )
-  // Admin broadcast — admins only.
-  .guard(adminGuard, (app) =>
-    app
-      .resolve({ as: "scoped" }, authDerive)
-      .get(
-        "/admin/notifications/recipient-count",
-        async ({ store: { notificationsService } }) => {
-          const count = await notificationsService.getActiveRecipientCount();
-          return { count };
-        },
-        {
-          response: {
-            200: RecipientCountResponseSchema,
-            ...StandardErrorResponses,
+  // Admin routes — authGuard first so token revocation (the redis access-token
+  // allow-list) applies, matching admin.plugin.ts's two-guard model; then
+  // adminGuard for the is_admin check.
+  .guard(authGuard, (app) =>
+    app.resolve({ as: "scoped" }, authDerive).guard(adminGuard, (app) =>
+      app
+        .get(
+          "/admin/notifications/recipient-count",
+          async ({ store: { notificationsService } }) => {
+            const count = await notificationsService.getActiveRecipientCount();
+            return { count };
           },
-          detail: {
-            tags: ["Notifications"],
-            summary: "Active push recipient count",
-            description:
-              "Number of active device tokens a broadcast would reach (preview before sending).",
+          {
+            response: {
+              200: RecipientCountResponseSchema,
+              ...StandardErrorResponses,
+            },
+            detail: {
+              tags: ["Notifications"],
+              summary: "Active push recipient count",
+              description:
+                "Number of active device tokens a broadcast would reach (preview before sending).",
+            },
           },
-        },
-      )
-      .post(
-        "/admin/notifications/broadcast",
-        async ({ currentUserId, body, store: { notificationsService } }) => {
-          return notificationsService.broadcast(
-            { title: body.title, body: body.body, deepLink: body.deepLink },
-            currentUserId,
-          );
-        },
-        {
-          body: BroadcastDto,
-          response: {
-            200: BroadcastResponseSchema,
-            ...StandardErrorResponses,
+        )
+        .post(
+          "/admin/notifications/broadcast",
+          async ({ currentUserId, body, store: { notificationsService } }) => {
+            return notificationsService.broadcast(
+              { title: body.title, body: body.body, deepLink: body.deepLink },
+              currentUserId,
+            );
           },
-          detail: {
-            tags: ["Notifications"],
-            summary: "Broadcast a notification to all users",
-            description:
-              "Sends an ad-hoc push to every active device. deepLink must use the versemate:// scheme. Audited in notification_broadcasts.",
+          {
+            body: BroadcastDto,
+            response: {
+              200: BroadcastResponseSchema,
+              ...StandardErrorResponses,
+            },
+            detail: {
+              tags: ["Notifications"],
+              summary: "Broadcast a notification to all users",
+              description:
+                "Sends an ad-hoc push to every active device. deepLink must use the versemate:// scheme. Audited in notification_broadcasts.",
+            },
           },
-        },
-      ),
+        ),
+    ),
   );
 
 export type NotificationsPlugin = typeof plugin;
