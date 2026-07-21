@@ -2,9 +2,7 @@
   "schemaVersion": 2,
   "generatedAt": "2026-07-21",
   "model": "v3-weighted-100",
-  "admins": [
-    "andytryba@gmail.com"
-  ],
+  "admins": ["andytryba@gmail.com"],
   "clusters": [
     {
       "name": "Teaching Craft",
