@@ -184,7 +184,10 @@ export class CoachRepository {
       .where("id", "=", classId)
       .where("user_id", "=", userId)
       .executeTakeFirst();
-    return (res?.numDeletedRows ?? 0n) > 0n;
+    // Number() rather than a 0n/`> 0n` BigInt comparison: the frontend-next
+    // build compiles this file under a tsconfig target below ES2020, which
+    // rejects BigInt literals (TS2737). numDeletedRows is a bigint; coerce it.
+    return Number(res?.numDeletedRows ?? 0) > 0;
   }
 
   /** Every class across all leaders (admin export). Ordered by owner then
