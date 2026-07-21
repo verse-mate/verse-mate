@@ -5,12 +5,21 @@ import {
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
+  ValidationError,
 } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
-import { ReportSchema } from "./coach.schema";
+import {
+  AdminCoachClassSchema,
+  CoachClassSchema,
+  ReportSchema,
+} from "./coach.schema";
 import { CoachService } from "./coach.service";
-import { UpdateAffiliatedChurchDto, UpdateZoomLinkDto } from "./dto/coach.dto";
+import {
+  CoachClassDto,
+  UpdateAffiliatedChurchDto,
+  UpdateZoomLinkDto,
+} from "./dto/coach.dto";
 
 // ─── Response schemas ──────────────────────────────────────────────────────
 // ReportSchema (and its parts) live in coach.schema.ts — a side-effect-free
@@ -39,6 +48,41 @@ const MeSchema = t.Object({
     t.Object({ min: t.Number(), label: t.String(), emoji: t.String() }),
   ),
 });
+
+// Shared validation + normalization for a class body. Mirrors the zoom-link
+// route's URL rule and enforces an ISO yyyy-mm-dd (or empty) date. Returns the
+// CoachClassInput the service/repository expect (empty date → null).
+function normalizeClassBody(body: {
+  name: string;
+  classDate: string;
+  recurrence: string;
+  zoomLink: string;
+}): {
+  name: string;
+  classDate: string | null;
+  recurrence: string;
+  zoomLink: string;
+} {
+  const name = body.name.trim();
+  if (!name) throw new ValidationError("Class name is required");
+
+  const zoomLink = body.zoomLink.trim();
+  if (zoomLink && !/^https?:\/\/\S+$/i.test(zoomLink)) {
+    throw new ValidationError("Enter a valid http(s) link");
+  }
+
+  const classDate = body.classDate.trim();
+  if (classDate && !/^\d{4}-\d{2}-\d{2}$/.test(classDate)) {
+    throw new ValidationError("Date must be in YYYY-MM-DD format");
+  }
+
+  return {
+    name,
+    classDate: classDate || null,
+    recurrence: body.recurrence,
+    zoomLink,
+  };
+}
 
 const ProfileHeaderSchema = t.Object({
   id: t.String(),
@@ -194,6 +238,100 @@ const plugin = new Elysia()
           },
         },
       )
+      // ─── Classes (many per leader) ──────────────────────────────────────
+      // The leader registers each study they run. Each class's zoom_link is a
+      // meeting the Notetaker bot joins; the program admin reads the whole set
+      // via GET /coach/admin/classes.
+      .get(
+        "/classes",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const classes = await coachService.getClasses(currentUserId);
+          if (classes === null)
+            throw new ForbiddenError("Not a coaching account");
+          return { classes };
+        },
+        {
+          response: {
+            200: t.Object({ classes: t.Array(CoachClassSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/classes",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const input = normalizeClassBody(body);
+          const created = await coachService.addClass(currentUserId, input);
+          if (created === null)
+            throw new ForbiddenError("Not a coaching account");
+          return { class: created };
+        },
+        {
+          body: CoachClassDto,
+          response: {
+            200: t.Object({ class: CoachClassSchema }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/classes/:id",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const input = normalizeClassBody(body);
+          const updated = await coachService.updateClass(
+            currentUserId,
+            params.id,
+            input,
+          );
+          if (updated === null) {
+            // Either not a coach or the class id isn't theirs. Distinguish so
+            // the client shows the right message.
+            if (!(await coachService.isCoach(currentUserId)))
+              throw new ForbiddenError("Not a coaching account");
+            throw new NotFoundError("Class not found");
+          }
+          return { class: updated };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: CoachClassDto,
+          response: {
+            200: t.Object({ class: CoachClassSchema }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .delete(
+        "/classes/:id",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const result = await coachService.removeClass(
+            currentUserId,
+            params.id,
+          );
+          if (result === "not_coach")
+            throw new ForbiddenError("Not a coaching account");
+          if (result === "not_found")
+            throw new NotFoundError("Class not found");
+          return { success: true };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({ success: t.Boolean() }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       // ─── Admin oversight (program admins only) ──────────────────────────
       // Every /coach/admin/* route requires isAdmin(); non-admin coaches get
       // 403 so the web client keeps them in their own dashboard.
@@ -253,6 +391,24 @@ const plugin = new Elysia()
           response: {
             200: TrendsSchema,
             404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Every leader's classes + owner identity — the single feed the Fireflies
+      // operator reads to configure which meeting links the bot auto-joins.
+      .get(
+        "/admin/classes",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return { classes: await coachService.listAllClasses() };
+        },
+        {
+          response: {
+            200: t.Object({ classes: t.Array(AdminCoachClassSchema) }),
             ...StandardErrorResponses,
           },
         },
