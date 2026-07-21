@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { Value } from "@sinclair/typebox/value";
-import { ReportSchema } from "./coach.schema";
+import {
+  AdminCoachClassSchema,
+  CoachClassSchema,
+  ReportSchema,
+} from "./coach.schema";
 import { type CoachReport, CoachService } from "./coach.service";
+import { CoachClassDto } from "./dto/coach.dto";
 
 // listCoaches / getReportsById / getTrendsById are pure over the bundled
 // dataset — the constructor only stores `db`, so a dummy is safe here.
@@ -223,5 +228,69 @@ describe("CoachService admin oversight", () => {
     expect(svc.getReportsById("nope")).toBeNull();
     expect(svc.getTrendsById("nope")).toBeNull();
     expect(svc.getProfileById("nope")).toBeNull();
+  });
+});
+
+describe("Coach class schemas", () => {
+  const validClass = {
+    id: "c1",
+    name: "Thursday Evening — James",
+    classDate: "2026-07-23",
+    recurrence: "weekly",
+    zoomLink: "https://zoom.us/j/123456789",
+  };
+
+  it("validates a well-formed class and allows a null date", () => {
+    expect(Value.Check(CoachClassSchema, validClass)).toBe(true);
+    expect(Value.Check(CoachClassSchema, { ...validClass, classDate: null })).toBe(
+      true,
+    );
+  });
+
+  it("strips unknown fields on the class response (Elysia clean step)", () => {
+    const cleaned = Value.Clean(
+      CoachClassSchema,
+      structuredClone({ ...validClass, secret: "leak" }),
+    ) as Record<string, unknown>;
+    expect(cleaned.secret).toBeUndefined();
+    expect(cleaned.zoomLink).toBe("https://zoom.us/j/123456789");
+  });
+
+  it("carries the resolved leader identity on the admin export row", () => {
+    const adminRow = {
+      ...validClass,
+      leader: { id: "jeff-ward", name: "Jeff Ward", email: "jeff@example.com" },
+    };
+    expect(Value.Check(AdminCoachClassSchema, adminRow)).toBe(true);
+    // A class whose owner isn't in the roster still validates (null id).
+    expect(
+      Value.Check(AdminCoachClassSchema, {
+        ...adminRow,
+        leader: {
+          id: null,
+          name: "unknown@example.com",
+          email: "unknown@example.com",
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects a class-create body with an unknown recurrence keyword", () => {
+    expect(
+      Value.Check(CoachClassDto, {
+        name: "X",
+        classDate: "",
+        recurrence: "hourly",
+        zoomLink: "",
+      }),
+    ).toBe(false);
+    expect(
+      Value.Check(CoachClassDto, {
+        name: "X",
+        classDate: "",
+        recurrence: "weekly",
+        zoomLink: "",
+      }),
+    ).toBe(true);
   });
 });
