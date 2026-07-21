@@ -8,11 +8,6 @@ import {
 import { type CoachReport, CoachService } from "./coach.service";
 import { CoachClassDto } from "./dto/coach.dto";
 
-// listCoaches / getReportsById / getTrendsById are pure over the bundled
-// dataset — the constructor only stores `db`, so a dummy is safe here.
-// biome-ignore lint/suspicious/noExplicitAny: test-only dummy db
-const svc = new CoachService(undefined as any);
-
 // buildTrends is a pure static — exercise it without a DB connection.
 
 function report(over: Partial<CoachReport>): CoachReport {
@@ -211,23 +206,45 @@ describe("ReportSchema sections field", () => {
 });
 
 describe("CoachService admin oversight", () => {
-  it("lists every coach with a newest-first latest summary", () => {
-    const coaches = svc.listCoaches();
+  // listCoaches / getReportsById now merge admin-added leaders and overlay
+  // recording links + notes from the DB. A fully-chainable query-builder stub
+  // that resolves every terminal to [] means "no added leaders, no overlays",
+  // so the assertions below reflect the bundled dataset unchanged.
+  const emptyQuery: Record<string, unknown> = new Proxy(
+    {},
+    {
+      get(_t, prop) {
+        if (prop === "execute") return async () => [];
+        if (prop === "executeTakeFirst") return async () => undefined;
+        return () => emptyQuery;
+      },
+    },
+  );
+  const stubDb = {
+    getOrCreateConnection: () => ({
+      selectFrom: () => emptyQuery,
+      insertInto: () => emptyQuery,
+    }),
+  } as unknown as ConstructorParameters<typeof CoachService>[0];
+  const adminSvc = new CoachService(stubDb);
+
+  it("lists every coach with a newest-first latest summary", async () => {
+    const coaches = await adminSvc.listCoaches();
     expect(coaches.length).toBeGreaterThan(0);
     const jeff = coaches.find((c) => c.id === "jeff-ward");
     expect(jeff).toBeDefined();
     expect(jeff?.sessionCount).toBeGreaterThanOrEqual(1);
     // latest.date must be >= every other report date for that coach.
-    const reports = svc.getReportsById("jeff-ward") ?? [];
+    const reports = (await adminSvc.getReportsById("jeff-ward")) ?? [];
     const maxDate = reports.reduce((m, r) => (r.date > m ? r.date : m), "");
     expect(jeff?.latest?.date).toBe(maxDate);
   });
 
-  it("returns reports for a known coach id and null for an unknown one", () => {
-    expect(svc.getReportsById("jeff-ward")).not.toBeNull();
-    expect(svc.getReportsById("nope")).toBeNull();
-    expect(svc.getTrendsById("nope")).toBeNull();
-    expect(svc.getProfileById("nope")).toBeNull();
+  it("returns reports for a known coach id and null for an unknown one", async () => {
+    expect(await adminSvc.getReportsById("jeff-ward")).not.toBeNull();
+    expect(await adminSvc.getReportsById("nope")).toBeNull();
+    expect(await adminSvc.getTrendsById("nope")).toBeNull();
+    expect(await adminSvc.getProfileById("nope")).toBeNull();
   });
 });
 

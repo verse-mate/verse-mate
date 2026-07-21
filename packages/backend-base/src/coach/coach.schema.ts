@@ -73,6 +73,15 @@ export const AdminCoachClassSchema = t.Object({
   }),
 });
 
+// A coaching note as returned to the portal. Declared so Elysia passes
+// `report.notes` through instead of stripping it.
+export const NoteSchema = t.Object({
+  id: t.String(),
+  body: t.String(),
+  createdAt: t.String(),
+  emailed: t.Boolean(),
+});
+
 export const ReportSchema = t.Object({
   id: t.String(),
   date: t.String(),
@@ -107,4 +116,48 @@ export const ReportSchema = t.Object({
   sections: t.Optional(t.Array(SectionSchema)),
   docUrl: t.String(),
   pdfUrl: t.String(),
+  // Admin-editable recording URL + coaching notes, overlaid from the DB.
+  // Optional so bundled reports without them still validate.
+  recordingUrl: t.Optional(t.String()),
+  notes: t.Optional(t.Array(NoteSchema)),
+});
+
+// ─── Monthly cross-leader analysis ─────────────────────────────────────────
+
+export const MonthlyLeaderSchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+  group: t.String(),
+  sessions: t.Number(),
+  avgScore: t.Union([t.Number(), t.Null()]),
+  status: t.String(),
+  statusEmoji: t.String(),
+  dimensions: t.Array(
+    t.Object({
+      n: t.Number(),
+      name: t.String(),
+      avg: t.Union([t.Number(), t.Null()]),
+    }),
+  ),
+  delta: t.Union([t.Number(), t.Null()]),
+});
+
+export const MonthlySchema = t.Object({
+  month: t.String(),
+  monthLabel: t.String(),
+  program: t.Object({
+    sessions: t.Number(),
+    activeLeaders: t.Number(),
+    newcomers: t.Number(),
+    avgScore: t.Union([t.Number(), t.Null()]),
+    clusters: t.Array(
+      t.Object({
+        name: t.String(),
+        weight: t.Number(),
+        avg: t.Union([t.Number(), t.Null()]),
+      }),
+    ),
+    delta: t.Union([t.Number(), t.Null()]),
+  }),
+  leaders: t.Array(MonthlyLeaderSchema),
 });

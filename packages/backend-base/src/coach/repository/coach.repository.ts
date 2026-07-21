@@ -30,6 +30,25 @@ export interface CoachClassWithOwner extends CoachClassRow {
   userId: string;
 }
 
+/** An admin-added leader row (roster placeholder before any report exists). */
+export interface AddedLeaderRow {
+  id: string;
+  email: string;
+  name: string;
+  group_name: string;
+  coach_name: string;
+}
+
+/** A persisted coaching note on a specific session. */
+export interface CoachNoteRow {
+  id: string;
+  coachId: string;
+  reportId: string;
+  body: string;
+  emailed: boolean;
+  createdAt: string;
+}
+
 /**
  * Persistence for the coach portal's mutable state:
  *   - coach_zoom_links — the leader's single quick meeting link + affiliated
@@ -211,5 +230,156 @@ export class CoachRepository {
       userId: r.user_id,
       ...CoachRepository.rowToClass(r),
     }));
+  }
+  // ─── Admin-added leaders ─────────────────────────────────────────────────
+
+  /** Every admin-added leader, for merging into the roster. */
+  async listAddedLeaders(): Promise<AddedLeaderRow[]> {
+    return this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_leaders")
+      .select(["id", "email", "name", "group_name", "coach_name"])
+      .execute();
+  }
+
+  /** Lookup by email (lowercased). null when not an admin-added leader. */
+  async findAddedLeaderByEmail(email: string): Promise<AddedLeaderRow | null> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_leaders")
+      .where("email", "=", email.trim().toLowerCase())
+      .select(["id", "email", "name", "group_name", "coach_name"])
+      .executeTakeFirst();
+    return row ?? null;
+  }
+
+  /** Insert a new leader. Assumes the caller already checked for duplicates. */
+  async addLeader(input: {
+    email: string;
+    name: string;
+    group: string;
+    coachName: string;
+    invitedBy: string | null;
+  }): Promise<AddedLeaderRow> {
+    return this.db
+      .getOrCreateConnection()
+      .insertInto("coach_leaders")
+      .values({
+        email: input.email.trim().toLowerCase(),
+        name: input.name,
+        group_name: input.group,
+        coach_name: input.coachName,
+        invited_by: input.invitedBy,
+      })
+      .returning(["id", "email", "name", "group_name", "coach_name"])
+      .executeTakeFirstOrThrow();
+  }
+
+  // ─── Recording links ─────────────────────────────────────────────────────
+
+  /** Recording URLs for a whole coach, keyed by report id (bulk overlay). */
+  async getRecordingLinksForCoach(
+    coachId: string,
+  ): Promise<Record<string, string>> {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_recording_links")
+      .where("coach_id", "=", coachId)
+      .select(["report_id", "recording_url"])
+      .execute();
+    const map: Record<string, string> = {};
+    for (const r of rows) map[r.report_id] = r.recording_url;
+    return map;
+  }
+
+  /** Upserts a session's recording URL and returns the stored value. */
+  async setRecordingLink(
+    coachId: string,
+    reportId: string,
+    recordingUrl: string,
+  ): Promise<string> {
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("coach_recording_links")
+      .values({
+        coach_id: coachId,
+        report_id: reportId,
+        recording_url: recordingUrl,
+      })
+      .onConflict((oc) =>
+        oc.columns(["coach_id", "report_id"]).doUpdateSet({
+          recording_url: recordingUrl,
+          updated_at: sql`NOW()`,
+        }),
+      )
+      .execute();
+    return recordingUrl;
+  }
+
+  // ─── Coaching notes ──────────────────────────────────────────────────────
+
+  /** Notes for a coach (optionally one session), newest first. */
+  async listNotes(coachId: string, reportId?: string): Promise<CoachNoteRow[]> {
+    let q = this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_notes")
+      .where("coach_id", "=", coachId);
+    if (reportId) q = q.where("report_id", "=", reportId);
+    const rows = await q
+      .select(["id", "coach_id", "report_id", "body", "emailed", "created_at"])
+      .orderBy("created_at", "desc")
+      .execute();
+    return rows.map(CoachRepository.toNoteRow);
+  }
+
+  /** Insert a note and return it (emailed flag decided by the caller). */
+  async addNote(input: {
+    coachId: string;
+    reportId: string;
+    authorUserId: string | null;
+    body: string;
+    emailed: boolean;
+  }): Promise<CoachNoteRow> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .insertInto("coach_notes")
+      .values({
+        coach_id: input.coachId,
+        report_id: input.reportId,
+        author_user_id: input.authorUserId,
+        body: input.body,
+        emailed: input.emailed,
+      })
+      .returning([
+        "id",
+        "coach_id",
+        "report_id",
+        "body",
+        "emailed",
+        "created_at",
+      ])
+      .executeTakeFirstOrThrow();
+    return CoachRepository.toNoteRow(row);
+  }
+
+  private static toNoteRow(row: {
+    id: string;
+    coach_id: string;
+    report_id: string;
+    body: string;
+    emailed: boolean;
+    created_at: Date | string;
+  }): CoachNoteRow {
+    return {
+      id: row.id,
+      coachId: row.coach_id,
+      reportId: row.report_id,
+      body: row.body,
+      emailed: row.emailed,
+      createdAt:
+        row.created_at instanceof Date
+          ? row.created_at.toISOString()
+          : String(row.created_at),
+    };
   }
 }
