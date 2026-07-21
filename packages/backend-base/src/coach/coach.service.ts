@@ -394,9 +394,10 @@ export class CoachService {
     // Authenticated but neither a coachee nor an admin → not a coaching account.
     if (!record && !admin) return null;
 
-    const stored = record
-      ? await this.coachRepository.getSettings(userId)
-      : null;
+    // Church + Bible-coach settings apply to any portal member (coachee OR
+    // admin), so fetch the stored row for admins too — not just coachees.
+    const stored =
+      record || admin ? await this.coachRepository.getSettings(userId) : null;
     return {
       isCoach: !!record,
       isAdmin: admin,
@@ -784,12 +785,18 @@ export class CoachService {
     return this.coachRepository.setZoomLink(userId, zoomLink);
   }
 
+  /** True when the user belongs to the coach portal at all — a coachee OR a
+   *  program admin. Church + Bible-coach settings are writable by both. */
+  private async isPortalMember(userId: string): Promise<boolean> {
+    if (await this.recordFor(userId)) return true;
+    return this.isAdmin(userId);
+  }
+
   async setAffiliatedChurch(
     userId: string,
     affiliatedChurch: string,
   ): Promise<string | null> {
-    const record = await this.recordFor(userId);
-    if (!record) return null;
+    if (!(await this.isPortalMember(userId))) return null;
     return this.coachRepository.setAffiliatedChurch(userId, affiliatedChurch);
   }
 
@@ -797,8 +804,7 @@ export class CoachService {
     userId: string,
     bibleCoach: string,
   ): Promise<string | null> {
-    const record = await this.recordFor(userId);
-    if (!record) return null;
+    if (!(await this.isPortalMember(userId))) return null;
     return this.coachRepository.setBibleCoach(userId, bibleCoach);
   }
 
