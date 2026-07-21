@@ -5,6 +5,7 @@ import type { db } from "../../shared/shared.plugin";
 export interface CoachSettings {
   zoomLink: string;
   affiliatedChurch: string;
+  bibleCoach: string;
 }
 
 /** A persisted class row as returned to the service layer (dates normalized
@@ -67,11 +68,15 @@ export class CoachRepository {
       .getOrCreateConnection()
       .selectFrom("coach_zoom_links")
       .where("user_id", "=", userId)
-      .select(["zoom_link", "affiliated_church"])
+      .select(["zoom_link", "affiliated_church", "bible_coach"])
       .executeTakeFirst();
 
     return row
-      ? { zoomLink: row.zoom_link, affiliatedChurch: row.affiliated_church }
+      ? {
+          zoomLink: row.zoom_link,
+          affiliatedChurch: row.affiliated_church,
+          bibleCoach: row.bible_coach,
+        }
       : null;
   }
 
@@ -110,6 +115,23 @@ export class CoachRepository {
       .execute();
 
     return affiliatedChurch;
+  }
+
+  /** Upserts the selected Bible coach for a user and returns the stored value. */
+  async setBibleCoach(userId: string, bibleCoach: string): Promise<string> {
+    await this.db
+      .getOrCreateConnection()
+      .insertInto("coach_zoom_links")
+      .values({ user_id: userId, bible_coach: bibleCoach })
+      .onConflict((oc) =>
+        oc.column("user_id").doUpdateSet({
+          bible_coach: bibleCoach,
+          updated_at: sql`NOW()`,
+        }),
+      )
+      .execute();
+
+    return bibleCoach;
   }
 
   // ─── Classes (many rows per user) ─────────────────────────────────────────

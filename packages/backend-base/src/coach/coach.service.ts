@@ -396,6 +396,7 @@ export class CoachService {
         : null,
       zoomLink: stored?.zoomLink ?? record?.zoomLink ?? "",
       affiliatedChurch: stored?.affiliatedChurch ?? "",
+      bibleCoach: stored?.bibleCoach ?? "",
       model: coachData.model,
       clusters: coachData.clusters,
       statusBands: coachData.statusBands,
@@ -761,6 +762,15 @@ export class CoachService {
     const record = await this.recordFor(userId);
     if (!record) return null;
     return this.coachRepository.setAffiliatedChurch(userId, affiliatedChurch);
+  }
+
+  async setBibleCoach(
+    userId: string,
+    bibleCoach: string,
+  ): Promise<string | null> {
+    const record = await this.recordFor(userId);
+    if (!record) return null;
+    return this.coachRepository.setBibleCoach(userId, bibleCoach);
   }
 
   // ─── Classes (many per leader) ────────────────────────────────────────────
