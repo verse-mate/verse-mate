@@ -13013,7 +13013,7 @@
     {
       "id": "james-davis",
       "name": "James Davis",
-      "email": "james-davis@needs-real-email.invalid",
+      "email": "anthocar@gmail.com",
       "group": "James D’Apolito’s Group",
       "coachName": "Bryan Bailey",
       "isCoach": true,
@@ -16259,646 +16259,9 @@
       ]
     },
     {
-      "id": "cameron-relic",
-      "name": "Cameron Relic",
-      "email": "cameron-relic@needs-real-email.invalid",
-      "group": "James Study",
-      "coachName": "Bryan Bailey",
-      "isCoach": true,
-      "zoomLink": "",
-      "reports": [
-        {
-          "id": "cameron-relic-2026-05-28-james-lesson-1-faith2see-group-c",
-          "date": "2026-05-28",
-          "dateLabel": "May 28, 2026",
-          "session": "James, Lesson 1 (faith2see group) — Crown of Life, Temptation, Doers of the Word, True Religion (Jas 1:12–27)",
-          "topic": "Trials vs. temptation; sin progression (lust→carried away→death); doers vs. hearers; bridling the tongue; pure religion",
-          "duration": "~2h 3m (6:00 PM – 8:03 PM CT; ended 5 min over target)",
-          "attendees": 15,
-          "newcomers": 0,
-          "score": 73.3,
-          "base": 73.3,
-          "newcomerBonus": 0,
-          "sizeBonus": 0,
-          "status": "Strong",
-          "statusEmoji": "🟢",
-          "clusters": [
-            {
-              "name": "Teaching Craft",
-              "weight": 33,
-              "scorePct": 80,
-              "contribution": 26.4
-            },
-            {
-              "name": "Building Ministry",
-              "weight": 31,
-              "scorePct": 70,
-              "contribution": 21.7
-            },
-            {
-              "name": "Engaging People",
-              "weight": 18,
-              "scorePct": 70,
-              "contribution": 12.6
-            },
-            {
-              "name": "Being Real",
-              "weight": 18,
-              "scorePct": 70,
-              "contribution": 12.6
-            }
-          ],
-          "dimensions": [
-            {
-              "n": 1,
-              "name": "Session Structure & Flow",
-              "score": 4,
-              "note": "Strong blueprint adherence; dual-leader handoff smooth; both prayers captured; homework anchored"
-            },
-            {
-              "n": 2,
-              "name": "Newcomer Welcome",
-              "score": null,
-              "note": "No newcomers — Building Ministry max reduced proportionally"
-            },
-            {
-              "n": 3,
-              "name": "Scripture Engagement",
-              "score": 5,
-              "note": "14 cross-references; Cameron's arc high; Isaiah 1 cross-ref at close exceptional"
-            },
-            {
-              "n": 4,
-              "name": "Facilitation vs. Lecture",
-              "score": 3,
-              "note": "~30–35% leader talk; Cameron's best facilitation ratio in tracked arc; productive struggle honored"
-            },
-            {
-              "n": 5,
-              "name": "Application Questions",
-              "score": 4,
-              "note": "10 Big Idea questions; 40% DOK 4; distributed throughout; productive struggle defended"
-            },
-            {
-              "n": 6,
-              "name": "Participant Engagement",
-              "score": 4,
-              "note": "~13 members called by name; 12 distinct voices in discussion; strong go-around even if brief"
-            },
-            {
-              "n": 7,
-              "name": "Visual Aids",
-              "score": 3,
-              "note": "Russell's sin-progression diagram (Cameron invited it); no BLB on-screen; no leader-prepared visual"
-            },
-            {
-              "n": 8,
-              "name": "Vulnerability / Authenticity",
-              "score": 3,
-              "note": "Cameron: 3 mild disclosures; no high-cost personal moment; member vulnerability (Uri, Andy) present but not fully honored"
-            },
-            {
-              "n": 9,
-              "name": "Memory Reinforcement",
-              "score": 4,
-              "note": "Russell's 14-min review of James 1:1–11 + Cameron's Big Ideas opening; strong closing synthesis 'three things that cost you'"
-            },
-            {
-              "n": 10,
-              "name": "Homework References",
-              "score": 5,
-              "note": "Explicit page references (pg 25, 27, 28); homework structure spine of lesson; Cameron's arc high on this dimension"
-            },
-            {
-              "n": 11,
-              "name": "Prayer",
-              "score": 4,
-              "note": "Opening prayer by Cameron (Russell's invitation, on-topic); closing prayer delegated to Andy (substantive, applied lesson themes); prayer chain awareness implied"
-            },
-            {
-              "n": 12,
-              "name": "Leader Development",
-              "score": 2,
-              "note": "No visible apprentice or facilitation-window assignment; Russell is peer co-leader not Cameron's coachee; no 2:2 signal visible"
-            }
-          ],
-          "bigIdeas": [],
-          "feedback": {
-            "headline": "A strong session — strongest in Scripture Engagement and Homework References, with the clearest next step in Leader Development.",
-            "strengths": [
-              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
-              "Homework was referenced and rewarded, differentiating the members who prepared.",
-              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place."
-            ],
-            "improvements": [
-              "No in-session development of another leader was observable this week.",
-              "Leader talk crowded out discussion; the balance leaned toward lecture.",
-              "The session leaned audio-only; a visual anchor would aid retention."
-            ],
-            "recommendations": [
-              "Next time, verbalize one hand-off — e.g., \"Randy is going to open us next week.\"",
-              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
-              "Next time, put one word-study lookup or a simple table on screen during the key term."
-            ],
-            "overview": [
-              "A strong session — strongest in Scripture Engagement and Homework References, with the clearest next step in Leader Development. It scored 73.3/100 under the v3 weighted model.",
-              "The session played to its strengths in Scripture Engagement and Homework References; the recommendations below turn Leader Development into transferable technique for the next session, so the momentum carries forward regardless of the passage."
-            ],
-            "strengthsProse": [
-              {
-                "title": "Scripture Engagement anchored the session (5/5)",
-                "paragraphs": [
-                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
-                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
-                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: 14 cross-references; Cameron's arc high; Isaiah 1 cross-ref at close exceptional"
-                ]
-              },
-              {
-                "title": "Homework References anchored the session (5/5)",
-                "paragraphs": [
-                  "Homework was referenced and rewarded, differentiating the members who prepared.",
-                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement.",
-                  "This dimension rolls up into the Building Ministry cluster (weight 31 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: Explicit page references (pg 25, 27, 28); homework structure spine of lesson; Cameron's arc high on this dimension"
-                ]
-              },
-              {
-                "title": "Session Structure & Flow anchored the session (4/5)",
-                "paragraphs": [
-                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
-                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
-                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: Strong blueprint adherence; dual-leader handoff smooth; both prayers captured; homework anchored"
-                ]
-              },
-              {
-                "title": "Application Questions anchored the session (4/5)",
-                "paragraphs": [
-                  "Application questions pushed members from concept to life, several at the reason/apply level.",
-                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
-                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: 10 Big Idea questions; 40% DOK 4; distributed throughout; productive struggle defended"
-                ]
-              },
-              {
-                "title": "Participant Engagement anchored the session (4/5)",
-                "paragraphs": [
-                  "A high share of the room contributed substantively, called on by name.",
-                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room.",
-                  "This dimension rolls up into the Engaging People cluster (weight 18 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: ~13 members called by name; 12 distinct voices in discussion; strong go-around even if brief"
-                ]
-              }
-            ],
-            "improvementsProse": [
-              {
-                "title": "Leader Development is a growth area (2/5)",
-                "paragraphs": [
-                  "No in-session development of another leader was observable this week.",
-                  "2 Timothy 2:2 makes multiplication the apex leadership outcome — a named, in-session hand-off is the observable signal that a leader is being made.",
-                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: No visible apprentice or facilitation-window assignment; Russell is peer co-leader not Cameron's coachee; no 2:2 signal visible"
-                ]
-              },
-              {
-                "title": "Facilitation vs. Lecture is a growth area (3/5)",
-                "paragraphs": [
-                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
-                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
-                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: ~30–35% leader talk; Cameron's best facilitation ratio in tracked arc; productive struggle honored"
-                ]
-              },
-              {
-                "title": "Visual Aids is a growth area (3/5)",
-                "paragraphs": [
-                  "The session leaned audio-only; a visual anchor would aid retention.",
-                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: Russell's sin-progression diagram (Cameron invited it); no BLB on-screen; no leader-prepared visual"
-                ]
-              },
-              {
-                "title": "Vulnerability / Authenticity is a growth area (3/5)",
-                "paragraphs": [
-                  "Teaching stayed at arm’s length; little personal cost was modeled.",
-                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
-                  "Because this dimension sits in the Being Real cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: Cameron: 3 mild disclosures; no high-cost personal moment; member vulnerability (Uri, Andy) present but not fully honored"
-                ]
-              },
-              {
-                "title": "Memory Reinforcement is a growth area (4/5)",
-                "paragraphs": [
-                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
-                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: Russell's 14-min review of James 1:1–11 + Cameron's Big Ideas opening; strong closing synthesis 'three things that cost you'"
-                ]
-              }
-            ],
-            "recommendationsProse": [
-              {
-                "title": "Next session — Leader Development",
-                "paragraphs": [
-                  "Next time, verbalize one hand-off — e.g., \"Randy is going to open us next week.\"",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Facilitation vs. Lecture",
-                "paragraphs": [
-                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Visual Aids",
-                "paragraphs": [
-                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Vulnerability / Authenticity",
-                "paragraphs": [
-                  "Next time, open one teaching point with a first-person example that cost you something.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Being Real cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Memory Reinforcement",
-                "paragraphs": [
-                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              }
-            ]
-          },
-          "sections": [
-            {
-              "title": "Score composition",
-              "paragraphs": [
-                "How the four weighted clusters and any session bonuses combined into the composite score."
-              ],
-              "bullets": [
-                "Teaching Craft: 80% × weight 33 → 26.40 pts",
-                "Building Ministry: 70% × weight 31 → 21.70 pts",
-                "Engaging People: 70% × weight 18 → 12.60 pts",
-                "Being Real: 70% × weight 18 → 12.60 pts",
-                "Base (sum of cluster contributions): 73.30 / 100",
-                "Session score: 73.3 / 100"
-              ]
-            },
-            {
-              "title": "Coaching notes by dimension",
-              "paragraphs": [
-                "The per-dimension rationale behind each score on the 12-dimension scorecard."
-              ],
-              "bullets": [
-                "Session Structure & Flow (4/5): Strong blueprint adherence; dual-leader handoff smooth; both prayers captured; homework anchored",
-                "Newcomer Welcome (N/A): No newcomers — Building Ministry max reduced proportionally",
-                "Scripture Engagement (5/5): 14 cross-references; Cameron's arc high; Isaiah 1 cross-ref at close exceptional",
-                "Facilitation vs. Lecture (3/5): ~30–35% leader talk; Cameron's best facilitation ratio in tracked arc; productive struggle honored",
-                "Application Questions (4/5): 10 Big Idea questions; 40% DOK 4; distributed throughout; productive struggle defended",
-                "Participant Engagement (4/5): ~13 members called by name; 12 distinct voices in discussion; strong go-around even if brief",
-                "Visual Aids (3/5): Russell's sin-progression diagram (Cameron invited it); no BLB on-screen; no leader-prepared visual",
-                "Vulnerability / Authenticity (3/5): Cameron: 3 mild disclosures; no high-cost personal moment; member vulnerability (Uri, Andy) present but not fully honored",
-                "Memory Reinforcement (4/5): Russell's 14-min review of James 1:1–11 + Cameron's Big Ideas opening; strong closing synthesis 'three things that cost you'",
-                "Homework References (5/5): Explicit page references (pg 25, 27, 28); homework structure spine of lesson; Cameron's arc high on this dimension",
-                "Prayer (4/5): Opening prayer by Cameron (Russell's invitation, on-topic); closing prayer delegated to Andy (substantive, applied lesson themes); prayer chain awareness implied",
-                "Leader Development (2/5): No visible apprentice or facilitation-window assignment; Russell is peer co-leader not Cameron's coachee; no 2:2 signal visible"
-              ]
-            }
-          ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
-        },
-        {
-          "id": "cameron-relic-2026-04-16-destruction-of-jerusalem-zedekia",
-          "date": "2026-04-16",
-          "dateLabel": "April 16, 2026",
-          "session": "Destruction of Jerusalem — Zedekiah, False Prophets, the Yoke of Babylon",
-          "topic": "God as main character; cyclical warnings; partial truth as lie; two masters",
-          "duration": "1h 54m (114 minutes)",
-          "attendees": 7,
-          "newcomers": 0,
-          "score": 70.66,
-          "base": 70.66,
-          "newcomerBonus": 0,
-          "sizeBonus": 0,
-          "status": "On Target",
-          "statusEmoji": "🟡",
-          "clusters": [
-            {
-              "name": "Teaching Craft",
-              "weight": 33,
-              "scorePct": 72,
-              "contribution": 23.76
-            },
-            {
-              "name": "Building Ministry",
-              "weight": 31,
-              "scorePct": 70,
-              "contribution": 21.7
-            },
-            {
-              "name": "Engaging People",
-              "weight": 18,
-              "scorePct": 60,
-              "contribution": 10.8
-            },
-            {
-              "name": "Being Real",
-              "weight": 18,
-              "scorePct": 80,
-              "contribution": 14.4
-            }
-          ],
-          "dimensions": [
-            {
-              "n": 1,
-              "name": "Session Structure & Flow",
-              "score": 4,
-              "note": "Clean arc; opens with retrieval; closes with Big Ideas but apologetic"
-            },
-            {
-              "n": 2,
-              "name": "Newcomer Welcome",
-              "score": null,
-              "note": "No newcomers present"
-            },
-            {
-              "n": 3,
-              "name": "Scripture Engagement",
-              "score": 5,
-              "note": "7 books triangulated on one narrative; 85% verse-grounded"
-            },
-            {
-              "n": 4,
-              "name": "Facilitation vs. Lecture",
-              "score": 2,
-              "note": "52% leader talk — 22 points above 30% target"
-            },
-            {
-              "n": 5,
-              "name": "Application Questions",
-              "score": 3,
-              "note": "6 Big Ideas at 83% DOK 3-4, but clustered late"
-            },
-            {
-              "n": 6,
-              "name": "Participant Engagement",
-              "score": 4,
-              "note": "83% read aloud; 50% discuss; named call-outs used well"
-            },
-            {
-              "n": 7,
-              "name": "Visual Aids",
-              "score": 1,
-              "note": "None observed — audio-plus-Bible only on dense parallel-passage session"
-            },
-            {
-              "n": 8,
-              "name": "Vulnerability / Authenticity",
-              "score": 4,
-              "note": "3 moments, 1 reciprocity peak; moderate depth overall"
-            },
-            {
-              "n": 9,
-              "name": "Memory Reinforcement",
-              "score": 5,
-              "note": "Retrieval-first opening — pedagogically strongest position"
-            },
-            {
-              "n": 10,
-              "name": "Homework References",
-              "score": 4,
-              "note": "Regular workbook references; lesson built on homework questions"
-            },
-            {
-              "n": 11,
-              "name": "Prayer",
-              "score": 4,
-              "note": "Opening delegated to Frank; closing delegated to John Relic (different member)"
-            },
-            {
-              "n": 12,
-              "name": "Leader Development",
-              "score": 3,
-              "note": "Solo leader (no co-teacher or mentor); no apprentice visible"
-            }
-          ],
-          "bigIdeas": [],
-          "feedback": {
-            "headline": "An on target session — strongest in Scripture Engagement and Memory Reinforcement, with the clearest next step in Visual Aids.",
-            "strengths": [
-              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
-              "The session opened by recalling prior Big Ideas, reinforcing cumulative learning.",
-              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place."
-            ],
-            "improvements": [
-              "The session leaned audio-only; a visual anchor would aid retention.",
-              "Leader talk crowded out discussion; the balance leaned toward lecture.",
-              "Questions stayed heady; few moved the group to first-person, personal application."
-            ],
-            "recommendations": [
-              "Next time, put one word-study lookup or a simple table on screen during the key term.",
-              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
-              "Next time, pre-write 3 \"what does this look like for you this week?\" probes."
-            ],
-            "overview": [
-              "An on target session — strongest in Scripture Engagement and Memory Reinforcement, with the clearest next step in Visual Aids. It scored 70.66/100 under the v3 weighted model.",
-              "The session played to its strengths in Scripture Engagement and Memory Reinforcement; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
-            ],
-            "strengthsProse": [
-              {
-                "title": "Scripture Engagement anchored the session (5/5)",
-                "paragraphs": [
-                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
-                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
-                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: 7 books triangulated on one narrative; 85% verse-grounded"
-                ]
-              },
-              {
-                "title": "Memory Reinforcement anchored the session (5/5)",
-                "paragraphs": [
-                  "The session opened by recalling prior Big Ideas, reinforcing cumulative learning.",
-                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
-                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: Retrieval-first opening — pedagogically strongest position"
-                ]
-              },
-              {
-                "title": "Session Structure & Flow anchored the session (4/5)",
-                "paragraphs": [
-                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
-                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
-                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: Clean arc; opens with retrieval; closes with Big Ideas but apologetic"
-                ]
-              },
-              {
-                "title": "Participant Engagement anchored the session (4/5)",
-                "paragraphs": [
-                  "A high share of the room contributed substantively, called on by name.",
-                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room.",
-                  "This dimension rolls up into the Engaging People cluster (weight 18 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: 83% read aloud; 50% discuss; named call-outs used well"
-                ]
-              },
-              {
-                "title": "Vulnerability / Authenticity anchored the session (4/5)",
-                "paragraphs": [
-                  "Costly personal honesty set a tone of safety, and members disclosed in turn.",
-                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
-                  "This dimension rolls up into the Being Real cluster (weight 18 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
-                  "From the session: 3 moments, 1 reciprocity peak; moderate depth overall"
-                ]
-              }
-            ],
-            "improvementsProse": [
-              {
-                "title": "Visual Aids is a growth area (1/5)",
-                "paragraphs": [
-                  "The session leaned audio-only; a visual anchor would aid retention.",
-                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: None observed — audio-plus-Bible only on dense parallel-passage session"
-                ]
-              },
-              {
-                "title": "Facilitation vs. Lecture is a growth area (2/5)",
-                "paragraphs": [
-                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
-                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
-                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: 52% leader talk — 22 points above 30% target"
-                ]
-              },
-              {
-                "title": "Application Questions is a growth area (3/5)",
-                "paragraphs": [
-                  "Questions stayed heady; few moved the group to first-person, personal application.",
-                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: 6 Big Ideas at 83% DOK 3-4, but clustered late"
-                ]
-              },
-              {
-                "title": "Leader Development is a growth area (3/5)",
-                "paragraphs": [
-                  "No in-session development of another leader was observable this week.",
-                  "2 Timothy 2:2 makes multiplication the apex leadership outcome — a named, in-session hand-off is the observable signal that a leader is being made.",
-                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: Solo leader (no co-teacher or mentor); no apprentice visible"
-                ]
-              },
-              {
-                "title": "Homework References is a growth area (4/5)",
-                "paragraphs": [
-                  "Homework went unmentioned, reducing its pull on the group.",
-                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement.",
-                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
-                  "From the session: Regular workbook references; lesson built on homework questions"
-                ]
-              }
-            ],
-            "recommendationsProse": [
-              {
-                "title": "Next session — Visual Aids",
-                "paragraphs": [
-                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Facilitation vs. Lecture",
-                "paragraphs": [
-                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Application Questions",
-                "paragraphs": [
-                  "Next time, pre-write 3 \"what does this look like for you this week?\" probes.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Leader Development",
-                "paragraphs": [
-                  "Next time, verbalize one hand-off — e.g., \"Randy is going to open us next week.\"",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              },
-              {
-                "title": "Next session — Homework References",
-                "paragraphs": [
-                  "Next time, ask two members to share one thing from their homework in the first 10 minutes.",
-                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
-                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
-                ]
-              }
-            ]
-          },
-          "sections": [
-            {
-              "title": "Score composition",
-              "paragraphs": [
-                "How the four weighted clusters and any session bonuses combined into the composite score."
-              ],
-              "bullets": [
-                "Teaching Craft: 72% × weight 33 → 23.76 pts",
-                "Building Ministry: 70% × weight 31 → 21.70 pts",
-                "Engaging People: 60% × weight 18 → 10.80 pts",
-                "Being Real: 80% × weight 18 → 14.40 pts",
-                "Base (sum of cluster contributions): 70.66 / 100",
-                "Session score: 70.66 / 100"
-              ]
-            },
-            {
-              "title": "Coaching notes by dimension",
-              "paragraphs": [
-                "The per-dimension rationale behind each score on the 12-dimension scorecard."
-              ],
-              "bullets": [
-                "Session Structure & Flow (4/5): Clean arc; opens with retrieval; closes with Big Ideas but apologetic",
-                "Newcomer Welcome (N/A): No newcomers present",
-                "Scripture Engagement (5/5): 7 books triangulated on one narrative; 85% verse-grounded",
-                "Facilitation vs. Lecture (2/5): 52% leader talk — 22 points above 30% target",
-                "Application Questions (3/5): 6 Big Ideas at 83% DOK 3-4, but clustered late",
-                "Participant Engagement (4/5): 83% read aloud; 50% discuss; named call-outs used well",
-                "Visual Aids (1/5): None observed — audio-plus-Bible only on dense parallel-passage session",
-                "Vulnerability / Authenticity (4/5): 3 moments, 1 reciprocity peak; moderate depth overall",
-                "Memory Reinforcement (5/5): Retrieval-first opening — pedagogically strongest position",
-                "Homework References (4/5): Regular workbook references; lesson built on homework questions",
-                "Prayer (4/5): Opening delegated to Frank; closing delegated to John Relic (different member)",
-                "Leader Development (3/5): Solo leader (no co-teacher or mentor); no apprentice visible"
-              ]
-            }
-          ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
-        }
-      ]
-    },
-    {
       "id": "brendan-elizabeth",
       "name": "Brendan & Elizabeth",
-      "email": "brendan-elizabeth@needs-real-email.invalid",
+      "email": "bocojoywed@gmail.com",
       "group": "Couples Precept Study",
       "coachName": "Bryan Bailey",
       "isCoach": true,
@@ -17851,7 +17214,7 @@
     {
       "id": "jt-dettman",
       "name": "JT Dettman",
-      "email": "jt-dettman@needs-real-email.invalid",
+      "email": "jt.dettman@austinstone.org",
       "group": "Revelation Study",
       "coachName": "Bryan Bailey",
       "isCoach": true,
@@ -18430,7 +17793,7 @@
     {
       "id": "josh-samuels",
       "name": "Josh Samuels",
-      "email": "josh-samuels@needs-real-email.invalid",
+      "email": "jdub.samuels@gmail.com",
       "group": "James Study",
       "coachName": "Bryan Bailey",
       "isCoach": true,
@@ -18743,6 +18106,643 @@
                 "Homework References (3/5): Building Ministry",
                 "Prayer (4/5): Being Real",
                 "Leader Development (5/5): Building Ministry"
+              ]
+            }
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        }
+      ]
+    },
+    {
+      "id": "cameron-relic",
+      "name": "Cameron Relic",
+      "email": "cameron-relic@needs-real-email.invalid",
+      "group": "James Study",
+      "coachName": "Bryan Bailey",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "cameron-relic-2026-05-28-james-lesson-1-faith2see-group-c",
+          "date": "2026-05-28",
+          "dateLabel": "May 28, 2026",
+          "session": "James, Lesson 1 (faith2see group) — Crown of Life, Temptation, Doers of the Word, True Religion (Jas 1:12–27)",
+          "topic": "Trials vs. temptation; sin progression (lust→carried away→death); doers vs. hearers; bridling the tongue; pure religion",
+          "duration": "~2h 3m (6:00 PM – 8:03 PM CT; ended 5 min over target)",
+          "attendees": 15,
+          "newcomers": 0,
+          "score": 73.3,
+          "base": 73.3,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 80,
+              "contribution": 26.4
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 70,
+              "contribution": 21.7
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Strong blueprint adherence; dual-leader handoff smooth; both prayers captured; homework anchored"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null,
+              "note": "No newcomers — Building Ministry max reduced proportionally"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "14 cross-references; Cameron's arc high; Isaiah 1 cross-ref at close exceptional"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "~30–35% leader talk; Cameron's best facilitation ratio in tracked arc; productive struggle honored"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "10 Big Idea questions; 40% DOK 4; distributed throughout; productive struggle defended"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4,
+              "note": "~13 members called by name; 12 distinct voices in discussion; strong go-around even if brief"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3,
+              "note": "Russell's sin-progression diagram (Cameron invited it); no BLB on-screen; no leader-prepared visual"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3,
+              "note": "Cameron: 3 mild disclosures; no high-cost personal moment; member vulnerability (Uri, Andy) present but not fully honored"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 4,
+              "note": "Russell's 14-min review of James 1:1–11 + Cameron's Big Ideas opening; strong closing synthesis 'three things that cost you'"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Explicit page references (pg 25, 27, 28); homework structure spine of lesson; Cameron's arc high on this dimension"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4,
+              "note": "Opening prayer by Cameron (Russell's invitation, on-topic); closing prayer delegated to Andy (substantive, applied lesson themes); prayer chain awareness implied"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 2,
+              "note": "No visible apprentice or facilitation-window assignment; Russell is peer co-leader not Cameron's coachee; no 2:2 signal visible"
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "A strong session — strongest in Scripture Engagement and Homework References, with the clearest next step in Leader Development.",
+            "strengths": [
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "Homework was referenced and rewarded, differentiating the members who prepared.",
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place."
+            ],
+            "improvements": [
+              "No in-session development of another leader was observable this week.",
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "The session leaned audio-only; a visual anchor would aid retention."
+            ],
+            "recommendations": [
+              "Next time, verbalize one hand-off — e.g., \"Randy is going to open us next week.\"",
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, put one word-study lookup or a simple table on screen during the key term."
+            ],
+            "overview": [
+              "A strong session — strongest in Scripture Engagement and Homework References, with the clearest next step in Leader Development. It scored 73.3/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Homework References; the recommendations below turn Leader Development into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: 14 cross-references; Cameron's arc high; Isaiah 1 cross-ref at close exceptional"
+                ]
+              },
+              {
+                "title": "Homework References anchored the session (5/5)",
+                "paragraphs": [
+                  "Homework was referenced and rewarded, differentiating the members who prepared.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement.",
+                  "This dimension rolls up into the Building Ministry cluster (weight 31 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: Explicit page references (pg 25, 27, 28); homework structure spine of lesson; Cameron's arc high on this dimension"
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: Strong blueprint adherence; dual-leader handoff smooth; both prayers captured; homework anchored"
+                ]
+              },
+              {
+                "title": "Application Questions anchored the session (4/5)",
+                "paragraphs": [
+                  "Application questions pushed members from concept to life, several at the reason/apply level.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
+                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: 10 Big Idea questions; 40% DOK 4; distributed throughout; productive struggle defended"
+                ]
+              },
+              {
+                "title": "Participant Engagement anchored the session (4/5)",
+                "paragraphs": [
+                  "A high share of the room contributed substantively, called on by name.",
+                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room.",
+                  "This dimension rolls up into the Engaging People cluster (weight 18 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: ~13 members called by name; 12 distinct voices in discussion; strong go-around even if brief"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Leader Development is a growth area (2/5)",
+                "paragraphs": [
+                  "No in-session development of another leader was observable this week.",
+                  "2 Timothy 2:2 makes multiplication the apex leadership outcome — a named, in-session hand-off is the observable signal that a leader is being made.",
+                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: No visible apprentice or facilitation-window assignment; Russell is peer co-leader not Cameron's coachee; no 2:2 signal visible"
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture is a growth area (3/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: ~30–35% leader talk; Cameron's best facilitation ratio in tracked arc; productive struggle honored"
+                ]
+              },
+              {
+                "title": "Visual Aids is a growth area (3/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: Russell's sin-progression diagram (Cameron invited it); no BLB on-screen; no leader-prepared visual"
+                ]
+              },
+              {
+                "title": "Vulnerability / Authenticity is a growth area (3/5)",
+                "paragraphs": [
+                  "Teaching stayed at arm’s length; little personal cost was modeled.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
+                  "Because this dimension sits in the Being Real cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: Cameron: 3 mild disclosures; no high-cost personal moment; member vulnerability (Uri, Andy) present but not fully honored"
+                ]
+              },
+              {
+                "title": "Memory Reinforcement is a growth area (4/5)",
+                "paragraphs": [
+                  "Prior Big Ideas weren’t reviewed, so last week’s themes faded.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: Russell's 14-min review of James 1:1–11 + Cameron's Big Ideas opening; strong closing synthesis 'three things that cost you'"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Leader Development",
+                "paragraphs": [
+                  "Next time, verbalize one hand-off — e.g., \"Randy is going to open us next week.\"",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Vulnerability / Authenticity",
+                "paragraphs": [
+                  "Next time, open one teaching point with a first-person example that cost you something.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Being Real cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Memory Reinforcement",
+                "paragraphs": [
+                  "Next time, start with a 3-minute cold-recall of last session’s Big Ideas.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the four weighted clusters and any session bonuses combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 80% × weight 33 → 26.40 pts",
+                "Building Ministry: 70% × weight 31 → 21.70 pts",
+                "Engaging People: 70% × weight 18 → 12.60 pts",
+                "Being Real: 70% × weight 18 → 12.60 pts",
+                "Base (sum of cluster contributions): 73.30 / 100",
+                "Session score: 73.3 / 100"
+              ]
+            },
+            {
+              "title": "Coaching notes by dimension",
+              "paragraphs": [
+                "The per-dimension rationale behind each score on the 12-dimension scorecard."
+              ],
+              "bullets": [
+                "Session Structure & Flow (4/5): Strong blueprint adherence; dual-leader handoff smooth; both prayers captured; homework anchored",
+                "Newcomer Welcome (N/A): No newcomers — Building Ministry max reduced proportionally",
+                "Scripture Engagement (5/5): 14 cross-references; Cameron's arc high; Isaiah 1 cross-ref at close exceptional",
+                "Facilitation vs. Lecture (3/5): ~30–35% leader talk; Cameron's best facilitation ratio in tracked arc; productive struggle honored",
+                "Application Questions (4/5): 10 Big Idea questions; 40% DOK 4; distributed throughout; productive struggle defended",
+                "Participant Engagement (4/5): ~13 members called by name; 12 distinct voices in discussion; strong go-around even if brief",
+                "Visual Aids (3/5): Russell's sin-progression diagram (Cameron invited it); no BLB on-screen; no leader-prepared visual",
+                "Vulnerability / Authenticity (3/5): Cameron: 3 mild disclosures; no high-cost personal moment; member vulnerability (Uri, Andy) present but not fully honored",
+                "Memory Reinforcement (4/5): Russell's 14-min review of James 1:1–11 + Cameron's Big Ideas opening; strong closing synthesis 'three things that cost you'",
+                "Homework References (5/5): Explicit page references (pg 25, 27, 28); homework structure spine of lesson; Cameron's arc high on this dimension",
+                "Prayer (4/5): Opening prayer by Cameron (Russell's invitation, on-topic); closing prayer delegated to Andy (substantive, applied lesson themes); prayer chain awareness implied",
+                "Leader Development (2/5): No visible apprentice or facilitation-window assignment; Russell is peer co-leader not Cameron's coachee; no 2:2 signal visible"
+              ]
+            }
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
+          "id": "cameron-relic-2026-04-16-destruction-of-jerusalem-zedekia",
+          "date": "2026-04-16",
+          "dateLabel": "April 16, 2026",
+          "session": "Destruction of Jerusalem — Zedekiah, False Prophets, the Yoke of Babylon",
+          "topic": "God as main character; cyclical warnings; partial truth as lie; two masters",
+          "duration": "1h 54m (114 minutes)",
+          "attendees": 7,
+          "newcomers": 0,
+          "score": 70.66,
+          "base": 70.66,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "On Target",
+          "statusEmoji": "🟡",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 72,
+              "contribution": 23.76
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 70,
+              "contribution": 21.7
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Clean arc; opens with retrieval; closes with Big Ideas but apologetic"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null,
+              "note": "No newcomers present"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "7 books triangulated on one narrative; 85% verse-grounded"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 2,
+              "note": "52% leader talk — 22 points above 30% target"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 3,
+              "note": "6 Big Ideas at 83% DOK 3-4, but clustered late"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4,
+              "note": "83% read aloud; 50% discuss; named call-outs used well"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 1,
+              "note": "None observed — audio-plus-Bible only on dense parallel-passage session"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "3 moments, 1 reciprocity peak; moderate depth overall"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5,
+              "note": "Retrieval-first opening — pedagogically strongest position"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4,
+              "note": "Regular workbook references; lesson built on homework questions"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4,
+              "note": "Opening delegated to Frank; closing delegated to John Relic (different member)"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3,
+              "note": "Solo leader (no co-teacher or mentor); no apprentice visible"
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "An on target session — strongest in Scripture Engagement and Memory Reinforcement, with the clearest next step in Visual Aids.",
+            "strengths": [
+              "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+              "The session opened by recalling prior Big Ideas, reinforcing cumulative learning.",
+              "The session followed a clear arc — opening, context, reading, discussion, and close each had their place."
+            ],
+            "improvements": [
+              "The session leaned audio-only; a visual anchor would aid retention.",
+              "Leader talk crowded out discussion; the balance leaned toward lecture.",
+              "Questions stayed heady; few moved the group to first-person, personal application."
+            ],
+            "recommendations": [
+              "Next time, put one word-study lookup or a simple table on screen during the key term.",
+              "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+              "Next time, pre-write 3 \"what does this look like for you this week?\" probes."
+            ],
+            "overview": [
+              "An on target session — strongest in Scripture Engagement and Memory Reinforcement, with the clearest next step in Visual Aids. It scored 70.66/100 under the v3 weighted model.",
+              "The session played to its strengths in Scripture Engagement and Memory Reinforcement; the recommendations below turn Visual Aids into transferable technique for the next session, so the momentum carries forward regardless of the passage."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Scripture Engagement anchored the session (5/5)",
+                "paragraphs": [
+                  "Strong cross-referencing anchored the discussion in multiple texts, not a single proof-verse.",
+                  "Willow Creek’s REVEAL study found Scripture engagement the #1 driver of long-term spiritual growth; the research bar is 6+ cross-references a session.",
+                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: 7 books triangulated on one narrative; 85% verse-grounded"
+                ]
+              },
+              {
+                "title": "Memory Reinforcement anchored the session (5/5)",
+                "paragraphs": [
+                  "The session opened by recalling prior Big Ideas, reinforcing cumulative learning.",
+                  "Ebbinghaus’ forgetting curve is answered by cumulative recall — reciting prior Big Ideas at the open reinforces what would otherwise fade by the next session.",
+                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: Retrieval-first opening — pedagogically strongest position"
+                ]
+              },
+              {
+                "title": "Session Structure & Flow anchored the session (4/5)",
+                "paragraphs": [
+                  "The session followed a clear arc — opening, context, reading, discussion, and close each had their place.",
+                  "A clear arc — open, review, context, reading, discussion, close — is what lets a group feel momentum instead of drift, so hand-offs between segments are worth guarding.",
+                  "This dimension rolls up into the Teaching Craft cluster (weight 33 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: Clean arc; opens with retrieval; closes with Big Ideas but apologetic"
+                ]
+              },
+              {
+                "title": "Participant Engagement anchored the session (4/5)",
+                "paragraphs": [
+                  "A high share of the room contributed substantively, called on by name.",
+                  "Healthy participation research (Gini-coefficient approach) looks for 70–80% of attendees contributing substantively, not a few voices carrying the room.",
+                  "This dimension rolls up into the Engaging People cluster (weight 18 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: 83% read aloud; 50% discuss; named call-outs used well"
+                ]
+              },
+              {
+                "title": "Vulnerability / Authenticity anchored the session (4/5)",
+                "paragraphs": [
+                  "Costly personal honesty set a tone of safety, and members disclosed in turn.",
+                  "Authenticity modeled at genuine personal cost is what earns a teacher relational authority and gives the room permission to disclose in turn.",
+                  "This dimension rolls up into the Being Real cluster (weight 18 of 100), so keeping it strong protects a large share of the composite — the gain here is banked, not one-off.",
+                  "From the session: 3 moments, 1 reciprocity peak; moderate depth overall"
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Visual Aids is a growth area (1/5)",
+                "paragraphs": [
+                  "The session leaned audio-only; a visual anchor would aid retention.",
+                  "Mayer’s multimedia principle: pairing a word or image on screen with the spoken teaching measurably improves retention.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: None observed — audio-plus-Bible only on dense parallel-passage session"
+                ]
+              },
+              {
+                "title": "Facilitation vs. Lecture is a growth area (2/5)",
+                "paragraphs": [
+                  "Leader talk crowded out discussion; the balance leaned toward lecture.",
+                  "The Lifeway 30% Rule (and Flanders Interaction Analysis) puts leader talk at ≤30–35% during discussion — the room should carry most of the thinking.",
+                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: 52% leader talk — 22 points above 30% target"
+                ]
+              },
+              {
+                "title": "Application Questions is a growth area (3/5)",
+                "paragraphs": [
+                  "Questions stayed heady; few moved the group to first-person, personal application.",
+                  "Norman Webb’s Depth-of-Knowledge framework asks the majority of Big-Idea questions to land at Level 2–4, moving members from recall toward first-person application.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: 6 Big Ideas at 83% DOK 3-4, but clustered late"
+                ]
+              },
+              {
+                "title": "Leader Development is a growth area (3/5)",
+                "paragraphs": [
+                  "No in-session development of another leader was observable this week.",
+                  "2 Timothy 2:2 makes multiplication the apex leadership outcome — a named, in-session hand-off is the observable signal that a leader is being made.",
+                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: Solo leader (no co-teacher or mentor); no apprentice visible"
+                ]
+              },
+              {
+                "title": "Homework References is a growth area (4/5)",
+                "paragraphs": [
+                  "Homework went unmentioned, reducing its pull on the group.",
+                  "Homework named and rewarded in-session (the Precept workbook, “The Guarantee”) is what differentiates members who prepared and compounds engagement.",
+                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention.",
+                  "From the session: Regular workbook references; lesson built on homework questions"
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Next session — Visual Aids",
+                "paragraphs": [
+                  "Next time, put one word-study lookup or a simple table on screen during the key term.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Facilitation vs. Lecture",
+                "paragraphs": [
+                  "Next time, after each key point hand off with a question and hold silence for a full 5 seconds.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Engaging People cluster (weight 18 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Application Questions",
+                "paragraphs": [
+                  "Next time, pre-write 3 \"what does this look like for you this week?\" probes.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Teaching Craft cluster (weight 33 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Leader Development",
+                "paragraphs": [
+                  "Next time, verbalize one hand-off — e.g., \"Randy is going to open us next week.\"",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              },
+              {
+                "title": "Next session — Homework References",
+                "paragraphs": [
+                  "Next time, ask two members to share one thing from their homework in the first 10 minutes.",
+                  "This is transferable technique: it carries into next week’s passage rather than re-teaching this one.",
+                  "Because this dimension sits in the Building Ministry cluster (weight 31 of 100), a one-point move here shifts the composite more than almost anywhere else — which is why it is the highest-leverage place to spend next session's attention."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the four weighted clusters and any session bonuses combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 72% × weight 33 → 23.76 pts",
+                "Building Ministry: 70% × weight 31 → 21.70 pts",
+                "Engaging People: 60% × weight 18 → 10.80 pts",
+                "Being Real: 80% × weight 18 → 14.40 pts",
+                "Base (sum of cluster contributions): 70.66 / 100",
+                "Session score: 70.66 / 100"
+              ]
+            },
+            {
+              "title": "Coaching notes by dimension",
+              "paragraphs": [
+                "The per-dimension rationale behind each score on the 12-dimension scorecard."
+              ],
+              "bullets": [
+                "Session Structure & Flow (4/5): Clean arc; opens with retrieval; closes with Big Ideas but apologetic",
+                "Newcomer Welcome (N/A): No newcomers present",
+                "Scripture Engagement (5/5): 7 books triangulated on one narrative; 85% verse-grounded",
+                "Facilitation vs. Lecture (2/5): 52% leader talk — 22 points above 30% target",
+                "Application Questions (3/5): 6 Big Ideas at 83% DOK 3-4, but clustered late",
+                "Participant Engagement (4/5): 83% read aloud; 50% discuss; named call-outs used well",
+                "Visual Aids (1/5): None observed — audio-plus-Bible only on dense parallel-passage session",
+                "Vulnerability / Authenticity (4/5): 3 moments, 1 reciprocity peak; moderate depth overall",
+                "Memory Reinforcement (5/5): Retrieval-first opening — pedagogically strongest position",
+                "Homework References (4/5): Regular workbook references; lesson built on homework questions",
+                "Prayer (4/5): Opening delegated to Frank; closing delegated to John Relic (different member)",
+                "Leader Development (3/5): Solo leader (no co-teacher or mentor); no apprentice visible"
               ]
             }
           ],
