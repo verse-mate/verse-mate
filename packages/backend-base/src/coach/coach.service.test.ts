@@ -246,6 +246,35 @@ describe("CoachService admin oversight", () => {
     expect(await adminSvc.getTrendsById("nope")).toBeNull();
     expect(await adminSvc.getProfileById("nope")).toBeNull();
   });
+
+  it("lists only months that actually have reports (newest first)", async () => {
+    const monthly = await adminSvc.getMonthly("2026-07");
+    // Every listed month must be present in the underlying dataset — a month
+    // with no reports must never appear in the picker.
+    const reportMonths = new Set<string>();
+    for (const c of await adminSvc.listCoaches()) {
+      const reps = (await adminSvc.getReportsById(c.id)) ?? [];
+      for (const r of reps) reportMonths.add(r.date.slice(0, 7));
+    }
+    expect(monthly.availableMonths.length).toBeGreaterThan(0);
+    for (const m of monthly.availableMonths)
+      expect(reportMonths.has(m)).toBe(true);
+    expect(
+      [...monthly.availableMonths].sort((a, b) => (a < b ? 1 : -1)),
+    ).toEqual(monthly.availableMonths);
+    // A month the dataset never covers is absent.
+    expect(monthly.availableMonths).not.toContain("2025-12");
+  });
+
+  it("carries the same availableMonths regardless of which month is queried", async () => {
+    const jul = await adminSvc.getMonthly("2026-07");
+    const jan = await adminSvc.getMonthly("2026-01");
+    expect(jan.availableMonths).toEqual(jul.availableMonths);
+    // An empty month still reports zero leaders but the full picker list.
+    const empty = await adminSvc.getMonthly("2030-01");
+    expect(empty.leaders).toHaveLength(0);
+    expect(empty.availableMonths).toEqual(jul.availableMonths);
+  });
 });
 
 describe("CoachService recording-link auto-attach", () => {
