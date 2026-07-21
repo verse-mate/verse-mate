@@ -8,6 +8,7 @@ import type { default as BibleVersionsTable } from "./BibleVersions";
 import type { default as BookIntroductionsTable } from "./BookIntroductions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
+import type { default as CoachClassesTable } from "./CoachClasses";
 import type { default as CoachZoomLinksTable } from "./CoachZoomLinks";
 import type { default as ConversationsTable } from "./Conversations";
 import type { default as DailyVerseHistoryTable } from "./DailyVerseHistory";
@@ -110,6 +111,8 @@ export default interface PublicSchema {
   user_recently_viewed_books: UserRecentlyViewedBooksTable;
 
   coach_zoom_links: CoachZoomLinksTable;
+
+  coach_classes: CoachClassesTable;
 
   notes: NotesTable;
 
