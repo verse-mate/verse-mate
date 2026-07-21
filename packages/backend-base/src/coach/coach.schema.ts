@@ -47,6 +47,32 @@ export const SectionSchema = t.Object({
   moments: t.Optional(t.Array(MomentSchema)),
 });
 
+// One registered class. `classDate` is an ISO yyyy-mm-dd string or null (no
+// pinned date). `zoomLink` is the URL the Notetaker bot joins.
+export const CoachClassSchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+  classDate: t.Union([t.String(), t.Null()]),
+  recurrence: t.String(),
+  zoomLink: t.String(),
+});
+
+// One class in the admin export — the class fields plus the leader it belongs
+// to (name / email / roster id) so the Fireflies operator can map each meeting
+// link to a coach without a second lookup.
+export const AdminCoachClassSchema = t.Object({
+  id: t.String(),
+  name: t.String(),
+  classDate: t.Union([t.String(), t.Null()]),
+  recurrence: t.String(),
+  zoomLink: t.String(),
+  leader: t.Object({
+    id: t.Union([t.String(), t.Null()]),
+    name: t.String(),
+    email: t.String(),
+  }),
+});
+
 export const ReportSchema = t.Object({
   id: t.String(),
   date: t.String(),
