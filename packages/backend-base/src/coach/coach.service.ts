@@ -301,6 +301,7 @@ export class CoachService {
   private async overlayReports(
     coachId: string,
     reports: CoachReport[],
+    fallbackRecordingUrl = "",
   ): Promise<CoachReport[]> {
     if (reports.length === 0) return [];
     const [recMap, noteRows] = await Promise.all([
@@ -313,11 +314,21 @@ export class CoachService {
       list.push(n);
       notesByReport.set(n.reportId, list);
     }
-    return reports.map((r) => ({
-      ...r,
-      recordingUrl: recMap[r.id] ?? r.recordingUrl ?? "",
-      notes: (notesByReport.get(r.id) ?? []).map(CoachService.toNoteView),
-    }));
+    return reports.map((r) => {
+      // An explicit admin value (including an explicit clear to "") wins;
+      // otherwise fall back to any bundled URL, then to the leader's saved
+      // meeting link so every session auto-carries a recording link.
+      const explicit = recMap[r.id];
+      const recordingUrl =
+        explicit !== undefined
+          ? explicit
+          : r.recordingUrl || fallbackRecordingUrl || "";
+      return {
+        ...r,
+        recordingUrl,
+        notes: (notesByReport.get(r.id) ?? []).map(CoachService.toNoteView),
+      };
+    });
   }
 
   private static toNoteView(row: CoachNoteRow): CoachNoteView {
@@ -406,7 +417,9 @@ export class CoachService {
   async getReports(userId: string): Promise<CoachReport[] | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return this.overlayReports(record.id, record.reports);
+    const stored = await this.coachRepository.getSettings(userId);
+    const fallback = stored?.zoomLink ?? record.zoomLink ?? "";
+    return this.overlayReports(record.id, record.reports, fallback);
   }
 
   async getTrends(userId: string): Promise<CoachTrends | null> {
@@ -448,7 +461,13 @@ export class CoachService {
   async getReportsById(coachId: string): Promise<CoachReport[] | null> {
     const record = await this.resolveById(coachId);
     if (!record) return null;
-    return this.overlayReports(record.id, record.reports);
+    // Auto-attach the leader's saved meeting link (looked up by their account
+    // email) so each session carries a recording link on the admin drill-in too.
+    const fallback =
+      (await this.coachRepository.getZoomLinkByEmail(record.email)) ||
+      record.zoomLink ||
+      "";
+    return this.overlayReports(record.id, record.reports, fallback);
   }
 
   /** A specific coach's trends by id (admin drill-in). null → unknown id. */

@@ -248,6 +248,77 @@ describe("CoachService admin oversight", () => {
   });
 });
 
+describe("CoachService recording-link auto-attach", () => {
+  // A table-aware query stub: coach_zoom_links terminal → the saved meeting
+  // link; coach_recording_links terminal → the seeded explicit links; all
+  // other terminals → empty.
+  function stubDbFor(opts: {
+    zoomLink?: string;
+    recordingLinks?: Record<string, string>;
+  }) {
+    const recordingRows = Object.entries(opts.recordingLinks ?? {}).map(
+      ([report_id, recording_url]) => ({ report_id, recording_url }),
+    );
+    const builderFor = (table: string) => {
+      const b: Record<string, unknown> = new Proxy(
+        {},
+        {
+          get(_t, prop) {
+            if (prop === "execute")
+              return async () =>
+                table === "coach_recording_links" ? recordingRows : [];
+            if (prop === "executeTakeFirst")
+              return async () =>
+                table === "coach_zoom_links" && opts.zoomLink
+                  ? { zoom_link: opts.zoomLink }
+                  : undefined;
+            return () => b;
+          },
+        },
+      );
+      return b;
+    };
+    return {
+      getOrCreateConnection: () => ({
+        selectFrom: (table: string) => builderFor(table),
+        insertInto: () => builderFor("_"),
+      }),
+    } as unknown as ConstructorParameters<typeof CoachService>[0];
+  }
+
+  it("auto-attaches the leader's saved meeting link when no explicit link is set", async () => {
+    const zoom = "https://zoom.us/j/555000111";
+    const svc = new CoachService(stubDbFor({ zoomLink: zoom }));
+    const reports = (await svc.getReportsById("jeff-ward")) ?? [];
+    expect(reports.length).toBeGreaterThan(0);
+    for (const r of reports) expect(r.recordingUrl).toBe(zoom);
+  });
+
+  it("lets an explicit recording link override the auto-attached meeting link", async () => {
+    const zoom = "https://zoom.us/j/555000111";
+    const explicit = "https://drive.google.com/file/session-1";
+    // Grab a real report id first, then seed an explicit link for it.
+    const ids =
+      (await new CoachService(stubDbFor({})).getReportsById("jeff-ward")) ?? [];
+    const targetId = ids[0]?.id ?? "";
+    const svc = new CoachService(
+      stubDbFor({ zoomLink: zoom, recordingLinks: { [targetId]: explicit } }),
+    );
+    const reports = (await svc.getReportsById("jeff-ward")) ?? [];
+    expect(reports.find((r) => r.id === targetId)?.recordingUrl).toBe(explicit);
+    // Every other session still gets the auto-attached meeting link.
+    for (const r of reports.filter((r) => r.id !== targetId)) {
+      expect(r.recordingUrl).toBe(zoom);
+    }
+  });
+
+  it("leaves the recording link empty when the leader has saved no meeting link", async () => {
+    const svc = new CoachService(stubDbFor({}));
+    const reports = (await svc.getReportsById("jeff-ward")) ?? [];
+    for (const r of reports) expect(r.recordingUrl).toBe("");
+  });
+});
+
 describe("Coach class schemas", () => {
   const validClass = {
     id: "c1",
