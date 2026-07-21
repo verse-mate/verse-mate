@@ -388,7 +388,7 @@ export class CoachService {
         zoomLink: row.zoomLink,
         leader: {
           id: record?.id ?? null,
-          name: record?.name ?? (email ?? "Unknown"),
+          name: record?.name ?? email ?? "Unknown",
           email: email ?? "",
         },
       });

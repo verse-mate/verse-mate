@@ -242,9 +242,9 @@ describe("Coach class schemas", () => {
 
   it("validates a well-formed class and allows a null date", () => {
     expect(Value.Check(CoachClassSchema, validClass)).toBe(true);
-    expect(Value.Check(CoachClassSchema, { ...validClass, classDate: null })).toBe(
-      true,
-    );
+    expect(
+      Value.Check(CoachClassSchema, { ...validClass, classDate: null }),
+    ).toBe(true);
   });
 
   it("strips unknown fields on the class response (Elysia clean step)", () => {
