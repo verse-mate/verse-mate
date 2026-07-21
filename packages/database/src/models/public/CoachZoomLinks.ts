@@ -14,6 +14,8 @@ export default interface CoachZoomLinksTable {
 
   zoom_link: ColumnType<string, string | undefined, string>;
 
+  affiliated_church: ColumnType<string, string | undefined, string>;
+
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
