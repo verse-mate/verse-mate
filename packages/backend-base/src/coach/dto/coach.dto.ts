@@ -7,3 +7,11 @@ export const UpdateZoomLinkDto = t.Object({
 });
 
 export type UpdateZoomLinkDto = typeof UpdateZoomLinkDto.static;
+
+/** Body for PUT /coach/affiliated-church. Empty string clears the value; any
+ *  non-empty value is a free-form church name. */
+export const UpdateAffiliatedChurchDto = t.Object({
+  affiliatedChurch: t.String({ maxLength: 200 }),
+});
+
+export type UpdateAffiliatedChurchDto = typeof UpdateAffiliatedChurchDto.static;

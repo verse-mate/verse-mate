@@ -10,7 +10,7 @@ import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { ReportSchema } from "./coach.schema";
 import { CoachService } from "./coach.service";
-import { UpdateZoomLinkDto } from "./dto/coach.dto";
+import { UpdateAffiliatedChurchDto, UpdateZoomLinkDto } from "./dto/coach.dto";
 
 // ─── Response schemas ──────────────────────────────────────────────────────
 // ReportSchema (and its parts) live in coach.schema.ts — a side-effect-free
@@ -32,6 +32,7 @@ const MeSchema = t.Object({
     t.Null(),
   ]),
   zoomLink: t.String(),
+  affiliatedChurch: t.String(),
   model: t.String(),
   clusters: t.Array(t.Object({ name: t.String(), weight: t.Number() })),
   statusBands: t.Array(
@@ -167,6 +168,28 @@ const plugin = new Elysia()
           body: UpdateZoomLinkDto,
           response: {
             200: t.Object({ zoomLink: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/affiliated-church",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const affiliatedChurch = body.affiliatedChurch.trim();
+          const saved = await coachService.setAffiliatedChurch(
+            currentUserId,
+            affiliatedChurch,
+          );
+          if (saved === null)
+            throw new ForbiddenError("Not a coaching account");
+          return { affiliatedChurch: saved };
+        },
+        {
+          body: UpdateAffiliatedChurchDto,
+          response: {
+            200: t.Object({ affiliatedChurch: t.String() }),
             ...StandardErrorResponses,
           },
         },

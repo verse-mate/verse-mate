@@ -208,7 +208,7 @@ export class CoachService {
     if (!record && !admin) return null;
 
     const stored = record
-      ? await this.coachRepository.getZoomLink(userId)
+      ? await this.coachRepository.getSettings(userId)
       : null;
     return {
       isCoach: !!record,
@@ -222,7 +222,8 @@ export class CoachService {
             coachName: record.coachName,
           }
         : null,
-      zoomLink: stored ?? record?.zoomLink ?? "",
+      zoomLink: stored?.zoomLink ?? record?.zoomLink ?? "",
+      affiliatedChurch: stored?.affiliatedChurch ?? "",
       model: coachData.model,
       clusters: coachData.clusters,
       statusBands: coachData.statusBands,
@@ -296,6 +297,15 @@ export class CoachService {
     const record = await this.recordFor(userId);
     if (!record) return null;
     return this.coachRepository.setZoomLink(userId, zoomLink);
+  }
+
+  async setAffiliatedChurch(
+    userId: string,
+    affiliatedChurch: string,
+  ): Promise<string | null> {
+    const record = await this.recordFor(userId);
+    if (!record) return null;
+    return this.coachRepository.setAffiliatedChurch(userId, affiliatedChurch);
   }
 
   /** Derive the chart series from a coach's reports. Pure — exported shape
