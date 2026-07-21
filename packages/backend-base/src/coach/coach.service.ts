@@ -220,6 +220,10 @@ export interface CoachMonthly {
     delta: number | null;
   };
   leaders: MonthlyLeader[];
+  /** Every YYYY-MM month that has at least one report across the program,
+   *  newest first. Drives the portal's month picker so only months that were
+   *  actually done are offered — empty months are never selectable. */
+  availableMonths: string[];
 }
 
 export class CoachService {
@@ -623,13 +627,18 @@ export class CoachService {
     const records = await this.allRecords();
     const prev = CoachService.prevMonth(month);
 
-    // Canonical n→name map for the 12-dimension heatmap columns.
+    // Canonical n→name map for the 12-dimension heatmap columns, plus the set
+    // of months that actually have reports (for the picker).
     const dimNames = new Map<number, string>();
+    const monthSet = new Set<string>();
     for (const c of records)
-      for (const r of c.reports)
+      for (const r of c.reports) {
+        monthSet.add(r.date.slice(0, 7));
         for (const d of r.dimensions)
           if (!dimNames.has(d.n)) dimNames.set(d.n, d.name);
+      }
     const dimList = [...dimNames.entries()].sort((a, b) => a[0] - b[0]);
+    const availableMonths = [...monthSet].sort((a, b) => (a < b ? 1 : -1));
 
     const leaders: MonthlyLeader[] = [];
     let programSessions = 0;
@@ -717,6 +726,7 @@ export class CoachService {
             : null,
       },
       leaders,
+      availableMonths,
     };
   }
 

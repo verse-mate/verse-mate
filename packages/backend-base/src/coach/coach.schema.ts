@@ -160,4 +160,7 @@ export const MonthlySchema = t.Object({
     delta: t.Union([t.Number(), t.Null()]),
   }),
   leaders: t.Array(MonthlyLeaderSchema),
+  // Months (YYYY-MM) that actually have reports, newest first — drives the
+  // portal's month picker so only completed months are selectable.
+  availableMonths: t.Array(t.String()),
 });
