@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
 import {
+  ConflictError,
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
@@ -12,14 +13,26 @@ import shared from "../shared/shared.plugin";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
+  MonthlySchema,
+  NoteSchema,
   ReportSchema,
 } from "./coach.schema";
 import { CoachService } from "./coach.service";
 import {
+  AddLeaderDto,
+  AddNoteDto,
   CoachClassDto,
   UpdateAffiliatedChurchDto,
+  UpdateRecordingLinkDto,
   UpdateZoomLinkDto,
 } from "./dto/coach.dto";
+
+/** Empty (clear) or a well-formed http(s) URL — shared by zoom + recording. */
+const isBlankOrHttpUrl = (v: string): boolean =>
+  v === "" || /^https?:\/\/\S+$/i.test(v);
+
+/** Minimal email shape check for the add-leader form. */
+const isEmail = (v: string): boolean => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
 // ─── Response schemas ──────────────────────────────────────────────────────
 // ReportSchema (and its parts) live in coach.schema.ts — a side-effect-free
@@ -150,7 +163,7 @@ const plugin = new Elysia()
   .onError(createErrorHandler("coach plugin"))
   .state((state) => ({
     ...state,
-    coachService: new CoachService(state.db),
+    coachService: new CoachService(state.db, state.notification),
   }))
   .group("/coach", (app) =>
     app
@@ -342,7 +355,7 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
-          return { coaches: coachService.listCoaches() };
+          return { coaches: await coachService.listCoaches() };
         },
         {
           response: {
@@ -358,8 +371,8 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
-          const profile = coachService.getProfileById(params.id);
-          const reports = coachService.getReportsById(params.id);
+          const profile = await coachService.getProfileById(params.id);
+          const reports = await coachService.getReportsById(params.id);
           if (!profile || !reports) throw new NotFoundError("Coach not found");
           return { profile, reports };
         },
@@ -382,7 +395,7 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
-          const trends = coachService.getTrendsById(params.id);
+          const trends = await coachService.getTrendsById(params.id);
           if (!trends) throw new NotFoundError("Coach not found");
           return trends;
         },
@@ -409,6 +422,114 @@ const plugin = new Elysia()
         {
           response: {
             200: t.Object({ classes: t.Array(AdminCoachClassSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Add a leader by email (+ optional name/group). Sends an invite email.
+      .post(
+        "/admin/leaders",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const email = body.email.trim().toLowerCase();
+          if (!isEmail(email))
+            throw new ValidationError("Enter a valid email address");
+          const result = await coachService.addLeader(currentUserId, {
+            email,
+            name: body.name,
+            group: body.group,
+            coachName: body.coachName,
+          });
+          if (!result.ok)
+            throw new ConflictError("That email is already a leader");
+          return { coach: result.coach };
+        },
+        {
+          body: AddLeaderDto,
+          response: {
+            200: t.Object({ coach: CoachSummarySchema }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Set / clear a session's recording URL.
+      .put(
+        "/admin/coaches/:id/reports/:reportId/recording",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const recordingUrl = body.recordingUrl.trim();
+          if (!isBlankOrHttpUrl(recordingUrl))
+            throw new ValidationError("Enter a valid http(s) link");
+          const saved = await coachService.setRecordingLink(
+            params.id,
+            params.reportId,
+            recordingUrl,
+          );
+          if (saved === null) throw new NotFoundError("Session not found");
+          return { recordingUrl: saved };
+        },
+        {
+          params: t.Object({ id: t.String(), reportId: t.String() }),
+          body: UpdateRecordingLinkDto,
+          response: {
+            200: t.Object({ recordingUrl: t.String() }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Write a coaching note on a session — persisted + emailed to the leader.
+      .post(
+        "/admin/coaches/:id/reports/:reportId/notes",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const text = body.body.trim();
+          if (!text) throw new ValidationError("Note cannot be empty");
+          const note = await coachService.addNote(
+            params.id,
+            params.reportId,
+            currentUserId,
+            text,
+          );
+          if (note === null) throw new NotFoundError("Session not found");
+          return { note };
+        },
+        {
+          params: t.Object({ id: t.String(), reportId: t.String() }),
+          body: AddNoteDto,
+          response: {
+            200: t.Object({ note: NoteSchema }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Program-wide + per-leader monthly analysis for a YYYY-MM month.
+      .get(
+        "/admin/monthly",
+        async ({ query, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const month = (query.month ?? "").trim();
+          if (!/^\d{4}-\d{2}$/.test(month))
+            throw new ValidationError("month must be YYYY-MM");
+          return coachService.getMonthly(month);
+        },
+        {
+          query: t.Object({ month: t.String() }),
+          response: {
+            200: MonthlySchema,
             ...StandardErrorResponses,
           },
         },
