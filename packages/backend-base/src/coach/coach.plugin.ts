@@ -23,6 +23,7 @@ import {
   AddNoteDto,
   CoachClassDto,
   UpdateAffiliatedChurchDto,
+  UpdateBibleCoachDto,
   UpdateRecordingLinkDto,
   UpdateZoomLinkDto,
 } from "./dto/coach.dto";
@@ -55,6 +56,7 @@ const MeSchema = t.Object({
   ]),
   zoomLink: t.String(),
   affiliatedChurch: t.String(),
+  bibleCoach: t.String(),
   model: t.String(),
   clusters: t.Array(t.Object({ name: t.String(), weight: t.Number() })),
   statusBands: t.Array(
@@ -247,6 +249,28 @@ const plugin = new Elysia()
           body: UpdateAffiliatedChurchDto,
           response: {
             200: t.Object({ affiliatedChurch: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/bible-coach",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const bibleCoach = body.bibleCoach.trim();
+          const saved = await coachService.setBibleCoach(
+            currentUserId,
+            bibleCoach,
+          );
+          if (saved === null)
+            throw new ForbiddenError("Not a coaching account");
+          return { bibleCoach: saved };
+        },
+        {
+          body: UpdateBibleCoachDto,
+          response: {
+            200: t.Object({ bibleCoach: t.String() }),
             ...StandardErrorResponses,
           },
         },

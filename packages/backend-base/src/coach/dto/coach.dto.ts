@@ -16,6 +16,15 @@ export const UpdateAffiliatedChurchDto = t.Object({
 
 export type UpdateAffiliatedChurchDto = typeof UpdateAffiliatedChurchDto.static;
 
+/** Body for PUT /coach/bible-coach. Empty string clears the selection (the
+ *  portal then defaults to Bryan Bailey); any non-empty value is the chosen
+ *  coach's display name. */
+export const UpdateBibleCoachDto = t.Object({
+  bibleCoach: t.String({ maxLength: 200 }),
+});
+
+export type UpdateBibleCoachDto = typeof UpdateBibleCoachDto.static;
+
 /** Allowed recurrence keywords for a class. */
 export const CLASS_RECURRENCES = [
   "none",

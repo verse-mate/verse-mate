@@ -16,6 +16,8 @@ export default interface CoachZoomLinksTable {
 
   affiliated_church: ColumnType<string, string | undefined, string>;
 
+  bible_coach: ColumnType<string, string | undefined, string>;
+
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
