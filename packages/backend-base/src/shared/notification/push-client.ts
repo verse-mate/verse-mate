@@ -35,6 +35,14 @@ export interface PushClient {
   send(messages: PushMessage[]): Promise<PushSendResult[]>;
 }
 
+/** The subset of the Expo SDK the client drives — injectable for tests. */
+export interface ExpoLike {
+  chunkPushNotifications(messages: ExpoPushMessage[]): ExpoPushMessage[][];
+  sendPushNotificationsAsync(
+    messages: ExpoPushMessage[],
+  ): Promise<ExpoPushTicket[]>;
+}
+
 /**
  * Expo Push Service implementation. Validates tokens, chunks per Expo's limit,
  * and maps tickets back to per-token results. Receipt reconciliation is out of
@@ -42,10 +50,13 @@ export interface PushClient {
  * tokens; lingering dead tokens only waste a silent send.
  */
 export class ExpoPushClient implements PushClient {
-  private readonly expo: Expo;
+  private readonly expo: ExpoLike;
 
-  constructor(accessToken: string | undefined = process.env.EXPO_ACCESS_TOKEN) {
-    this.expo = accessToken ? new Expo({ accessToken }) : new Expo();
+  constructor(
+    accessToken: string | undefined = process.env.EXPO_ACCESS_TOKEN,
+    expo?: ExpoLike,
+  ) {
+    this.expo = expo ?? (accessToken ? new Expo({ accessToken }) : new Expo());
   }
 
   async send(messages: PushMessage[]): Promise<PushSendResult[]> {
