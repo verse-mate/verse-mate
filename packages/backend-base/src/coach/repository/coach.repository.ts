@@ -75,6 +75,24 @@ export class CoachRepository {
       : null;
   }
 
+  /** The saved meeting link for the account whose email matches `email`
+   *  (case-insensitive), or "" when there is no matching account or no saved
+   *  link. Used to auto-attach a leader's recurring meeting link (where the
+   *  Fireflies Notetaker records) as the default recording link on each of
+   *  their sessions. */
+  async getZoomLinkByEmail(email: string): Promise<string> {
+    const target = email.trim().toLowerCase();
+    if (!target) return "";
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_zoom_links")
+      .innerJoin("user", "user.id", "coach_zoom_links.user_id")
+      .where(sql<boolean>`lower("user"."email") = ${target}`)
+      .select("coach_zoom_links.zoom_link")
+      .executeTakeFirst();
+    return row?.zoom_link ?? "";
+  }
+
   /** Upserts the link for a user and returns the stored value. */
   async setZoomLink(userId: string, zoomLink: string): Promise<string> {
     await this.db
