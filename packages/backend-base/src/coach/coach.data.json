@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-20",
+  "generatedAt": "2026-07-21",
   "model": "v3-weighted-100",
   "admins": ["andytryba@gmail.com"],
   "clusters": [
@@ -58,6 +58,378 @@
       "isCoach": true,
       "zoomLink": "",
       "reports": [
+        {
+          "id": "bryan-bailey-2026-07-18-james-lesson-9-saturday-morning-",
+          "date": "2026-07-18",
+          "dateLabel": "July 18, 2026",
+          "session": "James, Lesson 9 — Saturday Morning Group (Austin Ridge, in-person)",
+          "topic": "James 4:13–5:12 — Wealth, Patience, and the Last Days",
+          "duration": "~2 hr 18 min (incl. join buffer) · in-person, solo (no mentor)",
+          "attendees": 28,
+          "newcomers": 6,
+          "score": 91.69,
+          "base": 83.69,
+          "newcomerBonus": 5,
+          "sizeBonus": 3,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 92,
+              "contribution": 30.36
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 73.3,
+              "contribution": 22.73
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Clear 10-step arc — cold-recall open, context, reading, verse-by-verse, cross-ref chains, wrap-up, prayer chain — but the ~94-min main block ran unbroken with no midpoint recap and the session went ~18 min over the 120-min target."
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 5,
+              "note": "6 first-timers introduced individually over ~11 min, opened by Bryan's own conversion testimony as the on-ramp; every newcomer gave a specific personal reason for being there."
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "Seven distinct books beyond James — Hebrews 1:2, Job 1/2/42, 2 Cor 4, 1 Thess 2, Matthew 5 — with ~85%+ of exchanges tied directly to a text."
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "Discussion-only leader talk ran ~42–48%, above the 30–35% target, elevated by three >90-sec monologue stretches; strong Socratic routing otherwise."
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "8 DOK-scored Big Idea questions (37.5% DOK-4), but only one first-person confession surfaced — below the ≥2 target for application depth."
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "20+ named substantive contributors, ~70%+ of a ~28-man room — a high share for a room this size — with consistent by-name cold-calling."
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 5,
+              "note": "On-screen VerseMate word-study throughout James 4–5 (live Greek/Hebrew pop-ups — σήπω 'have rotted', 'Lord of Sabaoth', perfect-tense 'withheld') plus a 2 Corinthians 4 screen-share."
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "Consistent with the leader's established ~4/5 baseline — no fresh high-cost confession from Bryan himself, but he modeled his own testimony and drew out Mike's real mortality disclosure, evidence of built trust."
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5,
+              "note": "Opened with a genuinely unaided 'give me the bumper stickers' cold recall across the whole book of James, and closed with a cumulative Big Ideas recap."
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 3,
+              "note": "'The Guarantee' offered to newcomers, but no explicit workbook/homework review or reward surfaced in-session this week."
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5,
+              "note": "Delegated opening prayer (captured after the recording gap), closing prayer, and a full prayer-chain ministry emphasis with named call assignments."
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3,
+              "note": "Solo-led with no named apprentice handoff or delegated facilitation window; the nine newcomer call-pairings are Building-Ministry multiplication, not in-session leader development."
+            }
+          ],
+          "bigIdeas": [
+            "Faith without works is dead — it's literally useless",
+            "Your riches have already rotted — judgment writes in past tense",
+            "You can't take it with you, but you'll answer for every dime"
+          ],
+          "feedback": {
+            "headline": "A newcomer-heavy Saturday — 6 new men, Bryan's own testimony, and a real mortality confession from Mike.",
+            "strengths": [
+              "The Newcomer Multiplication System: Nine Named Pairings in Real Time",
+              "Bryan's Own Testimony as the Newcomer On-Ramp",
+              "The Cold 'Give Me the Bumper Stickers' Recall Drill"
+            ],
+            "improvements": [
+              "Confirm Recording Audio Is Live Before the Opening Prayer",
+              "Three Monologue Stretches Exceeded the ≤2 Target",
+              "Verse Confusion Compounded by an Unusually Large, New Room"
+            ],
+            "recommendations": [
+              "Confirm Recording Audio Is Live Before Any Delegated Prayer",
+              "Break Any Explanation Past 90 Seconds With a Question",
+              "Keep the Newcomer Follow-Up Loop Visible Week to Week"
+            ],
+            "overview": [
+              "A newcomer-heavy Saturday — 6 new men, Bryan's own testimony, and a real mortality confession from Mike.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 91.69/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "The Newcomer Multiplication System: Nine Named Pairings in Real Time",
+                "paragraphs": [
+                  "Rather than a generic \"welcome, hope you come back,\" Bryan closed the session by naming a specific existing member and pairing him with a specific newcomer, one at a time, out loud: \"Mike, you know him, right? I would like you to get his phone number and call him this week... Bryce and Shaddy, I want you to get Mason's number, call him, welcome him into the group... Mason and Kevin, get Rob, okay?... Austin, Hassan, get his number, call him, welcome him, see what's on his mind\" [02:10:25–02:12:19]. Nine pairings in under two minutes, each with a concrete deliverable (get the number, place the call, ask what's on his mind). This is 2 Timothy 2:2 multiplication executed as an operational checklist, not an aspiration — it converts a one-time Saturday visit into a tracked relational commitment before anyone leaves the room."
+                ]
+              },
+              {
+                "title": "Bryan's Own Testimony as the Newcomer On-Ramp",
+                "paragraphs": [
+                  "Instead of a scripted welcome speech, Bryan opened the newcomer segment by telling his own conversion story in specific, unflattering detail — \"I went to church, I listened, I paid attention... but it wasn't a daily thing... At 39, I came to a group that was using the materials we use here\" [00:10:00–00:12:25], including the admission that it \"took years for me\" and \"I had a thick skull.\" He then converted the story directly into an invitation: \"if you would like God to speak to you... I've got a guarantee\" [00:13:06]. Modeling vulnerability-as-authority BEFORE asking six total strangers to introduce themselves is a deliberate sequencing choice — it set the room's safety level for what followed, and every one of the six newcomers responded with a specific, personal reason for being there (a cross-country move, a search for accountability, a background as a Muslim-Background Believer, a recent move to Austin)."
+                ]
+              },
+              {
+                "title": "The Cold 'Give Me the Bumper Stickers' Recall Drill",
+                "paragraphs": [
+                  "Before opening a single Bible this session, Bryan ran a genuinely unaided cumulative review across the entire book of James: \"Now give me some bumper stickers from this study, some big ideas that we have seen... Mike, what do you think the biggest idea is of the book?\" [00:20:41–00:24:44]. Members recalled — without being fed the answer — faith without works being dead, hearers vs. doers, trials producing endurance, friendship with the world as enmity with God, the tongue reflecting the heart, wisdom available by faith, and partiality as judging by face value. This is precisely the Ebbinghaus cold-retrieval technique the Thursday group has now skipped two sessions running — the Saturday group ran it this week, unprompted, as a matter of course."
+                ]
+              },
+              {
+                "title": "Job's Arc Built the Definition of Patience Incrementally, Not Upfront",
+                "paragraphs": [
+                  "Rather than defining patience and then illustrating it, Bryan built the definition progressively across Job's story, stopping after chapter 1 to ask \"if we could only have chapter one, we don't know how the story ends — how would we define patience?\" [01:34:58], landing \"endurance under stress,\" then continuing into chapter 2's second trial (Job's wife: \"do you still hold fast your integrity? Curse God and die\" [01:36:48]) before finally reaching the restoration in chapter 42. The technique — pause the story, ask the room to name what they know so far, then continue — forces the room to sit with an unresolved Job rather than jumping straight to the tidy ending, which is a more accurate rendering of what patience actually costs."
+                ]
+              },
+              {
+                "title": "Mike's Heart-Attack Confession Validated the Session's Entire Thesis",
+                "paragraphs": [
+                  "Closing with \"Mike, what are you thinking about your wealth?\" [02:06:28], Bryan drew out a genuine, previously undisclosed testimony: \"it came on me suddenly, one day, no signs... I certainly wasn't thinking about my stuff, I was thinking about where I might be going and about my family\" [02:07:16–02:07:34], and when asked how long he had to process it — \"probably about an hour and a half\" [02:07:42]. This landed the session's central claim (James 4:14's \"you are just a vapor\") as lived experience rather than doctrine, in the room, from a named member with real stakes — exactly the kind of moment the Application Depth metric is designed to surface."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Confirm Recording Audio Is Live Before the Opening Prayer",
+                "paragraphs": [
+                  "Audio analysis of this session's recording (silence-level scan, not transcript) shows near-total silence from 00:00:00 to roughly 00:02:15 — consistent with exactly what Bryan flagged: the opening prayer very likely happened but the Fireflies bot's microphone hadn't yet picked up the room (heads bowed, voices lowered, and/or the bot still finishing its join sequence). This is a recording capture gap, not a leadership gap — no dimension in this report treats it as a missing prayer, and Session Structure and Prayer are both scored on the assumption the delegated opening prayer occurred. Fix: give the recorder ~15–20 seconds of normal-volume room audio (a clear \"alright men, let's pray\") right before heads bow, so the archive captures the prayer in full next time — a one-time habit, not a leadership change."
+                ]
+              },
+              {
+                "title": "Three Monologue Stretches Exceeded the ≤2 Target",
+                "paragraphs": [
+                  "Three separate stretches ran past 90 seconds largely uninterrupted: the James-authorship history [00:21:59–00:24:41, ~2.7 min], the Milky Way/galaxy-scale digression [01:52:41–01:55:24, ~2.7 min], and the prayer-chain closing instructions [02:12:22–02:16:23, ~4 min]. Each is individually defensible content, but together they pushed the discussion-only talk ratio to ~42–48%, well above the 30–35% target. See the Monologues section below for the specific fix on each."
+                ]
+              },
+              {
+                "title": "Verse Confusion Compounded by an Unusually Large, New Room",
+                "paragraphs": [
+                  "Bryan mid-corrected himself on the passage reference more than once — \"No, just, I mean, excuse me, excuse me, chapter 5 verse 11, I said that wrong\" [01:41:34] — and named the cause directly: \"I'm having trouble with people now, you know, enough people changing in here. I'm struggling a little bit overload\" [01:41:16]. This is an honest, in-the-moment admission rather than a hidden problem, and it is a reasonable cost of learning six new names in one sitting while still teaching at full pace. No specific fix is prescribed here — Bryan named the trade-off himself, live, which is itself the right response."
+                ]
+              },
+              {
+                "title": "Only One First-Person Confession Surfaced From the Application Round",
+                "paragraphs": [
+                  "The wealth block landed its concept well, but most responses stayed third-person and prescriptive (\"we should hold our stuff loosely\") rather than first-person and specific. Only one genuine first-person confession surfaced from a Big-Idea question this session — below the ≥2-per-session target for Application depth. The teaching was strong; the gap is in converting a conceptual answer into a personal one. Fix: after a conceptual reply on a Big Idea, add one probe that forces a personal, specific response — \"where has your own wallet argued with your faith this week?\" — and hold the silence until someone answers about themselves, not about \"us.\" One such probe per Big-Idea block would clear the target next week regardless of passage."
+                ]
+              },
+              {
+                "title": "The Main Teaching Block Ran ~94 Minutes With No Structural Break",
+                "paragraphs": [
+                  "From the first scripture reading [00:29:32] to the start of wrap-up [02:03:31], the session ran continuously for roughly 94 minutes — above the 60–90-min target and with no built-in stretch, recap, or re-focus point along the way, on a night the room itself was unusually large and full of first-timers. Fix: on heavy-newcomer weeks especially, insert one explicit 60-second \"where are we / what have we covered\" recap at the session's rough midpoint (e.g., right after the 'last days' cross-ref chain, before Job begins) — it costs a minute and re-anchors newcomers who may have lost the thread."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Confirm Recording Audio Is Live Before Any Delegated Prayer",
+                "paragraphs": [
+                  " Audio analysis of this session shows near-total silence for the first ~2:15, consistent with the opening prayer happening but not being fully picked up by the Fireflies bot mic. Before: the prayer begins as soon as the room quiets down and heads bow. After: whoever's praying opens at normal volume (\"Let's pray\") and holds a beat before bowing heads, giving the recorder a moment to lock onto the room audio — a one-time habit that protects the archive going forward, independent of this week's specific gap."
+                ]
+              },
+              {
+                "title": "Break Any Explanation Past 90 Seconds With a Question",
+                "paragraphs": [
+                  " Three stretches this week ran past 90 seconds largely uninterrupted (James history, the galaxy-scale digression, the prayer-chain instructions). Before: continuous narration through the full explanation. After: pause at the 60–90-second mark and ask a specific question about what was just said before continuing — same content, but the room stays in the answering seat."
+                ]
+              },
+              {
+                "title": "Keep the Newcomer Follow-Up Loop Visible Week to Week",
+                "paragraphs": [
+                  " Nine call-pairings were assigned this week, but there's no in-session mechanism to confirm they happened. Before: a one-time announcement of who calls whom. After: open next Saturday with a 30-second public check-in (\"who made their call this week?\") before moving into the lesson — makes the multiplication system self-reinforcing rather than a single ask."
+                ]
+              },
+              {
+                "title": "Add One First-Person Probe to Every Application Block",
+                "paragraphs": [
+                  " The application round drew strong conceptual answers but only one first-person confession — below the ≥2 target. Before: a conceptual answer (\"we should hold wealth loosely\") is accepted and the room moves on. After: follow every conceptual answer with one probe that forces a personal, specific response — \"where did your own money argue with your faith this week?\" — and hold the silence until someone answers about themselves. Transferable to any passage."
+                ]
+              },
+              {
+                "title": "Insert a Midpoint Recap on Long, Newcomer-Heavy Sessions",
+                "paragraphs": [
+                  " The main lesson ran ~94 minutes continuously with no structural break, on a night with 6 first-time visitors who had the least context to hang onto. Before: an unbroken 94-minute teaching block. After: one explicit 60-second \"where are we / what have we covered\" recap at the rough midpoint — cheap insurance against losing newcomers mid-session."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — Attendees",
+              "bullets": [
+                "Total attendees: ~28 men (Saturday 7am in-person, Austin Ridge) — 27+ named/heard in the recording, including a large newcomer wave  (Target: Consistent growth)  → STRONG",
+                "Newcomers / first-timers: 6 first-timers introduced individually — Sebastian, Jeff, Hassan, Rob, Mason, Zach [00:14:48–00:20:15]  (Target: Organic growth over time)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — Scripture Focus",
+              "bullets": [
+                "Cross-references used: 7 distinct books beyond the primary text — Hebrews 1:2; Job 1, 2, 42 (read nearly in full); 2 Corinthians 4:7–10, 16–18; 1 Thessalonians 2:14–15; Matthew 5:12  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Leader talk ratio (with scripture reading): ~50–55% (whole session; three separate monologue stretches plus extensive narrated cross-ref connective tissue)  (Target: ≤35%)  → NEEDS WORK",
+                "Leader talk ratio (discussion only — graded): ~42–48% (excludes scripture reading and newcomer-welcome testimony; elevated by the three >90-sec monologue stretches)  (Target: ≤30–35% (Lifeway 30% Rule))  → NEEDS WORK",
+                "Time to first scripture reading: ~8–9 min after the welcome ends (James 4:13–17 read at [00:29:46]; welcome/testimony ends ~00:21:00)  (Target: Within 15 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~85%+ of exchanges tied directly to a text  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — Time Management",
+              "bullets": [
+                "Total session time: ~2 hr 18 min (incl. ~10-min pre-session join buffer before teaching content begins)  (Target: 120 min)  → NEEDS WORK",
+                "Newcomer welcome + leader testimony: ~11 min (00:10–00:21) — Bryan's own 39-year conversion story, then 6 individual newcomer introductions  (Target: 7–25 min)  → STRONG",
+                "Big Ideas cumulative review + book history: ~8 min (00:21–00:29) — cold 'give me the bumper stickers' recall across the whole book of James, then James/authorship context  (Target: 5–15 min)  → STRONG",
+                "Main lesson (James 4:13–5:12 + Job + cross-ref chains): ~94 min (00:29–02:03), continuous with no structural break  (Target: 60–90 min)  → NEEDS WORK",
+                "Wrap-up application + newcomer call assignments + prayer chain + closing prayer: ~15 min (02:03–02:18) — high-value time  (Target: High-value time)  → STRONG",
+                "Tangent time: ~2 min (Hansel-and-Gretel aside [00:37:38]; parking-lot joke [02:03:02])  (Target: < 5 min)  → STRONG",
+                "Pacing (self-managed): Bryan self-managed throughout — no external redirect — but ran ~18 min over the 120-min target, driven mainly by the extended, unbroken main-lesson block  (Target: Self-managed throughout)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 8 questions  (Target: 5–7 per session)  → ON TARGET",
+                "DOK Level 4 (apply to life): 37.5% (3 questions — the 'give me a real prayer for your future'; 'why are we so challenged by wealth'; 'what are you thinking about your wealth' → Mike's heart-attack answer)  (Target: 35–50% for DOK 4)  → STRONG",
+                "DOK Level 3 (reason/justify): 62.5% (5 questions — presumption/future critique; basis of patience; Job ch.1 patience definition; 2 Cor 4 contrast; why a treasure in an earthen vessel)  (Target: 35–50% for DOK 3)  → ON TARGET",
+                "DOK Level 1–2 scaffolding (excluded): ~25+ navigation/reading/word-definition prompts — unusually high, driven by the newcomer-heavy pacing and frequent re-reads  (Target: Excluded from scoring)  → N/A",
+                "Confession / Personal-Response Rate: 1 clear first-person confession this week (Mike's heart-attack disclosure [02:07:16])  (Target: ≥2 per session)  → NEEDS WORK",
+                "Leader follow-up probe frequency: 10+ probes ('Say more', 'Tell me more', 'Come on')  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — Engagement",
+              "bullets": [
+                "Named substantive contributors: 20+ (Mike, Noah, Kevin, Brendan, Caleb, Danny, Zach ×2, Weston, Jason, Andy, Bryce, Shaddy, Lake, Justin, Hassan, Sebastian, Jeff, Rob, Mason, Fred, Austin, Nick, Ron, Russ, and more)  (Target: 70–80% of attendees)  → STRONG",
+                "Substantive % of group: ~70%+ of a ~28-man room — a high percentage for a room this size  (Target: ≥70%)  → STRONG",
+                "Read-aloud assignments (reported, not scored): 15+ reading turns across James, Job, 2 Corinthians, 1 Thessalonians, Matthew  (Target: Reported only)  → N/A",
+                "Wait time / productive struggle: Bryan repeatedly holds silence ('Come on', 'no, no, what is...') and redirects partial answers before supplying the point  (Target: 3–5 sec (Rowe 1972))  → STRONG",
+                "Quiet member flag: Cannot be reliably isolated this week — the room is unusually large and audio-only attribution makes a single silent regular hard to name; worth a visual check next session  (Target: All regulars contribute)  → N/A"
+              ]
+            },
+            {
+              "title": "Scorecard — Leadership",
+              "bullets": [
+                "Vulnerability moments: 3 — Bryan's 39-year conversion testimony opening the newcomer welcome [00:10:00]; Bryan's live 'I'm struggling a little bit overload' admission [01:41:16]; Mike's heart-attack mortality disclosure [02:07:16]  (Target: ≥1 per session with depth)  → STRONG",
+                "Vulnerability depth (rolling baseline ±1): 4/5 — consistent with the leader's established ~4/5 baseline; no fresh high-cost unresolved confession from Bryan himself this week, but strong member-side vulnerability (Mike) as evidence of built trust  (Target: 4–5/5 for experienced leader)  → STRONG",
+                "Extended monologues > 90 sec: 3 — James-authorship history [00:21:59–00:24:41]; Milky Way/galaxy-scale digression [01:52:41–01:55:24]; prayer-chain closing instructions [02:12:22–02:16:23]  (Target: ≤2 per session (each named with fix))  → NEEDS WORK",
+                "Monologue details: See Monologues section below  (Target: —)  → —"
+              ]
+            },
+            {
+              "title": "Scorecard — Question Quality",
+              "bullets": [
+                "% open-ended questions: ~70%  (Target: ≥60%)  → STRONG",
+                "% text-requiring questions: ~55%  (Target: ≥50%)  → STRONG",
+                "Leader follow-up probes: 10+ ('Say more', 'Tell me more', 'Come on')  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle rate: HIGH — Bryan repeatedly declines to hand over the answer ('No, no, what is... if you're showing partiality, what are you doing?'), routing the room back to the text  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Peer-to-peer exchanges: Present — several members build directly on each other's answers (the hoarding/fraud word-list build, the 'past-tense judgment' back-and-forth)  (Target: Members respond to each other)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — Study Method & Communication",
+              "bullets": [
+                "Study flow: Newcomer welcome + leader testimony → whole-book Big Ideas cold recall → James authorship history → James 4:13–5:12 verse-by-verse (money's four problems: hoarding, fraud, self-indulgence, injustice) → 'last days' cross-ref chain → Job 1/2/42 → patience definition → 2 Corinthians 4 → oaths passage → wrap-up application → prayer chain  (Target: OIA method)  → STRONG",
+                "Bumper stickers generated: 6 — see Big Ideas on title page  (Target: 3–5 per session)  → STRONG",
+                "Visual aids: On-screen VerseMate word-study tool used throughout James 4–5 (Summary / By Line / Study / Visuals tabs; live Greek/Hebrew pop-ups — σήπω 'have rotted' with Hebrew kālâh, 'Lord of Sabaoth' military title, perfect-tense 'withheld'), plus a plain-text 2 Corinthians 4 screen-share  (Target: Multiple tools (Mayer))  → STRONG",
+                "Tone & delivery: N/A — audio only; energetic, high-tempo cold-calling evident from transcript (name-by-name questioning, frequent 'come on')  (Target: N/A — audio only)  → N/A",
+                "Topic drift: Hansel-and-Gretel aside ~1 min [00:37:38]; parking-lot joke ~30 sec [02:03:02]; total ~2 min  (Target: < 5% off-topic)  → STRONG",
+                "Big Ideas at close: Genuine closing recap ('What are our big ideas here today?' [02:03:31]) plus the wealth application round — strong bookending with the opening cold-recall drill  (Target: Cumulative review at close)  → STRONG"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "Three stretches exceeded the 90-second threshold (Stuart & Rutherford) — above the ≤2 target. Each named with its fix.",
+                "Monologue 1 — James Authorship & Church History [00:21:59–00:24:41] (~2.7 min): Bryan narrated James's identity as Jesus's half-brother, his rise to lead the Jerusalem church, and the martyrdom that scattered the church, almost entirely solo before opening it back up with \"now give me some bumper stickers.\" Valuable context, but delivered as a lecture. Fix: break it into two beats with a question between them — \"James was Jesus's half-brother, but he didn't believe in him during his lifetime — what do you think changed that?\" — before continuing to the martyrdom/scattering half.",
+                "Monologue 2 — Milky Way / Galaxy-Scale Digression [01:52:41–01:55:24] (~2.7 min): Illustrating \"the things which are seen are temporal,\" Bryan built an extended cosmological-scale riff (200 billion stars, 2 trillion galaxies, a 6-million-light-year gap to the nearest one) largely uninterrupted except for Andy supplying a number. The illustration lands, but it ran long. Fix: cut the recitation to one or two scale facts (galaxy count, nearest-galaxy distance) and ask the room to finish the thought — \"so if all of that is temporary, what does that make the thing right in front of you today?\" — before moving on.",
+                "Monologue 3 — Prayer-Chain Closing Instructions [02:12:22–02:16:23] (~4 min): Explaining the prayer-chain mechanics and importance (\"This is super important... please make your call... it's designed where it's literally we can rely on\") ran almost entirely solo for four minutes at the very end of a 2-hour-plus session, when attention is at its lowest. The content (Bryan's signature Prayer Chain Ministry technique) is valuable and worth keeping — the length is the issue. Fix: hand a returning member the closing prayer-chain reminder in 60 seconds (\"hey, quick reminder on the prayer chain — Austin, take 30 seconds\") and reserve Bryan's own voice for the one line that matters most: \"the chain works because we make it 100%.\""
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "Mike's Heart-Attack Confession  (Real · Capitalized · Being Real)\n\nWhat happened: Closing the wealth application with \"Mike, what are you thinking about your wealth?\" [02:06:28], Bryan drew out a disclosure the room hadn't heard before: \"it came on me suddenly, one day, no signs. But I tell you one thing, I certainly wasn't thinking about my stuff. I was thinking about where I might be going and about my family.\" Bryan followed up — \"how long was that time period that you had to evaluate that?\" — and Mike answered, \"probably about an hour and a half.\" Bryan then turned to the room: \"I thought that was super powerful... some of these guys didn't hear that.\"\n\nWhy it mattered: The entire session's thesis — James 4:14's \"you are just a vapor,\" James 5's warning against hoarded wealth — is easy to affirm intellectually and hard to feel. A named member's real, unscripted brush with mortality, disclosed live, converted the lesson from doctrine into lived testimony in front of 6 brand-new visitors on their very first Saturday. It is also the kind of moment that raises the room's disclosure ceiling for everyone who witnessed it.\n\nWhat would make it bigger: Land it with one forward step: \"Mike, an hour and a half to think about what mattered — what's one thing that hour and a half changed about how you're living this week?\" The disclosure did the diagnostic work; a named follow-through would have converted it into an assignment the room could track.",
+                  "timestamp": "02:07:16"
+                },
+                {
+                  "detail": "Nine Newcomer Call-Pairings, Named One at a Time  (Capitalized · Building Ministry)\n\nWhat happened: In under two minutes, Bryan named nine specific existing members and paired each with a specific newcomer for a follow-up call this week: \"Mike, you know him, right? Get his phone number and call him this week... Bryce and Shaddy, get Mason's number, call him, welcome him into the group... Austin, Hassan, get his number, call him, welcome him, see what's on his mind.\"\n\nWhy it mattered: Six newcomers walked in for the first time this week. Without a tracked follow-up mechanism, first-time visitors have a well-documented tendency to not return — the assignment converts a warm Saturday morning into nine concrete relational commitments with an owner and a deadline (this week) attached to each one.\n\nWhat would make it bigger: Close the loop next Saturday with a 30-second public check: \"quick show of hands — who made their call this week?\" This makes the multiplication system self-reinforcing rather than a one-time announcement.",
+                  "timestamp": "02:10:25–02:12:19"
+                },
+                {
+                  "detail": "Bryan's Own Testimony Opens the Session for Six Newcomers  (Capitalized · Being Real + Building Ministry)\n\nWhat happened: Rather than a scripted welcome, Bryan told his own conversion story in specific, unflattering detail before asking anyone else to speak — \"it took years for me... I had a thick skull\" [00:10:00–00:13:52] — then converted it into a direct invitation: \"if you would like God to speak to you... I've got a guarantee, 100% guarantee.\"\n\nWhy it mattered: Sequencing matters: Bryan modeled vulnerable disclosure BEFORE asking six strangers to introduce themselves. Every one of the six newcomers who followed gave a specific, personal reason for being there rather than a guarded one-liner — evidence the modeling worked.\n\nWhat would make it bigger: Already a strength as executed — the one addition worth testing is naming the technique out loud to the room once the newcomers have finished: \"that's why I went first — I wanted y'all to know it's safe to be honest here.\"",
+                  "timestamp": "00:10:00"
+                },
+                {
+                  "detail": "Naming the Strain of a Big New Room, Live  (Pivot Point (mixed) · Teaching Craft + Being Real)\n\nWhat happened: Mid-correcting a chapter/verse reference, Bryan paused to name the cause out loud: \"I'm having trouble with people now, you know, enough people changing in here. I'm struggling a little bit overload.\"\n\nWhy it mattered: This is a small but real authenticity moment — a 17-year veteran leader naming a live limitation in front of a room half-full of people he just met, rather than papering over the mistake. It doubles as a structure signal: a 6-newcomer week measurably strains even an experienced leader's tracking.\n\nWhat would make it bigger: Turn the moment into a light, reusable bit rather than a passing aside — \"give me grace on names this week, I've got nine new faces to learn\" — normalizing the strain for the room instead of just naming it once and moving on.",
+                  "timestamp": "01:41:16"
+                }
+              ],
+              "paragraphs": [
+                "Four disproportionately important moments — the pivots that shaped what this group will remember, believe, and do this week. Named explicitly so Bryan can see the pattern and replicate it."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "Give me a real prayer — how should you be praying and thinking about your future? [00:34:39] — Level 4 — Apply to life — Produced a specific, personal prayer from a member rather than a paraphrase — the session's clearest DOK-4 model answer.",
+                "Why are we so challenged by wealth? [00:53:39] — Level 4 — Apply to life — Room named self-sufficiency and false security as the mechanism, not just the symptom.",
+                "Mike, what are you thinking about your wealth? [02:06:28] — Level 4 — Apply to life — The session's signature moment — produced Mike's unscripted heart-attack disclosure.",
+                "What is the challenge about presuming on your future ('if the Lord wills')? [00:31:53] — Level 3 — Reason/justify — Room named 'the illusion of control' and functioning like an atheist as the core failure.",
+                "What's the basis of the patience commanded in verses 7–11? [01:06:10] — Level 3 — Reason/justify — Room correctly located the answer in 'knowing the Lord is coming,' tying patience to eschatology rather than temperament.",
+                "If we could only have Job chapter 1, how would we define patience? [01:34:58] — Level 3 — Reason/justify — Forced a definition ('endurance under stress') before the room knew the story's resolution.",
+                "What's the contrast being drawn in 2 Corinthians 4? [01:51:23] — Level 3 — Reason/justify — Room named the inside/outside, temporal/eternal contrast and connected it back to James 5's 'vapor' language.",
+                "Why has God put a treasure in an earthen vessel? [01:46:49] — Level 3 — Reason/justify — Room reasoned toward 'so the power is seen as God's, not the container's' — a clean theological inference from the text's own logic."
+              ],
+              "paragraphs": [
+                "8 Big Idea questions (DOK scored) — slightly above the 5–7 target, reflecting the session's unusually wide cross-reference sweep. Scaffolding / reading / navigation prompts (~25+, DOK 1–2) excluded. Distribution: DOK 4 — 37.5% (3 questions); DOK 3 — 62.5% (5 questions). Confession/Personal-Response Rate: 1 (below the ≥2 target). Leader Follow-up Probe Frequency: 10+ throughout."
+              ]
+            }
+          ],
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
+          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
         {
           "id": "bryan-bailey-2026-07-16-james-lesson-9-thursday-evening-",
           "date": "2026-07-16",
