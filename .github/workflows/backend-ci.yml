@@ -12,14 +12,6 @@
 #   OBJECT_STORAGE_ENDPOINT          - Object storage endpoint URL
 #   OBJECT_STORAGE_BUCKET            - Object storage bucket name
 #   OBJECT_STORAGE_REGION            - Object storage region
-#
-# Optional GitHub Secrets (production deploy — see the deploy job):
-#   SSH_PRIVATE_KEY   - Private key authorized on the production host. When
-#                       unset, the deploy job skips (build + push still run),
-#                       so CI stays green until deploy is configured.
-#   DEPLOY_HOST       - Production host (default: app.versemate.org)
-#   DEPLOY_USER       - SSH user (default: root)
-#   DEPLOY_PATH       - Compose project dir on the host (default: ~/verse-mate)
 
 name: Backend CI/CD
 
@@ -329,15 +321,14 @@ jobs:
         run: docker push ${{ secrets.DO_REGISTRY }}/${{ secrets.DO_REGISTRY_IMAGE }}-backend:${{ github.ref_name }}
 
   # ============================================
-  # DEPLOY JOB
-  # Rolls the freshly-pushed image onto the production host over SSH:
-  #   cd <path> && docker compose pull && docker compose up -d && docker system prune -a -f
+  # DEPLOY (no-op — production deploy is NOT handled by this workflow)
   #
-  # Runs only on pushes to the main branch (not on version tags, whose image
-  # is pushed under a different tag than the server's compose references).
-  # Gated on SSH_PRIVATE_KEY: when the secret is absent the job logs a warning
-  # and succeeds without deploying, so the pipeline stays green until an
-  # operator configures the deploy secrets (see the header for the full list).
+  # api.versemate.org runs on DigitalOcean App Platform, which auto-deploys
+  # whenever the `:main` image is pushed to the DOCR registry by the
+  # docker-push job above. There is no SSH host or docker-compose server to
+  # roll onto — app.versemate.org resolves to Cloudflare, and the backend is
+  # the App Platform app `verse-mate-backend`. Do NOT add an SSH/docker-compose
+  # deploy step here: it cannot connect and would not roll anything out.
   # ============================================
   deploy:
     name: Deploy
@@ -345,32 +336,5 @@ jobs:
     needs: [docker-push]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Check deploy configuration
-        id: cfg
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          if [ -n "$SSH_PRIVATE_KEY" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::SSH_PRIVATE_KEY is not set — skipping production deploy. Add the SSH_PRIVATE_KEY secret to enable automatic roll-out."
-          fi
-
-      - name: Deploy to production over SSH
-        if: steps.cfg.outputs.enabled == 'true'
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          set -euo pipefail
-          HOST="${DEPLOY_HOST:-app.versemate.org}"
-          USER="${DEPLOY_USER:-root}"
-          DIR="${DEPLOY_PATH:-~/verse-mate}"
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$USER@$HOST" \
-            "cd $DIR && docker compose pull && docker compose up -d && docker system prune -a -f"
+      - name: Deployment handled by App Platform auto-deploy
+        run: echo "No action here — DO App Platform auto-deploys the :main image pushed by docker-push. No SSH/compose roll-out exists."
