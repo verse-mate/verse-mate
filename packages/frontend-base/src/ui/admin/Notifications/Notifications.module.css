@@ -1,0 +1,77 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 640px;
+}
+
+.intro {
+  color: var(--color-text-secondary, #555);
+  margin: 0;
+}
+
+.count {
+  font-weight: 600;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.input,
+.textarea {
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 6px;
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #777);
+}
+
+.confirmRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--color-border, #ccc);
+  border-radius: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.message {
+  padding: 0.625rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.messageSuccess {
+  background: #e6f4ea;
+  color: #1e7e34;
+}
+
+.messageError {
+  background: #fdecea;
+  color: #b71c1c;
+}
