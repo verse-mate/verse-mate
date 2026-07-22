@@ -13,6 +13,7 @@ import shared from "../shared/shared.plugin";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
+  LeaderMonthlyResponseSchema,
   MonthlySchema,
   NoteSchema,
   ReportSchema,
@@ -207,6 +208,31 @@ const plugin = new Elysia()
           return trends;
         },
         { response: { 200: TrendsSchema, ...StandardErrorResponses } },
+      )
+      // The signed-in leader's own monthly summary (full parity with the
+      // individual monthly PDF) for a YYYY-MM month.
+      .get(
+        "/monthly-summary",
+        async ({ query, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const month = (query.month ?? "").trim();
+          if (!/^\d{4}-\d{2}$/.test(month))
+            throw new ValidationError("month must be YYYY-MM");
+          const data = await coachService.getMyMonthlySummary(
+            currentUserId,
+            month,
+          );
+          if (!data) throw new ForbiddenError("Not a coaching account");
+          return data;
+        },
+        {
+          query: t.Object({ month: t.String() }),
+          response: {
+            200: LeaderMonthlyResponseSchema,
+            ...StandardErrorResponses,
+          },
+        },
       )
       .put(
         "/zoom-link",
@@ -427,6 +453,34 @@ const plugin = new Elysia()
           params: t.Object({ id: t.String() }),
           response: {
             200: TrendsSchema,
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // A specific leader's monthly summary (admin drill-in) for a YYYY-MM month.
+      .get(
+        "/admin/coaches/:id/monthly-summary",
+        async ({ params, query, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const month = (query.month ?? "").trim();
+          if (!/^\d{4}-\d{2}$/.test(month))
+            throw new ValidationError("month must be YYYY-MM");
+          const data = await coachService.getMonthlySummaryById(
+            params.id,
+            month,
+          );
+          if (!data) throw new NotFoundError("Coach not found");
+          return data;
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          query: t.Object({ month: t.String() }),
+          response: {
+            200: LeaderMonthlyResponseSchema,
             404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
           },
