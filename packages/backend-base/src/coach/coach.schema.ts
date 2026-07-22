@@ -173,3 +173,106 @@ export const MonthlySchema = t.Object({
     t.Null(),
   ]),
 });
+
+// ─── Per-leader monthly summary (full parity with the individual monthly PDF)
+
+const NumOrNull = t.Union([t.Number(), t.Null()]);
+const DimStat = t.Union([
+  t.Object({ name: t.String(), val: t.Number() }),
+  t.Null(),
+]);
+
+export const LeaderMonthlySummarySchema = t.Object({
+  month: t.String(),
+  monthLabel: t.String(),
+  priorMonthLabel: t.String(),
+  leaderId: t.String(),
+  leaderName: t.String(),
+  group: t.String(),
+  sessionsCount: t.Number(),
+  composite: t.Number(),
+  status: t.Object({ label: t.String(), emoji: t.String() }),
+  priorComposite: NumOrNull,
+  delta: NumOrNull,
+  clusterAvg: t.Object({
+    tc: NumOrNull,
+    bm: NumOrNull,
+    ep: NumOrNull,
+    br: NumOrNull,
+  }),
+  glance: t.Object({
+    rows: t.Array(
+      t.Object({
+        date: t.String(),
+        session: t.String(),
+        bm: NumOrNull,
+        tc: NumOrNull,
+        ep: NumOrNull,
+        br: NumOrNull,
+        composite: t.Number(),
+        status: t.String(),
+      }),
+    ),
+    avg: t.Object({
+      bm: NumOrNull,
+      tc: NumOrNull,
+      ep: NumOrNull,
+      br: NumOrNull,
+      composite: t.Number(),
+      status: t.String(),
+    }),
+  }),
+  trajectory: t.Array(
+    t.Object({
+      date: t.String(),
+      session: t.String(),
+      composite: t.Number(),
+      status: t.String(),
+      delta: NumOrNull,
+    }),
+  ),
+  clusters: t.Array(
+    t.Object({
+      key: t.String(),
+      name: t.String(),
+      weight: t.Number(),
+      avgPct: NumOrNull,
+      statusLabel: t.String(),
+      strongestDim: DimStat,
+      weakestDim: DimStat,
+      insight: t.String(),
+    }),
+  ),
+  strengths: t.Array(t.Object({ text: t.String(), session: t.String() })),
+  growth: t.Array(t.Object({ text: t.String(), session: t.String() })),
+  trends: t.Array(t.String()),
+  conversationGuide: t.Array(t.Object({ label: t.String(), q: t.String() })),
+  focus: t.Object({
+    clusterName: t.String(),
+    clusterPct: NumOrNull,
+    goals: t.Array(t.String()),
+  }),
+  sessions: t.Array(
+    t.Object({
+      date: t.String(),
+      session: t.String(),
+      composite: t.Number(),
+      status: t.String(),
+      dimensions: t.Array(
+        t.Object({
+          n: t.Number(),
+          name: t.String(),
+          cluster: t.String(),
+          score: NumOrNull,
+          note: t.String(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const LeaderMonthlyResponseSchema = t.Object({
+  profile: t.Object({ id: t.String(), name: t.String(), group: t.String() }),
+  summary: t.Union([LeaderMonthlySummarySchema, t.Null()]),
+  availableMonths: t.Array(t.String()),
+});
