@@ -163,4 +163,13 @@ export const MonthlySchema = t.Object({
   // Months (YYYY-MM) that actually have reports, newest first — drives the
   // portal's month picker so only completed months are selectable.
   availableMonths: t.Array(t.String()),
+  // Program-wide narrative prose for the month (Executive Summary + Trends),
+  // or null. Passed through from the coaching pipeline's shared generator.
+  narrative: t.Union([
+    t.Object({
+      executiveSummary: t.Array(t.String()),
+      trends: t.Array(t.String()),
+    }),
+    t.Null(),
+  ]),
 });
