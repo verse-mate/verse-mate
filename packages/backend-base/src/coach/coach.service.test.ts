@@ -266,6 +266,17 @@ describe("CoachService admin oversight", () => {
     expect(monthly.availableMonths).not.toContain("2025-12");
   });
 
+  it("passes through the program narrative for a month that has one", async () => {
+    const may = await adminSvc.getMonthly("2026-05");
+    expect(may.narrative).not.toBeNull();
+    expect(Array.isArray(may.narrative?.executiveSummary)).toBe(true);
+    expect(may.narrative?.executiveSummary.length ?? 0).toBeGreaterThan(0);
+    expect(Array.isArray(may.narrative?.trends)).toBe(true);
+    // A month the dataset carries no narrative for → null (never throws).
+    const empty = await adminSvc.getMonthly("2030-01");
+    expect(empty.narrative).toBeNull();
+  });
+
   it("carries the same availableMonths regardless of which month is queried", async () => {
     const jul = await adminSvc.getMonthly("2026-07");
     const jan = await adminSvc.getMonthly("2026-01");
