@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "generatedAt": "2026-07-21",
   "model": "v3-weighted-100",
   "admins": ["andytryba@gmail.com"],
@@ -19652,5 +19652,91 @@
         }
       ]
     }
-  ]
+  ],
+  "monthlyNarratives": {
+    "2026-07": {
+      "executiveSummary": [
+        "In July 2026, 1 leader delivered 2 evaluated sessions, and the program held a weighted average composite of 85.2 / 100 — Exceptional on the v3 scale. That places the cohort in world-class territory — the work now is sustaining it, not rebuilding.",
+        "Across the cohort the month broke down as 1 Exceptional. Bryan Bailey led the field at 85.2 (Exceptional).",
+        "Bryan Bailey posted the biggest jump off the June 2026 baseline, climbing roughly 79 to 85.2 (+6.3 pts), the strongest muscle program-wide was Newcomer Welcome (5.00 / 5), and the thinnest was Leader Development (3.00 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's July 2026 composite of 85.2 / 100 lands it in the Exceptional band. Month over month, Bryan Bailey is the standout mover off the June 2026 baseline, up 6.3 points.",
+        "Dimension by dimension, Newcomer Welcome is the cohort's anchor strength (5.00 / 5), while Leader Development (3.00 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
+    "2026-06": {
+      "executiveSummary": [
+        "In June 2026, 8 leaders delivered 11 evaluated sessions, and the program held a weighted average composite of 75.1 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 5 Strong, 2 On Target, and 1 Developing. Joel Hurt led the field at 82.3 (Strong), while Ricky Town anchored the other end at 59.5 (Developing) — the clearest place to concentrate coaching attention.",
+        "JT Dettman posted the biggest jump off the May 2026 baseline, climbing roughly 52 to 65.4 (+13.8 pts), the strongest muscle program-wide was Scripture Engagement (4.91 / 5), and the thinnest was Visual Aids (2.73 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with Ricky Town and Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's June 2026 composite of 75.1 / 100 lands it in the Strong band. Month over month, JT Dettman is the standout mover off the May 2026 baseline, up 13.8 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.91 / 5), while Visual Aids (2.73 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
+    "2026-05": {
+      "executiveSummary": [
+        "In May 2026, 13 leaders delivered 25 evaluated sessions, and the program held a weighted average composite of 72.9 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 7 Strong, 5 On Target, and 1 Developing. Ken Ture led the field at 83.8 (Strong), while JT Dettman anchored the other end at 51.6 (Developing) — the clearest place to concentrate coaching attention.",
+        "James Davis posted the biggest jump off the April 2026 baseline, climbing roughly 57 to 68.2 (+11.3 pts), the strongest muscle program-wide was Scripture Engagement (4.40 / 5), and the thinnest was Visual Aids (2.42 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with JT Dettman, Jeff Ward, Ricky Town, Cole Strong, and 2 more flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's May 2026 composite of 72.9 / 100 lands it in the Strong band. Month over month, James Davis is the standout mover off the April 2026 baseline, up 11.3 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.40 / 5), while Visual Aids (2.42 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
+    "2026-04": {
+      "executiveSummary": [
+        "In April 2026, 8 leaders delivered 10 evaluated sessions, and the program held a weighted average composite of 72.9 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 1 Exceptional, 3 Strong, 2 On Target, and 2 Developing. Joel Hurt led the field at 90.9 (Exceptional), while James Davis anchored the other end at 56.9 (Developing) — the clearest place to concentrate coaching attention.",
+        "Joel Hurt posted the biggest jump off the March 2026 baseline, climbing roughly 77 to 90.9 (+13.5 pts), the strongest muscle program-wide was Scripture Engagement (4.80 / 5), and the thinnest was Visual Aids (2.70 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with James Davis and David Kartozia flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's April 2026 composite of 72.9 / 100 lands it in the Strong band. Month over month, Joel Hurt is the standout mover off the March 2026 baseline, up 13.5 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.80 / 5), while Visual Aids (2.70 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
+    "2026-03": {
+      "executiveSummary": [
+        "In March 2026, 6 leaders delivered 8 evaluated sessions, and the program held a weighted average composite of 64.2 / 100 — On Target on the v3 scale. The cohort is developing well, with one or two clusters still trailing the target.",
+        "Across the cohort the month broke down as 3 Strong, 1 On Target, and 2 Developing. Joel Hurt led the field at 77.3 (Strong), while James Davis anchored the other end at 54.4 (Developing) — the clearest place to concentrate coaching attention.",
+        "James Davis posted the biggest jump off the February 2026 baseline, climbing roughly 61 to 54.4 (+-6.3 pts), the strongest muscle program-wide was Scripture Engagement (4.25 / 5), and the thinnest was Visual Aids (2.13 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with James Davis and Jeff Ward flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's March 2026 composite of 64.2 / 100 lands it in the On Target band. Month over month, James Davis is the standout mover off the February 2026 baseline, up -6.3 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.25 / 5), while Visual Aids (2.13 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
+    "2026-02": {
+      "executiveSummary": [
+        "In February 2026, 2 leaders delivered 3 evaluated sessions, and the program held a weighted average composite of 61.5 / 100 — On Target on the v3 scale. The cohort is developing well, with one or two clusters still trailing the target.",
+        "Across the cohort the month broke down as 2 On Target. David Kartozia led the field at 63.2 (On Target), while James Davis anchored the other end at 60.6 (On Target) — the clearest place to concentrate coaching attention.",
+        "James Davis posted the biggest jump off the January 2026 baseline, climbing roughly 59 to 60.6 (+1.8 pts), the strongest muscle program-wide was Memory Reinforcement (4.67 / 5), and the thinnest was Leader Development (1.00 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's February 2026 composite of 61.5 / 100 lands it in the On Target band. Month over month, James Davis is the standout mover off the January 2026 baseline, up 1.8 points.",
+        "Dimension by dimension, Memory Reinforcement is the cohort's anchor strength (4.67 / 5), while Leader Development (1.00 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
+    "2026-01": {
+      "executiveSummary": [
+        "In January 2026, 1 leader delivered 2 evaluated sessions, and the program held a weighted average composite of 58.8 / 100 — Developing on the v3 scale. Foundations are in place, but several leaders still have multiple focus areas open.",
+        "Across the cohort the month broke down as 1 Developing. James Davis led the field at 58.8 (Developing).",
+        "The strongest muscle program-wide was Scripture Engagement (4.50 / 5) and the thinnest was Leader Development (1.00 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with James Davis flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's January 2026 composite of 58.8 / 100 lands it in the Developing band.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.50 / 5), while Leader Development (1.00 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    }
+  }
 }
