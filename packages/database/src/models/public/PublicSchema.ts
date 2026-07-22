@@ -18,6 +18,7 @@ import type { default as DailyVerseHistoryTable } from "./DailyVerseHistory";
 import type { default as DailyVerseTagsTable } from "./DailyVerseTags";
 import type { default as DailyVerseToTagTable } from "./DailyVerseToTag";
 import type { default as DailyVersesTable } from "./DailyVerses";
+import type { default as DeviceTokensTable } from "./DeviceTokens";
 import type { default as ExplanationAudioProgressTable } from "./ExplanationAudioProgress";
 import type { default as ExplanationAudiosTable } from "./ExplanationAudios";
 import type { default as ExplanationLanguagesTable } from "./ExplanationLanguages";
@@ -32,6 +33,7 @@ import type { default as LemmaTranslationsTable } from "./LemmaTranslations";
 import type { default as LemmasTable } from "./Lemmas";
 import type { default as MessagesTable } from "./Messages";
 import type { default as NotesTable } from "./Notes";
+import type { default as NotificationBroadcastsTable } from "./NotificationBroadcasts";
 import type { default as PromptsTable } from "./Prompts";
 import type { default as RefreshTokensTable } from "./RefreshTokens";
 import type { default as StudiesTable } from "./Studies";
@@ -170,4 +172,8 @@ export default interface PublicSchema {
   daily_verse_history: DailyVerseHistoryTable;
 
   translation_jobs: TranslationJobsTable;
+
+  device_tokens: DeviceTokensTable;
+
+  notification_broadcasts: NotificationBroadcastsTable;
 }
