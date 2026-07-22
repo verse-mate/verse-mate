@@ -266,6 +266,29 @@ describe("CoachService admin oversight", () => {
     expect(monthly.availableMonths).not.toContain("2025-12");
   });
 
+  it("returns a leader's monthly summary (admin drill-in) with picker months", async () => {
+    const res = await adminSvc.getMonthlySummaryById("bryan-bailey", "2026-06");
+    expect(res).not.toBeNull();
+    expect(res?.profile.id).toBe("bryan-bailey");
+    expect(res?.summary).not.toBeNull();
+    expect(res?.summary?.month).toBe("2026-06");
+    expect(res?.summary?.clusters.length).toBe(4);
+    expect(res?.summary?.sessions.length).toBeGreaterThan(0);
+    const months = res?.availableMonths ?? [];
+    expect(months.length).toBeGreaterThan(0);
+    // newest-first
+    expect([...months].sort((a, b) => (a < b ? 1 : -1))).toEqual(months);
+    // A month the leader has no summary for → summary null, months still listed.
+    const empty = await adminSvc.getMonthlySummaryById(
+      "bryan-bailey",
+      "2030-01",
+    );
+    expect(empty?.summary).toBeNull();
+    expect(empty?.availableMonths.length).toBeGreaterThan(0);
+    // Unknown leader → null.
+    expect(await adminSvc.getMonthlySummaryById("nope", "2026-06")).toBeNull();
+  });
+
   it("passes through the program narrative for a month that has one", async () => {
     const may = await adminSvc.getMonthly("2026-05");
     expect(may.narrative).not.toBeNull();
