@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-07-21",
+  "generatedAt": "2026-07-23",
   "model": "v3-weighted-100",
   "admins": ["andytryba@gmail.com"],
   "clusters": [
@@ -428,7 +428,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-07-16-james-lesson-9-thursday-evening-",
@@ -814,7 +814,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-06-13-james-lesson-5-saturday-morning-",
@@ -1199,7 +1199,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-06-06-james-lesson-4-saturday-morning-",
@@ -1571,7 +1571,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-06-04-james-lesson-4-weeknight-group",
@@ -1935,7 +1935,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-05-30-james-lesson-3-saturday-morning-",
@@ -2300,7 +2300,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-05-28-james-lesson-3-temptation-doers-",
@@ -2674,7 +2674,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-05-23-james-lesson-2-testing-of-faith-",
@@ -3060,7 +3060,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-05-22-james-lesson-2-trials-wisdom-ric",
@@ -3437,7 +3437,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-05-16-james-lesson-1-full-book-overvie",
@@ -3801,7 +3801,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-04-18-2-kings-21-25-lesson-6-final-les",
@@ -4178,7 +4178,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "bryan-bailey-2026-04-11-2-kings-21-25-lesson-5",
@@ -4581,7 +4581,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -4906,7 +4906,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "jeff-ward-2026-04-08-precept-colossians-study-chapter",
@@ -5219,7 +5219,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "jeff-ward-2026-04-01-colossians-3-18-4-1-philemon-pre",
@@ -5506,7 +5506,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "jeff-ward-2026-03-18-precept-colossians-study-colossi",
@@ -5819,7 +5819,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -6144,7 +6144,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "joel-hurt-2026-06-01-revelation-week-4-letters-to-the",
@@ -6458,7 +6458,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "joel-hurt-2026-05-23-revelation-week-3-chapter-1-vers",
@@ -6772,7 +6772,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "joel-hurt-2026-05-16-revelation-week-2-50-000-foot-ov",
@@ -7086,7 +7086,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "joel-hurt-2026-05-09-revelation-week-1-orientation-pu",
@@ -7400,7 +7400,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "joel-hurt-2026-04-18-kings-week-6-the-fall-of-judah-j",
@@ -7714,7 +7714,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "joel-hurt-2026-03-14-zephaniah-1-3",
@@ -8002,7 +8002,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -8300,7 +8300,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -8625,7 +8625,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "cole-strong-2026-05-30-james-1-12-27-crown-of-life-temp",
@@ -8939,7 +8939,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "cole-strong-2026-05-23-james-1-2-12-trials-endurance-wi",
@@ -9252,7 +9252,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "cole-strong-2026-05-16-james-book-survey-five-chapter-h",
@@ -9565,7 +9565,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "cole-strong-2026-04-18-listening-to-god-through-the-pro",
@@ -9878,7 +9878,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "cole-strong-2026-03-28-kings-p10-l4-2-kings-23-31-24-9",
@@ -10166,7 +10166,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -10491,7 +10491,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "ken-ture-2026-05-16-james-book-overview-james-1-1-11",
@@ -10805,7 +10805,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "ken-ture-2026-03-25-jeremiah-lesson-4",
@@ -11092,7 +11092,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -11416,7 +11416,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "ricky-town-2026-05-30-james-1-12-27-lesson-3-the-crown",
@@ -11730,7 +11730,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "ricky-town-2026-05-17-james-1-1-12-lesson-2-from-doulo",
@@ -12044,7 +12044,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "ricky-town-2026-04-12-1-john-lesson-5",
@@ -12357,7 +12357,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -12681,7 +12681,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -13006,7 +13006,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -13331,7 +13331,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-05-23-james-ch-1-trials-wisdom-the-cro",
@@ -13645,7 +13645,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-05-16-book-of-james-full-read-through-",
@@ -13959,7 +13959,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-04-11-2-kings-study-exile-theology-jeh",
@@ -14242,7 +14242,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-03-28-build-james-davis-2026-03-28-js",
@@ -14525,7 +14525,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-03-14-build-james-davis-2026-03-14-js",
@@ -14808,7 +14808,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-03-07-build-james-davis-2026-03-07-js",
@@ -15091,7 +15091,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-02-21-build-james-davis-2026-02-21-js",
@@ -15374,7 +15374,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-02-14-build-james-davis-2026-02-14-js",
@@ -15657,7 +15657,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-01-31-build-james-davis-2026-01-31-js",
@@ -15940,7 +15940,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "james-davis-2026-01-17-2-kings-8-10-god-s-sovereignty-c",
@@ -16254,7 +16254,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -16579,7 +16579,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "brendan-elizabeth-2026-05-30-james-lesson-2-james-1-12-27",
@@ -16893,7 +16893,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "brendan-elizabeth-2026-05-25-james-lesson-1-james-1-1-12",
@@ -17207,7 +17207,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -17502,7 +17502,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "jt-dettman-2026-05-16-revelation-part-one-week-1-intro",
@@ -17786,7 +17786,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -18110,7 +18110,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -18434,7 +18434,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "cameron-relic-2026-04-16-destruction-of-jerusalem-zedekia",
@@ -18747,7 +18747,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -19071,7 +19071,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     },
@@ -19365,7 +19365,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         },
         {
           "id": "david-kartozia-2026-02-07-build-david-kartozia-2026-02-07-",
@@ -19648,7 +19648,7 @@
             }
           ],
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+          "pdfUrl": ""
         }
       ]
     }
