@@ -24,6 +24,10 @@ export class UserService {
       lastName: user.lastName,
       fullName: `${user.firstName} ${user.lastName}`,
       emailVerified: user.emailVerified,
+      // The admin app's middleware gates every route on GET /user/me
+      // returning is_admin — omitting it locked out every admin.
+      is_admin: user.is_admin,
+      preferred_language: user.preferred_language,
     };
   }
 
