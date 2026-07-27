@@ -1,5 +1,5 @@
 import "frontend-base/styles/global.css";
-import { Notifications } from "frontend-base/admin";
+import { Notifications, QueryProvider } from "frontend-base/admin";
 import { $env, type Env, StoreInitializer } from "frontend-envs";
 import type { Metadata } from "next";
 
@@ -43,8 +43,10 @@ export default function RootLayout({
       </head>
       <StoreInitializer {...envValues} />
       <body>
-        {children}
-        <Notifications />
+        <QueryProvider>
+          {children}
+          <Notifications />
+        </QueryProvider>
       </body>
     </html>
   );

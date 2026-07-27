@@ -16,6 +16,11 @@
 // Admin shell + dashboard
 export { AdminDashboard } from "../src/ui/admin/AdminDashboard/AdminDashboard";
 export { AdminGuard } from "../src/ui/AdminGuard/AdminGuard";
+// react-query provider every admin page needs (Audio, Daily Verses, Topics,
+// Notifications, Auto-Highlights all use useQuery/useMutation).
+// ponytail: still lives under src/Main (end-user tree) — move it out with the
+// rest of VERA-21 rather than duplicating a second QueryClient here.
+export { QueryProvider } from "../src/Main/Providers/useQueryProvider";
 
 // Admin feature modules
 export { BatchOperations } from "../src/ui/admin/BatchOperations/BatchOperations";
