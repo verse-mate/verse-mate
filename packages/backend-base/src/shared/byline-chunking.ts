@@ -166,6 +166,105 @@ export function findVersesMissingSummary(
   return missing;
 }
 
+/** Widget summaries are clamped to this many characters (GH-265 design). */
+export const VERSE_SUMMARY_MAX_CHARS = 220;
+
+/**
+ * Pull the short, prose-only summary for [startVerse, endVerse] out of a byline
+ * explanation — the same per-verse insight the reader shows when a verse is
+ * tapped, condensed for surfaces with no room for markdown (the home-screen
+ * widget's "Why it matters" panel, GH-265).
+ *
+ * Walks `## …:V` headings exactly like `findVersesMissingSummary`, but keeps the
+ * prose instead of measuring it. Only the `### Summary` sub-section is taken
+ * when present; the generation prompt also emits `### Analysis` bullets, which
+ * are far too long for a widget. When a section has no `### Summary` sub-header
+ * every prose line is used instead — the same hardening the mobile parser needed
+ * after Mark 10:29 shipped with a renamed sub-header.
+ *
+ * Markdown emphasis and list bullets are stripped, and the result is clamped at
+ * a word boundary. Returns null when the requested verses have no prose at all
+ * (an ungenerated or incomplete chapter), which callers render as "no summary".
+ */
+export function extractVerseSummary(
+  output: string,
+  chapterNumber: number,
+  startVerse: number,
+  endVerse: number,
+  maxChars: number = VERSE_SUMMARY_MAX_CHARS,
+): string | null {
+  if (!output) return null;
+
+  const chapterHeading = new RegExp(
+    `\\b${chapterNumber}\\s*[:\\-]\\s*(\\d{1,3})\\b`,
+  );
+  const simpleHeading = /^##\s*(\d{1,3})\b/;
+
+  // Per verse: prose under `### Summary`, and prose under any other sub-header.
+  const summaryProse = new Map<number, string[]>();
+  const otherProse = new Map<number, string[]>();
+  let current: number | null = null;
+  let inSummarySection = false;
+
+  for (const line of output.replace(/\r\n/g, "\n").split("\n")) {
+    if (line.startsWith("## ") && !line.startsWith("### ")) {
+      const cv = line.match(chapterHeading);
+      const simple = line.match(simpleHeading);
+      current = cv
+        ? Number.parseInt(cv[1], 10)
+        : simple
+          ? Number.parseInt(simple[1], 10)
+          : null;
+      inSummarySection = false;
+      continue;
+    }
+    if (current === null) continue;
+
+    const trimmed = line.trim();
+    // A `###`+ sub-header switches which bucket the following prose lands in.
+    if (trimmed.startsWith("#")) {
+      inSummarySection = /^#{3,}\s*summary\b/i.test(trimmed);
+      continue;
+    }
+    // The `>` blockquote is the verse text itself, not commentary.
+    if (!trimmed || trimmed.startsWith(">")) continue;
+
+    const bucket = inSummarySection ? summaryProse : otherProse;
+    const lines = bucket.get(current) ?? [];
+    // Drop the list marker here, while the line is still a line — once the
+    // lines are joined into one string a `^`-anchored strip can't see them.
+    lines.push(trimmed.replace(/^[-*+]\s+/, ""));
+    bucket.set(current, lines);
+  }
+
+  const parts: string[] = [];
+  for (let v = startVerse; v <= endVerse; v++) {
+    const prose = summaryProse.get(v) ?? otherProse.get(v);
+    if (prose?.length) parts.push(prose.join(" "));
+  }
+  if (parts.length === 0) return null;
+
+  return clampToWord(stripMarkdown(parts.join(" ")), maxChars);
+}
+
+/** Flatten markdown to plain prose: emphasis and links removed. */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Truncate at the last word boundary within `maxChars`, adding an ellipsis. */
+function clampToWord(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  // Reserve one char for the ellipsis.
+  const cut = text.slice(0, maxChars - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:]$/, "")}…`;
+}
+
 function validateChunkCoverage({
   output,
   chapterNumber,

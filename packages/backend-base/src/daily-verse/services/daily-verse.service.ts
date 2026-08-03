@@ -1,5 +1,6 @@
 import type { DailyVerses } from "database/src/models/public/DailyVerses";
 import { ValidationError } from "../../common/errors";
+import { extractVerseSummary } from "../../shared/byline-chunking";
 import cacheConstants from "../../shared/cache.constants";
 import type { cache, db } from "../../shared/shared.plugin";
 import {
@@ -38,6 +39,13 @@ export interface VerseOfTheDayResult {
   versionKey: string;
   languageCode: string;
   date: string;
+  /**
+   * Short plain-text insight for the verse, lifted from the chapter's byline
+   * explanation and clamped to 220 chars — the same commentary the reader shows
+   * for a tapped verse, sized for the home-screen widget's "Why it matters"
+   * panel (GH-265). Null when the chapter has no byline explanation yet.
+   */
+  explanation: string | null;
   /** Observability flags emitted by the plugin as PostHog events (D-40). */
   metrics: {
     poolTooSmall: boolean;
@@ -273,6 +281,14 @@ export class DailyVerseService {
 
     const tags = (await this.repo.getTagsForVerse(verse.id)).map((t) => t.slug);
 
+    const explanation = await this.resolveVerseSummary({
+      bookId: verse.book_id,
+      chapterNumber: verse.chapter_number,
+      verseStart: verse.verse_start,
+      verseEnd,
+      languageCode: resolvedVersion.language_code,
+    });
+
     return {
       empty: false,
       reference: {
@@ -287,6 +303,7 @@ export class DailyVerseService {
       versionKey: resolvedVersion.version_key,
       languageCode: resolvedVersion.language_code,
       date,
+      explanation,
       metrics: { poolTooSmall, missingBookNameLocalization },
     };
   }
@@ -367,6 +384,38 @@ export class DailyVerseService {
       referenceText: `${bookName} ${chapterNumber}:${range}`,
       missingBookNameLocalization,
     };
+  }
+
+  /**
+   * Short insight for the picked verse, taken from the chapter's byline
+   * explanation (GH-265). Best-effort by design: a missing byline, malformed
+   * markdown, or a read failure yields null so the verse itself still ships —
+   * the widget then renders its verse-only composition.
+   */
+  private async resolveVerseSummary({
+    bookId,
+    chapterNumber,
+    verseStart,
+    verseEnd,
+    languageCode,
+  }: {
+    bookId: number;
+    chapterNumber: number;
+    verseStart: number;
+    verseEnd: number;
+    languageCode: string;
+  }): Promise<string | null> {
+    try {
+      const markdown = await this.repo.getBylineExplanation({
+        bookId,
+        chapterNumber,
+        languageCode,
+      });
+      if (!markdown) return null;
+      return extractVerseSummary(markdown, chapterNumber, verseStart, verseEnd);
+    } catch {
+      return null;
+    }
   }
 
   /* --------------------------- Admin operations --------------------------- */
