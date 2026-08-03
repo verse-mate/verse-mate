@@ -39,6 +39,10 @@ interface FakeOptions {
   localizedBookName?: string | null;
   canonicalBookName?: string | null;
   knownTagIds?: string[];
+  /** Byline markdown the widget summary is extracted from; null = none generated. */
+  bylineExplanation?: string | null;
+  /** Make the byline read throw, to prove it can't take the whole response down. */
+  bylineThrows?: boolean;
 }
 
 /** Build a fake repository capturing recordPick calls. */
@@ -112,6 +116,10 @@ function makeFakeRepo(opts: FakeOptions) {
     async tagIdsExist(ids: string[]) {
       const known = new Set(opts.knownTagIds ?? []);
       return ids.every((id) => known.has(id));
+    },
+    async getBylineExplanation() {
+      if (opts.bylineThrows) throw new Error("explanation read failed");
+      return opts.bylineExplanation ?? null;
     },
   };
 
@@ -317,6 +325,75 @@ describe("DailyVerseService.getVerseOfTheDay", () => {
     expect(result.verses).toHaveLength(2);
     expect(result.referenceText).toBe("Genesis 1:1-2");
     expect(result.versionKey).toBe("NASB1995");
+    // No byline generated for this chapter → no widget summary.
+    expect(result.explanation).toBeNull();
+  });
+
+  // GH-265: the home-screen widget's "Why it matters" panel reads this field.
+  describe("widget summary (explanation)", () => {
+    const BYLINE = `# Line-by-Line Analysis of Genesis 1
+
+## Genesis 1:1
+> In the beginning God created the heavens and the earth.
+
+### Summary
+God is the origin of everything that exists.
+
+### Analysis
+- A bullet that must not reach the widget.
+
+## Genesis 1:2
+> And the earth was formless and void.
+
+### Summary
+The earth begins unformed, and the Spirit hovers over it.`;
+
+    function serviceFor(opts: {
+      bylineExplanation?: string | null;
+      bylineThrows?: boolean;
+    }) {
+      const repo = makeFakeRepo({
+        active: [
+          makeVerse("a", { book_id: 1, chapter_number: 1, verse_start: 1 }),
+        ],
+        versions,
+        versesInRange: {
+          "ver-nasb": [{ verseNumber: 1, text: "In the beginning…" }],
+        },
+        localizedBookName: "Genesis",
+        ...opts,
+      });
+      return new DailyVerseService({} as any, repo);
+    }
+
+    it("carries the verse's byline summary, without its Analysis bullets", async () => {
+      const result = await serviceFor({
+        bylineExplanation: BYLINE,
+      }).getVerseOfTheDay({
+        date: "2026-06-08",
+        versionKey: "NASB1995",
+        userId: null,
+      });
+      expect(result.empty).toBe(false);
+      if (result.empty) return;
+      expect(result.explanation).toBe(
+        "God is the origin of everything that exists.",
+      );
+      expect(result.explanation).not.toContain("bullet");
+    });
+
+    it("returns null rather than failing the verse when the read throws", async () => {
+      const result = await serviceFor({ bylineThrows: true }).getVerseOfTheDay({
+        date: "2026-06-08",
+        versionKey: "NASB1995",
+        userId: null,
+      });
+      expect(result.empty).toBe(false);
+      if (result.empty) return;
+      // The verse itself still ships — the widget just drops its note panel.
+      expect(result.verses).toHaveLength(1);
+      expect(result.explanation).toBeNull();
+    });
   });
 
   it("falls back to NASB1995 verses missing in the requested version (D-29 safety net)", async () => {

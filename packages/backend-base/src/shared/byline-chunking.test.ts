@@ -3,6 +3,8 @@ import {
   BYLINE_CHUNK_SIZE,
   BYLINE_CHUNK_THRESHOLD,
   type BylineVerse,
+  VERSE_SUMMARY_MAX_CHARS,
+  extractVerseSummary,
   findVersesMissingSummary,
   generateChunkedByline,
   shouldUseBylineChunking,
@@ -543,5 +545,103 @@ Bartimaeus asks to see.
 ## Mark 10:52
 > b`;
     expect(findVersesMissingSummary(md, 10, 51, 52)).toEqual([52]);
+  });
+});
+
+// --- extractVerseSummary ---
+
+describe("extractVerseSummary", () => {
+  // Shape taken verbatim from prod: GET /bible/book/explanation/19/139?explanationType=byline
+  const PSALM_139 = `# Line-by-Line Analysis of Psalms 139
+
+## Psalm 139:13
+> For You formed my inward parts; You wove me in my mother's womb.
+
+### Summary
+You formed my inward parts and knit me together in my mother's womb.
+
+## Psalm 139:14
+> I will give thanks to You, for I am fearfully and wonderfully made.
+
+### Summary
+I praise you because I am fearfully and wonderfully made. The words mean God's design is awesome and valuable.
+
+### Analysis
+**Human dignity:**
+- The body is not incidental; it is crafted.
+
+## Psalm 139:15
+> My frame was not hidden from You.
+
+### Summary
+My body was formed in secret, yet you saw me.`;
+
+  it("returns only the requested verse's Summary section", () => {
+    expect(extractVerseSummary(PSALM_139, 139, 14, 14)).toBe(
+      "I praise you because I am fearfully and wonderfully made. The words mean God's design is awesome and valuable.",
+    );
+  });
+
+  it("excludes the Analysis section — it is far too long for a widget", () => {
+    const summary = extractVerseSummary(PSALM_139, 139, 14, 14);
+    expect(summary).not.toContain("Human dignity");
+    expect(summary).not.toContain("incidental");
+  });
+
+  it("joins a verse range in order", () => {
+    expect(extractVerseSummary(PSALM_139, 139, 13, 14)).toBe(
+      "You formed my inward parts and knit me together in my mother's womb. I praise you because I am fearfully and wonderfully made. The words mean God's design is awesome and valuable.",
+    );
+  });
+
+  it("falls back to all prose when the Summary sub-header is missing or renamed", () => {
+    // The Mark 10:29 class of bug: content exists under a different sub-header.
+    const md = `## Mark 10:29
+> a
+
+### Analysis
+Jesus answers about leaving home for the gospel.`;
+    expect(extractVerseSummary(md, 10, 29, 29)).toBe(
+      "Jesus answers about leaving home for the gospel.",
+    );
+  });
+
+  it("returns null when the verse has no prose at all", () => {
+    const md = `## Mark 10:52
+> b`;
+    expect(extractVerseSummary(md, 10, 52, 52)).toBeNull();
+    expect(extractVerseSummary("", 10, 1, 1)).toBeNull();
+    // Chapter present but the requested verse is not.
+    expect(extractVerseSummary(PSALM_139, 139, 99, 99)).toBeNull();
+  });
+
+  it("strips markdown emphasis, bullets and links", () => {
+    const md = `## John 3:16
+### Summary
+God **so** loved the _world_ that he gave his [only Son](https://x.test).
+- A bullet line.`;
+    expect(extractVerseSummary(md, 3, 16, 16)).toBe(
+      "God so loved the world that he gave his only Son. A bullet line.",
+    );
+  });
+
+  it("clamps to the widget budget at a word boundary", () => {
+    const long = "word ".repeat(200).trim();
+    const summary = extractVerseSummary(
+      `## John 3:16\n### Summary\n${long}`,
+      3,
+      16,
+      16,
+    );
+    if (summary === null) throw new Error("expected a summary");
+    expect(summary.length).toBeLessThanOrEqual(VERSE_SUMMARY_MAX_CHARS);
+    expect(summary.endsWith("…")).toBe(true);
+    // Never mid-word.
+    expect(summary).not.toContain("wor…");
+  });
+
+  it("does not clamp content already within budget", () => {
+    const md = "## John 3:16\n### Summary\nShort and sufficient.";
+    expect(extractVerseSummary(md, 3, 16, 16)).toBe("Short and sufficient.");
   });
 });

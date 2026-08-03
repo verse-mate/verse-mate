@@ -144,6 +144,7 @@ const plugin = new Elysia()
           versionKey: result.versionKey,
           languageCode: result.languageCode,
           date: result.date,
+          explanation: result.explanation,
         };
       },
       {
