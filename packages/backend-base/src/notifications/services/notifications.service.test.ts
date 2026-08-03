@@ -50,6 +50,7 @@ function makeVerse(overrides: Partial<Extract<Verse, { empty: false }>> = {}) {
     versionKey: "NASB1995",
     languageCode: "en",
     date: "2026-07-20",
+    explanation: null,
     metrics: { poolTooSmall: false, missingBookNameLocalization: false },
     ...overrides,
   };
