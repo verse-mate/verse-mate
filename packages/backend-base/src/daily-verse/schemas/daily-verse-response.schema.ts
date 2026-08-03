@@ -21,6 +21,13 @@ export const VerseOfTheDaySchema = t.Object({
   versionKey: t.String(),
   languageCode: t.String(),
   date: t.String(),
+  /**
+   * Short plain-text insight for the verse (≤220 chars), taken from the
+   * chapter's byline explanation — the copy the home-screen widget renders in
+   * its "Why it matters" panel (GH-265). Null when the chapter has no byline
+   * explanation yet, so clients must treat it as optional.
+   */
+  explanation: t.Union([t.String(), t.Null()]),
 });
 
 /** Empty-pool / cold-start payload (D-25). */
