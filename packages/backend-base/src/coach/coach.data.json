@@ -1,8 +1,10 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-07-23",
+  "generatedAt": "2026-08-14",
   "model": "v3-weighted-100",
-  "admins": ["andytryba@gmail.com"],
+  "admins": [
+    "andytryba@gmail.com"
+  ],
   "clusters": [
     {
       "name": "Teaching Craft",
@@ -427,8 +429,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-07-16-james-lesson-9-thursday-evening-",
@@ -813,8 +815,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://docs.google.com/document/d/1vmO-EHe0vgvMX9qNlqraVdJSKSKGQ3xR/edit?usp=drivesdk"
         },
         {
           "id": "bryan-bailey-2026-06-13-james-lesson-5-saturday-morning-",
@@ -1198,8 +1200,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/REPLACE_WITH_UPLOADED_APPENDIX_DOC_URL"
         },
         {
           "id": "bryan-bailey-2026-06-06-james-lesson-4-saturday-morning-",
@@ -1570,8 +1572,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-06-04-james-lesson-4-weeknight-group",
@@ -1934,8 +1936,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-05-30-james-lesson-3-saturday-morning-",
@@ -2299,8 +2301,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-05-28-james-lesson-3-temptation-doers-",
@@ -2673,8 +2675,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-05-23-james-lesson-2-testing-of-faith-",
@@ -3059,8 +3061,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-05-22-james-lesson-2-trials-wisdom-ric",
@@ -3436,8 +3438,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-05-16-james-lesson-1-full-book-overvie",
@@ -3800,8 +3802,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-04-18-2-kings-21-25-lesson-6-final-les",
@@ -4177,8 +4179,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "bryan-bailey-2026-04-11-2-kings-21-25-lesson-5",
@@ -4580,8 +4582,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -4905,8 +4907,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "jeff-ward-2026-04-08-precept-colossians-study-chapter",
@@ -5218,8 +5220,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "jeff-ward-2026-04-01-colossians-3-18-4-1-philemon-pre",
@@ -5505,8 +5507,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "jeff-ward-2026-03-18-precept-colossians-study-colossi",
@@ -5818,8 +5820,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -6143,8 +6145,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "joel-hurt-2026-06-01-revelation-week-4-letters-to-the",
@@ -6457,8 +6459,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "joel-hurt-2026-05-23-revelation-week-3-chapter-1-vers",
@@ -6771,8 +6773,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "joel-hurt-2026-05-16-revelation-week-2-50-000-foot-ov",
@@ -7085,8 +7087,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "joel-hurt-2026-05-09-revelation-week-1-orientation-pu",
@@ -7399,8 +7401,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "joel-hurt-2026-04-18-kings-week-6-the-fall-of-judah-j",
@@ -7713,8 +7715,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "joel-hurt-2026-03-14-zephaniah-1-3",
@@ -8001,8 +8003,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -8299,8 +8301,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -8624,8 +8626,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "cole-strong-2026-05-30-james-1-12-27-crown-of-life-temp",
@@ -8938,8 +8940,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "cole-strong-2026-05-23-james-1-2-12-trials-endurance-wi",
@@ -9251,8 +9253,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "cole-strong-2026-05-16-james-book-survey-five-chapter-h",
@@ -9564,8 +9566,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "cole-strong-2026-04-18-listening-to-god-through-the-pro",
@@ -9877,8 +9879,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "cole-strong-2026-03-28-kings-p10-l4-2-kings-23-31-24-9",
@@ -10165,8 +10167,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -10179,6 +10181,380 @@
       "isCoach": true,
       "zoomLink": "",
       "reports": [
+        {
+          "id": "ken-ture-2026-08-08-week-zero-launching-obadiah-joel",
+          "date": "2026-08-08",
+          "dateLabel": "August 8, 2026",
+          "session": "Week Zero — launching Obadiah, Joel, Amos & Jonah",
+          "topic": "How to study the Old Testament, and how we got to Obadiah",
+          "duration": "~133 min (2h 13m), full recording",
+          "attendees": 9,
+          "newcomers": 1,
+          "score": 90.05,
+          "base": 89.05,
+          "newcomerBonus": 1,
+          "sizeBonus": 0,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 84,
+              "contribution": 27.72
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 93.3,
+              "contribution": 28.93
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Complete week-zero arc with both prayers delegated and a sophisticated three-part question spine. Held below 5 by the ~7-minute overrun and the resulting compression of the closing round"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 4,
+              "note": "One newcomer, handled proportionately and well — contact taken before the session, the \\\"why do you come?\\\" round performed in front of him, two readings assigned to him, thanked by name at the close. Below 5 because his own answer (\\\"study environment\\\") went unexplored"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "11 passages opened and read aloud, distributed across 7 different men including the newcomer and the remote member, plus a whole-OT sweep anchored to specific chapters. Ken read none himself"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4,
+              "note": "~40% discussion-only leader talk — above benchmark in raw terms but a clear improvement on the arc. Ken's default turn is a question; the timeline, the tool list and the closing round were all member-generated"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "5 drivers, majority DOK 3–4, with the best application spacing in the arc (primed twice, answered once). Held below 5 because only 4 men reached the answer round before time ran out"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "8 of 9 men contributed substantively across two hours, including Josh remotely while minding an infant. Effectively the ceiling for a group this size"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3,
+              "note": "Whiteboard only — used continuously and well (timeline, map, method frame) but erased mid-session before capture, and five study tools were described at length with none ever displayed. The clearest gap on the day"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "Ken's son's paralysis referenced twice plus repeated public admissions of not-knowing; strong member-side disclosure (Jeff's tears, Stephen's 42 days). Consistent with his rolling baseline"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5,
+              "note": "The entire session is cumulative retrieval over the just-completed James study and prior arcs; the 3× spine question is deliberate spaced practice; the memorisation charge with Blake praised by name; and the pedagogy of repetition taught directly from the text (\\\"the law was given twice because we forget — that's why we do Saturday studies\\\")"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "\\\"I can't teach you if you don't do the homework. If you want God to teach you, do the homework... and I guarantee that.\\\" Week-zero framing of the lesson book, PDF logistics, a memorisation charge, and a study method that is itself the homework method"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5,
+              "note": "Opening delegated to Jim and closing to Stephen, both substantive; the prayer chain explained to the newcomer with a clear rationale; \\\"we're praying for you\\\" offered to Jeff in the moment"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 5,
+              "note": "A named apprentice (\\\"Josh is probably going to be our next leader here\\\") plus an explicit stated intent for the whole room (\\\"my secret goal is that for every one of you to be a leader down the road\\\"), with every reading and both prayers delegated. 2 Tim 2:2 verbalised in-session"
+            }
+          ],
+          "bigIdeas": [
+            "Observe, then interpret, then apply — most studies skip straight to interpret",
+            "Context is the primary key; a single thread bends, but a fabric holds itself",
+            "The law was given twice because we forget — that is why we meet every Saturday",
+            "If you want God to teach you, do the homework"
+          ],
+          "feedback": {
+            "headline": "Week Zero of a four-prophet arc — the hour builds the timeline and teaches the study method itself.",
+            "strengths": [
+              "The Same Question, Three Times, Ninety Minutes Apart",
+              "Every Recall Prompt Paired With a Character Question",
+              "Teaching the Method, Not Just the Material"
+            ],
+            "improvements": [
+              "Five Study Tools Discussed, None Ever Shown",
+              "The Timeline Was Erased Before It Was Captured",
+              "The Best Round Ran Out of Clock"
+            ],
+            "recommendations": [
+              "Show One Tool Live for Ninety Seconds",
+              "Photograph the Board Before Anything Is Erased",
+              "Put a Hard Marker at Ninety Minutes for the Closing Round"
+            ],
+            "overview": [
+              "Week Zero of a four-prophet arc — the hour builds the timeline and teaches the study method itself.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 3 areas for improvement, and 5 recommendations for next session, scored 90.05/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "The Same Question, Three Times, Ninety Minutes Apart",
+                "paragraphs": [
+                  "The architectural move of the session. At [00:17:58], before any teaching, Ken posed a question and explicitly refused to take answers: \"You're going to hear this question three times this morning. So the first time, I just want you to think about it. Second time I want you to think about it. Third time we'll talk about it.\" The question — \"What has God taught you that you can point out to someone else that has affected the direction of your life in the recent past?\" — was repeated verbatim at [01:09:06], then answered at [02:01:21]. This is spaced retrieval applied to application rather than to recall, and it worked: instead of the flat first-thing-that-comes-to-mind responses an unprimed question produces, the room gave four genuinely considered answers, including Jeff's on the hard season he is walking through and Stephen's on 42 days of freedom. Most leaders ask their best question once, cold, at the end. Priming it twice cost about forty seconds of airtime and transformed the quality of the answers."
+                ]
+              },
+              {
+                "title": "Every Recall Prompt Paired With a Character Question",
+                "paragraphs": [
+                  "The twenty-stage timeline could easily have been a trivia round. Ken pre-empted that in the setup at [00:36:46]: \"when you answer, I want you to answer one. And then if you've answered one, I want you to also tell us, if you can, where do you see God in this? What does God teach us about himself from this?\" He then held to it for the full hour — on the flood, \"do you think Noah was without sin?\" then \"what does that tell us about God?\" producing \"he looks at the heart\"; on Babel, \"what do we know about God from the Tower of Babel?\" producing \"he intervenes in the ways of man\" and a member's sharper \"you could resist his authority but not overcome it\"; on Joseph, \"what's that teach us about God?\" producing \"God can use evil into good,\" which Ken immediately pressed further — \"just in the Old Testament though, right? Not in our lives.\" Every DOK-1 retrieval was converted into DOK-3 reasoning within seconds. That single design decision is why the recall hour did not read as a lecture."
+                ]
+              },
+              {
+                "title": "Teaching the Method, Not Just the Material",
+                "paragraphs": [
+                  "Week zero was used to hand the group a transferable skill. Ken laid out Observe / Interpret / Apply and then diagnosed the room's likely failure mode before they could fall into it: \"my observation is most people interpret. Well, let me tell you what I think that means. And they don't do the research, they don't do the homework on what does it say. And they spend so much time on saying let me tell you what I think this means. They never get to applying it\" [01:45:17]. He gave the observation toolkit (the five W's and an H, lists, contrasts, keywords), named context as the primary interpretive key, illustrated the failure concretely with proof-texting for baptism of the dead, and closed with the principle a member sharpened into the session's best line — scripture interprets scripture, because \"a single thread is easily bent to your will, but a fabric holds itself.\" A group that internalises this arrives at week one able to do the homework rather than merely assigned it."
+                ]
+              },
+              {
+                "title": "Eight of Nine Men Contributing, Including the One at Home",
+                "paragraphs": [
+                  "Participation was effectively total, and deliberately engineered. Ken opened by asking four men — including the newcomer — why they come on a Saturday morning, which both enrolled Kevin and reminded the regulars out loud (Stephen: \"it's a big good support group because we can't do this alone\"; Blake: \"it's a non-negotiable for me\"). All eleven scripture readings went to members rather than to himself, spread across seven different men. And Josh, at home with an 11-month-old, was not a spectator: he read Genesis 50, supplied \"peace\" in the Judges cycle, offered the Babel scattering point, and Ken physically turned the whiteboard toward the camera and checked what he could see. In a nine-man room, engaging eight of them for two hours is the ceiling."
+                ]
+              },
+              {
+                "title": "Being Corrected in Front of the Room, on Purpose",
+                "paragraphs": [
+                  "Twice Ken made his own learning public. On the second giving of the law he said, \"this is something I just learned. I'm an old man and this is something I just learned in the last year\" [01:00:00], and moments later, when Derek pointed out that Deuteronomy 10 also establishes the ark of the covenant, \"you know what I just saw? I skipped over this. I never read this... I missed this\" [01:02:49]. He accepted the correction, wrote it on the board, and moved on without defensiveness. This is not a small thing: a leader who visibly learns from the room is the reason this room talks. It also models the exact posture he had just taught — approaching scripture \"as if you've never read it before\" — and it is the strongest available signal to men he is trying to turn into leaders that not-knowing is survivable."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Five Study Tools Discussed, None Ever Shown",
+                "paragraphs": [
+                  "The clearest gap on the day, and the one with the largest payoff. Ken spent roughly five minutes [01:56:41]–[02:01:20] on Blue Letter Bible, Bible Gateway, Logos, Olive Tree, YouVersion and Bible Project, describing what each does — the interlinear Greek and Hebrew, twenty translations, phrase search across the whole Bible. Not one was put on screen. He also described the Bible Project's five-minute Obadiah video (\"it's incredible because they'll take the whole thing and they put it into a picture\") without playing it, in a session whose entire purpose was to prepare the group for Obadiah. Fix (transferable): open one tool live for ninety seconds on the passage actually in front of the group — search a phrase, show the Greek behind one word, flip two translations side by side. Demonstrating a tool once beats describing five, and it converts Visual Aids from a single channel to two (Mayer's multimedia principle). Applies to any session, any passage."
+                ]
+              },
+              {
+                "title": "The Timeline Was Erased Before It Was Captured",
+                "paragraphs": [
+                  "The group spent an hour collaboratively building a twenty-stage map of the Old Testament on the whiteboard — genuinely the session's main artifact. Then it was erased to make room for the map of Israel, and the recovery was improvised: \"I don't know how to do this without... did anybody — I took a picture of it?\" [01:37:18], \"shame on me, man\" [01:37:29], and a hope that \"sometimes Josh writes these things down. He might send it out too.\" A member did photograph it, and Ken asked John to photograph the board again at the close, but only after the fact. Fix (transferable): photograph the board at the end of each build and send it to the group the same morning — the men who were there get a revision aid, and the two who were travelling get the session. Better still, use one half of the board for anything that must survive the session. Applies to every whiteboard-driven week, which for this group is most of them."
+                ]
+              },
+              {
+                "title": "The Best Round Ran Out of Clock",
+                "paragraphs": [
+                  "The spine question had been primed for two hours, and then only four men got to answer it before \"we're over time, sorry\" [02:07:30] — and the last answer, Stephen's on 42 days and wanting to be the first in his family to have one marriage, was met with \"okay, challenging, super, okay, we're over time.\" That is the single most costly seven minutes in the session: a man disclosed something difficult and the room moved straight to stacking chairs. Nothing about the content needed cutting — the compression came from upstream, with the timeline sweep running to sixty-one minutes and the tools round to five. Fix (transferable): put a hard marker at the ninety-minute point for the closing application round and treat it as immovable, cutting the sweep to reach it. The teaching exists to produce that round; when the round gets the offcuts, the session inverts its own priorities."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Show One Tool Live for Ninety Seconds",
+                "paragraphs": [
+                  "Five study tools were described in detail and none was displayed. Before: “Blue Letter Bible has about twenty translations and gives you the Greek.” After: put it on screen for ninety seconds on the actual passage — search one phrase, show the Hebrew behind one word in Obadiah, flip two translations. Demonstrating one beats describing five, and it adds a second visual channel to a whiteboard-only session. Transferable to every week."
+                ]
+              },
+              {
+                "title": "Photograph the Board Before Anything Is Erased",
+                "paragraphs": [
+                  "An hour-long collaborative timeline was wiped to make room for a map, and the recovery was improvised after the fact. Before: erase and hope someone captured it. After: photograph at the end of each build and text it to the group that morning — revision for the men who were there, and the session itself for the two who were travelling. Transferable to every whiteboard week."
+                ]
+              },
+              {
+                "title": "Put a Hard Marker at Ninety Minutes for the Closing Round",
+                "paragraphs": [
+                  "The spine question was primed for two hours and got six minutes; four men answered and the last disclosure was met with “we're over time.” Before: let the sweep run and give the round what remains. After: fix the round's start time and cut the sweep to reach it. The teaching exists to produce that round. Transferable to any session built toward a closing application."
+                ]
+              },
+              {
+                "title": "Attach a Date to the Apprentice",
+                "paragraphs": [
+                  "“Josh is probably going to be our next leader here” is a strong public signal, and the next step is small. Before: a named successor with no assignment. After: “Josh, take us through the first ten minutes of Joel in three weeks.” A named apprentice with a calendar entry develops; one without stays a compliment. Transferable to every leader-development moment."
+                ]
+              },
+              {
+                "title": "Take Ninety Seconds on a Costly Disclosure",
+                "paragraphs": [
+                  "When a man names something difficult in front of the room, stop and mark it. Before: “okay, challenging, super — we're over time.” After: “guys, hear that. Jim, pray for Stephen right now.” It costs ninety seconds, converts a private battle into the group's, and hands the prayer chain something specific for the week. Transferable to every session."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: 9 — Stephen, John, Blake, Jim, Derek, Jeff and Kevin in the room with Ken, plus Josh joining remotely while minding an 11-month-old. Heath (Montana) and Eric (California) were travelling. The Zoom participant counter reflects remote connections plus the Fireflies bot only, not the room  (Target: Consistent participation)  → STRONG",
+                "Newcomers / first-timers: 1 — Kevin, who had done a Mark study about five years ago and was pointed toward this group after visiting another. Ken took his contact details before the session, had him read twice during it, and thanked him by name at the close  (Target: Organic growth over time)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 11 passages opened and read aloud, plus a whole-OT sweep — Psalm 119:102, 2 Timothy 3:16–17, Romans 15:4, Luke 24:44, Jeremiah 29:11, John 10:10, Hebrews 11:1 & 6, Genesis 6:5 & 8, Genesis 50:15–20, Judges 21:25, John 14:21  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Who did the reading: Seven different men read — John, Stephen, Kevin, Jeff, Jim, Derek and Josh (remotely). Ken read none of them himself. Distributing every reading across the room, including the newcomer and the remote member, is the strongest possible version of this practice  (Target: Distributed)  → STRONG",
+                "Leader talk ratio (whole session, includes reading): ~48% — Ken carries the structure but almost never the content; his turns are overwhelmingly questions, one-word affirmations (\"Good\", \"Okay\", \"What else?\") and brief syntheses  (Target: ≤35%)  → ON TARGET",
+                "Leader talk ratio (discussion only — graded): ~40%. High-ish in raw terms, but this is a week-zero framing session where the leader must supply the scaffolding, and Ken still handed the substance to the room — the twenty-item timeline, the tool list, and the closing application round were all member-generated. A marked improvement on his recent arc  (Target: ≤30–35% (Lifeway 30% Rule))  → STRONG",
+                "Time to first scripture reading: Psalm 119:102 at [00:18:29] — roughly three minutes after the opening prayer and the prayer-chain explanation ended. Fast, and it set up the session's governing idea (God teaches; therefore do the homework)  (Target: Within ~10 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~85% — the timeline sweep was anchored to specific chapters throughout (Genesis 3, 6, 11, 12, 50; Deuteronomy 10; Judges 21:25), and each stage carried a \"where do you see God in this?\" requirement  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~133 min (2h 13m) against a ~120-minute slot. Ken closed with \"we're over time, sorry\" at [02:07:30] — about seven minutes long, and the overrun landed on the application round that mattered most  (Target: ~120 min for this group)  → ON TARGET",
+                "Pre-session fellowship + welcome: [00:00]–[00:15:39] (~15 min) — personal check-ins (Stephen's father possibly coming to church; Stephen's 42 days free of pornography), Kevin welcomed and contact details exchanged, then a \"why do you come here on a Saturday morning?\" round with John, Stephen, Blake and Kevin  (Target: 5–15 min)  → STRONG",
+                "Foundation block — why and how to study the OT: [00:20:23]–[00:35:39] (~15 min) — week-zero framing, Old vs New Testament, 2 Timothy 3:16–17's four verbs, and how studying narrative differs from studying letters  (Target: Purposeful)  → STRONG",
+                "Timeline sweep: [00:35:39]–[01:36:42] (~61 min) — roughly twenty OT milestones built collaboratively on the whiteboard, each with a \"where do you see God in this?\" follow-up  (Target: Woven, purposeful)  → STRONG",
+                "Maps + study method + tools: [01:36:50]–[02:01:20] (~25 min) — Israel and its neighbours drawn on the board landing Edom; Observe / Interpret / Apply; the 5 W's and an H; context; then a crowdsourced round on study tools  (Target: Purposeful)  → STRONG",
+                "Tangent time: ~4% — the Halloween/Red Sea wheelchair story [01:38:52] (~1 min, and Ken flagged it himself: \"this has nothing to do\") and a brief detour on Mormon proof-texting. Both short and relational  (Target: < 5% off-topic)  → STRONG",
+                "Pacing (self-managed): Self-managed but tight. Ken flagged the pace himself — \"man, we're going fast\" [00:59:31] — and reached the closing question with only about six minutes left, so just four men answered before time ran out. No external redirect was needed  (Target: Self-managed throughout)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 5 drivers — the session's spine question, \"What has God taught you that you can point out to someone else that has affected the direction of your life in the recent past?\" (DOK 4, posed three separate times); \"where do you see God in this?\" applied to roughly twenty timeline stages (DOK 3); \"how does that apply to us?\" on the fall (DOK 4); \"how many times has that cycle happened in your life?\" on Judges (DOK 4); \"which of the three do people have the most fun with?\" exposing the interpret-without-observing habit (DOK 3)  (Target: 5–7 per session)  → STRONG",
+                "DOK Level distribution: Majority DOK 3–4. Notably the recall prompts (\"what's the next big event?\") were never left at DOK 1 — each was immediately paired with a DOK-3 follow-up about God's character, so the scaffolding always converted into reasoning  (Target: Majority DOK 2–3 (Webb))  → STRONG",
+                "Application spacing: The standout structural device of the session. Ken posed the spine question at [00:17:58] (\"you're going to hear this question three times this morning — the first time I just want you to think about it\"), again at [01:09:06], and took answers at [02:01:21]. That is deliberate spaced retrieval applied to application rather than to recall  (Target: Woven throughout)  → STRONG",
+                "Confession / Personal-Response Rate: 4 first-person responses — Jeff on the hard season he is in (\"that is the hope to which I cling\", visibly tearing up); a member on submission changing how he drives, with his wife noticing; another on Elijah and the widow and God's care through highs and lows; Stephen on 42 days free of pornography and wanting to be \"the first one in my family to have one marriage\"  (Target: ≥2 per session)  → STRONG",
+                "Leader follow-up probe frequency: 8+ — Ken rarely accepted a first answer. \"What do you mean by that?\", \"do that again\", \"is there another reason?\", \"how would that affect how you study it?\", \"what's that tell us about us and God?\", and on the flood, \"do you think Noah was without sin?\" then \"what else does that tell us?\"  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Named substantive contributors: 8 of 9 — Stephen, John, Blake, Jim, Derek, Jeff, Kevin and Josh (remote) all contributed interpretively, not just by reading. Ken worked entirely by name  (Target: 70–80% of attendees)  → STRONG",
+                "Substantive % of group: ~89% — effectively the whole room. In a group this size that is the ceiling, and it was sustained across two hours rather than concentrated in one round  (Target: ≥70%)  → STRONG",
+                "Read-aloud assignments (reported, not scored): 11 readings distributed across 7 men, including the newcomer (Romans 15:4, Jeremiah 29:11) and the remote member (Genesis 50:15–20). Reported here, never counted as engagement  (Target: Reported only)  → N/A — reported",
+                "Remote member integration: Josh participated fully from home while caring for an infant — read a passage, answered on the Judges cycle (\"peace\"), offered the Babel insight, and Ken turned the whiteboard toward the camera for him and checked he could see. Genuinely included, not merely dialled in  (Target: Equivalent participation)  → STRONG",
+                "Wait time / productive struggle: Ken held silences deliberately and pushed back rather than rescuing — \"oh come on, somebody's got to have a bad answer\" [00:21:22] when the room went quiet, and on Abraham he redirected a wrong premise (\"because Abraham was such a good guy?\") until the room produced \"God was the initiator\"  (Target: 3–5 sec (Rowe 1972))  → STRONG",
+                "Quiet member flag: None — every man present contributed substantively. Jim was the lightest contributor (opening prayer plus the Hebrews 11 reading and one answer); worth a direct question early next session  (Target: All regulars contribute)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: Ken referenced his son's paralysis from the car collision twice, including the fact that his own testimony video circulates on Facebook, and named his own limits repeatedly — \"I'm an old man and this is something I just learned in the last year\" [01:00:00] and \"I never read this. I missed this\" [01:02:49] on the second giving of the law. Member-side: Jeff's tears, Stephen's 42 days, the submission confession  (Target: ≥1 per session with depth)  → STRONG",
+                "Vulnerability depth (rolling baseline ±1): See Dim 8 in Appendix A8 — held at 4/5. Ken's disclosures are consistent with his baseline and he holds a deliberate stance about it (\"in here we concentrate on studying the scripture, not on telling stories\"), with the prayer chain carrying the relational load by design  (Target: 4–5/5 for experienced leader)  → STRONG",
+                "Extended monologues > 90 sec: 1 over the threshold — the Observe/Interpret/Apply explanation at [01:44:03]–[01:47:03]. Well inside the ≤2 target. Named with its fix in the Monologues section  (Target: ≤2 per session (each named with fix))  → STRONG",
+                "Monologue details: See Monologues section below"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~60% — a genuinely high proportion given how much of the hour was timeline recall, precisely because every recall prompt was paired with an open follow-up about God's character  (Target: ≥60%)  → STRONG",
+                "% text-requiring questions: ~55% — eleven passages were opened and worked, and the two-part analysis of Psalm 119:102 and the four-verb breakdown of 2 Timothy 3:16–17 both sent the room into the text rather than into memory  (Target: ≥50%)  → STRONG",
+                "Leader follow-up probes: 8+ — see Application Questions above. Ken's default move is a second question, not an answer  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle rate: Consistent. On the Abrahamic covenant he let a wrong premise stand and questioned it open (\"because Abraham was such a good guy?\") until the room self-corrected to \"God was the initiator\"; on Noah he asked \"do you think Noah was without sin?\" and waited  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Peer-to-peer exchanges: High and unusually two-directional — Derek corrected Ken on Deuteronomy 10 and the ark of the covenant, which Ken accepted openly (\"good — I missed this\"); members built on one another on the forgetting theme; Blake and Josh supplied tools the others adopted  (Target: Members respond to each other)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Study flow: Pre-session check-ins → \"why do you come?\" round → delegated opening prayer (Jim) → prayer-chain explanation → spine question posed → Psalm 119:102 and the homework guarantee → week-zero framing → Old vs New Testament → how to study narrative → collaborative twenty-stage OT timeline → maps landing Edom → Observe/Interpret/Apply → study tools round → spine question answered → delegated closing prayer (Stephen)  (Target: Blueprint-aligned for a launch)  → STRONG",
+                "Bumper stickers generated: \"A single thread is easily bent to your will, but a fabric holds itself\" (on interpreting scripture by scripture) [01:50:11]; \"Teaching tells you the course, reproof tells you you're off it, correction gets you back, training keeps you there\" [00:26:04]; \"If you want God to teach you, do the homework\" [00:19:57]; \"The law was given twice because we forget — that's why we do Saturday studies\" [01:02:04]; \"We chose to be our own God\" on Eden [01:45:26]  (Target: 3–5 per session)  → STRONG",
+                "Visual aids: Whiteboard only, used continuously and well — the numbered twenty-stage timeline, a map of Israel and its neighbours, the Observe/Interpret/Apply frame and the 5 W's. But it was the single channel all session: Blue Letter Bible, Bible Gateway, Logos, Olive Tree and Bible Project were all discussed at length and none was ever put on screen, and the Bible Project's five-minute Obadiah video was described rather than played. The timeline was also erased to make room for the map  (Target: Multiple tools (Mayer))  → NEEDS WORK",
+                "Tone & delivery: Warm, unhurried, self-deprecating. Ken's register is quiet and interrogative rather than declarative, and he is comfortable being corrected in front of the room — which is precisely what keeps eight of nine men contributing  (Target: Vocal variety, pace, command voice)  → STRONG",
+                "Topic drift: ~4% — the Halloween/Red Sea story (self-flagged) and a short Mormon proof-texting aside that actually served the context lesson  (Target: < 5% off-topic)  → STRONG",
+                "Big Ideas at close: Partial — the session closed on the spine-question round and the delegated prayer rather than on a distilled recap of the twenty-stage timeline. Given the volume built, a three-line summary was the missing final beat, and the overrun is why it went missing  (Target: Cumulative review at close)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "One leader monologue past the 90-second threshold — comfortably inside the ≤2 target, and the lowest count in Ken's recent arc. His default turn length is a single question, which is the underlying reason the talk ratio improved this week.",
+                "The explanation of the three-step method, the diagnosis that most studies stall at \"interpret\", and the case for spending time on observation first. Excellent content and arguably the most transferable teaching of the session — but delivered as sustained explanation to a room that had been answering questions all morning. Fix: this block is unusually easy to convert, because the room already knows the answers. Ask \"which of these three do you think people spend the most time on?\" and \"why does that go wrong?\" and let them produce the diagnosis; Ken already did exactly this at [01:45:03] with \"which one do you think people have most fun with?\" — the fix is to lead with that question rather than close with it."
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "The Spine Question, Primed Twice Before It Was Answered  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Ken posed his central application question before any teaching and explicitly refused answers — \"you're going to hear this question three times this morning\" — repeated it verbatim an hour later, and only took responses in the final minutes: \"What has God taught you that you can point out to someone else that has affected the direction of your life in the recent past?\"\n\nWhy it mattered: Priming converts an application question from a reflex into a reflection. The answers it produced were specific and costly rather than generic, and the question's phrasing does double duty — \"that you can point out to someone else\" quietly frames every man as a future teacher, which is the group's stated direction.\n\nWhat would make it bigger: Protect the landing (see Improvement 3). The device earned a fifteen-minute round and got six minutes.",
+                  "timestamp": "[00:17:58] · [01:09:06] · [02:01:21]"
+                },
+                {
+                  "detail": "\"Why Do You Come Here on a Saturday Morning?\"  (🟢 Capitalized · Engaging People)\n\nWhat happened: With a newcomer sitting in his first session, Ken asked four men in turn why they attend. John: \"I couldn't find a small group that works with my work schedule... even though it is early sacrifice, it's been good.\" Stephen: \"to be grounded... listen to their struggles, share my struggles... we can't do this alone.\" Blake: \"it's a non-negotiable for me — I feel it more when I miss this than when I miss Sunday morning.\"\n\nWhy it mattered: The newcomer heard the group's value proposition from members rather than from the leader, which is the difference between enrollment and recruitment. It simultaneously re-committed the regulars out loud — men who have just articulated why they come are less likely to drift.\n\nWhat would make it bigger: Kevin's own answer (\"study environment\") went unexplored. One follow-up — \"what made you go looking?\" — would have given the room something to pray about and given Kevin a stake in the first five minutes.",
+                  "timestamp": "[00:11:44]–[00:15:26]"
+                },
+                {
+                  "detail": "The Four Verbs of 2 Timothy 3:16 as a Single Image  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Ken had Stephen read the verse, then extracted the four benefits one at a time and bound them into one metaphor: teaching \"tells you what the course is\", reproof \"tells you when you're off course\", correction is \"how to get back on\", and training is \"to stay there\". He then closed the loop: \"so when you study scripture, that's what you expect to find.\"\n\nWhy it mattered: It gave the group a reason to study before asking them to study, and it is genuinely memorable — one image carrying four abstractions. It also set up the session's homework argument without ever sounding like a demand.\n\nWhat would make it bigger: Write the four words on the board as they emerge. This was the one teaching block that would have gained most from the whiteboard and did not get it.",
+                  "timestamp": "[00:24:25]–[00:26:18]"
+                },
+                {
+                  "detail": "Naming the Next Leader Out Loud  (🟢 Capitalized · Building Ministry)\n\nWhat happened: Introducing Josh on the remote link, Ken said \"Josh is probably going to be our next leader here\", then minutes later told the whole room: \"here's my goal, here's my secret goal — is that for every one of you to be a leader down the road, you know, some sooner than others. I want you to have that grasp and that confidence in the Word.\"\n\nWhy it mattered: Dimension 12 only scores what is observable and verbalised in-session, and this is both — a named apprentice and a stated development intent for every man present. It also reframes the study's purpose from personal enrichment to multiplication, which is what makes the homework argument land later.\n\nWhat would make it bigger: Attach one concrete step to the name: \"Josh, take us through the first ten minutes of Joel in three weeks.\" A named apprentice with a date on the calendar is a different thing from a named apprentice.",
+                  "timestamp": "[00:32:38] · [00:34:49]"
+                },
+                {
+                  "detail": "42 Days, and the Clock  (🟠 Partially Capitalized · Being Real)\n\nWhat happened: Answering the spine question last, Stephen described 42 days free of pornography and why: \"I want to be the first one in my family to have one marriage. Too many marriages destroyed.\" He added that the effort had brought \"the most demonic dreams I've ever had\". Ken responded \"okay, challenging, super, okay — we're over time, sorry\" and moved to the closing prayer.\n\nWhy it mattered: The disclosure itself is evidence of real safety in the room, and Ken had honoured the same news warmly before the session began (\"you're gonna be a chain breaker, man — change the course of your family\"). But in the room, at the moment it became public, it received seconds.\n\nWhat would make it bigger: Two sentences and a prayer. \"Guys, hear that — 42 days. Jim, would you pray for Stephen right now?\" costs ninety seconds, converts a private win into the group's win, and gives the prayer chain something specific to carry into the week.",
+                  "timestamp": "[02:06:44]–[02:07:34]"
+                }
+              ],
+              "paragraphs": [
+                "Five disproportionately important moments — named so the pattern is replicable."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "“What has God taught you that you can point out to someone else that has affected the direction of your life in the recent past?” [00:17:58, 01:09:06, 02:01:21] — DOK 4 — apply to life — The session's spine. Posed three times, answered once — deliberate spaced priming that produced four considered, first-person answers.",
+                "“Where do you see God in this? What does God teach us about himself from this?” — applied to ~20 timeline stages [00:36:46 onward] — DOK 3 — reason/justify — The design decision that kept an hour of recall from becoming trivia. Produced “he looks at the heart”, “you could resist his authority but not overcome it”, “God can use evil into good”.",
+                "“How does that apply to us?” — on the fall [00:41:39] — DOK 4 — apply to life — Moved Genesis 3 from history to inheritance: “we were in the garden... it wouldn't have been Adam's name, it would have been Ken's name.”",
+                "“How many times has that cycle happened in your life?” — on the Judges cycle [01:08:53] — DOK 4 — apply to life — Turned the sin/cry-out/deliverance/peace/complacency loop into a personal audit. One member: “that's my life story.”",
+                "“Which of the three do you think people have the most fun with?” — Observe / Interpret / Apply [01:45:03] — DOK 3 — reason/justify — Let the room diagnose its own likely failure mode (interpreting without observing) rather than being told it."
+              ],
+              "paragraphs": [
+                "Five Big-Idea drivers, logged with DOK level. Timeline recall prompts are DOK-1 scaffolding and are excluded from the distribution per Metric Adjustment #3 — though in this session nearly every one was immediately paired with a scored follow-up."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 84.0% × weight 33 → 27.72 pts",
+                "Building Ministry: 93.3% × weight 31 → 28.93 pts",
+                "Engaging People: 90.0% × weight 18 → 16.20 pts",
+                "Being Real: 90.0% × weight 18 → 16.20 pts",
+                "BASE (pre-bonus): — × weight 100 → 89.05 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/file/d/1MchVmHFrTA42YVh6Dx47xBHxleRnt5fI/view?usp=drivesdk"
+        },
         {
           "id": "ken-ture-2026-06-06-james-lesson-4-partiality-rich-v",
           "date": "2026-06-06",
@@ -10490,8 +10866,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "ken-ture-2026-05-16-james-book-overview-james-1-1-11",
@@ -10804,8 +11180,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "ken-ture-2026-03-25-jeremiah-lesson-4",
@@ -11091,8 +11467,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -11415,8 +11791,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "ricky-town-2026-05-30-james-1-12-27-lesson-3-the-crown",
@@ -11729,8 +12105,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "ricky-town-2026-05-17-james-1-1-12-lesson-2-from-doulo",
@@ -12043,8 +12419,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "ricky-town-2026-04-12-1-john-lesson-5",
@@ -12356,8 +12732,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -12680,8 +13056,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -13005,8 +13381,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -13330,8 +13706,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-05-23-james-ch-1-trials-wisdom-the-cro",
@@ -13644,8 +14020,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-05-16-book-of-james-full-read-through-",
@@ -13958,8 +14334,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-04-11-2-kings-study-exile-theology-jeh",
@@ -14241,8 +14617,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-03-28-build-james-davis-2026-03-28-js",
@@ -14524,8 +14900,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-03-14-build-james-davis-2026-03-14-js",
@@ -14807,8 +15183,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-03-07-build-james-davis-2026-03-07-js",
@@ -15090,8 +15466,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-02-21-build-james-davis-2026-02-21-js",
@@ -15373,8 +15749,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-02-14-build-james-davis-2026-02-14-js",
@@ -15656,8 +16032,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-01-31-build-james-davis-2026-01-31-js",
@@ -15939,8 +16315,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "james-davis-2026-01-17-2-kings-8-10-god-s-sovereignty-c",
@@ -16253,8 +16629,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -16578,8 +16954,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "brendan-elizabeth-2026-05-30-james-lesson-2-james-1-12-27",
@@ -16892,8 +17268,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "brendan-elizabeth-2026-05-25-james-lesson-1-james-1-1-12",
@@ -17206,8 +17582,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -17501,8 +17877,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "jt-dettman-2026-05-16-revelation-part-one-week-1-intro",
@@ -17785,8 +18161,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -18109,8 +18485,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -18433,8 +18809,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "cameron-relic-2026-04-16-destruction-of-jerusalem-zedekia",
@@ -18746,8 +19122,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -19070,8 +19446,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     },
@@ -19364,8 +19740,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         },
         {
           "id": "david-kartozia-2026-02-07-build-david-kartozia-2026-02-07-",
@@ -19647,8 +20023,8 @@
               ]
             }
           ],
-          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV",
-          "pdfUrl": ""
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
     }
@@ -19712,6 +20088,18 @@
       "trends": [
         "The program's March 2026 composite of 64.2 / 100 lands it in the On Target band. Month over month, James Davis is the standout mover off the February 2026 baseline, up -6.3 points.",
         "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.25 / 5), while Visual Aids (2.13 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
+    "2026-08": {
+      "executiveSummary": [
+        "In August 2026, 1 leader delivered 1 evaluated session, and the program held a weighted average composite of 90.0 / 100 — Exceptional on the v3 scale. That places the cohort in world-class territory — the work now is sustaining it, not rebuilding.",
+        "Across the cohort the month broke down as 1 Exceptional. Ken Ture led the field at 90.0 (Exceptional).",
+        "The strongest muscle program-wide was Scripture Engagement (5.00 / 5) and the thinnest was Visual Aids (3.00 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's August 2026 composite of 90.0 / 100 lands it in the Exceptional band.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (5.00 / 5), while Visual Aids (3.00 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-02": {
@@ -25759,6 +26147,277 @@
       }
     },
     "ken-ture": {
+      "2026-08": {
+        "month": "2026-08",
+        "monthLabel": "August 2026",
+        "priorMonthLabel": "July 2026",
+        "leaderId": "ken-ture",
+        "leaderName": "Ken Ture",
+        "group": "Jeremiah Study",
+        "sessionsCount": 1,
+        "composite": 90.1,
+        "status": {
+          "label": "Exceptional",
+          "emoji": "🔷"
+        },
+        "priorComposite": null,
+        "delta": null,
+        "clusterAvg": {
+          "tc": 84,
+          "bm": 93,
+          "ep": 90,
+          "br": 90
+        },
+        "glance": {
+          "rows": [
+            {
+              "date": "2026-08-08",
+              "session": "Week Zero — launching Obadiah, Joel, Amos & Jonah",
+              "bm": 93,
+              "tc": 84,
+              "ep": 90,
+              "br": 90,
+              "composite": 90.1,
+              "status": "Exceptional"
+            }
+          ],
+          "avg": {
+            "bm": 93,
+            "tc": 84,
+            "ep": 90,
+            "br": 90,
+            "composite": 90.1,
+            "status": "Exceptional"
+          }
+        },
+        "trajectory": [
+          {
+            "date": "2026-08-08",
+            "session": "Week Zero — launching Obadiah, Joel, Amos & Jonah",
+            "composite": 90.1,
+            "status": "Exceptional",
+            "delta": null
+          }
+        ],
+        "clusters": [
+          {
+            "key": "tc",
+            "name": "Teaching Craft",
+            "weight": 33,
+            "avgPct": 84,
+            "statusLabel": "Strong",
+            "strongestDim": {
+              "name": "Scripture Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Visual Aids",
+              "val": 3
+            },
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Visual Aids is the bottleneck this month."
+          },
+          {
+            "key": "bm",
+            "name": "Building Ministry",
+            "weight": 31,
+            "avgPct": 93,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Homework References",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Newcomer Welcome",
+              "val": 4
+            },
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — elite tier. Lift the floor on Newcomer Welcome."
+          },
+          {
+            "key": "ep",
+            "name": "Engaging People",
+            "weight": 18,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Participant Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 4
+            },
+            "insight": "Engaging People (Facilitation + Participation) — elite tier. Continue to broaden participation beyond the core 6–8 voices."
+          },
+          {
+            "key": "br",
+            "name": "Being Real",
+            "weight": 18,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Prayer",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 4
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — elite tier. Vulnerability / Authenticity is the lift this month."
+          }
+        ],
+        "strengths": [
+          {
+            "text": "The Same Question, Three Times, Ninety Minutes Apart",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "Every Recall Prompt Paired With a Character Question",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "Teaching the Method, Not Just the Material",
+            "session": "2026-08-08"
+          }
+        ],
+        "growth": [
+          {
+            "text": "Five Study Tools Discussed, None Ever Shown",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "The Timeline Was Erased Before It Was Captured",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "The Best Round Ran Out of Clock",
+            "session": "2026-08-08"
+          }
+        ],
+        "trends": [
+          "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Visual Aids (avg 3.0 / 5)."
+        ],
+        "conversationGuide": [
+          {
+            "label": "Celebrate the strength",
+            "q": "Building Ministry averaged 93% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+          },
+          {
+            "label": "Explore the growth area",
+            "q": "Teaching Craft averaged 84%. What's getting in the way? What would have to be true for that to lift 10 points by September 2026?"
+          },
+          {
+            "label": "Trajectory",
+            "q": "Your one August 2026 session scored 90.0 (Exceptional). What was different about your prep or delivery this time?"
+          },
+          {
+            "label": "Group dynamics",
+            "q": "Participant Engagement averaged 5.0 / 5 in August 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+          }
+        ],
+        "focus": {
+          "clusterName": "Teaching Craft",
+          "clusterPct": 84,
+          "goals": [
+            "Lift Visual Aids from 3.0 / 5 toward 4+ by end of September 2026.",
+            "Improve Session Structure & Flow (currently 4.0 / 5).",
+            "In every September 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
+          ]
+        },
+        "sessions": [
+          {
+            "date": "2026-08-08",
+            "session": "Week Zero — launching Obadiah, Joel, Amos & Jonah",
+            "composite": 90.1,
+            "status": "Exceptional",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Complete week-zero arc with both prayers delegated and a sophisticated three-part question spine. Held below 5 by the ~7-minute overrun and the resulting compression of the closing round"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": 4,
+                "note": "One newcomer, handled proportionately and well — contact taken before the session, the \\\"why do you come?\\\" round performed in front of him, two readings assigned to him, thanked by name at the close. Below 5 because his own answer (\\\"study environment\\\") went unexplored"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "11 passages opened and read aloud, distributed across 7 different men including the newcomer and the remote member, plus a whole-OT sweep anchored to specific chapters. Ken read none himself"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "~40% discussion-only leader talk — above benchmark in raw terms but a clear improvement on the arc. Ken's default turn is a question; the timeline, the tool list and the closing round were all member-generated"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "5 drivers, majority DOK 3–4, with the best application spacing in the arc (primed twice, answered once). Held below 5 because only 4 men reached the answer round before time ran out"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "8 of 9 men contributed substantively across two hours, including Josh remotely while minding an infant. Effectively the ceiling for a group this size"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 3,
+                "note": "Whiteboard only — used continuously and well (timeline, map, method frame) but erased mid-session before capture, and five study tools were described at length with none ever displayed. The clearest gap on the day"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Ken's son's paralysis referenced twice plus repeated public admissions of not-knowing; strong member-side disclosure (Jeff's tears, Stephen's 42 days). Consistent with his rolling baseline"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "The entire session is cumulative retrieval over the just-completed James study and prior arcs; the 3× spine question is deliberate spaced practice; the memorisation charge with Blake praised by name; and the pedagogy of repetition taught directly from the text (\\\"the law was given twice because we forget — that's why we do Saturday studies\\\")"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "\\\"I can't teach you if you don't do the homework. If you want God to teach you, do the homework... and I guarantee that.\\\" Week-zero framing of the lesson book, PDF logistics, a memorisation charge, and a study method that is itself the homework method"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "Opening delegated to Jim and closing to Stephen, both substantive; the prayer chain explained to the newcomer with a clear rationale; \\\"we're praying for you\\\" offered to Jeff in the moment"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "A named apprentice (\\\"Josh is probably going to be our next leader here\\\") plus an explicit stated intent for the whole room (\\\"my secret goal is that for every one of you to be a leader down the road\\\"), with every reading and both prayers delegated. 2 Tim 2:2 verbalised in-session"
+              }
+            ]
+          }
+        ]
+      },
       "2026-06": {
         "month": "2026-06",
         "monthLabel": "June 2026",

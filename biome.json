@@ -12,6 +12,7 @@
       "handlers.ts",
       "./packages/backend-base/src/bible/data/t_asv.json",
       "./packages/backend-base/src/bible/data/NASB1995.json",
+      "./packages/backend-base/src/coach/coach.data.json",
       "./apps/frontend-next/public/*",
       "./apps/website/*",
       "./VerseMate/*",
