@@ -61,6 +61,382 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "bryan-bailey-2026-08-08-week-zero-launching-obadiah-joel",
+          "date": "2026-08-08",
+          "dateLabel": "August 8, 2026",
+          "session": "Week Zero — launching Obadiah & Joel (Austin Ridge, Saturday morning)",
+          "topic": "Placing Edom — and Obadiah — on the Bible's timeline",
+          "duration": "~133 min (2h 13m), full recording",
+          "attendees": 25,
+          "newcomers": 6,
+          "score": 95.04,
+          "base": 87.04,
+          "newcomerBonus": 5,
+          "sizeBonus": 3,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 88,
+              "contribution": 29.04
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 100,
+              "contribution": 31
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Coherent week-zero arc — testimonies, welcome, The Guarantee, sweep, landing, homework charge, delegated close. Held below 5 by the compressed Obadiah landing (~4 min for the session's destination) and no captured opening prayer"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 5,
+              "note": "23 minutes; returning-member testimonies BEFORE newcomers spoke; Shady's conversion account; The Guarantee verbatim; prayer chain explained; six individual introductions. Blueprint step 3 exactly as designed"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4,
+              "note": "20+ books traversed in one sweep, but only three passages actually opened (Gen 6, Rev 2, John 3:17). Leader-recall rather than group text-work — appropriate for a framing week, but it caps the dimension"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "Discussion-only leader talk ~68%, the arc's highest. Week-zero format is a real mitigating factor and Bryan named it himself, but the recall chain resolved in one-word answers rather than developed thought"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "5 Big-Idea drivers, majority DOK 3–4, with two genuinely sharp asks (remove every compromising opportunity; do the homework for someone else). Held below 5 by back-loading — the first personal ask lands ~50 min into the lesson"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4,
+              "note": "~15 named substantive contributors across an estimated 25-man room (~60%), plus a delegated screen-operator role. Breadth is strong; depth per contribution is limited by the recall format"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 5,
+              "note": "Four channels: live whiteboard construction of the Genesis-to-Christ arc, the hand-drawn Judges sin cycle, the promised-land boundary map, and a frame-confirmed color-coded kings-and-prophets timeline with Obadiah placed on it. The session's standout"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "Bryan's parental-regret disclosure is genuinely costly and drives the close; the room supplied greater depth (Shady's disowning, Jared's confession, Trinity's account). Briefer than Bryan's arc norm, hence 4 not 5 — within the ±1 cap"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5,
+              "note": "The entire session is a cumulative recall drill — “if you've been in this review before, keep your mouth shut” — spanning the just-completed ~40-week 1–2 Kings arc, with the sin cycle re-derived by the room. Ebbinghaus at scale"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Study guides and $40 registration; “day three, extremely long”; The Guarantee verbatim; a 12-minute closing motivation block; the do-it-for-someone-else reframe; “this is challenging — I'm not gonna lie to you”"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4,
+              "note": "Closing delegated to Zach and substantive (named the sin cycle back). Prayer chain explained at 00:21:14 and reinforced at length by Brendan. No opening prayer appears in the recording, which begins at 04:47 — recorded as not-captured rather than asserted absent"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 5,
+              "note": "“I'm gonna make a leader out of this guy. I'm gonna train you” [00:20:00]; “you guys are all in a leadership development program … being developed to understand God's word so you can go and lead in your community” [02:07:56]; the spring-not-reservoir teaching; Russell Reed operating the screen as a delegated role. 2 Tim 2:2, verbalized in-session"
+            }
+          ],
+          "bigIdeas": [
+            "The top-level message of the Bible is that God loves you — agape, without condition",
+            "The Bible mirrors itself: the end answers the beginning, and the middle points to Christ",
+            "The enemy you don't kill in the morning will rise up in the evening and take you out",
+            "Remember, repent, and do the deeds you did at first — the cure for a lost first love"
+          ],
+          "feedback": {
+            "headline": "Week Zero of the Obadiah/Joel arc — no homework to review, so the hour is spent building the whole-Bible frame.",
+            "strengths": [
+              "Week Zero Used to Build the Frame, Not to Fill Time",
+              "The Newcomer Welcome, Executed at Full Blueprint Depth",
+              "Four Visual Channels Working Together"
+            ],
+            "improvements": [
+              "The Graded Talk Ratio Was the Highest of the Arc",
+              "Four Monologues Past the Threshold, and the Landing Got Squeezed",
+              "Two Moments Carried Avoidable Pastoral Risk"
+            ],
+            "recommendations": [
+              "Pre-Mark Three Full-Hold Questions",
+              "Budget the Landing Before the Runway",
+              "Run the Familiar Arcs as a Relay, Not a Narration"
+            ],
+            "overview": [
+              "Week Zero of the Obadiah/Joel arc — no homework to review, so the hour is spent building the whole-Bible frame.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 3 areas for improvement, and 5 recommendations for next session, scored 95.04/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Week Zero Used to Build the Frame, Not to Fill Time",
+                "paragraphs": [
+                  "A launch week with no homework is the easiest session of the year to waste. Bryan instead used it to answer the question a 21-verse book can't answer for itself: why does Edom matter? He walked the whole canon in a single sweep — creation, fall, Cain, Lamech, flood, Babel — then stopped at the hinge: \"the Bible literally hinges right here. This is where the redemption story started\" [00:41:46], and traced the line forward through Isaac and Ishmael to the twins, landing the payload precisely: \"Esau, also, the other name for Esau is Edom. And so Esau's line became a nation called Edom\" [00:56:13], then \"I would say Edom is enemy number one\" [00:56:45]. By the time the color-coded timeline appeared with Obadiah on it, every man in the room knew what he was about to study and why it exists. This is framework-building teaching at its most efficient — the hardest kind to do, and the kind that pays off for the next six weeks rather than for ninety minutes."
+                ]
+              },
+              {
+                "title": "The Newcomer Welcome, Executed at Full Blueprint Depth",
+                "paragraphs": [
+                  "Twenty-three minutes, and not one of them wasted. Returning members modeled the ask before a single first-timer spoke: Will, back after a two-month absence, told the room \"this group is truly, truly impacted and changed my life … if you spend the time doing the homework, showing up, pouring in to not only the word but these guys, your life will be changed too. It's not a matter of if, but when\" [00:06:27]. Then Shady's account of coming to Christ from Islam — \"I was told I'm no longer worthy of being my parents' son … that was the first time that my mother never hugged me back\" [00:08:39] — and what the room did with it: \"there was so many of them that called me and I had no idea who they were\" [00:09:32]. Only then did Bryan open the floor, and six men introduced themselves. He followed with The Guarantee verbatim — \"I guarantee you if you do the homework with an open mind, prayerfully, God will speak to you\" [00:16:18] — and the prayer-chain explanation [00:21:14]. Existing-member testimony first, leader testimony second, newcomers third, mechanism last: that is the 10-step blueprint's step 3 run exactly as designed."
+                ]
+              },
+              {
+                "title": "Four Visual Channels Working Together",
+                "paragraphs": [
+                  "This was the strongest visual session in the recent arc. Bryan built the Genesis-to-Christ arc live on a whiteboard rather than presenting it finished — \"I'm going to attempt to draw this first\" [00:29:03] — so the room watched the structure assemble. He hand-drew the Judges sin cycle as a loop [01:22:56] while the room supplied each stage (peace → sin → slavery → crying out → judge → peace). He pulled up a map contrasting the full promised-land boundary with modern Israel: \"part of Turkey, part of Saudi Arabia. That's what was promised. Right now Israel is just that little bitty part\" [01:12:24]. And he closed the sweep on a professional color-coded kings-and-prophets timeline — frame-confirmed — with the 722 Assyrian captivity marked and Obadiah banded against Isaiah, Micah, Amos, Hosea, Jonah and Nahum. Four distinct channels, each doing work the others couldn't. Mayer's multimedia principle, fully exploited."
+                ]
+              },
+              {
+                "title": "The Whole Session Was a Cumulative Recall Drill",
+                "paragraphs": [
+                  "Bryan opened the sweep with an instruction that turned a lecture into an exam: \"If you've been in this review before, keep your mouth shut. But if you haven't, I want you to answer this first question\" [00:29:42]. From there the room, not the leader, supplied the spine — redemption, trust, love, the fall, Cain, Noah, Babel, the Abrahamic covenant, Joseph, the judges, Saul, David, Solomon, the divided kingdom. He explicitly tied it back to the study they had just finished: \"we just completed first and second Kings … I think it was 40 weeks\" [01:51:23], and then named the purpose: \"the reason why I wanted to come back and do this part is I wanted us to now go back and see what God was telling the prophets during this time\" [01:51:47]. Ebbinghaus would recognize this immediately — spaced retrieval of a year's material, dressed as an orientation. It is the single best use of a week-zero slot available."
+                ]
+              },
+              {
+                "title": "Turning Homework Compliance Into a Leadership Identity",
+                "paragraphs": [
+                  "The closing twelve minutes are the session's most transferable teaching. Rather than scold, Bryan asked the room for the excuses — \"What's the reason why somebody would come here week after week but not able to do all the homework?\" [01:56:37] — collected them (not prodded, work a lot, time management), and then dismantled the category: \"Well, everybody's got 168 hours, right? There isn't a good reason.\" He then had Jared testify against himself: \"I had every excuse … I make time to go to the gym five or six times a week. I make that time\" [01:58:08]. Then came the reframe that does the actual work: \"If you can't do it for yourself, do your homework for me or for Fred … do your homework for the future state of your family\" [02:02:32], anchored by his own regret, and closed by renaming the whole enterprise: \"You guys are all in a leadership development program. You just don't realize you're being developed to understand God's word so you can go and lead in your community\" [02:07:56]. Compliance reframed as discipleship, and discipleship reframed as leadership — in one move."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "The Graded Talk Ratio Was the Highest of the Arc",
+                "paragraphs": [
+                  "Discussion-only leader talk landed near 68% — roughly double the Lifeway benchmark and the highest figure in the recent arc. The format explains a great deal of it: a canon sweep is leader-carried by nature, there was no homework to discuss, and Bryan named the anomaly himself — \"normally you guys don't do class like this; normally it's very interactive\" [01:56:16]. That defence is real, and the framing goal was worth the airtime. But the recall chain shows the cost: dozens of prompts resolved in a single word before the sweep resumed, so the room was answering rather than thinking. Fix (transferable): on any framework-building week, pre-designate three \"full-hold\" stops — points where the question goes to the room and stays there for a genuine sixty seconds, with a named person asked to develop the answer rather than supply it. Three holds in ninety minutes costs about five minutes of sweep and converts the largest block of DOK-1 recall into DOK-3 reasoning. Applies to every overview or framework session, regardless of book."
+                ]
+              },
+              {
+                "title": "Four Monologues Past the Threshold, and the Landing Got Squeezed",
+                "paragraphs": [
+                  "Four leader monologues ran past ninety seconds (detailed in the Monologues section), against a target of two. The consequence was structural rather than cosmetic: the Abraham and Moses arcs together consumed roughly twenty-five minutes of narrative that the room already largely knew, and by [01:36:00] Bryan was checking the clock — \"we got 28 minutes\" — then compressing the actual destination. Obadiah itself, the reason for the whole sweep, received about four minutes [01:52:28]–[01:56:12], and Bryan's own verdict was \"that was your speed run through this\" and \"I didn't do a great job of it today … need more time to kind of get all the pieces in there\" [02:07:13]. Fix (transferable): budget the landing first. On any framing session, reserve the final fifteen minutes for the destination before planning the runway, and cut the runway to fit — the room needs the new book more than it needs a fuller retelling of the familiar ones. Transferable to every study launch."
+                ]
+              },
+              {
+                "title": "Two Moments Carried Avoidable Pastoral Risk",
+                "paragraphs": [
+                  "Two exchanges are worth naming because both are easy to avoid and both landed in front of newcomers. First: roughly twelve minutes after Shady described being disowned by his Muslim family and his mother refusing to hug him goodbye, the room joked about \"the number one Muslim\" and Bryan added \"we'll ship all the Muslims off for their own little deal\" [00:11:33]; later, on the nations surrounding Jerusalem, \"there are just Muslims\" [00:52:54]. The affection behind the first is obvious — Shady is clearly loved here — but a man who has just paid that price for conversion, sitting beside first-time visitors, is the least safe audience for that joke. Second: Rick Town, a brand-new attendee introduced minutes earlier as Ricky's father, was made the subject of a sexual illustration — \"he loved his wife and now they have sex once a month … it's once every three months, I bet\" [01:33:39] — with \"I'm not saying that's the case\" as the only mitigation. Fix (transferable): keep named-member illustrations to hypotheticals (\"say a guy in his sixties…\") whenever the subject is sexual or marital, and reserve any joke touching a member's costly conversion for a room where that member has been long enough to trade it back. Neither point touches the teaching; both protect the enrollment the welcome just earned."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Pre-Mark Three Full-Hold Questions",
+                "paragraphs": [
+                  "Discussion-only talk ratio reached ~68%, the arc's highest. Before: dozens of one-word recall answers absorbed into a continuing sweep. After: three designated stops per session where the question goes to the room and stays there a full sixty seconds, with a named man asked to develop rather than supply the answer. The Abrahamic-covenant hold [00:43:08] already worked exactly this way — the change is doing it three times instead of once. Transferable to any session, any passage."
+                ]
+              },
+              {
+                "title": "Budget the Landing Before the Runway",
+                "paragraphs": [
+                  "Obadiah — the destination of a 90-minute sweep — got about four minutes, and the session closed on “that was your speed run.” Before: build the runway forward and let the landing take what remains. After: reserve the last fifteen minutes for the destination first, then cut the runway to fit. Applies to every study launch and every overview week."
+                ]
+              },
+              {
+                "title": "Run the Familiar Arcs as a Relay, Not a Narration",
+                "paragraphs": [
+                  "The Abraham and Moses blocks consumed ~23 minutes narrating material the room largely knew. Before: leader-carried retelling. After: name four men and assign each one stage of the arc, then correct and extend. Same content, roughly half the time, and the recall becomes participation. Transferable to any recap of familiar narrative."
+                ]
+              },
+              {
+                "title": "Keep Named-Member Illustrations Away From Sexual and Marital Examples",
+                "paragraphs": [
+                  "A first-time attendee was made the subject of a sexual illustration within minutes of being welcomed. Before: “Rick over here — he loved his wife and now they have sex once a month.” After: the identical teaching as a hypothetical — “say a guy's been married thirty years and it's once a month.” The point survives intact; the newcomer's first morning does too. Transferable to every session."
+                ]
+              },
+              {
+                "title": "Close With Three Recitable Lines",
+                "paragraphs": [
+                  "After covering twenty books, the close went to the homework charge without distilling the sweep. Before: no cumulative summary. After: three lines the room repeats back — “the Bible hinges at Genesis 12”; “Edom is Esau, and Esau is enemy number one”; “the enemy you don't kill in the morning will rise up in the evening.” Costs ninety seconds and is what makes week zero survive to week one. Transferable to every session."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: Large room — video frames show a full table of roughly 25 men plus remote joiners. The Zoom participant counter (7) reflects ONLY remote connections and the Fireflies Notetaker bot, not the in-person room, so all attendee-driven metrics use the frame estimate (CLAUDE.md metadata trap)  (Target: Consistent participation)  → STRONG",
+                "Newcomers / first-timers: 6 introduced individually — Will Hardy (moved from Atlanta ~3–4 weeks prior), Jake Durino, Chris (wife + three boys), Rick Town (Ricky Town's father), Jordan Crosby (relocated from Oregon), Trinity Branch (moved to Austin one week prior). A seventh, Will, returned after a two-month absence and gave the opening testimony  (Target: Organic growth over time)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 20+ books traversed in a single sweep — Genesis (creation, fall, Cain, Lamech, flood, Babel, Abraham, Isaac, Ishmael, Jacob/Esau, Joseph), Exodus, Joshua, Judges, 1–2 Samuel, 1–2 Kings, Daniel, Jonah, Obadiah, Joel, Isaiah, Micah, Amos, Hosea, Nahum, Mark 10:29–30, John 3:16–17, Revelation 2 and 20, Hebrews 11 (Abraham's resurrection logic)  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Passages actually read aloud: 3 — Genesis 6:5–6 (Jared), Revelation 2:1–7 (member), John 3:17 (Russell). The remaining ~20 books were narrated from Bryan's own recall rather than opened by the room  (Target: Text in front of the group)  → ON TARGET",
+                "Leader talk ratio (whole session, includes reading): ~78% — a single-sweep framing lecture by design; the room supplied short answers into a long leader-carried narrative  (Target: ≤35%)  → NEEDS WORK",
+                "Leader talk ratio (discussion only — graded): ~68%, with the newcomer welcome and testimonies excluded per Metric Adjustment #2. Bryan asked constantly, but most exchanges resolved in one or two words before he resumed the sweep. He names the pattern himself at [01:56:16]: “normally you guys don't do class like this — normally it's very interactive”  (Target: ≤30–35% (Lifeway 30% Rule))  → NEEDS WORK",
+                "Time to first scripture reading: ~8 min after the lesson proper began — the welcome ran to [00:27:38] and Genesis 6 was read at [00:35:52]. Measured from the END of the welcome per Metric Adjustment #1; the 23-minute welcome is Building Ministry and is NOT added to this number  (Target: Within ~10 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~90% — nearly everything said tracked a specific biblical narrative or text, even where the text was narrated rather than opened  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~133 min (2h 13m) — modestly over the 120-minute target for a week-zero launch that carried a 23-minute welcome plus a full-canon sweep  (Target: 120 min (Bryan's Austin Ridge groups))  → ON TARGET",
+                "Newcomer welcome + member testimonies + The Guarantee: [00:04:47]–[00:27:38] (~23 min) — returning-member testimonies first (Will, then a second member, then Shady's conversion account), then Bryan's own testimony, The Guarantee, the prayer-chain explanation, and six individual newcomer introductions. Building Ministry, not overhead  (Target: 7–25 min)  → STRONG",
+                "Teaching block — the meta-narrative sweep: [00:27:42]–[01:55:00] (~87 min) — Genesis through the divided kingdom and the 17 prophets, landing Edom and Obadiah on a color-coded timeline  (Target: Woven, purposeful)  → STRONG",
+                "Homework motivation block: [01:56:16]–[02:08:17] (~12 min) — the “why you can't do the homework” exchange, Jared's testimony, the do-it-for-someone-else reframe, and the leadership-development charge  (Target: Purposeful close)  → STRONG",
+                "Tangent time: ~6–8% — the modern-Israel/supersessionism exchange [01:13:01]–[01:14:20] (Bryan flags it himself: “this is probably a rabbit hole about to go down”) and the extended yoga-pants/spandex riff [01:18:53]–[01:19:40] were the two genuine detours  (Target: < 5% off-topic)  → ON TARGET",
+                "Pacing (self-managed): Self-managed but visibly compressed — “I'm going to speed it up a little bit now” [01:09:57], “we got 28 minutes” [01:36:00], “that was your speed run through this” [01:56:12]. No external redirect was needed, but the Obadiah landing itself got the least time of any segment  (Target: Self-managed throughout)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 5 leader-posed drivers — “If you could only put one bumper sticker on the Bible, what would it be?” (DOK 3); “Why do you think God didn't give him a baby at 76?” (DOK 3); “What's that a parallel of?” → the un-eradicated enemy as un-eradicated sin (DOK 3); “What should you be doing?” → remove every compromising opportunity (DOK 4); “What's the reason somebody comes week after week but can't do the homework?” (DOK 4)  (Target: 5–7 per session)  → STRONG",
+                "DOK Level distribution: Majority DOK 3–4 across the five Big-Idea drivers. The long chain of “what's the next story?” prompts is DOK-1 scaffolding and is excluded from this distribution per Metric Adjustment #3 — correctly so, but it does mean the recall chain carried far more airtime than the Big-Idea drivers did  (Target: Majority DOK 2–3 (Webb))  → STRONG",
+                "Application spacing: Back-loaded — the two strongest applications (eradicate the compromising opportunity; do the homework for someone else) both land after [01:16:00]. The first 50 minutes are almost entirely framework with no personal ask  (Target: Woven throughout)  → NEEDS WORK",
+                "Confession / Personal-Response Rate: 4 first-person responses — Jared's homework confession (“I had every excuse … I make time for the gym five or six times a week”), Shady's disowning account, Trinity's account of bitterness and verbal abuse, Jordan's “are we giving it up into our children?”  (Target: ≥2 per session)  → STRONG",
+                "Leader follow-up probe frequency: 5+ — Bryan pressed past first answers repeatedly (“Say more” to Blake and to Zach; “No, I'm asking why does this begin?”; “somebody help me out”; “give the essence of this part” to Jared)  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Named substantive contributors: ~15 — Blake (trust), Zach (love; the sacrifice answer; closing prayer), Bryce, Jared (reads Genesis 6; the homework testimony), Russell (reads John 3:17; connects the Exodus), Brendan (slave of righteousness; the 2 Kings parallel; the prayer-chain charge), Danny (God's view of wanting a king), Fred (Ishmael → Islam; Moses's excuse), Chris (“to prove it's a miracle”), Will (“removing every single opportunity”), Mike, Ephraim, Jason, Hasan, Ace  (Target: 70–80% of attendees)  → STRONG",
+                "Substantive % of group: ~60% of an estimated 25-man room contributed substantively. Normalized for room size per Metric Adjustment #8, this is solid breadth — but a large share of those contributions were single-word answers slotted into the recall chain rather than developed thought  (Target: ≥70%)  → ON TARGET",
+                "Read-aloud assignments (reported, not scored): 3 — Jared (Genesis 6:5–6), a member (Revelation 2:1–7), Russell (John 3:17). Reported here, never counted as engagement  (Target: Reported only)  → N/A — reported",
+                "Wait time / productive struggle: Mixed. Genuine holds occurred (“Somebody help me out. Why, why is, does somebody in here know why, Zach?” [00:43:08]), and Bryan redirected rather than rescued on the Abrahamic-covenant question — but the sweep's pace meant many prompts were answered by Bryan himself within a beat or two  (Target: 3–5 sec (Rowe 1972))  → ON TARGET",
+                "Quiet member flag: Not individually assessable — the collapsed single-speaker transcript prevents reliable per-member attribution beyond those who named themselves. Recommend a manual scan next session for regulars who did not speak  (Target: All regulars contribute)  → N/A — transcript limitation",
+                "Delegated in-session roles: Russell Reed operated the shared screen throughout (frame-confirmed: “You are viewing Russell K. Reed's screen”) — a real delegated role, not merely attendance  (Target: Roles distributed)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: Bryan's own: the regret disclosure at [02:02:54] — “I would give anything if I had known what the Bible really meant when my kids were in bed with me reading. I would give anything for that. That's why I teach y'all” — plus the story of his son bursting into the bedroom at 10:30 to verify the study habit hadn't changed, and “I've been scratching my head all week” about Obadiah. Member-side: Shady's disowning, Jared's confession, Trinity's account  (Target: ≥1 per session with depth)  → STRONG",
+                "Vulnerability depth (rolling baseline ±1): See Dim 8 in Appendix A8 — 4/5. Bryan's own disclosure this week was real and costly (parental regret) but briefer than his arc norm; the depth came largely from the room. Within the ±1 swing cap from his high baseline  (Target: 4–5/5 for experienced leader)  → STRONG",
+                "Extended monologues > 90 sec: 4 over the threshold — above the ≤2 target. Each is named with its specific fix in the Monologues section below  (Target: ≤2 per session (each named with fix))  → NEEDS WORK",
+                "Monologue details: See Monologues section — the Abraham/Isaac arc, the Moses/Exodus arc, the pornography/social-media application, and the closing homework charge"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~35% — the five Big-Idea drivers and the “say more” probes were genuinely open, but the dominant question form this week was the closed recall prompt (“What's the next story?”, “Who's the third king?”, “What form of government does God give them?”)  (Target: ≥60%)  → NEEDS WORK",
+                "% text-requiring questions: ~30% — most recall prompts drew on memory of the biblical narrative rather than sending anyone into the text; only three passages were actually opened  (Target: ≥50%)  → NEEDS WORK",
+                "Leader follow-up probes: 5+ — “Say more” (twice), “No, I'm asking why does this begin?”, “Somebody help me out”, “Give the essence of this part”  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle rate: Bryan redirected rather than rescued on the Abrahamic-covenant question, holding through two wrong answers before the room got it [00:43:08]–[00:43:53] — a clean example of the technique  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Peer-to-peer exchanges: Present but limited — Fred built on the Ishmael point unprompted, Brendan extended the prayer-chain charge at length, and a member corrected Bryan's 300/700 wives figure. Most exchange still routed through Bryan  (Target: Members respond to each other)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Study flow: Returning-member testimonies → Shady's conversion account → Bryan's own testimony → The Guarantee → prayer-chain explanation → six newcomer introductions → week-zero framing → whole-Bible meta-narrative sweep (whiteboard + timeline chart + maps) → Revelation 2 remember/repent/do → Obadiah placed on the timeline → homework motivation block → delegated closing prayer (Zach)  (Target: Blueprint-aligned for a launch)  → STRONG",
+                "Bumper stickers generated: “The enemy you don't kill in the morning will rise up in the evening and take you out” [01:20:02]; “They look good from afar, but far from good” [01:42:34]; “You're either a slave of sin or a slave of righteousness” [01:08:27]; “He creates the world and then he de-creates it” [01:37:28]; “Remember, repent, and do the deeds you did at first” [01:33:18]  (Target: 3–5 per session)  → STRONG",
+                "Visual aids: The session's standout. Live whiteboard construction of the Genesis-to-Christ arc (“I'm going to attempt to draw this first” [00:29:03]), the hand-drawn Judges sin-cycle diagram [01:22:56], a shared-screen map of the full promised-land boundary versus modern Israel [01:11:18], and a professional color-coded kings-and-prophets timeline with Obadiah placed on it — frame-confirmed at 01:45, showing the 722 Assyrian captivity and the prophets banded by era  (Target: Multiple tools (Mayer))  → STRONG",
+                "Tone & delivery: Commanding and warm — Bryan works the room by name, lands humor constantly, and shifts to real gravity for the parental-regret disclosure. Frames confirm an animated presence moving between whiteboard and screen throughout  (Target: Vocal variety, pace, command voice)  → STRONG",
+                "Topic drift: ~6–8% — the modern-Israel/supersessionism exchange and the yoga-pants/spandex riff. Bryan flagged the first himself as a rabbit hole; the second ran longer than the point required  (Target: < 5% off-topic)  → ON TARGET",
+                "Big Ideas at close: Partial — Bryan closed on the homework charge and the leadership-development framing rather than distilling the sweep into a short recitable set. Given the volume covered, an explicit three-line summary was the missing final beat  (Target: Cumulative review at close)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "Four leader monologues ran past the 90-second threshold — above the ≤2 target. All four are teaching monologues rather than tangents, and each was genuinely informative; the issue is cumulative, in that together they consumed the time the Obadiah landing needed. Each is named below with its specific fix.",
+                "From the promise through Hagar and Ishmael, the twenty-five-year wait, the near-sacrifice, and the Revelation mirror. Rich typology (Isaac carrying his own wood; Sarah's miracle birth foreshadowing the virgin birth) but delivered almost entirely as narration, with only two short question breaks. Fix: the 75-second reflex break — every time you pass 75 seconds of narration, convert the next sentence into a question. Here, \"what does that sound like?\" already existed as a device; use it three more times rather than once.",
+                "Egypt, slavery, the basket, the killing, forty years in Midian, the burning bush, and the Exodus-as-salvation parallel. Bryan self-diagnosed mid-stream — \"I know I'm laying something on y'all\" [01:07:07] and \"I'm going to speed it up a little bit now\" [01:09:57]. Fix: this is the most compressible block in the session because it is also the most familiar. Hand it to the room as a relay — name four men and have each supply one stage — which preserves the content, cuts the time by half, and converts recall into participation.",
+                "The strongest application of the day (remove every compromising opportunity; delete anything that scrolls) diluted by an extended riff on yoga pants and spandex that outran its point. Fix: land the ask and stop. \"That's why on my phone I don't have the social media apps. Anything that scrolls, I don't have\" [01:17:55] is the whole teaching — the following three minutes added heat, not light, and drifted into territory the Improvement 3 note covers.",
+                "Excellent content — the do-it-for-someone-else reframe, the parental-regret disclosure, the leadership-development renaming. It ran long only because it followed three earlier long blocks. Fix: no change to the content; this is the session's best material. Reclaim its room by cutting monologues 1 and 2, so the close lands unhurried rather than as a fourth consecutive long block."
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "Shady's Conversion Account, and What the Room Did With It  (🟢 Capitalized · Building Ministry)\n\nWhat happened: Called on to give a returning-member testimony, Shady described coming to Christ from Islam and being disowned: \"I was told I'm no longer worthy of being my parents' son … at the end of that conversation I was going to my mom to hug her goodbye, and that was the first time that my mother never hugged me back.\" He then named the passage Bryan had given him — Mark 10:29–30, \"you may lose your mother, your brother, but what you gain is mothers, brothers, fathers and sisters\" — and reported the response: \"there was so many of them that called me and I had no idea who they were.\"\n\nWhy it mattered: This is the single most persuasive thing that happened in the room, and Bryan did not have to say any of it. A newcomer weighing whether to come back heard a member describe the exact cost of following Christ and the exact compensation the group provided. It is also direct evidence that the prayer-chain infrastructure Bryan explained ten minutes later actually functions.\n\nWhat would make it bigger: Protect it. The Muslim jokes that followed within minutes (see Improvement 3) cost nothing to omit and would have left the testimony standing alone as the last word on the subject.",
+                  "timestamp": "[00:08:28]–[00:10:04]"
+                },
+                {
+                  "detail": "“The Bible Literally Hinges Right Here”  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Having walked creation through Babel as an accelerating catastrophe — \"the first part of the Bible is just devastating\" — Bryan stopped at Genesis 11 and named it: \"you're asking yourself, where do we go from here? How can it get any worse? … So the Bible literally hinges right here. This is where the redemption story started.\" He then held the Abrahamic-covenant question through two wrong answers before the room produced it.\n\nWhy it mattered: Framework-building at its best: the room felt the problem before receiving the solution, which is why the covenant landed as relief rather than as information. The two-wrong-answer hold is textbook productive struggle — Bryan redirected (\"No, I'm asking why does this begin?\") rather than rescuing.\n\nWhat would make it bigger: This is the model for the three \"full-hold\" stops recommended in Improvement 1 — it already worked here; it simply needs repeating twice more across a ninety-minute sweep.",
+                  "timestamp": "[00:41:46]–[00:44:00]"
+                },
+                {
+                  "detail": "The Un-Eradicated Enemy Becomes the Un-Eradicated Sin  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: After establishing that Israel only partially cleared the land — \"there's different groups that they didn't fully eradicate, so they're still lurking around\" — Bryan asked \"what's that a parallel of?\" and a member supplied it. Bryan then drove it all the way home: \"If you don't completely eradicate sin, it will fester and it will grow … like a virus inside you and eventually take over you and kill you,\" moving directly to phones, apps and pornography, and asking Will \"what should you be doing?\" — answer: \"removing every single opportunity that you have to put yourself in a compromising position.\"\n\nWhy it mattered: This is the session's only full-strength move from ancient text to present obedience, and it was member-completed at both ends. It also produced the day's best bumper sticker — \"the enemy you don't kill in the morning will rise up in the evening and take you out.\"\n\nWhat would make it bigger: Land and stop (see Monologue 3). The teaching was complete at \"removing every single opportunity\"; the material that followed diluted a moment that had already arrived.",
+                  "timestamp": "[01:15:44]–[01:18:10]"
+                },
+                {
+                  "detail": "The Color-Coded Timeline — the Sweep's Destination  (🟠 Partially Capitalized · Teaching Craft)\n\nWhat happened: The shared screen (operated by Russell Reed) brought up a professional kings-and-prophets timeline: the northern kingdom's twenty kings banded in red — \"20 out of 20 kings, they do evil in God's sight\" — the 722 Assyrian captivity, the southern kingdom's mixed green and grey, 586 and the Babylonians, and the seventeen prophets placed by era with Obadiah among them. Bryan drew the leadership lesson directly off the chart: \"if you're a leader, don't ever do that.\"\n\nWhy it mattered: This is where ninety minutes of narrative became a single legible picture, and where the new study finally had an address. Colour-coding is one of Bryan's thirteen signature techniques and it did exactly what it exists to do.\n\nWhat would make it bigger: It arrived with roughly eleven minutes left. Reaching this chart by the ninety-minute mark — which cutting monologues 1 and 2 would achieve — would allow the room to read it together rather than watch it go by, and would give Obadiah's \"no king named, so we can't date it\" puzzle the time it deserves.",
+                  "timestamp": "[01:44:25]–[01:52:00]"
+                },
+                {
+                  "detail": "“I Would Give Anything” — Regret as the Engine of the Charge  (🟢 Capitalized · Building Ministry)\n\nWhat happened: Closing the homework block, Bryan disclosed the cost behind his own teaching: \"I would give anything if I had known what the Bible really meant when my kids were in bed with me reading. I would give anything for that. That's why I teach y'all.\" He extended it to the grandchildren he still has a chance with, then renamed the room's whole purpose: \"You guys are all in a leadership development program. You just don't realize you're being developed to understand God's word so you can go and lead in your community.\"\n\nWhy it mattered: Vulnerability-as-authority in its purest form — the regret is what licenses the charge, and the charge is what converts homework from an assignment into a legacy decision. It also delivered the session's Dim 12 signal in-session and explicitly, which is the only way Dim 12 scores.\n\nWhat would make it bigger: Name one person. \"Jake, by November you'll be teaching a piece of Joel\" converts a room-wide identity statement into a specific apprenticeship — and Bryan had already done exactly that earlier with \"I'm gonna make a leader out of this guy\" [00:20:00].",
+                  "timestamp": "[02:02:54]–[02:08:07]"
+                }
+              ],
+              "paragraphs": [
+                "Five disproportionately important moments — named so the pattern is replicable."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "“If you could only put one bumper sticker on the Bible that summarizes the whole thing — what would you go with?” [00:29:50] — DOK 3 — reason/justify — Opened the sweep by making the room commit before receiving; produced redemption, trust, and love from three different men before Bryan landed on “God loves you — agape, without condition.”",
+                "“Why do you think God didn't give him a baby when he was 76 or 77?” [00:47:30] — DOK 3 — reason/justify — Held through a weak first answer; Chris produced “to prove that it's a miracle,” which Bryan extended into the Sarah-to-Mary foreshadowing.",
+                "“What's that a parallel of?” — the un-eradicated enemy [01:15:47] — DOK 3 — reason/justify — Member-completed: un-eradicated peoples map onto un-eradicated sin. The pivot point of the session's application.",
+                "“What should you be doing, Will?” — after the eradication parallel [01:17:42] — DOK 4 — apply to life — Answered by Will: “removing every single opportunity that you have to put yourself in a compromising position.” The sharpest personal ask of the day.",
+                "“What's the reason why somebody would come here week after week but not able to do all the homework?” [01:56:37] — DOK 4 — apply to life — Collected the room's excuses, then dismantled the category (“everybody's got 168 hours — there isn't a good reason”) and had Jared testify against himself. The most effective application of the session."
+              ],
+              "paragraphs": [
+                "Five leader-posed Big-Idea drivers, logged with DOK level. The long chain of “what's the next story?” prompts is DOK-1 scaffolding and is excluded from the distribution per Metric Adjustment #3."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 88.0% × weight 33 → 29.04 pts",
+                "Building Ministry: 100.0% × weight 31 → 31.00 pts",
+                "Engaging People: 70.0% × weight 18 → 12.60 pts",
+                "Being Real: 80.0% × weight 18 → 14.40 pts",
+                "BASE (pre-bonus): — × weight 100 → 87.04 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/file/d/1hUzCIPXlGiP9SVI_72TrZ6vOGvSlmLEi/view?usp=drivesdk"
+        },
+        {
           "id": "bryan-bailey-2026-07-18-james-lesson-9-saturday-morning-",
           "date": "2026-07-18",
           "dateLabel": "July 18, 2026",
@@ -20030,6 +20406,18 @@
     }
   ],
   "monthlyNarratives": {
+    "2026-08": {
+      "executiveSummary": [
+        "In August 2026, 2 leaders delivered 2 evaluated sessions, and the program held a weighted average composite of 92.5 / 100 — Exceptional on the v3 scale. That places the cohort in world-class territory — the work now is sustaining it, not rebuilding.",
+        "Across the cohort the month broke down as 2 Exceptional. Bryan Bailey led the field at 95.0 (Exceptional), while Ken Ture anchored the other end at 90.0 (Exceptional) — the clearest place to concentrate coaching attention.",
+        "Bryan Bailey posted the biggest jump off the July 2026 baseline, climbing roughly 85 to 95.0 (+9.8 pts), the strongest muscle program-wide was Memory Reinforcement (5.00 / 5), and the thinnest was Facilitation vs. Lecture (3.50 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Facilitation vs. Lecture. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+      ],
+      "trends": [
+        "The program's August 2026 composite of 92.5 / 100 lands it in the Exceptional band. Month over month, Bryan Bailey is the standout mover off the July 2026 baseline, up 9.8 points.",
+        "Dimension by dimension, Memory Reinforcement is the cohort's anchor strength (5.00 / 5), while Facilitation vs. Lecture (3.50 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+      ]
+    },
     "2026-07": {
       "executiveSummary": [
         "In July 2026, 1 leader delivered 2 evaluated sessions, and the program held a weighted average composite of 85.2 / 100 — Exceptional on the v3 scale. That places the cohort in world-class territory — the work now is sustaining it, not rebuilding.",
@@ -20090,18 +20478,6 @@
         "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.25 / 5), while Visual Aids (2.13 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
-    "2026-08": {
-      "executiveSummary": [
-        "In August 2026, 1 leader delivered 1 evaluated session, and the program held a weighted average composite of 90.0 / 100 — Exceptional on the v3 scale. That places the cohort in world-class territory — the work now is sustaining it, not rebuilding.",
-        "Across the cohort the month broke down as 1 Exceptional. Ken Ture led the field at 90.0 (Exceptional).",
-        "The strongest muscle program-wide was Scripture Engagement (5.00 / 5) and the thinnest was Visual Aids (3.00 / 5), where one shared training would lift the most leaders at once.",
-        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
-      ],
-      "trends": [
-        "The program's August 2026 composite of 90.0 / 100 lands it in the Exceptional band.",
-        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (5.00 / 5), while Visual Aids (3.00 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
-      ]
-    },
     "2026-02": {
       "executiveSummary": [
         "In February 2026, 2 leaders delivered 3 evaluated sessions, and the program held a weighted average composite of 61.5 / 100 — On Target on the v3 scale. The cohort is developing well, with one or two clusters still trailing the target.",
@@ -20129,6 +20505,278 @@
   },
   "monthlyLeaderSummaries": {
     "bryan-bailey": {
+      "2026-08": {
+        "month": "2026-08",
+        "monthLabel": "August 2026",
+        "priorMonthLabel": "July 2026",
+        "leaderId": "bryan-bailey",
+        "leaderName": "Bryan Bailey",
+        "group": "Saturday Morning Study — Austin Ridge",
+        "sessionsCount": 1,
+        "composite": 95,
+        "status": {
+          "label": "Exceptional",
+          "emoji": "🔷"
+        },
+        "priorComposite": 85.2,
+        "delta": 9.8,
+        "clusterAvg": {
+          "tc": 88,
+          "bm": 100,
+          "ep": 70,
+          "br": 80
+        },
+        "glance": {
+          "rows": [
+            {
+              "date": "2026-08-08",
+              "session": "Week Zero — launching Obadiah & Joel (Austin Ridge, Saturday morning)",
+              "bm": 100,
+              "tc": 88,
+              "ep": 70,
+              "br": 80,
+              "composite": 95,
+              "status": "Exceptional"
+            }
+          ],
+          "avg": {
+            "bm": 100,
+            "tc": 88,
+            "ep": 70,
+            "br": 80,
+            "composite": 95,
+            "status": "Exceptional"
+          }
+        },
+        "trajectory": [
+          {
+            "date": "2026-08-08",
+            "session": "Week Zero — launching Obadiah & Joel (Austin Ridge, Saturday morning)",
+            "composite": 95,
+            "status": "Exceptional",
+            "delta": null
+          }
+        ],
+        "clusters": [
+          {
+            "key": "tc",
+            "name": "Teaching Craft",
+            "weight": 33,
+            "avgPct": 88,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Visual Aids",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Session Structure & Flow",
+              "val": 4
+            },
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — elite tier. Session Structure & Flow is the bottleneck this month."
+          },
+          {
+            "key": "bm",
+            "name": "Building Ministry",
+            "weight": 31,
+            "avgPct": 100,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Newcomer Welcome",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Newcomer Welcome",
+              "val": 5
+            },
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — elite tier. Lift the floor on Newcomer Welcome."
+          },
+          {
+            "key": "ep",
+            "name": "Engaging People",
+            "weight": 18,
+            "avgPct": 70,
+            "statusLabel": "On Target",
+            "strongestDim": {
+              "name": "Participant Engagement",
+              "val": 4
+            },
+            "weakestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 3
+            },
+            "insight": "Engaging People (Facilitation + Participation) — developing well. Continue to broaden participation beyond the core 6–8 voices."
+          },
+          {
+            "key": "br",
+            "name": "Being Real",
+            "weight": 18,
+            "avgPct": 80,
+            "statusLabel": "Strong",
+            "strongestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 4
+            },
+            "weakestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 4
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — strong. Vulnerability / Authenticity is the lift this month."
+          }
+        ],
+        "strengths": [
+          {
+            "text": "Week Zero Used to Build the Frame, Not to Fill Time",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "The Newcomer Welcome, Executed at Full Blueprint Depth",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "Four Visual Channels Working Together",
+            "session": "2026-08-08"
+          }
+        ],
+        "growth": [
+          {
+            "text": "The Graded Talk Ratio Was the Highest of the Arc",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "Four Monologues Past the Threshold, and the Landing Got Squeezed",
+            "session": "2026-08-08"
+          },
+          {
+            "text": "Two Moments Carried Avoidable Pastoral Risk",
+            "session": "2026-08-08"
+          }
+        ],
+        "trends": [
+          "Highest-scoring dimension this month: Newcomer Welcome (avg 5.0 / 5). Lowest: Facilitation vs. Lecture (avg 3.0 / 5).",
+          "Composite vs. July 2026 (~85): up 9.8. Forward momentum."
+        ],
+        "conversationGuide": [
+          {
+            "label": "Celebrate the strength",
+            "q": "Building Ministry averaged 100% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+          },
+          {
+            "label": "Explore the growth area",
+            "q": "Engaging People averaged 70%. What's getting in the way? What would have to be true for that to lift 10 points by September 2026?"
+          },
+          {
+            "label": "Trajectory",
+            "q": "Your one August 2026 session scored 95.0 (Exceptional). What was different about your prep or delivery this time?"
+          },
+          {
+            "label": "Group dynamics",
+            "q": "Participant Engagement averaged 4.0 / 5 in August 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+          }
+        ],
+        "focus": {
+          "clusterName": "Engaging People",
+          "clusterPct": 70,
+          "goals": [
+            "Cut leader talk in discussion to <40% by end of September 2026 (use a 5-second wait-time count and a one-question-then-stop rule).",
+            "Hit 70%+ participation in 2 of the next 4 sessions (track which members spoke each week).",
+            "In every September 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
+          ]
+        },
+        "sessions": [
+          {
+            "date": "2026-08-08",
+            "session": "Week Zero — launching Obadiah & Joel (Austin Ridge, Saturday morning)",
+            "composite": 95,
+            "status": "Exceptional",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Coherent week-zero arc — testimonies, welcome, The Guarantee, sweep, landing, homework charge, delegated close. Held below 5 by the compressed Obadiah landing (~4 min for the session's destination) and no captured opening prayer"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "23 minutes; returning-member testimonies BEFORE newcomers spoke; Shady's conversion account; The Guarantee verbatim; prayer chain explained; six individual introductions. Blueprint step 3 exactly as designed"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "20+ books traversed in one sweep, but only three passages actually opened (Gen 6, Rev 2, John 3:17). Leader-recall rather than group text-work — appropriate for a framing week, but it caps the dimension"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 3,
+                "note": "Discussion-only leader talk ~68%, the arc's highest. Week-zero format is a real mitigating factor and Bryan named it himself, but the recall chain resolved in one-word answers rather than developed thought"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "5 Big-Idea drivers, majority DOK 3–4, with two genuinely sharp asks (remove every compromising opportunity; do the homework for someone else). Held below 5 by back-loading — the first personal ask lands ~50 min into the lesson"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "~15 named substantive contributors across an estimated 25-man room (~60%), plus a delegated screen-operator role. Breadth is strong; depth per contribution is limited by the recall format"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Four channels: live whiteboard construction of the Genesis-to-Christ arc, the hand-drawn Judges sin cycle, the promised-land boundary map, and a frame-confirmed color-coded kings-and-prophets timeline with Obadiah placed on it. The session's standout"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Bryan's parental-regret disclosure is genuinely costly and drives the close; the room supplied greater depth (Shady's disowning, Jared's confession, Trinity's account). Briefer than Bryan's arc norm, hence 4 not 5 — within the ±1 cap"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "The entire session is a cumulative recall drill — “if you've been in this review before, keep your mouth shut” — spanning the just-completed ~40-week 1–2 Kings arc, with the sin cycle re-derived by the room. Ebbinghaus at scale"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Study guides and $40 registration; “day three, extremely long”; The Guarantee verbatim; a 12-minute closing motivation block; the do-it-for-someone-else reframe; “this is challenging — I'm not gonna lie to you”"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Closing delegated to Zach and substantive (named the sin cycle back). Prayer chain explained at 00:21:14 and reinforced at length by Brendan. No opening prayer appears in the recording, which begins at 04:47 — recorded as not-captured rather than asserted absent"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "“I'm gonna make a leader out of this guy. I'm gonna train you” [00:20:00]; “you guys are all in a leadership development program … being developed to understand God's word so you can go and lead in your community” [02:07:56]; the spring-not-reservoir teaching; Russell Reed operating the screen as a delegated role. 2 Tim 2:2, verbalized in-session"
+              }
+            ]
+          }
+        ]
+      },
       "2026-07": {
         "month": "2026-07",
         "monthLabel": "July 2026",
