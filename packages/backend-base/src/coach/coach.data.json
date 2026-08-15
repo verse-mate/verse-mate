@@ -61,6 +61,380 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "bryan-bailey-2026-08-15-saturday-morning-group-austin-ri",
+          "date": "2026-08-15",
+          "dateLabel": "August 15, 2026",
+          "session": "Saturday Morning Group (Austin Ridge) — Obadiah, Continued",
+          "topic": "Edom's arrogance and judgment, Genesis 12–Revelation 19",
+          "duration": "~124 min of content (~134 min full recording)",
+          "attendees": 27,
+          "newcomers": 4,
+          "score": 85.16,
+          "base": 78.16,
+          "newcomerBonus": 4,
+          "sizeBonus": 3,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 72,
+              "contribution": 23.76
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 100,
+              "contribution": 31
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Coherent welcome-to-close arc with a genuine delegated teaching window; held below 5 by the missing Big Ideas review and the leader-led (not delegated) closing prayer"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 5,
+              "note": "14 minutes; four individually named, individually answered testimonies; member-led community-building announcement. Blueprint step 3 at full strength"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "11+ cross-references, all opened and read live by rotating readers — a clear improvement on 8/8's leader-recall-heavy framing week"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "Discussion-only leader talk ~60%, roughly double the Lifeway benchmark, concentrated in the background and closing blocks"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "6 Big-Idea drivers, majority DOK 3–4, but back-loaded into the session's final third"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4,
+              "note": "~15 named substantive contributors across an estimated 26-man room (~58%) — solid breadth once normalized for room size, under the 70% target"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3,
+              "note": "One dialogue-confirmed tool (geographic map) vs. four channels on 8/8; no on-screen word-study tool despite a live Hebrew-word moment"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "Bryan's own prayer-chain admission plus costly newcomer testimonies; within the ±1 cap of the group's rolling baseline"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 2,
+              "note": "No cumulative Big Ideas recitation at open or close — a clear regression from 8/8's full-arc recall drill"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "A member's unprompted verbatim \\\"Guarantee\\\" pitch to newcomers before Bryan even spoke; explicit workbook payment/PDF logistics at close"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 2,
+              "note": "Closing prayer leader-led, not delegated — a regression from 8/8's delegation to Zach; no opening prayer present in the recorded portion"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 5,
+              "note": "Explicit, named, time-boxed delegated teaching window to Will (\\\"I'll fill in the gaps\\\"), verbalized in-session — 2 Tim 2:2 in action"
+            }
+          ],
+          "bigIdeas": [
+            "Neutrality in a brother's suffering is betrayal",
+            "The arrogance of your heart deceives you"
+          ],
+          "feedback": {
+            "headline": "A newcomer-heavy second week in Obadiah, with application concentrated late on personal arrogance.",
+            "strengths": [
+              "Four Newcomer Testimonies in 14 Minutes, Each Answered Personally",
+              "A Genuinely Held-Open Theological Tension (Predestination vs. Free Will)",
+              "Making Abstract Arrogance Concrete by Naming Individuals"
+            ],
+            "improvements": [
+              "No Big Ideas Review, Open or Close",
+              "Elevated Discussion-Only Talk Ratio in the Background Block",
+              "Application Answers Stayed Mostly Generalized, Not Confessional"
+            ],
+            "recommendations": [
+              "Close Every Session With a 90-Second Recitable Recap",
+              "Convert Background Narration Into a Cold-Call Chain",
+              "Follow Every Generalized Application Answer With One Named Follow-Up"
+            ],
+            "overview": [
+              "A newcomer-heavy second week in Obadiah, with application concentrated late on personal arrogance.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 85.16/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Four Newcomer Testimonies in 14 Minutes, Each Answered Personally",
+                "paragraphs": [
+                  "Rather than a generic welcome, each of the four newcomers received an individualized response tied to what he actually said. Shreve disclosed real cost — \"I'm a first-generation kid from India... recovering from an alcoholic. I have four years and a week\" [00:19:10]–[00:19:31] — and Bryan answered him directly, not with a script: \"trust me with this, if whatever you're looking for, which you probably don't even know what... My experience has been just locking in and inviting God through this homework, with this work, to speak to me\" [00:20:04]–[00:20:44]. Zach's disclosure of family strain since 2019 (\"my family and I have been on a break for a time\") [00:21:12]–[00:21:16] likewise drew a specific, non-generic response about isolation and community. Four individualized answers in fourteen minutes is real welcome craft, not a formula."
+                ]
+              },
+              {
+                "title": "A Genuinely Held-Open Theological Tension (Predestination vs. Free Will)",
+                "paragraphs": [
+                  "On Romans 9's \"Jacob I loved, but Esau I hated,\" Bryan refused to hand the room a tidy answer. He laid out both classical positions, then explicitly declined to resolve it: \"there's been books, really smart people, support both sides... we don't know how [it works], I have no way of fully explaining\" [00:59:58]–[01:00:26], while five different men (Blake, Andy, Noah, JP, Mark) each took a turn on the question. Letting a genuinely contested doctrine stay open in front of newcomers — rather than performing certainty — models a harder and more honest kind of teaching than a leader who resolves everything for the room."
+                ]
+              },
+              {
+                "title": "Making Abstract Arrogance Concrete by Naming Individuals",
+                "paragraphs": [
+                  "Instead of asking \"how can we be arrogant toward God\" as an abstraction, Bryan repeatedly named specific men: \"How can Danny Maul be arrogant towards God?\" [01:14:34]; \"How can Brendan act arrogant towards God relative to prayer? ... towards his work? ... towards his community, his church?\" [01:16:01]–[01:16:17]. Naming a real person converts a hypothetical into something the room has to actually picture happening to someone they know — a small technique with an outsized effect on how seriously an application question lands."
+                ]
+              },
+              {
+                "title": "Bryan Noticed and Named the Jeremiah/Obadiah Textual Echo",
+                "paragraphs": [
+                  "Reading Jeremiah 49:14–16 immediately after Obadiah's near-identical opening (\"the arrogance of your heart has deceived you... you who live in the cleft of the rock\"), Bryan stopped and let the room hear the parallel for itself rather than simply asserting it: \"sounds kind of familiar, don't it?\" [01:53:19]–[01:53:24], which produced a genuine member question about which prophet wrote first. Surfacing the Bible's internal cross-references in real time — rather than just citing them — is Scripture Engagement at its most effective."
+                ]
+              },
+              {
+                "title": "A Member Sharpened the Session's Own Takeaway",
+                "paragraphs": [
+                  "The session's cleanest summary line didn't come from Bryan — it came from Ricky, unprompted: \"My big takeaway was self-assessment versus God's assessment. Right now you see yourself... I'm right and I do this and I do that... And God's like, you're a fool. You're arrogant\" [02:03:43]–[02:04:00]. A member independently distilling the night's theological point into a memorable, personal frame is strong evidence the teaching actually transferred, not just that it was delivered."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "No Big Ideas Review, Open or Close",
+                "paragraphs": [
+                  "The session moved directly from newcomer welcome into new background teaching, and closed on a forward-looking commitment ask — \"we need to go home this weekend and share the elements of the big idea of this message\" [02:11:06]–[02:11:12] — rather than a recitation of the night's own themes. That line is a share-commitment, not a recall drill, and it is not a substitute for one. Fix (transferable): reserve the final 90 seconds of every session, regardless of topic, for the room to recite back two or three lines from that specific night before any closing charge or prayer."
+                ]
+              },
+              {
+                "title": "Elevated Discussion-Only Talk Ratio in the Background Block",
+                "paragraphs": [
+                  "At ~60% discussion-only leader talk, this week is roughly double the Lifeway benchmark, concentrated in the ~18-minute Genesis/Jacob-Esau/Edom-formation setup [00:26:24]–[00:44:04] (minus Will's delegated window) and the closing application charge. Much of this narration is genuinely necessary orientation for four brand-new attendees, but it was delivered almost entirely as monologue rather than cold-call. Fix (transferable): convert every third sentence of background narration into a question the room answers from the map or the text on screen, rather than narrating the full setup solo."
+                ]
+              },
+              {
+                "title": "Application Answers Stayed Mostly Generalized, Not Confessional",
+                "paragraphs": [
+                  "Most responses to the \"how is X arrogant toward God\" chain stayed in the third person or listed abstractions rather than naming a specific personal struggle — \"I mean, a lot of things like family, health, wealth\" [01:15:03] is representative. Only one answer in the entire session (\"I'll spend my time on working or working out\" [01:17:39]) was a genuine first-person admission. Fix (transferable): after any group answer that stays conceptual, add one direct follow-up to a named member — \"okay, but where does that show up for you this week, specifically?\" — before moving to the next application angle."
+                ]
+              },
+              {
+                "title": "One Visual Channel This Week, No On-Screen Word Study",
+                "paragraphs": [
+                  "Only the geographic map was used this week, down from the four channels (whiteboard arc, sin-cycle sketch, boundary map, color-coded timeline) deployed on 8/8. The live Hebrew word-study moment on \"Hamas\" (violence) [01:33:50]–[01:33:58] was explained verbally with no on-screen lookup, even though the screen was already active for the map. Fix (transferable): whenever a Hebrew or Greek root comes up mid-lesson, pull it up on the same screen already in use (Blue Letter Bible, VerseMate, Logos, or any equivalent) rather than explaining it from memory — costs nothing extra on a week the screen is already live."
+                ]
+              },
+              {
+                "title": "Three of Four Newcomers Never Spoke Again After Their Testimony",
+                "paragraphs": [
+                  "Michael, Shreve, and Zach each gave a testimony during the welcome but were not drawn back into the 90-minute teaching block that followed; John Michael was the only newcomer re-engaged, with one late answer at [01:48:08]–[01:48:20]. Fix (transferable): plan one easy, low-stakes cold-call per newcomer during the session itself — a reading assignment or a \"what stood out to you\" check-in — so the welcome isn't the only time a first-time visitor's voice is heard."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Close Every Session With a 90-Second Recitable Recap",
+                "paragraphs": [
+                  "No Big Ideas review opened or closed this session, despite several strong lines being generated (\"neutrality is betrayal\"; \"your faith is sealed\"). Before: the session ends on a forward-looking commitment charge and prayer, with no recap. After: reserve the final ninety seconds, every session, for the room to recite back two or three lines from that specific night before any closing charge. Transferable to every future session regardless of book or format."
+                ]
+              },
+              {
+                "title": "Convert Background Narration Into a Cold-Call Chain",
+                "paragraphs": [
+                  "The ~18-minute Genesis/Jacob-Esau setup ran almost entirely as monologue. Before: narrate the full background, then open the floor. After: three pre-marked full-hold questions dropped into the narration at natural beats (\"who's the firstborn — Jared, take a guess\") so orientation becomes discussion rather than lecture. Applies to any session with a heavy-background week, any book."
+                ]
+              },
+              {
+                "title": "Follow Every Generalized Application Answer With One Named Follow-Up",
+                "paragraphs": [
+                  "Most \"how is X arrogant toward God\" answers stayed abstract or third-person; only one response was a genuine first-person admission. Before: accept the group's conceptual answer and move to the next angle. After: \"okay — but where does that actually show up for you this week?\" aimed at one named member before advancing. Transferable to any application chain, any passage."
+                ]
+              },
+              {
+                "title": "Pull Up Word-Origin Discussions on the Screen Already in Use",
+                "paragraphs": [
+                  "The live \"Hamas\" (Hebrew for violence) discussion was explained verbally with the screen already active for the map. Before: explain the root from memory. After: type or pull up the word on the same screen — Blue Letter Bible, VerseMate, Logos, or any equivalent lookup tool — at no added setup cost on a week the screen is already live. Transferable to any session with an active screen-share and a word-study moment."
+                ]
+              },
+              {
+                "title": "Rotate the Closing Prayer to a Different Member Every Week",
+                "paragraphs": [
+                  "This week's closing prayer was leader-led rather than delegated, breaking the pattern from 8/8 (delegated to Zach). Before: Bryan closes the session himself. After: name a member before the final charge — \"Russ, close us out\" — every week, especially heavy-newcomer weeks, reinforcing the \"we, not me\" message the session itself taught. Transferable to every session regardless of topic."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: ~27 men (26 named contributors + Bryan). No speaker diarization or gallery frame this pass (Whisper transcript of the raw audio) — count is built from distinct named individuals who self-introduce, are named by Bryan, or answer a cold-call  (Target: Consistent/growing participation)  → STRONG",
+                "Newcomers / first-timers: 4 individual testimonies — John Michael (JM), Michael, Shreve, and Zach (initially misaddressed as \"Chris\" and corrected) — plus one additional, heavily garbled introduction from a re-engaging attendee describing time away from in-person community. Third consecutive newcomer-positive week for this group (Week Zero 8/8 welcomed 6)  (Target: Organic growth over time)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 11+ passages beyond Obadiah itself — Genesis 12:1–3, Numbers 20:14–21, Romans 9:10–16, Hebrews 12:15–17, Jeremiah 48:42, Isaiah 10:12, Malachi 4:1–6, Romans 1:28–32, Psalm 2:1–4, Jeremiah 49:7–22, Revelation 19:11–18 — well above benchmark, and a marked improvement on 8/8's three-passages-opened framing week  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Passages actually read aloud: All 11+ cross-references plus Obadiah itself (read in four blocks: vv.1–4, 5–9, 10–14, 15–22) were opened and read live by rotating readers — Jay, Hasan, Weston, Andy, Noah, Austin, Mark, Ryker, Blake, Russ  (Target: Text in front of the group)  → STRONG",
+                "Leader talk ratio (whole session, includes reading): ~52% — held down by the volume of member-read cross-references and the 14-minute newcomer welcome  (Target: ≤35%)  → NEEDS WORK",
+                "Leader talk ratio (discussion only — graded): ~60% — the ~18-minute Genesis/Jacob-Esau background block and the closing ~12-minute application charge carry most of Bryan's discussion-only airtime  (Target: ≤30–35% (Lifeway 30% Rule))  → NEEDS WORK",
+                "Time to first scripture reading: ~2.5 min after the newcomer welcome ended — Genesis 12:1–3 read at [00:28:52], welcome closed at [00:26:22]  (Target: Within ~10 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~90% — nearly the entire session tracks an opened passage; the predestination/free-will exchange is the one extended departure into pure discussion  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~124 min of substantive content (full recording ~134 min; the leading ~10 min is a repeating recording-notice artifact, not live session time)  (Target: 120 min (Bryan's Austin Ridge groups))  → ON TARGET",
+                "Newcomer welcome: ~14 min [00:12:34]–[00:26:22] — four individual testimonies plus a member-led announcement about a new post-study family gathering  (Target: 7–25 min)  → STRONG",
+                "Teaching block — Genesis background, Jacob/Esau, Obadiah text, cross-references: [00:26:24]–[01:58:00] (~92 min) — Genesis background and map, the delegated Jacob/Esau color commentary, the Romans 9 predestination exchange, Obadiah read in four blocks with 11+ supporting cross-references  (Target: Woven, purposeful)  → STRONG",
+                "Application / closing charge: [01:58:00]–[02:14:24] (~16 min) — self-assessment vs. God's assessment, the personal \"am I arrogant toward prayer/word/community\" chain, the family-sharing commitment ask, delegated-in-spirit but leader-led closing prayer  (Target: Woven throughout)  → ON TARGET",
+                "Big Ideas review at open: None — moved directly from newcomer welcome into new background teaching with no recap of the group's prior-session or prior-book Big Ideas  (Target: Cumulative review at start)  → NEEDS WORK",
+                "Pacing (self-managed): Self-managed throughout — no external redirect observed; Bryan flagged his own pace near the close (\"we've got two minutes... I'd like to get on time... it's kind of my signature\") [02:02:02]  (Target: Self-managed throughout)  → STRONG",
+                "Tangent time: ~3–4% — a brief pre-session workout/counting bit, short AC/mic banter, and a ~20-second Elon Musk aside [01:28:24] tied back to the lesson (\"100 years from now, it ain't gonna matter\")  (Target: < 5% off-topic)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 6 leader-posed drivers — \"How can Danny Maul be arrogant towards God?\" (DOK 3); \"How could he demonstrate arrogant behavior towards God, specifically?\" (DOK 3); \"How can Brendan act arrogant towards God relative to prayer / his work / his community?\" (DOK 3–4); \"Am I Edom or Jacob? Who am I?\" (DOK 4); \"How do you make this uplifting to somebody?\" (DOK 4); the closing self-assessment-vs-God's-assessment takeaway prompt (DOK 4)  (Target: 5–7 per session)  → STRONG",
+                "DOK Level distribution: Majority DOK 3–4. Recall/navigation prompts (\"who's the first kid he has?\", \"what's the fourth promise?\") are excluded as scaffolding per Metric Adjustment #3  (Target: Majority DOK 2–3 (Webb))  → STRONG",
+                "Application spacing: Back-loaded — the first ~64 minutes are Genesis background, the Jacob/Esau narrative, and the Obadiah text itself; nearly every personal \"are you arrogant toward X\" question lands after [01:14:00], concentrated in the session's final third  (Target: Woven throughout)  → NEEDS WORK",
+                "Confession / Personal-Response Rate: ~1 first-person response — a member owning that he spends his time \"on working or working out\" rather than the Word [01:17:39]–[01:17:56]. Most other answers stayed generalized or third-person (\"a lot of things like family, health, wealth\" [01:15:03])  (Target: ≥2 per session)  → NEEDS WORK",
+                "Leader follow-up probe frequency: 4 — \"Help me out\" [01:17:38]; the repeated \"Why?\" press on the Revelation 19 passage [01:59:33]–[01:59:45]; \"Ricky, help me out\" [01:59:56]; \"Say more. What does that mean?\" [02:07:00]  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Named substantive contributors: ~15 of ~26 non-leader attendees — Blake, Andy, Noah, JP, Danny Maul, Bryce, Russ, Ricky, Amal, Rib, Will, Stephen, Mark, Austin, and (late) John Michael offered interpretation, application, or theological pushback beyond reading or a single-word answer  (Target: 70–80% of attendees)  → ON TARGET",
+                "Substantive % of group: ~58% of an estimated 26-man non-leader room — solid breadth given room size (Metric Adjustment #8's size-normalization applies), but under the ≥70% target  (Target: ≥70%)  → ON TARGET",
+                "Read-aloud assignments (reported, not scored): 11+ — Jay, Hasan, Weston, Andy, Noah, Austin, Mark, Ryker, Blake, and Russ each read one or more passages. Reported here, never counted as engagement  (Target: Reported only)  → N/A — reported",
+                "Wait time / productive struggle: The Romans 9 predestination/free-will exchange was held open for ~5 minutes across five different voices (Blake, Andy, Noah, JP, Mark) without Bryan resolving it — \"we don't know why... there's been books, really smart people, support both sides\" [01:00:18]–[01:00:26]  (Target: 3–5 sec (Rowe 1972))  → STRONG",
+                "Quiet member flag: Three of the four newcomers — Michael, Shreve, Zach — gave testimonies during the welcome but did not speak again during the 90-minute teaching block; John Michael was the only newcomer drawn back in, with one late answer [01:48:08]. Worth a direct follow-up question for these three next session  (Target: All regulars contribute)  → ON TARGET",
+                "Delegated in-session roles: Dan operated the screen/slides (\"go to the top... Dan\"); Will was delegated a ~5-minute teaching window on the Jacob/Esau narrative. No newcomer was given a speaking role beyond testimony  (Target: Roles distributed)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: Bryan's own: the prayer-chain admission \"I need somebody to call me... I need to be able to say, I need help\" [02:09:33]–[02:09:50]. Member-side: Shreve's addiction-recovery disclosure (\"recovering from an alcoholic, I have four years and a week\" [00:19:29]–[00:19:31]) and Zach's family-strain testimony (\"since 2019, my family and I have been on a break\" [00:21:12]–[00:21:16]) — both newcomer testimonies, not established-member disclosures  (Target: ≥1 per session with depth)  → STRONG",
+                "Vulnerability depth (rolling baseline ±1): See Dim 8 in Appendix A8 — 4/5. Genuinely costly newcomer disclosures plus a real (if brief) leader admission of need; within the ±1 swing cap of the group's established baseline  (Target: 3–5/5 for experienced leader)  → STRONG",
+                "Extended monologues > 90 sec: 4 over the threshold — above the ≤2 target. Each is named with its specific fix in the Monologues section below  (Target: ≤2 per session (each named with fix))  → NEEDS WORK",
+                "Monologue details: See Monologues section — the Genesis/Jacob-Esau background, the map/geography walk, the predestination/free-will explanation, and the closing application/exhortation"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~55% — a strong mix of open reasoning questions (\"what do you think God's saying here?\", \"why is Edom being judged?\") alongside closed recall/navigation prompts moving between passages  (Target: ≥60%)  → ON TARGET",
+                "% text-requiring questions: ~65% — most questions sent the room back into an opened passage rather than relying on memory alone  (Target: ≥50%)  → STRONG",
+                "Leader follow-up probes: 4 — see Application Questions above  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle rate: Bryan held the predestination/free-will tension open across five voices without resolving it, and separately held \"why is Edom being judged?\" until the room supplied \"because of violence towards Israel\"-equivalent reasoning tied back to Genesis 12  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Peer-to-peer exchanges: The \"Neutrality is betrayal\" bumper sticker was built collaboratively across several voices (\"Complicit\" / \"no middle ground\" / \"taking a side\" all member-supplied) rather than delivered whole by Bryan — see Key Moments  (Target: Members respond to each other)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Study flow: Newcomer welcome (4 testimonies) → member-led community announcement → Genesis/Jacob-Esau background and map → delegated color commentary (Will) → Numbers 20 cross-reference → Romans 9 predestination exchange → Obadiah read in four blocks with supporting cross-references → arrogance application chain → closing self-assessment takeaway → family-sharing commitment charge → closing prayer (leader-led)  (Target: Blueprint-aligned)  → ON TARGET",
+                "Bumper stickers generated: \"Neutrality is betrayal\" [01:36:32]; \"Your faith is sealed\" [02:03:00]; \"The shot clock goes off\" [01:23:06]/[02:00:13]; \"You sow what you reap\" [01:44:16]  (Target: 3–5 per session)  → STRONG",
+                "Visual aids: One dialogue-confirmed tool this week — a geographic map of Israel/Edom/Philistia/the Negev (\"pull up one of my maps... go to the top\" [00:44:37]) operated by a delegated screen operator (Dan). No on-screen word-study tool — the \"Hamas\" (Hebrew for violence) etymology was explained verbally rather than displayed [01:33:50]–[01:33:58]. No frame extraction performed this pass, so this is dialogue-confirmed, not frame-confirmed  (Target: Multiple tools (Mayer))  → NEEDS WORK",
+                "Tone & delivery: Direct and frequently playful (extended, affectionate ribbing of a member's resemblance to Esau [01:41:02]–[01:41:20]), with real warmth in the individualized newcomer responses. Assessed from the audio/Whisper transcript only — no video frames reviewed this pass  (Target: Vocal variety, pace, command voice)  → STRONG",
+                "Topic drift: ~3–4% — the pre-session workout bit, brief AC/mic banter, and the short Elon Musk aside, all under the 5% threshold and each tied back to the lesson  (Target: < 5% off-topic)  → STRONG",
+                "Big Ideas at close: None — the session ends on a closing prayer with no distilled recitable summary of the night's own Big Ideas; the closing charge is a commitment ask (\"go home this weekend and share\"), not a recall drill  (Target: Cumulative review at close)  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "Four leader monologues ran past the 90-second threshold — above the ≤2 target. All four are background or application teaching rather than tangents; together they left no room for a closing Big Ideas recap. Each is named below with its specific fix.",
+                "The Genesis creation-to-Babel sweep, the four Abrahamic promises, and the Jacob/Esau/Edom setup, delivered almost entirely as narration before handing off to Will. Necessary orientation for four brand-new attendees, but solo-carried. Fix: the 75-second reflex break — convert every third sentence of background narration into a question the room can answer from the diagram already on screen, rather than narrating the full setup before delegating.",
+                "The Israel/Edom/Philistines/Negev geography tour, carried almost entirely solo with only brief member interjections. Fix: pause after naming each location and ask a specific member to locate the next one on screen (\"Weston, where's Bozrah relative to Petra?\") rather than narrating the full tour before the group reads Numbers 20.",
+                "The two classical viewpoints on Jacob and Esau's election, laid out at length before the room's turn. Genuinely well-handled as an open question (see Strength 2), but front-loaded as monologue before the five-voice exchange began. Fix: state the two-viewpoints framing in two sentences, then open the floor immediately — \"which one do you lean toward, and why?\" — rather than fully unpacking both sides solo first.",
+                "The extended \"how am I arrogant toward prayer / community / God's word\" charge, culminating in the family-sharing commitment ask. Strong, high-stakes material that would land with more room to breathe if it followed a shorter monologue 1. Fix: trim monologue 1 (background) by delegating more of it to member cold-calls, giving this closing charge — and a Big Ideas recap — unhurried room at the very end."
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "A Member Delivers Bryan's Own \"Guarantee\" Pitch to Newcomers — Before Bryan Even Speaks  (🟢 Capitalized · Building Ministry)\n\nWhat happened: Before Bryan introduces himself at [00:12:34], an unnamed veteran member opens the session with an unprompted testimony that reproduces Bryan's own signature \"Guarantee\" technique almost word for word: \"if you come here with an open heart and you say you want to grow, put everything you have into it, I promise you got to change your heart... this is what you need, man. Don't run from it\" [00:11:16]–[00:11:38]. He speaks before the leader does, to a room that includes at least four first-time visitors.\n\nWhy it mattered: 2 Timothy 2:2 multiplication is the highest-weighted rationale in the entire scoring model — not because it sounds good on paper, but because a technique surviving in a member's own voice, unprompted, in front of newcomers, is the clearest possible evidence it has actually transferred rather than just been performed. This is DNA transfer happening in real time, and it happened before Bryan said a word.\n\nWhat would make it bigger: Already a strong, spontaneous moment. The one addition worth testing: naming it back to the room afterward — \"that's exactly what I'd have told you, and he didn't hear it from a script\" — so newcomers register that this isn't just one man's opinion but the group's shared conviction.",
+                  "timestamp": "[00:10:00]–[00:11:53]"
+                },
+                {
+                  "detail": "A Genuine Delegated Teaching Window, Not Just a Delegated Reading  (🟢 Capitalized · Building Ministry)\n\nWhat happened: Bryan explicitly hands off real teaching content: \"I asked Will to take about five minutes or so... give us a little color commentary just to give us a little more sense about these two people... as much as you can, and I'll fill in the gaps\" [00:36:49]–[00:37:23]. Will then delivers a substantive, accurate account of the birthright story — Esau's hunger, Jacob's stew, Rebekah's deception plan, Isaac's blessing — running nearly five minutes before Bryan resumes with \"let me stop you there\" [00:41:41].\n\nWhy it mattered: This is Dim 12 (Leader Development)'s actual observable bar: a named, time-boxed facilitation window, not just a reading assignment or a testimony. Handing over real teaching content — not just narration — to a member, then building on what he delivered rather than re-teaching it, is the coaching-in-real-time signal the model is designed to reward.\n\nWhat would make it bigger: Already well-executed. One addition: naming the apprenticeship explicitly to the room afterward — \"Will's going to be teaching a full lesson before long\" — so the multiplication pathway is visible to newcomers watching it happen, not just to Will.",
+                  "timestamp": "[00:36:49]–[00:41:41]"
+                },
+                {
+                  "detail": "\"Neutrality Is Betrayal\" — Built by the Room, Not Delivered to It  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Working Obadiah 11 (\"you stood aloof\"), Bryan draws the bumper sticker out of the room rather than stating it: \"what's my next phrase? Neutrality is what?\" [01:35:39]–[01:35:42], and members supply it in stages — \"Complicit\" — \"or complacency is no middle ground\" — \"taking a side\" [01:35:43]–[01:35:52] — before Bryan lands the final line: \"neutrality in the face of your brother's suffering... it's betrayal. Neutrality is betrayal\" [01:36:29]–[01:36:32].\n\nWhy it mattered: A bumper sticker the leader hands the room is a good line; one the room builds word by word is evidence the group is doing the interpretive work themselves rather than receiving a conclusion. The multi-voice construction (at least three different members contributing a piece of the phrase) is a stronger engagement signal than any single member's answer would be.\n\nWhat would make it bigger: Already well-executed. Naming the process back to the room — \"you just built that yourselves, I didn't hand it to you\" — would make the technique visible and repeatable rather than only felt.",
+                  "timestamp": "[01:35:33]–[01:36:32]"
+                },
+                {
+                  "detail": "The Closing Prayer Went Un-Delegated on the Heaviest Newcomer Week in Three Sessions  (🟠 Missed Opportunity · Being Real)\n\nWhat happened: After a session spent explicitly teaching \"we, not me\" and the \"team sport\" nature of the group [02:10:18]–[02:10:28], Bryan delivers the closing prayer himself — \"Dear Lord, I just want to thank you for bringing us here today...\" through \"Amen. Amen.\" [02:12:30]–[02:14:24] — rather than naming a member, as the blueprint calls for and as the group did the week before (delegated to Zach on 8/8).\n\nWhy it mattered: Prayer delegation is a small, repeatable integration ritual — and on a week with four new visitors, handing the closing prayer to a regular member (or even inviting a newcomer, gently, to simply listen while a peer prays over the room) is exactly the kind of visible \"you belong here\" signal the session's own content was arguing for. Its absence doesn't undo the welcome, but it is a missed instance of the group modeling its own stated value.\n\nWhat would make it bigger: Name a member by name before the final charge — \"Russ, would you close us out?\" — the same move used for the opening testimony and Will's teaching window. Costs nothing and reinforces the exact \"we, not me\" point made moments earlier.",
+                  "timestamp": "[02:12:04]–[02:14:24]"
+                },
+                {
+                  "detail": "A Real Leader Disclosure of Need, Never Handed Back to the Room  (🔵 Pivot Point · Being Real)\n\nWhat happened: Discussing the prayer chain, Bryan makes a genuine personal admission: \"I personally deeply desire whoever gets me to call me, and I do desire to call and talk to whoever it is, but I need somebody to call me. I need to be able to say, I need help. I've got this going on\" [02:09:33]–[02:09:52]. The moment moves immediately into the next application point (\"am I arrogant towards community?\") without pausing on it.\n\nWhy it mattered: This is Being Real's actual mechanism — a leader modeling honest need rather than only strength — but it passed without a beat for the room to respond. No one was asked whether they're on the prayer chain, whether they'd actually make that call, or who in the room might need it this week. A vulnerable disclosure that isn't handed back to the room stays the leader's moment rather than becoming the group's.\n\nWhat would make it bigger: One direct turn immediately after: \"who in here is actually going to pick up the phone this week?\" — naming two or three men by name — converting the disclosure from something Bryan modeled into a commitment the room makes out loud.",
+                  "timestamp": "[02:09:20]–[02:09:55]"
+                }
+              ],
+              "paragraphs": [
+                "Five disproportionately important moments — named so the pattern is replicable."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 72.0% × weight 33 → 23.76 pts",
+                "Building Ministry: 100.0% × weight 31 → 31.00 pts",
+                "Engaging People: 70.0% × weight 18 → 12.60 pts",
+                "Being Real: 60.0% × weight 18 → 10.80 pts",
+                "BASE (pre-bonus): — × weight 100 → 78.16 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/file/d/1SUWUX0-Z4bxk-teXzX8wJ2qyt0aFiZG2/view?usp=drivesdk"
+        },
+        {
           "id": "bryan-bailey-2026-08-13-thursday-evening-group-zoom-obad",
           "date": "2026-08-13",
           "dateLabel": "August 13, 2026",
@@ -32769,14 +33143,14 @@
   "monthlyNarratives": {
     "2026-08": {
       "executiveSummary": [
-        "In August 2026, 3 leaders delivered 5 evaluated sessions, and the program held a weighted average composite of 84.8 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "In August 2026, 3 leaders delivered 6 evaluated sessions, and the program held a weighted average composite of 84.8 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
         "Across the cohort the month broke down as 2 Exceptional and 1 On Target. Ken Ture led the field at 90.0 (Exceptional), while Russell Davis anchored the other end at 71.5 (On Target) — the clearest place to concentrate coaching attention.",
-        "Ken Ture posted the biggest jump off the July 2026 baseline, climbing roughly 73 to 90.0 (+17.4 pts), the strongest muscle program-wide was Scripture Engagement (4.60 / 5), and the thinnest was Visual Aids (3.40 / 5), where one shared training would lift the most leaders at once.",
-        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with Russell Davis flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+        "Ken Ture posted the biggest jump off the July 2026 baseline, climbing roughly 73 to 90.0 (+17.4 pts), the strongest muscle program-wide was Scripture Engagement (4.67 / 5), and the thinnest was Memory Reinforcement (3.33 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Memory Reinforcement, with Russell Davis flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
         "The program's August 2026 composite of 84.8 / 100 lands it in the Strong band. Month over month, Ken Ture is the standout mover off the July 2026 baseline, up 17.4 points.",
-        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.60 / 5), while Visual Aids (3.40 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.67 / 5), while Memory Reinforcement (3.33 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-07": {
@@ -32873,19 +33247,19 @@
         "leaderId": "bryan-bailey",
         "leaderName": "Bryan Bailey",
         "group": "Saturday Morning Study — Austin Ridge",
-        "sessionsCount": 3,
-        "composite": 87.4,
+        "sessionsCount": 4,
+        "composite": 86.8,
         "status": {
           "label": "Exceptional",
           "emoji": "🔷"
         },
         "priorComposite": 84.7,
-        "delta": 2.7,
+        "delta": 2.1,
         "clusterAvg": {
-          "tc": 77,
-          "bm": 87,
-          "ep": 83,
-          "br": 83
+          "tc": 76,
+          "bm": 90,
+          "ep": 80,
+          "br": 78
         },
         "glance": {
           "rows": [
@@ -32918,14 +33292,24 @@
               "br": 70,
               "composite": 71.4,
               "status": "On Target"
+            },
+            {
+              "date": "2026-08-15",
+              "session": "Saturday Morning Group (Austin Ridge) — Obadiah, Continued",
+              "bm": 100,
+              "tc": 72,
+              "ep": 70,
+              "br": 60,
+              "composite": 85.2,
+              "status": "Exceptional"
             }
           ],
           "avg": {
-            "bm": 87,
-            "tc": 77,
-            "ep": 83,
-            "br": 83,
-            "composite": 87.4,
+            "bm": 90,
+            "tc": 76,
+            "ep": 80,
+            "br": 78,
+            "composite": 86.8,
             "status": "Exceptional"
           }
         },
@@ -32950,6 +33334,13 @@
             "composite": 71.4,
             "status": "On Target",
             "delta": -23.7
+          },
+          {
+            "date": "2026-08-15",
+            "session": "Saturday Morning Group (Austin Ridge) — Obadiah, Continued",
+            "composite": 85.2,
+            "status": "Exceptional",
+            "delta": 13.8
           }
         ],
         "clusters": [
@@ -32957,15 +33348,15 @@
             "key": "tc",
             "name": "Teaching Craft",
             "weight": 33,
-            "avgPct": 77,
+            "avgPct": 76,
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Scripture Engagement",
-              "val": 4.3
+              "val": 4.5
             },
             "weakestDim": {
               "name": "Memory Reinforcement",
-              "val": 3.7
+              "val": 3.3
             },
             "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Memory Reinforcement is the bottleneck this month."
           },
@@ -32973,7 +33364,7 @@
             "key": "bm",
             "name": "Building Ministry",
             "weight": 31,
-            "avgPct": 87,
+            "avgPct": 90,
             "statusLabel": "Exceptional",
             "strongestDim": {
               "name": "Newcomer Welcome",
@@ -32981,7 +33372,7 @@
             },
             "weakestDim": {
               "name": "Homework References",
-              "val": 4.3
+              "val": 4.5
             },
             "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — elite tier. Lift the floor on Homework References."
           },
@@ -32989,7 +33380,7 @@
             "key": "ep",
             "name": "Engaging People",
             "weight": 18,
-            "avgPct": 83,
+            "avgPct": 80,
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Participant Engagement",
@@ -32997,7 +33388,7 @@
             },
             "weakestDim": {
               "name": "Facilitation vs. Lecture",
-              "val": 4
+              "val": 3.8
             },
             "insight": "Engaging People (Facilitation + Participation) — strong. Continue to broaden participation beyond the core 6–8 voices."
           },
@@ -33005,17 +33396,17 @@
             "key": "br",
             "name": "Being Real",
             "weight": 18,
-            "avgPct": 83,
+            "avgPct": 78,
             "statusLabel": "Strong",
             "strongestDim": {
-              "name": "Prayer",
-              "val": 4.3
-            },
-            "weakestDim": {
               "name": "Vulnerability / Authenticity",
               "val": 4
             },
-            "insight": "Being Real (Vulnerability + Prayer) — strong. Vulnerability / Authenticity is the lift this month."
+            "weakestDim": {
+              "name": "Prayer",
+              "val": 3.8
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — strong. Prayer is the lift this month."
           }
         ],
         "strengths": [
@@ -33063,22 +33454,22 @@
           }
         ],
         "trends": [
-          "Within-month arc: 95.8 → 71.4 (-24.4). Trajectory declined.",
-          "Highest-scoring dimension this month: Newcomer Welcome (avg 5.0 / 5). Lowest: Memory Reinforcement (avg 3.7 / 5).",
-          "Composite vs. July 2026 (~85): up 2.7. Forward momentum."
+          "Within-month arc: 95.8 → 85.2 (-10.6). Trajectory declined.",
+          "Highest-scoring dimension this month: Newcomer Welcome (avg 5.0 / 5). Lowest: Memory Reinforcement (avg 3.3 / 5).",
+          "Composite vs. July 2026 (~85): up 2.1. Forward momentum."
         ],
         "conversationGuide": [
           {
             "label": "Celebrate the strength",
-            "q": "Building Ministry averaged 87% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+            "q": "Building Ministry averaged 90% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
           },
           {
             "label": "Explore the growth area",
-            "q": "Teaching Craft averaged 77%. What's getting in the way? What would have to be true for that to lift 10 points by September 2026?"
+            "q": "Teaching Craft averaged 76%. What's getting in the way? What would have to be true for that to lift 10 points by September 2026?"
           },
           {
             "label": "Trajectory",
-            "q": "Composite went from 95.8 on 2026-08-01 to 71.4 on 2026-08-13. What changed in your prep or delivery?"
+            "q": "Composite went from 95.8 on 2026-08-01 to 85.2 on 2026-08-15. What changed in your prep or delivery?"
           },
           {
             "label": "Group dynamics",
@@ -33087,10 +33478,10 @@
         ],
         "focus": {
           "clusterName": "Teaching Craft",
-          "clusterPct": 77,
+          "clusterPct": 76,
           "goals": [
-            "Lift Session Structure & Flow from 3.7 / 5 toward 4+ by end of September 2026.",
-            "Improve Visual Aids (currently 3.7 / 5).",
+            "Lift Memory Reinforcement from 3.3 / 5 toward 4+ by end of September 2026.",
+            "Improve Visual Aids (currently 3.5 / 5).",
             "In every September 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
           ]
         },
@@ -33368,6 +33759,98 @@
                 "cluster": "Building Ministry",
                 "score": 3,
                 "note": "Reading extensively delegated across 13 different men, but no explicit apprenticeship/training language verbalized this session"
+              }
+            ]
+          },
+          {
+            "date": "2026-08-15",
+            "session": "Saturday Morning Group (Austin Ridge) — Obadiah, Continued",
+            "composite": 85.2,
+            "status": "Exceptional",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Coherent welcome-to-close arc with a genuine delegated teaching window; held below 5 by the missing Big Ideas review and the leader-led (not delegated) closing prayer"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "14 minutes; four individually named, individually answered testimonies; member-led community-building announcement. Blueprint step 3 at full strength"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "11+ cross-references, all opened and read live by rotating readers — a clear improvement on 8/8's leader-recall-heavy framing week"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 3,
+                "note": "Discussion-only leader talk ~60%, roughly double the Lifeway benchmark, concentrated in the background and closing blocks"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "6 Big-Idea drivers, majority DOK 3–4, but back-loaded into the session's final third"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "~15 named substantive contributors across an estimated 26-man room (~58%) — solid breadth once normalized for room size, under the 70% target"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 3,
+                "note": "One dialogue-confirmed tool (geographic map) vs. four channels on 8/8; no on-screen word-study tool despite a live Hebrew-word moment"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Bryan's own prayer-chain admission plus costly newcomer testimonies; within the ±1 cap of the group's rolling baseline"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 2,
+                "note": "No cumulative Big Ideas recitation at open or close — a clear regression from 8/8's full-arc recall drill"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "A member's unprompted verbatim \\\"Guarantee\\\" pitch to newcomers before Bryan even spoke; explicit workbook payment/PDF logistics at close"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 2,
+                "note": "Closing prayer leader-led, not delegated — a regression from 8/8's delegation to Zach; no opening prayer present in the recorded portion"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Explicit, named, time-boxed delegated teaching window to Will (\\\"I'll fill in the gaps\\\"), verbalized in-session — 2 Tim 2:2 in action"
               }
             ]
           }
