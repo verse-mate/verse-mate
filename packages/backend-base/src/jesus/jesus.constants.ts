@@ -7,6 +7,293 @@
  * backend-only change that both clients pick up without a release.
  */
 
+// ── Facet taxonomy (the event graph) ──────────────────────────────────────
+//
+// A facet is one thing Jesus said or did, hanging off an event. `mode` answers
+// "speech or deed"; `type` is the browse category. The six types beyond the
+// original nine — PROMISE, WARNING, PRAYER, PROPHECY, HEALING and
+// SYMBOLIC_ACTION — are what the event model makes expressible: under the old
+// single-`kind` column a warning had to be smuggled in as a theme.
+
+export const JESUS_FACET_MODES = ["WORD", "ACTION"] as const;
+export type JesusFacetMode = (typeof JESUS_FACET_MODES)[number];
+
+export const JESUS_FACET_TYPES = [
+  // Words
+  "TEACHING",
+  "PARABLE",
+  "QUESTION",
+  "COMMAND",
+  "CLAIM",
+  "PROMISE",
+  "WARNING",
+  "PRAYER",
+  "PROPHECY",
+  // Actions
+  "MIRACLE",
+  "HEALING",
+  "ENCOUNTER",
+  "COMPASSION",
+  "CONFRONTATION",
+  "SYMBOLIC_ACTION",
+] as const;
+
+export type JesusFacetType = (typeof JESUS_FACET_TYPES)[number];
+
+export interface JesusFacetMeta {
+  type: JesusFacetType;
+  mode: JesusFacetMode;
+  slug: string;
+  label: string;
+  singular: string;
+  section: JesusSection;
+  blurb: string;
+  sortOrder: number;
+}
+
+export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
+  TEACHING: {
+    type: "TEACHING",
+    mode: "WORD",
+    slug: "teachings",
+    label: "Teachings",
+    singular: "Teaching",
+    section: "words",
+    blurb: "What He taught, and what it means",
+    sortOrder: 1,
+  },
+  QUESTION: {
+    type: "QUESTION",
+    mode: "WORD",
+    slug: "questions",
+    label: "Questions",
+    singular: "Question",
+    section: "words",
+    blurb: "The questions He asked, and why",
+    sortOrder: 2,
+  },
+  COMMAND: {
+    type: "COMMAND",
+    mode: "WORD",
+    slug: "commands",
+    label: "Commands",
+    singular: "Command",
+    section: "words",
+    blurb: "What He told His followers to do",
+    sortOrder: 3,
+  },
+  CLAIM: {
+    type: "CLAIM",
+    mode: "WORD",
+    slug: "claims",
+    label: "Claims",
+    singular: "Claim",
+    section: "words",
+    blurb: "What He said about Himself",
+    sortOrder: 4,
+  },
+  PROMISE: {
+    type: "PROMISE",
+    mode: "WORD",
+    slug: "promises",
+    label: "Promises",
+    singular: "Promise",
+    section: "words",
+    blurb: "What He pledged to those who follow",
+    sortOrder: 5,
+  },
+  WARNING: {
+    type: "WARNING",
+    mode: "WORD",
+    slug: "warnings",
+    label: "Warnings",
+    singular: "Warning",
+    section: "words",
+    blurb: "The hard sayings He refused to soften",
+    sortOrder: 6,
+  },
+  PRAYER: {
+    type: "PRAYER",
+    mode: "WORD",
+    slug: "prayers",
+    label: "Prayers",
+    singular: "Prayer",
+    section: "words",
+    blurb: "When He spoke to the Father",
+    sortOrder: 7,
+  },
+  PROPHECY: {
+    type: "PROPHECY",
+    mode: "WORD",
+    slug: "prophecies",
+    label: "Prophecies",
+    singular: "Prophecy",
+    section: "words",
+    blurb: "What He foretold",
+    sortOrder: 8,
+  },
+  MIRACLE: {
+    type: "MIRACLE",
+    mode: "ACTION",
+    slug: "miracles",
+    label: "Miracles",
+    singular: "Miracle",
+    section: "actions",
+    blurb: "Signs of the Kingdom breaking in",
+    sortOrder: 9,
+  },
+  HEALING: {
+    type: "HEALING",
+    mode: "ACTION",
+    slug: "healings",
+    label: "Healings",
+    singular: "Healing",
+    section: "actions",
+    blurb: "Every body He restored",
+    sortOrder: 10,
+  },
+  ENCOUNTER: {
+    type: "ENCOUNTER",
+    mode: "ACTION",
+    slug: "encounters",
+    label: "Encounters",
+    singular: "Encounter",
+    section: "actions",
+    blurb: "The people He met, one by one",
+    sortOrder: 11,
+  },
+  COMPASSION: {
+    type: "COMPASSION",
+    mode: "ACTION",
+    slug: "compassion",
+    label: "Compassion",
+    singular: "Act of compassion",
+    section: "actions",
+    blurb: "Where He stopped, touched, and wept",
+    sortOrder: 12,
+  },
+  CONFRONTATION: {
+    type: "CONFRONTATION",
+    mode: "ACTION",
+    slug: "confrontations",
+    label: "Confrontations",
+    singular: "Confrontation",
+    section: "actions",
+    blurb: "Where He refused to back down",
+    sortOrder: 13,
+  },
+  SYMBOLIC_ACTION: {
+    type: "SYMBOLIC_ACTION",
+    mode: "ACTION",
+    slug: "symbolic-actions",
+    label: "Symbolic actions",
+    singular: "Symbolic action",
+    section: "actions",
+    blurb: "Acted parables — the fig tree, the towel",
+    sortOrder: 14,
+  },
+  PARABLE: {
+    type: "PARABLE",
+    mode: "WORD",
+    slug: "parables",
+    label: "Parables",
+    singular: "Parable",
+    section: "parables",
+    blurb: "Every story He told",
+    sortOrder: 15,
+  },
+};
+
+const FACET_TYPE_BY_SLUG = new Map<string, JesusFacetType>(
+  JESUS_FACET_TYPES.map((t) => [JESUS_FACET_META[t].slug, t]),
+);
+
+export function isJesusFacetType(value: string): value is JesusFacetType {
+  return (JESUS_FACET_TYPES as readonly string[]).includes(value);
+}
+
+/** `"miracles"` → `"MIRACLE"`, and `"MIRACLE"` → `"MIRACLE"`. */
+export function getFacetTypeFromSlug(slug: string): JesusFacetType | null {
+  const upper = slug.toUpperCase();
+  if (isJesusFacetType(upper)) return upper;
+  return FACET_TYPE_BY_SLUG.get(slug.toLowerCase()) ?? null;
+}
+
+/**
+ * Resolve `?type=` / `?section=` / `?mode=` into a facet-type filter.
+ *
+ * Same three-outcome contract as `resolveKindFilter`: undefined means don't
+ * filter, a populated array means filter to these, and an empty array means the
+ * caller named something the taxonomy doesn't have — which must match nothing
+ * rather than everything.
+ */
+export function resolveFacetTypeFilter(input: {
+  type?: string;
+  section?: string;
+  mode?: string;
+}): JesusFacetType[] | undefined {
+  if (input.type) {
+    const resolved = getFacetTypeFromSlug(input.type);
+    return resolved ? [resolved] : [];
+  }
+  if (input.section) {
+    const section = input.section.toLowerCase();
+    if (!isJesusSection(section)) return [];
+    return JESUS_FACET_TYPES.filter(
+      (t) => JESUS_FACET_META[t].section === section,
+    );
+  }
+  if (input.mode) {
+    const mode = input.mode.toUpperCase();
+    if (!(JESUS_FACET_MODES as readonly string[]).includes(mode)) return [];
+    return JESUS_FACET_TYPES.filter((t) => JESUS_FACET_META[t].mode === mode);
+  }
+  return undefined;
+}
+
+/** Confidence values the UI knows how to hedge. Mirrors the DB check constraints. */
+export const JESUS_CONFIDENCE_LEVELS = [
+  "high",
+  "probable",
+  "disputed",
+] as const;
+export type JesusConfidenceLevel = (typeof JESUS_CONFIDENCE_LEVELS)[number];
+
+/**
+ * Provenance of an assertion — the answer to "how do you know that?".
+ *   1 explicitly present in the biblical text
+ *   2 interpretation of the passage in its own context
+ *   3 theological synthesis across passages
+ */
+export const JESUS_PROVENANCE = {
+  SCRIPTURE: 1,
+  INTERPRETATION: 2,
+  SYNTHESIS: 3,
+} as const;
+
+/** Channels for "what this event reveals", kept apart so voices don't merge. */
+export const JESUS_REVEAL_CHANNELS = [
+  "SAYS_ABOUT_HIMSELF",
+  "DEMONSTRATES",
+  "OTHERS_SAY",
+  "NARRATOR_SAYS",
+] as const;
+export type JesusRevealChannel = (typeof JESUS_REVEAL_CHANNELS)[number];
+
+/** Generated narrative attached to an event. */
+export const JESUS_EVENT_EXPLANATION_TYPES = [
+  "overview",
+  "compare",
+  "insights",
+  "application",
+] as const;
+export type JesusEventExplanationType =
+  (typeof JESUS_EVENT_EXPLANATION_TYPES)[number];
+
+// ── Legacy entry taxonomy ─────────────────────────────────────────────────
+// Retained while `/jesus/entries` is still served. Superseded by the facet
+// taxonomy above; remove with the entry endpoints.
+
 /** The nine kinds an entry can take. Stored verbatim in `jesus_entries.kind`. */
 export const JESUS_KINDS = [
   "TEACHING",

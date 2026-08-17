@@ -28,12 +28,21 @@ import type { default as FavoritesTable } from "./Favorites";
 import type { default as GenresTable } from "./Genres";
 import type { default as HighlightThemesTable } from "./HighlightThemes";
 import type { default as JesusCollectionEntriesTable } from "./JesusCollectionEntries";
+import type { default as JesusCollectionEventsTable } from "./JesusCollectionEvents";
 import type { default as JesusCollectionsTable } from "./JesusCollections";
 import type { default as JesusEntriesTable } from "./JesusEntries";
 import type { default as JesusEntryExplanationsTable } from "./JesusEntryExplanations";
 import type { default as JesusEntryReferencesTable } from "./JesusEntryReferences";
 import type { default as JesusEntryThemesTable } from "./JesusEntryThemes";
 import type { default as JesusEntryTranslationsTable } from "./JesusEntryTranslations";
+import type { default as JesusEventExplanationsTable } from "./JesusEventExplanations";
+import type { default as JesusEventPassagesTable } from "./JesusEventPassages";
+import type { default as JesusEventPeopleTable } from "./JesusEventPeople";
+import type { default as JesusEventReactionsTable } from "./JesusEventReactions";
+import type { default as JesusEventRevealsTable } from "./JesusEventReveals";
+import type { default as JesusEventThemesTable } from "./JesusEventThemes";
+import type { default as JesusEventsTable } from "./JesusEvents";
+import type { default as JesusFacetsTable } from "./JesusFacets";
 import type { default as JesusLabelTranslationsTable } from "./JesusLabelTranslations";
 import type { default as JesusPeriodsTable } from "./JesusPeriods";
 import type { default as JesusThemesTable } from "./JesusThemes";
@@ -142,6 +151,24 @@ export default interface PublicSchema {
   jesus_label_translations: JesusLabelTranslationsTable;
 
   jesus_entry_explanations: JesusEntryExplanationsTable;
+
+  jesus_events: JesusEventsTable;
+
+  jesus_event_passages: JesusEventPassagesTable;
+
+  jesus_facets: JesusFacetsTable;
+
+  jesus_event_reveals: JesusEventRevealsTable;
+
+  jesus_event_reactions: JesusEventReactionsTable;
+
+  jesus_event_people: JesusEventPeopleTable;
+
+  jesus_event_themes: JesusEventThemesTable;
+
+  jesus_event_explanations: JesusEventExplanationsTable;
+
+  jesus_collection_events: JesusCollectionEventsTable;
 
   user_recently_viewed_books: UserRecentlyViewedBooksTable;
 
