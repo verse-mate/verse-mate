@@ -644,4 +644,22 @@ God **so** loved the _world_ that he gave his [only Son](https://x.test).
     const md = "## John 3:16\n### Summary\nShort and sufficient.";
     expect(extractVerseSummary(md, 3, 16, 16)).toBe("Short and sufficient.");
   });
+
+  // GH-265 UX follow-up: the cap was 220, which fired for about half of all
+  // verses — measured across 336 verses the summaries run 73-606 chars
+  // (median 234, p90 425). Real copy must now survive whole so the widget can
+  // decide what fits from its own measured height.
+  it("passes a realistically long summary through unclamped", () => {
+    // 606 chars — the longest summary measured across 12 chapters.
+    const realistic = "a".repeat(600) + " tail";
+    const summary = extractVerseSummary(
+      `## John 3:16\n### Summary\n${realistic}`,
+      3,
+      16,
+      16,
+    );
+    if (summary === null) throw new Error("expected a summary");
+    expect(summary.endsWith("…")).toBe(false);
+    expect(summary.length).toBe(realistic.length);
+  });
 });
