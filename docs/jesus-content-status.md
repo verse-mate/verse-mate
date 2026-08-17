@@ -50,24 +50,6 @@ carry three, 6 carry four). 110 are single-account.
 
 ## 2. Ranked gaps
 
-### P0 — Three "Popular Studies" render empty (regression)
-
-`every-question-jesus-asked`, `every-miracle-of-jesus` and
-`every-parable-of-jesus` have **zero curated members**. They were never meant to:
-each defines a dynamic filter (`{"kind":"QUESTION"}` etc.) stored on the
-collection row.
-
-The **entry-era** service resolved that filter — `jesus.service.ts` still carries
-the comment *"resolving a collection's membership (dynamic filter vs. curated
-list)"* and the code to do it. The **event-era** path does not:
-`getEventIdsForCollection` reads `jesus_collection_events` only, and that table is
-populated exclusively from curated `jesus_collection_entries`. No curated rows →
-no event rows → an empty list.
-
-So three of the nine studies are dead pages today, and they are three of the most
-prominent ones on the hub. This is a code fix, not a seeding one: teach the event
-collection path to resolve a stored filter, the way the entry path did.
-
 ### P0 — Parables and Teachings have no text
 
 The `quote` field is what becomes a facet's `text` — the actual words. Coverage
@@ -81,10 +63,38 @@ is all-or-nothing by type:
 | **Teaching** | **1 / 29** |
 | **Parable** | **0 / 40** |
 
-69 of the 144 word facets carry no words. A parable renders as a title and a
+68 of the 144 word facets carry no words. A parable renders as a title and a
 summary with nothing said in it — which is a strange thing for a parable to be.
 This is the single biggest content gap by user-visible impact, and it's exactly
 the category the hub advertises most heavily (40 parables).
+
+### Not a gap — dynamic collections (previously listed here in error)
+
+An earlier revision of this document claimed that
+`every-question-jesus-asked`, `every-miracle-of-jesus` and
+`every-parable-of-jesus` render empty because they carry no curated members.
+**That was wrong.** They carry no members by design: each defines a dynamic
+filter (`{"kind":"QUESTION"}` etc.) stored on the collection row, and the event
+path resolves it. `getCollection()` delegates to `listEvents({collection})`,
+which calls `collectionMembership()` — that branches on the stored filter and
+maps `kind` / `kinds` / `type` onto facet types. The curated join table is only
+consulted when a collection has no filter.
+
+Verified against a local database seeded from this corpus:
+
+| Collection | Events returned |
+| --- | ---: |
+| every-question-jesus-asked | 27 |
+| every-miracle-of-jesus | 35 |
+| every-parable-of-jesus | 40 |
+| the-i-am-statements | 8 |
+| jesus-and-the-pharisees | 12 |
+
+One thing worth knowing while reading those numbers: a curated collection's event
+count can be **lower** than its member count — `jesus-and-the-pharisees` curates
+15 entries but resolves to 12 events, because clustering collapses parallel
+entries onto a shared event. That is the event model working, not membership
+being dropped.
 
 ### P1 — Six taxonomy categories have no content at all
 
@@ -165,19 +175,19 @@ Ordered by value per unit of effort.
 
 | # | Work | Kind | Unblocks |
 | --- | --- | --- | --- |
-| 1 | Resolve dynamic collection filters in the event path | Code | 3 dead studies |
-| 2 | Add quotes to 40 parables + 28 teachings | Authoring | The largest browse category |
-| 3 | Re-type existing healing miracles as `HEALING` | Data pass | 1 empty category |
-| 4 | Run `jesus:generate` for overviews, review, then the rest | Pipeline | Summary, Compare prose |
-| 5 | Author Promise / Warning / Prayer / Prophecy entries | Authoring | 4 empty categories |
-| 6 | Place the 5 unplaced entries; verify the 2 non-Gospel refs | Data pass | Timeline completeness |
-| 7 | Populate `unique_to_account` per passage | Authoring | Compare becomes useful |
-| 8 | Extract level-1 facets from supplied passage text | Pipeline | Provenance means something |
-| 9 | Assess chronology confidence per event | Review | Confidence means something |
-| 10 | Fill reveals / reactions / people / location | Authoring | Event page depth |
+| 1 | Add quotes to 40 parables + 28 teachings | Authoring | The largest browse category |
+| 2 | Re-type existing healing miracles as `HEALING` | Data pass | 1 empty category |
+| 3 | Run `jesus:generate` for overviews, review, then the rest | Pipeline | Summary, Compare prose |
+| 4 | Author Promise / Warning / Prayer / Prophecy entries | Authoring | 4 empty categories |
+| 5 | Place the 5 unplaced entries; verify the 2 non-Gospel refs | Data pass | Timeline completeness |
+| 6 | Populate `unique_to_account` per passage | Authoring | Compare becomes useful |
+| 7 | Extract level-1 facets from supplied passage text | Pipeline | Provenance means something |
+| 8 | Assess chronology confidence per event | Review | Confidence means something |
+| 9 | Fill reveals / reactions / people / location | Authoring | Event page depth |
 
-Items 1, 3 and 6 are small and mechanical. Item 2 is the biggest single win and
-is pure authoring. Item 4 needs a provider key and a reviewer.
+Items 2 and 5 are small and mechanical. **Item 1 is the biggest single win** and
+is pure authoring — 68 facets that currently have no words. Item 3 needs a
+provider key and a reviewer.
 
 ---
 
