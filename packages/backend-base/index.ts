@@ -16,6 +16,9 @@ import type { UserPlugin } from "./src/user/user.plugin";
 import topicPlugin from "./src/topics/topic.plugin";
 import type { TopicPlugin } from "./src/topics/topic.plugin";
 
+import jesusPlugin from "./src/jesus/jesus.plugin";
+import type { JesusPlugin } from "./src/jesus/jesus.plugin";
+
 import lemmaPlugin from "./src/lemmas/lemma.plugin";
 import type { LemmaPlugin } from "./src/lemmas/lemma.plugin";
 
@@ -59,6 +62,8 @@ export {
   adminPlugin,
   type TopicPlugin,
   topicPlugin,
+  type JesusPlugin,
+  jesusPlugin,
   type LemmaPlugin,
   lemmaPlugin,
   type HealthCheckPlugin,
