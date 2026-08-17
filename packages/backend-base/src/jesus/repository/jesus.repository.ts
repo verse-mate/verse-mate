@@ -799,11 +799,16 @@ export class JesusRepository {
         version: 1,
       })
       .onConflict((oc) =>
-        oc.columns(["entry_id", "language_code", "type"]).doUpdateSet({
-          explanation,
-          is_active: true,
-          updated_at: new Date(),
-        }),
+        oc
+          .columns(["entry_id", "language_code", "type"])
+          // Partial unique index (active rows only) — the conflict target has
+          // to carry the same predicate for Postgres to infer it.
+          .where("is_active", "=", true)
+          .doUpdateSet({
+            explanation,
+            is_active: true,
+            updated_at: new Date(),
+          }),
       )
       .execute();
   }
