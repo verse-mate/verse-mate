@@ -404,17 +404,24 @@ export class JesusEventRepository {
       )
       .select((eb) => [
         "jesus_event_passages.event_id",
-        // Narrowest first: a verse inside a specific pericope is more useful
-        // than the discourse that contains it. A whole-chapter passage is
-        // treated as the widest possible span.
+        // Narrowest first when a verse is given: a verse inside a specific
+        // pericope is more useful than the discourse containing it. A
+        // whole-chapter passage counts as the widest possible span.
         eb.fn
           .min(
             sql<number>`COALESCE(jesus_event_passages.verse_end, 9999) - COALESCE(jesus_event_passages.verse_start, 0)`,
           )
           .as("span"),
+        // Reading order, used when the whole chapter was asked for.
+        eb.fn
+          .min(sql<number>`COALESCE(jesus_event_passages.verse_start, 0)`)
+          .as("position"),
       ])
       .groupBy("jesus_event_passages.event_id")
-      .orderBy("span", "asc")
+      // Asking about a verse is a "what is this?" question, so precision wins.
+      // Asking about a chapter is a "what's in here?" question, so the events
+      // come back in the order the reader will meet them.
+      .orderBy(verse != null ? "span" : "position", "asc")
       .limit(5)
       .execute();
 
