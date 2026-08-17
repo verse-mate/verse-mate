@@ -1,6 +1,5 @@
 import { db } from "database";
 import type { Books } from "database/src/models/public/Books";
-import type { Chapters } from "database/src/models/public/Chapters";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 import type { Subtitles } from "database/src/models/public/Subtitles";
@@ -56,82 +55,86 @@ async function saveBook({ name, testament, genre_id }: Omit<Books, "book_id">) {
   return { book_id: book_id?.book_id };
 }
 
-async function saveChapter({
-  book_id,
-  chapter_number,
-}: Omit<Chapters, "chapter_id">) {
-  await db
-    .getOrCreateConnection()
-    .insertInto("chapters")
-    .values({ book_id, chapter_number })
-    .execute();
+/**
+ * Postgres caps a statement at 65535 bind parameters, so multi-row inserts are
+ * chunked. 1000 rows x at most 5 columns stays an order of magnitude clear of
+ * that while keeping the number of round trips small.
+ */
+const INSERT_CHUNK = 1000;
 
-  return db
+async function insertInChunks<T>(
+  rows: T[],
+  insert: (chunk: T[]) => Promise<unknown>,
+) {
+  for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+    await insert(rows.slice(i, i + INSERT_CHUNK));
+  }
+}
+
+/** Create every chapter of a book in one statement; existing ones are skipped. */
+async function insertChaptersForBook(
+  book_id: number,
+  book: { chapters: { chapterId: number }[] },
+) {
+  const rows = book.chapters.map((chapter) => ({
+    book_id,
+    chapter_number: chapter.chapterId,
+  }));
+  if (!rows.length) return;
+
+  await insertInChunks(rows, (chunk) =>
+    db
+      .getOrCreateConnection()
+      .insertInto("chapters")
+      .values(chunk)
+      .onConflict((oc) => oc.columns(["book_id", "chapter_number"]).doNothing())
+      .execute(),
+  );
+}
+
+/** chapter_number -> chapter_id for one book, in a single query. */
+async function loadChapterIds(book_id: number) {
+  const rows = await db
     .getOrCreateConnection()
     .selectFrom("chapters")
     .where("book_id", "=", book_id)
-    .where("chapter_number", "=", chapter_number)
-    .select("chapter_id")
-    .executeTakeFirst();
+    .select(["chapter_id", "chapter_number"])
+    .execute();
+
+  return new Map(rows.map((r) => [r.chapter_number, r.chapter_id]));
 }
 
-async function saveSubtitles({
-  chapter_id,
-  subtitle,
-  start_verse,
-  end_verse,
-  version_id,
-}: Omit<Subtitles, "subtitle_id">) {
-  const exists = await db
-    .getOrCreateConnection()
-    .selectFrom("subtitles")
-    .where("chapter_id", "=", chapter_id)
-    .where("subtitle", "=", subtitle)
-    .where("start_verse", "=", start_verse)
-    .where("end_verse", "=", end_verse)
-    .where("version_id", "=", version_id)
-    .select("subtitle_id")
-    .executeTakeFirst();
-  if (exists) {
-    return;
-  }
-
-  await db
-    .getOrCreateConnection()
-    .insertInto("subtitles")
-    .values({ chapter_id, subtitle, start_verse, end_verse, version_id })
-    .execute();
+async function insertSubtitles(rows: Omit<Subtitles, "subtitle_id">[]) {
+  if (!rows.length) return;
+  await insertInChunks(rows, (chunk) =>
+    db
+      .getOrCreateConnection()
+      .insertInto("subtitles")
+      .values(chunk)
+      .onConflict((oc) =>
+        oc
+          .columns(["chapter_id", "start_verse", "end_verse", "version_id"])
+          .doNothing(),
+      )
+      .execute(),
+  );
 }
 
-async function saveVerse({
-  chapter_id,
-  verse_number,
-  text,
-  version_id,
-}: Omit<Verses, "verse_id" | "tokens">) {
-  await db
-    .getOrCreateConnection()
-    .insertInto("verses")
-    .values({
-      chapter_id,
-      verse_number,
-      text,
-      version_id,
-    })
-    .execute();
+async function insertVerses(rows: Omit<Verses, "verse_id" | "tokens">[]) {
+  if (!rows.length) return;
+  await insertInChunks(rows, (chunk) =>
+    db
+      .getOrCreateConnection()
+      .insertInto("verses")
+      .values(chunk)
+      .onConflict((oc) =>
+        oc.columns(["chapter_id", "verse_number", "version_id"]).doNothing(),
+      )
+      .execute(),
+  );
 }
 
 // --------------- Explanation & Prompt Functions ---------------
-
-async function checkExplanationExists({ chapter_id }: { chapter_id: number }) {
-  const explanation = await db
-    .getOrCreateConnection()
-    .selectFrom("explanations")
-    .where("chapter_id", "=", chapter_id)
-    .select("explanation_id")
-    .executeTakeFirst();
-  return { exists: !!explanation };
-}
 
 async function getExplanationFromFile(bookName: string, chapterId: number) {
   const chapterIdTwoDigits = chapterId.toString().padStart(2, "0");
@@ -465,79 +468,97 @@ export async function main() {
       console.log(`Book created: ${book.name}`);
     }
 
-    // Now loop over the chapters
-    for (const chapter of book.chapters) {
-      // Check if chapter already exists
-      let savedChapter = await db
-        .getOrCreateConnection()
-        .selectFrom("chapters")
-        .where("book_id", "=", savedBook.book_id)
-        .where("chapter_number", "=", chapter.chapterId)
-        .select("chapter_id")
-        .executeTakeFirst();
+    // Chapters, subtitles and verses are written a whole book at a time.
+    //
+    // These used to be a row-at-a-time SELECT-then-INSERT: one existence query
+    // per chapter, per subtitle and per verse, each awaited before the next.
+    // That is ~35k sequential round trips for one Bible version, which is
+    // roughly a minute against a local Postgres and over an hour against the
+    // managed database (measured: 103ms RTT, ~9 queries/sec). Every one of
+    // those queries asks something the schema already guarantees — there are
+    // unique indexes on exactly the columns each check tested — so the checks
+    // are replaced by `ON CONFLICT DO NOTHING` against those indexes.
+    //
+    // This is also strictly more correct: check-then-insert is a race, and two
+    // concurrent seeds could both pass the check and then collide on the unique
+    // index. Conflict handling makes the database the arbiter instead.
+    await insertChaptersForBook(savedBook.book_id, book);
 
-      // Create if missing
-      if (!savedChapter) {
-        savedChapter = await saveChapter({
-          book_id: savedBook.book_id,
-          chapter_number: chapter.chapterId,
-        });
-        if (!savedChapter) {
-          console.log(
-            `Chapter ${chapter.chapterId} in book ${book.name} could not be saved.`,
-          );
-          continue;
-        }
-        // console.log(`Chapter ${chapter.chapterId} created for book ${book.name}`);
+    const chapterIdByNumber = await loadChapterIds(savedBook.book_id);
+
+    const subtitleRows = book.chapters.flatMap((chapter) => {
+      const chapter_id = chapterIdByNumber.get(chapter.chapterId);
+      if (!chapter_id) return [];
+      return chapter.subtitles.map((sub) => ({
+        chapter_id,
+        subtitle: sub.subtitle,
+        start_verse: sub.start_verse,
+        end_verse: sub.end_verse,
+        version_id: version.id,
+      }));
+    });
+    await insertSubtitles(subtitleRows);
+
+    const verseRows = book.chapters.flatMap((chapter) => {
+      const chapter_id = chapterIdByNumber.get(chapter.chapterId);
+      if (!chapter_id) {
+        console.log(
+          `Chapter ${chapter.chapterId} in book ${book.name} could not be saved.`,
+        );
+        return [];
       }
-
-      // Subtitles
-      for (const sub of chapter.subtitles) {
-        // You might check if the exact subtitle already exists, but often it's simpler to just insert
-        await saveSubtitles({
-          chapter_id: savedChapter.chapter_id,
-          subtitle: sub.subtitle,
-          start_verse: sub.start_verse,
-          end_verse: sub.end_verse,
-          version_id: version.id,
-        });
-        // console.log(`Subtitle created: ${sub.subtitle}`);
-      }
-
-      // Verses
-      for (const verse of chapter.verses) {
-        const existingVerse = await db
-          .getOrCreateConnection()
-          .selectFrom("verses")
-          .where("chapter_id", "=", savedChapter.chapter_id)
-          .where("verse_number", "=", verse.verseId)
-          .select("verse_id")
-          .executeTakeFirst();
-
-        if (!existingVerse) {
-          await saveVerse({
-            chapter_id: savedChapter.chapter_id,
-            verse_number: verse.verseId,
-            text: verse.text,
-            version_id: version.id,
-          });
-          // console.log(`Verse ${verse.verseId} created`);
-        }
-      }
-    }
+      return chapter.verses.map((verse) => ({
+        chapter_id,
+        verse_number: verse.verseId,
+        text: verse.text,
+        version_id: version.id,
+      }));
+    });
+    await insertVerses(verseRows);
   }
 
   // 4. Insert Explanations if missing
-  for (const book of bible.books) {
-    // Lookup the savedBook in DB
-    const savedBook = await db
-      .getOrCreateConnection()
-      .selectFrom("books")
-      .where("name", "=", book.name)
-      .select("book_id")
-      .executeTakeFirst();
+  //
+  // Same N+1 as above, at chapter granularity: a book lookup, a chapter lookup
+  // and an explanation-existence check for all 1189 chapters, ~2.4k sequential
+  // round trips. The lookups are hoisted into two queries and answered from
+  // memory; the write path below is unchanged, and on an already-seeded
+  // database no write happens at all.
+  const bookIdByName = new Map(
+    (
+      await db
+        .getOrCreateConnection()
+        .selectFrom("books")
+        .select(["book_id", "name"])
+        .execute()
+    ).map((r) => [r.name, r.book_id]),
+  );
 
-    if (!savedBook) {
+  const chapterIdByBookAndNumber = new Map(
+    (
+      await db
+        .getOrCreateConnection()
+        .selectFrom("chapters")
+        .select(["chapter_id", "book_id", "chapter_number"])
+        .execute()
+    ).map((r) => [`${r.book_id}:${r.chapter_number}`, r.chapter_id]),
+  );
+
+  const chaptersWithExplanation = new Set(
+    (
+      await db
+        .getOrCreateConnection()
+        .selectFrom("explanations")
+        .select("chapter_id")
+        .distinct()
+        .execute()
+    ).map((r) => r.chapter_id),
+  );
+
+  for (const book of bible.books) {
+    const bookId = bookIdByName.get(book.name);
+
+    if (!bookId) {
       console.log(
         `No DB entry for book ${book.name}, skipping explanations...`,
       );
@@ -545,21 +566,14 @@ export async function main() {
     }
 
     for (const chapter of book.chapters) {
-      // Get the chapter in DB
-      const savedChapter = await db
-        .getOrCreateConnection()
-        .selectFrom("chapters")
-        .where("book_id", "=", savedBook.book_id)
-        .where("chapter_number", "=", chapter.chapterId)
-        .select("chapter_id")
-        .executeTakeFirst();
+      const chapterId = chapterIdByBookAndNumber.get(
+        `${bookId}:${chapter.chapterId}`,
+      );
 
-      if (!savedChapter) continue;
+      if (!chapterId) continue;
 
-      // Check explanation
-      const { exists } = await checkExplanationExists({
-        chapter_id: savedChapter.chapter_id,
-      });
+      const savedChapter = { chapter_id: chapterId };
+      const exists = chaptersWithExplanation.has(chapterId);
       if (!exists) {
         const { explanation } = await getExplanationFromFile(
           book.name,
