@@ -112,7 +112,7 @@ async function main() {
     `\nFound ${chunkCollector.size} chunked translation(s), ${nonChunkedProcessed} non-chunked.\n`,
   );
 
-  for (const [key, collected] of chunkCollector) {
+  for (const [_key, collected] of chunkCollector) {
     if (collected.chunks.length < collected.totalChunks) {
       console.warn(
         `  Incomplete: ${collected.chunks.length}/${collected.totalChunks}`,
