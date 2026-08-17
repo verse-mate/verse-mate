@@ -27,6 +27,16 @@ import type { default as ExplanationsTable } from "./Explanations";
 import type { default as FavoritesTable } from "./Favorites";
 import type { default as GenresTable } from "./Genres";
 import type { default as HighlightThemesTable } from "./HighlightThemes";
+import type { default as JesusCollectionEntriesTable } from "./JesusCollectionEntries";
+import type { default as JesusCollectionsTable } from "./JesusCollections";
+import type { default as JesusEntriesTable } from "./JesusEntries";
+import type { default as JesusEntryExplanationsTable } from "./JesusEntryExplanations";
+import type { default as JesusEntryReferencesTable } from "./JesusEntryReferences";
+import type { default as JesusEntryThemesTable } from "./JesusEntryThemes";
+import type { default as JesusEntryTranslationsTable } from "./JesusEntryTranslations";
+import type { default as JesusLabelTranslationsTable } from "./JesusLabelTranslations";
+import type { default as JesusPeriodsTable } from "./JesusPeriods";
+import type { default as JesusThemesTable } from "./JesusThemes";
 import type { default as KyselyMigrationTable } from "./KyselyMigration";
 import type { default as KyselyMigrationLockTable } from "./KyselyMigrationLock";
 import type { default as LemmaTranslationsTable } from "./LemmaTranslations";
@@ -112,6 +122,26 @@ export default interface PublicSchema {
   topic_explanations: TopicExplanationsTable;
 
   topic_translations: TopicTranslationsTable;
+
+  jesus_periods: JesusPeriodsTable;
+
+  jesus_themes: JesusThemesTable;
+
+  jesus_entries: JesusEntriesTable;
+
+  jesus_entry_references: JesusEntryReferencesTable;
+
+  jesus_entry_themes: JesusEntryThemesTable;
+
+  jesus_collections: JesusCollectionsTable;
+
+  jesus_collection_entries: JesusCollectionEntriesTable;
+
+  jesus_entry_translations: JesusEntryTranslationsTable;
+
+  jesus_label_translations: JesusLabelTranslationsTable;
+
+  jesus_entry_explanations: JesusEntryExplanationsTable;
 
   user_recently_viewed_books: UserRecentlyViewedBooksTable;
 
