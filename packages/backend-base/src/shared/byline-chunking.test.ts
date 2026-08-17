@@ -651,7 +651,7 @@ God **so** loved the _world_ that he gave his [only Son](https://x.test).
   // decide what fits from its own measured height.
   it("passes a realistically long summary through unclamped", () => {
     // 606 chars — the longest summary measured across 12 chapters.
-    const realistic = "a".repeat(600) + " tail";
+    const realistic = `${"a".repeat(600)} tail`;
     const summary = extractVerseSummary(
       `## John 3:16\n### Summary\n${realistic}`,
       3,
