@@ -24,7 +24,7 @@ import {
  */
 
 /** "Mark 4:35-41" → structured. Throws on anything it can't read. */
-function parseReference(input: string): {
+export function parseReference(input: string): {
   book: string;
   chapter: number;
   verseStart: number | null;

@@ -3,7 +3,8 @@
   "module": "index.ts",
   "scripts": {
     "dev": "bun test --watch",
-    "jesus:generate": "bun ./src/jesus/scripts/generate-jesus-content.ts"
+    "jesus:generate": "bun ./src/jesus/scripts/generate-jesus-content.ts",
+    "jesus:quotes": "bun ./src/jesus/scripts/propose-jesus-quotes.ts"
   },
   "dependencies": {
     "@elysiajs/bearer": "1.2.0",
