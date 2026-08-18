@@ -12,7 +12,14 @@ export const db = {
       const dialect = new PostgresDialect({
         pool: new Pool({
           connectionString: getCleanConnectionString(),
-          max: 10,
+          // The managed database allows 25 connections in total and the running
+          // backend already holds a pool of these. A long CLI job that opens its
+          // own default-sized pool can therefore exhaust the server: four
+          // concurrent workers took every remaining slot and died with
+          // "remaining connection slots are reserved for roles with the
+          // SUPERUSER attribute". Such jobs set `PG_POOL_MAX=2` and share the
+          // budget instead.
+          max: Number(process.env.PG_POOL_MAX ?? 10),
           ssl: getSSLConfig(),
         }),
       });
