@@ -167,7 +167,26 @@ export function findVersesMissingSummary(
 }
 
 /** Widget summaries are clamped to this many characters (GH-265 design). */
-export const VERSE_SUMMARY_MAX_CHARS = 220;
+/**
+ * Upper bound on the widget summary, in characters.
+ *
+ * Raised 220 → 800 (GH-265 UX follow-up). 220 was discarding roughly half the
+ * available copy: measured across 336 verses the summaries run 73–606 chars
+ * (median 234, p90 425), so the clamp was firing for about half of them and
+ * appending an ellipsis the client then had no way to undo.
+ *
+ * Truncation is a presentation concern, and one server constant cannot serve
+ * two platforms, three iOS widget families, and an unbounded range of Android
+ * cell sizes — real cells measured 483dp against a 336dp design. Clients now
+ * decide what fits from their own measured height. 800 sits above the measured
+ * maximum, so it is "no cap" for every real verse while still bounding a
+ * pathological byline.
+ *
+ * Consumed only by the widget path (`resolveVerseSummary` → the `explanation`
+ * field on /bible/verse-of-the-day). The reader does not use it, and the daily
+ * push builds its body from verse text.
+ */
+export const VERSE_SUMMARY_MAX_CHARS = 800;
 
 /**
  * Pull the short, prose-only summary for [startVerse, endVerse] out of a byline
