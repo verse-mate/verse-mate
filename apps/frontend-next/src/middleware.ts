@@ -3,7 +3,7 @@ import { ACCESS_TOKEN_COOKIE } from "./lib/utils";
 
 const LOGIN_PATH = "/login";
 const ADMIN_HOME = "/admin";
-const ADMIN_REQUIRED_REDIRECT = `${LOGIN_PATH}?error=admin_required`;
+const _ADMIN_REQUIRED_REDIRECT = `${LOGIN_PATH}?error=admin_required`;
 // Admin app — never cache HTML at the CDN. Overrides the default
 // s-maxage=31536000 that OpenNext applies to statically prerendered routes.
 const NO_STORE = "private, no-store";
