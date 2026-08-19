@@ -18,6 +18,14 @@ import {
 import { JesusEventService } from "./jesus-event.service";
 
 const DEFAULT_MODEL = "gpt-5";
+
+/**
+ * Shared by the synchronous and batched paths so a batched record is generated
+ * under exactly the same settings as a synchronous one — otherwise "we batched
+ * it" would quietly mean "we generated it differently".
+ */
+export const GENERATION_REASONING_EFFORT = "medium" as const;
+export const GENERATION_MAX_OUTPUT_TOKENS = 8000;
 const DEFAULT_LANGUAGE = "en-US";
 
 /**
@@ -176,6 +184,56 @@ export class JesusGenerationService {
       overwrite = false,
     } = options;
 
+    const prepared = await this.prepareInput(eventSlug, type, {
+      languageCode,
+      bibleVersion,
+      overwrite,
+    });
+    if ("status" in prepared) return prepared;
+    const { input } = prepared;
+
+    if (dryRun) {
+      return { eventSlug, type, status: "skipped", chars: input.length };
+    }
+
+    const system = await this.getSystemPrompt();
+    const response = await this.ai.responsesCreate({
+      model,
+      instructions: system.text,
+      input,
+      reasoningEffort: GENERATION_REASONING_EFFORT,
+      maxOutputTokens: GENERATION_MAX_OUTPUT_TOKENS,
+    });
+
+    return this.acceptGeneratedContent(
+      eventSlug,
+      type,
+      response.outputText,
+      response.model,
+      { languageCode, bibleVersion },
+    );
+  }
+
+  /**
+   * Resolve an event and render its prompt, or explain why there is nothing to
+   * send. Shared by the synchronous and batched paths so both submit byte-for
+   * -byte the same prompt.
+   */
+  private async prepareInput(
+    eventSlug: string,
+    type: JesusEventExplanationType,
+    options: {
+      languageCode?: string;
+      bibleVersion?: string;
+      overwrite?: boolean;
+    } = {},
+  ): Promise<{ input: string } | GenerationResult> {
+    const {
+      languageCode = DEFAULT_LANGUAGE,
+      bibleVersion = "NASB1995",
+      overwrite = false,
+    } = options;
+
     const event = await this.events.getEventBySlug(eventSlug, languageCode);
     if (!event) {
       return {
@@ -241,23 +299,67 @@ export class JesusGenerationService {
       )
       .replace("{period}", event.period_name ?? "(unplaced)");
 
-    if (dryRun) {
+    return { input };
+  }
+
+  /**
+   * Everything `generateForEvent` does *before* the model call, returned rather
+   * than sent. This is what lets the same prompt be submitted through the Batch
+   * API — half the price of the synchronous path, and one job instead of N
+   * requests that can die halfway through on a 429.
+   *
+   * Returns a `GenerationResult` instead when there is nothing to send: the
+   * event is missing, it already has content, or its template is inactive.
+   */
+  async buildGenerationRequest(
+    eventSlug: string,
+    type: JesusEventExplanationType,
+    options: {
+      languageCode?: string;
+      bibleVersion?: string;
+      model?: string;
+      overwrite?: boolean;
+    } = {},
+  ): Promise<
+    | { status: "ready"; instructions: string; input: string; model: string }
+    | GenerationResult
+  > {
+    const prepared = await this.prepareInput(eventSlug, type, options);
+    if ("status" in prepared) return prepared;
+    const system = await this.getSystemPrompt();
+    return {
+      status: "ready",
+      instructions: system.text,
+      input: prepared.input,
+      model: options.model ?? DEFAULT_MODEL,
+    };
+  }
+
+  /**
+   * Everything `generateForEvent` does *after* the model call: the same
+   * validation gate and the same write. Shared so a batched response is held to
+   * exactly the standard a synchronous one is — a record that fails is rejected
+   * and re-run, never stored with a caveat nobody will read.
+   */
+  async acceptGeneratedContent(
+    eventSlug: string,
+    type: JesusEventExplanationType,
+    outputText: string,
+    model: string,
+    options: { languageCode?: string; bibleVersion?: string } = {},
+  ): Promise<GenerationResult> {
+    const languageCode = options.languageCode ?? DEFAULT_LANGUAGE;
+    const event = await this.events.getEventBySlug(eventSlug, languageCode);
+    if (!event) {
       return {
         eventSlug,
         type,
         status: "skipped",
-        chars: input.length,
+        issues: [{ rule: "missing-event", detail: eventSlug }],
       };
     }
-
     const system = await this.getSystemPrompt();
-    const response = await this.ai.responsesCreate({
-      model,
-      instructions: system.text,
-      input,
-      reasoningEffort: "medium",
-      maxOutputTokens: 8000,
-    });
+    const response = { outputText, model };
 
     const bookNames = await this.getBookNames();
     const allowed = new Set(

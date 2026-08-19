@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "bun test --watch",
     "jesus:generate": "bun ./src/jesus/scripts/generate-jesus-content.ts",
-    "jesus:quotes": "bun ./src/jesus/scripts/propose-jesus-quotes.ts"
+    "jesus:quotes": "bun ./src/jesus/scripts/propose-jesus-quotes.ts",
+    "jesus:generate:batch": "bun ./src/jesus/scripts/generate-jesus-content-batch.ts"
   },
   "dependencies": {
     "@elysiajs/bearer": "1.2.0",
