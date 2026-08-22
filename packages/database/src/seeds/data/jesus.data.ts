@@ -25,6 +25,7 @@ export type SeedKind =
   | "COMMAND"
   | "CLAIM"
   | "MIRACLE"
+  | "HEALING"
   | "ENCOUNTER"
   | "COMPASSION"
   | "CONFRONTATION"
@@ -232,7 +233,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-officials-son",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing the official's son",
     summary:
       "A royal official begs Him to come to Capernaum. Jesus heals from a day's journey away, and the father believes before he sees.",
@@ -250,7 +251,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "unclean-spirit-in-capernaum",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Driving out an unclean spirit in Capernaum",
     summary:
       "In the synagogue a demon names Him aloud. He silences it and casts it out, and the crowd realises His authority is not borrowed.",
@@ -260,7 +261,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-peters-mother-in-law",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing Peter's mother-in-law",
     summary:
       "He takes her hand and the fever leaves. She gets up and serves them — the first thing healing produces is service.",
@@ -270,7 +271,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "cleansing-a-leper",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Cleansing a leper",
     summary:
       '"If you are willing, you can make me clean." He reaches out and touches the untouchable before He says a word.',
@@ -280,7 +281,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-paralytic",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The paralytic lowered through the roof",
     summary:
       "Four friends dig through a roof. He forgives the man's sins first — then heals him to prove He had the right to.",
@@ -290,7 +291,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-at-bethesda",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing at the pool of Bethesda",
     summary:
       "Thirty-eight years of waiting end with a question and a command. It happens on a Sabbath, and the trouble begins.",
@@ -299,7 +300,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-withered-hand",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing the man with the withered hand",
     summary:
       "They watch to see if He will heal on the Sabbath. He does it in the middle of the synagogue, grieved at their hard hearts.",
@@ -309,7 +310,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-centurions-servant",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing the centurion's servant",
     summary:
       "A Roman officer says a word from a distance will do. Jesus marvels — He has not found such faith in Israel.",
@@ -338,7 +339,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-gerasene-demoniac",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The Gerasene demoniac",
     summary:
       "A man no chain could hold is left clothed and in his right mind. The town asks Jesus to leave.",
@@ -348,7 +349,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-bleeding-woman",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The woman who touched His garment",
     summary:
       "Twelve years of bleeding, and no doctor could help. She touches the fringe of His cloak in a crowd and He stops everything to find her.",
@@ -368,7 +369,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-two-blind-men",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing two blind men",
     summary:
       '"Do you believe that I am able to do this?" He touches their eyes according to their faith.',
@@ -377,7 +378,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-a-mute-demoniac",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing a mute demoniac",
     summary:
       "The crowds marvel; the Pharisees say He casts out demons by the prince of demons. The same act, two verdicts.",
@@ -406,7 +407,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-syrophoenician-womans-daughter",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The Syrophoenician woman's daughter",
     summary:
       "A Gentile mother refuses to be turned away and answers Him from inside His own metaphor. He calls her faith great.",
@@ -416,7 +417,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-a-deaf-and-mute-man",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing a deaf and mute man",
     summary:
       'He takes the man aside privately, sighs, and says "Ephphatha" — be opened.',
@@ -435,7 +436,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-a-blind-man-at-bethsaida",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The blind man at Bethsaida",
     summary:
       "The only healing that comes in two stages — first men like trees walking, then everything clearly.",
@@ -444,7 +445,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-boy-with-an-unclean-spirit",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The boy with an unclean spirit",
     summary:
       '"I believe; help my unbelief!" A father\'s honest prayer at the foot of the mountain of transfiguration.',
@@ -463,7 +464,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-man-born-blind",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The man born blind",
     summary:
       'Mud, a wash in Siloam, and an interrogation. "One thing I know: I was blind, now I see."',
@@ -472,7 +473,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-crippled-woman",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "The woman bent double for eighteen years",
     summary:
       "He calls her over on a Sabbath and straightens her. The synagogue ruler is indignant; the crowd rejoices.",
@@ -481,7 +482,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-a-man-with-dropsy",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing a man with dropsy",
     summary:
       "At a Pharisee's table, on a Sabbath, He asks whether it is lawful to heal — and no one will answer.",
@@ -490,7 +491,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "cleansing-ten-lepers",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Cleansing ten lepers",
     summary:
       "Ten are healed on the way. One comes back — and he is a Samaritan.",
@@ -508,7 +509,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-blind-bartimaeus",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Blind Bartimaeus",
     summary:
       "Shouted down by the crowd, he shouts louder. Jesus stops the procession and asks what he wants.",
@@ -528,7 +529,7 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-the-servants-ear",
-    kind: "MIRACLE",
+    kind: "HEALING",
     title: "Healing the servant's severed ear",
     summary:
       "His last miracle before the cross repairs the damage done by a disciple defending Him.",
@@ -562,6 +563,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Sower",
     summary:
       "One seed, four soils. The difference is never the seed — it is the ground it lands on.",
+    quote:
+      "Other seed fell into the good soil, and grew up, and produced a crop a hundred times as great.",
+    quoteRef: "Luke 8:8",
     refs: ["Matthew 13:1-23", "Mark 4:1-20", "Luke 8:4-15"],
     themes: ["kingdom", "discipleship"],
     harmony: "parable-sower",
@@ -572,6 +576,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Weeds Among the Wheat",
     summary:
       "An enemy sows weeds in the night. The servants want to pull them; the owner says wait for the harvest.",
+    quote:
+      "So just as the tares are gathered up and burned with fire, so shall it be at the end of the age.",
+    quoteRef: "Matthew 13:40",
     refs: ["Matthew 13:24-30", "Matthew 13:36-43"],
     themes: ["kingdom", "judgment"],
   },
@@ -581,6 +588,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Mustard Seed",
     summary:
       "The smallest of seeds becomes a tree the birds nest in. The Kingdom starts smaller than anyone expects.",
+    quote:
+      "It is like a mustard seed, which a man took and threw into his own garden; and it grew and became a tree, and the birds of the air nested in its branches.",
+    quoteRef: "Luke 13:19",
     refs: ["Matthew 13:31-32", "Mark 4:30-32", "Luke 13:18-19"],
     themes: ["kingdom"],
     harmony: "parable-mustard-seed",
@@ -591,6 +601,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Leaven",
     summary:
       "A little yeast hidden in three measures of flour works through all of it — invisibly, and completely.",
+    quote:
+      "It is like leaven, which a woman took and hid in three pecks of flour until it was all leavened.",
+    quoteRef: "Luke 13:21",
     refs: ["Matthew 13:33", "Luke 13:20-21"],
     themes: ["kingdom"],
     harmony: "parable-leaven",
@@ -601,6 +614,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Hidden Treasure",
     summary:
       "A man finds treasure in a field and sells everything he has for it — joyfully.",
+    quote:
+      "The kingdom of heaven is like a treasure hidden in the field, which a man found and hid again; and from joy over it he goes and sells all that he has and buys that field.",
+    quoteRef: "Matthew 13:44",
     refs: ["Matthew 13:44"],
     themes: ["kingdom", "money"],
   },
@@ -610,6 +626,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Pearl of Great Price",
     summary:
       "A merchant who knows pearls finds one worth more than all the rest, and liquidates his life to own it.",
+    quote:
+      "and upon finding one pearl of great value, he went and sold all that he had and bought it.",
+    quoteRef: "Matthew 13:46",
     refs: ["Matthew 13:45-46"],
     themes: ["kingdom", "money"],
   },
@@ -619,6 +638,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Net",
     summary:
       "A dragnet gathers fish of every kind. The sorting happens on the shore, not in the water.",
+    quote:
+      "So it will be at the end of the age; the angels will come forth and take out the wicked from among the righteous,",
+    quoteRef: "Matthew 13:49",
     refs: ["Matthew 13:47-50"],
     themes: ["kingdom", "judgment"],
   },
@@ -628,6 +650,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Growing Seed",
     summary:
       "The farmer sleeps and rises; the seed sprouts and grows, he knows not how. Growth is not his doing.",
+    quote:
+      "The soil produces crops by itself; first the blade, then the head, then the mature grain in the head.",
+    quoteRef: "Mark 4:28",
     refs: ["Mark 4:26-29"],
     themes: ["kingdom", "faith"],
   },
@@ -637,6 +662,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Two Debtors",
     summary:
       'Two debts cancelled, one ten times the other. "Which of them will love him more?"',
+    quote: "When they were unable to repay, he graciously forgave them both.",
+    quoteRef: "Luke 7:42",
     refs: ["Luke 7:41-43"],
     themes: ["love", "salvation"],
   },
@@ -646,6 +673,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Good Samaritan",
     summary:
       'Asked to define "neighbour," He tells a story that redefines the question — and makes the hero the wrong nationality.',
+    quote:
+      "Which of these three do you think proved to be a neighbor to the man who fell into the robbers’ hands?",
+    quoteRef: "Luke 10:36",
     refs: ["Luke 10:25-37"],
     themes: ["love", "discipleship"],
   },
@@ -655,6 +685,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Friend at Midnight",
     summary:
       "A neighbour gets up not out of friendship but because of shameless persistence. So keep asking.",
+    quote:
+      "I tell you, even though he will not get up and give him anything because he is his friend, yet because of his persistence he will get up and give him as much as he needs.",
+    quoteRef: "Luke 11:8",
     refs: ["Luke 11:5-8"],
     themes: ["prayer"],
   },
@@ -664,6 +697,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Rich Fool",
     summary:
       'A bumper crop, bigger barns, and a comfortable retirement plan. "This night your soul is required of you."',
+    quote:
+      "So is the man who stores up treasure for himself, and is not rich toward God.",
+    quoteRef: "Luke 12:21",
     refs: ["Luke 12:16-21"],
     themes: ["money", "judgment", "warnings"],
   },
@@ -673,6 +709,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Watchful Servants",
     summary:
       "Servants waiting up for a master returning from a wedding. Blessed are the ones he finds awake.",
+    quote:
+      "You too, be ready; for the Son of Man is coming at an hour that you do not expect.",
+    quoteRef: "Luke 12:40",
     refs: ["Luke 12:35-40"],
     themes: ["discipleship", "prophecy"],
   },
@@ -682,6 +721,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Faithful and Wise Steward",
     summary:
       "Put in charge while the master is away. To whom much is given, much will be required.",
+    quote:
+      "From everyone who has been given much, much will be required; and to whom they entrusted much, of him they will ask all the more.",
+    quoteRef: "Luke 12:48",
     refs: ["Luke 12:42-48", "Matthew 24:45-51"],
     themes: ["discipleship", "judgment"],
     harmony: "parable-faithful-steward",
@@ -692,6 +734,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Barren Fig Tree",
     summary:
       "Three fruitless years and an owner ready to cut it down. The gardener asks for one more year.",
+    quote: "and if it bears fruit next year, fine; but if not, cut it down.",
+    quoteRef: "Luke 13:9",
     refs: ["Luke 13:6-9"],
     themes: ["judgment", "warnings"],
   },
@@ -701,6 +745,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Great Banquet",
     summary:
       "Every invited guest has an excuse, so the host fills his house from the streets and the hedgerows.",
+    quote:
+      "Go out into the highways and along the hedges, and compel them to come in, so that my house may be filled.",
+    quoteRef: "Luke 14:23",
     refs: ["Luke 14:15-24"],
     themes: ["kingdom", "salvation"],
   },
@@ -710,6 +757,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Tower and the King Going to War",
     summary:
       "Count the cost before you start building, or going to battle. Discipleship is not an impulse purchase.",
+    quote:
+      "So then, none of you can be My disciple who does not give up all his own possessions.",
+    quoteRef: "Luke 14:33",
     refs: ["Luke 14:28-33"],
     themes: ["discipleship"],
   },
@@ -719,6 +769,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Lost Sheep",
     summary:
       "Ninety-nine left in the open country to go after one, and a party when it is carried home.",
+    quote:
+      "I tell you that in the same way, there will be more joy in heaven over one sinner who repents than over ninety-nine righteous persons who need no repentance.",
+    quoteRef: "Luke 15:7",
     refs: ["Luke 15:3-7", "Matthew 18:12-14"],
     themes: ["salvation", "love"],
     harmony: "parable-lost-sheep",
@@ -729,6 +782,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Lost Coin",
     summary:
       "A woman sweeps the whole house for one coin, and calls in the neighbours when she finds it.",
+    quote:
+      "In the same way, I tell you, there is joy in the presence of the angels of God over one sinner who repents.",
+    quoteRef: "Luke 15:10",
     refs: ["Luke 15:8-10"],
     themes: ["salvation"],
   },
@@ -738,6 +794,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Prodigal Son",
     summary:
       "A son who wanted his father dead, a father who ran to meet him, and an older brother who would not come in.",
+    quote:
+      "for this son of mine was dead and has come to life again; he was lost and has been found.",
+    quoteRef: "Luke 15:24",
     refs: ["Luke 15:11-32"],
     themes: ["salvation", "love"],
   },
@@ -747,6 +806,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Shrewd Manager",
     summary:
       "A dishonest steward buys himself a future. Use worldly wealth the way he used his last week of access.",
+    quote:
+      "And I say to you, make friends for yourselves by means of the wealth of unrighteousness, so that when it fails, they will receive you into the eternal dwellings.",
+    quoteRef: "Luke 16:9",
     refs: ["Luke 16:1-13"],
     themes: ["money", "discipleship"],
   },
@@ -756,6 +818,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Rich Man and Lazarus",
     summary:
       "A beggar at the gate and a man in purple. The gulf that was invisible in life turns out to be fixed.",
+    quote:
+      "And besides all this, between us and you there is a great chasm fixed, so that those who wish to come over from here to you will not be able, and that none may cross over from there to us.",
+    quoteRef: "Luke 16:26",
     refs: ["Luke 16:19-31"],
     themes: ["money", "judgment", "warnings"],
   },
@@ -765,6 +830,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Unworthy Servants",
     summary:
       "When you have done everything commanded, say: we are unworthy servants; we have only done our duty.",
+    quote:
+      "So you too, when you do all the things which are commanded you, say, ‘We are unworthy slaves; we have done only that which we ought to have done.’",
+    quoteRef: "Luke 17:10",
     refs: ["Luke 17:7-10"],
     themes: ["discipleship"],
   },
@@ -774,6 +842,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Persistent Widow",
     summary:
       "She wears down an unjust judge. If he relents, how much more will a just Father hear?",
+    quote:
+      "now, will not God bring about justice for His elect who cry to Him day and night, and will He delay long over them?",
+    quoteRef: "Luke 18:7",
     refs: ["Luke 18:1-8"],
     themes: ["prayer", "faith"],
   },
@@ -783,6 +854,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Pharisee and the Tax Collector",
     summary:
       "Two men pray. One lists his virtues; one will not lift his eyes. Only one goes home justified.",
+    quote:
+      "for everyone who exalts himself will be humbled, but he who humbles himself will be exalted.",
+    quoteRef: "Luke 18:14",
     refs: ["Luke 18:9-14"],
     themes: ["prayer", "salvation"],
   },
@@ -792,6 +866,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Unforgiving Servant",
     summary:
       "Forgiven an unpayable debt, he throttles a man over pocket change. Forgiveness you keep is forgiveness you never took.",
+    quote:
+      "My heavenly Father will also do the same to you, if each of you does not forgive his brother from your heart.",
+    quoteRef: "Matthew 18:35",
     refs: ["Matthew 18:21-35"],
     themes: ["love", "judgment"],
   },
@@ -801,6 +878,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Workers in the Vineyard",
     summary:
       "Everyone gets a denarius, whether they worked twelve hours or one. Grace looks like unfairness from the front of the line.",
+    quote: "So the last shall be first, and the first last.",
+    quoteRef: "Matthew 20:16",
     refs: ["Matthew 20:1-16"],
     themes: ["kingdom", "salvation"],
   },
@@ -810,6 +889,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Two Sons",
     summary:
       "One says no and goes; one says yes and doesn't. Which one did the will of his father?",
+    quote: "Which of the two did the will of his father?",
+    quoteRef: "Matthew 21:31",
     refs: ["Matthew 21:28-32"],
     themes: ["kingdom", "discipleship"],
   },
@@ -819,6 +900,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Wicked Tenants",
     summary:
       "Servant after servant is beaten, then the son is killed. The chief priests knew exactly who He meant.",
+    quote:
+      "What will the owner of the vineyard do? He will come and destroy the vine-growers, and will give the vineyard to others.",
+    quoteRef: "Mark 12:9",
     refs: ["Matthew 21:33-46", "Mark 12:1-12", "Luke 20:9-19"],
     themes: ["judgment", "prophecy"],
     harmony: "parable-wicked-tenants",
@@ -829,6 +913,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Wedding Feast",
     summary:
       "The invited will not come, so the hall is filled from the highways — and one guest is still turned out.",
+    quote: "For many are called, but few are chosen.",
+    quoteRef: "Matthew 22:14",
     refs: ["Matthew 22:1-14"],
     themes: ["kingdom", "judgment"],
   },
@@ -838,6 +924,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Fig Tree in Leaf",
     summary:
       "When the branch is tender you know summer is near. Read the season you are living in.",
+    quote:
+      "so, you too, when you see all these things, recognize that He is near, right at the door.",
+    quoteRef: "Matthew 24:33",
     refs: ["Matthew 24:32-35", "Mark 13:28-31", "Luke 21:29-33"],
     themes: ["prophecy"],
     harmony: "parable-fig-tree-lesson",
@@ -848,6 +937,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Ten Virgins",
     summary:
       "Five brought extra oil, five didn't. The bridegroom was delayed, and readiness could not be borrowed at midnight.",
+    quote: "Be on the alert then, for you do not know the day nor the hour.",
+    quoteRef: "Matthew 25:13",
     refs: ["Matthew 25:1-13"],
     themes: ["prophecy", "warnings"],
   },
@@ -857,6 +948,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Talents",
     summary:
       "Two servants trade and double; one buries his in the ground and calls the master hard.",
+    quote:
+      "For to everyone who has, more shall be given, and he will have an abundance; but from the one who does not have, even what he does have shall be taken away.",
+    quoteRef: "Matthew 25:29",
     refs: ["Matthew 25:14-30"],
     themes: ["discipleship", "judgment"],
   },
@@ -866,6 +960,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Ten Minas",
     summary:
       "A nobleman leaves to receive a kingdom, and his citizens send word that they will not have him reign.",
+    quote:
+      "I tell you that to everyone who has, more shall be given, but from the one who does not have, even what he does have shall be taken away.",
+    quoteRef: "Luke 19:26",
     refs: ["Luke 19:11-27"],
     themes: ["kingdom", "judgment"],
   },
@@ -875,6 +972,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Sheep and the Goats",
     summary:
       'The nations are divided over meals given, clothes provided, prisons visited. "You did it to me."',
+    quote:
+      "Truly I say to you, to the extent that you did it to one of these brothers of Mine, even the least of them, you did it to Me.",
+    quoteRef: "Matthew 25:40",
     refs: ["Matthew 25:31-46"],
     themes: ["judgment", "love"],
   },
@@ -884,6 +984,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Wise and Foolish Builders",
     summary:
       "Two houses, one storm. The difference was invisible until the rain came — and it was the foundation.",
+    quote:
+      "Therefore everyone who hears these words of Mine and acts on them, may be compared to a wise man who built his house on the rock.",
+    quoteRef: "Matthew 7:24",
     refs: ["Matthew 7:24-27", "Luke 6:47-49"],
     themes: ["discipleship", "warnings"],
     harmony: "parable-builders",
@@ -894,6 +997,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "New Wine and Old Wineskins",
     summary:
       "You cannot patch the new onto the old. What He brings will not fit inside what was there before.",
+    quote: "But new wine must be put into fresh wineskins.",
+    quoteRef: "Luke 5:38",
     refs: ["Matthew 9:16-17", "Mark 2:21-22", "Luke 5:36-39"],
     themes: ["kingdom"],
     harmony: "parable-wineskins",
@@ -904,6 +1009,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Lamp Under a Basket",
     summary:
       "Nobody lights a lamp to hide it. Nothing is concealed that will not be brought into the open.",
+    quote:
+      "For nothing is hidden, except to be revealed; nor has anything been secret, but that it would come to light.",
+    quoteRef: "Mark 4:22",
     refs: ["Matthew 5:14-16", "Mark 4:21-25", "Luke 8:16-18"],
     themes: ["discipleship"],
     harmony: "parable-lamp",
@@ -914,6 +1022,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Good Shepherd and the Sheepfold",
     summary:
       "The sheep know the shepherd's voice. The hired hand runs; the shepherd lays down his life.",
+    quote:
+      "I am the good shepherd; the good shepherd lays down His life for the sheep.",
+    quoteRef: "John 10:11",
     refs: ["John 10:1-18"],
     themes: ["salvation", "love"],
   },
@@ -923,6 +1034,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Vine and the Branches",
     summary:
       'Fruit is not produced by effort but by connection. "Apart from me you can do nothing."',
+    quote:
+      "I am the vine, you are the branches; he who abides in Me and I in him, he bears much fruit, for apart from Me you can do nothing.",
+    quoteRef: "John 15:5",
     refs: ["John 15:1-8"],
     themes: ["discipleship", "faith"],
   },
@@ -1816,6 +1930,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Beatitudes",
     summary:
       "He opens the Sermon on the Mount by congratulating exactly the people nobody congratulates.",
+    quote:
+      "Blessed are the poor in spirit, for theirs is the kingdom of heaven.",
+    quoteRef: "Matthew 5:3",
     refs: ["Matthew 5:1-12", "Luke 6:20-26"],
     themes: ["kingdom", "discipleship"],
     harmony: "beatitudes",
@@ -1826,6 +1943,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "Salt and Light",
     summary:
       "Two images for the same point: His followers are for the world, not withdrawn from it.",
+    quote:
+      "Let your light shine before men in such a way that they may see your good works, and glorify your Father who is in heaven.",
+    quoteRef: "Matthew 5:16",
     refs: ["Matthew 5:13-16"],
     themes: ["discipleship"],
   },
@@ -1835,6 +1955,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On anger and reconciliation",
     summary:
       "He traces murder back to contempt, and tells you to leave your gift at the altar and go make it right.",
+    quote:
+      "leave your offering there before the altar and go; first be reconciled to your brother, and then come and present your offering.",
+    quoteRef: "Matthew 5:24",
     refs: ["Matthew 5:21-26"],
     themes: ["love", "warnings"],
   },
@@ -1844,6 +1967,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On lust and the heart",
     summary:
       "The commandment reaches past the act to the look, and the remedy He prescribes is drastic.",
+    quote:
+      "but I say to you that everyone who looks at a woman with lust for her has already committed adultery with her in his heart.",
+    quoteRef: "Matthew 5:28",
     refs: ["Matthew 5:27-30"],
     themes: ["warnings", "discipleship"],
   },
@@ -1853,6 +1979,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On divorce and marriage",
     summary:
       "Asked which grounds are permissible, He goes back past Moses to Genesis and the intention behind it.",
+    quote: "What therefore God has joined together, let no man separate.",
+    quoteRef: "Matthew 19:6",
     refs: ["Matthew 5:31-32", "Matthew 19:3-12", "Mark 10:2-12"],
     themes: ["love"],
     harmony: "divorce-teaching",
@@ -1863,6 +1991,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On oaths and plain speech",
     summary:
       "Do not swear at all. Let your yes be yes — integrity that needs no escalation.",
+    quote:
+      "But let your statement be, ‘Yes, yes’ or ‘No, no’; anything beyond these is of evil.",
+    quoteRef: "Matthew 5:37",
     refs: ["Matthew 5:33-37"],
     themes: ["discipleship"],
   },
@@ -1872,6 +2003,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On retaliation",
     summary:
       "The other cheek, the second mile, the cloak as well — refusing to let an aggressor set the terms.",
+    quote:
+      "But I say to you, do not resist an evil person; but whoever slaps you on your right cheek, turn the other to him also.",
+    quoteRef: "Matthew 5:39",
     refs: ["Matthew 5:38-42", "Luke 6:29-31"],
     themes: ["love"],
   },
@@ -1881,6 +2015,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On giving to the needy",
     summary:
       "Give so quietly that your left hand does not know. The audience you play to is the reward you get.",
+    quote:
+      "so that your giving will be in secret; and your Father who sees what is done in secret will reward you.",
+    quoteRef: "Matthew 6:4",
     refs: ["Matthew 6:1-4"],
     themes: ["money", "warnings"],
   },
@@ -1890,6 +2027,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On how to pray",
     summary:
       "Not performed on street corners, not padded with many words — go into your room and shut the door.",
+    quote:
+      "But you, when you pray, go into your inner room, close your door and pray to your Father who is in secret, and your Father who sees what is done in secret will reward you.",
+    quoteRef: "Matthew 6:6",
     refs: ["Matthew 6:5-15", "Luke 11:1-13"],
     themes: ["prayer"],
     harmony: "lords-prayer",
@@ -1900,6 +2040,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On fasting",
     summary:
       "Wash your face and comb your hair. The point is not to be seen doing it.",
+    quote:
+      "so that your fasting will not be noticed by men, but by your Father who is in secret; and your Father who sees what is done in secret will reward you.",
+    quoteRef: "Matthew 6:18",
     refs: ["Matthew 6:16-18"],
     themes: ["discipleship"],
   },
@@ -1909,6 +2052,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "Treasures in heaven and two masters",
     summary:
       "Where your treasure is, your heart follows — and no one can serve God and money.",
+    quote: "for where your treasure is, there your heart will be also.",
+    quoteRef: "Matthew 6:21",
     refs: ["Matthew 6:19-24", "Luke 12:33-34", "Luke 16:13"],
     themes: ["money", "kingdom"],
     harmony: "treasure-and-masters",
@@ -1919,6 +2064,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "A tree and its fruit",
     summary:
       "False prophets are identified not by their claims but by what grows on them over time.",
+    quote: "For each tree is known by its own fruit.",
+    quoteRef: "Luke 6:44",
     refs: ["Matthew 7:15-20", "Luke 6:43-45"],
     themes: ["warnings", "discipleship"],
     harmony: "tree-and-fruit",
@@ -1929,6 +2076,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "You must be born again",
     summary:
       "To a Pharisee who came at night, He says the kingdom is not entered by improvement but by birth.",
+    quote:
+      "Truly, truly, I say to you, unless one is born again he cannot see the kingdom of God.",
+    quoteRef: "John 3:3",
     refs: ["John 3:1-21"],
     themes: ["salvation", "kingdom"],
   },
@@ -1938,6 +2088,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "Living water",
     summary:
       "At a well at noon, to a woman with five husbands, He offers water that ends thirst permanently.",
+    quote:
+      "but whoever drinks of the water that I will give him shall never thirst; but the water that I will give him will become in him a well of water springing up to eternal life.",
+    quoteRef: "John 4:14",
     refs: ["John 4:1-26"],
     themes: ["salvation"],
   },
@@ -1947,6 +2100,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The bread of life discourse",
     summary:
       "The hardest sermon He preached, measured by results: many of His disciples turned back and no longer walked with Him.",
+    quote: "You do not want to go away also, do you?",
+    quoteRef: "John 6:67",
     refs: ["John 6:22-71"],
     themes: ["salvation", "faith"],
   },
@@ -1956,6 +2111,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Good Shepherd discourse",
     summary:
       "Sheep, shepherd, hired hand, thief, and one flock — an extended claim about who He is and what He will do.",
+    quote:
+      "I am the good shepherd; the good shepherd lays down His life for the sheep.",
+    quoteRef: "John 10:11",
     refs: ["John 10:1-21"],
     themes: ["salvation", "love"],
   },
@@ -1965,6 +2123,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Olivet Discourse",
     summary:
       "Sitting opposite the temple He has just left, He describes its fall and His return, and tells them to keep watch.",
+    quote:
+      "“Therefore be on the alert, for you do not know which day your Lord is coming.",
+    quoteRef: "Matthew 24:42",
     refs: ["Matthew 24:1-51", "Mark 13:1-37", "Luke 21:5-36"],
     themes: ["prophecy", "judgment", "warnings"],
     harmony: "olivet-discourse",
@@ -1975,6 +2136,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Upper Room Discourse",
     summary:
       "Four chapters of last words: a place prepared, a Helper promised, a vine, and peace not as the world gives.",
+    quote:
+      "Peace I leave with you; My peace I give to you; not as the world gives do I give to you.",
+    quoteRef: "John 14:27",
     refs: ["John 14:1-31", "John 15:1-27", "John 16:1-33"],
     themes: ["love", "discipleship", "prophecy"],
   },
@@ -1984,6 +2148,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The High Priestly Prayer",
     summary:
       "He prays aloud for Himself, for the eleven, and for everyone who would ever believe through their word.",
+    quote: "Sanctify them in the truth; Your word is truth.",
+    quoteRef: "John 17:17",
     refs: ["John 17:1-26"],
     themes: ["prayer", "love"],
   },
@@ -1993,6 +2159,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On greatness and servanthood",
     summary:
       "Two disciples ask for the best seats. He redefines the ranking: whoever would be great must serve.",
+    quote:
+      "It is not this way among you, but whoever wishes to become great among you shall be your servant,",
+    quoteRef: "Matthew 20:26",
     refs: ["Matthew 20:20-28", "Mark 10:35-45", "Luke 22:24-27"],
     themes: ["discipleship", "kingdom"],
     harmony: "greatness-servanthood",
@@ -2003,6 +2172,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On the cost of discipleship",
     summary:
       "Great crowds are following Him, so He turns and tells them exactly what it will take.",
+    quote:
+      "So then, none of you can be My disciple who does not give up all his own possessions.",
+    quoteRef: "Luke 14:33",
     refs: ["Luke 14:25-33"],
     themes: ["discipleship", "warnings"],
   },
@@ -2012,6 +2184,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The Sabbath was made for man",
     summary:
       "Confronted about grain picked on a rest day, He states the purpose the rule was serving.",
+    quote: "The Sabbath was made for man, and not man for the Sabbath.",
+    quoteRef: "Mark 2:27",
     refs: ["Mark 2:23-28", "Matthew 12:1-8", "Luke 6:1-5"],
     themes: ["kingdom", "love"],
     harmony: "lord-of-sabbath",
@@ -2022,6 +2196,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "What defiles a person",
     summary:
       "Not what goes into the mouth but what comes out of the heart — and He lists what comes out.",
+    quote:
+      "But the things that proceed out of the mouth come from the heart, and those defile the man.",
+    quoteRef: "Matthew 15:18",
     refs: ["Matthew 15:1-20", "Mark 7:1-23"],
     themes: ["warnings"],
     harmony: "defilement-teaching",
@@ -2032,6 +2209,8 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "The widow's two small coins",
     summary:
       "He sits opposite the treasury and watches. She put in more than all of them, because she put in everything.",
+    quote: "Truly I say to you, this poor widow put in more than all of them;",
+    quoteRef: "Luke 21:3",
     refs: ["Mark 12:41-44", "Luke 21:1-4"],
     themes: ["money", "faith"],
     harmony: "widows-offering",
@@ -2042,6 +2221,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On the resurrection",
     summary:
       "The Sadducees bring a riddle about seven brothers. He tells them they know neither the Scriptures nor the power of God.",
+    quote:
+      "You are mistaken, not understanding the Scriptures nor the power of God.",
+    quoteRef: "Matthew 22:29",
     refs: ["Matthew 22:23-33", "Mark 12:18-27", "Luke 20:27-40"],
     themes: ["prophecy", "salvation"],
     harmony: "sadducees-resurrection",
@@ -2052,6 +2234,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On the Helper who is coming",
     summary:
       "It is to their advantage that He goes away, because then the Spirit of truth will come.",
+    quote:
+      "But I tell you the truth, it is to your advantage that I go away; for if I do not go away, the Helper will not come to you; but if I go, I will send Him to you.",
+    quoteRef: "John 16:7",
     refs: ["John 14:15-31", "John 16:5-15"],
     themes: ["prophecy", "discipleship"],
   },
@@ -2073,6 +2258,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On forgiving before you pray",
     summary:
       "Whenever you stand praying, forgive — He ties the vertical and the horizontal together and will not untie them.",
+    quote:
+      "Whenever you stand praying, forgive, if you have anything against anyone, so that your Father who is in heaven will also forgive you your transgressions.",
+    quoteRef: "Mark 11:25",
     refs: ["Mark 11:25", "Matthew 6:14-15"],
     themes: ["prayer", "love"],
   },
@@ -2082,6 +2270,9 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     title: "On judgment and eternal accountability",
     summary:
       "The hardest strand of His teaching: a reckoning is coming, and it is not a metaphor He softens.",
+    quote:
+      "These will go away into eternal punishment, but the righteous into eternal life.",
+    quoteRef: "Matthew 25:46",
     refs: ["Matthew 25:31-46", "Mark 9:42-48", "Luke 12:4-5"],
     themes: ["judgment", "warnings"],
   },
@@ -2645,11 +2836,14 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "eating-with-tax-collectors-and-sinners",
     "parable-of-new-wine-and-old-wineskins",
     "healing-at-bethesda",
+    "do-you-want-to-be-healed",
     "teaching-on-the-sabbath",
     "lord-of-the-sabbath",
+    "greater-than-the-temple",
     "healing-the-withered-hand",
     "the-sabbath-healing-controversy",
     "the-beatitudes",
+    "i-came-to-fulfil-the-law",
     "salt-and-light",
     "let-your-light-shine",
     "teaching-on-anger",
@@ -2779,6 +2973,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "healing-the-man-born-blind",
     "do-you-believe-in-the-son-of-man",
     "parable-of-the-good-shepherd",
+    "i-came-that-they-may-have-life",
     "i-am-the-door",
     "i-am-the-good-shepherd",
     "the-good-shepherd-discourse",

@@ -37,12 +37,25 @@ import type Database from "../models/Database";
  * Nothing is deleted. `jesus_entries` and its satellites survive untouched.
  */
 
-/** Which former `kind` values describe an episode rather than a saying. */
+/**
+ * Which `kind` values describe an episode rather than a saying.
+ *
+ * Mirrors every type whose `mode` is `ACTION` in `JESUS_FACET_META`
+ * (`packages/backend-base/src/jesus/jesus.constants.ts`) — duplicated rather
+ * than imported because the database package must not depend on backend-base.
+ * **Keep the two in sync.** A type missing here is not a loud failure: the facet
+ * is silently written as speech, taking `speaker: "JESUS"` and a null `actor`,
+ * which quietly corrupts both the "everything He said" and "everything He did"
+ * queries. `HEALING` and `SYMBOLIC_ACTION` were absent for exactly that reason —
+ * nothing was typed with them yet, so nothing had surfaced it.
+ */
 const ACTION_KINDS = [
   "MIRACLE",
+  "HEALING",
   "ENCOUNTER",
   "COMPASSION",
   "CONFRONTATION",
+  "SYMBOLIC_ACTION",
 ] as const;
 
 export interface JesusProjectionResult {
@@ -185,10 +198,40 @@ export async function projectJesusEventsFromEntries(
           sort_order: entry.sort_order ?? 0,
           is_active: true,
         })
-        .onConflict((oc) => oc.column("slug").doNothing())
+        // Authored fields are refreshed so an edit to the seed corpus actually
+        // reaches the reader. `doNothing` here meant a facet was frozen at
+        // whatever it was first projected as: adding the missing `quote` to an
+        // existing entry updated `jesus_entries.quote` (that upsert does
+        // `doUpdateSet`) while `jesus_facets.text` — the field the API serves —
+        // silently kept its old value, so the words never appeared.
+        //
+        // `provenance`, `is_active` and the timestamps are deliberately NOT in
+        // this list: they are lifecycle state owned by the extraction pipeline
+        // and by review, and re-seeding must not knock a level-1 facet back to
+        // level 2 or resurrect one somebody deactivated.
+        .onConflict((oc) =>
+          oc.column("slug").doUpdateSet({
+            type: entry.kind,
+            speaker: action ? null : "JESUS",
+            actor: action ? "JESUS" : null,
+            title: entry.title,
+            text: entry.quote,
+            summary: entry.summary,
+            book_id: primaryRef?.book_id ?? null,
+            chapter: primaryRef?.chapter ?? null,
+            verse_start: primaryRef?.verse_start ?? null,
+            verse_end: primaryRef?.verse_end ?? null,
+            sort_order: entry.sort_order ?? 0,
+            updated_at: new Date(),
+          }),
+        )
         .returning(["facet_id"])
         .executeTakeFirst();
 
+      // `facetCount` now means "facets touched", not "facets created" — an
+      // upsert returns a row either way. The seeder reports it as the projection
+      // summary, where "how many facets does this corpus describe" is the useful
+      // number.
       if (facet) facetCount++;
     }
   }
