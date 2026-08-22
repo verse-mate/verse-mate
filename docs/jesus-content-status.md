@@ -1,5 +1,11 @@
 # Jesus corpus — what's seeded, what's missing, what needs work
 
+> **Status: the seeding checklist in section 3 is complete.** Every item has been
+> worked and the results are live in production. The numbers below are the state
+> *before* that work; section 6 records what changed and what is genuinely left.
+> The two open questions in section 4 — event granularity, and who signs off
+> level-2 and level-3 content — are unchanged and still need a person.
+
 Measured against `packages/database/src/seeds/data/jesus.data.ts` (the source the
 production seed runs from) and the backend taxonomy in
 `packages/backend-base/src/jesus/jesus.constants.ts`.
@@ -219,3 +225,67 @@ directly, so counting is a few lines of Bun.
 
 Against a live database, the equivalent check is in
 `docs/runbooks/seed-jesus-corpus.md`.
+
+
+---
+
+## 6. What was done (update)
+
+All nine checklist items have been worked. Production now holds:
+
+| | before | after |
+| --- | ---: | ---: |
+| Facets | 231 | **697** (231 curated at level 2 + 466 extracted at level 1) |
+| Word facets carrying words | 76 / 144 | **144 / 144** |
+| Generated explanations | 0 | **828 / 828** |
+| `jesus_event_reveals` | 0 | **885** |
+| `jesus_event_reactions` | 0 | **791** |
+| `jesus_event_people` | 0 | **472** |
+| Events with a location | 0 | **73** |
+| Passages with `unique_to_account` | 0 | **351** |
+| Empty taxonomy categories | 6 | **0** |
+| `chronology_confidence` | `probable` × 207 | high 54 · probable 93 · disputed 60 |
+
+**Item 1** — the 68 missing quotes were written, so every word facet now carries
+its words. Each was checked verbatim against the `verses` table before storage:
+a quote that is not a literal substring of the verse it cites is rejected, so
+nothing invented can enter the corpus. Tool: `bun run jesus:quotes`.
+
+**Item 2** — 22 of 35 miracles re-typed `HEALING`. Bodily restorations and
+exorcisms in; nature miracles, provision and the three raisings stay `MIRACLE`.
+
+**Item 3** — all 828 narrative layers generated, through the Batch API.
+
+**Item 4** — solved by item 7 rather than by authoring. Promise, Warning,
+Prayer, Prophecy and Symbolic action are now populated from extraction.
+
+**Item 5** — four of the five unplaced entries placed next to their nearest
+neighbour in the same Gospel. `have-you-never-read` is deliberately still
+unplaced: its references span Mark 2:25 and Matthew 21:42, so it is a recurring
+formula rather than a moment, and choosing one is an editorial call.
+
+**Items 6 and 9** — `bun run jesus:enrich` fills reveals, reactions, people,
+location and the per-Gospel `unique_to_account` / `emphasis` notes. Everything is
+answered from the supplied verse text and carries the reference it came from.
+
+**Item 7** — `bun run jesus:extract` finally runs the extraction pipeline and,
+crucially, persists it. It writes only the previously-empty categories by
+default: extraction proposed 2,781 facets across 207 events and 466 were kept,
+because writing all of them would put twelve times the curated corpus behind it
+at level 1. `--all-types` exists for whoever decides otherwise.
+
+**Item 8** — every event assessed rather than defaulted.
+
+### Still open
+
+- **`have-you-never-read`** is unplaced on the timeline, on purpose.
+- **`cleansing-the-temple`** sits in `early-ministry` while three of its four
+  references are Passion Week — the two-cleansings question. Its event is now
+  marked `disputed`, but the timeline placement is untouched.
+- **15 events have no reveals**, where the passage did not support any.
+- **Action facets still carry no text** (Healing, Miracle, Confrontation,
+  Symbolic action). That is by design — they describe rather than quote — but
+  if the UI reads thin there, it is the next content decision, not a bug.
+- **Nothing is reviewed.** `reviewed_by` / `reviewed_at` remain null on every
+  generated row, exactly as section 4 warns. Generated interpretation reaching
+  readers without a named reviewer is still an open governance question.
