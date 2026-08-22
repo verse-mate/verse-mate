@@ -34,10 +34,22 @@ import {
 } from "../jesus.constants";
 import { JesusEventRepository } from "../repository/jesus-event.repository";
 import {
+  EXTRACTION_MAX_OUTPUT_TOKENS,
   GENERATION_MAX_OUTPUT_TOKENS,
   GENERATION_REASONING_EFFORT,
   JesusGenerationService,
 } from "../services/jesus-generation.service";
+import {
+  EMPTY_CATEGORIES,
+  type KeepTally,
+  normalizeFacetKey,
+  selectFacetsToWrite,
+} from "../utils/persist-extracted-facets";
+import {
+  ENRICH_INSTRUCTIONS,
+  type Enrichment,
+  writeEnrichment,
+} from "./enrich-jesus-events";
 
 /** One line of the JSONL, shaped exactly like the existing batch jobs. */
 interface BatchLine {
@@ -59,6 +71,13 @@ const decodeId = (id: string) => {
   const [type, ...rest] = id.split("::");
   return { type: type as JesusEventExplanationType, slug: rest.join("::") };
 };
+
+const get2 = (argv: string[], n: string) =>
+  argv
+    .find((a) => a.startsWith(`--${n}=`))
+    ?.split("=")
+    .slice(1)
+    .join("=");
 
 function parseArgs(argv: string[]) {
   const get = (n: string) =>
@@ -115,6 +134,73 @@ async function submit(argv: string[]) {
   const lines: BatchLine[] = [];
   let skipped = 0;
 
+  // Enrichment (status-doc items 6 and 9) is also one request per event: the
+  // reveals/reactions/people/location tables and the per-Gospel passage notes
+  // are all read off the same passage text.
+  if (argv.includes("--enrich")) {
+    for (const slug of slugs) {
+      const full = await events.getEventBySlug(slug, opts.languageCode);
+      const passageBlock = await service.renderEventPassages(slug, {
+        languageCode: opts.languageCode,
+        bibleVersion: opts.bibleVersion,
+      });
+      if (!full || !passageBlock) {
+        skipped++;
+        continue;
+      }
+      lines.push({
+        custom_id: encodeId(slug, "enrich"),
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model: opts.model ?? "gpt-5",
+          reasoning: { effort: GENERATION_REASONING_EFFORT },
+          instructions: ENRICH_INSTRUCTIONS,
+          input: `Event: ${full.title}\nSummary: ${full.summary ?? ""}\nGospel accounts: ${(full.passages ?? []).map((x) => x.display).join(" · ")}\n\nPassages:\n${passageBlock}`,
+          max_output_tokens: 16000,
+        },
+      });
+    }
+    console.log(
+      `${lines.length} enrichment request(s) · ${skipped} unavailable`,
+    );
+    await finishSubmit(lines, argv, "jesus_enrich");
+    return;
+  }
+
+  // Extraction is one request per event rather than per (event, type), and it
+  // needs a much larger ceiling — see EXTRACTION_MAX_OUTPUT_TOKENS.
+  if (argv.includes("--extract")) {
+    for (const slug of slugs) {
+      const built = await service.buildExtractionRequest(slug, {
+        languageCode: opts.languageCode,
+        bibleVersion: opts.bibleVersion,
+        model: opts.model,
+      });
+      if (built.status !== "ready") {
+        skipped++;
+        continue;
+      }
+      lines.push({
+        custom_id: encodeId(slug, "extract"),
+        method: "POST",
+        url: "/v1/responses",
+        body: {
+          model: built.model,
+          reasoning: { effort: GENERATION_REASONING_EFFORT },
+          instructions: built.instructions,
+          input: built.input,
+          max_output_tokens: EXTRACTION_MAX_OUTPUT_TOKENS,
+        },
+      });
+    }
+    console.log(
+      `${lines.length} extraction request(s) · ${skipped} unavailable`,
+    );
+    await finishSubmit(lines, argv, "jesus_extract");
+    return;
+  }
+
   // Only what is actually outstanding is submitted, so re-submitting after a
   // partial run costs nothing for work already done.
   for (const slug of slugs) {
@@ -147,6 +233,10 @@ async function submit(argv: string[]) {
   console.log(
     `${lines.length} request(s) to submit · ${skipped} already present or unavailable`,
   );
+  await finishSubmit(lines, argv, "jesus_generate");
+}
+
+async function finishSubmit(lines: BatchLine[], argv: string[], label: string) {
   if (!lines.length) {
     await db.closeConnection();
     return;
@@ -177,10 +267,7 @@ async function submit(argv: string[]) {
 
   const ai = getAiProvider();
   const file = await ai.filesCreate({
-    file: new File(
-      [new Uint8Array(buffer)],
-      `jesus_generate_${Date.now()}.jsonl`,
-    ),
+    file: new File([new Uint8Array(buffer)], `${label}_${Date.now()}.jsonl`),
     purpose: "batch",
   });
   const batch = await ai.batchesCreate({
@@ -226,9 +313,37 @@ async function collect(batchId: string, argv: string[]) {
   }
 
   const service = new JesusGenerationService(db);
+  const events = new JesusEventRepository(db);
+  const conn = db.getOrCreateConnection();
   const text = await (await ai.filesContent(b.outputFileId)).text();
   const tally = { saved: 0, skipped: 0, rejected: 0 };
   const failures: string[] = [];
+  const facetTally: KeepTally = {
+    proposed: 0,
+    written: 0,
+    noText: 0,
+    duplicate: 0,
+    filtered: 0,
+  };
+  const usedSlugs = new Set<string>();
+  const enrichTally = {
+    location: 0,
+    people: 0,
+    reveals: 0,
+    reactions: 0,
+    accounts: 0,
+  };
+  const bookIds = new Map(
+    (await conn.selectFrom("books").select(["book_id", "name"]).execute()).map(
+      (b) => [b.name, b.book_id] as const,
+    ),
+  );
+  const allTypes = argv.includes("--all-types");
+  const wanted = new Set(
+    (get2(argv, "types")
+      ?.split(",")
+      .map((t) => t.trim().toUpperCase()) ?? [...EMPTY_CATEGORIES]) as string[],
+  );
 
   for (const raw of text.split("\n").filter(Boolean)) {
     let line: {
@@ -269,6 +384,95 @@ async function collect(batchId: string, argv: string[]) {
       continue;
     }
 
+    if (type === ("enrich" as never)) {
+      const full = await events.getEventBySlug(slug, "en-US");
+      if (!full) {
+        tally.skipped++;
+        continue;
+      }
+      let data: Enrichment;
+      try {
+        data = JSON.parse(
+          outputText.trim().replace(/^```json\s*|\s*```$/g, ""),
+        );
+      } catch (err) {
+        tally.rejected++;
+        failures.push(
+          `${slug} · enrich: ${(err as Error).message.slice(0, 60)}`,
+        );
+        continue;
+      }
+      const wrote = await writeEnrichment(conn, full.event_id, data, bookIds);
+      enrichTally.location += wrote.location;
+      enrichTally.people += wrote.people;
+      enrichTally.reveals += wrote.reveals;
+      enrichTally.reactions += wrote.reactions;
+      enrichTally.accounts += wrote.accounts;
+      tally.saved++;
+      continue;
+    }
+
+    // Extraction results take the facet path: validated against the passage
+    // text, then filtered and written at level 1 by the same rules the
+    // synchronous `jesus:extract` uses.
+    if (type === ("extract" as never)) {
+      const built = await service.buildExtractionRequest(slug, {
+        languageCode: opts.languageCode,
+        bibleVersion: opts.bibleVersion,
+      });
+      if (built.status !== "ready") {
+        tally.rejected++;
+        failures.push(`${slug} · extract: ${built.detail}`);
+        continue;
+      }
+      const ex = service.acceptExtraction(outputText, built.sourceText);
+      if (ex.error) {
+        tally.rejected++;
+        failures.push(`${slug} · extract: ${ex.error}`);
+        continue;
+      }
+      const full = await events.getEventBySlug(slug, "en-US");
+      if (!full) {
+        tally.skipped++;
+        continue;
+      }
+      const existingKeys = new Set(
+        (full.facets ?? []).map((f) =>
+          normalizeFacetKey(String(f.text ?? f.title ?? "")),
+        ),
+      );
+      const keep = selectFacetsToWrite({
+        facets: ex.accepted,
+        existingKeys,
+        wantedTypes: allTypes ? null : wanted,
+        eventSlug: slug,
+        usedSlugs,
+        tally: facetTally,
+      });
+      for (const f of keep) {
+        await conn
+          .insertInto("jesus_facets")
+          .values({
+            event_id: full.event_id,
+            slug: f.slug,
+            mode: f.mode,
+            type: f.type,
+            speaker: f.mode === "WORD" ? "JESUS" : null,
+            actor: f.mode === "ACTION" ? "JESUS" : null,
+            title: f.title,
+            text: f.text,
+            summary: null,
+            provenance: 1,
+            sort_order: 100,
+            is_active: true,
+          })
+          .onConflict((oc) => oc.column("slug").doNothing())
+          .execute();
+      }
+      tally.saved++;
+      continue;
+    }
+
     const result = await service.acceptGeneratedContent(
       slug,
       type,
@@ -287,6 +491,16 @@ async function collect(batchId: string, argv: string[]) {
   console.log(
     `saved ${tally.saved} · skipped ${tally.skipped} · rejected ${tally.rejected}`,
   );
+  if (enrichTally.reveals || enrichTally.reactions || enrichTally.people) {
+    console.log(
+      `enrichment: location ${enrichTally.location} · people ${enrichTally.people} · reveals ${enrichTally.reveals} · reactions ${enrichTally.reactions} · passages annotated ${enrichTally.accounts}`,
+    );
+  }
+  if (facetTally.proposed) {
+    console.log(
+      `facets: proposed ${facetTally.proposed} · written ${facetTally.written} · dropped ${facetTally.filtered} wrong type, ${facetTally.noText} no text, ${facetTally.duplicate} duplicate`,
+    );
+  }
   if (failures.length) {
     console.log(`\n${failures.length} not stored — re-submit to retry:`);
     for (const f of failures.slice(0, 40)) console.log(`  ${f}`);

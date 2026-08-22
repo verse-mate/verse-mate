@@ -24,6 +24,17 @@ export interface ScriptureReference {
 export function extractReferences(
   text: string,
   bookNames: string[],
+  /**
+   * Book name → how many chapters it actually has. Optional, but supplying it
+   * is what stops prose being read as a citation: the pattern is
+   * `<book> <number>`, and narrative legitimately puts a number after a book
+   * name. The Sower's compare text says the yields differ — "Matthew 100,
+   * sixty, thirty; Mark 30…" — and that was read as *Matthew chapter 100*,
+   * failing the scope gate and throwing away an otherwise good record about
+   * one of the better-known parables. Matthew has 28 chapters, so the claim
+   * was refutable from data already in the database.
+   */
+  chapterCounts?: ReadonlyMap<string, number>,
 ): ScriptureReference[] {
   if (!text.trim() || bookNames.length === 0) return [];
 
@@ -38,9 +49,17 @@ export function extractReferences(
 
   const found: ScriptureReference[] = [];
   for (const match of text.matchAll(pattern)) {
+    const book = match[1];
+    const chapter = Number.parseInt(match[2], 10);
+
+    // A chapter past the end of the book is not a reference to somewhere out
+    // of scope — it is not a reference at all.
+    const max = chapterCounts?.get(book);
+    if (max !== undefined && (chapter < 1 || chapter > max)) continue;
+
     found.push({
-      book: match[1],
-      chapter: Number.parseInt(match[2], 10),
+      book,
+      chapter,
       verse: match[3] ? Number.parseInt(match[3], 10) : undefined,
     });
   }
@@ -63,9 +82,10 @@ export function findOutOfScopeReferences(
   text: string,
   bookNames: string[],
   allowed: Iterable<string>,
+  chapterCounts?: ReadonlyMap<string, number>,
 ): ScriptureReference[] {
   const allowedSet = new Set(allowed);
-  return extractReferences(text, bookNames).filter(
+  return extractReferences(text, bookNames, chapterCounts).filter(
     (ref) => !allowedSet.has(referenceKey(ref.book, ref.chapter)),
   );
 }
@@ -138,6 +158,8 @@ export function validateNarrative(input: {
   content: string;
   type: string;
   bookNames: string[];
+  /** Book name → chapter count, so prose numbers are not read as citations. */
+  chapterCounts?: ReadonlyMap<string, number>;
   /** `book|chapter` keys for the event's own passages. */
   allowedReferences: Iterable<string>;
   minLength?: number;
@@ -181,6 +203,7 @@ export function validateNarrative(input: {
       content,
       input.bookNames,
       input.allowedReferences,
+      input.chapterCounts,
     );
     if (stray.length > 0) {
       issues.push({
