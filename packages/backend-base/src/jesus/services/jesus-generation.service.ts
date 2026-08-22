@@ -18,6 +18,25 @@ import {
 import { JesusEventService } from "./jesus-event.service";
 
 const DEFAULT_MODEL = "gpt-5";
+
+/**
+ * Shared by the synchronous and batched paths so a batched record is generated
+ * under exactly the same settings as a synchronous one — otherwise "we batched
+ * it" would quietly mean "we generated it differently".
+ */
+export const GENERATION_REASONING_EFFORT = "medium" as const;
+export const GENERATION_MAX_OUTPUT_TOKENS = 8000;
+
+/**
+ * Extraction needs far more room than a narrative layer. It returns one object
+ * per facet for a whole event, so a three-Gospel episode or a long discourse
+ * (John 17) produces a large array — and reasoning tokens count toward this
+ * ceiling too. At 8000 the response was cut mid-array and surfaced only as
+ * `unparseable JSON: Unexpected EOF`, so extraction failed on precisely the
+ * richest events while short ones looked fine. The batch service hit the same
+ * wall on long study chapters and raised its ceiling for the same reason.
+ */
+export const EXTRACTION_MAX_OUTPUT_TOKENS = 32000;
 const DEFAULT_LANGUAGE = "en-US";
 
 /**
@@ -134,6 +153,24 @@ export class JesusGenerationService {
   }
 
   /**
+   * Book name → chapter count. Passed to the scope check so a number sitting
+   * after a book name in prose is not mistaken for a citation.
+   */
+  private async getChapterCounts(): Promise<ReadonlyMap<string, number>> {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("chapters")
+      .innerJoin("books", "books.book_id", "chapters.book_id")
+      .select(({ fn }) => [
+        "books.name as name",
+        fn.max("chapters.chapter_number").as("max_chapter"),
+      ])
+      .groupBy("books.name")
+      .execute();
+    return new Map(rows.map((r) => [r.name, Number(r.max_chapter)]));
+  }
+
+  /**
    * Render the passage the model is allowed to reason from.
    *
    * Verse text comes from the database in the requested version, never from the
@@ -173,6 +210,56 @@ export class JesusGenerationService {
       bibleVersion = "NASB1995",
       model = DEFAULT_MODEL,
       dryRun = false,
+      overwrite = false,
+    } = options;
+
+    const prepared = await this.prepareInput(eventSlug, type, {
+      languageCode,
+      bibleVersion,
+      overwrite,
+    });
+    if ("status" in prepared) return prepared;
+    const { input } = prepared;
+
+    if (dryRun) {
+      return { eventSlug, type, status: "skipped", chars: input.length };
+    }
+
+    const system = await this.getSystemPrompt();
+    const response = await this.ai.responsesCreate({
+      model,
+      instructions: system.text,
+      input,
+      reasoningEffort: GENERATION_REASONING_EFFORT,
+      maxOutputTokens: GENERATION_MAX_OUTPUT_TOKENS,
+    });
+
+    return this.acceptGeneratedContent(
+      eventSlug,
+      type,
+      response.outputText,
+      response.model,
+      { languageCode, bibleVersion },
+    );
+  }
+
+  /**
+   * Resolve an event and render its prompt, or explain why there is nothing to
+   * send. Shared by the synchronous and batched paths so both submit byte-for
+   * -byte the same prompt.
+   */
+  private async prepareInput(
+    eventSlug: string,
+    type: JesusEventExplanationType,
+    options: {
+      languageCode?: string;
+      bibleVersion?: string;
+      overwrite?: boolean;
+    } = {},
+  ): Promise<{ input: string } | GenerationResult> {
+    const {
+      languageCode = DEFAULT_LANGUAGE,
+      bibleVersion = "NASB1995",
       overwrite = false,
     } = options;
 
@@ -241,25 +328,184 @@ export class JesusGenerationService {
       )
       .replace("{period}", event.period_name ?? "(unplaced)");
 
-    if (dryRun) {
+    return { input };
+  }
+
+  /**
+   * Everything `generateForEvent` does *before* the model call, returned rather
+   * than sent. This is what lets the same prompt be submitted through the Batch
+   * API — half the price of the synchronous path, and one job instead of N
+   * requests that can die halfway through on a 429.
+   *
+   * Returns a `GenerationResult` instead when there is nothing to send: the
+   * event is missing, it already has content, or its template is inactive.
+   */
+  async buildGenerationRequest(
+    eventSlug: string,
+    type: JesusEventExplanationType,
+    options: {
+      languageCode?: string;
+      bibleVersion?: string;
+      model?: string;
+      overwrite?: boolean;
+    } = {},
+  ): Promise<
+    | { status: "ready"; instructions: string; input: string; model: string }
+    | GenerationResult
+  > {
+    const prepared = await this.prepareInput(eventSlug, type, options);
+    if ("status" in prepared) return prepared;
+    const system = await this.getSystemPrompt();
+    return {
+      status: "ready",
+      instructions: system.text,
+      input: prepared.input,
+      model: options.model ?? DEFAULT_MODEL,
+    };
+  }
+
+  /**
+   * Just the rendered passage text for an event — no template, no task
+   * description. A caller that has its own instructions must not be handed
+   * another prompt's wrapper: doing so puts two competing task descriptions in
+   * front of the model, and it follows the embedded one.
+   */
+  async renderEventPassages(
+    eventSlug: string,
+    options: { languageCode?: string; bibleVersion?: string } = {},
+  ): Promise<string | null> {
+    const languageCode = options.languageCode ?? DEFAULT_LANGUAGE;
+    const bibleVersion = options.bibleVersion ?? "NASB1995";
+    const event = await this.events.getEventBySlug(eventSlug, languageCode);
+    if (!event) return null;
+    const passages = await this.loadPassageText(
+      event.slug,
+      bibleVersion,
+      languageCode,
+    );
+    const rendered = this.renderPassages(passages);
+    return rendered.trim() ? rendered : null;
+  }
+
+  /**
+   * The extraction prompt, returned rather than sent — the batch counterpart of
+   * `extractFacets`, for the same reason the narrative layers have one.
+   */
+  async buildExtractionRequest(
+    eventSlug: string,
+    options: {
+      languageCode?: string;
+      bibleVersion?: string;
+      model?: string;
+    } = {},
+  ): Promise<
+    | {
+        status: "ready";
+        instructions: string;
+        input: string;
+        model: string;
+        sourceText: string;
+      }
+    | { status: "skipped" | "error"; detail: string }
+  > {
+    const languageCode = options.languageCode ?? DEFAULT_LANGUAGE;
+    const bibleVersion = options.bibleVersion ?? "NASB1995";
+
+    const event = await this.events.getEventBySlug(eventSlug, languageCode);
+    if (!event) return { status: "error", detail: "event not found" };
+
+    const template = await this.getTemplate("extraction");
+    if (!template)
+      return {
+        status: "error",
+        detail: "no active jesus-event-extraction template",
+      };
+
+    const passages = await this.loadPassageText(
+      event.slug,
+      bibleVersion,
+      languageCode,
+    );
+    const sourceText = passages
+      .flatMap((p) => p.verses.map((v) => v.text))
+      .join(" ");
+    if (!sourceText.trim())
+      return { status: "skipped", detail: `no verse text in ${bibleVersion}` };
+
+    const system = await this.getSystemPrompt();
+    const input = template
+      .replace("{event_title}", event.title)
+      .replace("{passages}", this.renderPassages(passages))
+      .replace("{allowed_types}", JESUS_FACET_TYPES.join(" | "));
+
+    return {
+      status: "ready",
+      instructions: system.text,
+      input,
+      model: options.model ?? DEFAULT_MODEL,
+      sourceText,
+    };
+  }
+
+  /**
+   * Validate a batched extraction response against the passage text it was
+   * given — the same gate `extractFacets` applies, so a batched facet earns
+   * level 1 the same way a synchronous one does.
+   */
+  acceptExtraction(outputText: string, sourceText: string) {
+    let parsed: { facets?: ExtractedFacet[] };
+    try {
+      parsed = JSON.parse(stripCodeFence(outputText));
+    } catch (error) {
+      return {
+        accepted: [] as ExtractedFacet[],
+        rejected: [] as Array<{
+          facet: ExtractedFacet;
+          issues: ValidationIssue[];
+        }>,
+        error: `unparseable JSON: ${(error as Error).message}`,
+      };
+    }
+    const { valid, rejected } = validateExtraction({
+      facets: parsed.facets ?? [],
+      sourceText,
+      allowedTypes: JESUS_FACET_TYPES,
+    });
+    return {
+      accepted: valid,
+      rejected,
+      error: undefined as string | undefined,
+    };
+  }
+
+  /**
+   * Everything `generateForEvent` does *after* the model call: the same
+   * validation gate and the same write. Shared so a batched response is held to
+   * exactly the standard a synchronous one is — a record that fails is rejected
+   * and re-run, never stored with a caveat nobody will read.
+   */
+  async acceptGeneratedContent(
+    eventSlug: string,
+    type: JesusEventExplanationType,
+    outputText: string,
+    model: string,
+    options: { languageCode?: string; bibleVersion?: string } = {},
+  ): Promise<GenerationResult> {
+    const languageCode = options.languageCode ?? DEFAULT_LANGUAGE;
+    const event = await this.events.getEventBySlug(eventSlug, languageCode);
+    if (!event) {
       return {
         eventSlug,
         type,
         status: "skipped",
-        chars: input.length,
+        issues: [{ rule: "missing-event", detail: eventSlug }],
       };
     }
-
     const system = await this.getSystemPrompt();
-    const response = await this.ai.responsesCreate({
-      model,
-      instructions: system.text,
-      input,
-      reasoningEffort: "medium",
-      maxOutputTokens: 8000,
-    });
+    const response = { outputText, model };
 
     const bookNames = await this.getBookNames();
+    const chapterCounts = await this.getChapterCounts();
     const allowed = new Set(
       event.passages.map((p) => referenceKey(p.book_name, p.chapter)),
     );
@@ -268,6 +514,7 @@ export class JesusGenerationService {
       content: response.outputText,
       type,
       bookNames,
+      chapterCounts,
       allowedReferences: allowed,
     });
 
@@ -387,7 +634,7 @@ export class JesusGenerationService {
       instructions: system.text,
       input,
       reasoningEffort: "medium",
-      maxOutputTokens: 8000,
+      maxOutputTokens: EXTRACTION_MAX_OUTPUT_TOKENS,
     });
 
     let parsed: { facets?: ExtractedFacet[] };
