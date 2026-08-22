@@ -242,6 +242,15 @@ async function main() {
     for (const a of accounts) {
       const bookId = bookIds.get(a.book);
       if (!bookId) continue;
+
+      // The model is asked for a chapter number and mostly gives one, but it
+      // also returns a reference fragment such as "13:53-58". Passing that
+      // straight into an integer column aborted the entire writeback on a
+      // single malformed row, so take the leading integer and skip a value
+      // that has none.
+      const chapter = Number.parseInt(String(a.chapter), 10);
+      if (!Number.isFinite(chapter)) continue;
+
       const res = await conn
         .updateTable("jesus_event_passages")
         .set({
@@ -250,7 +259,7 @@ async function main() {
         })
         .where("event_id", "=", full.event_id)
         .where("book_id", "=", bookId)
-        .where("chapter", "=", a.chapter)
+        .where("chapter", "=", chapter)
         .executeTakeFirst();
       if (Number(res.numUpdatedRows ?? 0) > 0) tally.accounts++;
     }
@@ -374,6 +383,15 @@ export async function writeEnrichment(
   for (const a of accounts) {
     const bookId = bookIds.get(a.book);
     if (!bookId) continue;
+
+    // The model is asked for a chapter number and mostly gives one, but it
+    // also returns a reference fragment such as "13:53-58". Passing that
+    // straight into an integer column aborted the entire writeback on a
+    // single malformed row, so take the leading integer and skip a value
+    // that has none.
+    const chapter = Number.parseInt(String(a.chapter), 10);
+    if (!Number.isFinite(chapter)) continue;
+
     const res = await conn
       .updateTable("jesus_event_passages")
       .set({
@@ -382,7 +400,7 @@ export async function writeEnrichment(
       })
       .where("event_id", "=", eventId)
       .where("book_id", "=", bookId)
-      .where("chapter", "=", a.chapter)
+      .where("chapter", "=", chapter)
       .executeTakeFirst();
     if (Number(res.numUpdatedRows ?? 0) > 0) out.accounts++;
   }

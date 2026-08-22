@@ -402,7 +402,17 @@ async function collect(batchId: string, argv: string[]) {
         );
         continue;
       }
-      const wrote = await writeEnrichment(conn, full.event_id, data, bookIds);
+      // One malformed record must not abort the writeback of 206 good ones.
+      let wrote: Awaited<ReturnType<typeof writeEnrichment>>;
+      try {
+        wrote = await writeEnrichment(conn, full.event_id, data, bookIds);
+      } catch (err) {
+        tally.rejected++;
+        failures.push(
+          `${slug} · enrich: ${(err as Error).message.slice(0, 80)}`,
+        );
+        continue;
+      }
       enrichTally.location += wrote.location;
       enrichTally.people += wrote.people;
       enrichTally.reveals += wrote.reveals;
