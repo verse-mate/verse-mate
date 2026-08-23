@@ -470,7 +470,10 @@ than more hand-authoring.
 
 All of these need `bun run jesus:extract -- --apply` against a real database
 with a provider key. The mechanism is in place and unit-tested; the run is not
-something a content change can do for itself.
+something a content change can do for itself. Step-by-step instructions for
+that run, including trimming the over-filled categories and the editorial pass
+Commands needs afterwards, are in
+[`docs/runbooks/fill-jesus-categories.md`](runbooks/fill-jesus-categories.md).
 
 Landing a few either side of any of these numbers is the expected outcome, not
 a miss.
