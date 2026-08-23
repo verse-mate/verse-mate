@@ -15,9 +15,19 @@ export type cache = typeof redisClient;
 
 export type db = typeof Database;
 
+// Security (audit #2): never fall back to a hardcoded signing secret. A default
+// secret means any attacker can forge a valid session JWT for any user. Fail
+// closed at startup instead.
+const authTokenSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
+if (!authTokenSecret) {
+  throw new Error(
+    "AUTH_ACCESS_TOKEN_SECRET is not set — refusing to start with a default JWT signing secret",
+  );
+}
+
 const jwt = ElysiaJwt({
   name: "jwt",
-  secret: process.env.AUTH_ACCESS_TOKEN_SECRET ?? "my-super-secret",
+  secret: authTokenSecret,
   // Per spec feat-auth-platform br-auth-001 (D-005): access token IS the
   // persistent session token; refresh tokens eliminated. Backend Redis cache
   // validates every token so server-side logout immediately revokes regardless
