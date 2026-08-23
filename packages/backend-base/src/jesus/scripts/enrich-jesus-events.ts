@@ -301,11 +301,52 @@ export async function writeEnrichment(
   accounts: number;
 }> {
   const CH = new Set<string>(JESUS_REVEAL_CHANNELS);
-  const reveals = (data.reveals ?? []).filter(
-    (r) => CH.has(r.channel) && r.content?.trim(),
+
+  /**
+   * Collapse repeats within an event, keeping every reference.
+   *
+   * The model is given all of an event's parallel accounts and answers per
+   * account, so one line arrives once per Gospel: Bartimaeus returned "He gives
+   * sight to the blind immediately" three times, from Matthew, Mark and Luke.
+   * Collapsing an event's parallel accounts is the whole point of the event
+   * model, and three identical lines on one page reads as a bug.
+   *
+   * The duplicates are not always parallel accounts — Pilate really does say "I
+   * find no guilt in Him" three times in John — so the references are merged
+   * rather than dropped, and the reader still sees that it happened at 18:38,
+   * 19:4 and 19:6.
+   */
+  const dedupe = <T>(
+    items: T[],
+    key: (t: T) => string,
+    ref: (t: T) => string | null | undefined,
+    withRef: (t: T, refs: string) => T,
+  ): T[] => {
+    const seen = new Map<string, { item: T; refs: string[] }>();
+    for (const it of items) {
+      const k = key(it).toLowerCase().replace(/\s+/g, " ").trim();
+      const r = (ref(it) ?? "").trim();
+      const hit = seen.get(k);
+      if (hit) {
+        if (r && !hit.refs.includes(r)) hit.refs.push(r);
+      } else {
+        seen.set(k, { item: it, refs: r ? [r] : [] });
+      }
+    }
+    return [...seen.values()].map((v) => withRef(v.item, v.refs.join(" · ")));
+  };
+
+  const reveals = dedupe(
+    (data.reveals ?? []).filter((r) => CH.has(r.channel) && r.content?.trim()),
+    (r) => `${r.channel}|${r.content}`,
+    (r) => r.source_ref,
+    (r, refs) => ({ ...r, source_ref: refs || r.source_ref }),
   );
-  const reactions = (data.reactions ?? []).filter(
-    (r) => r.who?.trim() && r.what?.trim(),
+  const reactions = dedupe(
+    (data.reactions ?? []).filter((r) => r.who?.trim() && r.what?.trim()),
+    (r) => `${r.who}|${r.what}`,
+    (r) => r.source_ref,
+    (r, refs) => ({ ...r, source_ref: refs || r.source_ref }),
   );
   const people = (data.people ?? []).filter((p) => p.person?.trim());
   const accounts = (data.accounts ?? []).filter((a) => a.book && a.chapter);

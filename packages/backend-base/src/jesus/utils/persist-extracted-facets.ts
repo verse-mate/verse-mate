@@ -33,6 +33,24 @@ export const normalizeFacetKey = (s: string) =>
     .trim()
     .toLowerCase();
 
+/**
+ * Drop quotation marks that wrap the whole value.
+ *
+ * Extraction returns a saying either bare or wrapped — 85 of 391 rows came back
+ * as `"Watch out!"` while the curated corpus stores none that way. The UI puts
+ * facet text in its own quoted presentation, so the wrapped ones rendered with
+ * visible double quotes and the rest did not. Marks *inside* the saying are
+ * content and are left alone.
+ */
+export const stripWrappingQuotes = (s: string) => {
+  const t = s.trim();
+  const wrapped = /^([“"'‘])([\s\S]*)([”"'’])$/.exec(t);
+  if (!wrapped) return t;
+  const inner = wrapped[2].trim();
+  // Only unwrap when the marks really are a pair around the whole value.
+  return inner && !/^[“"'‘]/.test(inner) ? inner : t;
+};
+
 export const facetSlug = (s: string) =>
   s
     .toLowerCase()
@@ -80,7 +98,7 @@ export function selectFacetsToWrite(input: {
 
     const meta = JESUS_FACET_META[f.type as keyof typeof JESUS_FACET_META];
     const mode = (meta?.mode ?? f.mode) as "WORD" | "ACTION";
-    const text = (f.text ?? "").trim();
+    const text = stripWrappingQuotes(f.text ?? "");
 
     if (mode === "WORD" && !text) {
       input.tally.noText++;
