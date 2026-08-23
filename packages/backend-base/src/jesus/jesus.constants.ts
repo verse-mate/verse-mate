@@ -46,8 +46,20 @@ export interface JesusFacetMeta {
   slug: string;
   label: string;
   singular: string;
+  /**
+   * The noun to count with, lower-case: "8 teachings", "3 acts of compassion".
+   * Not derivable from `label` — "Compassion" is a plural label but not a
+   * countable one — so it is stated rather than pluralized at the call site.
+   */
+  plural: string;
   section: JesusSection;
   blurb: string;
+  /**
+   * The paragraph at the top of the category's browse screen. Where `blurb`
+   * labels the category in a nav card, this frames what the reader is about to
+   * work through and says how it is organised.
+   */
+  intro: string;
   sortOrder: number;
 }
 
@@ -58,8 +70,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "teachings",
     label: "Teachings",
     singular: "Teaching",
+    plural: "teachings",
     section: "words",
     blurb: "What He taught, and what it means",
+    intro:
+      "Jesus taught in synagogues, on hillsides and at dinner tables, and He returned to the same handful of subjects again and again. Gathered by topic below: what He says about each, and where He says it.",
     sortOrder: 1,
   },
   QUESTION: {
@@ -68,8 +83,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "questions",
     label: "Questions",
     singular: "Question",
+    plural: "questions",
     section: "words",
     blurb: "The questions He asked, and why",
+    intro:
+      "Jesus asked far more questions than He answered. Gathered by topic below: what each line of questioning is probing, and where He asks it.",
     sortOrder: 2,
   },
   COMMAND: {
@@ -78,8 +96,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "commands",
     label: "Commands",
     singular: "Command",
+    plural: "commands",
     section: "words",
     blurb: "What He told His followers to do",
+    intro:
+      "Jesus told His followers to do specific things. Gathered by topic below: what He asks of them in each area of life, and where He asks it.",
     sortOrder: 3,
   },
   CLAIM: {
@@ -88,8 +109,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "claims",
     label: "Claims",
     singular: "Claim",
+    plural: "claims",
     section: "words",
     blurb: "What He said about Himself",
+    intro:
+      "Jesus said things about Himself that leave no neutral ground. Gathered by topic below: what He claims in each direction, and where He claims it.",
     sortOrder: 4,
   },
   PROMISE: {
@@ -98,8 +122,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "promises",
     label: "Promises",
     singular: "Promise",
+    plural: "promises",
     section: "words",
     blurb: "What He pledged to those who follow",
+    intro:
+      "Jesus pledged things to those who follow Him. Gathered by topic below: what He promises in each area, and where He promises it.",
     sortOrder: 5,
   },
   WARNING: {
@@ -108,8 +135,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "warnings",
     label: "Warnings",
     singular: "Warning",
+    plural: "warnings",
     section: "words",
     blurb: "The hard sayings He refused to soften",
+    intro:
+      "Jesus warned plainly and refused to soften it. Gathered by topic below: what He warns about in each area, and where He warns it.",
     sortOrder: 6,
   },
   PRAYER: {
@@ -118,8 +148,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "prayers",
     label: "Prayers",
     singular: "Prayer",
+    plural: "prayers",
     section: "words",
     blurb: "When He spoke to the Father",
+    intro:
+      "Jesus prayed in public and alone, and the Gospels preserve the words. Gathered by topic below: what He brings to the Father, and where.",
     sortOrder: 7,
   },
   PROPHECY: {
@@ -128,8 +161,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "prophecies",
     label: "Prophecies",
     singular: "Prophecy",
+    plural: "prophecies",
     section: "words",
     blurb: "What He foretold",
+    intro:
+      "Jesus foretold what was coming — for Himself, for Jerusalem, for His followers. Gathered by topic below: what He foretells in each direction, and where.",
     sortOrder: 8,
   },
   MIRACLE: {
@@ -138,8 +174,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "miracles",
     label: "Miracles",
     singular: "Miracle",
+    plural: "miracles",
     section: "actions",
     blurb: "Signs of the Kingdom breaking in",
+    intro:
+      "Jesus' signs were never only relief; each one says something. Gathered by topic below: what the signs show in each area, and where they happen.",
     sortOrder: 9,
   },
   HEALING: {
@@ -148,8 +187,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "healings",
     label: "Healings",
     singular: "Healing",
+    plural: "healings",
     section: "actions",
     blurb: "Every body He restored",
+    intro:
+      "Jesus restored bodies, and each healing carries a point beyond the body. Gathered by topic below: who He heals, what it shows, and where.",
     sortOrder: 10,
   },
   ENCOUNTER: {
@@ -158,8 +200,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "encounters",
     label: "Encounters",
     singular: "Encounter",
+    plural: "encounters",
     section: "actions",
     blurb: "The people He met, one by one",
+    intro:
+      "Jesus met people one at a time and treated no two the same. Gathered by topic below: who He meets, what changes, and where.",
     sortOrder: 11,
   },
   COMPASSION: {
@@ -168,8 +213,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "compassion",
     label: "Compassion",
     singular: "Act of compassion",
+    plural: "acts of compassion",
     section: "actions",
     blurb: "Where He stopped, touched, and wept",
+    intro:
+      "Jesus stopped, touched, and wept. Gathered by topic below: who He turns toward, what it costs Him, and where.",
     sortOrder: 12,
   },
   CONFRONTATION: {
@@ -178,8 +226,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "confrontations",
     label: "Confrontations",
     singular: "Confrontation",
+    plural: "confrontations",
     section: "actions",
     blurb: "Where He refused to back down",
+    intro:
+      "Jesus refused to back down, and the Gospels record who He faced. Gathered by topic below: what is at stake in each clash, and where.",
     sortOrder: 13,
   },
   SYMBOLIC_ACTION: {
@@ -188,8 +239,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "symbolic-actions",
     label: "Symbolic actions",
     singular: "Symbolic action",
+    plural: "symbolic actions",
     section: "actions",
     blurb: "Acted parables — the fig tree, the towel",
+    intro:
+      "Jesus acted His message out — the fig tree, the towel, the temple tables. Gathered by topic below: what each act means, and where.",
     sortOrder: 14,
   },
   PARABLE: {
@@ -198,8 +252,11 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
     slug: "parables",
     label: "Parables",
     singular: "Parable",
+    plural: "parables",
     section: "parables",
     blurb: "Every story He told",
+    intro:
+      "Jesus told stories that hide as much as they reveal. Gathered by topic below: what each set of stories is about, and where He tells them.",
     sortOrder: 15,
   },
 };
