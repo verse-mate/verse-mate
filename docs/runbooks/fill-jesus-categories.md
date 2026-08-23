@@ -27,6 +27,39 @@ why. Nothing here is a pass/fail gate.
 
 ---
 
+## 0. Stop — settle the framework first
+
+**Do not start this run until F1 and F6 of
+[`docs/jesus-content-faith-review.md`](../jesus-content-faith-review.md) have an
+answer.** This is a gate, not a caution.
+
+`extractFacets` sends the active `system` prompt as its `instructions` — the
+same theological framework every other generated layer is written against. The
+faith review found (F1) that this framework does not match the seventeen tenets
+supplied for it, and (F6) that 828 explanations, 466 level-1 facets, 885 reveals
+and 791 reactions are already live having never been checked against any
+statement of faith by a person.
+
+This runbook multiplies exactly that content. Filling Questions alone takes the
+corpus from 27 to ~300 facets, all of them level 1 — the provenance that asserts
+*"this is what the text says"* rather than *"this is our reading"*. Generating
+several hundred more against a framework under active revision means doing the
+work twice, and the second time is a deletion.
+
+The review's own recommendation, and the spec's (§11, §14), is the order to
+follow:
+
+1. Amend the `system` prompt so the framework matches the tenets (F1).
+2. Export a sample of what already exists — every `insights` layer and every
+   `SAYS_ABOUT_HIMSELF` reveal — and review it against the tenets (F6).
+3. Name who signs off level-1 content.
+4. *Then* run this.
+
+If steps 1–3 are not done, the correct action is to raise it, not to proceed
+with a smaller `--limit`. A partial run has the same problem in miniature.
+
+---
+
 ## 1. Prerequisites
 
 Same access constraints as `seed-jesus-corpus.md`, plus a provider key:
@@ -39,6 +72,9 @@ Same access constraints as `seed-jesus-corpus.md`, plus a provider key:
   exact substring to enable TLS with `rejectUnauthorized: false`, then strips it
   before connecting. Omit it and TLS is off and the connection is refused.
 - **`OPEN_AI_KEY`**, and `AI_PROVIDER` left at its default (`openai`).
+- **An active `system` prompt**, post-F1. Extraction reads it at run time and
+  will happily use a stale one — there is no version check between the prompt
+  the review examined and the prompt a run picks up.
 - **The corpus must already be seeded.** If `jesus_events` is empty, run
   `seed-jesus-corpus.md` first — extraction reads events, it does not create
   them.
@@ -237,10 +273,13 @@ category is worth the care.
 
 **Nothing is reviewed.** `reviewed_by` and `reviewed_at` are still null on every
 generated row. Level-1 facets assert "this is what the text says", which is a
-stronger claim than level 2's "this is our reading". Filling these categories
-raises the volume of unreviewed content substantially, and who signs it off is
-still an open governance question (see §4 of `jesus-content-status.md`). Decide
-that before or shortly after this run, not indefinitely later.
+stronger claim than level 2's "this is our reading".
+
+This is the same point §0 gates on, and it does not go away once the run
+finishes. Whatever this run adds inherits the unreviewed status of everything
+already there, at several times the volume. `jesus-content-faith-review.md` F6
+carries the recommendation; §4 of `jesus-content-status.md` carries the open
+question of who signs off. Neither is answered by running this successfully.
 
 ---
 
