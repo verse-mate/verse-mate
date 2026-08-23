@@ -263,22 +263,28 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
 
 // ── Coverage targets ──────────────────────────────────────────────────────
 //
-// How much content a category should carry before it stops reading as thin (or
-// starts reading as padded). Without a number here "the encounters are
-// under-represented" is a matter of opinion and nothing can act on it; with
-// one, `jesus:coverage` reports it and `jesus:extract` fills toward it.
+// Roughly how much content a category should carry before it reads as thin, or
+// as padded. Without a number "the encounters are under-represented" is a
+// matter of opinion and nothing can act on it; with one, `jesus:coverage`
+// reports it and `jesus:extract` fills toward it.
 //
-// These are scholarly consensus ranges, not inspired totals — published
-// harmonies disagree, because the disagreements are classification questions
-// (is "he healed many" one miracle or many? is a repeated saying one command
-// or three?) rather than doctrinal ones. Treat a range as the band a category
-// should land in, and read anything outside it as a question to look at, not
-// a failure.
+// **These are approximate and are meant to be.** They come from published
+// harmonies, which disagree with each other, because the disagreements are
+// classification questions — is "he healed many" one miracle or many? is a
+// saying repeated in three Gospels one command or three? — rather than
+// doctrinal ones. There is no inspired total for any of these categories and
+// Scripture makes one underivable: the narrated episodes are samples, and John
+// 21:25 closes by saying so.
+//
+// So nothing here is an acceptance criterion. A count near its band is fine, a
+// count well outside it is a question worth looking at, and neither is a build
+// failure. `COVERAGE_TOLERANCE` is what keeps the difference honest: a category
+// has to be clearly out before anything reports it as out.
 
 export interface JesusCategoryTarget {
-  /** Below this the category reads as thin. */
+  /** Roughly the fewest before the category reads as thin. */
   min: number;
-  /** Above this it reads as padded — usually one event dominating the type. */
+  /** Roughly the most before it reads as padded — usually one event dominating. */
   max: number;
   /**
    * What the range counts, where it is not one facet per episode. Questions
@@ -286,6 +292,27 @@ export interface JesusCategoryTarget {
    * repetitions across parallel accounts, not distinct questions.
    */
   unit?: string;
+}
+
+/**
+ * How far outside its band a count may sit before anything reports it.
+ *
+ * The bands are approximations, so treating their edges as exact would invent
+ * precision the sources do not have — flagging 34 parables against a band of
+ * 35-40 says the catalogues agree to the unit, and they do not. 20% is wide
+ * enough that only a real gap trips it.
+ */
+export const COVERAGE_TOLERANCE = 0.2;
+
+/**
+ * What a fill run should aim at: the middle of the band, not its floor.
+ *
+ * Aiming at `min` lands every category at the thin end of an approximate range
+ * and makes the exact boundary matter, which is the thing these numbers cannot
+ * support.
+ */
+export function fillGoal(target: JesusCategoryTarget): number {
+  return Math.round((target.min + target.max) / 2);
 }
 
 export const JESUS_CATEGORY_TARGETS: Partial<
@@ -337,8 +364,15 @@ export interface JesusCoverageRow {
   count: number;
   target: JesusCategoryTarget | null;
   status: JesusCoverageStatus;
-  /** How many to add to reach `min`, or to shed to reach `max`. 0 when ok. */
+  /**
+   * Roughly how far outside the band it sits — short of `min`, or over `max`.
+   * 0 when the count is in the band or within tolerance of it. Approximate,
+   * like everything else here: useful for "is this a big gap or a small one",
+   * not for planning to the unit.
+   */
   delta: number;
+  /** What a fill run aims at, the middle of the band. Null when untargeted. */
+  goal: number | null;
 }
 
 /**
@@ -347,6 +381,9 @@ export interface JesusCoverageRow {
  * Takes counts rather than reading them, so the same function serves the
  * report (counts from the database), the extraction script (deciding which
  * types still need filling) and the tests (counts made up).
+ *
+ * A count is only reported out-of-band once it is `COVERAGE_TOLERANCE` beyond
+ * the edge, because the bands are approximate — see the note above them.
  */
 export function assessCoverage(
   counts: Partial<Record<JesusFacetType, number>>,
@@ -363,11 +400,17 @@ export function assessCoverage(
         target: null,
         status: "untargeted" as const,
         delta: 0,
+        goal: null,
       };
     }
 
+    const floor = target.min * (1 - COVERAGE_TOLERANCE);
+    const ceiling = target.max * (1 + COVERAGE_TOLERANCE);
+
     const status =
-      count < target.min ? "under" : count > target.max ? "over" : "ok";
+      count < floor ? "under" : count > ceiling ? "over" : ("ok" as const);
+    // Measured from the band itself rather than from the tolerance edge, so
+    // the number answers "how far from where it should be".
     const delta =
       status === "under"
         ? target.min - count
@@ -382,11 +425,12 @@ export function assessCoverage(
       target,
       status,
       delta,
+      goal: fillGoal(target),
     };
   });
 }
 
-/** The types that still need content, neediest first. */
+/** The types clearly short of their band, biggest gap first. */
 export function typesUnderTarget(
   counts: Partial<Record<JesusFacetType, number>>,
 ): JesusFacetType[] {

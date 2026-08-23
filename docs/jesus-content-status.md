@@ -396,19 +396,35 @@ Encounter — for which extraction had already *found* content, out of the 2,781
 facets it proposed — received none of it and stayed at their curated counts.
 One flag produced both complaints.
 
-### Targets now exist
+### Approximate targets now exist
 
-`JESUS_CATEGORY_TARGETS` holds a range per category, from the published
-harmonies. Ranges rather than points, because the catalogues disagree and the
+`JESUS_CATEGORY_TARGETS` holds a band per category, from the published
+harmonies. Bands rather than points, because the catalogues disagree and the
 disagreements are classification questions ("he healed many" — one or many?)
 rather than doctrinal ones.
 
-`bun run jesus:coverage` prints count against target for the seed corpus and
-for live facets; `--seed` works with no database. `bun run jesus:extract` now
-defaults to **whatever is under target** rather than to the empty categories,
-stops a type the moment it reaches `min`, and applies a per-event-per-type cap
-(`--cap=`, default 3) so a category cannot come to mean "the Olivet discourse,
-forty times". `--types=empty` restores the original run.
+**They are approximate, deliberately, and nothing treats them as acceptance
+criteria.** There is no inspired total for any of these categories and none is
+derivable — the narrated episodes are samples, and John 21:25 closes by saying
+so. Three things follow, and they are the difference between a useful number
+and a false one:
+
+- `COVERAGE_TOLERANCE` (20%) means a count has to be *clearly* out before
+  anything reports it as out. Flagging 34 parables against a band of 35-40
+  would claim the catalogues agree to the unit, and they do not.
+- A fill run aims at the **middle** of a band, not its floor, so no category
+  lands at a thin edge that carries no more authority than any other point.
+- No test asserts a category is *in* its band. The one test that touches the
+  seed corpus asserts the hand-authored categories are not on the short list —
+  so adding a 21st act of compassion cannot fail CI, which would be exactly the
+  wrong incentive.
+
+`bun run jesus:coverage` prints count against band for the seed corpus and for
+live facets; `--seed` works with no database. `bun run jesus:extract` now
+defaults to **whatever is clearly short** rather than to the empty categories,
+drops a type once it reaches the middle of its band, and applies a
+per-event-per-type cap (`--cap=`, default 3) so a category cannot come to mean
+"the Olivet discourse, forty times". `--types=empty` restores the original run.
 
 ### What the seed corpus could close, and what it could not
 
@@ -443,7 +459,7 @@ than more hand-authoring.
 
 ### Still short, and what closes each
 
-| Category | now | target | closes with |
+| Category | now | roughly | closes with |
 | --- | ---: | --- | --- |
 | Questions | 27 | 300-310 | extraction; counts every interrogative, repetitions included |
 | Teachings | 29 | 60-80 | extraction |
@@ -455,6 +471,9 @@ than more hand-authoring.
 All of these need `bun run jesus:extract -- --apply` against a real database
 with a provider key. The mechanism is in place and unit-tested; the run is not
 something a content change can do for itself.
+
+Landing a few either side of any of these numbers is the expected outcome, not
+a miss.
 
 **One caveat on Commands.** The 50-60 target is *enduring* commands. Extraction
 counts every imperative, so "stretch out your hand" and "go, show yourself to

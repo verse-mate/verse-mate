@@ -7,9 +7,13 @@ import { db } from "database";
  *
  * "The encounters are under-represented" was true and nobody could act on it,
  * because the repo held no number to be under. `JESUS_CATEGORY_TARGETS` holds
- * the ranges now and this prints the comparison — so the claim is settled by
- * running something rather than by argument, and `jesus:extract` fills toward
- * the same numbers.
+ * approximate bands now and this prints the comparison — so the claim is
+ * settled by running something rather than by argument, and `jesus:extract`
+ * fills toward the same numbers.
+ *
+ * The bands are approximate on purpose and a count only shows as out once it
+ * is clearly out, so read this as orientation rather than as a scorecard.
+ * Nothing here fails a build.
  *
  * Two counts differ and both are worth seeing:
  *
@@ -35,7 +39,7 @@ function render(
 ) {
   console.log(`\n${heading}\n`);
   console.log(
-    `  ${"".padEnd(2)}${"category".padEnd(18)}${"count".padStart(6)}  ${"target".padEnd(10)}  note`,
+    `  ${"".padEnd(2)}${"category".padEnd(18)}${"count".padStart(6)}  ${"roughly".padEnd(10)}  note`,
   );
 
   let under = 0;
@@ -46,10 +50,10 @@ function render(
     const note = !row.target
       ? "no published range to anchor on"
       : row.status === "under"
-        ? `${row.delta} short`
+        ? `~${row.delta} short`
         : row.status === "over"
-          ? `${row.delta} over`
-          : row.target.unit ?? "";
+          ? `~${row.delta} over`
+          : row.target.unit ?? "about right";
 
     if (row.status === "under") under++;
     if (row.status === "over") over++;
@@ -69,11 +73,11 @@ function render(
     catalogue >= MIRACLE_CATALOGUE_TARGET.min &&
     catalogue <= MIRACLE_CATALOGUE_TARGET.max;
   console.log(
-    `\n  ${catalogueOk ? "·" : catalogue < MIRACLE_CATALOGUE_TARGET.min ? "▽" : "△"} ${"Miracle + Healing".padEnd(18)}${String(catalogue).padStart(6)}  ${`${MIRACLE_CATALOGUE_TARGET.min}-${MIRACLE_CATALOGUE_TARGET.max}`.padEnd(10)}  the traditional catalogue`,
+    `\n  ${catalogueOk ? "·" : catalogue < MIRACLE_CATALOGUE_TARGET.min ? "▽" : "△"} ${"Miracle + Healing".padEnd(18)}${String(catalogue).padStart(6)}  ${`${MIRACLE_CATALOGUE_TARGET.min}-${MIRACLE_CATALOGUE_TARGET.max}`.padEnd(10)}  traditional catalogue, ~37`,
   );
 
   console.log(
-    `\n  ${under} categor${under === 1 ? "y" : "ies"} under target · ${over} over`,
+    `\n  ${under} clearly short · ${over} clearly over · the rest about right\n  Bands are approximate — a count near its band is fine.`,
   );
 }
 

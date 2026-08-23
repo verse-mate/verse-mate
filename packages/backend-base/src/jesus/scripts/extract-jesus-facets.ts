@@ -31,7 +31,11 @@
  *
  *  - a per-event-per-type cap (`--cap=`), so a category cannot come to mean
  *    "the Olivet discourse, forty times"
- *  - a type drops out of the run the moment it reaches its target's `min`
+ *  - a type drops out of the run once it reaches the middle of its band
+ *
+ * The bands are approximate, so neither bound is a number to hit exactly. The
+ * run aims at the middle rather than the floor and stops there; landing a few
+ * either side of it is the expected outcome, not a miss.
  *
  * `--types=A,B` narrows it, `--types=empty` restores the original surgical
  * case, and `--all-types` still takes everything the cap allows.
@@ -54,6 +58,7 @@ import {
   JESUS_FACET_TYPES,
   type JesusFacetType,
   assessCoverage,
+  fillGoal,
   typesUnderTarget,
 } from "../jesus.constants";
 import { JesusEventRepository } from "../repository/jesus-event.repository";
@@ -119,22 +124,25 @@ async function main() {
 
   if (!allTypes && wanted.size === 0) {
     console.log(
-      "Every targeted category is already within its range — nothing to fill.\n" +
+      "No category is clearly short of its band — nothing to fill.\n" +
+        "The bands are approximate, so this means 'about right', not 'exact'.\n" +
         "Pass --types= or --all-types to run anyway.",
     );
     await db.closeConnection();
     return;
   }
 
-  // Remaining headroom per type, so a run stops at `min` instead of running to
-  // whatever the model happens to propose.
+  // Remaining headroom per type, so a run lands in the band instead of running
+  // to whatever the model happens to propose. Aimed at the middle of the band,
+  // not its floor — the bands are approximate and their edges carry no more
+  // authority than their middles.
   const headroom = new Map<string, number>();
   for (const row of assessCoverage(liveCounts)) {
     if (!allTypes && !wanted.has(row.type)) continue;
     headroom.set(
       row.type,
       row.target
-        ? Math.max(0, row.target.min - row.count)
+        ? Math.max(0, fillGoal(row.target) - row.count)
         : Number.POSITIVE_INFINITY,
     );
   }
@@ -156,7 +164,7 @@ async function main() {
       const target = JESUS_CATEGORY_TARGETS[type as JesusFacetType];
       if (target && Number.isFinite(need)) {
         console.log(
-          `  ${type.padEnd(16)} ${liveCounts[type as JesusFacetType] ?? 0} → ${target.min}-${target.max} (need ${need})`,
+          `  ${type.padEnd(16)} ${liveCounts[type as JesusFacetType] ?? 0} → ~${fillGoal(target)} (band ${target.min}-${target.max}, roughly ${need} to go)`,
         );
       }
     }
@@ -194,9 +202,9 @@ async function main() {
       existingTypeCounts[f.type] = (existingTypeCounts[f.type] ?? 0) + 1;
     }
 
-    // A type that has reached its target mid-run drops out for the remaining
-    // events, so the run lands on the range rather than overshooting it the
-    // way the first one did.
+    // A type that has reached the middle of its band mid-run drops out for the
+    // remaining events, so the run lands in the range rather than overshooting
+    // it the way the first one did.
     const stillWanted = allTypes
       ? null
       : new Set(
