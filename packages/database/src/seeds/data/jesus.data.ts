@@ -2,13 +2,22 @@
  * Seed corpus for the Jesus feature.
  *
  * This file is the content, not the mechanism — `jesus.seed.ts` reads it and
- * writes rows. Two conventions keep it maintainable:
+ * writes rows. Three conventions keep it maintainable:
  *
  *  1. Every entry carries an explicit `slug`. Slugs are the stable identity
  *     used by URLs, the timeline and the curated collections, so they are
  *     written out rather than derived from the title (which editors change).
  *
- *  2. Chronology lives in `LIFE_TIMELINE`, not on the entries. Ordering the
+ *  2. Order within this file is `sort_order` in the database, and
+ *     `jesus-events.project.ts` names a harmony cluster after its **first
+ *     action entry** by that order. Adding an entry to an existing cluster
+ *     ahead of the entry the event is named for therefore renames the event —
+ *     but only on a database seeded from scratch, because the `jesus_events`
+ *     upsert is `doNothing` on title. A fresh environment and production would
+ *     disagree. So: **append to a cluster, never prepend**, and leave an
+ *     existing lead's title and summary alone.
+ *
+ *  3. Chronology lives in `LIFE_TIMELINE`, not on the entries. Ordering the
  *     ministry is a curation decision that cuts across kinds, and expressing it
  *     as an ordered list of slugs per period makes it reviewable at a glance —
  *     and lets the seeder fail loudly on a typo instead of silently dropping an
@@ -404,6 +413,16 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     refs: ["Matthew 14:22-33", "Mark 6:45-52", "John 6:16-21"],
     themes: ["faith"],
     harmony: "walking-on-water",
+  },
+  {
+    slug: "healing-many-at-gennesaret",
+    kind: "HEALING",
+    title: "Many healed at Gennesaret",
+    summary:
+      "They run through the whole region carrying the sick on mats and beg only to touch the fringe of His cloak. Everyone who touches it is made well.",
+    refs: ["Matthew 14:34-36", "Mark 6:53-56"],
+    themes: ["faith", "love"],
+    harmony: "gennesaret-healings",
   },
   {
     slug: "healing-the-syrophoenician-womans-daughter",
@@ -2636,12 +2655,17 @@ export const JESUS_ENTRIES: SeedEntry[] = [
   },
   {
     slug: "healing-all-who-came",
-    kind: "COMPASSION",
+    // "Many healed at sunset" in the traditional catalogues. Typed COMPASSION
+    // when HEALING did not yet exist; it is a bodily restoration like any
+    // other, and the re-typing pass only looked at entries already typed
+    // MIRACLE, so it was missed. Title and summary are deliberately untouched —
+    // see the note on cluster leads at the top of this file.
+    kind: "HEALING",
     title: "Healing everyone who came",
     summary:
       "Whole evenings spent at a door, laying hands on each one — the gospels record it almost in passing.",
     refs: ["Luke 4:40-41", "Matthew 8:16-17", "Mark 1:32-34"],
-    themes: ["love"],
+    themes: ["love", "prophecy"],
     harmony: "evening-healings",
   },
 
@@ -2699,6 +2723,19 @@ export const JESUS_ENTRIES: SeedEntry[] = [
       "Accused of casting out demons by the prince of demons, He points out that a divided kingdom cannot stand.",
     refs: ["Matthew 12:22-32", "Mark 3:20-30", "Luke 11:14-23"],
     themes: ["kingdom", "warnings"],
+    harmony: "beelzebul",
+  },
+  // The healing that provoked the accusation above, and one of the traditional
+  // catalogue's 37. Filed here rather than with the miracles because it joins
+  // an existing cluster: see the note on cluster leads at the top of this file.
+  {
+    slug: "healing-the-blind-and-mute-demoniac",
+    kind: "HEALING",
+    title: "The blind and mute demoniac",
+    summary:
+      "A man who can neither see nor speak is brought to Him and leaves doing both. The crowd asks whether this could be the Son of David — and the accusation follows.",
+    refs: ["Matthew 12:22-23", "Luke 11:14"],
+    themes: ["kingdom", "faith"],
     harmony: "beelzebul",
   },
   {
@@ -2874,6 +2911,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "woe-to-the-unrepentant-cities",
     "the-woman-who-anointed-his-feet",
     "parable-of-the-two-debtors",
+    "healing-the-blind-and-mute-demoniac",
     "the-beelzebul-accusation",
     "the-demand-for-a-sign",
     "who-is-my-mother-and-my-brothers",
@@ -2901,6 +2939,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "feeding-the-five-thousand",
     "how-many-loaves-do-you-have",
     "walking-on-water",
+    "healing-many-at-gennesaret",
     "the-bread-of-life-discourse",
     "i-am-the-bread-of-life",
     "the-tradition-of-the-elders",
@@ -3086,9 +3125,34 @@ export const JESUS_COLLECTIONS: SeedCollection[] = [
     name: "Every miracle of Jesus",
     subtitle: "Signs of a Kingdom breaking in",
     description:
-      "Healings, exorcisms, provision, power over nature, and three people raised from the dead — every recorded miracle, with its parallel accounts held together.",
+      'Healings, exorcisms, provision, power over nature, and three people raised from the dead — every recorded miracle, with its parallel accounts held together. Lists of these run to 33, 35, 37 or 40; the spread is a counting question, not a doctrinal one. "He healed many" is one line and an unknown number of miracles, and John closes by saying the world could not contain the books.',
     isFeatured: true,
-    filter: { kind: "MIRACLE" },
+    // Both action kinds, or the study is a third of its own name: the corpus
+    // splits a sign over nature from a sign over a body, and "every miracle"
+    // means both.
+    filter: { kinds: ["MIRACLE", "HEALING"] },
+  },
+  {
+    slug: "what-the-miracles-reveal",
+    name: "What the miracles reveal",
+    subtitle: "Eight signs, and the claim each one makes",
+    description:
+      "The pattern matters more than the count. Taken together the signs stop being a list of wonders and start making one claim: authority over disease (the evening at Peter's door), over demons (the Gerasene), over nature (the stilled squall), over scarcity (five loaves), over what was broken from birth (the man born blind), over death (Lazarus) and — the one the crowd found hardest — over sin (the paralytic, forgiven before he was healed). The eighth is not like the other seven. Lazarus was raised and died again; the resurrection is not a reversal of death but the defeat of it, and John says he chose which signs to record so that you would believe exactly that.",
+    isFeatured: true,
+    // Ordered by the authority each sign demonstrates rather than by
+    // chronology. Both list paths sort by period and sequence, so the study
+    // currently renders in gospel order and the progression has to be carried
+    // by the description above; curated order is not honoured anywhere yet.
+    members: [
+      "healing-all-who-came",
+      "healing-the-gerasene-demoniac",
+      "calming-the-storm",
+      "feeding-the-five-thousand",
+      "healing-the-man-born-blind",
+      "raising-lazarus",
+      "healing-the-paralytic",
+      "mary-magdalene-at-the-tomb",
+    ],
   },
   {
     slug: "every-parable-of-jesus",

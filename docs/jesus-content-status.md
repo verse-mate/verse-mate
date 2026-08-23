@@ -91,10 +91,13 @@ Verified against a local database seeded from this corpus:
 | Collection | Events returned |
 | --- | ---: |
 | every-question-jesus-asked | 27 |
-| every-miracle-of-jesus | 35 |
+| every-miracle-of-jesus | 35 † |
 | every-parable-of-jesus | 40 |
 | the-i-am-statements | 8 |
 | jesus-and-the-pharisees | 12 |
+
+† Measured *before* item 2 re-typed 22 of those 35 as `HEALING`, which silently
+dropped the study to 13. See section 7.
 
 One thing worth knowing while reading those numbers: a curated collection's event
 count can be **lower** than its member count — `jesus-and-the-pharisees` curates
@@ -286,6 +289,92 @@ at level 1. `--all-types` exists for whoever decides otherwise.
 - **Action facets still carry no text** (Healing, Miracle, Confrontation,
   Symbolic action). That is by design — they describe rather than quote — but
   if the UI reads thin there, it is the next content decision, not a bug.
+- **Curated collection order is ignored by both list paths.** A collection's
+  `jesus_collection_events.sort_order` is read when resolving membership and
+  then discarded by the ordering clause. Studies whose sequence is the point —
+  `what-the-miracles-reveal`, `sermon-on-the-mount` — render in gospel order.
+  The fix is an ordering mode that sorts by curated position; it needs a
+  database to verify against.
 - **Nothing is reviewed.** `reviewed_by` / `reviewed_at` remain null on every
   generated row, exactly as section 4 warns. Generated interpretation reaching
   readers without a named reviewer is still an open governance question.
+
+---
+
+## 7. The miracle catalogue (update)
+
+Reported from the app: *"Jesus' miracles are not documented enough. Only 13
+listed."* Correct, and it was a regression rather than a gap in the corpus.
+
+**What happened.** Item 2 re-typed 22 of the 35 miracles as `HEALING` — the
+right call for the browse taxonomy, which now has a Healings category worth
+having. But `HEALING` was added to the seed corpus and to `JESUS_FACET_TYPES`
+without ever being added to `JESUS_KINDS`, the legacy entry vocabulary. Nothing
+failed loudly. What happened instead:
+
+- `every-miracle-of-jesus` filters `{"kind":"MIRACLE"}` and went from 35 to 13
+- `getKindCounts()` zero-fills from `JESUS_KINDS`, so the 22 healings counted
+  nowhere on the hub
+- `?kind=healings` and `?section=actions` both resolved past them
+- `jesus.seed-data.test.ts` "uses only known kinds" had been red on `main` since
+  that commit
+
+**What changed.**
+
+| | before | after |
+| --- | ---: | ---: |
+| `every-miracle-of-jesus` | 13 | **38** |
+| Entries typed `MIRACLE` or `HEALING` | 35 | **38** |
+| Kinds in `JESUS_KINDS` | 9 | **10** |
+
+1. `HEALING` added to `JESUS_KINDS`, `JESUS_KIND_META` and the `actions`
+   section, so the legacy path can see it.
+2. `every-miracle-of-jesus` now filters `{"kinds":["MIRACLE","HEALING"]}`.
+   The corpus is right to distinguish a sign over nature from a sign over a
+   body; a study called *every miracle* is not right to answer with a third of
+   them.
+3. Three episodes the traditional catalogue lists and the miracle categories
+   did not have:
+   - `healing-the-blind-and-mute-demoniac` (Matthew 12:22-23 ∥ Luke 11:14),
+     new. It joins the existing Beelzebul event as a second facet, the way
+     `cleansing-a-leper` and `touching-the-leper` share one event — the healing
+     is what provokes the accusation.
+   - `healing-many-at-gennesaret` (Matthew 14:34-36 ∥ Mark 6:53-56), new.
+   - `healing-all-who-came` — "many healed at sunset" — was already in the
+     corpus, typed `COMPASSION` because `HEALING` did not exist when it was
+     written, and missed by the re-typing pass because that pass only looked at
+     entries already typed `MIRACLE`. Re-typed rather than duplicated.
+
+   Both new entries are placed on the timeline.
+4. A new featured study, `what-the-miracles-reveal`, gathers eight signs by the
+   authority each demonstrates: disease → demons → nature → provision →
+   congenital disability → death → sin → resurrection.
+
+   Its members are authored in that order, but **curated order is not honoured
+   on either list path** — `listEvents` sorts by period then sequence, and
+   `listEntries` by `jesus_entries.sort_order`, neither of which is the
+   collection's `sort_order`. That is pre-existing and affects every curated
+   study (`the-i-am-statements` and `sermon-on-the-mount` are both authored in
+   a deliberate order too), so it is recorded here rather than fixed inside a
+   content change. Until it is, the progression is carried by the study's
+   description.
+
+**One trap found on the way, now documented in the seed file's header.** This
+file's order is `sort_order` in the database, and `jesus-events.project.ts`
+names a harmony cluster after its first *action* entry in that order. Adding
+the blind-and-mute healing to the Beelzebul cluster in the miracles block would
+have renamed that event — but only on a database seeded from scratch, since the
+`jesus_events` upsert is `doNothing` on title. Production would have kept "The
+Beelzebul accusation" while a fresh environment showed "The blind and mute
+demoniac". Hence the rule: append to a cluster, never prepend. The underlying
+`doNothing` is the same latent bug the facet upsert already had fixed (an edit
+to a lead's title or summary never reaches the reader); it is left alone here
+rather than widened into this change.
+
+**On the count.** Published harmonies list 33, 34, 35, 37 or 40 miracles. The
+spread is a classification question, not a doctrinal one: whether "he healed
+many" (Mark 1:34) is one miracle or many, whether Matthew's two demoniacs and
+Mark's one are one event, whether supernatural knowledge counts, whether the
+resurrection belongs in the list or above it. 37 is the usual traditional
+catalogue and `jesus.seed-data.test.ts` now holds the corpus at or above it, but
+no number is derivable from Scripture — John 21:25 closes by saying so.
