@@ -523,6 +523,111 @@ export class JesusEventRepository {
       .execute();
   }
 
+  // ── Topic briefs ────────────────────────────────────────────────────────
+  //
+  // What He teaches/asks/claims about one theme, within one category. Keyed on
+  // the theme's slug rather than its id at the boundary, because that is what
+  // the grouped browse and the generator both work in.
+
+  /**
+   * Every live brief for a category, in one query.
+   *
+   * The browse renders up to ten topics at once, so this is deliberately one
+   * round trip rather than one per topic.
+   */
+  async getTopicBriefs(
+    facetType: string,
+    languageCode: string,
+  ): Promise<
+    Array<{
+      theme_slug: string;
+      content: string;
+      provenance: number;
+      reviewed_at: Date | null;
+    }>
+  > {
+    const rows = await this.conn
+      .selectFrom("jesus_topic_briefs")
+      .innerJoin(
+        "jesus_themes",
+        "jesus_themes.theme_id",
+        "jesus_topic_briefs.theme_id",
+      )
+      .where("jesus_topic_briefs.facet_type", "=", facetType)
+      .where("jesus_topic_briefs.language_code", "=", languageCode)
+      .where("jesus_topic_briefs.is_active", "=", true)
+      .select([
+        "jesus_themes.slug as theme_slug",
+        "jesus_topic_briefs.content",
+        "jesus_topic_briefs.provenance",
+        "jesus_topic_briefs.reviewed_at",
+      ])
+      .execute();
+
+    return rows.map((row) => ({
+      theme_slug: row.theme_slug,
+      content: row.content,
+      provenance: row.provenance,
+      reviewed_at: row.reviewed_at,
+    }));
+  }
+
+  /** One brief, for the generator's "is this already written?" check. */
+  async getTopicBrief(
+    facetType: string,
+    themeId: string,
+    languageCode: string,
+  ) {
+    return await this.conn
+      .selectFrom("jesus_topic_briefs")
+      .where("facet_type", "=", facetType)
+      .where("theme_id", "=", themeId)
+      .where("language_code", "=", languageCode)
+      .where("is_active", "=", true)
+      .select(["content", "provenance", "model", "reviewed_at"])
+      .executeTakeFirst();
+  }
+
+  async saveTopicBrief(input: {
+    facetType: string;
+    themeId: string;
+    content: string;
+    languageCode: string;
+    provenance: number;
+    promptId?: number | null;
+    model?: string | null;
+  }) {
+    await this.conn
+      .insertInto("jesus_topic_briefs")
+      .values({
+        facet_type: input.facetType,
+        theme_id: input.themeId,
+        content: input.content,
+        language_code: input.languageCode,
+        provenance: input.provenance,
+        prompt_id: input.promptId ?? null,
+        model: input.model ?? null,
+        is_active: true,
+        version: 1,
+      })
+      .onConflict((oc) =>
+        oc
+          .columns(["facet_type", "theme_id", "language_code"])
+          // Partial unique index (active rows only), so the conflict target has
+          // to repeat its predicate — see `saveExplanation`.
+          .where("is_active", "=", true)
+          .doUpdateSet({
+            content: input.content,
+            provenance: input.provenance,
+            prompt_id: input.promptId ?? null,
+            model: input.model ?? null,
+            is_active: true,
+            updated_at: new Date(),
+          }),
+      )
+      .execute();
+  }
+
   /** Counts per facet type, zero-filled so the hub never omits a category. */
   async getFacetTypeCounts(): Promise<Record<string, number>> {
     const rows = await this.conn

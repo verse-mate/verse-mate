@@ -164,6 +164,13 @@ export function validateNarrative(input: {
   allowedReferences: Iterable<string>;
   minLength?: number;
   maxLength?: number;
+  /**
+   * Force the scope gate on or off instead of deriving it from `type`. Topic
+   * briefs are not one of the event tabs but are just as bound to the passages
+   * they were shown, so they set this rather than borrowing another type's name
+   * to inherit its behaviour.
+   */
+  enforceReferenceScope?: boolean;
 }): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const content = input.content?.trim() ?? "";
@@ -198,7 +205,10 @@ export function validateNarrative(input: {
   }
 
   // Only the tabs that must stay inside this event are scope-checked.
-  if (input.type === "overview" || input.type === "compare") {
+  const scoped =
+    input.enforceReferenceScope ??
+    (input.type === "overview" || input.type === "compare");
+  if (scoped) {
     const stray = findOutOfScopeReferences(
       content,
       input.bookNames,
@@ -282,4 +292,72 @@ export function validateExtraction(input: {
   }
 
   return { valid, rejected };
+}
+
+/**
+ * Gate a topic brief before it is stored.
+ *
+ * A brief describes what Jesus teaches, asks or claims about one theme, and it
+ * is written from a list of His sayings in that theme rather than from a single
+ * passage. Two things follow, and both are checked here:
+ *
+ *  1. It must stay inside the passages it was shown. A brief about the Kingdom
+ *     that reaches for Revelation is describing something the generator never
+ *     handed it.
+ *  2. Anything it puts in quotation marks must actually be one of those
+ *     sayings. This is the gate that stops a fluent, plausible, invented
+ *     quotation being filed as something Jesus said.
+ *
+ * Length is bounded tightly: this is a paragraph above a list, and a brief that
+ * runs to an essay breaks the screen it was written for.
+ */
+export function validateTopicBrief(input: {
+  content: string;
+  bookNames: string[];
+  chapterCounts?: ReadonlyMap<string, number>;
+  /** `book|chapter` keys for the passages behind this topic's events. */
+  allowedReferences: Iterable<string>;
+  /** The sayings the model was given, concatenated. */
+  sourceText: string;
+  minLength?: number;
+  maxLength?: number;
+}): ValidationIssue[] {
+  const issues = validateNarrative({
+    content: input.content,
+    type: "topic-brief",
+    bookNames: input.bookNames,
+    chapterCounts: input.chapterCounts,
+    allowedReferences: input.allowedReferences,
+    minLength: input.minLength ?? 120,
+    maxLength: input.maxLength ?? 900,
+    enforceReferenceScope: true,
+  });
+
+  for (const quotation of extractQuotations(input.content)) {
+    if (!isQuotationGrounded(quotation, input.sourceText)) {
+      issues.push({
+        rule: "quotation-grounded",
+        detail: `quotation not among this topic's sayings: "${quotation.slice(0, 60)}"`,
+      });
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Quoted spans in prose, straight or curly.
+ *
+ * Apostrophes are not treated as quote marks: "the Father's house" is not a
+ * quotation, and reading it as one would fail every brief that used a
+ * possessive. Single-word spans are ignored — a scare-quoted term like "born
+ * again" is a reference to the saying, not a claim to be reproducing it.
+ */
+export function extractQuotations(text: string): string[] {
+  const found: string[] = [];
+  for (const match of text.matchAll(/[“"]([^”"]{2,})[”"]/g)) {
+    const quotation = match[1].trim();
+    if (quotation.split(/\s+/).length > 1) found.push(quotation);
+  }
+  return found;
 }

@@ -272,6 +272,10 @@ const TopicGroupSchema = t.Object({
   gospels: t.Array(t.String()),
   points: t.Array(TopicPointSchema),
   events: t.Array(EventCardSchema),
+  // What He addresses in this category, as opposed to what the theme is in
+  // general. Null until the brief has been generated for this pair.
+  brief: t.Union([t.String(), t.Null()]),
+  brief_provenance: t.Union([t.Number(), t.Null()]),
 });
 
 const EventBrowseResponseSchema = t.Object({

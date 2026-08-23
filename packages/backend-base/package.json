@@ -6,6 +6,7 @@
     "jesus:generate": "bun ./src/jesus/scripts/generate-jesus-content.ts",
     "jesus:quotes": "bun ./src/jesus/scripts/propose-jesus-quotes.ts",
     "jesus:generate:batch": "bun ./src/jesus/scripts/generate-jesus-content-batch.ts",
+    "jesus:briefs": "bun ./src/jesus/scripts/generate-jesus-topic-briefs.ts",
     "jesus:chronology": "bun ./src/jesus/scripts/assess-chronology.ts",
     "jesus:extract": "bun ./src/jesus/scripts/extract-jesus-facets.ts",
     "jesus:enrich": "bun ./src/jesus/scripts/enrich-jesus-events.ts"
