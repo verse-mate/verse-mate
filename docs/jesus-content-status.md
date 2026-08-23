@@ -378,3 +378,86 @@ Mark's one are one event, whether supernatural knowledge counts, whether the
 resurrection belongs in the list or above it. 37 is the usual traditional
 catalogue and `jesus.seed-data.test.ts` now holds the corpus at or above it, but
 no number is derivable from Scripture — John 21:25 closes by saying so.
+
+---
+
+## 8. Category coverage (update)
+
+Follow-up to §7, from the same reader: Encounters, Compassion, Confrontations,
+Teachings, Questions, Commands and Claims all read as under-represented, while
+Warnings, Prayers and Prophecies read as padded.
+
+**Both halves have one cause.** `jesus:extract` defaulted `--types` to
+`EMPTY_CATEGORIES` — the five categories that had no content at all. So the 466
+level-1 facets it wrote went entirely to Promise, Warning, Prayer, Prophecy and
+Symbolic action, and there was no per-event cap to stop one big discourse from
+taking a category to itself. Meanwhile Question, Command, Teaching, Claim and
+Encounter — for which extraction had already *found* content, out of the 2,781
+facets it proposed — received none of it and stayed at their curated counts.
+One flag produced both complaints.
+
+### Targets now exist
+
+`JESUS_CATEGORY_TARGETS` holds a range per category, from the published
+harmonies. Ranges rather than points, because the catalogues disagree and the
+disagreements are classification questions ("he healed many" — one or many?)
+rather than doctrinal ones.
+
+`bun run jesus:coverage` prints count against target for the seed corpus and
+for live facets; `--seed` works with no database. `bun run jesus:extract` now
+defaults to **whatever is under target** rather than to the empty categories,
+stops a type the moment it reaches `min`, and applies a per-event-per-type cap
+(`--cap=`, default 3) so a category cannot come to mean "the Olivet discourse,
+forty times". `--types=empty` restores the original run.
+
+### What the seed corpus could close, and what it could not
+
+| Category | before | after | how |
+| --- | ---: | ---: | --- |
+| Compassion | 11 | **17** | six authored facets |
+| Confrontations | 14 | **18** | three authored facets + one missing episode |
+
+Checked against the reader's own lists, **every episode they named already
+existed in the corpus** bar one — the plot to kill Him after Lazarus (John
+11:45-53), now added. The categories were thin because most episodes carry a
+single facet, not because episodes were missing.
+
+Closing the rest from the seed file is blocked by the harmony-key constraint:
+a second facet can only attach to an episode that already has a harmony key,
+because the projection derives a standalone event's slug from its lead entry's
+slug. Giving a standalone entry a harmony key to hang a second facet off it
+moves its event from `/jesus/event/<slug>` to `/jesus/event/event-<key>` and
+orphans the old row. So of the reader's compassion list, six could take a
+second facet and nine could not (the deaf man, Bethsaida, the bent-over woman,
+the ten lepers, Malchus, the man born blind, Thomas, the anointing woman,
+Peter's restoration — all standalone events).
+
+Two more were dropped for the §7 rule rather than the constraint: a
+confrontation facet on `greatest-commandment` or `lord-of-sabbath` would become
+those clusters' first *action* entry and rename the event on a fresh database.
+
+**Extraction has neither problem** — it writes facets against an event id, so
+it needs no harmony key and cannot move a URL. That is the tool for the
+remaining gaps, and it is why the fix here is the pipeline's defaults rather
+than more hand-authoring.
+
+### Still short, and what closes each
+
+| Category | now | target | closes with |
+| --- | ---: | --- | --- |
+| Questions | 27 | 300-310 | extraction; counts every interrogative, repetitions included |
+| Teachings | 29 | 60-80 | extraction |
+| Claims | 20 | 50-70 | extraction |
+| Commands | 28 | 50-60 | extraction, then a pass to drop situational imperatives |
+| Encounters | 26 | 50-60 | extraction |
+| Warnings / Prayers / Prophecies | live only | 40-50 / 20-25 / 30-40 | re-run under the cap; level-1 rows are `provenance = 1`, so the current over-fill can be trimmed without touching curated content |
+
+All of these need `bun run jesus:extract -- --apply` against a real database
+with a provider key. The mechanism is in place and unit-tested; the run is not
+something a content change can do for itself.
+
+**One caveat on Commands.** The 50-60 target is *enduring* commands. Extraction
+counts every imperative, so "stretch out your hand" and "go, show yourself to
+the priest" — real imperatives addressed to one person in one moment — will
+come through alongside "love your enemies". Reaching 50 is not the same as
+reaching the right 50, and that pass is editorial.

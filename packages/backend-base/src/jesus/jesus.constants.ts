@@ -261,6 +261,141 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
   },
 };
 
+// ── Coverage targets ──────────────────────────────────────────────────────
+//
+// How much content a category should carry before it stops reading as thin (or
+// starts reading as padded). Without a number here "the encounters are
+// under-represented" is a matter of opinion and nothing can act on it; with
+// one, `jesus:coverage` reports it and `jesus:extract` fills toward it.
+//
+// These are scholarly consensus ranges, not inspired totals — published
+// harmonies disagree, because the disagreements are classification questions
+// (is "he healed many" one miracle or many? is a repeated saying one command
+// or three?) rather than doctrinal ones. Treat a range as the band a category
+// should land in, and read anything outside it as a question to look at, not
+// a failure.
+
+export interface JesusCategoryTarget {
+  /** Below this the category reads as thin. */
+  min: number;
+  /** Above this it reads as padded — usually one event dominating the type. */
+  max: number;
+  /**
+   * What the range counts, where it is not one facet per episode. Questions
+   * are the notable case: ~300 counts every direct interrogative including
+   * repetitions across parallel accounts, not distinct questions.
+   */
+  unit?: string;
+}
+
+export const JESUS_CATEGORY_TARGETS: Partial<
+  Record<JesusFacetType, JesusCategoryTarget>
+> = {
+  // Words
+  TEACHING: { min: 60, max: 80, unit: "distinct teaching units" },
+  PARABLE: { min: 35, max: 40 },
+  QUESTION: {
+    min: 300,
+    max: 310,
+    unit: "every direct interrogative, repetitions included",
+  },
+  COMMAND: {
+    min: 50,
+    max: 60,
+    unit: "enduring commands, not every imperative",
+  },
+  CLAIM: { min: 50, max: 70, unit: "distinct self-claims, parallels merged" },
+  WARNING: { min: 40, max: 50 },
+  PRAYER: { min: 20, max: 25, unit: "occasions He is shown praying" },
+  PROPHECY: { min: 30, max: 40, unit: "prophetic units, parallels merged" },
+  // Actions. Miracle and Healing split one traditional catalogue of ~37
+  // between them, so neither range means much alone — `assessCoverage` reports
+  // them together as well.
+  MIRACLE: { min: 12, max: 20 },
+  HEALING: { min: 17, max: 25 },
+  ENCOUNTER: { min: 50, max: 60, unit: "narrated personal encounters" },
+  COMPASSION: { min: 15, max: 20, unit: "touch / weeping episodes" },
+  CONFRONTATION: { min: 15, max: 20 },
+  // PROMISE and SYMBOLIC_ACTION have no published range to anchor on, so they
+  // are deliberately untargeted rather than given an invented one.
+};
+
+/** The two types that split the traditional miracle catalogue between them. */
+export const MIRACLE_CATALOGUE_TYPES = ["MIRACLE", "HEALING"] as const;
+
+/** The traditional catalogue the two of them together should cover. */
+export const MIRACLE_CATALOGUE_TARGET: JesusCategoryTarget = {
+  min: 37,
+  max: 45,
+};
+
+export type JesusCoverageStatus = "under" | "ok" | "over" | "untargeted";
+
+export interface JesusCoverageRow {
+  type: JesusFacetType;
+  label: string;
+  count: number;
+  target: JesusCategoryTarget | null;
+  status: JesusCoverageStatus;
+  /** How many to add to reach `min`, or to shed to reach `max`. 0 when ok. */
+  delta: number;
+}
+
+/**
+ * Compare per-type facet counts against the targets.
+ *
+ * Takes counts rather than reading them, so the same function serves the
+ * report (counts from the database), the extraction script (deciding which
+ * types still need filling) and the tests (counts made up).
+ */
+export function assessCoverage(
+  counts: Partial<Record<JesusFacetType, number>>,
+): JesusCoverageRow[] {
+  return JESUS_FACET_TYPES.map((type) => {
+    const count = counts[type] ?? 0;
+    const target = JESUS_CATEGORY_TARGETS[type] ?? null;
+
+    if (!target) {
+      return {
+        type,
+        label: JESUS_FACET_META[type].label,
+        count,
+        target: null,
+        status: "untargeted" as const,
+        delta: 0,
+      };
+    }
+
+    const status =
+      count < target.min ? "under" : count > target.max ? "over" : "ok";
+    const delta =
+      status === "under"
+        ? target.min - count
+        : status === "over"
+          ? count - target.max
+          : 0;
+
+    return {
+      type,
+      label: JESUS_FACET_META[type].label,
+      count,
+      target,
+      status,
+      delta,
+    };
+  });
+}
+
+/** The types that still need content, neediest first. */
+export function typesUnderTarget(
+  counts: Partial<Record<JesusFacetType, number>>,
+): JesusFacetType[] {
+  return assessCoverage(counts)
+    .filter((r) => r.status === "under")
+    .sort((a, b) => b.delta - a.delta)
+    .map((r) => r.type);
+}
+
 const FACET_TYPE_BY_SLUG = new Map<string, JesusFacetType>(
   JESUS_FACET_TYPES.map((t) => [JESUS_FACET_META[t].slug, t]),
 );

@@ -324,6 +324,7 @@ async function collect(batchId: string, argv: string[]) {
     noText: 0,
     duplicate: 0,
     filtered: 0,
+    capped: 0,
   };
   const usedSlugs = new Set<string>();
   const enrichTally = {
@@ -451,6 +452,10 @@ async function collect(batchId: string, argv: string[]) {
           normalizeFacetKey(String(f.text ?? f.title ?? "")),
         ),
       );
+      const existingTypeCounts: Record<string, number> = {};
+      for (const f of full.facets ?? []) {
+        existingTypeCounts[f.type] = (existingTypeCounts[f.type] ?? 0) + 1;
+      }
       const keep = selectFacetsToWrite({
         facets: ex.accepted,
         existingKeys,
@@ -458,6 +463,7 @@ async function collect(batchId: string, argv: string[]) {
         eventSlug: slug,
         usedSlugs,
         tally: facetTally,
+        existingTypeCounts,
       });
       for (const f of keep) {
         await conn
