@@ -2669,6 +2669,67 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     harmony: "evening-healings",
   },
 
+  {
+    slug: "taking-her-by-the-hand",
+    kind: "COMPASSION",
+    title: "Taking her by the hand",
+    summary:
+      "He could have spoken across the room. Mark keeps the detail that He went over, took her hand, and raised her up.",
+    refs: ["Mark 1:31", "Matthew 8:15"],
+    themes: ["love"],
+    harmony: "peters-mother-in-law",
+  },
+  {
+    slug: "taking-the-dead-girl-by-the-hand",
+    kind: "COMPASSION",
+    title: "Taking the dead girl by the hand",
+    summary:
+      "Touching a corpse made a man unclean. He takes her hand anyway and speaks to her in the language of a household waking a child.",
+    refs: ["Mark 5:41", "Luke 8:54"],
+    themes: ["love", "faith"],
+    harmony: "jairus-daughter",
+  },
+  {
+    slug: "who-touched-me-daughter",
+    kind: "COMPASSION",
+    title: '"Daughter" — stopping the crowd to find her',
+    summary:
+      'She was already healed and could have slipped away. He stops the whole procession to find her, and gives her a word she can keep: not "you are healed" but "Daughter."',
+    refs: ["Mark 5:32-34", "Luke 8:47-48"],
+    themes: ["love", "faith"],
+    harmony: "bleeding-woman",
+  },
+  {
+    slug: "taking-the-children-in-his-arms",
+    kind: "COMPASSION",
+    title: "Taking the children in His arms",
+    summary:
+      "The disciples treat them as an interruption. He is indignant, gathers them up, and blesses them with His hands on them.",
+    refs: ["Mark 10:16", "Matthew 19:15"],
+    themes: ["love", "kingdom"],
+    harmony: "blessing-children",
+  },
+  {
+    slug: "stopping-for-bartimaeus",
+    kind: "COMPASSION",
+    title: "Stopping for a beggar shouting",
+    summary:
+      "The crowd tells him to be quiet. Jesus hears the one voice being shouted down, stops on the road out of Jericho, and has him called over.",
+    refs: ["Mark 10:49", "Luke 18:40"],
+    themes: ["love", "faith"],
+    harmony: "bartimaeus",
+  },
+  {
+    slug: "he-said-her-name",
+    kind: "COMPASSION",
+    title: '"Mary"',
+    summary:
+      "She is weeping at an empty tomb and mistakes Him for the gardener. He does not argue her out of her grief; He says her name, and that is enough.",
+    refs: ["John 20:15-16"],
+    themes: ["love", "salvation"],
+    harmony: "resurrection-morning",
+  },
+
   // ═══ CONFRONTATIONS ═════════════════════════════════════════════════════
   {
     slug: "cleansing-the-temple",
@@ -2788,6 +2849,45 @@ export const JESUS_ENTRIES: SeedEntry[] = [
     harmony: "woe-to-cities",
   },
   {
+    slug: "the-plot-to-kill-him",
+    kind: "CONFRONTATION",
+    title: "The plot to kill Him",
+    summary:
+      "Raising Lazarus is what finally decides them. The council reasons that it is expedient for one man to die for the people — and from that day they plan His death.",
+    refs: ["John 11:45-53"],
+    themes: ["judgment", "salvation"],
+  },
+  {
+    slug: "refusing-every-shortcut",
+    kind: "CONFRONTATION",
+    title: "Refusing every shortcut",
+    summary:
+      "Bread, spectacle, and the kingdoms of the world without a cross. He answers each one from Deuteronomy and takes none of them.",
+    refs: ["Matthew 4:1-11", "Luke 4:1-13"],
+    themes: ["kingdom", "faith"],
+    harmony: "temptation",
+  },
+  {
+    slug: "which-is-easier-to-say",
+    kind: "CONFRONTATION",
+    title: "Refusing to soften the claim to forgive",
+    summary:
+      "They are right that only God forgives sins. Rather than retreat from what He said, He heals the man in front of them to prove He had the right to say it.",
+    refs: ["Mark 2:6-12", "Luke 5:21-25"],
+    themes: ["salvation", "kingdom"],
+    harmony: "paralytic-roof",
+  },
+  {
+    slug: "you-would-have-no-authority",
+    kind: "CONFRONTATION",
+    title: "Telling Pilate where his authority comes from",
+    summary:
+      "Pilate says he has power to release or crucify Him. Jesus, bound and beaten, tells him he would have none at all unless it had been given from above.",
+    refs: ["John 19:10-11"],
+    themes: ["kingdom", "judgment"],
+    harmony: "pilate-trial",
+  },
+  {
     slug: "the-trial-before-the-sanhedrin",
     kind: "CONFRONTATION",
     title: "The trial before the Sanhedrin",
@@ -2844,7 +2944,11 @@ export const JESUS_ENTRIES: SeedEntry[] = [
  */
 export const LIFE_TIMELINE: Record<string, string[]> = {
   "hidden-years": ["the-boy-in-the-temple"],
-  preparation: ["the-baptism-of-jesus", "the-temptation-in-the-wilderness"],
+  preparation: [
+    "the-baptism-of-jesus",
+    "the-temptation-in-the-wilderness",
+    "refusing-every-shortcut",
+  ],
   "early-ministry": [
     "what-are-you-seeking",
     "nathanael-under-the-fig-tree",
@@ -2864,11 +2968,13 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "follow-me",
     "unclean-spirit-in-capernaum",
     "healing-peters-mother-in-law",
+    "taking-her-by-the-hand",
     "healing-all-who-came",
     "miraculous-catch-of-fish",
     "cleansing-a-leper",
     "touching-the-leper",
     "healing-the-paralytic",
+    "which-is-easier-to-say",
     "calling-matthew",
     "eating-with-tax-collectors-and-sinners",
     "parable-of-new-wine-and-old-wineskins",
@@ -2931,7 +3037,9 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "restoring-the-demoniac",
     "healing-the-bleeding-woman",
     "who-touched-my-garments",
+    "who-touched-me-daughter",
     "raising-jairus-daughter",
+    "taking-the-dead-girl-by-the-hand",
     "healing-two-blind-men",
     "do-you-believe-that-i-am-able",
     "healing-a-mute-demoniac",
@@ -2992,6 +3100,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "parable-of-the-pharisee-and-tax-collector",
     "teaching-on-divorce-and-marriage",
     "blessing-the-children",
+    "taking-the-children-in-his-arms",
     "let-the-children-come",
     "the-rich-young-ruler",
     "why-do-you-call-me-good",
@@ -3000,6 +3109,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "teaching-on-greatness",
     "what-do-you-want-me-to-do-for-you",
     "healing-blind-bartimaeus",
+    "stopping-for-bartimaeus",
     "zacchaeus",
     "to-seek-and-save-the-lost",
     "parable-of-the-minas",
@@ -3019,6 +3129,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "i-and-the-father-are-one",
     "raising-lazarus",
     "jesus-wept-at-the-tomb",
+    "the-plot-to-kill-him",
     "i-am-the-resurrection-and-the-life",
   ],
   "passion-week": [
@@ -3070,6 +3181,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
     "i-am-before-the-high-priest",
     "jesus-before-pilate",
     "my-kingdom-is-not-of-this-world",
+    "you-would-have-no-authority",
     "father-forgive-them",
     "the-thief-on-the-cross",
     "behold-your-mother",
@@ -3078,6 +3190,7 @@ export const LIFE_TIMELINE: Record<string, string[]> = {
   resurrection: [
     "mary-magdalene-at-the-tomb",
     "woman-why-are-you-weeping",
+    "he-said-her-name",
     "the-road-to-emmaus",
     "doubting-thomas",
     "the-second-catch-of-fish",

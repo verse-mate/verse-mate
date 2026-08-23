@@ -9,7 +9,8 @@
     "jesus:briefs": "bun ./src/jesus/scripts/generate-jesus-topic-briefs.ts",
     "jesus:chronology": "bun ./src/jesus/scripts/assess-chronology.ts",
     "jesus:extract": "bun ./src/jesus/scripts/extract-jesus-facets.ts",
-    "jesus:enrich": "bun ./src/jesus/scripts/enrich-jesus-events.ts"
+    "jesus:enrich": "bun ./src/jesus/scripts/enrich-jesus-events.ts",
+    "jesus:coverage": "bun ./src/jesus/scripts/jesus-coverage.ts"
   },
   "dependencies": {
     "@elysiajs/bearer": "1.2.0",

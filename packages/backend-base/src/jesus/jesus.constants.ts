@@ -261,6 +261,185 @@ export const JESUS_FACET_META: Record<JesusFacetType, JesusFacetMeta> = {
   },
 };
 
+// ── Coverage targets ──────────────────────────────────────────────────────
+//
+// Roughly how much content a category should carry before it reads as thin, or
+// as padded. Without a number "the encounters are under-represented" is a
+// matter of opinion and nothing can act on it; with one, `jesus:coverage`
+// reports it and `jesus:extract` fills toward it.
+//
+// **These are approximate and are meant to be.** They come from published
+// harmonies, which disagree with each other, because the disagreements are
+// classification questions — is "he healed many" one miracle or many? is a
+// saying repeated in three Gospels one command or three? — rather than
+// doctrinal ones. There is no inspired total for any of these categories and
+// Scripture makes one underivable: the narrated episodes are samples, and John
+// 21:25 closes by saying so.
+//
+// So nothing here is an acceptance criterion. A count near its band is fine, a
+// count well outside it is a question worth looking at, and neither is a build
+// failure. `COVERAGE_TOLERANCE` is what keeps the difference honest: a category
+// has to be clearly out before anything reports it as out.
+
+export interface JesusCategoryTarget {
+  /** Roughly the fewest before the category reads as thin. */
+  min: number;
+  /** Roughly the most before it reads as padded — usually one event dominating. */
+  max: number;
+  /**
+   * What the range counts, where it is not one facet per episode. Questions
+   * are the notable case: ~300 counts every direct interrogative including
+   * repetitions across parallel accounts, not distinct questions.
+   */
+  unit?: string;
+}
+
+/**
+ * How far outside its band a count may sit before anything reports it.
+ *
+ * The bands are approximations, so treating their edges as exact would invent
+ * precision the sources do not have — flagging 34 parables against a band of
+ * 35-40 says the catalogues agree to the unit, and they do not. 20% is wide
+ * enough that only a real gap trips it.
+ */
+export const COVERAGE_TOLERANCE = 0.2;
+
+/**
+ * What a fill run should aim at: the middle of the band, not its floor.
+ *
+ * Aiming at `min` lands every category at the thin end of an approximate range
+ * and makes the exact boundary matter, which is the thing these numbers cannot
+ * support.
+ */
+export function fillGoal(target: JesusCategoryTarget): number {
+  return Math.round((target.min + target.max) / 2);
+}
+
+export const JESUS_CATEGORY_TARGETS: Partial<
+  Record<JesusFacetType, JesusCategoryTarget>
+> = {
+  // Words
+  TEACHING: { min: 60, max: 80, unit: "distinct teaching units" },
+  PARABLE: { min: 35, max: 40 },
+  QUESTION: {
+    min: 300,
+    max: 310,
+    unit: "every direct interrogative, repetitions included",
+  },
+  COMMAND: {
+    min: 50,
+    max: 60,
+    unit: "enduring commands, not every imperative",
+  },
+  CLAIM: { min: 50, max: 70, unit: "distinct self-claims, parallels merged" },
+  WARNING: { min: 40, max: 50 },
+  PRAYER: { min: 20, max: 25, unit: "occasions He is shown praying" },
+  PROPHECY: { min: 30, max: 40, unit: "prophetic units, parallels merged" },
+  // Actions. Miracle and Healing split one traditional catalogue of ~37
+  // between them, so neither range means much alone — `assessCoverage` reports
+  // them together as well.
+  MIRACLE: { min: 12, max: 20 },
+  HEALING: { min: 17, max: 25 },
+  ENCOUNTER: { min: 50, max: 60, unit: "narrated personal encounters" },
+  COMPASSION: { min: 15, max: 20, unit: "touch / weeping episodes" },
+  CONFRONTATION: { min: 15, max: 20 },
+  // PROMISE and SYMBOLIC_ACTION have no published range to anchor on, so they
+  // are deliberately untargeted rather than given an invented one.
+};
+
+/** The two types that split the traditional miracle catalogue between them. */
+export const MIRACLE_CATALOGUE_TYPES = ["MIRACLE", "HEALING"] as const;
+
+/** The traditional catalogue the two of them together should cover. */
+export const MIRACLE_CATALOGUE_TARGET: JesusCategoryTarget = {
+  min: 37,
+  max: 45,
+};
+
+export type JesusCoverageStatus = "under" | "ok" | "over" | "untargeted";
+
+export interface JesusCoverageRow {
+  type: JesusFacetType;
+  label: string;
+  count: number;
+  target: JesusCategoryTarget | null;
+  status: JesusCoverageStatus;
+  /**
+   * Roughly how far outside the band it sits — short of `min`, or over `max`.
+   * 0 when the count is in the band or within tolerance of it. Approximate,
+   * like everything else here: useful for "is this a big gap or a small one",
+   * not for planning to the unit.
+   */
+  delta: number;
+  /** What a fill run aims at, the middle of the band. Null when untargeted. */
+  goal: number | null;
+}
+
+/**
+ * Compare per-type facet counts against the targets.
+ *
+ * Takes counts rather than reading them, so the same function serves the
+ * report (counts from the database), the extraction script (deciding which
+ * types still need filling) and the tests (counts made up).
+ *
+ * A count is only reported out-of-band once it is `COVERAGE_TOLERANCE` beyond
+ * the edge, because the bands are approximate — see the note above them.
+ */
+export function assessCoverage(
+  counts: Partial<Record<JesusFacetType, number>>,
+): JesusCoverageRow[] {
+  return JESUS_FACET_TYPES.map((type) => {
+    const count = counts[type] ?? 0;
+    const target = JESUS_CATEGORY_TARGETS[type] ?? null;
+
+    if (!target) {
+      return {
+        type,
+        label: JESUS_FACET_META[type].label,
+        count,
+        target: null,
+        status: "untargeted" as const,
+        delta: 0,
+        goal: null,
+      };
+    }
+
+    const floor = target.min * (1 - COVERAGE_TOLERANCE);
+    const ceiling = target.max * (1 + COVERAGE_TOLERANCE);
+
+    const status =
+      count < floor ? "under" : count > ceiling ? "over" : ("ok" as const);
+    // Measured from the band itself rather than from the tolerance edge, so
+    // the number answers "how far from where it should be".
+    const delta =
+      status === "under"
+        ? target.min - count
+        : status === "over"
+          ? count - target.max
+          : 0;
+
+    return {
+      type,
+      label: JESUS_FACET_META[type].label,
+      count,
+      target,
+      status,
+      delta,
+      goal: fillGoal(target),
+    };
+  });
+}
+
+/** The types clearly short of their band, biggest gap first. */
+export function typesUnderTarget(
+  counts: Partial<Record<JesusFacetType, number>>,
+): JesusFacetType[] {
+  return assessCoverage(counts)
+    .filter((r) => r.status === "under")
+    .sort((a, b) => b.delta - a.delta)
+    .map((r) => r.type);
+}
+
 const FACET_TYPE_BY_SLUG = new Map<string, JesusFacetType>(
   JESUS_FACET_TYPES.map((t) => [JESUS_FACET_META[t].slug, t]),
 );
