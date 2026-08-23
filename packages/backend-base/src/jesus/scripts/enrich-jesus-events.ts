@@ -22,7 +22,15 @@
  * Everything is answered from the verse text supplied in the prompt, and every
  * claim carries the reference it came from. Reveals and reactions are stored at
  * provenance 2 (interpretation) — they are readings of the text, not extraction
- * of it, and the level-1 path is `jesus:extract`. People and location are plain
+ * of it, and the level-1 path is `jesus:extract`.
+ *
+ * Because they are readings rather than extraction, they are written against
+ * the same `system` prompt as every other explanation in VerseMate — the
+ * statement of faith the rest of the commentary is held to. `reveals` in
+ * particular asks what the event discloses about who Jesus is, which is a
+ * doctrinal answer; generating it from the task description alone would let one
+ * corner of the product answer that question on a different theology from every
+ * other corner. People and location are plain
  * facts of the narrative.
  *
  * Re-running replaces an event's rows rather than appending, so a second run
@@ -96,6 +104,18 @@ async function main() {
   const service = new JesusGenerationService(db);
   const ai = getAiProvider();
 
+  // Fail before spending a single call if the framework is missing, the way
+  // `jesus:generate` does, rather than quietly enriching without it.
+  let framework: { id: number; text: string };
+  try {
+    framework = await service.getSystemPrompt();
+  } catch {
+    console.error(
+      "no active `system` prompt — that row is the theological framework the rest of the commentary is written against, and reveals must not be generated without it",
+    );
+    process.exit(1);
+  }
+
   const all = await events.listEvents(
     {},
     { limit: 1000, orderBy: "chronology" },
@@ -140,8 +160,10 @@ async function main() {
     try {
       const res = await ai.responsesCreate({
         model,
-        instructions: ENRICH_INSTRUCTIONS,
-        input: `Event: ${full.title}\nSummary: ${full.summary ?? ""}\nGospel accounts: ${(full.passages ?? []).map((p) => p.display).join(" · ")}\n\nPassages:\n${passageBlock}`,
+        // Framework as instructions, task as input — the same split
+        // `JesusGenerationService` uses for every other generated layer.
+        instructions: framework.text,
+        input: `${ENRICH_INSTRUCTIONS}\n\nEvent: ${full.title}\nSummary: ${full.summary ?? ""}\nGospel accounts: ${(full.passages ?? []).map((p) => p.display).join(" · ")}\n\nPassages:\n${passageBlock}`,
         reasoningEffort: "medium",
         maxOutputTokens: 16000,
       });
