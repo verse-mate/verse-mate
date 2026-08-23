@@ -107,6 +107,7 @@ describe("resolveKindFilter", () => {
   it("resolves a section to its kinds", () => {
     expect(resolveKindFilter({ section: "actions" })).toEqual([
       "MIRACLE",
+      "HEALING",
       "ENCOUNTER",
       "COMPASSION",
       "CONFRONTATION",

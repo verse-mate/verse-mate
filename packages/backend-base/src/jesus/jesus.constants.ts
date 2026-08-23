@@ -351,13 +351,23 @@ export type JesusEventExplanationType =
 // Retained while `/jesus/entries` is still served. Superseded by the facet
 // taxonomy above; remove with the entry endpoints.
 
-/** The nine kinds an entry can take. Stored verbatim in `jesus_entries.kind`. */
+/**
+ * The ten kinds an entry can take. Stored verbatim in `jesus_entries.kind`.
+ *
+ * `HEALING` arrived with the corpus before it arrived here, and a kind the
+ * corpus writes but this list omits is invisible rather than loud: it is
+ * dropped from the hub's kind counts, from `?kind=`, from `?section=`, and
+ * from every collection that filters on kinds. Twenty-two healings sat in the
+ * database and nowhere on the screen. **Anything `SeedKind` can be must appear
+ * here.**
+ */
 export const JESUS_KINDS = [
   "TEACHING",
   "QUESTION",
   "COMMAND",
   "CLAIM",
   "MIRACLE",
+  "HEALING",
   "ENCOUNTER",
   "COMPASSION",
   "CONFRONTATION",
@@ -431,6 +441,15 @@ export const JESUS_KIND_META: Record<JesusKind, JesusKindMeta> = {
     blurb: "Signs of the Kingdom breaking in",
     sortOrder: 5,
   },
+  HEALING: {
+    kind: "HEALING",
+    slug: "healings",
+    label: "Healings",
+    singular: "Healing",
+    section: "actions",
+    blurb: "Every body He restored",
+    sortOrder: 6,
+  },
   ENCOUNTER: {
     kind: "ENCOUNTER",
     slug: "encounters",
@@ -438,7 +457,7 @@ export const JESUS_KIND_META: Record<JesusKind, JesusKindMeta> = {
     singular: "Encounter",
     section: "actions",
     blurb: "The people He met, one by one",
-    sortOrder: 6,
+    sortOrder: 7,
   },
   COMPASSION: {
     kind: "COMPASSION",
@@ -447,7 +466,7 @@ export const JESUS_KIND_META: Record<JesusKind, JesusKindMeta> = {
     singular: "Act of compassion",
     section: "actions",
     blurb: "Where He stopped, touched, and wept",
-    sortOrder: 7,
+    sortOrder: 8,
   },
   CONFRONTATION: {
     kind: "CONFRONTATION",
@@ -456,7 +475,7 @@ export const JESUS_KIND_META: Record<JesusKind, JesusKindMeta> = {
     singular: "Confrontation",
     section: "actions",
     blurb: "Where He refused to back down",
-    sortOrder: 8,
+    sortOrder: 9,
   },
   PARABLE: {
     kind: "PARABLE",
@@ -465,7 +484,7 @@ export const JESUS_KIND_META: Record<JesusKind, JesusKindMeta> = {
     singular: "Parable",
     section: "parables",
     blurb: "Every story He told",
-    sortOrder: 9,
+    sortOrder: 10,
   },
 };
 
@@ -488,8 +507,8 @@ export const JESUS_SECTION_META: Record<JesusSection, JesusSectionMeta> = {
   actions: {
     section: "actions",
     label: "His Actions",
-    blurb: "Miracles, encounters, compassion and confrontations",
-    kinds: ["MIRACLE", "ENCOUNTER", "COMPASSION", "CONFRONTATION"],
+    blurb: "Miracles, healings, encounters, compassion and confrontations",
+    kinds: ["MIRACLE", "HEALING", "ENCOUNTER", "COMPASSION", "CONFRONTATION"],
     sortOrder: 2,
   },
   parables: {
