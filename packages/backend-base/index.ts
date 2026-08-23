@@ -4,6 +4,8 @@ import authPlugin from "./src/auth/auth.plugin";
 import type { AuthPlugin } from "./src/auth/auth.plugin";
 import audioPlugin from "./src/bible/audio/audio.plugin";
 import type { AudioPlugin } from "./src/bible/audio/audio.plugin";
+import bibleBrainPlugin from "./src/bible/bible-brain/bible-brain.plugin";
+import type { BibleBrainPlugin } from "./src/bible/bible-brain/bible-brain.plugin";
 import biblePlugin from "./src/bible/bible.plugin";
 import type { BiblePlugin } from "./src/bible/bible.plugin";
 import coachPlugin from "./src/coach/coach.plugin";
@@ -58,6 +60,8 @@ export {
   coachPlugin,
   type AudioPlugin,
   audioPlugin,
+  type BibleBrainPlugin,
+  bibleBrainPlugin,
   type AdminPlugin,
   adminPlugin,
   type TopicPlugin,
