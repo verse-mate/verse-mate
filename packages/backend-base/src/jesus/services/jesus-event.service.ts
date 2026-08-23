@@ -138,10 +138,10 @@ export class JesusEventService {
   /**
    * "Every question Jesus asked" must not match a question someone asked Him,
    * so a word-type filter pins the speaker and an action-type filter pins the
-   * actor. Shared by the flat list and the topic-grouped browse so the two can
-   * never disagree about what belongs to a category.
+   * actor. Shared by the flat list, the topic-grouped browse and the brief
+   * generator so they can never disagree about what belongs to a category.
    */
-  private facetFilter(types: JesusFacetType[] | undefined): JesusEventFilter {
+  facetFilter(types: JesusFacetType[] | undefined): JesusEventFilter {
     const filter: JesusEventFilter = { types };
     if (types?.length) {
       const modes = new Set(types.map((t) => JESUS_FACET_META[t].mode));
@@ -221,13 +221,14 @@ export class JesusEventService {
     const meta = JESUS_FACET_META[type];
 
     const filter = this.facetFilter([type]);
-    const [rows, themes, facetCounts] = await Promise.all([
+    const [rows, themes, facetCounts, briefs] = await Promise.all([
       this.events.listEvents(filter, {
         limit: BROWSE_EVENT_LIMIT,
         languageCode,
       }),
       this.taxonomy.getThemes(languageCode),
       this.events.getFacetTypeCounts(),
+      this.getTopicBriefs(type, languageCode),
     ]);
 
     const events = rows.map((row) => toEventCard(row, [type]));
@@ -254,10 +255,56 @@ export class JesusEventService {
           description: theme.description,
           sort_order: theme.sort_order,
         })),
-      ),
+      ).map((topic) => {
+        const brief = topic.slug ? briefs.get(topic.slug) : undefined;
+        return {
+          ...topic,
+          // What He addresses in THIS category, as opposed to what the theme
+          // is in general. Null until the brief has been generated, which is
+          // why the theme's own description still travels alongside it.
+          brief: brief?.content ?? null,
+          brief_provenance: brief?.provenance ?? null,
+        };
+      }),
       total_events: events.length,
       truncated: rows.length >= BROWSE_EVENT_LIMIT,
     };
+  }
+
+  /**
+   * Topic briefs for a category, keyed by theme slug.
+   *
+   * Falls back to en-US per topic rather than wholesale: a partly translated
+   * language should show the briefs it has in its own words and the rest in
+   * English, not lose all of them because one is missing.
+   */
+  private async getTopicBriefs(
+    type: JesusFacetType,
+    languageCode: string,
+  ): Promise<Map<string, { content: string; provenance: number }>> {
+    const rows = await this.events.getTopicBriefs(type, languageCode);
+    const byTheme = new Map(
+      rows.map((row) => [
+        row.theme_slug,
+        { content: row.content, provenance: row.provenance },
+      ]),
+    );
+
+    if (languageCode !== FALLBACK_LANGUAGE) {
+      for (const row of await this.events.getTopicBriefs(
+        type,
+        FALLBACK_LANGUAGE,
+      )) {
+        if (!byTheme.has(row.theme_slug)) {
+          byTheme.set(row.theme_slug, {
+            content: row.content,
+            provenance: row.provenance,
+          });
+        }
+      }
+    }
+
+    return byTheme;
   }
 
   // ── One event ───────────────────────────────────────────────────────────
