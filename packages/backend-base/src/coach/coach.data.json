@@ -14179,6 +14179,388 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "cole-strong-2026-08-22-obadiah-recap-joel-1-3-high-leve",
+          "date": "2026-08-22",
+          "dateLabel": "August 22, 2026",
+          "session": "Obadiah recap + Joel 1-3 high-level overview",
+          "topic": "Judgment (locusts), the Day of the Lord, the call to repent, restoration",
+          "duration": "~56 min — deliberately shortened (see context note)",
+          "attendees": 9,
+          "newcomers": 0,
+          "score": 66.22,
+          "base": 66.22,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "On Target",
+          "statusEmoji": "🟡",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 64,
+              "contribution": 21.12
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 70,
+              "contribution": 21.7
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 60,
+              "contribution": 10.8
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Clean compressed arc (logistics, prayer, context framing, delegated recap, Obadiah/Joel background, full read-through, 5 Ws close, prayer) that hit every core blueprint beat despite the schedule cut"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null,
+              "note": "No newcomers present or welcomed this session"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 2,
+              "note": "Only 2 cross-references (Revelation locust-army parallel, Romans 10), both explicitly deferred to a future week by design — a series low against this leader's established 6-25+ range"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4,
+              "note": "~25-30% discussion-only leader talk — a series-high improvement over the persistent 3/5 plateau (6 of 7 prior sessions)"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 2,
+              "note": "0 DOK 3-4 questions completed; the session's one DOK-4 personal-application question was raised and explicitly deferred, not answered"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 3,
+              "note": "~55-65% substantive contributors, below the size-adjusted ≥70% target; several members' answers stayed at one-word recall rather than interpretation"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3,
+              "note": "Whiteboard used for repeated-words tracking; no on-screen word-study tool used despite several word-study-adjacent moments"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 3,
+              "note": "One light, genuine leader self-deprecating admission; no member disclosures this session — within the established ±1 baseline cap, driven by the deferred application block rather than a trust regression"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5,
+              "note": "Series-high retrieval performance: a full unaided member-delivered historical recap plus an Obadiah bumper-sticker cold-recall round, both before any new teaching began"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4,
+              "note": "Active homework tie-ins (\\\"you did the homework for this week... day one, you were supposed to read the text three times\\\"; references to specific day-one homework questions)"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 3,
+              "note": "Opening prayer cleanly delegated (Lucas); closing prayer appears leader-led, not handed to a different member"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3,
+              "note": "First clean, observable delegated-facilitation-window signal in the series — the full opening historical recap handed to a member with only a light accuracy check afterward; not yet named explicitly as a coaching moment (see Improvement 3 / Key Moment 1)"
+            }
+          ],
+          "bigIdeas": [
+            "It's going to get worse before it gets better.",
+            "Repent with all your heart, not just your garments."
+          ],
+          "feedback": {
+            "headline": "A shortened, schedule-driven survey session — trading depth for breadth.",
+            "strengths": [
+              "A Full, Unaided Historical Recap Delegated Entirely to a Member",
+              "The Lowest Leader-Talk Density of the Series, Even Through Dense Content",
+              "Transparent, Proactive Schedule Communication"
+            ],
+            "improvements": [
+              "The One Application Question Raised Was Deferred Entirely",
+              "Closing Prayer Wasn't Delegated",
+              "Cross-Referencing Dropped to a Series Low (2 Total)"
+            ],
+            "recommendations": [
+              "Protect at Least One Application Question, Even on a Compressed Week",
+              "Delegate the Closing Prayer to a Different Member Than the Opener, Every Session",
+              "Name the Skill When a Member Delivers a Strong Unaided Recap"
+            ],
+            "overview": [
+              "A shortened, schedule-driven survey session — trading depth for breadth.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 66.22/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "A Full, Unaided Historical Recap Delegated Entirely to a Member",
+                "paragraphs": [
+                  "Rather than opening with his own overview, Cole handed the entire pre-Joel history to the room with just a time-box: \"Somebody sketch us up on where we were. How do we get to this point that we are now in the Bible? High level, three minute, maybe at max, maybe two minute overview, where are we?\" [00:04:56]. A member then delivered an unaided, accurate five-minute arc from the Abrahamic promise through Joseph, the Exodus, the Judges, Saul, David, Solomon, the kingdom split, and Joash's reign under Jehoiada — without a single correction needed beyond Cole's closing check: \"Did I miss anything?... I think that was pretty thorough. It was really good... What did we miss, Kevin? I don't think so\" [00:09:56]-[00:10:04]. This is the strongest single retrieval performance in the evaluated series and a genuine, observable Dim 12 signal (a delegated facilitation window) — a first for this class."
+                ]
+              },
+              {
+                "title": "The Lowest Leader-Talk Density of the Series, Even Through Dense Content",
+                "paragraphs": [
+                  "Facilitation vs. Lecture (Dim 4) has plateaued at 3/5 in 6 of the 7 prior evaluated sessions for this class. This week broke that pattern: Cole ran an almost entirely call-and-response cadence through genuinely dense theological material — locust symbolism, the Day of the Lord, judgment and restoration — surfacing content from the room rather than lecturing it. Example: \"And so what's about to happen? [pause] An invasion of Israel. [pause] An invasion? That's what we're gonna say? Basically, they're gonna be stripped of everything...\" [00:07:22]-[00:07:33] — Cole names the gap in a member's answer and lets the room sharpen it, rather than supplying the correction himself."
+                ]
+              },
+              {
+                "title": "Transparent, Proactive Schedule Communication",
+                "paragraphs": [
+                  "Before anything else, Cole explained exactly why the format was changing and what the room should expect: \"Because of that, we only have an hour... the idea is, look, we'll just do a high-level overview of what Joel's about. Quick recap of Obadiah, high overview of Joel. We'll read all three chapters together, talk about, hey, what are some big highlights, and then rock and roll from there. That'll be our goal\" [00:01:00]-[00:01:23]. Naming the constraint and the resulting plan up front — rather than silently compressing content and leaving the room to guess why — is itself a transferable leadership skill, and it's the reason the room could follow a genuinely unusual session shape without confusion."
+                ]
+              },
+              {
+                "title": "Self-Managed Pacing That Actually Held",
+                "paragraphs": [
+                  "Every previously evaluated session for this class ran over its stated target (1h48m-1h58m against a 60-90 min norm) with no self-correction. This week, Cole announced the constraint up front (\"I'll try to keep an eye on the clock, make sure 8 o'clock hits, we'll wrap up and head over to men's breakfast\") and the session landed at ~56 minutes — on the disclosed target, with no external redirect needed. This is exactly the kind of self-managed pacing Metric Adjustment #6 rewards, and it breaks a pattern flagged in every prior report."
+                ]
+              },
+              {
+                "title": "A Late, Distracted Member Still Lands a Substantive Theological Point",
+                "paragraphs": [
+                  "Patrick joined by phone mid-session, apologizing for the disruption: \"sorry, I overslept, so I've been Zooming in. I'm headed to the breakfast with y'all, so I'm on my way\" [00:22:34]-[00:22:41]. Cole welcomed him without breaking stride (\"All right, Patrick, sounds good, man. Glad you're here\"), and Patrick immediately contributed a genuinely substantive point: \"the locusts are, it's got two meanings in Joel, because it kind of also refers to locusts as the people who are gonna be taking over the kingdom and destroying it, and then it's also a symbol of God's divine judgment. He uses locusts all the time when he's judging people, so especially in Revelation\" [00:22:45]-[00:23:06]. A room culture where a late, driving, mobile member still engages at this level is a real signal of group ownership over the material."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "The One Application Question Raised Was Deferred Entirely",
+                "paragraphs": [
+                  "At the close, Cole named the session's only real application prompt: \"What's in this book for me, right? What's in the book for you? You don't need to answer that right now\" [00:55:00]-[00:55:08]. Given the compressed, disclosed format, deferring deep application for ONE week is defensible — but with zero DOK 3-4 questions completed and zero first-person responses, this session scored NEEDS WORK on every Application sub-metric. Worth flagging now so it doesn't become the pattern if the overview format continues into next week's Joel 1 deep-dive."
+                ]
+              },
+              {
+                "title": "Closing Prayer Wasn't Delegated",
+                "paragraphs": [
+                  "The opening prayer was properly delegated to Lucas [00:02:54]. The closing prayer, by contrast, appears to flow directly from Cole's own closing remarks with no hand-off named: \"...Thank you so much for just allowing us to be here today and study your word. [00:55:55] Yeah, Lord, I just pray that as we go out this week...\" — no member is named to close, unlike the clean open/close split the blueprint calls for."
+                ]
+              },
+              {
+                "title": "Cross-Referencing Dropped to a Series Low (2 Total)",
+                "paragraphs": [
+                  "Against this leader's own established range (6-25+ cross-references in recent sessions), this week surfaced only two: the Revelation armored-locust parallel and Romans 10's \"call on the name of the Lord.\" Both were explicitly deferred rather than pursued: \"we're not gonna follow that question today, but I'm sure as we get into Joel 2 and a deeper dive, we might\" [00:21:56]-[00:21:59]. This is a deliberate, disclosed trade-off for a survey-format week — but Scripture Engagement is the model's highest-weighted dimension, so it's worth naming even when the reason is good."
+                ]
+              },
+              {
+                "title": "One-Word Recall Answers Dominated Over Fuller Interpretation",
+                "paragraphs": [
+                  "Much of the Q&A cadence pulled single-word echoes rather than developed answers: \"What repeated phrases or themes did we see throughout this text? [00:29:52] Destruction. [00:29:54] Say it again. [00:29:55] Destruction or abandonment. [00:29:56] Destruction.\" [00:29:43]-[00:29:57]. A brief standing follow-up (\"say more — destruction of what, specifically, and why does that matter to Israel here?\") would convert quick recall into real interpretation without materially slowing the compressed pace."
+                ]
+              },
+              {
+                "title": "Quiet Contributors Read but Didn't Discuss",
+                "paragraphs": [
+                  "Keith, Steve, Mike, and Jackson each took a reading turn this session but no additional discussion contribution from any of the four was identified beyond their assigned verses — the same pattern flagged in the August 15 report (there: Asher, Devin, Mike, Brad). Worth a direct, named invitation next time: \"Keith, before we move on — what stood out to you in what you just read?\""
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Protect at Least One Application Question, Even on a Compressed Week",
+                "paragraphs": [
+                  "When a schedule change forces a shorter session, keep one application question live rather than deferring the only one raised. A single 15-second-silence-then-one-volunteer moment before the closing prayer preserves the Application dimension without meaningfully extending the session — applies to any future shortened week, regardless of passage."
+                ]
+              },
+              {
+                "title": "Delegate the Closing Prayer to a Different Member Than the Opener, Every Session",
+                "paragraphs": [
+                  "This week's opening prayer was cleanly delegated to Lucas; the close wasn't handed to anyone. A standing habit — name a closer at the start of the session, same as the opener — closes this gap permanently."
+                ]
+              },
+              {
+                "title": "Name the Skill When a Member Delivers a Strong Unaided Recap",
+                "paragraphs": [
+                  "This week's member-delivered historical recap (Genesis through Joash, unaided) was the strongest retrieval moment in the series but went unnamed as a skill. Calling it out explicitly (\"that's a clean, unaided recap of six centuries\") converts an observed strength into a repeatable, scoreable Leader Development signal any time a member is handed a delegated block."
+                ]
+              },
+              {
+                "title": "Build a Standing \"Say More\" Follow-Up Into Recall-Heavy Stretches",
+                "paragraphs": [
+                  "One-word echo answers (\"Destruction.\" \"Judgment.\") were accepted and moved past repeatedly this session. A reflex follow-up — \"say more, why does that matter here?\" — costs seconds and converts recall into interpretation, applicable to any passage's recall-heavy Q&A."
+                ]
+              },
+              {
+                "title": "Name Cross-References as \"Deferred,\" Not Silently Skipped",
+                "paragraphs": [
+                  "When choosing to save a cross-reference for a future week (as done here with the Revelation locust-army connection), say so explicitly in the moment — \"we're parking that for next week's deep dive\" — so the room and any reviewer can tell a deliberate choice from a gap."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: ~9-12 — 8 individually named as readers/contributors: Lucas, Nathan, Kevin, Mike, Keith, Steve, Jackson, Patrick (joined late by phone); one additional unnamed member delivered the opening historical recap, and several further unattributed voices answered recall prompts  (Target: This class's established range (~8-16))  → ON TARGET",
+                "Newcomers: 0 apparent — no individual welcome, no new names introduced this session  (Target: Sustained newcomer flow when present (BSF))  → N/A"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Leader talk ratio (whole session, incl. scripture reading): ~45-50% — includes the ~9 min of members reading Joel 1-3 aloud plus Cole's connective narration  (Target: ≤35% (Lifeway 30% Rule))  → NEEDS WORK",
+                "Leader talk ratio (discussion only — graded number): ~25-30% — the lowest of the evaluated series; most content surfaced via rapid Q&A rather than leader explanation  (Target: ≤30-35% (Flanders Interaction Analysis))  → STRONG",
+                "% verse-grounded teaching: ~90%+ — nearly the entire session is spent inside Obadiah/Joel text or direct recap of it  (Target: ≥75-80% (BSF/Precept standard))  → STRONG",
+                "Cross-references cited: 2 — Revelation's armored-locust imagery (\"they have armor... their heads are horsemen\") and Romans 10 (\"all who call on the name of the Lord shall be delivered\"); explicitly parked for \"next week\" rather than pursued this session  (Target: ≥6 (Precept inductive benchmark))  → NEEDS WORK",
+                "Time to first scripture reading (Joel 1:1): ~23 min [00:23:21] — Obadiah recap + Joel background precede the first fresh reading  (Target: ~10 min (from end of welcome/logistics))  → NEEDS WORK",
+                "Time to target-text first reading: Same as above — this week's \"target text\" (all of Joel 1-3) begins at [00:23:21]  (Target: Signposted, even if lengthy)  → ON TARGET — explicitly signposted (\"let's jump in, we got 30 minutes\")"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~56 min captured (00:00:00-00:56:22)  (Target: ~60 min — this week's announced, schedule-driven target (men's pastor moved the group to a shared breakfast))  → STRONG — landed on the disclosed target, breaking the series' established overrun pattern",
+                "Housekeeping / announcements (men's breakfast schedule, Warrior Night): ~2.9 min [00:00:00-00:02:54]  (Target: Brief, transparent scope-setting)  → ON TARGET",
+                "Opening prayer (delegated, Lucas): ~30 sec [00:02:54-00:03:22]  (Target: 2-3 min)  → STRONG",
+                "Context framing + historical recap (member-delivered) + Obadiah recap: ~14.6 min [00:03:22-00:18:00]  (Target: 5-15 min)  → STRONG",
+                "Joel background (author, dating, Precepts framework): ~5.3 min [00:18:00-00:23:19]  (Target: 5-10 min)  → STRONG",
+                "Joel 1-3 read-through + Q&A: ~27.7 min [00:23:21-00:51:00]  (Target: Primary block)  → ON TARGET",
+                "Wrap-up (5 Ws recap, closing thoughts): ~4.5 min [00:51:00-00:55:34]  (Target: 3-5 min)  → STRONG",
+                "Closing prayer (leader-led, not delegated — see Improvement 2): ~40 sec [00:55:34-00:56:14]  (Target: 2-3 min, delegated to a different member than the opener)  → NEEDS WORK",
+                "Tangent time: <2 min total (Revelation locust aside, Esther/sackcloth aside — both parked quickly and on-topic)  (Target: <10 min)  → STRONG",
+                "Pacing: Self-managed — Cole announced the compressed plan up front (\"I'll try to keep an eye on the clock, make sure 8 o'clock hits\") and the session landed almost exactly on that disclosed target with no external redirect  (Target: Self-managed (caught and corrected))  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea question count (DOK 3-4): 0 completed — one DOK-4 question was raised at the close (\"what's in this book for me?\") but explicitly deferred: \"You don't need to answer that right now\"  (Target: 5-7 (Hendricks standard))  → NEEDS WORK",
+                "DOK 3 questions (interpretive/synthesis): 4 — chapter \"bumper sticker\"/big-idea synthesis prompts for Joel 1, 2, and 3, plus the overall-theme close (\"Judgment, repentance, restoration\")  (Target: Mix of DOK 2-3)  → ON TARGET",
+                "DOK 4 questions: 1 raised, 0 answered — \"What's in this book for me? What's in the book for you?\" was named and then explicitly parked  (Target: Majority DOK 3-4 (Norman Webb))  → NEEDS WORK",
+                "Application woven vs. clustered: Not woven this session — application was named as a category (\"there's plenty of application for us in this book\") but deliberately not explored, by design, given the compressed format  (Target: Woven throughout (Hattie 0.82))  → NEEDS WORK",
+                "Confession / Personal-Response Rate: 0 first-person confessional responses this session — a direct consequence of the deferred application block, not a room-trust regression  (Target: ≥2 first-person responses per session)  → NEEDS WORK",
+                "Leader Follow-up Probe Frequency: 0 personal probes — no application question was opened long enough to probe  (Target: ≥3 personal probes per session)  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Substantive contributors (interpret/apply — graded number): ~5-6 of ~9-12 attendees (~55-65%) gave an interpretive comment beyond one-word recall — the unnamed recap-giver, Patrick (locust dual-meaning point), Kevin (2 catches), plus 2-3 unattributed textual observations (the \"cutaway\" analogy, the elders-not-king observation, the locusts-can't-steer-themselves point)  (Target: Size-normalized — target ≥70%)  → ON TARGET",
+                "Read-aloud assignments (reported, not scored): 8 reading turns across Joel 1-3 — Nathan (x2), Mike, Keith, Steve (x2), Jackson rotated through  (Target: Reported only)  → N/A",
+                "Members with theological contributions: 5+ — locust dual-meaning (Patrick), Revelation-army-imagery parallel, the wind/sovereignty point (\"who controls the wind... they are the ultimate pawns\"), the judges-vs-king textual observation, the Esther sackcloth connection  (Target: 50%+ meaningful contribution (Hattie))  → ON TARGET",
+                "Quiet member flag: Keith, Steve, Mike, Jackson — appeared primarily as readers this session with no additional discussion contribution identified beyond their assigned turns  (Target: Named invitations next time (Hattie 0.82))  → NEEDS WORK",
+                "Visual aids: Whiteboard used for repeated-words/themes tracking (\"I'm gonna write on the board what are repeated phrases or words that we read\"); no on-screen word-study tool used  (Target: Slide + word-study tool on screen (Mayer's multimedia principle))  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: 1 — Cole's own admission about not connecting the prophets-and-kings timeline until Precepts: \"I wasn't smart enough, shows how dumb I am, to think about how these prophets are talking at the same time these kings are ruling\" [00:18:19]-[00:18:36]  (Target: 1-2 weighted disclosures per session)  → ON TARGET",
+                "Vulnerability depth (rolling baseline ±1): 3/5 — a genuine but light self-deprecating admission, well below the room-wide member disclosures seen in recent sessions; within the established ±1 swing cap off the 4/5 baseline (Jun 20-Aug 15), driven by the near-total absence of application time this week rather than a trust regression  (Target: High personal cost named; room invited in (Willow Creek))  → ON TARGET",
+                "Extended monologues > 90 sec: 1 — opening housekeeping/announcements [00:00:00]-[00:02:54], ~2.9 min  (Target: ≤2 per session (each still named with its fix — see Monologues section))  → STRONG",
+                "Calling on members by name: Consistent — all 8 named individuals called by name for readings or responses; Patrick greeted by name on his late join  (Target: Named invitations standard)  → STRONG",
+                "Delegated facilitation window (leader development signal): 1 — the entire opening historical recap (Genesis through Joash, ~5 min) was handed to a member with just a time-box (\"high level, three minute, maybe at max\"); Cole then simply confirmed accuracy afterward (\"Did I miss anything?... What did we miss, Kevin?\")  (Target: A named apprentice, a delegated window, or public coaching (2 Tim 2:2))  → STRONG — first clean instance in this series"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~50% — many prompts were fill-in-the-blank recall (\"what repeated word...\") rather than genuinely open  (Target: ≥60-70% (discussion facilitation standard))  → NEEDS WORK",
+                "% text-requiring answers: ~90%+ — virtually every question sent the room back into the just-read verses  (Target: ≥50-60% (Precept inductive method))  → STRONG",
+                "Follow-up probes after member answers: Light — most answers were accepted and moved past (\"Destruction. Say it again. Destruction or abandonment. Destruction.\") rather than probed for elaboration  (Target: Consistent probing (Hattie))  → NEEDS WORK",
+                "Productive struggle: Present but brief — the room worked through \"where will the victory happen\" via two guesses (\"the mountains of Edom\" then \"Mount Zion\") before landing on the right answer [00:15:06]-[00:15:29]  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Study flow: Logistics → delegated context recap → Obadiah cold-recall → Joel background → full Joel 1-3 read-through with recall Q&A → 5 Ws close, bookended by opening and closing prayer  (Target: OIA method)  → ON TARGET",
+                "Bumper stickers generated: 2 — \"It's going to get worse before it gets better\" (member-generated, [00:55:31]); \"rend your heart, not your garments\" reinforced as the chapter-2 key verse  (Target: 3-5 per session)  → NEEDS WORK",
+                "Tone & delivery: N/A — audio only; no video frames analyzed this pass  (Target: N/A — audio only)  → N/A",
+                "Topic drift: <2 min total (Revelation locust-army aside, Esther/sackcloth aside) — both parked quickly and stayed on-topic  (Target: <10% (Precept focus standard))  → STRONG",
+                "Big Ideas at close: Partial — the 5 Ws recap and \"judgment, repentance, restoration\" theme close functioned as a solid content recap, but the one reflective application question (\"what's in this book for me?\") was raised and then explicitly not explored  (Target: Cumulative recitation (Braddy / Ebbinghaus))  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "One monologue segment exceeded 90 seconds during discussion time, well within the ≤2 target. Named here with a specific fix.",
+                "1. Opening Housekeeping / Announcements [00:00:00]-[00:02:54] — ~2.9 Minutes: Cole explains the men's breakfast schedule change and the Warrior Night event largely in an unbroken block, with only brief member interjections (\"Tebow, Tebow, Tebow\"). The content itself is necessary and well-communicated (see Strength 3), but the delivery is leader-driven start to finish. Fix: post logistics (event dates, schedule changes) in the group chat before the session and use the in-room time for a 30-second confirmation instead of the full explanation — reclaims 2+ minutes for the compressed session."
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "A Full Historical Recap, Delegated Entirely to a Member  (🟢 Capitalized · Building Ministry)\n\nWhat happened: Cole opened the session's content by handing the whole pre-Joel history to the room rather than delivering it himself: \"Somebody sketch us up on where we were. How do we get to this point that we are now in the Bible? High level, three minute, maybe at max, maybe two minute overview, where are we?\" [00:04:56]. An unnamed member then delivered an accurate, unaided five-minute arc from the Abrahamic promise through Joseph, the Exodus, the Judges, Saul, David and Solomon's failures, the kingdom split, and Joash's reign under the priest Jehoiada. Cole's only follow-up was a confirmation check: \"Did I miss anything? [member response] I think that was pretty thorough. It was really good... What did we miss, Kevin? I don't think so\" [00:09:56]-[00:10:04].\n\nWhy it mattered: This is the clearest, cleanest observable Dim 12 (Leader Development) signal across the whole evaluated series for this class — every prior report scored this dimension N/A for lack of an observable delegation moment. A leader handing five uninterrupted minutes of substantive teaching content to a member, with only a light-touch accuracy check afterward, is exactly the \"delegated facilitation window\" the model looks for. It also converts what could have been five minutes of leader lecture into the session's strongest retrieval-practice moment (Dim 9).\n\nWhat would make it bigger: Naming the member and the specific skill out loud afterward — \"that's a clean, unaided recap of six centuries of history, nice job holding that whole arc together\" — would convert this into an explicit, repeatable coaching moment rather than a quiet \"good job\" that risks being forgotten by next week.",
+                  "timestamp": "[00:04:56]"
+                },
+                {
+                  "detail": "A Late, Distracted Member Still Lands a Substantive Point  (🔵 Pivot · Engaging People)\n\nWhat happened: Patrick joined mid-session by phone, apologizing for being late and driving: \"sorry, I overslept, so I've been Zooming in. I'm headed to the breakfast with y'all, so I'm on my way\" [00:22:34]-[00:22:41]. Cole welcomed him briefly (\"All right, Patrick, sounds good, man. Glad you're here\") without breaking the session's flow, and Patrick immediately offered a genuine theological contribution: the locusts in Joel carry a double meaning — both the literal invading army and a recurring symbol of God's judgment, tying it forward to Revelation's usage [00:22:45]-[00:23:06].\n\nWhy it mattered: A member joining late, distracted, and driving still choosing to contribute a substantive point (not just \"I'm here\") is real evidence of ownership over the material — this doesn't happen in a room where engagement depends entirely on the leader carrying the content. Cluster impact: Engaging People — reinforces Dim 6 even in a session where overall substantive-contributor percentage ran below target.\n\nWhat would make it bigger: A brief explicit callback later in the session — \"Patrick's dual-meaning point on locusts ties right into what we're about to read in chapter 2\" — would have kept his late-arriving contribution live in the room's shared memory instead of it passing as a single aside.",
+                  "timestamp": "[00:22:34]"
+                },
+                {
+                  "detail": "The Room Self-Corrects a Reading Mistake, and the Leader Owns His Own Miss  (🔵 Pivot · Teaching Craft)\n\nWhat happened: When Mike began reading at verse 5 instead of verse 4, multiple members immediately caught it in real time: \"Whoa, whoa, whoa, wait, wait. Are you in Joel 1?... He started with five instead of four... you said locusts seven times, eight times\" [00:24:37]-[00:24:52]. Cole, rather than deflecting, owned that he'd missed it too: \"Okay, I have to have been in another world. I totally missed it. Okay, I'm sorry\" [00:24:52]-[00:24:57].\n\nWhy it mattered: Multiple members independently tracking the exact verse and word count in real time shows the room is engaging the text closely, not passively listening to be read to — a genuine textual-precision signal. Cole's unguarded, non-defensive admission (\"I totally missed it... I'm sorry\") is a small but real authenticity marker, modeling that even the leader doesn't have to appear infallible.\n\nWhat would make it bigger: Naming the room's catch explicitly — \"that's exactly the kind of close tracking I want you doing with the text every week\" — would turn a brief correction into a named, reinforced habit.",
+                  "timestamp": "[00:24:37]"
+                },
+                {
+                  "detail": "Application Was Deferred Entirely, Even the One Reflective Question  (🟠 Missed Opportunity · Teaching Craft)\n\nWhat happened: Closing out the session, Cole named the one real application prompt of the day: \"Here's what I want you to think about as we close this thing out. This was in the homework. What's in this book for me, right? What's in the book for you? You don't need to answer that right now, but think about, hey, this is all about destruction...\" [00:55:00]-[00:55:13]. The room moved directly to the closing thought (\"It's going to get worse before it gets better\") and prayer without anyone answering.\n\nWhy it mattered: This is the only application-shaped moment in the entire session, and it was explicitly waved off rather than opened even briefly. In a compressed-format week that already carried zero DOK 3-4 questions and zero personal-response moments, this was the last opportunity to salvage any Application-cluster credit — and it passed unused. Cluster impact: Teaching Craft — missed, the direct evidence behind Dim 5's NEEDS WORK score this session.\n\nWhat would make it bigger: Even 15 seconds of silence followed by one volunteer answer — \"just one guy, quick, what's one thing in Joel that landed for you personally this morning?\" — would have converted a deferred question into a real, if brief, application close.",
+                  "timestamp": "[00:55:00]"
+                }
+              ],
+              "paragraphs": [
+                "Four moments in this session were disproportionately important — they changed what the room experienced, not just what it heard. Ordered by impact."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "What would you say if you're going to put a bumper sticker on the overall big idea of chapter one? — 3 — Room converged on \"judgment\" as the locust-replacement word for the bumper sticker.",
+                "What do we hear from this overall high level? What's a theme, a big idea of chapter two? — 3 — Room named \"Day of the Lord\" and \"repent\" as the chapter's two big buckets.",
+                "Overall, what do you think? [Joel 3 judgment theme] — 3 — Room synthesized \"judgment of all the nations.\"",
+                "What's the overall theme of the book of Joel? — 3 — Closing synthesis: \"Judgment, repentance, restoration... Day of the Lord.\"",
+                "What's in this book for me? What's in the book for you? — 4 — DEFERRED — raised at [00:55:00] but explicitly not answered this session (\"you don't need to answer that right now\")."
+              ],
+              "paragraphs": [
+                "This was a high-level survey session with a compressed hour — 4 DOK 3 synthesis/bumper-sticker questions were completed; the session's one DOK 4 personal-application question was raised but explicitly deferred, not answered. Scaffolding / reading-navigation prompts (DOK 1) are excluded. DOK level follows Norman Webb's taxonomy."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 64.0% × weight 33 → 21.12 pts",
+                "Building Ministry: 70.0% × weight 31 → 21.70 pts",
+                "Engaging People: 70.0% × weight 18 → 12.60 pts",
+                "Being Real: 60.0% × weight 18 → 10.80 pts",
+                "BASE (pre-bonus): — × weight 100 → 66.22 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "https://drive.google.com/file/d/1Djlq9nwhzDvB4Wz64mXgTMyBeLmwV8DP/view?usp=drivesdk",
+          "docUrl": "https://drive.google.com/file/d/1BqkI5dFGOZqYIylp-DXklp4wNf_wYIim/view?usp=drivesdk"
+        },
+        {
           "id": "cole-strong-2026-08-15-obadiah-precept-phase-4-lesson-1",
           "date": "2026-08-15",
           "dateLabel": "August 15, 2026",
@@ -37291,14 +37673,14 @@
   "monthlyNarratives": {
     "2026-08": {
       "executiveSummary": [
-        "In August 2026, 8 leaders delivered 17 evaluated sessions, and the program held a weighted average composite of 77.9 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "In August 2026, 8 leaders delivered 18 evaluated sessions, and the program held a weighted average composite of 77.3 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
         "Across the cohort the month broke down as 2 Exceptional, 4 Strong, 1 On Target, and 1 Developing. Phil Carlberg led the field at 88.0 (Exceptional), while James Davis anchored the other end at 57.9 (Developing) — the clearest place to concentrate coaching attention.",
-        "Ken Ture posted the biggest jump off the July 2026 baseline, climbing roughly 73 to 86.3 (+13.6 pts), the strongest muscle program-wide was Participant Engagement (4.35 / 5), and the thinnest was Visual Aids (2.76 / 5), where one shared training would lift the most leaders at once.",
-        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with James Davis, Russell Davis, Brendan & Elizabeth, Bryan Bailey, and 1 more flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+        "Ken Ture posted the biggest jump off the July 2026 baseline, climbing roughly 73 to 86.3 (+13.6 pts), the strongest muscle program-wide was Homework References (4.33 / 5), and the thinnest was Visual Aids (2.78 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with James Davis, Russell Davis, Cole Strong, Brendan & Elizabeth, and 1 more flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's August 2026 composite of 77.9 / 100 lands it in the Strong band. Month over month, Ken Ture is the standout mover off the July 2026 baseline, up 13.6 points.",
-        "Dimension by dimension, Participant Engagement is the cohort's anchor strength (4.35 / 5), while Visual Aids (2.76 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's August 2026 composite of 77.3 / 100 lands it in the Strong band. Month over month, Ken Ture is the standout mover off the July 2026 baseline, up 13.6 points.",
+        "Dimension by dimension, Homework References is the cohort's anchor strength (4.33 / 5), while Visual Aids (2.78 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-07": {
@@ -44345,19 +44727,19 @@
         "leaderId": "cole-strong",
         "leaderName": "Cole Strong",
         "group": "Kings Study",
-        "sessionsCount": 1,
-        "composite": 81.3,
+        "sessionsCount": 2,
+        "composite": 73.8,
         "status": {
           "label": "Strong",
           "emoji": "🟢"
         },
         "priorComposite": 91.1,
-        "delta": -9.8,
+        "delta": -17.4,
         "clusterAvg": {
-          "tc": 84,
-          "bm": 80,
-          "ep": 80,
-          "br": 80
+          "tc": 74,
+          "bm": 75,
+          "ep": 75,
+          "br": 70
         },
         "glance": {
           "rows": [
@@ -44370,14 +44752,24 @@
               "br": 80,
               "composite": 81.3,
               "status": "Strong"
+            },
+            {
+              "date": "2026-08-22",
+              "session": "Obadiah recap + Joel 1-3 high-level overview",
+              "bm": 70,
+              "tc": 64,
+              "ep": 70,
+              "br": 60,
+              "composite": 66.2,
+              "status": "On Target"
             }
           ],
           "avg": {
-            "bm": 80,
-            "tc": 84,
-            "ep": 80,
-            "br": 80,
-            "composite": 81.3,
+            "bm": 75,
+            "tc": 74,
+            "ep": 75,
+            "br": 70,
+            "composite": 73.8,
             "status": "Strong"
           }
         },
@@ -44388,6 +44780,13 @@
             "composite": 81.3,
             "status": "Strong",
             "delta": null
+          },
+          {
+            "date": "2026-08-22",
+            "session": "Obadiah recap + Joel 1-3 high-level overview",
+            "composite": 66.2,
+            "status": "On Target",
+            "delta": -15.1
           }
         ],
         "clusters": [
@@ -44395,11 +44794,11 @@
             "key": "tc",
             "name": "Teaching Craft",
             "weight": 33,
-            "avgPct": 84,
+            "avgPct": 74,
             "statusLabel": "Strong",
             "strongestDim": {
-              "name": "Scripture Engagement",
-              "val": 5
+              "name": "Memory Reinforcement",
+              "val": 4.5
             },
             "weakestDim": {
               "name": "Visual Aids",
@@ -44411,31 +44810,31 @@
             "key": "bm",
             "name": "Building Ministry",
             "weight": 31,
-            "avgPct": 80,
+            "avgPct": 75,
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Homework References",
               "val": 4
             },
             "weakestDim": {
-              "name": "Homework References",
-              "val": 4
+              "name": "Leader Development",
+              "val": 3
             },
-            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — strong. Lift the floor on Homework References."
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — strong. Lift the floor on Leader Development."
           },
           {
             "key": "ep",
             "name": "Engaging People",
             "weight": 18,
-            "avgPct": 80,
+            "avgPct": 75,
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Participant Engagement",
-              "val": 5
+              "val": 4
             },
             "weakestDim": {
               "name": "Facilitation vs. Lecture",
-              "val": 3
+              "val": 3.5
             },
             "insight": "Engaging People (Facilitation + Participation) — strong. Continue to broaden participation beyond the core 6–8 voices."
           },
@@ -44443,17 +44842,17 @@
             "key": "br",
             "name": "Being Real",
             "weight": 18,
-            "avgPct": 80,
-            "statusLabel": "Strong",
+            "avgPct": 70,
+            "statusLabel": "On Target",
             "strongestDim": {
               "name": "Vulnerability / Authenticity",
-              "val": 4
+              "val": 3.5
             },
             "weakestDim": {
               "name": "Vulnerability / Authenticity",
-              "val": 4
+              "val": 3.5
             },
-            "insight": "Being Real (Vulnerability + Prayer) — strong. Vulnerability / Authenticity is the lift this month."
+            "insight": "Being Real (Vulnerability + Prayer) — developing well. Vulnerability / Authenticity is the lift this month."
           }
         ],
         "strengths": [
@@ -44468,6 +44867,14 @@
           {
             "text": "A Hot-Button Current Event, Handled With Real Theological Restraint",
             "session": "2026-08-15"
+          },
+          {
+            "text": "A Full, Unaided Historical Recap Delegated Entirely to a Member",
+            "session": "2026-08-22"
+          },
+          {
+            "text": "The Lowest Leader-Talk Density of the Series, Even Through Dense Content",
+            "session": "2026-08-22"
           }
         ],
         "growth": [
@@ -44482,37 +44889,45 @@
           {
             "text": "A Capable Member's Correction Went Unnamed",
             "session": "2026-08-15"
+          },
+          {
+            "text": "The One Application Question Raised Was Deferred Entirely",
+            "session": "2026-08-22"
+          },
+          {
+            "text": "Closing Prayer Wasn't Delegated",
+            "session": "2026-08-22"
           }
         ],
         "trends": [
-          "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Visual Aids (avg 3.0 / 5).",
-          "Composite vs. July 2026 (~91): down 9.8. Inspect the cluster regressions in the Cluster Deep Dive above."
+          "Within-month arc: 81.3 → 66.2 (-15.1). Trajectory declined.",
+          "Highest-scoring dimension this month: Memory Reinforcement (avg 4.5 / 5). Lowest: Leader Development (avg 3.0 / 5).",
+          "Composite vs. July 2026 (~91): down 17.4. Inspect the cluster regressions in the Cluster Deep Dive above."
         ],
         "conversationGuide": [
           {
             "label": "Celebrate the strength",
-            "q": "Teaching Craft averaged 84% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+            "q": "Building Ministry averaged 75% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
           },
           {
             "label": "Explore the growth area",
-            "q": "Being Real averaged 80%. What's getting in the way? What would have to be true for that to lift 10 points by September 2026?"
+            "q": "Being Real averaged 70%. What's getting in the way? What would have to be true for that to lift 10 points by September 2026?"
           },
           {
             "label": "Trajectory",
-            "q": "Your one August 2026 session scored 81.3 (Strong). What was different about your prep or delivery this time?"
+            "q": "Composite went from 81.3 on 2026-08-15 to 66.2 on 2026-08-22. What changed in your prep or delivery?"
           },
           {
             "label": "Group dynamics",
-            "q": "Participant Engagement averaged 5.0 / 5 in August 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+            "q": "Participant Engagement averaged 4.0 / 5 in August 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
           }
         ],
         "focus": {
-          "clusterName": "Building Ministry",
-          "clusterPct": 80,
+          "clusterName": "Being Real",
+          "clusterPct": 70,
           "goals": [
-            "Identify and name an apprentice/co-leader for September 2026; have them visibly co-teach one segment.",
-            "Reference the Precept workbook / homework explicitly at least 3 times per session.",
-            "Welcome a newcomer with a member testimony first (7–25 min block) when they appear.",
+            "Add at least one HIGH-cost vulnerability disclosure per session (depth, not count).",
+            "Delegate BOTH opening and closing prayer to different members each week — log who.",
             "In every September 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
           ]
         },
@@ -44606,6 +45021,98 @@
                 "cluster": "Building Ministry",
                 "score": null,
                 "note": "Solo leading, consistent with the established pattern; a capable member's (Kevin's) precise correction went unnamed as a development signal"
+              }
+            ]
+          },
+          {
+            "date": "2026-08-22",
+            "session": "Obadiah recap + Joel 1-3 high-level overview",
+            "composite": 66.2,
+            "status": "On Target",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Clean compressed arc (logistics, prayer, context framing, delegated recap, Obadiah/Joel background, full read-through, 5 Ws close, prayer) that hit every core blueprint beat despite the schedule cut"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": null,
+                "note": "No newcomers present or welcomed this session"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 2,
+                "note": "Only 2 cross-references (Revelation locust-army parallel, Romans 10), both explicitly deferred to a future week by design — a series low against this leader's established 6-25+ range"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "~25-30% discussion-only leader talk — a series-high improvement over the persistent 3/5 plateau (6 of 7 prior sessions)"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 2,
+                "note": "0 DOK 3-4 questions completed; the session's one DOK-4 personal-application question was raised and explicitly deferred, not answered"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 3,
+                "note": "~55-65% substantive contributors, below the size-adjusted ≥70% target; several members' answers stayed at one-word recall rather than interpretation"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 3,
+                "note": "Whiteboard used for repeated-words tracking; no on-screen word-study tool used despite several word-study-adjacent moments"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 3,
+                "note": "One light, genuine leader self-deprecating admission; no member disclosures this session — within the established ±1 baseline cap, driven by the deferred application block rather than a trust regression"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Series-high retrieval performance: a full unaided member-delivered historical recap plus an Obadiah bumper-sticker cold-recall round, both before any new teaching began"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 4,
+                "note": "Active homework tie-ins (\\\"you did the homework for this week... day one, you were supposed to read the text three times\\\"; references to specific day-one homework questions)"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 3,
+                "note": "Opening prayer cleanly delegated (Lucas); closing prayer appears leader-led, not handed to a different member"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 3,
+                "note": "First clean, observable delegated-facilitation-window signal in the series — the full opening historical recap handed to a member with only a light accuracy check afterward; not yet named explicitly as a coaching moment (see Improvement 3 / Key Moment 1)"
               }
             ]
           }
