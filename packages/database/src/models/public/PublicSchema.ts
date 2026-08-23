@@ -46,6 +46,7 @@ import type { default as JesusFacetsTable } from "./JesusFacets";
 import type { default as JesusLabelTranslationsTable } from "./JesusLabelTranslations";
 import type { default as JesusPeriodsTable } from "./JesusPeriods";
 import type { default as JesusThemesTable } from "./JesusThemes";
+import type { default as JesusTopicBriefsTable } from "./JesusTopicBriefs";
 import type { default as KyselyMigrationTable } from "./KyselyMigration";
 import type { default as KyselyMigrationLockTable } from "./KyselyMigrationLock";
 import type { default as LemmaTranslationsTable } from "./LemmaTranslations";
@@ -167,6 +168,8 @@ export default interface PublicSchema {
   jesus_event_themes: JesusEventThemesTable;
 
   jesus_event_explanations: JesusEventExplanationsTable;
+
+  jesus_topic_briefs: JesusTopicBriefsTable;
 
   jesus_collection_events: JesusCollectionEventsTable;
 

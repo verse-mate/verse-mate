@@ -3,18 +3,24 @@ import { UserPromptRepository } from "../../bible/repository/user-prompt.reposit
 import { type AiProvider, getAiProvider } from "../../shared/ai";
 import type { db } from "../../shared/shared.plugin";
 import {
+  JESUS_FACET_META,
   JESUS_FACET_TYPES,
   JESUS_PROVENANCE,
   type JesusEventExplanationType,
+  type JesusFacetType,
+  getFacetTypeFromSlug,
 } from "../jesus.constants";
 import { JesusEventRepository } from "../repository/jesus-event.repository";
+import { JesusRepository } from "../repository/jesus.repository";
 import {
   type ExtractedFacet,
   type ValidationIssue,
   referenceKey,
   validateExtraction,
   validateNarrative,
+  validateTopicBrief,
 } from "../utils/generation-validation";
+import { fillTemplate } from "../utils/template.utils";
 import { JesusEventService } from "./jesus-event.service";
 
 const DEFAULT_MODEL = "gpt-5";
@@ -68,6 +74,35 @@ export interface GenerationResult {
   chars?: number;
 }
 
+/** The prompt template behind every topic brief, whatever the category. */
+export const TOPIC_BRIEF_TEMPLATE_TYPE = "jesus-topic-brief";
+
+/**
+ * A brief is prose about passages, so it is an interpretation — never level 1,
+ * which means "explicitly present in the text".
+ */
+const TOPIC_BRIEF_PROVENANCE = JESUS_PROVENANCE.INTERPRETATION;
+
+/**
+ * How many of a topic's sayings reach the prompt.
+ *
+ * A brief is three sentences; it does not need forty quotations to write them,
+ * and an unbounded list would put the largest topics over the context the rest
+ * of the pipeline is tuned for. The sayings are taken in chronological order,
+ * so the cap trims the tail of a long topic rather than sampling it randomly.
+ */
+export const TOPIC_BRIEF_SAYING_LIMIT = 24;
+
+export interface TopicBriefResult {
+  facetType: string;
+  themeSlug: string;
+  status: "saved" | "rejected" | "skipped";
+  issues?: ValidationIssue[];
+  chars?: number;
+  /** Why a topic was skipped, when it was not simply already written. */
+  detail?: string;
+}
+
 /**
  * Generates the narrative layers of an event, and extracts its facets.
  *
@@ -84,6 +119,7 @@ export interface GenerationResult {
 export class JesusGenerationService {
   private events: JesusEventRepository;
   private eventService: JesusEventService;
+  private taxonomy: JesusRepository;
   private prompts: PromptRepository;
   private templates: UserPromptRepository;
   // Resolved lazily: the OpenAI provider's constructor needs a key, and this
@@ -97,6 +133,7 @@ export class JesusGenerationService {
   constructor(private readonly db: db) {
     this.events = new JesusEventRepository(this.db);
     this.eventService = new JesusEventService(this.db);
+    this.taxonomy = new JesusRepository(this.db);
     this.prompts = new PromptRepository(this.db);
     this.templates = new UserPromptRepository(this.db);
   }
@@ -113,6 +150,20 @@ export class JesusGenerationService {
   private async getTemplate(type: string): Promise<string | null> {
     const row = await this.templates.getActivePromptByType(
       `jesus-event-${type}`,
+    );
+    return row?.prompt_template ?? null;
+  }
+
+  /**
+   * The topic-brief template.
+   *
+   * Fetched by its own name rather than through `getTemplate`, which prefixes
+   * `jesus-event-`: a brief describes a category's treatment of a theme, not an
+   * event, and filing it under the event namespace would misname it forever.
+   */
+  private async getTopicBriefTemplate(): Promise<string | null> {
+    const row = await this.templates.getActivePromptByType(
+      TOPIC_BRIEF_TEMPLATE_TYPE,
     );
     return row?.prompt_template ?? null;
   }
@@ -137,6 +188,30 @@ export class JesusGenerationService {
       if (!(await this.getTemplate(type))) {
         problems.push(`no active \`jesus-event-${type}\` prompt template`);
       }
+    }
+
+    return problems;
+  }
+
+  /**
+   * The topic-brief counterpart of `checkPreconditions`: same contract, same
+   * reason — one legible sentence up front beats N stack traces.
+   */
+  async checkTopicBriefPreconditions(): Promise<string[]> {
+    const problems: string[] = [];
+
+    try {
+      await this.getSystemPrompt();
+    } catch {
+      problems.push(
+        "no active `system` prompt — the theological framework the rest of the commentary uses",
+      );
+    }
+
+    if (!(await this.getTopicBriefTemplate())) {
+      problems.push(
+        `no active \`${TOPIC_BRIEF_TEMPLATE_TYPE}\` prompt template`,
+      );
     }
 
     return problems;
@@ -313,20 +388,15 @@ export class JesusGenerationService {
       )
       .join("\n");
 
-    const input = template
-      .replace("{event_title}", event.title)
-      .replace("{event_summary}", event.summary ?? "")
-      .replace(
-        "{gospel_accounts}",
-        event.passages.map((p) => p.display).join(" · "),
-      )
-      .replace("{passages}", passageBlock)
-      .replace("{facets}", facetLines || "(none catalogued)")
-      .replace(
-        "{themes}",
-        event.themes.map((t) => t.name).join(", ") || "(none)",
-      )
-      .replace("{period}", event.period_name ?? "(unplaced)");
+    const input = fillTemplate(template, {
+      event_title: event.title,
+      event_summary: event.summary ?? "",
+      gospel_accounts: event.passages.map((p) => p.display).join(" · "),
+      passages: passageBlock,
+      facets: facetLines || "(none catalogued)",
+      themes: event.themes.map((t) => t.name).join(", ") || "(none)",
+      period: event.period_name ?? "(unplaced)",
+    });
 
     return { input };
   }
@@ -433,10 +503,11 @@ export class JesusGenerationService {
       return { status: "skipped", detail: `no verse text in ${bibleVersion}` };
 
     const system = await this.getSystemPrompt();
-    const input = template
-      .replace("{event_title}", event.title)
-      .replace("{passages}", this.renderPassages(passages))
-      .replace("{allowed_types}", JESUS_FACET_TYPES.join(" | "));
+    const input = fillTemplate(template, {
+      event_title: event.title,
+      passages: this.renderPassages(passages),
+      allowed_types: JESUS_FACET_TYPES.join(" | "),
+    });
 
     return {
       status: "ready",
@@ -624,10 +695,11 @@ export class JesusGenerationService {
     }
 
     const system = await this.getSystemPrompt();
-    const input = template
-      .replace("{event_title}", event.title)
-      .replace("{passages}", this.renderPassages(passages))
-      .replace("{allowed_types}", JESUS_FACET_TYPES.join(" | "));
+    const input = fillTemplate(template, {
+      event_title: event.title,
+      passages: this.renderPassages(passages),
+      allowed_types: JESUS_FACET_TYPES.join(" | "),
+    });
 
     const response = await this.ai.responsesCreate({
       model,
@@ -657,6 +729,336 @@ export class JesusGenerationService {
     });
 
     return { eventSlug, accepted: valid, rejected, status: "ok" };
+  }
+
+  // ── Topic briefs ────────────────────────────────────────────────────────
+
+  /**
+   * What He teaches — or asks, or claims, or does — about one theme.
+   *
+   * The category browse groups a category's events under their themes, and each
+   * group was described by the theme's own blurb: the same sentence about the
+   * Kingdom under Teachings, under Miracles and under Parables. A brief is the
+   * sentence that group actually needs, written per (category × theme) from the
+   * sayings that sit in it.
+   *
+   * The model is given the real sayings from the database — never asked to
+   * recall them — and the output is checked back against exactly those before
+   * it is stored.
+   */
+  async generateTopicBrief(
+    facetTypeOrSlug: string,
+    themeSlug: string,
+    options: {
+      languageCode?: string;
+      model?: string;
+      dryRun?: boolean;
+      overwrite?: boolean;
+    } = {},
+  ): Promise<TopicBriefResult> {
+    const {
+      languageCode = DEFAULT_LANGUAGE,
+      model = DEFAULT_MODEL,
+      dryRun = false,
+      overwrite = false,
+    } = options;
+
+    const prepared = await this.prepareTopicBriefInput(
+      facetTypeOrSlug,
+      themeSlug,
+      { languageCode, overwrite },
+    );
+    if ("status" in prepared) return prepared;
+
+    if (dryRun) {
+      return {
+        facetType: prepared.facetType,
+        themeSlug,
+        status: "skipped",
+        chars: prepared.input.length,
+        detail: "dry run",
+      };
+    }
+
+    const system = await this.getSystemPrompt();
+    const response = await this.ai.responsesCreate({
+      model,
+      instructions: system.text,
+      input: prepared.input,
+      reasoningEffort: GENERATION_REASONING_EFFORT,
+      maxOutputTokens: GENERATION_MAX_OUTPUT_TOKENS,
+    });
+
+    return await this.acceptTopicBrief(
+      prepared.facetType,
+      themeSlug,
+      response.outputText,
+      response.model,
+      { languageCode },
+    );
+  }
+
+  /**
+   * Resolve a (category, theme) pair and render its prompt, or explain why
+   * there is nothing to send.
+   *
+   * Split out for the same reason the event path splits it: a dry run has to
+   * produce byte-for-byte the prompt a real run would submit, or it is
+   * reporting on something else.
+   */
+  private async prepareTopicBriefInput(
+    facetTypeOrSlug: string,
+    themeSlug: string,
+    options: { languageCode?: string; overwrite?: boolean } = {},
+  ): Promise<
+    | {
+        facetType: JesusFacetType;
+        themeId: string;
+        input: string;
+        sourceText: string;
+        allowedReferences: Set<string>;
+      }
+    | TopicBriefResult
+  > {
+    const { languageCode = DEFAULT_LANGUAGE, overwrite = false } = options;
+
+    const facetType = getFacetTypeFromSlug(facetTypeOrSlug);
+    if (!facetType) {
+      return {
+        facetType: facetTypeOrSlug,
+        themeSlug,
+        status: "skipped",
+        detail: `unknown category "${facetTypeOrSlug}"`,
+      };
+    }
+
+    const themes = await this.taxonomy.getThemes(languageCode);
+    const theme = themes.find((t) => t.slug === themeSlug);
+    if (!theme) {
+      return {
+        facetType,
+        themeSlug,
+        status: "skipped",
+        detail: `unknown theme "${themeSlug}"`,
+      };
+    }
+
+    if (!overwrite) {
+      const existing = await this.events.getTopicBrief(
+        facetType,
+        theme.theme_id,
+        languageCode,
+      );
+      if (existing?.content) {
+        return { facetType, themeSlug, status: "skipped" };
+      }
+    }
+
+    const template = await this.getTopicBriefTemplate();
+    if (!template) {
+      return {
+        facetType,
+        themeSlug,
+        status: "rejected",
+        issues: [
+          {
+            rule: "template",
+            detail: `no active ${TOPIC_BRIEF_TEMPLATE_TYPE} template`,
+          },
+        ],
+      };
+    }
+
+    // Exactly the corpus the browse screen groups under this heading — same
+    // filter, including the speaker/actor guard that keeps "every question
+    // Jesus asked" from matching questions asked of Him.
+    const events = await this.events.listEvents(
+      { ...this.eventService.facetFilter([facetType]), themeSlug },
+      { limit: 200, languageCode },
+    );
+
+    const sayings = events
+      .flatMap((event) =>
+        event.facets
+          .filter((facet) => facet.type === facetType)
+          .map((facet) => ({ event, facet })),
+      )
+      .slice(0, TOPIC_BRIEF_SAYING_LIMIT);
+
+    if (sayings.length === 0) {
+      return {
+        facetType,
+        themeSlug,
+        status: "skipped",
+        detail: "no events in this topic",
+      };
+    }
+
+    const meta = JESUS_FACET_META[facetType];
+    const sayingLines = sayings
+      .map(({ event, facet }) => {
+        const quote = facet.text ? ` — "${facet.text}"` : "";
+        const where = facet.reference ? ` (${facet.reference})` : "";
+        return `- ${facet.title}${quote}${where} [in: ${event.title}]`;
+      })
+      .join("\n");
+
+    const input = fillTemplate(template, {
+      category_label: meta.label,
+      category_singular: meta.singular,
+      category_plural: meta.plural,
+      category_mode: meta.mode === "ACTION" ? "did" : "said",
+      topic_name: theme.name,
+      topic_description: theme.description ?? "(none recorded)",
+      sayings: sayingLines,
+      event_count: String(events.length),
+      accounts:
+        [
+          ...new Set(events.flatMap((e) => e.passages.map((p) => p.book_name))),
+        ].join(", ") || "(none)",
+    });
+
+    return {
+      facetType,
+      themeId: theme.theme_id,
+      input,
+      // The quotation gate matches against the sayings the model was given —
+      // nothing else counts as grounded.
+      sourceText: sayings
+        .map(({ facet }) => facet.text ?? facet.title)
+        .join(" \u00b7 "),
+      allowedReferences: new Set(
+        events.flatMap((event) =>
+          event.passages.map((p) => referenceKey(p.book_name, p.chapter)),
+        ),
+      ),
+    };
+  }
+
+  /**
+   * Everything `generateTopicBrief` does *before* the model call, returned
+   * rather than sent.
+   *
+   * The event path has the same split so its prompts can go through the Batch
+   * API; here it is what lets a run be inspected before it is paid for — a
+   * content pipeline whose prompt you cannot read is one you cannot review.
+   */
+  async buildTopicBriefRequest(
+    facetTypeOrSlug: string,
+    themeSlug: string,
+    options: {
+      languageCode?: string;
+      model?: string;
+      overwrite?: boolean;
+    } = {},
+  ): Promise<
+    | { status: "ready"; instructions: string; input: string; model: string }
+    | TopicBriefResult
+  > {
+    const prepared = await this.prepareTopicBriefInput(
+      facetTypeOrSlug,
+      themeSlug,
+      options,
+    );
+    if ("status" in prepared) return prepared;
+    const system = await this.getSystemPrompt();
+    return {
+      status: "ready",
+      instructions: system.text,
+      input: prepared.input,
+      model: options.model ?? DEFAULT_MODEL,
+    };
+  }
+
+  /**
+   * Everything after the model call: the same gates, then the write. Separate
+   * from the call itself so a brief generated any other way — a batch job, a
+   * re-run over a stored response — is held to an identical standard.
+   */
+  async acceptTopicBrief(
+    facetTypeOrSlug: string,
+    themeSlug: string,
+    outputText: string,
+    model: string,
+    options: { languageCode?: string } = {},
+  ): Promise<TopicBriefResult> {
+    const languageCode = options.languageCode ?? DEFAULT_LANGUAGE;
+
+    // Re-resolved rather than threaded through, so this stays usable on a
+    // response that arrives long after the request was built.
+    const prepared = await this.prepareTopicBriefInput(
+      facetTypeOrSlug,
+      themeSlug,
+      { languageCode, overwrite: true },
+    );
+    if ("status" in prepared) return prepared;
+
+    const system = await this.getSystemPrompt();
+    const bookNames = await this.getBookNames();
+    const chapterCounts = await this.getChapterCounts();
+
+    const content = outputText.trim();
+    const issues = validateTopicBrief({
+      content,
+      bookNames,
+      chapterCounts,
+      allowedReferences: prepared.allowedReferences,
+      sourceText: prepared.sourceText,
+    });
+
+    if (issues.length) {
+      // Rejected, not downgraded — the same rule the event layers follow.
+      return {
+        facetType: prepared.facetType,
+        themeSlug,
+        status: "rejected",
+        issues,
+      };
+    }
+
+    await this.events.saveTopicBrief({
+      facetType: prepared.facetType,
+      themeId: prepared.themeId,
+      content,
+      languageCode,
+      provenance: TOPIC_BRIEF_PROVENANCE,
+      promptId: system.id,
+      model,
+    });
+
+    return {
+      facetType: prepared.facetType,
+      themeSlug,
+      status: "saved",
+      chars: content.length,
+    };
+  }
+
+  /**
+   * The (category, theme) pairs that have anything to describe.
+   *
+   * Derived from the corpus rather than from the cross product: most categories
+   * touch a handful of themes, and asking for a brief about a topic a category
+   * never addresses would produce prose about nothing.
+   */
+  async listTopicBriefTargets(
+    languageCode = DEFAULT_LANGUAGE,
+  ): Promise<Array<{ facetType: JesusFacetType; themeSlug: string }>> {
+    const themes = await this.taxonomy.getThemes(languageCode);
+    const targets: Array<{ facetType: JesusFacetType; themeSlug: string }> = [];
+
+    for (const facetType of JESUS_FACET_TYPES) {
+      const filter = this.eventService.facetFilter([facetType]);
+      for (const theme of themes) {
+        const count = await this.events.countEvents({
+          ...filter,
+          themeSlug: theme.slug,
+        });
+        if (count > 0) targets.push({ facetType, themeSlug: theme.slug });
+      }
+    }
+
+    return targets;
   }
 
   /**
