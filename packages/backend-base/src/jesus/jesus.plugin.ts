@@ -253,6 +253,46 @@ const EventOverviewResponseSchema = t.Object({
   collections: t.Array(t.Any()),
 });
 
+const TopicPointSchema = t.Object({
+  slug: t.String(),
+  title: t.String(),
+  text: t.Union([t.String(), t.Null()]),
+  summary: t.Union([t.String(), t.Null()]),
+  reference: t.Union([t.String(), t.Null()]),
+  provenance: t.Number(),
+});
+
+const TopicGroupSchema = t.Object({
+  slug: t.Union([t.String(), t.Null()]),
+  name: t.String(),
+  description: t.Union([t.String(), t.Null()]),
+  sort_order: t.Number(),
+  event_count: t.Number(),
+  facet_count: t.Number(),
+  gospels: t.Array(t.String()),
+  points: t.Array(TopicPointSchema),
+  events: t.Array(EventCardSchema),
+});
+
+const EventBrowseResponseSchema = t.Object({
+  type: t.Object({
+    type: t.String(),
+    mode: t.String(),
+    slug: t.String(),
+    label: t.String(),
+    singular: t.String(),
+    plural: t.String(),
+    section: t.String(),
+    blurb: t.String(),
+    intro: t.String(),
+    event_count: t.Number(),
+    facet_count: t.Number(),
+  }),
+  topics: t.Array(TopicGroupSchema),
+  total_events: t.Number(),
+  truncated: t.Boolean(),
+});
+
 const ForPassageResponseSchema = t.Object({
   events: t.Array(EventCardSchema),
 });
@@ -553,6 +593,44 @@ const plugin = new Elysia()
               "Sections, facet types with counts, periods, themes and featured studies. Clients render the hub from this rather than hardcoding the taxonomy.",
           },
           response: EventOverviewResponseSchema,
+        },
+      )
+      .get(
+        "/events/browse/:type",
+        async ({
+          params,
+          query,
+          store: { jesusEventService, db },
+          currentUserId,
+          set,
+        }) => {
+          const languageCode = await resolveLanguage(db, {
+            bibleVersion: query.bible_version,
+            currentUserId,
+          });
+          const browse = await jesusEventService.browseByType(
+            params.type,
+            languageCode,
+          );
+          if (!browse) {
+            set.status = 404;
+            return { error: "Category not found" };
+          }
+          return browse;
+        },
+        {
+          params: t.Object({ type: t.String() }),
+          query: t.Object({ bible_version: t.Optional(t.String()) }),
+          detail: {
+            tags: ["Jesus"],
+            summary: "One category, grouped by topic",
+            description:
+              "The same corpus as ?type= on /jesus/events, reorganised so a category leads with what He addresses rather than with an undifferentiated list: the category is introduced, each topic says what it is about and quotes what He says there, and the events follow. Returned whole rather than paged — topic headings computed over half a category would misdescribe it.",
+          },
+          response: {
+            200: EventBrowseResponseSchema,
+            404: ErrorSchema,
+          },
         },
       )
       .get(

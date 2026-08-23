@@ -9,6 +9,7 @@ import {
   JESUS_SECTION_META,
   type JesusEventExplanationType,
   type JesusFacetType,
+  getFacetTypeFromSlug,
   resolveFacetTypeFilter,
 } from "../jesus.constants";
 import {
@@ -17,9 +18,16 @@ import {
   type JesusEventRow,
 } from "../repository/jesus-event.repository";
 import { JesusRepository } from "../repository/jesus.repository";
+import { groupEventsByTopic } from "../utils/topic-grouping.utils";
 
 const DEFAULT_LANGUAGE = "en-US";
 const FALLBACK_LANGUAGE = "en-US";
+
+/**
+ * Ceiling on a topic-grouped category. No category is near it today; it exists
+ * so an unbounded query can never be issued as the corpus grows.
+ */
+const BROWSE_EVENT_LIMIT = 300;
 
 export interface JesusEventQuery {
   type?: string;
@@ -127,23 +135,14 @@ export class JesusEventService {
 
   // ── Browse ──────────────────────────────────────────────────────────────
 
-  async listEvents(params: JesusEventQuery, languageCode = DEFAULT_LANGUAGE) {
-    const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
-    const offset = Math.max(params.offset ?? 0, 0);
-
-    const types = resolveFacetTypeFilter(params);
-    const filter: JesusEventFilter = {
-      types,
-      themeSlug: params.theme,
-      periodSlug: params.period,
-      bookId: params.book_id,
-      person: params.person,
-      search: params.q,
-    };
-
-    // "Every question Jesus asked" must not match a question someone asked
-    // Him, so a word-type filter pins the speaker and an action-type filter
-    // pins the actor.
+  /**
+   * "Every question Jesus asked" must not match a question someone asked Him,
+   * so a word-type filter pins the speaker and an action-type filter pins the
+   * actor. Shared by the flat list and the topic-grouped browse so the two can
+   * never disagree about what belongs to a category.
+   */
+  private facetFilter(types: JesusFacetType[] | undefined): JesusEventFilter {
+    const filter: JesusEventFilter = { types };
     if (types?.length) {
       const modes = new Set(types.map((t) => JESUS_FACET_META[t].mode));
       if (modes.size === 1) {
@@ -151,6 +150,22 @@ export class JesusEventService {
         else filter.actor = "JESUS";
       }
     }
+    return filter;
+  }
+
+  async listEvents(params: JesusEventQuery, languageCode = DEFAULT_LANGUAGE) {
+    const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+    const offset = Math.max(params.offset ?? 0, 0);
+
+    const types = resolveFacetTypeFilter(params);
+    const filter: JesusEventFilter = {
+      ...this.facetFilter(types),
+      themeSlug: params.theme,
+      periodSlug: params.period,
+      bookId: params.book_id,
+      person: params.person,
+      search: params.q,
+    };
 
     if (params.collection) {
       const collection = await this.taxonomy.getCollectionBySlug(
@@ -181,6 +196,67 @@ export class JesusEventService {
       total,
       limit,
       offset,
+    };
+  }
+
+  /**
+   * A category, led by topic rather than by a flat list.
+   *
+   * Same corpus as `listEvents({ type })`, reorganised: the category is
+   * introduced, then each topic it touches says what it is about and what He
+   * says there, and only then come the events themselves. Every category gets
+   * the same treatment — Teachings, Questions, Commands, Claims and the rest
+   * are one code path, so the shape of the screen never depends on which tab
+   * the reader opened.
+   *
+   * Returns the whole category in one response rather than paging: the topic
+   * headings are only honest if they are computed over the entire set, and a
+   * page-2 button under a topic would lie about where the rest of the topic
+   * is. `BROWSE_EVENT_LIMIT` is the backstop, and `truncated` tells the client
+   * when it bit.
+   */
+  async browseByType(typeSlug: string, languageCode = DEFAULT_LANGUAGE) {
+    const type = getFacetTypeFromSlug(typeSlug);
+    if (!type) return null;
+    const meta = JESUS_FACET_META[type];
+
+    const filter = this.facetFilter([type]);
+    const [rows, themes, facetCounts] = await Promise.all([
+      this.events.listEvents(filter, {
+        limit: BROWSE_EVENT_LIMIT,
+        languageCode,
+      }),
+      this.taxonomy.getThemes(languageCode),
+      this.events.getFacetTypeCounts(),
+    ]);
+
+    const events = rows.map((row) => toEventCard(row, [type]));
+
+    return {
+      type: {
+        type,
+        mode: meta.mode,
+        slug: meta.slug,
+        label: meta.label,
+        singular: meta.singular,
+        plural: meta.plural,
+        section: meta.section,
+        blurb: meta.blurb,
+        intro: meta.intro,
+        event_count: events.length,
+        facet_count: facetCounts[type] ?? 0,
+      },
+      topics: groupEventsByTopic(
+        events,
+        themes.map((theme) => ({
+          slug: theme.slug,
+          name: theme.name,
+          description: theme.description,
+          sort_order: theme.sort_order,
+        })),
+      ),
+      total_events: events.length,
+      truncated: rows.length >= BROWSE_EVENT_LIMIT,
     };
   }
 
