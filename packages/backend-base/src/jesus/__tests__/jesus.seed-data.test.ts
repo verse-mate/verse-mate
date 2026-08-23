@@ -8,7 +8,7 @@ import {
   LIFE_TIMELINE,
 } from "database/src/seeds/data/jesus.data";
 
-import { JESUS_KINDS } from "../jesus.constants";
+import { JESUS_KINDS, JESUS_SECTION_META } from "../jesus.constants";
 import { generateEntrySlug, parseReference } from "../utils/reference.utils";
 
 /**
@@ -91,6 +91,34 @@ describe("Jesus seed corpus — entries", () => {
       const count = JESUS_ENTRIES.filter((e) => e.kind === kind).length;
       expect(count).toBeGreaterThan(0);
     }
+  });
+
+  it("reaches every entry from one of the hub's sections", () => {
+    // A kind the corpus writes but no section lists is not a loud failure —
+    // the entries are seeded, and then simply never appear. `HEALING` was in
+    // this state: 22 healings in the database, none of them on the hub, none
+    // of them in "every miracle of Jesus". Belonging to a kind is not enough;
+    // the kind has to be somewhere a reader can get to.
+    const reachable = new Set(
+      Object.values(JESUS_SECTION_META).flatMap((section) => section.kinds),
+    );
+    for (const entry of JESUS_ENTRIES) {
+      expect({
+        slug: entry.slug,
+        reachable: reachable.has(entry.kind),
+      }).toEqual({ slug: entry.slug, reachable: true });
+    }
+  });
+
+  it("documents the traditional catalogue of miracles", () => {
+    // The commonly published harmonies list 33-40 distinct miracles; the
+    // spread is a counting question ("he healed many" — one or many?), not a
+    // doctrinal one. 37 is the usual traditional catalogue, and the corpus is
+    // not allowed to fall under it.
+    const miracles = JESUS_ENTRIES.filter(
+      (e) => e.kind === "MIRACLE" || e.kind === "HEALING",
+    );
+    expect(miracles.length).toBeGreaterThanOrEqual(37);
   });
 });
 
@@ -203,6 +231,16 @@ describe("Jesus seed corpus — collections", () => {
     }
   });
 
+  it('means every miracle by "every miracle"', () => {
+    // The corpus types a sign over nature and a sign over a body differently,
+    // so a study that filters on MIRACLE alone answers "every miracle" with a
+    // third of them.
+    const miracles = JESUS_COLLECTIONS.find(
+      (c) => c.slug === "every-miracle-of-jesus",
+    );
+    expect(miracles?.filter?.kinds).toEqual(["MIRACLE", "HEALING"]);
+  });
+
   it("features the studies the hub is designed to show", () => {
     const featured = JESUS_COLLECTIONS.filter((c) => c.isFeatured).map(
       (c) => c.slug,
@@ -210,6 +248,7 @@ describe("Jesus seed corpus — collections", () => {
     expect(featured).toContain("the-i-am-statements");
     expect(featured).toContain("every-question-jesus-asked");
     expect(featured).toContain("every-miracle-of-jesus");
+    expect(featured).toContain("what-the-miracles-reveal");
     expect(featured).toContain("jesus-and-the-pharisees");
     expect(featured).toContain("jesus-and-outsiders");
     expect(featured).toContain("what-he-said-about-god");
