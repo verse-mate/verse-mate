@@ -141,8 +141,14 @@ export class JesusGenerationService {
   /**
    * The theological framework every other explanation in VerseMate is written
    * against. Reused verbatim so Jesus content cannot drift from the rest.
+   *
+   * Public because the enrichment script writes doctrinal content too — "what
+   * this event reveals about who Jesus is" is a theological claim, not a fact
+   * of the narrative — and it generates outside this service. A second path to
+   * the reader that skips the framework is exactly the drift the note above
+   * says must not happen.
    */
-  private async getSystemPrompt(): Promise<{ id: number; text: string }> {
+  async getSystemPrompt(): Promise<{ id: number; text: string }> {
     const prompt = await this.prompts.getActivePrompt();
     return { id: prompt.prompt_id, text: prompt.prompt };
   }
