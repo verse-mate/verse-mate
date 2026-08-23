@@ -4,6 +4,7 @@ import {
   adminPlugin,
   audioPlugin,
   authPlugin,
+  bibleBrainPlugin,
   biblePlugin,
   coachPlugin,
   dailyVersePlugin,
@@ -33,6 +34,7 @@ const app = new Elysia()
   .use(dailyVersePlugin)
   .use(notificationsPlugin)
   .use(audioPlugin)
+  .use(bibleBrainPlugin)
   .use(topicPlugin)
   .use(jesusPlugin)
   .use(lemmaPlugin)
