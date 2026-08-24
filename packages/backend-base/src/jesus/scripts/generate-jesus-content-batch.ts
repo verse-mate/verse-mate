@@ -30,7 +30,10 @@ import { db } from "database";
 import { getAiProvider } from "../../shared/ai/ai-provider.factory";
 import {
   JESUS_EVENT_EXPLANATION_TYPES,
+  JESUS_FACET_TYPES,
   type JesusEventExplanationType,
+  type JesusFacetType,
+  typesUnderTarget,
 } from "../jesus.constants";
 import { JesusEventRepository } from "../repository/jesus-event.repository";
 import {
@@ -110,6 +113,10 @@ function parseArgs(argv: string[]) {
     languageCode: get("language") ?? "en-US",
     bibleVersion: get("bible-version") ?? "NASB1995",
     overwrite: has("overwrite"),
+    slugs: get("slugs")
+      ?.split(",")
+      .map((x) => x.trim())
+      .filter(Boolean),
   };
 }
 
@@ -129,6 +136,9 @@ async function submit(argv: string[]) {
     await events.listEvents({}, { limit: 1000, orderBy: "chronology" })
   )
     .map((e) => e.slug)
+    // `--slugs` narrows a run to named events — used to regenerate a specific
+    // set, e.g. after the system prompt changed, without re-walking the corpus.
+    .filter((s) => !opts.slugs || opts.slugs.includes(s))
     .slice(0, opts.limit);
 
   const lines: BatchLine[] = [];
@@ -340,11 +350,39 @@ async function collect(batchId: string, argv: string[]) {
     ),
   );
   const allTypes = argv.includes("--all-types");
+
+  // Default to the same set `jesus:extract` would fill — the types currently
+  // under their band, computed from live counts — NOT a hardcoded list.
+  //
+  // These two paths are supposed to keep an identical set; that is the whole
+  // reason the selection rules are shared. The default had drifted: extract
+  // moved to `typesUnderTarget(liveCounts)` when the coverage bands landed,
+  // while this still read `EMPTY_CATEGORIES`. Collecting a fill batch with the
+  // default would have kept Promise/Warning/Prayer/Prophecy/Symbolic — the
+  // categories that are already over — and silently discarded every Question,
+  // Teaching, Claim, Encounter and Command the run was submitted to get.
+  const countRows = await conn
+    .selectFrom("jesus_facets")
+    .where("is_active", "=", true)
+    .select((eb) => ["type", eb.fn.countAll<string>().as("count")])
+    .groupBy("type")
+    .execute();
+  const liveCounts: Partial<Record<JesusFacetType, number>> = {};
+  for (const r of countRows) {
+    if ((JESUS_FACET_TYPES as readonly string[]).includes(r.type)) {
+      liveCounts[r.type as JesusFacetType] = Number(r.count);
+    }
+  }
+  const typesArg = get2(argv, "types")
+    ?.split(",")
+    .map((t) => t.trim().toUpperCase());
   const wanted = new Set(
-    (get2(argv, "types")
-      ?.split(",")
-      .map((t) => t.trim().toUpperCase()) ?? [...EMPTY_CATEGORIES]) as string[],
+    (typesArg?.includes("EMPTY")
+      ? [...EMPTY_CATEGORIES]
+      : typesArg ?? typesUnderTarget(liveCounts)) as string[],
   );
+  if (!allTypes)
+    console.log(`keeping: ${[...wanted].join(", ") || "(nothing under band)"}`);
 
   for (const raw of text.split("\n").filter(Boolean)) {
     let line: {
@@ -532,7 +570,7 @@ else if (cmd === "status" && arg) await status(arg);
 else if (cmd === "collect" && arg) await collect(arg, rest);
 else {
   console.error(
-    "usage: jesus:generate:batch submit [--types=] [--limit=] [--overwrite]\n" +
+    "usage: jesus:generate:batch submit [--types=] [--slugs=] [--limit=] [--overwrite]\n" +
       "       jesus:generate:batch status  <batch_id>\n" +
       "       jesus:generate:batch collect <batch_id>",
   );
