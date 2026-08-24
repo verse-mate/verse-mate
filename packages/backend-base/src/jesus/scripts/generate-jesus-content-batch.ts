@@ -33,6 +33,8 @@ import {
   JESUS_FACET_TYPES,
   type JesusEventExplanationType,
   type JesusFacetType,
+  assessCoverage,
+  fillGoal,
   typesUnderTarget,
 } from "../jesus.constants";
 import { JesusEventRepository } from "../repository/jesus-event.repository";
@@ -398,6 +400,26 @@ async function collect(batchId: string, argv: string[]) {
   if (!allTypes)
     console.log(`keeping: ${[...wanted].join(", ") || "(nothing under band)"}`);
 
+  // Remaining headroom per type, so a collect lands in the band instead of
+  // writing everything the batch happens to contain.
+  //
+  // `jesus:extract` has always done this; the collect did not, and the two are
+  // meant to keep the same set. Collecting CLAIM without it wrote 121 facets
+  // against a band of 50-70, taking the category to 140 — the run reports
+  // success and leaves the category at twice its target. The runbook's "a type
+  // stops on its own once it reaches the middle of its band" was only ever true
+  // of the extract path.
+  const headroom = new Map<string, number>();
+  for (const row of assessCoverage(liveCounts)) {
+    if (!allTypes && !wanted.has(row.type)) continue;
+    headroom.set(
+      row.type,
+      row.target
+        ? Math.max(0, fillGoal(row.target) - row.count)
+        : Number.POSITIVE_INFINITY,
+    );
+  }
+
   for (const raw of text.split("\n").filter(Boolean)) {
     let line: {
       custom_id: string;
@@ -518,6 +540,12 @@ async function collect(batchId: string, argv: string[]) {
         existingTypeCounts,
       });
       for (const f of keep) {
+        const left = headroom.get(f.type);
+        if (left !== undefined && left <= 0) {
+          facetTally.filtered++;
+          continue;
+        }
+        if (left !== undefined) headroom.set(f.type, left - 1);
         await conn
           .insertInto("jesus_facets")
           .values({
