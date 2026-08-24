@@ -45,6 +45,7 @@ import {
   JesusGenerationService,
 } from "../services/jesus-generation.service";
 import {
+  DEFAULT_PER_EVENT_TYPE_CAP,
   EMPTY_CATEGORIES,
   type KeepTally,
   normalizeFacetKey,
@@ -409,6 +410,12 @@ async function collect(batchId: string, argv: string[]) {
   // success and leaves the category at twice its target. The runbook's "a type
   // stops on its own once it reaches the middle of its band" was only ever true
   // of the extract path.
+  // `jesus:extract` takes `--cap=`; the collect did not, so a category whose
+  // band needs more than three facets per event could not reach it from a
+  // batch — QUESTION stopped at 234 against 300-310 for exactly that reason.
+  const perEventCap =
+    Number.parseInt(get2(argv, "cap") ?? "0", 10) || DEFAULT_PER_EVENT_TYPE_CAP;
+
   const headroom = new Map<string, number>();
   for (const row of assessCoverage(liveCounts)) {
     if (!allTypes && !wanted.has(row.type)) continue;
@@ -538,11 +545,17 @@ async function collect(batchId: string, argv: string[]) {
         usedSlugs,
         tally: facetTally,
         existingTypeCounts,
+        perEventTypeCap: perEventCap,
       });
       for (const f of keep) {
         const left = headroom.get(f.type);
         if (left !== undefined && left <= 0) {
-          facetTally.filtered++;
+          // Past the band ceiling. The selector already counted this as
+          // written, so correct that too — a tally that overstates what
+          // reached the database is how a filter failing silently stays
+          // invisible.
+          facetTally.written--;
+          facetTally.capped++;
           continue;
         }
         if (left !== undefined) headroom.set(f.type, left - 1);
