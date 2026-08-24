@@ -101,9 +101,23 @@ function parseArgs(argv: string[]) {
         )
       : [...JESUS_EVENT_EXPLANATION_TYPES]
   ) as JesusEventExplanationType[];
-  if (requested?.length && types.length !== requested.length) {
+  // `--types` carries two vocabularies depending on the run: narrative layers
+  // (overview/compare/insights/application) for a generation batch, and facet
+  // types (CLAIM, QUESTION, …) for an extraction collect, which filters what it
+  // keeps. Validating only against the first rejected `--types=CLAIM` outright,
+  // so a per-category collect — the way the runbook works through §4 — could not
+  // be run through the batch path at all.
+  const unknown = (requested ?? []).filter(
+    (t) =>
+      !(JESUS_EVENT_EXPLANATION_TYPES as readonly string[]).includes(t) &&
+      !(JESUS_FACET_TYPES as readonly string[]).includes(t.toUpperCase()) &&
+      t.toUpperCase() !== "EMPTY",
+  );
+  if (unknown.length) {
     throw new Error(
-      `Unknown --types value(s). Valid: ${JESUS_EVENT_EXPLANATION_TYPES.join(", ")}`,
+      `Unknown --types value(s): ${unknown.join(", ")}.\n` +
+        `  narrative layers: ${JESUS_EVENT_EXPLANATION_TYPES.join(", ")}\n` +
+        `  facet types:      ${JESUS_FACET_TYPES.join(", ")}`,
     );
   }
   return {
