@@ -528,8 +528,23 @@ async function collect(batchId: string, argv: string[]) {
         tally.skipped++;
         continue;
       }
+      // Dedup against every facet this event has ever been given, including
+      // deactivated ones.
+      //
+      // `full.facets` is the reader's view, so it carries only active rows. A
+      // second collect therefore re-proposed facets that already exist, and
+      // each one consumed a headroom slot before the insert no-opped on the
+      // unique slug — so the run burned its whole allowance re-deciding the
+      // first events and never reached the later ones. That is why re-running
+      // COMMAND could not get past the early-ministry narrative into the
+      // teaching blocks where the enduring commands actually are.
+      const priorRows = await conn
+        .selectFrom("jesus_facets")
+        .where("event_id", "=", full.event_id)
+        .select(["text", "title", "type"])
+        .execute();
       const existingKeys = new Set(
-        (full.facets ?? []).map((f) =>
+        priorRows.map((f) =>
           normalizeFacetKey(String(f.text ?? f.title ?? "")),
         ),
       );
