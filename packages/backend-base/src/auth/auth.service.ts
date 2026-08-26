@@ -243,6 +243,19 @@ export class AuthService {
       // Update user if email was not verified but SSO email is verified,
       // or if profile picture changed
       const updates: any = {};
+
+      // Security (audit #1): an existing password account on this email that was
+      // never verified is the account-pre-registration pattern — an attacker may
+      // have signed up the victim's email with their own password, waiting for
+      // the real owner to arrive via SSO. Do NOT silently adopt that password:
+      // null it and revoke its sessions before linking + auto-verifying, so the
+      // attacker keeps no foothold. A legitimately verified password user is
+      // untouched and keeps their password.
+      if (user.password && !user.emailVerified) {
+        updates.password = null;
+        await this.logoutAll(user.id);
+      }
+
       if (!user.emailVerified && emailVerified) {
         updates.emailVerified = true;
       }
@@ -655,7 +668,12 @@ export class AuthService {
       throw new ValidationError("Invalid verification token");
     }
 
-    if (user.id !== currentUserId) {
+    // Security (audit #3): bind the token to the account it was issued for. The
+    // cached payload.id is the account the verification token was minted for;
+    // it must match the caller. The previous `user.id !== currentUserId` check
+    // was tautological (user was selected BY currentUserId), so any valid token
+    // — including one minted for a different account — could verify this one.
+    if (payload.id !== currentUserId) {
       throw new ConflictError("Verification link already used");
     }
 
