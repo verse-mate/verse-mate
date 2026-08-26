@@ -42,11 +42,15 @@ export const authDerive = async ({
   jwt,
   bearer,
   query,
+  store: { cache },
 }: {
   bearer: string | undefined;
   jwt: JWT;
   query: {
     accessToken?: string;
+  };
+  store: {
+    cache: cache;
   };
 }): Promise<{ currentUserId: string | null }> => {
   const token = bearer ?? query.accessToken;
@@ -58,6 +62,18 @@ export const authDerive = async ({
   const validBearer = await jwt.verify(token);
 
   if (!validBearer || !validBearer.sub) {
+    return { currentUserId: null };
+  }
+
+  // Security (audit #5): a valid signature is not enough — the token must still
+  // be in the user's Redis session list, or logout / password-reset would not
+  // actually revoke it on authDerive-only routes (coach, support, bible, …).
+  // Every issued token is stored there via loginUser, so this rejects only
+  // revoked/expired-from-Redis tokens, matching authGuard's guarantee.
+  const allTokens = await cache.get<string[]>(
+    cacheConstants.accessToken(validBearer.sub),
+  );
+  if (!allTokens?.includes(token)) {
     return { currentUserId: null };
   }
 
