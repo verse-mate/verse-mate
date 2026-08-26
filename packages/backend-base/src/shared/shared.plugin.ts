@@ -15,13 +15,15 @@ export type cache = typeof redisClient;
 
 export type db = typeof Database;
 
-// Security (audit #2): never fall back to a hardcoded signing secret. A default
-// secret means any attacker can forge a valid session JWT for any user. Fail
-// closed at startup instead.
+// Security (audit #2): never sign sessions with a hardcoded or publicly-known
+// secret — either lets any attacker forge a valid JWT for any user. Fail closed
+// at startup when the secret is unset OR still the historical default that was
+// shipped in .env.example on a public repo (so setting it to that known value
+// does not sneak past this guard).
 const authTokenSecret = process.env.AUTH_ACCESS_TOKEN_SECRET;
-if (!authTokenSecret) {
+if (!authTokenSecret || authTokenSecret === "my-super-secret") {
   throw new Error(
-    "AUTH_ACCESS_TOKEN_SECRET is not set — refusing to start with a default JWT signing secret",
+    "AUTH_ACCESS_TOKEN_SECRET is unset or the known-public default — refusing to start; set a unique secret",
   );
 }
 
