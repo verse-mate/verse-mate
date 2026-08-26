@@ -30,25 +30,12 @@ function dailyVersePick(date: string, userId: string | null): string {
   return `dailyVersePick:${date}:${userId ?? "global"}`;
 }
 
-/**
- * Coach report store reads (change: coach-reports-store). The dataset `version`
- * is part of the key, so a publish that bumps it orphans every previous entry
- * at once — the Redis client has no `scan`, so versioning is what makes
- * namespace invalidation possible. Environment-namespaced like ssoState so a
- * shared Redis cannot leak coach data across environments.
- */
-function coachStore(version: string, shape: string, scope: string): string {
-  const env = process.env.NODE_ENV ?? "dev";
-  return `${env}:coach:v${version}:${shape}:${scope}`;
-}
-
 const cacheConstants = {
   resetPassword,
   accessToken,
   verifyEmail,
   ssoState,
   dailyVersePick,
-  coachStore,
 };
 
 export default cacheConstants;

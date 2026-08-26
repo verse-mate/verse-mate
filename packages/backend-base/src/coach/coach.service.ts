@@ -405,6 +405,36 @@ export class CoachService {
       );
     }
 
+    // Validate the WHOLE batch before writing anything, so a bad report at
+    // position k cannot leave reports 1..k-1 committed.
+    for (const report of input.reports) {
+      if (!report.coachId || !report.date) {
+        throw new ValidationError("Each report needs a coachId and a date");
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(report.date)) {
+        throw new ValidationError(
+          `Report date must be yyyy-mm-dd (got "${report.date}" for ${report.coachId})`,
+        );
+      }
+      // The read path serves ReportSchema, which REQUIRES these fields. Without
+      // this check a publisher that renames one field gets a 200, and the
+      // malformed row then breaks the leader's ENTIRE report list (the array
+      // response fails validation as a whole), with no repair endpoint.
+      const assembled = {
+        ...report.summary,
+        ...report.metrics,
+        ...report.body,
+      } as Record<string, unknown>;
+      const missing = CoachService.REQUIRED_REPORT_FIELDS.filter(
+        (f) => assembled[f] === undefined,
+      );
+      if (missing.length > 0) {
+        throw new ValidationError(
+          `Report ${report.coachId} ${report.date} is missing required field(s): ${missing.join(", ")}`,
+        );
+      }
+    }
+
     const accepted: Array<{
       id: string;
       coachId: string;
@@ -412,9 +442,6 @@ export class CoachService {
       created: boolean;
     }> = [];
     for (const report of input.reports) {
-      if (!report.coachId || !report.date) {
-        throw new ValidationError("Each report needs a coachId and a date");
-      }
       const result = await this.reportsRepository.upsert({
         id: report.id || CoachService.mintReportId(report.coachId, report.date),
         coach_id: report.coachId,
@@ -436,6 +463,31 @@ export class CoachService {
       reportCount: meta.reportCount,
     };
   }
+
+  /**
+   * Fields the read contract (ReportSchema) requires. An ingest that omits any
+   * of them is rejected at the write boundary rather than poisoning the read.
+   */
+  private static readonly REQUIRED_REPORT_FIELDS = [
+    "dateLabel",
+    "session",
+    "topic",
+    "duration",
+    "attendees",
+    "newcomers",
+    "score",
+    "base",
+    "newcomerBonus",
+    "sizeBonus",
+    "status",
+    "statusEmoji",
+    "clusters",
+    "dimensions",
+    "bigIdeas",
+    "feedback",
+    "docUrl",
+    "pdfUrl",
+  ];
 
   /** Opaque id for a report the store has not seen before. */
   private static mintReportId(coachId: string, date: string): string {
@@ -627,26 +679,24 @@ export class CoachService {
    * backfill has run for that coach — never as a runtime outage fallback).
    */
   private async storeReports(coachId: string): Promise<CoachReport[] | null> {
-    const rows = await this.reportsRepository.listMetrics(coachId);
+    // Gate on the DATASET-level signal, not this coach's row count. Gating on
+    // rows meant a single ingest landing before the backfill flipped the coach
+    // to store-only and their history appeared deleted (23 sessions -> 1).
+    const meta = await this.reportsRepository.getMeta();
+    if (!meta) return null;
+    // ONE query for the whole history — not listMetrics + getDetail per row.
+    const rows = await this.reportsRepository.listFullReports(coachId);
     if (rows.length === 0) return null;
-    // listMetrics is chronological; the API contract is newest-first.
-    const detailed = await Promise.all(
-      rows.map((r) => this.reportsRepository.getDetail(r.id)),
+    return rows.map(
+      (d) =>
+        rowToReport({
+          id: d.id,
+          session_date: d.date,
+          summary: d.summary,
+          metrics: d.metrics,
+          body: d.body,
+        }) as unknown as CoachReport,
     );
-    const reports = detailed
-      .filter((d): d is NonNullable<typeof d> => d !== null)
-      .map(
-        (d) =>
-          rowToReport({
-            id: d.id,
-            session_date: d.date,
-            summary: d.summary,
-            metrics: d.metrics,
-            body: d.body,
-          }) as unknown as CoachReport,
-      );
-    reports.sort((a, b) => (a.date < b.date ? 1 : -1));
-    return reports;
   }
 
   /** Reports for a roster record: store first, bundled dataset until backfilled. */
@@ -696,12 +746,16 @@ export class CoachService {
   }
 
   /**
-   * One session's full content by immutable OR legacy id. Null when the id
-   * names nothing — the caller reports not-found rather than silently showing
-   * a different session.
+   * One session's full content by immutable OR legacy id, SCOPED to the coach
+   * that owns it. Null when the id names nothing for that coach — so a leader
+   * can never read another leader's report, and an unknown id reports
+   * not-found rather than silently showing a different session.
    */
-  async getReportDetail(reportId: string): Promise<CoachReport | null> {
-    const row = await this.reportsRepository.getDetail(reportId);
+  async getReportDetail(
+    coachId: string,
+    reportId: string,
+  ): Promise<CoachReport | null> {
+    const row = await this.reportsRepository.getDetail(coachId, reportId);
     if (row) {
       const report = rowToReport({
         id: row.id,
@@ -710,16 +764,16 @@ export class CoachService {
         metrics: row.metrics,
         body: row.body,
       }) as unknown as CoachReport;
-      const [overlaid] = await this.overlayReports(row.coachId, [report]);
+      const [overlaid] = await this.overlayReports(coachId, [report]);
       return overlaid ?? report;
     }
-    // Migration-gate: the bundle still answers for reports not yet backfilled.
-    for (const coach of coachData.coaches) {
-      const found = coach.reports.find((r) => r.id === reportId);
-      if (found) {
-        const [overlaid] = await this.overlayReports(coach.id, [found]);
-        return overlaid ?? found;
-      }
+    // Migration-gate: the bundle still answers for reports not yet backfilled —
+    // scoped to THIS coach only, never a global search across every leader.
+    const bundled = coachData.coaches.find((c) => c.id === coachId);
+    const found = bundled?.reports.find((r) => r.id === reportId);
+    if (found) {
+      const [overlaid] = await this.overlayReports(coachId, [found]);
+      return overlaid ?? found;
     }
     return null;
   }
@@ -911,7 +965,7 @@ export class CoachService {
     const canonical = await this.canonicalReportId(coachId, reportId, record);
     if (!canonical) return null;
     const report =
-      (await this.getReportDetail(canonical)) ??
+      (await this.getReportDetail(coachId, canonical)) ??
       record.reports.find((r) => r.id === canonical);
     if (!report) return null;
 

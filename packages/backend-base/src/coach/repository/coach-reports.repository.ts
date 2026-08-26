@@ -33,11 +33,27 @@ export interface UpsertedReport {
   created: boolean;
 }
 
-/** Dates come back as Date from pg; the JSON contract is yyyy-mm-dd strings. */
+/**
+ * `session_date` is always selected pre-formatted in SQL (see `DATE_COL`), so it
+ * never becomes a JS Date. That matters: pg parses a DATE at LOCAL midnight, so
+ * `new Date('2026-08-22').toISOString()` yields 2026-08-21 on any UTC+ host —
+ * every date the store served would have been a day early in Europe/Asia.
+ */
 function isoDate(value: unknown): string {
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (value instanceof Date) {
+    // Defensive only; the queries below avoid this path entirely.
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
   return String(value).slice(0, 10);
 }
+
+/** Select `session_date` as a yyyy-mm-dd string, never as a Date. */
+const DATE_COL = sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as(
+  "session_date",
+);
 
 /**
  * Data access for the coach report store (change: coach-reports-store).
@@ -64,7 +80,8 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "session_date", "summary"])
+      .select(["id", "coach_id", "summary"])
+      .select(DATE_COL)
       .where("coach_id", "=", coachId)
       .orderBy("session_date", "desc")
       .limit(limit)
@@ -96,7 +113,8 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "session_date", "summary"])
+      .select(["id", "coach_id", "summary"])
+      .select(DATE_COL)
       .orderBy("coach_id")
       .orderBy("session_date", "desc")
       .execute();
@@ -121,22 +139,35 @@ export class CoachReportsRepository {
   }
 
   /**
-   * One session's full content. Resolves by immutable id OR by a legacy id a
-   * link was previously issued under, so older delivered links keep working.
-   * Returns null when the id matches nothing — the caller reports not-found
-   * rather than silently showing a different session.
+   * One session's full content, for a SPECIFIC coach. Resolves by immutable id
+   * OR by a legacy id a link was previously issued under, so older delivered
+   * links keep working. Returns null when the id matches nothing FOR THAT COACH
+   * — the caller reports not-found rather than silently showing a different
+   * session, and a leader can never read another leader's report.
    */
-  async getDetail(reportId: string): Promise<ReportDetailRow | null> {
+  async getDetail(
+    coachId: string,
+    reportId: string,
+  ): Promise<ReportDetailRow | null> {
     const row = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "session_date", "summary", "metrics", "body"])
+      .select(["id", "coach_id", "summary", "metrics", "body"])
+      .select(DATE_COL)
+      // SECURITY: always scope to the owning coach. Report ids are predictable
+      // slugs, so an unscoped lookup lets any leader read another leader's
+      // private report and the admin notes attached to it.
+      .where("coach_id", "=", coachId)
       .where((eb) =>
         eb.or([
           eb("id", "=", reportId),
           eb(sql`${reportId}`, "=", sql`ANY(legacy_ids)`),
         ]),
       )
+      // An exact id always wins over another report's legacy alias, so the
+      // result cannot flip with the query plan.
+      .orderBy(sql`case when id = ${reportId} then 0 else 1 end`)
+      .limit(1)
       .executeTakeFirst();
     if (!row) return null;
     return {
@@ -202,7 +233,8 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "session_date", "summary", "metrics"])
+      .select(["id", "summary", "metrics"])
+      .select(DATE_COL)
       .where("coach_id", "=", coachId)
       .orderBy("session_date", "asc")
       .execute();
@@ -211,6 +243,31 @@ export class CoachReportsRepository {
       date: isoDate(r.session_date),
       summary: (r.summary ?? {}) as Record<string, unknown>,
       metrics: (r.metrics ?? {}) as Record<string, unknown>,
+    }));
+  }
+
+  /**
+   * Every report of a coach, complete, in ONE query. Replaces a
+   * listMetrics-then-getDetail-per-row loop that fired N+1 queries and, via
+   * Promise.all, queued N connection acquisitions against a 10-connection pool
+   * — one leader's dashboard could monopolise the whole pool.
+   */
+  async listFullReports(coachId: string): Promise<ReportDetailRow[]> {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_reports")
+      .select(["id", "coach_id", "summary", "metrics", "body"])
+      .select(DATE_COL)
+      .where("coach_id", "=", coachId)
+      .orderBy("session_date", "desc")
+      .execute();
+    return rows.map((r) => ({
+      id: r.id,
+      coachId: r.coach_id,
+      date: isoDate(r.session_date),
+      summary: (r.summary ?? {}) as Record<string, unknown>,
+      metrics: (r.metrics ?? {}) as Record<string, unknown>,
+      body: (r.body ?? {}) as Record<string, unknown>,
     }));
   }
 
@@ -227,7 +284,8 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "session_date", "summary", "metrics"])
+      .select(["id", "coach_id", "summary", "metrics"])
+      .select(DATE_COL)
       .orderBy("session_date", "asc")
       .execute();
     return rows.map((r) => ({
@@ -307,54 +365,39 @@ export class CoachReportsRepository {
    * A brand-new report takes the id the caller proposes, or a generated one.
    */
   async upsert(row: CoachReportRow): Promise<UpsertedReport> {
-    const conn = this.db.getOrCreateConnection();
-    const existing = await conn
-      .selectFrom("coach_reports")
-      .select(["id", "legacy_ids"])
-      .where("coach_id", "=", row.coach_id)
-      // session_date is a DATE column; cast the yyyy-mm-dd string so it matches
-      .where(sql`session_date`, "=", sql`${row.session_date}::date`)
-      .executeTakeFirst();
+    // ONE atomic statement: a SELECT-then-INSERT races two concurrent publishes
+    // for the same leader+date into a unique-constraint 500. ON CONFLICT also
+    // preserves the report's identity — the incoming id is appended to
+    // legacy_ids instead of replacing it, so delivered links keep resolving.
+    const result = await sql<{ id: string; created: boolean }>`
+      INSERT INTO coach_reports
+        (id, coach_id, session_date, legacy_ids, summary, metrics, body)
+      VALUES (
+        ${row.id}, ${row.coach_id}, ${row.session_date}::date,
+        ${sql.val(row.legacy_ids ?? [])}::text[],
+        ${JSON.stringify(row.summary)}::jsonb,
+        ${JSON.stringify(row.metrics)}::jsonb,
+        ${JSON.stringify(row.body)}::jsonb
+      )
+      ON CONFLICT (coach_id, session_date) DO UPDATE SET
+        summary = EXCLUDED.summary,
+        metrics = EXCLUDED.metrics,
+        body    = EXCLUDED.body,
+        legacy_ids = CASE
+          WHEN EXCLUDED.id = coach_reports.id THEN coach_reports.legacy_ids
+          WHEN EXCLUDED.id = ANY(coach_reports.legacy_ids) THEN coach_reports.legacy_ids
+          ELSE array_append(coach_reports.legacy_ids, EXCLUDED.id)
+        END,
+        updated_at = NOW()
+      RETURNING id, (xmax = 0) AS created
+    `.execute(this.db.getOrCreateConnection());
 
-    if (existing) {
-      const legacy = new Set<string>(existing.legacy_ids ?? []);
-      if (row.id && row.id !== existing.id) legacy.add(row.id);
-      await conn
-        .updateTable("coach_reports")
-        .set({
-          summary: row.summary,
-          metrics: row.metrics,
-          body: row.body,
-          legacy_ids: [...legacy],
-          updated_at: sql`NOW()`,
-        })
-        .where("id", "=", existing.id)
-        .execute();
-      return {
-        id: existing.id,
-        coachId: row.coach_id,
-        date: row.session_date,
-        created: false,
-      };
-    }
-
-    await conn
-      .insertInto("coach_reports")
-      .values({
-        id: row.id,
-        coach_id: row.coach_id,
-        session_date: row.session_date,
-        legacy_ids: row.legacy_ids ?? [],
-        summary: row.summary,
-        metrics: row.metrics,
-        body: row.body,
-      })
-      .execute();
+    const first = result.rows[0];
     return {
-      id: row.id,
+      id: first.id,
       coachId: row.coach_id,
       date: row.session_date,
-      created: true,
+      created: Boolean(first.created),
     };
   }
 }

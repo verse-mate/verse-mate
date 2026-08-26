@@ -285,7 +285,11 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           const me = await coachService.getMe(currentUserId);
           if (!me?.profile) throw new ForbiddenError("Not a coaching account");
-          const report = await coachService.getReportDetail(params.reportId);
+          // SECURITY: scope to the caller's own coaching record.
+          const report = await coachService.getReportDetail(
+            me.profile.id,
+            params.reportId,
+          );
           if (!report) throw new NotFoundError("Session not found");
           return { report };
         },

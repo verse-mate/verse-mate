@@ -64,7 +64,7 @@ describe("store-backed report reads", () => {
 
   it("detail returns the full report reassembled from the store", async () => {
     await repo.upsert(row("s1", "2026-08-01"));
-    const detail = await service.getReportDetail("s1");
+    const detail = await service.getReportDetail(COACH, "s1");
     expect(detail?.id).toBe("s1");
     expect(detail?.date).toBe("2026-08-01");
     expect(detail?.session).toBe("Session 2026-08-01");
@@ -76,13 +76,19 @@ describe("store-backed report reads", () => {
   it("detail resolves a LEGACY id to the same report (delivered links survive)", async () => {
     await repo.upsert(row("original-id", "2026-08-01"));
     await repo.upsert(row("retitled-id", "2026-08-01")); // re-title → legacy recorded
-    const viaLegacy = await service.getReportDetail("retitled-id");
+    const viaLegacy = await service.getReportDetail(COACH, "retitled-id");
     expect(viaLegacy?.id).toBe("original-id");
   });
 
   it("unknown id returns null (never a different session)", async () => {
     await repo.upsert(row("s1", "2026-08-01"));
-    expect(await service.getReportDetail("no-such-report")).toBeNull();
+    expect(await service.getReportDetail(COACH, "no-such-report")).toBeNull();
+  });
+
+  it("SECURITY: one coach cannot read another coach's report detail", async () => {
+    await repo.upsert(row("s1", "2026-08-01"));
+    // same id, different caller → not found, never the victim's content
+    expect(await service.getReportDetail("some-other-coach", "s1")).toBeNull();
   });
 
   it("a note written against a LEGACY id attaches to the canonical report", async () => {

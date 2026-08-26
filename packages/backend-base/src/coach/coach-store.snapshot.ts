@@ -24,20 +24,30 @@ export async function snapshotReportsByCoach(): Promise<
   const repo = new CoachReportsRepository(Database);
   const all = await repo.listAllMetrics();
   const byCoach: Record<string, Record<string, unknown>[]> = {};
+  // One query per coach (not per report) — the per-report loop was an N+1.
+  const coachIds = [...new Set(all.map((r) => r.coachId))];
+  const detailsByCoach = new Map<
+    string,
+    Awaited<ReturnType<typeof repo.listFullReports>>
+  >();
+  for (const coachId of coachIds) {
+    detailsByCoach.set(coachId, await repo.listFullReports(coachId));
+  }
 
-  for (const row of all) {
-    const detail = await repo.getDetail(row.id);
-    if (!detail) continue;
-    const report = rowToReport({
-      id: detail.id,
-      session_date: detail.date,
-      summary: detail.summary,
-      metrics: detail.metrics,
-      body: detail.body,
-    });
-    const bucket = byCoach[row.coachId] ?? [];
-    bucket.push(report);
-    byCoach[row.coachId] = bucket;
+  for (const [coachId, details] of detailsByCoach) {
+    for (const detail of details) {
+      const row = { coachId };
+      const report = rowToReport({
+        id: detail.id,
+        session_date: detail.date,
+        summary: detail.summary,
+        metrics: detail.metrics,
+        body: detail.body,
+      });
+      const bucket = byCoach[row.coachId] ?? [];
+      bucket.push(report);
+      byCoach[row.coachId] = bucket;
+    }
   }
 
   // The bundle contract is newest-first per coach.
