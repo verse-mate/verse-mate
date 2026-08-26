@@ -10,6 +10,7 @@ import {
 } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
+import { hasPublishScope } from "./coach-publish.auth";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
@@ -170,6 +171,53 @@ const plugin = new Elysia()
   }))
   .group("/coach", (app) =>
     app
+      // ── Publish (ingest) ──────────────────────────────────────────────
+      // Authenticated by the SCOPED publish credential, not a user session:
+      // the coaching pipeline may publish reports and nothing else. Declared
+      // before the session-derived routes so it never inherits user auth.
+      .post(
+        "/ingest",
+        async ({ store: { coachService }, body, headers }) => {
+          if (!hasPublishScope(headers.authorization))
+            throw new UnauthorizedError("Publish credential required");
+          return coachService.ingestReports({
+            reports: body.reports,
+            generatedAt: body.generatedAt ?? null,
+            expectedCount: body.expectedCount ?? null,
+          });
+        },
+        {
+          body: t.Object({
+            reports: t.Array(
+              t.Object({
+                coachId: t.String(),
+                date: t.String(),
+                id: t.Optional(t.String()),
+                summary: t.Record(t.String(), t.Unknown()),
+                metrics: t.Record(t.String(), t.Unknown()),
+                body: t.Record(t.String(), t.Unknown()),
+              }),
+            ),
+            generatedAt: t.Optional(t.Union([t.String(), t.Null()])),
+            expectedCount: t.Optional(t.Union([t.Number(), t.Null()])),
+          }),
+          response: {
+            200: t.Object({
+              accepted: t.Array(
+                t.Object({
+                  id: t.String(),
+                  coachId: t.String(),
+                  date: t.String(),
+                  created: t.Boolean(),
+                }),
+              ),
+              version: t.String(),
+              reportCount: t.Number(),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .resolve({ as: "scoped" }, authDerive)
       .get(
         "/me",

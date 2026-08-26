@@ -1,7 +1,11 @@
+import { randomUUID } from "node:crypto";
+
 import { CoachInvite, CoachNote, render } from "../../../emails";
+import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
 import coachDataJson from "./coach.data.json";
+import { CoachReportsRepository } from "./repository/coach-reports.repository";
 import {
   type AddedLeaderRow,
   type CoachClassInput,
@@ -339,6 +343,9 @@ export interface CoachMonthly {
 export class CoachService {
   private readonly userService: UserService;
   private readonly coachRepository: CoachRepository;
+  /** Report store (change: coach-reports-store) — reports now live in the
+   *  database rather than the compiled-in dataset. */
+  private readonly reportsRepository: CoachReportsRepository;
 
   constructor(
     private readonly db: db,
@@ -348,6 +355,90 @@ export class CoachService {
   ) {
     this.userService = new UserService(db);
     this.coachRepository = new CoachRepository(db);
+    this.reportsRepository = new CoachReportsRepository(db);
+  }
+
+  // ─── Publish (ingest) ────────────────────────────────────────────────────
+
+  /**
+   * Ingest published reports into the store (change: coach-reports-store).
+   *
+   * The store is the sole assigner of report identity: an incoming report is
+   * matched on the title-free natural key (coach + session date), so a re-title
+   * updates the existing row and KEEPS its id — overlay notes/recording links
+   * and already-delivered `?s=<id>` links stay valid. The response carries each
+   * report's assigned id so the publisher can build links without deriving one.
+   *
+   * Guards the corpus against a stale publisher: when `expectedCount` is given
+   * and is lower than what the store already holds, the publish is refused
+   * rather than allowed to shrink live data.
+   */
+  async ingestReports(input: {
+    reports: Array<{
+      coachId: string;
+      date: string;
+      id?: string;
+      summary: Record<string, unknown>;
+      metrics: Record<string, unknown>;
+      body: Record<string, unknown>;
+    }>;
+    generatedAt?: string | null;
+    expectedCount?: number | null;
+  }): Promise<{
+    accepted: Array<{
+      id: string;
+      coachId: string;
+      date: string;
+      created: boolean;
+    }>;
+    version: string;
+    reportCount: number;
+  }> {
+    const stored = await this.reportsRepository.totalReports();
+    if (
+      typeof input.expectedCount === "number" &&
+      input.expectedCount < stored
+    ) {
+      throw new ConflictError(
+        `Publish refused: publisher reports ${input.expectedCount} sessions but the store holds ${stored} — refusing to shrink the corpus`,
+      );
+    }
+
+    const accepted: Array<{
+      id: string;
+      coachId: string;
+      date: string;
+      created: boolean;
+    }> = [];
+    for (const report of input.reports) {
+      if (!report.coachId || !report.date) {
+        throw new ValidationError("Each report needs a coachId and a date");
+      }
+      const result = await this.reportsRepository.upsert({
+        id: report.id || CoachService.mintReportId(report.coachId, report.date),
+        coach_id: report.coachId,
+        session_date: report.date,
+        legacy_ids: [],
+        summary: report.summary ?? {},
+        metrics: report.metrics ?? {},
+        body: report.body ?? {},
+      });
+      accepted.push(result);
+    }
+
+    const meta = await this.reportsRepository.bumpMeta(
+      input.generatedAt ?? null,
+    );
+    return {
+      accepted,
+      version: meta.version,
+      reportCount: meta.reportCount,
+    };
+  }
+
+  /** Opaque id for a report the store has not seen before. */
+  private static mintReportId(coachId: string, date: string): string {
+    return `${coachId}-${date}-${randomUUID().slice(0, 8)}`;
   }
 
   // ─── Roster resolution (bundled dataset + admin-added leaders) ────────────
