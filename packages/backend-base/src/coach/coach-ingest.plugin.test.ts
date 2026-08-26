@@ -14,9 +14,29 @@ function payload(
   return {
     reports: reports.map((r) => ({
       ...r,
-      summary: { session: `S ${r.date}`, score: 70 },
-      metrics: { clusters: [], dimensions: [] },
-      body: { bigIdeas: ["idea"] },
+      // Complete payload: the store rejects a report missing any field the read
+      // contract (ReportSchema) requires, so a bad publish cannot poison reads.
+      summary: {
+        dateLabel: r.date,
+        session: `S ${r.date}`,
+        topic: "Joel",
+        duration: "~60 min",
+        attendees: 12,
+        newcomers: 0,
+        score: 70,
+        status: "On Target",
+        statusEmoji: "🟡",
+        docUrl: "https://example/doc",
+        pdfUrl: "https://example/report.pdf",
+      },
+      metrics: {
+        base: 70,
+        newcomerBonus: 0,
+        sizeBonus: 0,
+        clusters: [],
+        dimensions: [],
+      },
+      body: { bigIdeas: ["idea"], feedback: { headline: "ok" }, sections: [] },
     })),
     generatedAt: "2026-08-25",
   };
@@ -90,6 +110,37 @@ describe("POST /coach/ingest", () => {
     expect(data?.accepted[0].id).toBe("original-slug");
     expect(data?.accepted[0].created).toBe(false);
     expect(data?.reportCount).toBe(1); // updated in place, not duplicated
+  });
+
+  it("rejects a report missing fields the read contract requires", async () => {
+    const { error } = await client.coach.ingest.post(
+      {
+        reports: [
+          {
+            coachId: "c1",
+            date: "2026-08-22",
+            summary: { session: "partial" }, // missing score, status, pdfUrl, ...
+            metrics: {},
+            body: {},
+          },
+        ],
+      },
+      { headers: { authorization: `Bearer ${TOKEN}` } },
+    );
+    expect(error).toBeTruthy();
+    const rows = await conn
+      .selectFrom("coach_reports")
+      .select((eb) => eb.fn.countAll<string>().as("n"))
+      .executeTakeFirstOrThrow();
+    expect(Number(rows.n)).toBe(0); // nothing written — validated before any write
+  });
+
+  it("rejects a malformed date rather than 500ing from the driver", async () => {
+    const bad = payload([{ coachId: "c1", date: "Aug 22, 2026" }]);
+    const { error } = await client.coach.ingest.post(bad, {
+      headers: { authorization: `Bearer ${TOKEN}` },
+    });
+    expect(error).toBeTruthy();
   });
 
   it("refuses a publish that would shrink the corpus", async () => {

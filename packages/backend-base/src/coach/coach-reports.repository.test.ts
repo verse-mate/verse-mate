@@ -44,15 +44,40 @@ describe("CoachReportsRepository", () => {
     await repo.upsert(row("orig-slug", "c1", "2026-08-22"));
     await repo.upsert(row("retitled-slug", "c1", "2026-08-22"));
 
-    const byNew = await repo.getDetail("retitled-slug");
+    const byNew = await repo.getDetail("c1", "retitled-slug");
     expect(byNew?.id).toBe("orig-slug"); // old link resolves to the same report
-    const byOrig = await repo.getDetail("orig-slug");
+    const byOrig = await repo.getDetail("c1", "orig-slug");
     expect(byOrig?.id).toBe("orig-slug");
   });
 
   it("returns null for an unknown id (never a different session)", async () => {
     await repo.upsert(row("a", "c1", "2026-08-22"));
-    expect(await repo.getDetail("does-not-exist")).toBeNull();
+    expect(await repo.getDetail("c1", "does-not-exist")).toBeNull();
+  });
+
+  it("dates survive a positive-offset timezone (run under TZ=Europe/Berlin too)", async () => {
+    // Regression guard: session_date is a DATE column. pg parses it at LOCAL
+    // midnight, so `new Date(...).toISOString()` returned the PREVIOUS day on
+    // any UTC+ host — every date the store served was a day early in
+    // Europe/Asia, and the suite passed only because CI/dev sat at UTC-3.
+    // The repository now formats the date in SQL, so this holds in any TZ.
+    await repo.upsert(row("tz-1", "c1", "2026-08-22"));
+    const detail = await repo.getDetail("c1", "tz-1");
+    expect(detail?.date).toBe("2026-08-22");
+    const [summary] = await repo.listSummaries("c1");
+    expect(summary.date).toBe("2026-08-22");
+    const [full] = await repo.listFullReports("c1");
+    expect(full.date).toBe("2026-08-22");
+  });
+
+  it("SECURITY: never returns another coach's report (cross-tenant isolation)", async () => {
+    await repo.upsert(row("victim-report", "victim-coach", "2026-08-22"));
+    // attacker knows the id — ids are predictable slugs — but is a different coach
+    expect(await repo.getDetail("attacker-coach", "victim-report")).toBeNull();
+    // the owner still gets it
+    expect((await repo.getDetail("victim-coach", "victim-report"))?.id).toBe(
+      "victim-report",
+    );
   });
 
   it("canonicalises a legacy id for overlay writes", async () => {
