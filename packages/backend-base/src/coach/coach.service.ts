@@ -4,6 +4,7 @@ import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
+import { rowToReport, rowToSummary } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
 import {
@@ -620,12 +621,119 @@ export class CoachService {
     };
   }
 
+  /**
+   * A coach's reports from the STORE, or null when the store holds none for
+   * them yet (migration-gate: the compiled-in bundle still answers until the
+   * backfill has run for that coach — never as a runtime outage fallback).
+   */
+  private async storeReports(coachId: string): Promise<CoachReport[] | null> {
+    const rows = await this.reportsRepository.listMetrics(coachId);
+    if (rows.length === 0) return null;
+    // listMetrics is chronological; the API contract is newest-first.
+    const detailed = await Promise.all(
+      rows.map((r) => this.reportsRepository.getDetail(r.id)),
+    );
+    const reports = detailed
+      .filter((d): d is NonNullable<typeof d> => d !== null)
+      .map(
+        (d) =>
+          rowToReport({
+            id: d.id,
+            session_date: d.date,
+            summary: d.summary,
+            metrics: d.metrics,
+            body: d.body,
+          }) as unknown as CoachReport,
+      );
+    reports.sort((a, b) => (a.date < b.date ? 1 : -1));
+    return reports;
+  }
+
+  /** Reports for a roster record: store first, bundled dataset until backfilled. */
+  private async reportsFor(record: CoachRecord): Promise<CoachReport[]> {
+    const fromStore = await this.storeReports(record.id);
+    return fromStore ?? record.reports;
+  }
+
+  /**
+   * One page of a coach's sessions as list rows — summary only, never prose, so
+   * a long history stays bounded. Falls back to projecting the bundled reports
+   * while the store has not been backfilled for that coach.
+   */
+  async getReportSummaries(
+    coachId: string,
+    opts: { limit?: number; offset?: number } = {},
+  ): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    const total = await this.reportsRepository.countForCoach(coachId);
+    if (total > 0) {
+      const rows = await this.reportsRepository.listSummaries(coachId, opts);
+      return {
+        items: rows.map((r) =>
+          rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
+        ),
+        total,
+      };
+    }
+    const record = await this.resolveById(coachId);
+    if (!record) return { items: [], total: 0 };
+    const limit = Math.min(Math.max(opts.limit ?? 25, 1), 100);
+    const offset = Math.max(opts.offset ?? 0, 0);
+    const page = record.reports.slice(offset, offset + limit);
+    return {
+      items: page.map((r) => ({
+        id: r.id,
+        date: r.date,
+        dateLabel: r.dateLabel,
+        session: r.session,
+        topic: r.topic,
+        score: r.score,
+        status: r.status,
+        statusEmoji: r.statusEmoji,
+        pdfUrl: r.pdfUrl,
+      })),
+      total: record.reports.length,
+    };
+  }
+
+  /**
+   * One session's full content by immutable OR legacy id. Null when the id
+   * names nothing — the caller reports not-found rather than silently showing
+   * a different session.
+   */
+  async getReportDetail(reportId: string): Promise<CoachReport | null> {
+    const row = await this.reportsRepository.getDetail(reportId);
+    if (row) {
+      const report = rowToReport({
+        id: row.id,
+        session_date: row.date,
+        summary: row.summary,
+        metrics: row.metrics,
+        body: row.body,
+      }) as unknown as CoachReport;
+      const [overlaid] = await this.overlayReports(row.coachId, [report]);
+      return overlaid ?? report;
+    }
+    // Migration-gate: the bundle still answers for reports not yet backfilled.
+    for (const coach of coachData.coaches) {
+      const found = coach.reports.find((r) => r.id === reportId);
+      if (found) {
+        const [overlaid] = await this.overlayReports(coach.id, [found]);
+        return overlaid ?? found;
+      }
+    }
+    return null;
+  }
+
   async getReports(userId: string): Promise<CoachReport[] | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
     const stored = await this.coachRepository.getSettings(userId);
     const fallback = stored?.zoomLink ?? record.zoomLink ?? "";
-    return this.overlayReports(record.id, record.reports, fallback);
+    return this.overlayReports(
+      record.id,
+      await this.reportsFor(record),
+      fallback,
+    );
   }
 
   async getTrends(userId: string): Promise<CoachTrends | null> {
@@ -673,7 +781,11 @@ export class CoachService {
       (await this.coachRepository.getZoomLinkByEmail(record.email)) ||
       record.zoomLink ||
       "";
-    return this.overlayReports(record.id, record.reports, fallback);
+    return this.overlayReports(
+      record.id,
+      await this.reportsFor(record),
+      fallback,
+    );
   }
 
   /** A specific coach's trends by id (admin drill-in). null → unknown id. */
@@ -748,6 +860,24 @@ export class CoachService {
     };
   }
 
+  /**
+   * Resolve a report id an admin supplied (possibly a legacy id) to the id the
+   * overlay tables should store. Falls back to the bundled dataset while the
+   * store has not been backfilled for that coach.
+   */
+  private async canonicalReportId(
+    coachId: string,
+    reportId: string,
+    record: CoachRecord,
+  ): Promise<string | null> {
+    const fromStore = await this.reportsRepository.canonicalId(
+      coachId,
+      reportId,
+    );
+    if (fromStore) return fromStore;
+    return record.reports.some((r) => r.id === reportId) ? reportId : null;
+  }
+
   /** Set (or clear) a session's recording URL. null → unknown coach/session. */
   async setRecordingLink(
     coachId: string,
@@ -756,10 +886,13 @@ export class CoachService {
   ): Promise<string | null> {
     const record = await this.resolveById(coachId);
     if (!record) return null;
-    if (!record.reports.some((r) => r.id === reportId)) return null;
+    // Canonicalise: an admin may act on a report addressed by a LEGACY id, and
+    // the overlay row must store the report's current immutable id.
+    const canonical = await this.canonicalReportId(coachId, reportId, record);
+    if (!canonical) return null;
     return this.coachRepository.setRecordingLink(
       coachId,
-      reportId,
+      canonical,
       recordingUrl,
     );
   }
@@ -774,7 +907,12 @@ export class CoachService {
   ): Promise<CoachNoteView | null> {
     const record = await this.resolveById(coachId);
     if (!record) return null;
-    const report = record.reports.find((r) => r.id === reportId);
+    // Canonicalise a possibly-legacy id, then resolve the session for the email.
+    const canonical = await this.canonicalReportId(coachId, reportId, record);
+    if (!canonical) return null;
+    const report =
+      (await this.getReportDetail(canonical)) ??
+      record.reports.find((r) => r.id === canonical);
     if (!report) return null;
 
     // Email the leader first; persist with the actual delivery outcome so the
@@ -804,7 +942,8 @@ export class CoachService {
 
     const saved = await this.coachRepository.addNote({
       coachId,
-      reportId,
+      // persist the canonical id so the note attaches to the report's identity
+      reportId: canonical,
       authorUserId,
       body,
       emailed,

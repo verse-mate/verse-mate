@@ -246,6 +246,56 @@ const plugin = new Elysia()
           },
         },
       )
+      // ── Paginated session list (new shape) ────────────────────────────
+      // Added ALONGSIDE /reports so the portal can migrate without a
+      // breaking change; /reports is retired once web is on this route.
+      .get(
+        "/reports/summary",
+        async ({ store: { coachService }, currentUserId, query }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me?.profile) throw new ForbiddenError("Not a coaching account");
+          return coachService.getReportSummaries(me.profile.id, {
+            limit: query.limit ? Number(query.limit) : undefined,
+            offset: query.offset ? Number(query.offset) : undefined,
+          });
+        },
+        {
+          query: t.Object({
+            limit: t.Optional(t.String()),
+            offset: t.Optional(t.String()),
+          }),
+          response: {
+            200: t.Object({
+              items: t.Array(t.Record(t.String(), t.Unknown())),
+              total: t.Number(),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // ── One session's full content ────────────────────────────────────
+      // Resolves an immutable OR legacy id; an unknown id is an explicit
+      // 404 rather than silently rendering a different session.
+      .get(
+        "/reports/:reportId",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me?.profile) throw new ForbiddenError("Not a coaching account");
+          const report = await coachService.getReportDetail(params.reportId);
+          if (!report) throw new NotFoundError("Session not found");
+          return { report };
+        },
+        {
+          response: {
+            200: t.Object({ report: ReportSchema }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/trends",
         async ({ store: { coachService }, currentUserId }) => {

@@ -108,3 +108,43 @@ export function datasetMeta(dataset: unknown): CoachDatasetMeta {
       typeof d.schemaVersion === "number" ? d.schemaVersion : null,
   };
 }
+
+/**
+ * Inverse of `reportToRow`: reassemble the report contract the API serves from
+ * the stored jsonb columns. Round-trips exactly (see the transform test), so
+ * moving reads onto the store cannot silently drop a field.
+ */
+export function rowToReport(row: {
+  id: string;
+  /** yyyy-mm-dd. Accepts either the DB column name or the API field name. */
+  session_date?: string;
+  date?: string;
+  summary: Record<string, unknown>;
+  metrics: Record<string, unknown>;
+  body: Record<string, unknown>;
+}): Record<string, unknown> {
+  return {
+    id: row.id,
+    date: row.session_date ?? row.date ?? "",
+    ...row.summary,
+    ...row.metrics,
+    ...row.body,
+  };
+}
+
+/**
+ * The list-view projection: identity + summary only, never prose. This is what
+ * a paginated session list returns, so a long history stays bounded.
+ */
+export function rowToSummary(row: {
+  id: string;
+  session_date?: string;
+  date?: string;
+  summary: Record<string, unknown>;
+}): Record<string, unknown> {
+  return {
+    id: row.id,
+    date: row.session_date ?? row.date ?? "",
+    ...row.summary,
+  };
+}

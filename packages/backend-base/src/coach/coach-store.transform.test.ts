@@ -1,6 +1,11 @@
 import { describe, expect, it } from "bun:test";
 
-import { datasetToRows, reportToRow } from "./coach-store.transform";
+import {
+  datasetToRows,
+  reportToRow,
+  rowToReport,
+  rowToSummary,
+} from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 
 // The deployed dataset is the authoritative backfill source (never the exporter).
@@ -48,5 +53,30 @@ describe("coach-store transform", () => {
     const meta = (coachDataJson as any).schemaVersion;
     expect(rows.length).toBe(deployedCount);
     expect(typeof meta).toBe("number");
+  });
+  it("round-trips: a deployed report survives reportToRow -> rowToReport intact", () => {
+    const coach = coaches[0];
+    for (const report of coach.reports.slice(0, 3)) {
+      const row = reportToRow(coach.id, report);
+      const back = rowToReport(row);
+      // every field of the original report comes back with the same value
+      for (const [key, value] of Object.entries(report)) {
+        expect(JSON.stringify(back[key])).toBe(JSON.stringify(value));
+      }
+    }
+  });
+
+  it("list projection carries the card fields and NO prose", () => {
+    const coach = coaches[0];
+    const row = reportToRow(coach.id, coach.reports[0]);
+    const summary = rowToSummary(row);
+    expect(summary).toHaveProperty("id");
+    expect(summary).toHaveProperty("pdfUrl");
+    expect(summary).toHaveProperty("topic");
+    expect(summary).toHaveProperty("score");
+    // prose stays out of the list
+    expect(summary).not.toHaveProperty("feedback");
+    expect(summary).not.toHaveProperty("sections");
+    expect(summary).not.toHaveProperty("bigIdeas");
   });
 });
