@@ -42,8 +42,15 @@ function payload(
   };
 }
 
+// Scoped to this file's coaches — an unscoped delete would wipe a real corpus
+// on whichever database POSTGRES_URL points at.
+const TEST_COACHES = ["c1", "c2"];
+
 async function clear() {
-  await conn.deleteFrom("coach_reports").execute();
+  await conn
+    .deleteFrom("coach_reports")
+    .where("coach_id", "in", TEST_COACHES)
+    .execute();
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
 
