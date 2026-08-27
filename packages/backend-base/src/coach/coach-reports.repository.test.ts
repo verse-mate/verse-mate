@@ -18,9 +18,15 @@ function row(id: string, coach: string, date: string, extra = {}) {
   };
 }
 
+// Scope every delete to the ids THIS file creates. An unscoped delete wipes the
+// whole corpus on whatever database POSTGRES_URL happens to point at.
+const TEST_COACHES = ["c1", "c2", "victim-coach", "attacker-coach"];
+
 async function clear() {
-  await conn.deleteFrom("coach_reports").execute();
-  await conn.deleteFrom("coach_dataset_meta").execute();
+  await conn
+    .deleteFrom("coach_reports")
+    .where("coach_id", "in", TEST_COACHES)
+    .execute();
 }
 
 describe("CoachReportsRepository", () => {
@@ -99,6 +105,9 @@ describe("CoachReportsRepository", () => {
   });
 
   it("bumpMeta advances version and syncs report_count to the real row count", async () => {
+    // meta is global (single row), so this assertion needs an isolated corpus
+    await conn.deleteFrom("coach_reports").execute();
+    await conn.deleteFrom("coach_dataset_meta").execute();
     await repo.upsert(row("r1", "c1", "2026-08-01"));
     const m1 = await repo.bumpMeta("2026-08-25");
     expect(m1.reportCount).toBe(1);

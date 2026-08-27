@@ -32,10 +32,11 @@ export async function backfillCoachStore(
         metrics: row.metrics,
         body: row.body,
       })
+      // Conflict on the NATURAL key, not the id: a session already published
+      // under an endpoint-minted id would otherwise hit the
+      // (coach_id, session_date) unique index and abort the backfill partway.
       .onConflict((oc) =>
-        oc.column("id").doUpdateSet({
-          coach_id: row.coach_id,
-          session_date: row.session_date,
+        oc.columns(["coach_id", "session_date"]).doUpdateSet({
           summary: row.summary,
           metrics: row.metrics,
           body: row.body,
