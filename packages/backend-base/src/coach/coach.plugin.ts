@@ -8,6 +8,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { createRateLimit } from "../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { hasPublishScope } from "./coach-publish.auth";
@@ -187,7 +188,32 @@ const plugin = new Elysia()
           });
         },
         {
+          // Throttle by client IP: without this an unauthenticated caller can
+          // brute-force COACH_PUBLISH_TOKEN at line rate, since the credential
+          // check is a string compare with no attempt limit.
+          beforeHandle: createRateLimit({
+            windowSeconds: 60,
+            max: 30,
+            keyGenerator: (ctx: {
+              headers?: Record<string, string | undefined>;
+              server?: {
+                requestIP?: (r: Request) => { address?: string } | null;
+              };
+              request?: Request;
+            }) => {
+              const fwd = ctx.headers?.["x-forwarded-for"];
+              const ip =
+                (fwd ? fwd.split(",").pop()?.trim() : undefined) ||
+                (ctx.request &&
+                  ctx.server?.requestIP?.(ctx.request)?.address) ||
+                "unknown";
+              return `coach-ingest:${ip}`;
+            },
+            message: "Too many publish attempts, please try again later",
+          }),
           body: t.Object({
+            // Bounded: the body is parsed before the credential is checked, so
+            // an unauthenticated request must not be able to buffer megabytes.
             reports: t.Array(
               t.Object({
                 coachId: t.String(),
@@ -197,6 +223,7 @@ const plugin = new Elysia()
                 metrics: t.Record(t.String(), t.Unknown()),
                 body: t.Record(t.String(), t.Unknown()),
               }),
+              { maxItems: 500 },
             ),
             generatedAt: t.Optional(t.Union([t.String(), t.Null()])),
             expectedCount: t.Optional(t.Union([t.Number(), t.Null()])),
