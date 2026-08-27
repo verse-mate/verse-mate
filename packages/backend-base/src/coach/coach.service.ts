@@ -699,6 +699,55 @@ export class CoachService {
     );
   }
 
+  /**
+   * Every coach's reports from the store, keyed by coach id — ONE query, and
+   * without prose, because the consumers of this view (trends, roster, monthly)
+   * only read score / status / clusters / dimensions / date. Null when the
+   * store is not yet backfilled, so the bundle keeps answering.
+   */
+  private async storeReportsByCoach(): Promise<Map<
+    string,
+    CoachReport[]
+  > | null> {
+    const meta = await this.reportsRepository.getMeta();
+    if (!meta) return null;
+    const rows = await this.reportsRepository.listAllMetrics();
+    if (rows.length === 0) return null;
+    const byCoach = new Map<string, CoachReport[]>();
+    for (const r of rows) {
+      const report = rowToReport({
+        id: r.id,
+        session_date: r.date,
+        summary: r.summary,
+        metrics: r.metrics,
+        body: {},
+      }) as unknown as CoachReport;
+      const list = byCoach.get(r.coachId) ?? [];
+      list.push(report);
+      byCoach.set(r.coachId, list);
+    }
+    // The contract everywhere else is newest-first.
+    for (const list of byCoach.values()) {
+      list.sort((a, b) => (a.date < b.date ? 1 : -1));
+    }
+    return byCoach;
+  }
+
+  /**
+   * Roster records whose `reports` come from the store where it has them, so
+   * trends / roster / monthly reflect a publish immediately instead of lagging
+   * until the next deploy (they previously all read the compiled-in bundle).
+   */
+  private async recordsWithStoreReports(): Promise<CoachRecord[]> {
+    const records = await this.allRecords();
+    const byCoach = await this.storeReportsByCoach();
+    if (!byCoach) return records;
+    return records.map((r) => {
+      const stored = byCoach.get(r.id);
+      return stored ? { ...r, reports: stored } : r;
+    });
+  }
+
   /** Reports for a roster record: store first, bundled dataset until backfilled. */
   private async reportsFor(record: CoachRecord): Promise<CoachReport[]> {
     const fromStore = await this.storeReports(record.id);
@@ -793,7 +842,7 @@ export class CoachService {
   async getTrends(userId: string): Promise<CoachTrends | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return CoachService.buildTrends(record.reports);
+    return CoachService.buildTrends(await this.reportsFor(record));
   }
 
   // ─── Admin oversight (every leader) ──────────────────────────────────────
@@ -801,7 +850,7 @@ export class CoachService {
   /** Roster summary for the admin landing view. Includes admin-added leaders
    *  (0 sessions until the pipeline produces their first report). */
   async listCoaches(): Promise<CoachSummary[]> {
-    const records = await this.allRecords();
+    const records = await this.recordsWithStoreReports();
     return records.map((c) => {
       // reports are stored newest-first.
       const latest = c.reports[0] ?? null;
@@ -845,7 +894,9 @@ export class CoachService {
   /** A specific coach's trends by id (admin drill-in). null → unknown id. */
   async getTrendsById(coachId: string): Promise<CoachTrends | null> {
     const record = await this.resolveById(coachId);
-    return record ? CoachService.buildTrends(record.reports) : null;
+    return record
+      ? CoachService.buildTrends(await this.reportsFor(record))
+      : null;
   }
 
   /** Profile header for an admin viewing a specific coach. */
@@ -1019,7 +1070,7 @@ export class CoachService {
    *  from the dataset (current v3 weighted model). Mirrors the coaching
    *  pipeline's monthly summary. */
   async getMonthly(month: string): Promise<CoachMonthly> {
-    const records = await this.allRecords();
+    const records = await this.recordsWithStoreReports();
     const prev = CoachService.prevMonth(month);
 
     // Canonical n→name map for the 12-dimension heatmap columns, plus the set
