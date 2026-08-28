@@ -24548,19 +24548,401 @@
           "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
         }
       ]
+    },
+    {
+      "id": "barry-smitherman",
+      "name": "Barry Smitherman",
+      "email": "barry-smitherman@needs-real-email.invalid",
+      "group": "Men’s Study",
+      "coachName": "Bryan Bailey",
+      "isCoach": true,
+      "zoomLink": "",
+      "reports": [
+        {
+          "id": "barry-smitherman-2026-08-27-joel-lesson-1-days-2-5-joel-1-ca",
+          "date": "2026-08-27",
+          "dateLabel": "August 27, 2026",
+          "session": "Joel Lesson 1, Days 2–5 (Joel 1 — Calamity, Sackcloth, Solemn Assembly)",
+          "topic": "Joel 1 verse-by-verse study with heavy Old/New Testament cross-referencing",
+          "duration": "~2 hr 7 min",
+          "attendees": 14,
+          "newcomers": 0,
+          "score": 86.7,
+          "base": 86.7,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 80,
+              "contribution": 26.4
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 90,
+              "contribution": 27.9
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Full 10-step blueprint executed; a ~15-min tangent pulled some depth from the closing Day-of-the-Lord material"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null,
+              "note": "No newcomers present this session"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "18+ cross-references spanning Law, Prophets, Gospels, Epistles, and Revelation"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4,
+              "note": "~26–28% discussion-only leader talk, under Lifeway target; all reading delegated"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "6 DOK-scored questions, ~83% DOK-4, but confession/probe rates both light"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "~93% substantive contribution across ~14 attendees; no quiet-member flag"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 2,
+              "note": "Zero on-screen visuals the entire session — purely verbal \\\"imaginary whiteboard\\\""
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "Rich member vulnerability across four attendees; leader's own disclosure stayed light — first session, scored directly"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5,
+              "note": "Genuine bookend device (3 questions posed at open, substantively answered at close) plus a full retrieval-chart exercise"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Homework chart and pre-matched cross-reference assignments drove the entire session structure"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5,
+              "note": "Delegated open (John Sermon) and close (Cameron); specific, detailed requests across multiple health/life updates"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 4,
+              "note": "Real delegated facilitation window to Phil; named forward handoff to Cameron for next week"
+            }
+          ],
+          "bigIdeas": [
+            "Calamity brings you to your knees — then repentance, reconciliation, redemption",
+            "Grain and drink offerings cut off means separation from God, not just crop loss",
+            "A solemn assembly isn't every week — it's a focused, reverent turning back",
+            "Return to God, obey Him, and avoid the certainty of judgment"
+          ],
+          "feedback": {
+            "headline": "Book of Joel — Lesson 1, Days 2–5  |  Calamity, Sackcloth & the Solemn Assembly",
+            "strengths": [
+              "Exceptional Cross-Book Scripture Saturation",
+              "Pre-Matched Reading Assignments Kept the Room Moving",
+              "Total Delegation of Scripture Reading"
+            ],
+            "improvements": [
+              "Zero Visual Materials Across a Full Two-Hour Session",
+              "The Solemn Assembly Tangent Ran Long Enough to Squeeze the Close",
+              "The Night's Most Personal Question Stayed Fully Rhetorical"
+            ],
+            "recommendations": [
+              "Make the \"Imaginary Whiteboard\" a Real One",
+              "Time-Box Application Tangents Before They Start",
+              "Ask at Least One Person to Answer the Hardest Question Out Loud"
+            ],
+            "overview": [
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 86.7/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Exceptional Cross-Book Scripture Saturation",
+                "paragraphs": [
+                  "Across a single \"Days 2–5\" lesson, the session pulled in 18+ distinct cross-references spanning the Law, the Prophets, the Gospels, the Epistles, and Revelation — Deuteronomy's covenant curses, the Exodus locust plague, Ezekiel's individual-responsibility passage, Amos twice, and New Testament parallels in Philippians, 2 Timothy, Romans, and Matthew. This is an unusually wide net for a text-heavy, single-chapter study."
+                ]
+              },
+              {
+                "title": "Pre-Matched Reading Assignments Kept the Room Moving",
+                "paragraphs": [
+                  "Before diving into the cross-references, the assignments were handed out by name in a single batch so every reader could find their passage while the discussion continued — a small mechanical choice that measurably reduced dead air across a 15-plus-reading session."
+                ]
+              },
+              {
+                "title": "Total Delegation of Scripture Reading",
+                "paragraphs": [
+                  "Barry did not read a single verse himself the entire session — all 15-plus reading assignments went to eight different members (Steve, Brian Morris, John Relic, Cameron, Jamie, John Bradford, Richard Sorenson, Rich, John Sermon, Phil, Frank). This is facilitation-first leadership in its purest form."
+                ]
+              },
+              {
+                "title": "A Genuine Bookend Retention Device",
+                "paragraphs": [
+                  "Barry opened the session by posing three questions to \"an imaginary whiteboard\" and explicitly promised to return to them — then did, closing the loop nearly 90 minutes later with real, substantive answers rather than letting the framing device evaporate."
+                ]
+              },
+              {
+                "title": "Confident, Well-Structured Solo Fill-In on Short Notice",
+                "paragraphs": [
+                  "Stepping back in after \"a short-lived sabbatical\" specifically because Russell was traveling, Barry ran a coherent, fully-paced ~2-hour session that hit every element of the 10-step blueprint — including delegating the opening review to Phil as a genuine facilitation handoff, not just an afterthought."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Zero Visual Materials Across a Full Two-Hour Session",
+                "paragraphs": [
+                  "The session's central organizing device was explicitly called an \"imaginary whiteboard\" — twice — and stayed purely verbal the entire night. No chart, map, word-study tool, or slide was ever shared on screen, even during the homework-chart retrieval exercise that was tailor-made for a visual."
+                ]
+              },
+              {
+                "title": "The Solemn Assembly Tangent Ran Long Enough to Squeeze the Close",
+                "paragraphs": [
+                  "The church-attire and reverence discussion sparked by the solemn-assembly question ran roughly 15 minutes — lively and on-theme, but long enough that the \"Day of the Lord\" material at the very end was covered with only a single cross-reference and noticeably less depth than everything before it."
+                ]
+              },
+              {
+                "title": "The Night's Most Personal Question Stayed Fully Rhetorical",
+                "paragraphs": [
+                  "Of the three bookend questions, \"are you holding anything back from your drink offering\" was the most personally convicting — and the only one left as a pure take-home reflection with no individual invited to answer out loud, even briefly."
+                ]
+              },
+              {
+                "title": "Two Significant Prayer-Request Disclosures Got Only Generic Acknowledgment",
+                "paragraphs": [
+                  "Rich and Fran's account-hacking stress and a member's marital-struggle disclosure — both genuinely difficult shares — each received a brief, general response rather than a specific, named follow-up."
+                ]
+              },
+              {
+                "title": "Leader's Own Vulnerability Stayed Minimal",
+                "paragraphs": [
+                  "Barry's only first-person disclosure was a brief, generic admission tied to the drink-offering question. On a night centered on \"what are you holding back,\" the leader modeling a specific, concrete example of his own would have given the room more to follow."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Make the \"Imaginary Whiteboard\" a Real One",
+                "paragraphs": [
+                  "The bookend-question device worked well as a retention tool, but it stayed entirely verbal across a two-hour session with zero visuals. Sharing an actual screen — even a blank doc where the three questions get typed live — turns a strong verbal habit into a visible one."
+                ]
+              },
+              {
+                "title": "Time-Box Application Tangents Before They Start",
+                "paragraphs": [
+                  "The solemn-assembly/attire discussion was genuinely valuable but ran ~15 minutes and crowded out real depth on the Day-of-the-Lord material at the very end."
+                ]
+              },
+              {
+                "title": "Ask at Least One Person to Answer the Hardest Question Out Loud",
+                "paragraphs": [
+                  "Leaving the night's most personally convicting question (\"are you holding anything back\") purely rhetorical let everyone off the hook at once."
+                ]
+              },
+              {
+                "title": "Name the Specific Hardship in Every Prayer-Request Response",
+                "paragraphs": [
+                  "Both the hacked-accounts and marital-struggle disclosures got warm but generic responses. A one-sentence, specific acknowledgment costs nothing and signals the room actually heard the particular thing shared."
+                ]
+              },
+              {
+                "title": "Keep Naming the Facilitation Handoffs Out Loud",
+                "paragraphs": [
+                  "Delegating the opening review to Phil was a genuine multiplication signal, but the room wasn't told why — the value of a handoff compounds when the group understands it's happening."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total Attendees: ~14 — consistent Zoom participant count throughout (contrast 8/20's merged-group ~16)  (Target: Consistent with the group's typical 13–15)  → ON TARGET",
+                "Newcomers: 0 this week  (Target: 1+ per session (not always present))  → N/A",
+                "Group Size Context: ~14 — no group-size bonus threshold crossed (>15)  (Target: Extra facilitation required ≥15)  → N/A"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Leader Talk — Whole Session (incl. reading & pre-session fellowship): ~30% (est.) — Barry read no scripture himself; nearly all reading and much analysis delegated to 8 different members  (Target: Reported only)  → N/A",
+                "Leader Talk — Discussion Only (graded): ~26–28% (est., no speaker diarization)  (Target: ≤30–35% (Lifeway 30% Rule))  → STRONG",
+                "% Verse-Grounded Responses: ~90%+ — heavy direct-text citation throughout  (Target: ≥80%)  → STRONG",
+                "Cross-References Used: 18+ passages: Deut 28 (three sections), Exod 10, Exod 29, Rev 6, Rev 9, Isa 15, Isa 26, Isa 45, Ezek 14, Amos 4, Amos 5, Gen 35, Gen 37, Phil 2:17, 2 Tim 4:6, Rom 12, Lev 23, Num 29, 2 Chr 7, Deut 16, Matt 11  (Target: 6+ per session)  → STRONG",
+                "Word Studies: None this session — no Hebrew/Greek term researched (\"wail,\" \"lament,\" and \"sackcloth\" were discussed in plain English, not looked up in the original languages)  (Target: 1–2 per session)  → NEEDS WORK",
+                "Word Studies Displayed on Screen: None — no screen share of any kind this session  (Target: 1+ per session (BLB / VerseMate / Logos))  → NEEDS WORK",
+                "Time to First Scripture (of new material): ~11.5 min after the review ended — Steve reads Joel 1:1–3 at [00:34:59], following the ~11-min homework-chart retrieval exercise  (Target: ≤15 min from end of intros/review)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total Session Duration: ~2 hr 7 min  (Target: Typical for this group (~2 hr))  → ON TARGET",
+                "Pre-Session Fellowship: ~8 min [00:00–00:08]  (Target: 5–15 min)  → ON TARGET",
+                "Retrieval Review of Last Week (delegated to Phil): ~14 min [00:09:37–00:23:31]  (Target: 5–15 min)  → STRONG",
+                "Homework Chart Retrieval (Barry's opening exercise): ~11 min [00:23:36–00:34:40]  (Target: 5–15 min)  → STRONG",
+                "Main Lesson — Text + Cross-References (incl. ~15-min Solemn Assembly / dress-code tangent): ~72.5 min [00:34:40–01:47:19]  (Target: 60–90 min)  → ON TARGET",
+                "Bookend Application Discussion: ~9.5 min [01:47:19–01:56:46] — returns to the 3 opening questions  (Target: 5–15 min)  → STRONG",
+                "Prayer Requests + Closing: ~9.5 min [01:56:46–02:06:26]  (Target: 5–10 min)  → ON TARGET",
+                "Pacing Self-Management: Covered the full Days 2–5 scope despite a long tangent; no external/peer redirect needed  (Target: Self-managed)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea Questions (DOK-scored): 6 — front-loaded (3 bookend questions posed at [00:21:46]–[00:22:57], revisited at [01:47:56]) plus 3 more woven through the lesson  (Target: 5–7 per session)  → ON TARGET",
+                "DOK Level 1 (Recall): 0% (excluded)  (Target: <20%)  → STRONG",
+                "DOK Level 2 (Compare/Analyze): 0%  (Target: Appropriate minority)  → N/A",
+                "DOK Level 3 (Reason/Justify): ~17%  (Target: 30–40%)  → NEEDS WORK",
+                "DOK Level 4 (Apply to Life): ~83% — unusually concentrated  (Target: 35–50%)  → STRONG",
+                "Question Spacing: 3 questions front-loaded as a bookend device, 3 more woven through the lesson  (Target: Spaced across session)  → ON TARGET",
+                "Confession/Personal-Response Rate: 1 — outside the Big-Idea Q&A, during prayer requests (a member's marital-struggle share [02:01:22])  (Target: ≥2 per session)  → NEEDS WORK",
+                "Leader Follow-up Probe Frequency: Low — mostly group-level (\"anyone else want to add to that?\") rather than individually directed  (Target: ≥3 per session)  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Substantive Contributors: ~13 of ~14 (~93%) — unusually high; nearly every named attendee spoke beyond reading  (Target: ≥70–80% (Hattie 0.82))  → STRONG",
+                "Read-Aloud Assignments (not scored): 15+ across 8 readers: Steve, Brian Morris, John Relic, Cameron, Jamie, John Bradford, Richard Sorenson, Rich, John Sermon, Phil, Frank  (Target: Reported separately)  → —",
+                "Wait Time Used: Rapid Socratic turn-taking throughout the chart retrieval and cross-reference exchanges  (Target: 3–5 sec (Rowe 1972))  → ON TARGET",
+                "Quiet Member Flag: None — every visible participant contributed substantively at least once this session  (Target: Activate all members)  → STRONG",
+                "Visual Aids Shown on Screen: 0 — the session's organizing device was explicitly called an \"imaginary whiteboard,\" never actually shared on screen  (Target: 1+ per session)  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Leader Vulnerability Moments: Light — Barry's own brief first-person admission on the drink-offering question (\"I know I'm guilty of it... not giving up some stuff\") [00:23:04]  (Target: 1–2 depth moments (first session — no baseline))  → NEEDS WORK",
+                "Member Vulnerability Surfaced: 4+ — John Sermon's ongoing cancer-treatment update [00:06:41]; Frank's wound-recovery update [01:39:13]; Rich & Fran's hacked-accounts stress [02:01:17]; an unnamed member's marital-struggle disclosure [02:01:22]  (Target: 2+ unprompted)  → STRONG",
+                "Monologues >90 sec in Discussion (Leader): 0 — Barry's longest unbroken stretches stayed under 90 sec; the one long monologue this session (~2.5 min, the Athaliah/Joash history) was delivered by a MEMBER (Brian Morris), not the leader  (Target: ≤2 during discussion)  → STRONG",
+                "Productive Struggle Used: Opened the Solemn Assembly / \"what would this look like today\" question to the room and let Cameron push back on the framing rather than resolving it himself [01:34:04]  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Pacing Self-Management: Covered full Days 2–5 scope on a night he was filling in solo, with no peer/mentor redirect needed  (Target: Self-managed)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "Open-Ended Questions: ~85%+  (Target: ≥80%)  → STRONG",
+                "Text-Requiring Questions: ~75%  (Target: ≥70%)  → STRONG",
+                "Follow-Up Probes: Present but mostly group-directed (\"anyone else want to add to that?\") rather than individually directed  (Target: Used regularly)  → ON TARGET",
+                "Question vs. Statement Ratio: ~55% question / ~45% statement — Barry narrated/summarized frequently between questions  (Target: ≥60% question)  → ON TARGET",
+                "Homework-Anchored Questions: The entire session structure — chart retrieval, cross-reference assignments — was pulled directly from the homework  (Target: Integrated throughout)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Homework Integration: Deep — the homework chart drove the opening exercise, and every cross-reference assignment was pre-matched from the homework  (Target: Referenced throughout)  → STRONG",
+                "Word Study Method: None this session — no Hebrew/Greek term researched  (Target: 1–2 displayed per session)  → NEEDS WORK",
+                "Topic Drift: The Solemn Assembly / church-attire tangent ran ~15 min (~12% of session) [01:29:53]–[01:44:16] — thematically adjacent (reverence) but ran past a tight window  (Target: ≤10%)  → NEEDS WORK",
+                "Study Flow: Retrieval review → homework chart → verse-by-verse cross-reference walk → bookend application → prayer  (Target: OIA: text → meaning → application)  → STRONG",
+                "Big Ideas at Close: Solid closing synthesis (return–obedience–judgment; recognition–repentance–reconciliation–redemption), though no single leader-crystallized bumper-sticker phrase  (Target: 3–5 bumper-sticker close)  → ON TARGET",
+                "Tone & Delivery: Warm, humor-forward throughout (dress-code banter, \"geezer\" jokes), genuinely pastoral during prayer requests — confirmed on video, not audio-only  (Target: Varied tone)  → STRONG"
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "The Bookend Retention Device — Posed at Open, Answered at Close  (🟢 Capitalized | Teaching Craft)\n\nWhat happened: Barry opens the session by posing three framing questions to \"an imaginary whiteboard\" — the purpose of calamity, how one would change ahead of it, and whether anything is being withheld from God — and explicitly commits the room to returning to them at the end.\n\nWhy it mattered: This is Ebbinghaus-style memory reinforcement done as live structure, not an afterthought review: it gives the entire two-hour session a spine, and it requires real discipline to actually circle back rather than let the framing device quietly disappear under time pressure.\n\nWhat would make it bigger: Write the three questions somewhere visible (chat, a shared doc, or an actual whiteboard) so members can silently track them across the session rather than relying purely on memory of a verbal framing.",
+                  "timestamp": "[00:21:13–00:23:15] and [01:47:33–01:56:46]"
+                },
+                {
+                  "detail": "A Real Delegated Facilitation Window — Barry Hands the Review to Phil  (🟢 Capitalized | Building Ministry)\n\nWhat happened: Rather than running the opening review himself, Barry explicitly hands it to Phil (\"I'm going to turn it over to Phil\") and Phil runs a genuinely well-paced ~14-minute cold-recall review of last week's material, closing with \"I'm looking forward to what Barry's got for us.\"\n\nWhy it mattered: This is an observable, in-session leadership-multiplication signal exactly as the model defines it — a named, delegated facilitation window, not just background prep. It also protects continuity for the group: the person who taught last week is the one best positioned to reinforce it, even on a night someone else is running point.\n\nWhat would make it bigger: Name the handoff explicitly to the room next time (\"Phil taught this material last week, so he's going to bring us back up to speed\") — it costs one sentence and makes the multiplication signal visible to the group, not just to a coach reading the transcript.",
+                  "timestamp": "[00:09:31–00:17:03]"
+                },
+                {
+                  "detail": "The Solemn Assembly Question — Rich Debate, No Return to the Text  (🔵 Pivot Point (mixed) | Teaching Craft / Engaging People)\n\nWhat happened: Barry asks whether a modern Sunday service would qualify as a \"solemn assembly\" — a strong, provocative application question. It sparks roughly 15 minutes of genuinely engaged debate about church attire, reverence, and cultural drift, with Cameron pushing back thoughtfully that solemn assembly is a rare, focused event, not a weekly posture.\n\nWhy it mattered: This is productive struggle working exactly as intended — real disagreement, multiple voices, nobody rescued from the tension. But the conversation never circled back to Joel's own text (the specific gathering-lamenting-crying-out described in verses 13–15) before time forced a move to the final section.\n\nWhat would make it bigger: One redirect sentence before wrapping — \"so given all that, what does Joel 1:14 specifically ask this room to actually do?\" — would have closed the loop between the lively application tangent and the text that sparked it.",
+                  "timestamp": "[01:29:40–01:44:16]"
+                },
+                {
+                  "detail": "A Marital-Struggle Disclosure Met With a Generic Response  (🟠 Missed Opportunity | Being Real)\n\nWhat happened: During prayer requests, a member shares an extended, visibly emotional disclosure about a struggling marriage and God \"knocking on my door\" through recent sermons and devotionals, ending with \"I still have my God, I still have my Jesus.\"\n\nWhy it mattered: This is the most vulnerable moment of the entire session — raw, costly, and clearly difficult to voice aloud (multiple self-interrupted \"sorry\"s). It's exactly the kind of moment Being Real exists to capture and hold.\n\nWhat would make it bigger: \"[Name], thank you for trusting us with that — we're specifically praying for your marriage this week, not just for you in general\" — naming the actual struggle costs nothing and signals the room heard the specific thing, not just the general vulnerability.",
+                  "timestamp": "[02:01:22–02:03:39]"
+                },
+                {
+                  "detail": "Rich & Fran's Hacked-Accounts Stress, Acknowledged in One Line  (🟠 Missed Opportunity | Being Real)\n\nWhat happened: Rich shares that he and Fran had every account hacked and are actively scrambling with the bank and American Express, asking the group to \"pray that we can get past this thing.\"\n\nWhy it mattered: A concrete, time-sensitive crisis (not a general prayer request) — the kind of disclosure that benefits from a specific, actionable follow-up, not just sympathy.\n\nWhat would make it bigger: \"Rich, is there anything practical the group can do this week — even just a check-in call?\" turns a passive prayer request into an active care moment.",
+                  "timestamp": "[02:01:17–02:02:03]"
+                }
+              ],
+              "paragraphs": [
+                "Five moments carried disproportionate weight this session — a genuine bookend retention device, a leadership handoff that modeled multiplication, a rich-but-unresolved application discussion, and two prayer-request disclosures that passed with only generic acknowledgment. Ordered by impact."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 80.0% × weight 33 → 26.40 pts",
+                "Building Ministry: 90.0% × weight 31 → 27.90 pts",
+                "Engaging People: 90.0% × weight 18 → 16.20 pts",
+                "Being Real: 90.0% × weight 18 → 16.20 pts",
+                "BASE (pre-bonus): — × weight 100 → 86.70 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/file/d/1lBCbAkt2rZGzOdKDdbRD8-SliCML0Ll8/view?usp=drivesdk"
+        }
+      ]
     }
   ],
   "monthlyNarratives": {
     "2026-08": {
       "executiveSummary": [
-        "In August 2026, 7 leaders delivered 13 evaluated sessions, and the program held a weighted average composite of 79.3 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
-        "Across the cohort the month broke down as 3 Exceptional, 3 Strong, and 1 Developing. Phil Carlberg led the field at 88.0 (Exceptional), while James Davis anchored the other end at 57.9 (Developing) — the clearest place to concentrate coaching attention.",
-        "Bryan Bailey posted the biggest jump off the July 2026 baseline, climbing roughly 85 to 85.2 (+-0.0 pts), the strongest muscle program-wide was Participant Engagement (4.38 / 5), and the thinnest was Visual Aids (2.69 / 5), where one shared training would lift the most leaders at once.",
+        "In August 2026, 8 leaders delivered 14 evaluated sessions, and the program held a weighted average composite of 79.8 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 4 Exceptional, 3 Strong, and 1 Developing. Phil Carlberg led the field at 88.0 (Exceptional), while James Davis anchored the other end at 57.9 (Developing) — the clearest place to concentrate coaching attention.",
+        "Bryan Bailey posted the biggest jump off the July 2026 baseline, climbing roughly 85 to 85.2 (+-0.0 pts), the strongest muscle program-wide was Participant Engagement (4.43 / 5), and the thinnest was Visual Aids (2.64 / 5), where one shared training would lift the most leaders at once.",
         "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with James Davis flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's August 2026 composite of 79.3 / 100 lands it in the Strong band. Month over month, Bryan Bailey is the standout mover off the July 2026 baseline, up -0.0 points.",
-        "Dimension by dimension, Participant Engagement is the cohort's anchor strength (4.38 / 5), while Visual Aids (2.69 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's August 2026 composite of 79.8 / 100 lands it in the Strong band. Month over month, Bryan Bailey is the standout mover off the July 2026 baseline, up -0.0 points.",
+        "Dimension by dimension, Participant Engagement is the cohort's anchor strength (4.43 / 5), while Visual Aids (2.64 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-07": {
@@ -40493,6 +40875,279 @@
                 "cluster": "Building Ministry",
                 "score": 1,
                 "note": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "barry-smitherman": {
+      "2026-08": {
+        "month": "2026-08",
+        "monthLabel": "August 2026",
+        "priorMonthLabel": "July 2026",
+        "leaderId": "barry-smitherman",
+        "leaderName": "Barry Smitherman",
+        "group": "Men’s Study",
+        "sessionsCount": 1,
+        "composite": 86.7,
+        "status": {
+          "label": "Exceptional",
+          "emoji": "🔷"
+        },
+        "priorComposite": null,
+        "delta": null,
+        "clusterAvg": {
+          "tc": 80,
+          "bm": 90,
+          "ep": 90,
+          "br": 90
+        },
+        "glance": {
+          "rows": [
+            {
+              "date": "2026-08-27",
+              "session": "Joel Lesson 1, Days 2–5 (Joel 1 — Calamity, Sackcloth, Solemn Assembly)",
+              "bm": 90,
+              "tc": 80,
+              "ep": 90,
+              "br": 90,
+              "composite": 86.7,
+              "status": "Exceptional"
+            }
+          ],
+          "avg": {
+            "bm": 90,
+            "tc": 80,
+            "ep": 90,
+            "br": 90,
+            "composite": 86.7,
+            "status": "Exceptional"
+          }
+        },
+        "trajectory": [
+          {
+            "date": "2026-08-27",
+            "session": "Joel Lesson 1, Days 2–5 (Joel 1 — Calamity, Sackcloth, Solemn Assembly)",
+            "composite": 86.7,
+            "status": "Exceptional",
+            "delta": null
+          }
+        ],
+        "clusters": [
+          {
+            "key": "tc",
+            "name": "Teaching Craft",
+            "weight": 33,
+            "avgPct": 80,
+            "statusLabel": "Strong",
+            "strongestDim": {
+              "name": "Scripture Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Visual Aids",
+              "val": 2
+            },
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Visual Aids is the bottleneck this month."
+          },
+          {
+            "key": "bm",
+            "name": "Building Ministry",
+            "weight": 31,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Homework References",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Leader Development",
+              "val": 4
+            },
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — elite tier. Lift the floor on Leader Development."
+          },
+          {
+            "key": "ep",
+            "name": "Engaging People",
+            "weight": 18,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Participant Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 4
+            },
+            "insight": "Engaging People (Facilitation + Participation) — elite tier. Continue to broaden participation beyond the core 6–8 voices."
+          },
+          {
+            "key": "br",
+            "name": "Being Real",
+            "weight": 18,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Prayer",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 4
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — elite tier. Vulnerability / Authenticity is the lift this month."
+          }
+        ],
+        "strengths": [
+          {
+            "text": "Exceptional Cross-Book Scripture Saturation",
+            "session": "2026-08-27"
+          },
+          {
+            "text": "Pre-Matched Reading Assignments Kept the Room Moving",
+            "session": "2026-08-27"
+          },
+          {
+            "text": "Total Delegation of Scripture Reading",
+            "session": "2026-08-27"
+          }
+        ],
+        "growth": [
+          {
+            "text": "Zero Visual Materials Across a Full Two-Hour Session",
+            "session": "2026-08-27"
+          },
+          {
+            "text": "The Solemn Assembly Tangent Ran Long Enough to Squeeze the Close",
+            "session": "2026-08-27"
+          },
+          {
+            "text": "The Night's Most Personal Question Stayed Fully Rhetorical",
+            "session": "2026-08-27"
+          }
+        ],
+        "trends": [
+          "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Visual Aids (avg 2.0 / 5)."
+        ],
+        "conversationGuide": [
+          {
+            "label": "Celebrate the strength",
+            "q": "Building Ministry averaged 90% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+          },
+          {
+            "label": "Explore the growth area",
+            "q": "Teaching Craft averaged 80%. What's getting in the way? What would have to be true for that to lift 10 points by September 2026?"
+          },
+          {
+            "label": "Trajectory",
+            "q": "Your one August 2026 session scored 86.7 (Exceptional). What was different about your prep or delivery this time?"
+          },
+          {
+            "label": "Group dynamics",
+            "q": "Participant Engagement averaged 5.0 / 5 in August 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+          }
+        ],
+        "focus": {
+          "clusterName": "Teaching Craft",
+          "clusterPct": 80,
+          "goals": [
+            "Lift Visual Aids from 2.0 / 5 toward 4+ by end of September 2026.",
+            "Improve Session Structure & Flow (currently 4.0 / 5).",
+            "In every September 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
+          ]
+        },
+        "sessions": [
+          {
+            "date": "2026-08-27",
+            "session": "Joel Lesson 1, Days 2–5 (Joel 1 — Calamity, Sackcloth, Solemn Assembly)",
+            "composite": 86.7,
+            "status": "Exceptional",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Full 10-step blueprint executed; a ~15-min tangent pulled some depth from the closing Day-of-the-Lord material"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": null,
+                "note": "No newcomers present this session"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "18+ cross-references spanning Law, Prophets, Gospels, Epistles, and Revelation"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "~26–28% discussion-only leader talk, under Lifeway target; all reading delegated"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "6 DOK-scored questions, ~83% DOK-4, but confession/probe rates both light"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "~93% substantive contribution across ~14 attendees; no quiet-member flag"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 2,
+                "note": "Zero on-screen visuals the entire session — purely verbal \\\"imaginary whiteboard\\\""
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Rich member vulnerability across four attendees; leader's own disclosure stayed light — first session, scored directly"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Genuine bookend device (3 questions posed at open, substantively answered at close) plus a full retrieval-chart exercise"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Homework chart and pre-matched cross-reference assignments drove the entire session structure"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "Delegated open (John Sermon) and close (Cameron); specific, detailed requests across multiple health/life updates"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 4,
+                "note": "Real delegated facilitation window to Phil; named forward handoff to Cameron for next week"
               }
             ]
           }
