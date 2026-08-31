@@ -30,7 +30,12 @@ import { db } from "database";
 import { getAiProvider } from "../../shared/ai/ai-provider.factory";
 import {
   JESUS_EVENT_EXPLANATION_TYPES,
+  JESUS_FACET_TYPES,
   type JesusEventExplanationType,
+  type JesusFacetType,
+  assessCoverage,
+  fillGoal,
+  typesUnderTarget,
 } from "../jesus.constants";
 import { JesusEventRepository } from "../repository/jesus-event.repository";
 import {
@@ -40,6 +45,7 @@ import {
   JesusGenerationService,
 } from "../services/jesus-generation.service";
 import {
+  DEFAULT_PER_EVENT_TYPE_CAP,
   EMPTY_CATEGORIES,
   type KeepTally,
   normalizeFacetKey,
@@ -98,9 +104,23 @@ function parseArgs(argv: string[]) {
         )
       : [...JESUS_EVENT_EXPLANATION_TYPES]
   ) as JesusEventExplanationType[];
-  if (requested?.length && types.length !== requested.length) {
+  // `--types` carries two vocabularies depending on the run: narrative layers
+  // (overview/compare/insights/application) for a generation batch, and facet
+  // types (CLAIM, QUESTION, …) for an extraction collect, which filters what it
+  // keeps. Validating only against the first rejected `--types=CLAIM` outright,
+  // so a per-category collect — the way the runbook works through §4 — could not
+  // be run through the batch path at all.
+  const unknown = (requested ?? []).filter(
+    (t) =>
+      !(JESUS_EVENT_EXPLANATION_TYPES as readonly string[]).includes(t) &&
+      !(JESUS_FACET_TYPES as readonly string[]).includes(t.toUpperCase()) &&
+      t.toUpperCase() !== "EMPTY",
+  );
+  if (unknown.length) {
     throw new Error(
-      `Unknown --types value(s). Valid: ${JESUS_EVENT_EXPLANATION_TYPES.join(", ")}`,
+      `Unknown --types value(s): ${unknown.join(", ")}.\n` +
+        `  narrative layers: ${JESUS_EVENT_EXPLANATION_TYPES.join(", ")}\n` +
+        `  facet types:      ${JESUS_FACET_TYPES.join(", ")}`,
     );
   }
   return {
@@ -110,6 +130,10 @@ function parseArgs(argv: string[]) {
     languageCode: get("language") ?? "en-US",
     bibleVersion: get("bible-version") ?? "NASB1995",
     overwrite: has("overwrite"),
+    slugs: get("slugs")
+      ?.split(",")
+      .map((x) => x.trim())
+      .filter(Boolean),
   };
 }
 
@@ -129,6 +153,9 @@ async function submit(argv: string[]) {
     await events.listEvents({}, { limit: 1000, orderBy: "chronology" })
   )
     .map((e) => e.slug)
+    // `--slugs` narrows a run to named events — used to regenerate a specific
+    // set, e.g. after the system prompt changed, without re-walking the corpus.
+    .filter((s) => !opts.slugs || opts.slugs.includes(s))
     .slice(0, opts.limit);
 
   const lines: BatchLine[] = [];
@@ -340,11 +367,65 @@ async function collect(batchId: string, argv: string[]) {
     ),
   );
   const allTypes = argv.includes("--all-types");
+
+  // Default to the same set `jesus:extract` would fill — the types currently
+  // under their band, computed from live counts — NOT a hardcoded list.
+  //
+  // These two paths are supposed to keep an identical set; that is the whole
+  // reason the selection rules are shared. The default had drifted: extract
+  // moved to `typesUnderTarget(liveCounts)` when the coverage bands landed,
+  // while this still read `EMPTY_CATEGORIES`. Collecting a fill batch with the
+  // default would have kept Promise/Warning/Prayer/Prophecy/Symbolic — the
+  // categories that are already over — and silently discarded every Question,
+  // Teaching, Claim, Encounter and Command the run was submitted to get.
+  const countRows = await conn
+    .selectFrom("jesus_facets")
+    .where("is_active", "=", true)
+    .select((eb) => ["type", eb.fn.countAll<string>().as("count")])
+    .groupBy("type")
+    .execute();
+  const liveCounts: Partial<Record<JesusFacetType, number>> = {};
+  for (const r of countRows) {
+    if ((JESUS_FACET_TYPES as readonly string[]).includes(r.type)) {
+      liveCounts[r.type as JesusFacetType] = Number(r.count);
+    }
+  }
+  const typesArg = get2(argv, "types")
+    ?.split(",")
+    .map((t) => t.trim().toUpperCase());
   const wanted = new Set(
-    (get2(argv, "types")
-      ?.split(",")
-      .map((t) => t.trim().toUpperCase()) ?? [...EMPTY_CATEGORIES]) as string[],
+    (typesArg?.includes("EMPTY")
+      ? [...EMPTY_CATEGORIES]
+      : typesArg ?? typesUnderTarget(liveCounts)) as string[],
   );
+  if (!allTypes)
+    console.log(`keeping: ${[...wanted].join(", ") || "(nothing under band)"}`);
+
+  // Remaining headroom per type, so a collect lands in the band instead of
+  // writing everything the batch happens to contain.
+  //
+  // `jesus:extract` has always done this; the collect did not, and the two are
+  // meant to keep the same set. Collecting CLAIM without it wrote 121 facets
+  // against a band of 50-70, taking the category to 140 — the run reports
+  // success and leaves the category at twice its target. The runbook's "a type
+  // stops on its own once it reaches the middle of its band" was only ever true
+  // of the extract path.
+  // `jesus:extract` takes `--cap=`; the collect did not, so a category whose
+  // band needs more than three facets per event could not reach it from a
+  // batch — QUESTION stopped at 234 against 300-310 for exactly that reason.
+  const perEventCap =
+    Number.parseInt(get2(argv, "cap") ?? "0", 10) || DEFAULT_PER_EVENT_TYPE_CAP;
+
+  const headroom = new Map<string, number>();
+  for (const row of assessCoverage(liveCounts)) {
+    if (!allTypes && !wanted.has(row.type)) continue;
+    headroom.set(
+      row.type,
+      row.target
+        ? Math.max(0, fillGoal(row.target) - row.count)
+        : Number.POSITIVE_INFINITY,
+    );
+  }
 
   for (const raw of text.split("\n").filter(Boolean)) {
     let line: {
@@ -464,8 +545,20 @@ async function collect(batchId: string, argv: string[]) {
         usedSlugs,
         tally: facetTally,
         existingTypeCounts,
+        perEventTypeCap: perEventCap,
       });
       for (const f of keep) {
+        const left = headroom.get(f.type);
+        if (left !== undefined && left <= 0) {
+          // Past the band ceiling. The selector already counted this as
+          // written, so correct that too — a tally that overstates what
+          // reached the database is how a filter failing silently stays
+          // invisible.
+          facetTally.written--;
+          facetTally.capped++;
+          continue;
+        }
+        if (left !== undefined) headroom.set(f.type, left - 1);
         await conn
           .insertInto("jesus_facets")
           .values({
@@ -532,7 +625,7 @@ else if (cmd === "status" && arg) await status(arg);
 else if (cmd === "collect" && arg) await collect(arg, rest);
 else {
   console.error(
-    "usage: jesus:generate:batch submit [--types=] [--limit=] [--overwrite]\n" +
+    "usage: jesus:generate:batch submit [--types=] [--slugs=] [--limit=] [--overwrite]\n" +
       "       jesus:generate:batch status  <batch_id>\n" +
       "       jesus:generate:batch collect <batch_id>",
   );
