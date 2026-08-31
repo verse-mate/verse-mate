@@ -1,7 +1,11 @@
 import type Database from "database/src/models/Database";
 import { type ExpressionBuilder, sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
-import { JESUS_KINDS, type JesusKind } from "../jesus.constants";
+import {
+  JESUS_KINDS,
+  JESUS_RELATED_LIMIT,
+  type JesusKind,
+} from "../jesus.constants";
 import { formatReference } from "../utils/reference.utils";
 
 const DEFAULT_LANGUAGE = "en-US";
@@ -604,7 +608,10 @@ export class JesusRepository {
    * of the other I AM statements. Ranking happens in SQL so we only ever
    * transfer `limit` rows.
    */
-  async getRelatedEntryIds(entryId: string, limit = 6): Promise<string[]> {
+  async getRelatedEntryIds(
+    entryId: string,
+    limit: number = JESUS_RELATED_LIMIT,
+  ): Promise<string[]> {
     // Written as raw SQL rather than through the builder: the shared-theme
     // count is needed twice in the score, so it wants a LATERAL join, and the
     // tiered CASE expression reads far better as one block than as chained
