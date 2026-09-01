@@ -5,7 +5,8 @@ import type Database from "../src/models/Database";
  * Bible-Coach portal: admin-added leaders.
  *
  * The coach roster is primarily served from the bundled coaching-pipeline
- * dataset (backend-base/src/coach/coach.data.json). This table lets a program
+ * dataset — a compiled-in bundle at the time, this same table since (change:
+ * port-coach-pipeline, task 3.1). This table lets a program
  * admin add a brand-new leader by email before any report exists — the row is
  * merged into the roster (0 sessions) and, once a VerseMate account with the
  * same email signs in, that account becomes a coachee. One row per email.
