@@ -119,6 +119,12 @@ export const ReportSchema = t.Object({
   // Admin-editable recording URL + coaching notes, overlaid from the DB.
   // Optional so bundled reports without them still validate.
   recordingUrl: t.Optional(t.String()),
+  // DETAIL-ONLY (task 4.5). Says whether VerseMate holds a recording, never
+  // where it is — the address is minted per session by
+  // GET /coach/reports/:reportId/recording-url. Kept off `recordingUrl`
+  // because that field is overlaid onto every row of every list, so carrying
+  // an address here would sign one URL per session on each page load.
+  hasRetainedRecording: t.Optional(t.Boolean()),
   notes: t.Optional(t.Array(NoteSchema)),
 });
 
