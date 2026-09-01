@@ -15,6 +15,8 @@ function row(id: string, date: string) {
     id,
     coach_id: COACH,
     session_date: date,
+    // Same source session across a re-title: the row must update in place.
+    source_session_id: `src-${date}`,
     legacy_ids: [] as string[],
     summary: {
       session: `Session ${date}`,

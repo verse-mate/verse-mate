@@ -357,12 +357,18 @@ export class CoachReportsRepository {
   // ─── Writes ───────────────────────────────────────────────────────────────
 
   /**
-   * Upsert one report on its natural key `(coach_id, session_date)`.
+   * Upsert one report on its natural key
+   * `(coach_id, session_date, source_session_id)`.
    *
-   * The store is the sole assigner of ids: when a report for that leader+date
-   * already exists its id is kept (so overlay rows and delivered links stay
-   * valid) and the payload's id — if different — is recorded in `legacy_ids`.
-   * A brand-new report takes the id the caller proposes, or a generated one.
+   * The store is the sole assigner of ids: when a report for that leader, date
+   * AND source session already exists its id is kept (so overlay rows and
+   * delivered links stay valid) and the payload's id — if different — is
+   * recorded in `legacy_ids`. A brand-new report takes the id the caller
+   * proposes, or a generated one.
+   *
+   * The source session is in the key because a leader may teach twice on one
+   * date: those are two reports, not a collision. On `(coach_id, session_date)`
+   * alone the second was a hard unique violation.
    */
   async upsert(row: CoachReportRow): Promise<UpsertedReport> {
     // ONE atomic statement: a SELECT-then-INSERT races two concurrent publishes
@@ -371,15 +377,17 @@ export class CoachReportsRepository {
     // legacy_ids instead of replacing it, so delivered links keep resolving.
     const result = await sql<{ id: string; created: boolean }>`
       INSERT INTO coach_reports
-        (id, coach_id, session_date, legacy_ids, summary, metrics, body)
+        (id, coach_id, session_date, source_session_id,
+         legacy_ids, summary, metrics, body)
       VALUES (
         ${row.id}, ${row.coach_id}, ${row.session_date}::date,
+        ${row.source_session_id},
         ${sql.val(row.legacy_ids ?? [])}::text[],
         ${JSON.stringify(row.summary)}::jsonb,
         ${JSON.stringify(row.metrics)}::jsonb,
         ${JSON.stringify(row.body)}::jsonb
       )
-      ON CONFLICT (coach_id, session_date) DO UPDATE SET
+      ON CONFLICT (coach_id, session_date, source_session_id) DO UPDATE SET
         summary = EXCLUDED.summary,
         metrics = EXCLUDED.metrics,
         body    = EXCLUDED.body,

@@ -14,6 +14,8 @@ export interface CoachReportRow {
   id: string;
   coach_id: string;
   session_date: string;
+  /** The provider's session identifier; part of the row's natural key. */
+  source_session_id: string;
   legacy_ids: string[];
   summary: Record<string, unknown>;
   metrics: Record<string, unknown>;
@@ -54,6 +56,15 @@ const METRICS_KEYS = [
 ];
 const BODY_KEYS = ["bigIdeas", "feedback", "sections"];
 
+/**
+ * The `source_session_id` a backfilled report takes. Deterministic, so a second
+ * backfill run matches the row the first one wrote rather than inserting beside
+ * it — the whole reason the column is NOT NULL.
+ */
+export function legacySourceSessionId(coachId: string, date: string): string {
+  return `legacy:${coachId}:${date}`;
+}
+
 /** One dataset report (under coach `coachId`) → one coach_reports row. */
 export function reportToRow(
   coachId: string,
@@ -63,6 +74,13 @@ export function reportToRow(
     id: String(report.id),
     coach_id: coachId,
     session_date: String(report.date),
+    // Backfilled reports predate intake and have no source session. The
+    // sentinel is title-free by construction: deriving it from the legacy id
+    // would embed the session title (those ids are slugs like
+    // `bryan-bailey-2026-08-22-saturday-morning-group-austin-ri`), which report
+    // identity forbids and which stops the backfill being idempotent across a
+    // re-title.
+    source_session_id: legacySourceSessionId(coachId, String(report.date)),
     legacy_ids: [],
     summary: pick(report, SUMMARY_KEYS),
     metrics: pick(report, METRICS_KEYS),
