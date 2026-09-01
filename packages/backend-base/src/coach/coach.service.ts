@@ -4,6 +4,7 @@ import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
+import { RetainedMediaService } from "./coach-retained-media.service";
 import { rowToReport, rowToSummary } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
@@ -81,6 +82,8 @@ export interface CoachReport {
   /** Admin-editable recording URL, overlaid from coach_recording_links.
    *  Optional so bundled reports (which don't carry one) still type-check. */
   recordingUrl?: string;
+  /** Detail-only: VerseMate holds a recording for this session (task 4.5). */
+  hasRetainedRecording?: boolean;
   /** Coaching notes on this session, newest first — overlaid from coach_notes.
    *  Rendered on the admin drill-in and read-only on the leader's dashboard. */
   notes?: CoachNoteView[];
@@ -347,6 +350,8 @@ export class CoachService {
   /** Report store (change: coach-reports-store) — reports now live in the
    *  database rather than the compiled-in dataset. */
   private readonly reportsRepository: CoachReportsRepository;
+  /** Retained recordings — minted per session, never listed (task 4.5). */
+  private readonly retainedMedia: RetainedMediaService;
 
   constructor(
     private readonly db: db,
@@ -357,6 +362,25 @@ export class CoachService {
     this.userService = new UserService(db);
     this.coachRepository = new CoachRepository(db);
     this.reportsRepository = new CoachReportsRepository(db);
+    this.retainedMedia = new RetainedMediaService(db);
+  }
+
+  /**
+   * Mint a short-lived address for one session's retained recording, or null
+   * for every refusal alike (task 4.5). Delegates so the plugin stays thin and
+   * the authorization lives in one place.
+   */
+  async mintRecordingUrl(input: {
+    reportId: string;
+    requesterCoachId: string | null;
+    isAdmin: boolean;
+  }): Promise<string | null> {
+    return this.retainedMedia.mint(input);
+  }
+
+  /** Whether a session has retained material. Mints nothing. */
+  async describeRetainedMedia(coachId: string, reportIds: string[]) {
+    return this.retainedMedia.describeMany(coachId, reportIds);
   }
 
   // ─── Publish (ingest) ────────────────────────────────────────────────────
@@ -875,7 +899,16 @@ export class CoachService {
         body: row.body,
       }) as unknown as CoachReport;
       const [overlaid] = await this.overlayReports(coachId, [report]);
-      return overlaid ?? report;
+      const resolved = overlaid ?? report;
+      // Detail-only: WHETHER we hold a recording, never where. The address is
+      // minted separately, one session at a time (task 4.5).
+      const media = (await this.describeRetainedMedia(coachId, [row.id])).get(
+        row.id,
+      );
+      return {
+        ...resolved,
+        hasRetainedRecording: media?.hasRetainedRecording ?? false,
+      } as CoachReport;
     }
     // Migration-gate: the bundle still answers for reports not yet backfilled —
     // scoped to THIS coach only, never a global search across every leader.

@@ -10,6 +10,7 @@ import {
 } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
+import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
@@ -266,6 +267,42 @@ const plugin = new Elysia()
         {
           response: {
             200: t.Object({ report: ReportSchema }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // ── One session's retained recording ──────────────────────────────
+      // A separate call on purpose (design D10, task 4.5). The address is
+      // minted for ONE session at a time and lives 24 hours, so a paginated
+      // list mints nothing; the detail response says only WHETHER material
+      // exists. A browser media element cannot send a bearer header, so the
+      // API never proxies the bytes — object storage serves them, Range
+      // requests included.
+      .get(
+        "/reports/:reportId/recording-url",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me) throw new ForbiddenError("Not a coaching account");
+          const url = await coachService.mintRecordingUrl({
+            reportId: params.reportId,
+            requesterCoachId: me.profile?.id ?? null,
+            isAdmin: me.isAdmin,
+          });
+          // One answer for every refusal — not this leader's session, no
+          // session, no retained asset. A 'you may not' that reads differently
+          // from a 'there is nothing' tells an unrelated leader which sessions
+          // exist.
+          if (!url) throw new NotFoundError("No retained recording");
+          return { url, expiresInSeconds: MINTED_URL_LIFETIME_SECONDS };
+        },
+        {
+          response: {
+            200: t.Object({
+              url: t.String(),
+              expiresInSeconds: t.Number(),
+            }),
             ...StandardErrorResponses,
           },
         },
