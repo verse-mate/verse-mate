@@ -30,6 +30,10 @@ export default interface CoachLeadersTable {
 
   is_benchmark: ColumnType<boolean, boolean | undefined, boolean>;
 
+  title_match: ColumnType<string[], string[] | undefined, string[]>;
+
+  alt_emails: ColumnType<string[], string[] | undefined, string[]>;
+
   invited_by: ColumnType<UserId | null, UserId | null, UserId | null>;
 
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
