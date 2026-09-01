@@ -51,6 +51,15 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("alt_emails", sql`text[]`, (col) =>
       col.notNull().defaultTo(sql`ARRAY[]::text[]`),
     )
+    // Coverage attestation (task 4.7). A leader who is genuinely not teaching
+    // looks exactly like a leader the recording bot fails to cover: both are
+    // silent. No provider API can tell them apart — Fireflies exposes nothing
+    // that lists configured or upcoming joins — so the distinction is recorded
+    // by a human, explicitly, and never inferred.
+    .addColumn("not_teaching_attested_at", "timestamp")
+    .addColumn("not_teaching_attested_by", "uuid", (col) =>
+      col.references("user.id").onDelete("set null"),
+    )
     .execute();
 
   await db.schema
@@ -76,6 +85,8 @@ export async function down(db: Kysely<Database>): Promise<void> {
   await sql`DROP INDEX IF EXISTS coach_leaders_slug_uidx`.execute(db);
   await db.schema
     .alterTable("coach_leaders")
+    .dropColumn("not_teaching_attested_by")
+    .dropColumn("not_teaching_attested_at")
     .dropColumn("alt_emails")
     .dropColumn("title_match")
     .dropColumn("is_benchmark")
