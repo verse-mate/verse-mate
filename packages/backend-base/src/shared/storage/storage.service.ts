@@ -53,6 +53,45 @@ export class ObjectStorageService {
   }
 
   /**
+   * Upload a stream as a multipart object, returning the bytes written.
+   *
+   * Use this rather than `putGlobalObject` for anything whose size is not known
+   * to be small: that path takes a Buffer, so the whole object sits in memory
+   * and a single PUT caps at S3's 5 GB limit. A recorded session can exceed
+   * both. Ceiling here: `MAX_STREAMED_OBJECT_BYTES` (~160 GB).
+   */
+  public async putGlobalObjectStream({
+    key,
+    body,
+    contentType,
+  }: {
+    key: string;
+    body: ReadableStream<Uint8Array>;
+    contentType?: string;
+  }): Promise<number> {
+    return this.helper.putObjectStream(key, body, contentType);
+  }
+
+  /** The object as a stream. Null when the key does not exist. */
+  public async getGlobalObjectStream(
+    key: string,
+  ): Promise<ReadableStream<Uint8Array> | null> {
+    return this.helper.getObjectStream(key);
+  }
+
+  /**
+   * A byte range, inclusive at both ends — HTTP `Range` semantics, so a caller
+   * serving one does not have to convert. Null when the key does not exist.
+   */
+  public async getGlobalObjectRange(
+    key: string,
+    start: number,
+    end?: number,
+  ): Promise<Uint8Array | null> {
+    return this.helper.getObjectRange(key, start, end);
+  }
+
+  /**
    * Return a presigned GET URL for an arbitrary key.
    */
   public async getGlobalObjectUrl({
