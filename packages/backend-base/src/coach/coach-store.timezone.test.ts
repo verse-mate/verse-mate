@@ -43,6 +43,7 @@ describe("dates under a positive-offset timezone (UTC+9)", () => {
       id: "tz-report",
       coach_id: COACH,
       session_date: "2026-08-22",
+      source_session_id: "src-tz",
       legacy_ids: [],
       summary: { session: "Joel", score: 70 },
       metrics: {},

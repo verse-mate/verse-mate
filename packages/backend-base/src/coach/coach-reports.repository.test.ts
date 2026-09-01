@@ -6,11 +6,16 @@ import { CoachReportsRepository } from "./repository/coach-reports.repository";
 const conn = Database.getOrCreateConnection();
 const repo = new CoachReportsRepository(Database);
 
+// A report's source session, not its id: these cases model ONE session being
+// re-published under a re-derived id, which must update the row in place. Two
+// genuinely different sessions on one date are covered in
+// coach-store.session-key.test.ts, which passes distinct source sessions.
 function row(id: string, coach: string, date: string, extra = {}) {
   return {
     id,
     coach_id: coach,
     session_date: date,
+    source_session_id: `src-${coach}-${date}`,
     legacy_ids: [] as string[],
     summary: { session: `S ${date}`, score: 70, ...extra },
     metrics: { clusters: [], dimensions: [] },

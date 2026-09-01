@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 
 import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
@@ -378,6 +378,8 @@ export class CoachService {
     reports: Array<{
       coachId: string;
       date: string;
+      /** The provider's session identifier — part of the row's natural key. */
+      sourceSessionId: string;
       id?: string;
       summary: Record<string, unknown>;
       metrics: Record<string, unknown>;
@@ -408,8 +410,10 @@ export class CoachService {
     // Validate the WHOLE batch before writing anything, so a bad report at
     // position k cannot leave reports 1..k-1 committed.
     for (const report of input.reports) {
-      if (!report.coachId || !report.date) {
-        throw new ValidationError("Each report needs a coachId and a date");
+      if (!report.coachId || !report.date || !report.sourceSessionId) {
+        throw new ValidationError(
+          "Each report needs a coachId, a date and a sourceSessionId",
+        );
       }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(report.date)) {
         throw new ValidationError(
@@ -443,9 +447,16 @@ export class CoachService {
     }> = [];
     for (const report of input.reports) {
       const result = await this.reportsRepository.upsert({
-        id: report.id || CoachService.mintReportId(report.coachId, report.date),
+        id:
+          report.id ||
+          CoachService.mintReportId(
+            report.coachId,
+            report.date,
+            report.sourceSessionId,
+          ),
         coach_id: report.coachId,
         session_date: report.date,
+        source_session_id: report.sourceSessionId,
         legacy_ids: [],
         summary: report.summary ?? {},
         metrics: report.metrics ?? {},
@@ -489,9 +500,24 @@ export class CoachService {
     "pdfUrl",
   ];
 
-  /** Opaque id for a report the store has not seen before. */
-  private static mintReportId(coachId: string, date: string): string {
-    return `${coachId}-${date}-${randomUUID().slice(0, 8)}`;
+  /**
+   * Opaque id for a report the store has not seen before. DETERMINISTIC in the
+   * natural key, not random: an id minted freshly on every publish lands in
+   * `legacy_ids` each time a retry turns the insert into an update, so the
+   * array grows without bound. Derived from the source session id — which is
+   * opaque provider output, never the session title — so it carries no title
+   * and re-minting for the same session reproduces the same value.
+   */
+  private static mintReportId(
+    coachId: string,
+    date: string,
+    sourceSessionId: string,
+  ): string {
+    const digest = createHash("sha256")
+      .update(`${coachId}\u0000${date}\u0000${sourceSessionId}`)
+      .digest("hex")
+      .slice(0, 8);
+    return `${coachId}-${date}-${digest}`;
   }
 
   // ─── Roster resolution (bundled dataset + admin-added leaders) ────────────

@@ -13,6 +13,8 @@ export default interface CoachReportsTable {
 
   session_date: ColumnType<Date, Date | string, Date | string>;
 
+  source_session_id: ColumnType<string, string, string>;
+
   legacy_ids: ColumnType<string[], string[] | undefined, string[]>;
 
   summary: ColumnType<unknown, unknown, unknown>;

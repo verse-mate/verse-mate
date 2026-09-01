@@ -10,9 +10,9 @@ import type Database from "../src/models/Database";
  * existing dataset slug (so `coach_notes`/`coach_recording_links`, which key on
  * that slug, keep joining with no rewrite, and already-issued `?s=<id>` email
  * links keep resolving); reports published later get an opaque endpoint-assigned
- * id. Upserts match on the title-free natural key `(coach_id, session_date)`,
- * which is UNIQUE so a same-date collision ERRORS rather than silently
- * overwriting a different session. `legacy_ids` records ids a report was
+ * id. Upserts match on the title-free natural key `(coach_id, session_date,
+ * source_session_id)`, which is UNIQUE so re-ingesting one session updates it in
+ * place while a second session on the same date becomes its own report. `legacy_ids` records ids a report was
  * previously known by (populated only when a re-title changes a derived id).
  *
  * `coach_dataset_meta` is a single-row provenance signal — a monotonic `version`
@@ -31,6 +31,15 @@ export async function up(db: Kysely<Database>): Promise<void> {
     // The coach slug (e.g. "bryan-bailey") — the same key the overlay tables use.
     .addColumn("coach_id", "text", (col) => col.notNull())
     .addColumn("session_date", "date", (col) => col.notNull())
+    // The provider's identifier for the recorded session this report evaluates.
+    // NOT NULL is load-bearing: Postgres treats NULLs as distinct in a unique
+    // index, so a nullable column would switch the guard OFF for exactly the
+    // backfilled rows and a second backfill run would double the corpus.
+    // Backfilled rows — which have no source session — take the title-free
+    // sentinel `legacy:<coach_id>:<session_date>`; deriving it from the legacy
+    // report id would embed the session title, which report identity forbids
+    // and which breaks idempotence across a re-title.
+    .addColumn("source_session_id", "text", (col) => col.notNull())
     // Ids this report was previously issued under (re-title history). Queried
     // with `= ANY(legacy_ids)` when resolving an older link.
     .addColumn("legacy_ids", sql`text[]`, (col) =>
@@ -51,12 +60,16 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     .execute();
 
-  // Title-free natural key: a same-date collision must error, never overwrite.
+  // Title-free natural key. The source session is part of it: a leader who
+  // teaches twice on one date gets TWO reports with distinct immutable ids,
+  // while re-ingesting the same source session updates in place. Keyed on
+  // (coach_id, session_date) alone, the second session of a day was a hard
+  // unique-violation and the intake dedupe silently dropped it.
   await db.schema
-    .createIndex("coach_reports_coach_date_uidx")
+    .createIndex("coach_reports_coach_date_session_uidx")
     .unique()
     .on("coach_reports")
-    .columns(["coach_id", "session_date"])
+    .columns(["coach_id", "session_date", "source_session_id"])
     .execute();
 
   // Read paths: list by coach, and resolve a legacy id.

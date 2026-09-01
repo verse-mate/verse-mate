@@ -24,6 +24,7 @@ function storeRow(id: string, date: string, score: number) {
     id,
     coach_id: COACH,
     session_date: date,
+    source_session_id: `src-${id}`,
     legacy_ids: [] as string[],
     summary: {
       dateLabel: date,
