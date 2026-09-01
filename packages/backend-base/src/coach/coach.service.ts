@@ -1,7 +1,12 @@
+import { randomUUID } from "node:crypto";
+
 import { CoachInvite, CoachNote, render } from "../../../emails";
+import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
+import { rowToReport, rowToSummary } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
+import { CoachReportsRepository } from "./repository/coach-reports.repository";
 import {
   type AddedLeaderRow,
   type CoachClassInput,
@@ -339,6 +344,9 @@ export interface CoachMonthly {
 export class CoachService {
   private readonly userService: UserService;
   private readonly coachRepository: CoachRepository;
+  /** Report store (change: coach-reports-store) — reports now live in the
+   *  database rather than the compiled-in dataset. */
+  private readonly reportsRepository: CoachReportsRepository;
 
   constructor(
     private readonly db: db,
@@ -348,6 +356,142 @@ export class CoachService {
   ) {
     this.userService = new UserService(db);
     this.coachRepository = new CoachRepository(db);
+    this.reportsRepository = new CoachReportsRepository(db);
+  }
+
+  // ─── Publish (ingest) ────────────────────────────────────────────────────
+
+  /**
+   * Ingest published reports into the store (change: coach-reports-store).
+   *
+   * The store is the sole assigner of report identity: an incoming report is
+   * matched on the title-free natural key (coach + session date), so a re-title
+   * updates the existing row and KEEPS its id — overlay notes/recording links
+   * and already-delivered `?s=<id>` links stay valid. The response carries each
+   * report's assigned id so the publisher can build links without deriving one.
+   *
+   * Guards the corpus against a stale publisher: when `expectedCount` is given
+   * and is lower than what the store already holds, the publish is refused
+   * rather than allowed to shrink live data.
+   */
+  async ingestReports(input: {
+    reports: Array<{
+      coachId: string;
+      date: string;
+      id?: string;
+      summary: Record<string, unknown>;
+      metrics: Record<string, unknown>;
+      body: Record<string, unknown>;
+    }>;
+    generatedAt?: string | null;
+    expectedCount?: number | null;
+  }): Promise<{
+    accepted: Array<{
+      id: string;
+      coachId: string;
+      date: string;
+      created: boolean;
+    }>;
+    version: string;
+    reportCount: number;
+  }> {
+    const stored = await this.reportsRepository.totalReports();
+    if (
+      typeof input.expectedCount === "number" &&
+      input.expectedCount < stored
+    ) {
+      throw new ConflictError(
+        `Publish refused: publisher reports ${input.expectedCount} sessions but the store holds ${stored} — refusing to shrink the corpus`,
+      );
+    }
+
+    // Validate the WHOLE batch before writing anything, so a bad report at
+    // position k cannot leave reports 1..k-1 committed.
+    for (const report of input.reports) {
+      if (!report.coachId || !report.date) {
+        throw new ValidationError("Each report needs a coachId and a date");
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(report.date)) {
+        throw new ValidationError(
+          `Report date must be yyyy-mm-dd (got "${report.date}" for ${report.coachId})`,
+        );
+      }
+      // The read path serves ReportSchema, which REQUIRES these fields. Without
+      // this check a publisher that renames one field gets a 200, and the
+      // malformed row then breaks the leader's ENTIRE report list (the array
+      // response fails validation as a whole), with no repair endpoint.
+      const assembled = {
+        ...report.summary,
+        ...report.metrics,
+        ...report.body,
+      } as Record<string, unknown>;
+      const missing = CoachService.REQUIRED_REPORT_FIELDS.filter(
+        (f) => assembled[f] === undefined,
+      );
+      if (missing.length > 0) {
+        throw new ValidationError(
+          `Report ${report.coachId} ${report.date} is missing required field(s): ${missing.join(", ")}`,
+        );
+      }
+    }
+
+    const accepted: Array<{
+      id: string;
+      coachId: string;
+      date: string;
+      created: boolean;
+    }> = [];
+    for (const report of input.reports) {
+      const result = await this.reportsRepository.upsert({
+        id: report.id || CoachService.mintReportId(report.coachId, report.date),
+        coach_id: report.coachId,
+        session_date: report.date,
+        legacy_ids: [],
+        summary: report.summary ?? {},
+        metrics: report.metrics ?? {},
+        body: report.body ?? {},
+      });
+      accepted.push(result);
+    }
+
+    const meta = await this.reportsRepository.bumpMeta(
+      input.generatedAt ?? null,
+    );
+    return {
+      accepted,
+      version: meta.version,
+      reportCount: meta.reportCount,
+    };
+  }
+
+  /**
+   * Fields the read contract (ReportSchema) requires. An ingest that omits any
+   * of them is rejected at the write boundary rather than poisoning the read.
+   */
+  private static readonly REQUIRED_REPORT_FIELDS = [
+    "dateLabel",
+    "session",
+    "topic",
+    "duration",
+    "attendees",
+    "newcomers",
+    "score",
+    "base",
+    "newcomerBonus",
+    "sizeBonus",
+    "status",
+    "statusEmoji",
+    "clusters",
+    "dimensions",
+    "bigIdeas",
+    "feedback",
+    "docUrl",
+    "pdfUrl",
+  ];
+
+  /** Opaque id for a report the store has not seen before. */
+  private static mintReportId(coachId: string, date: string): string {
+    return `${coachId}-${date}-${randomUUID().slice(0, 8)}`;
   }
 
   // ─── Roster resolution (bundled dataset + admin-added leaders) ────────────
@@ -529,18 +673,176 @@ export class CoachService {
     };
   }
 
+  /**
+   * A coach's reports from the STORE, or null when the store holds none for
+   * them yet (migration-gate: the compiled-in bundle still answers until the
+   * backfill has run for that coach — never as a runtime outage fallback).
+   */
+  private async storeReports(coachId: string): Promise<CoachReport[] | null> {
+    // Gate on the DATASET-level signal, not this coach's row count. Gating on
+    // rows meant a single ingest landing before the backfill flipped the coach
+    // to store-only and their history appeared deleted (23 sessions -> 1).
+    const meta = await this.reportsRepository.getMeta();
+    if (!meta) return null;
+    // ONE query for the whole history — not listMetrics + getDetail per row.
+    const rows = await this.reportsRepository.listFullReports(coachId);
+    if (rows.length === 0) return null;
+    return rows.map(
+      (d) =>
+        rowToReport({
+          id: d.id,
+          session_date: d.date,
+          summary: d.summary,
+          metrics: d.metrics,
+          body: d.body,
+        }) as unknown as CoachReport,
+    );
+  }
+
+  /**
+   * Every coach's reports from the store, keyed by coach id — ONE query, and
+   * without prose, because the consumers of this view (trends, roster, monthly)
+   * only read score / status / clusters / dimensions / date. Null when the
+   * store is not yet backfilled, so the bundle keeps answering.
+   */
+  private async storeReportsByCoach(): Promise<Map<
+    string,
+    CoachReport[]
+  > | null> {
+    const meta = await this.reportsRepository.getMeta();
+    if (!meta) return null;
+    const rows = await this.reportsRepository.listAllMetrics();
+    if (rows.length === 0) return null;
+    const byCoach = new Map<string, CoachReport[]>();
+    for (const r of rows) {
+      const report = rowToReport({
+        id: r.id,
+        session_date: r.date,
+        summary: r.summary,
+        metrics: r.metrics,
+        body: {},
+      }) as unknown as CoachReport;
+      const list = byCoach.get(r.coachId) ?? [];
+      list.push(report);
+      byCoach.set(r.coachId, list);
+    }
+    // The contract everywhere else is newest-first.
+    for (const list of byCoach.values()) {
+      list.sort((a, b) => (a.date < b.date ? 1 : -1));
+    }
+    return byCoach;
+  }
+
+  /**
+   * Roster records whose `reports` come from the store where it has them, so
+   * trends / roster / monthly reflect a publish immediately instead of lagging
+   * until the next deploy (they previously all read the compiled-in bundle).
+   */
+  private async recordsWithStoreReports(): Promise<CoachRecord[]> {
+    const records = await this.allRecords();
+    const byCoach = await this.storeReportsByCoach();
+    if (!byCoach) return records;
+    return records.map((r) => {
+      const stored = byCoach.get(r.id);
+      return stored ? { ...r, reports: stored } : r;
+    });
+  }
+
+  /** Reports for a roster record: store first, bundled dataset until backfilled. */
+  private async reportsFor(record: CoachRecord): Promise<CoachReport[]> {
+    const fromStore = await this.storeReports(record.id);
+    return fromStore ?? record.reports;
+  }
+
+  /**
+   * One page of a coach's sessions as list rows — summary only, never prose, so
+   * a long history stays bounded. Falls back to projecting the bundled reports
+   * while the store has not been backfilled for that coach.
+   */
+  async getReportSummaries(
+    coachId: string,
+    opts: { limit?: number; offset?: number } = {},
+  ): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    const total = await this.reportsRepository.countForCoach(coachId);
+    if (total > 0) {
+      const rows = await this.reportsRepository.listSummaries(coachId, opts);
+      return {
+        items: rows.map((r) =>
+          rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
+        ),
+        total,
+      };
+    }
+    const record = await this.resolveById(coachId);
+    if (!record) return { items: [], total: 0 };
+    const limit = Math.min(Math.max(opts.limit ?? 25, 1), 100);
+    const offset = Math.max(opts.offset ?? 0, 0);
+    const page = record.reports.slice(offset, offset + limit);
+    return {
+      items: page.map((r) => ({
+        id: r.id,
+        date: r.date,
+        dateLabel: r.dateLabel,
+        session: r.session,
+        topic: r.topic,
+        score: r.score,
+        status: r.status,
+        statusEmoji: r.statusEmoji,
+        pdfUrl: r.pdfUrl,
+      })),
+      total: record.reports.length,
+    };
+  }
+
+  /**
+   * One session's full content by immutable OR legacy id, SCOPED to the coach
+   * that owns it. Null when the id names nothing for that coach — so a leader
+   * can never read another leader's report, and an unknown id reports
+   * not-found rather than silently showing a different session.
+   */
+  async getReportDetail(
+    coachId: string,
+    reportId: string,
+  ): Promise<CoachReport | null> {
+    const row = await this.reportsRepository.getDetail(coachId, reportId);
+    if (row) {
+      const report = rowToReport({
+        id: row.id,
+        session_date: row.date,
+        summary: row.summary,
+        metrics: row.metrics,
+        body: row.body,
+      }) as unknown as CoachReport;
+      const [overlaid] = await this.overlayReports(coachId, [report]);
+      return overlaid ?? report;
+    }
+    // Migration-gate: the bundle still answers for reports not yet backfilled —
+    // scoped to THIS coach only, never a global search across every leader.
+    const bundled = coachData.coaches.find((c) => c.id === coachId);
+    const found = bundled?.reports.find((r) => r.id === reportId);
+    if (found) {
+      const [overlaid] = await this.overlayReports(coachId, [found]);
+      return overlaid ?? found;
+    }
+    return null;
+  }
+
   async getReports(userId: string): Promise<CoachReport[] | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
     const stored = await this.coachRepository.getSettings(userId);
     const fallback = stored?.zoomLink ?? record.zoomLink ?? "";
-    return this.overlayReports(record.id, record.reports, fallback);
+    return this.overlayReports(
+      record.id,
+      await this.reportsFor(record),
+      fallback,
+    );
   }
 
   async getTrends(userId: string): Promise<CoachTrends | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return CoachService.buildTrends(record.reports);
+    return CoachService.buildTrends(await this.reportsFor(record));
   }
 
   // ─── Admin oversight (every leader) ──────────────────────────────────────
@@ -548,7 +850,7 @@ export class CoachService {
   /** Roster summary for the admin landing view. Includes admin-added leaders
    *  (0 sessions until the pipeline produces their first report). */
   async listCoaches(): Promise<CoachSummary[]> {
-    const records = await this.allRecords();
+    const records = await this.recordsWithStoreReports();
     return records.map((c) => {
       // reports are stored newest-first.
       const latest = c.reports[0] ?? null;
@@ -582,13 +884,19 @@ export class CoachService {
       (await this.coachRepository.getZoomLinkByEmail(record.email)) ||
       record.zoomLink ||
       "";
-    return this.overlayReports(record.id, record.reports, fallback);
+    return this.overlayReports(
+      record.id,
+      await this.reportsFor(record),
+      fallback,
+    );
   }
 
   /** A specific coach's trends by id (admin drill-in). null → unknown id. */
   async getTrendsById(coachId: string): Promise<CoachTrends | null> {
     const record = await this.resolveById(coachId);
-    return record ? CoachService.buildTrends(record.reports) : null;
+    return record
+      ? CoachService.buildTrends(await this.reportsFor(record))
+      : null;
   }
 
   /** Profile header for an admin viewing a specific coach. */
@@ -657,6 +965,24 @@ export class CoachService {
     };
   }
 
+  /**
+   * Resolve a report id an admin supplied (possibly a legacy id) to the id the
+   * overlay tables should store. Falls back to the bundled dataset while the
+   * store has not been backfilled for that coach.
+   */
+  private async canonicalReportId(
+    coachId: string,
+    reportId: string,
+    record: CoachRecord,
+  ): Promise<string | null> {
+    const fromStore = await this.reportsRepository.canonicalId(
+      coachId,
+      reportId,
+    );
+    if (fromStore) return fromStore;
+    return record.reports.some((r) => r.id === reportId) ? reportId : null;
+  }
+
   /** Set (or clear) a session's recording URL. null → unknown coach/session. */
   async setRecordingLink(
     coachId: string,
@@ -665,10 +991,13 @@ export class CoachService {
   ): Promise<string | null> {
     const record = await this.resolveById(coachId);
     if (!record) return null;
-    if (!record.reports.some((r) => r.id === reportId)) return null;
+    // Canonicalise: an admin may act on a report addressed by a LEGACY id, and
+    // the overlay row must store the report's current immutable id.
+    const canonical = await this.canonicalReportId(coachId, reportId, record);
+    if (!canonical) return null;
     return this.coachRepository.setRecordingLink(
       coachId,
-      reportId,
+      canonical,
       recordingUrl,
     );
   }
@@ -683,7 +1012,12 @@ export class CoachService {
   ): Promise<CoachNoteView | null> {
     const record = await this.resolveById(coachId);
     if (!record) return null;
-    const report = record.reports.find((r) => r.id === reportId);
+    // Canonicalise a possibly-legacy id, then resolve the session for the email.
+    const canonical = await this.canonicalReportId(coachId, reportId, record);
+    if (!canonical) return null;
+    const report =
+      (await this.getReportDetail(coachId, canonical)) ??
+      record.reports.find((r) => r.id === canonical);
     if (!report) return null;
 
     // Email the leader first; persist with the actual delivery outcome so the
@@ -713,7 +1047,8 @@ export class CoachService {
 
     const saved = await this.coachRepository.addNote({
       coachId,
-      reportId,
+      // persist the canonical id so the note attaches to the report's identity
+      reportId: canonical,
       authorUserId,
       body,
       emailed,
@@ -735,7 +1070,7 @@ export class CoachService {
    *  from the dataset (current v3 weighted model). Mirrors the coaching
    *  pipeline's monthly summary. */
   async getMonthly(month: string): Promise<CoachMonthly> {
-    const records = await this.allRecords();
+    const records = await this.recordsWithStoreReports();
     const prev = CoachService.prevMonth(month);
 
     // Canonical n→name map for the 12-dimension heatmap columns, plus the set
