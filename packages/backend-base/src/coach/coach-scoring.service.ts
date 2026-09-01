@@ -37,7 +37,18 @@ export interface ScoringInput {
   /** Pseudonymous transcript lines — speakers numbered, never named (4.3a). */
   transcript: Array<{ speakerId: string; isLeader: boolean; text: string }>;
   sessionTitle: string;
+  /**
+   * Sampled frames for the Visual Aids dimension (task 5.4). Omitted or empty
+   * means the picture was never seen — which is NOT the same as "no visual
+   * aids were used", so dimension 7 is recorded not-applicable rather than
+   * scored low. Scoring it low on missing evidence would be a false claim
+   * about the leader, made systematically.
+   */
+  frames?: Uint8Array[];
 }
+
+/** The dimension that can only be answered from the picture. */
+export const VISUAL_AIDS_DIMENSION = 7;
 
 export type ScoringFailure =
   | "model-returned-unparseable-output"
@@ -130,7 +141,17 @@ export class CoachScoringService {
       };
     }
 
-    const validated = validateDimensionScores(raw);
+    // Dimension 7 is replaced by the vision judgement when frames exist, and
+    // forced to not-applicable when they do not: the text model has no basis
+    // for it either way, and a number produced from no evidence is worse than
+    // an honest gap.
+    const visual = await this.scoreVisualAids(input);
+    const withVisual = [
+      ...raw.filter((d) => d.n !== VISUAL_AIDS_DIMENSION),
+      visual,
+    ];
+
+    const validated = validateDimensionScores(withVisual);
     if (!validated.ok) {
       return {
         ok: false,
@@ -171,6 +192,79 @@ export class CoachScoringService {
       status: statusForScore(base),
       modelVersion: RUBRIC_MODEL_VERSION,
     };
+  }
+
+  /**
+   * Dimension 7, judged from sampled frames (task 5.4).
+   *
+   * Its own call, with its own images, because it is the one dimension the
+   * transcript cannot answer: charts, slides, maps and on-screen word-study
+   * tools appear only in the picture.
+   */
+  private async scoreVisualAids(
+    input: ScoringInput,
+  ): Promise<RawDimensionScore> {
+    const dimension = DIMENSIONS.find((d) => d.n === VISUAL_AIDS_DIMENSION);
+    if (!input.frames?.length) {
+      return {
+        n: VISUAL_AIDS_DIMENSION,
+        score: null,
+        rationale:
+          "No frames were available for this session, so visual aids could not be observed.",
+        notApplicable: true,
+      };
+    }
+
+    const response = await this.ai.chatComplete({
+      model: this.model,
+      messages: [
+        {
+          role: "system",
+          content: [
+            "Score ONE dimension of a Bible-study session from sampled frames.",
+            `${dimension?.n}. ${dimension?.name} — ${dimension?.what}`,
+            `Research-backed target: ${dimension?.target}`,
+            "",
+            "Score 1-5 from what you can SEE. If the frames do not show enough",
+            "to judge, set score to null and say so — do not score low for",
+            "absence of evidence.",
+            '{"score":4,"rationale":"..."}',
+          ].join("\n"),
+        },
+        {
+          role: "user",
+          content: `Session: ${input.sessionTitle}`,
+          images: input.frames.map(
+            (f) =>
+              `data:image/jpeg;base64,${Buffer.from(f).toString("base64")}`,
+          ),
+        },
+      ],
+      maxTokens: 1000,
+      responseFormat: { type: "json_object" },
+    });
+
+    try {
+      const parsed = JSON.parse(response.content) as {
+        score?: number | null;
+        rationale?: string;
+      };
+      return {
+        n: VISUAL_AIDS_DIMENSION,
+        score: parsed.score ?? null,
+        rationale: parsed.rationale ?? "",
+      };
+    } catch {
+      // A vision call that fails must not fail the whole session: eleven
+      // dimensions are still legitimately scored.
+      return {
+        n: VISUAL_AIDS_DIMENSION,
+        score: null,
+        rationale:
+          "The vision model returned no usable judgement for visual aids this session.",
+        notApplicable: true,
+      };
+    }
   }
 
   /**
