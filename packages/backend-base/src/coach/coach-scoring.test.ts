@@ -18,20 +18,21 @@ class FakeAi implements AiProvider {
     this.lastPrompt = opts.messages.map((m) => m.content).join("\n");
     return { content: this.payload, model: "fake" };
   }
-  // biome-ignore lint/suspicious/noExplicitAny: unused surface for this test
-  responsesCreate = (async () => ({})) as any;
-  // biome-ignore lint/suspicious/noExplicitAny: unused surface
-  filesCreate = (async () => ({})) as any;
-  // biome-ignore lint/suspicious/noExplicitAny: unused surface
-  filesRetrieve = (async () => ({})) as any;
-  // biome-ignore lint/suspicious/noExplicitAny: unused surface
-  filesContent = (async () => ({})) as any;
-  // biome-ignore lint/suspicious/noExplicitAny: unused surface
-  batchesCreate = (async () => ({})) as any;
-  // biome-ignore lint/suspicious/noExplicitAny: unused surface
-  batchesRetrieve = (async () => ({})) as any;
-  // biome-ignore lint/suspicious/noExplicitAny: unused surface
-  batchesCancel = (async () => ({})) as any;
+  /**
+   * The rest of the provider surface. Throwing beats `as any` stubs: if a
+   * future change makes scoring reach for one of these, the test says so
+   * instead of quietly returning an empty object.
+   */
+  private unused(name: string): never {
+    throw new Error(`FakeAi.${name} is not part of scoring`);
+  }
+  responsesCreate = () => this.unused("responsesCreate");
+  filesCreate = () => this.unused("filesCreate");
+  filesRetrieve = () => this.unused("filesRetrieve");
+  filesContent = () => this.unused("filesContent");
+  batchesCreate = () => this.unused("batchesCreate");
+  batchesRetrieve = () => this.unused("batchesRetrieve");
+  batchesCancel = () => this.unused("batchesCancel");
 }
 
 function payload(
@@ -103,7 +104,9 @@ describe("a session is scored without an operator present", () => {
     );
 
     expect(result.ok).toBe(true);
-    // Twelve 4s = 80% everywhere = 80 points, computed here from the rubric.
+    // Eleven 4s with dimension 7 not-applicable (no frames): every cluster is
+    // still at 80%, because a not-applicable dimension leaves the denominator
+    // smaller rather than counting as zero. Computed here from the rubric.
     expect(result.base).toBeCloseTo(80, 6);
     expect(result.status?.label).toBe("Strong");
     // The model is told NOT to compute a total; asking it to would produce a
@@ -158,9 +161,13 @@ describe("a session is scored without an operator present", () => {
     expect(corrected?.score).toBe(2);
     expect(corrected?.provenance).toBe("human");
     expect(corrected?.rationale).toBe("admin says otherwise");
-    // …while every machine dimension moved to the new run.
+    // …while every machine dimension moved to the new run. Dimension 7 is
+    // excluded: with no frames supplied it is not-applicable by design, not
+    // scored from the text (task 5.4).
     expect(
-      rows.filter((r) => r.dimension_n !== 1).every((r) => r.score === 5),
+      rows
+        .filter((r) => r.dimension_n !== 1 && r.dimension_n !== 7)
+        .every((r) => r.score === 5),
     ).toBe(true);
   });
 
@@ -211,7 +218,9 @@ describe("a session is scored without an operator present", () => {
 
     expect(result.ok).toBe(false);
     expect(result.failure).toBe("model-omitted-dimensions");
-    expect(result.detail).toContain("7");
+    // 7 is NOT among them — the vision path always supplies it (task 5.4).
+    expect(result.detail).toContain("8");
+    expect(result.detail).not.toMatch(/\b7\b/);
     expect((await storedScores()).length).toBe(0);
   });
 
@@ -222,6 +231,73 @@ describe("a session is scored without an operator present", () => {
     ).scoreSession(INPUT);
     expect(result.ok).toBe(false);
     expect(result.failure).toBe("model-returned-unparseable-output");
+  });
+
+  it("with FRAMES, dimension 7 is judged from the picture", async () => {
+    // The one dimension the transcript cannot answer: charts, slides, maps and
+    // word-study tools appear only in the picture.
+    class VisionAi extends FakeAi {
+      sawImages = 0;
+      override async chatComplete(
+        opts: AiChatOptions,
+      ): Promise<AiChatResponse> {
+        const withImages = opts.messages.find((m) => m.images?.length);
+        if (withImages) {
+          this.sawImages = withImages.images?.length ?? 0;
+          return {
+            content: JSON.stringify({
+              score: 5,
+              rationale: "slides and a map were on screen throughout",
+            }),
+            model: "fake",
+          };
+        }
+        return super.chatComplete(opts);
+      }
+    }
+    const ai = new VisionAi(ALL_FOURS);
+    const result = await new CoachScoringService(Database, ai).scoreSession({
+      ...INPUT,
+      frames: [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(ai.sawImages).toBe(2);
+    const rows = await storedScores();
+    expect(rows.find((r) => r.dimension_n === 7)?.score).toBe(5);
+  });
+
+  it("WITHOUT frames, dimension 7 is not-applicable — never scored low", async () => {
+    // Scoring low on missing evidence would be a false claim about the leader,
+    // made systematically on every session whose video could not be sampled.
+    const ai = new FakeAi(ALL_FOURS);
+    await new CoachScoringService(Database, ai).scoreSession(INPUT);
+    const rows = await storedScores();
+    const visual = rows.find((r) => r.dimension_n === 7);
+    expect(visual?.score).toBeNull();
+    expect(visual?.rationale).toContain("could not be observed");
+  });
+
+  it("a vision call returning nonsense does not fail the whole session", async () => {
+    class BrokenVision extends FakeAi {
+      override async chatComplete(
+        opts: AiChatOptions,
+      ): Promise<AiChatResponse> {
+        if (opts.messages.some((m) => m.images?.length)) {
+          return { content: "<html>gateway error</html>", model: "fake" };
+        }
+        return super.chatComplete(opts);
+      }
+    }
+    const result = await new CoachScoringService(
+      Database,
+      new BrokenVision(ALL_FOURS),
+    ).scoreSession({ ...INPUT, frames: [new Uint8Array([1])] });
+
+    // Eleven dimensions are still legitimately scored.
+    expect(result.ok).toBe(true);
+    const rows = await storedScores();
+    expect(rows.find((r) => r.dimension_n === 7)?.score).toBeNull();
   });
 
   it("the transcript reaches the model pseudonymously", async () => {

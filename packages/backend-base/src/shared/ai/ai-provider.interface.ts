@@ -16,6 +16,16 @@
 export interface AiChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
+  /**
+   * Optional images to send alongside `content`, as `data:` URLs.
+   *
+   * Additive: existing callers pass none and are unaffected. Added for coach
+   * session scoring, where the Visual Aids dimension asks whether charts,
+   * slides or word-study tools were on screen — a question the transcript
+   * cannot answer, because it is only in the picture. A provider that cannot
+   * accept images ignores these rather than failing.
+   */
+  images?: string[];
 }
 
 export interface AiChatOptions {
