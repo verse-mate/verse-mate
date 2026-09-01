@@ -1,0 +1,70 @@
+import { type Kysely, sql } from "kysely";
+import type Database from "../src/models/Database";
+
+/**
+ * Migration 2 of 9 (change: port-coach-pipeline, design D13).
+ *
+ * The leader roster moves out of the compiled-in `coach.data.json` and into
+ * `coach_leaders`, which already exists as the identity join source for
+ * admin-added leaders. Merging rather than adding a table keeps one roster:
+ * two would immediately disagree about who is a leader.
+ *
+ * `slug` is load-bearing. `coach_reports.coach_id`, `coach_notes.coach_id` and
+ * `coach_recording_links.coach_id` all key on the dataset slug
+ * (e.g. "bryan-bailey"), so a roster without it cannot be joined to a single
+ * report. It is UNIQUE for the same reason the reports key is: two leaders
+ * sharing a slug would each see the other's sessions.
+ *
+ * `is_benchmark` marks the one leader the coaching model is benchmarked
+ * against. Governance rule 1 — his name must not appear in another leader's
+ * report — is unimplementable without a marker, and the roster carried none:
+ * its fields were id / name / email / group / coachName / isCoach / zoomLink.
+ * A partial unique index enforces "at most one", because the rule is written in
+ * the singular and a second benchmark leader would make it ambiguous rather
+ * than merely wrong.
+ */
+export async function up(db: Kysely<Database>): Promise<void> {
+  console.log("Merging the leader roster into coach_leaders ...");
+
+  await db.schema
+    .alterTable("coach_leaders")
+    // Nullable for now: rows added before this migration have no slug, and
+    // 3.10's backfill is what fills them. Made NOT NULL once the bundle is gone.
+    .addColumn("slug", "text")
+    .addColumn("is_coach", "boolean", (col) => col.notNull().defaultTo(true))
+    .addColumn("zoom_link", "text", (col) => col.notNull().defaultTo(""))
+    .addColumn("is_benchmark", "boolean", (col) =>
+      col.notNull().defaultTo(false),
+    )
+    .execute();
+
+  await db.schema
+    .createIndex("coach_leaders_slug_uidx")
+    .unique()
+    .on("coach_leaders")
+    .column("slug")
+    .execute();
+
+  await sql`
+    CREATE UNIQUE INDEX coach_leaders_single_benchmark_uidx
+    ON coach_leaders ((true)) WHERE is_benchmark
+  `.execute(db);
+
+  console.log("coach_leaders extended successfully");
+}
+
+export async function down(db: Kysely<Database>): Promise<void> {
+  console.log("Reverting the leader roster merge ...");
+  await sql`DROP INDEX IF EXISTS coach_leaders_single_benchmark_uidx`.execute(
+    db,
+  );
+  await sql`DROP INDEX IF EXISTS coach_leaders_slug_uidx`.execute(db);
+  await db.schema
+    .alterTable("coach_leaders")
+    .dropColumn("is_benchmark")
+    .dropColumn("zoom_link")
+    .dropColumn("is_coach")
+    .dropColumn("slug")
+    .execute();
+  console.log("coach_leaders reverted successfully");
+}
