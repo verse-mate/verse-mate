@@ -180,10 +180,17 @@ import {
 } from "../notifications/verse-notification.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
+import { runsApiWorkers, runsMediaWorkers, workerRole } from "./worker-role";
 
 setup.onStart(async () => {
-  console.log("[QUEUE] Starting BullMQ workers...");
-  if (!batchMonitoringWorker.isRunning()) {
+  // Which workers are this container's job (task 5.3a). Default "all", so a
+  // single-container deployment is unchanged; splitting is an opt-in taken the
+  // day a second service is added.
+  const role = workerRole();
+  const apiSide = runsApiWorkers(role);
+  const media = runsMediaWorkers(role);
+  console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
+  if (apiSide && !batchMonitoringWorker.isRunning()) {
     console.log("[QUEUE] Monitoring worker not running, starting it now...");
     batchMonitoringWorker.run();
     console.log("[QUEUE] Monitoring worker started successfully");
@@ -191,7 +198,7 @@ setup.onStart(async () => {
     console.log("[QUEUE] Monitoring worker already running");
   }
 
-  if (!batchProcessingWorker.isRunning()) {
+  if (apiSide && !batchProcessingWorker.isRunning()) {
     console.log("[QUEUE] Processing worker not running, starting it now...");
     batchProcessingWorker.run();
     console.log("[QUEUE] Processing worker started successfully");
@@ -199,7 +206,7 @@ setup.onStart(async () => {
     console.log("[QUEUE] Processing worker already running");
   }
 
-  if (!audioGenerationWorker.isRunning()) {
+  if (media && !audioGenerationWorker.isRunning()) {
     console.log(
       "[QUEUE] Audio generation worker not running, starting it now...",
     );
@@ -209,7 +216,7 @@ setup.onStart(async () => {
     console.log("[QUEUE] Audio generation worker already running");
   }
 
-  if (!audioCleanupWorker.isRunning()) {
+  if (media && !audioCleanupWorker.isRunning()) {
     console.log("[QUEUE] Audio cleanup worker not running, starting it now...");
     audioCleanupWorker.run();
     console.log("[QUEUE] Audio cleanup worker started successfully");
@@ -218,12 +225,14 @@ setup.onStart(async () => {
   }
 
   try {
-    await registerAudioCleanupCron();
+    // Registered by the container that RUNS the worker, so a repeatable job
+    // cannot be scheduled by a container that would never process it.
+    if (media) await registerAudioCleanupCron();
   } catch (error) {
     console.error("[QUEUE] Failed to register audio cleanup cron:", error);
   }
 
-  if (!verseNotificationWorker.isRunning()) {
+  if (apiSide && !verseNotificationWorker.isRunning()) {
     console.log(
       "[QUEUE] Verse notification worker not running, starting it now...",
     );
@@ -234,12 +243,14 @@ setup.onStart(async () => {
   }
 
   try {
-    await registerVerseNotificationCron();
+    // Registered by the container that RUNS the worker, so a repeatable job
+    // cannot be scheduled by a container that would never process it.
+    if (apiSide) await registerVerseNotificationCron();
   } catch (error) {
     console.error("[QUEUE] Failed to register verse notification cron:", error);
   }
 
-  if (!coachIntakeWorker.isRunning()) {
+  if (media && !coachIntakeWorker.isRunning()) {
     console.log("[QUEUE] Coach intake worker not running, starting it now...");
     coachIntakeWorker.run();
     console.log("[QUEUE] Coach intake worker started successfully");
@@ -248,7 +259,9 @@ setup.onStart(async () => {
   }
 
   try {
-    await registerCoachIntakeCron();
+    // Registered by the container that RUNS the worker, so a repeatable job
+    // cannot be scheduled by a container that would never process it.
+    if (media) await registerCoachIntakeCron();
   } catch (error) {
     console.error("[QUEUE] Failed to register coach intake cron:", error);
   }
