@@ -276,3 +276,29 @@ export const LeaderMonthlyResponseSchema = t.Object({
   summary: t.Union([LeaderMonthlySummarySchema, t.Null()]),
   availableMonths: t.Array(t.String()),
 });
+
+/**
+ * The rubric contract served by GET /coach/rubric. Every field exists because a
+ * portal surface needs it: cluster names and weights for the breakdown,
+ * dimension -> cluster with each explainer and research-backed target for the
+ * expandable dimension detail, and BOTH band scales — composite status and the
+ * 1-5 dimension labels — so no client keeps its own list.
+ */
+export const RubricContractSchema = t.Object({
+  model: t.String(),
+  clusters: t.Array(t.Object({ name: t.String(), weight: t.Number() })),
+  dimensions: t.Array(
+    t.Object({
+      n: t.Number(),
+      name: t.String(),
+      cluster: t.String(),
+      clusterWeight: t.Number(),
+      what: t.String(),
+      target: t.String(),
+    }),
+  ),
+  statusBands: t.Array(
+    t.Object({ min: t.Number(), label: t.String(), emoji: t.String() }),
+  ),
+  dimensionBands: t.Array(t.Object({ min: t.Number(), label: t.String() })),
+});

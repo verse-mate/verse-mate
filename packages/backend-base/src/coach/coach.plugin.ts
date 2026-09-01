@@ -17,6 +17,7 @@ import {
   MonthlySchema,
   NoteSchema,
   ReportSchema,
+  RubricContractSchema,
 } from "./coach.schema";
 import { CoachService } from "./coach.service";
 import {
@@ -28,6 +29,7 @@ import {
   UpdateRecordingLinkDto,
   UpdateZoomLinkDto,
 } from "./dto/coach.dto";
+import { rubricContract } from "./rubric";
 
 /** Empty (clear) or a well-formed http(s) URL — shared by zoom + recording. */
 const isBlankOrHttpUrl = (v: string): boolean =>
@@ -170,6 +172,19 @@ const plugin = new Elysia()
   }))
   .group("/coach", (app) =>
     app
+      // ── The rubric contract ───────────────────────────────────────────
+      // The ONE definition of clusters, weights, the dimension mapping, each
+      // dimension's explainer and target, and both band scales. Declared
+      // BEFORE the session-derived routes because it carries no leader data:
+      // it is the scoring model itself, and the portal needs it to render an
+      // explainer for a score it is already showing. Serving it is what lets
+      // verse-mate-web delete its hand-maintained copies (task 8.2).
+      .get("/rubric", () => rubricContract(), {
+        response: {
+          200: RubricContractSchema,
+          ...StandardErrorResponses,
+        },
+      })
       .resolve({ as: "scoped" }, authDerive)
       .get(
         "/me",
