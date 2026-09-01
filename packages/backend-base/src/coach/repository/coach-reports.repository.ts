@@ -1,4 +1,6 @@
+import type { Transaction } from "kysely";
 import { sql } from "kysely";
+import type Database from "../../../../database/src/models/Database";
 
 import type { db } from "../../shared/shared.plugin";
 import type { CoachReportRow } from "../coach-store.transform";
@@ -65,8 +67,25 @@ const DATE_COL = sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as(
  * `listSummaries` reads only `summary`, `getDetail` adds `metrics` + `body`,
  * and `listMetrics` feeds trends/monthly aggregation without loading prose.
  */
+/**
+ * A write executor: the pooled connection, or an open transaction. The write
+ * methods take one so a caller can make a whole batch atomic — a mid-batch
+ * failure must not leave some reports committed and the provenance bump skipped.
+ */
+export type CoachReportsWriter = Transaction<Database>;
+
 export class CoachReportsRepository {
   constructor(private readonly db: db) {}
+
+  /** Run `fn` with every write inside one transaction. */
+  async transaction<T>(
+    fn: (writer: CoachReportsWriter) => Promise<T>,
+  ): Promise<T> {
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute((trx) => fn(trx as CoachReportsWriter));
+  }
 
   // ─── Reads ────────────────────────────────────────────────────────────────
 
@@ -299,9 +318,8 @@ export class CoachReportsRepository {
 
   // ─── Provenance ───────────────────────────────────────────────────────────
 
-  async getMeta(): Promise<DatasetMetaRow | null> {
-    const row = await this.db
-      .getOrCreateConnection()
+  async getMeta(writer?: CoachReportsWriter): Promise<DatasetMetaRow | null> {
+    const row = await (writer ?? this.db.getOrCreateConnection())
       .selectFrom("coach_dataset_meta")
       .selectAll()
       .executeTakeFirst();
@@ -315,9 +333,8 @@ export class CoachReportsRepository {
   }
 
   /** Total rows in the store — the truth `report_count` must reflect. */
-  async totalReports(): Promise<number> {
-    const row = await this.db
-      .getOrCreateConnection()
+  async totalReports(writer?: CoachReportsWriter): Promise<number> {
+    const row = await (writer ?? this.db.getOrCreateConnection())
       .selectFrom("coach_reports")
       .select((eb) => eb.fn.countAll<string>().as("n"))
       .executeTakeFirst();
@@ -329,9 +346,12 @@ export class CoachReportsRepository {
    * `report_count` to the store's actual row count. The DB trigger rejects any
    * attempt to move `version` backwards.
    */
-  async bumpMeta(generatedAt?: string | null): Promise<DatasetMetaRow> {
-    const conn = this.db.getOrCreateConnection();
-    const total = await this.totalReports();
+  async bumpMeta(
+    generatedAt?: string | null,
+    writer?: CoachReportsWriter,
+  ): Promise<DatasetMetaRow> {
+    const conn = writer ?? this.db.getOrCreateConnection();
+    const total = await this.totalReports(writer);
     await conn
       .insertInto("coach_dataset_meta")
       .values({
@@ -349,7 +369,7 @@ export class CoachReportsRepository {
         }),
       )
       .execute();
-    const meta = await this.getMeta();
+    const meta = await this.getMeta(writer);
     if (!meta) throw new Error("coach_dataset_meta missing after bump");
     return meta;
   }
@@ -370,7 +390,10 @@ export class CoachReportsRepository {
    * date: those are two reports, not a collision. On `(coach_id, session_date)`
    * alone the second was a hard unique violation.
    */
-  async upsert(row: CoachReportRow): Promise<UpsertedReport> {
+  async upsert(
+    row: CoachReportRow,
+    writer?: CoachReportsWriter,
+  ): Promise<UpsertedReport> {
     // ONE atomic statement: a SELECT-then-INSERT races two concurrent publishes
     // for the same leader+date into a unique-constraint 500. ON CONFLICT also
     // preserves the report's identity — the incoming id is appended to
@@ -398,7 +421,7 @@ export class CoachReportsRepository {
         END,
         updated_at = NOW()
       RETURNING id, (xmax = 0) AS created
-    `.execute(this.db.getOrCreateConnection());
+    `.execute(writer ?? this.db.getOrCreateConnection());
 
     const first = result.rows[0];
     return {
