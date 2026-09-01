@@ -11,6 +11,7 @@ import type { default as ChaptersTable } from "./Chapters";
 import type { default as CoachAdminsTable } from "./CoachAdmins";
 import type { default as CoachClassesTable } from "./CoachClasses";
 import type { default as CoachDatasetMetaTable } from "./CoachDatasetMeta";
+import type { default as CoachIntakeSessionsTable } from "./CoachIntakeSessions";
 import type { default as CoachLeadersTable } from "./CoachLeaders";
 import type { default as CoachMonthlyLeaderSummariesTable } from "./CoachMonthlyLeaderSummaries";
 import type { default as CoachMonthlyNarrativesTable } from "./CoachMonthlyNarratives";
@@ -201,6 +202,8 @@ export default interface PublicSchema {
   coach_report_dimension_scores: CoachReportDimensionScoresTable;
 
   coach_session_assets: CoachSessionAssetsTable;
+
+  coach_intake_sessions: CoachIntakeSessionsTable;
 
   coach_monthly_narratives: CoachMonthlyNarrativesTable;
 
