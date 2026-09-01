@@ -133,9 +133,11 @@ export class CoachReportsRepository {
   }
 
   /** How many sessions a coach has (for pagination + roster counts). */
-  async countForCoach(coachId: string): Promise<number> {
-    const row = await this.db
-      .getOrCreateConnection()
+  async countForCoach(
+    coachId: string,
+    writer?: CoachReportsWriter,
+  ): Promise<number> {
+    const row = await (writer ?? this.db.getOrCreateConnection())
       .selectFrom("coach_reports")
       .select((eb) => eb.fn.countAll<string>().as("n"))
       .where("coach_id", "=", coachId)
