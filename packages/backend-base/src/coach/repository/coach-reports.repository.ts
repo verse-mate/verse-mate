@@ -52,6 +52,24 @@ function isoDate(value: unknown): string {
   return String(value).slice(0, 10);
 }
 
+/**
+ * Clamp a pagination input to a whole number in range. `Math.min(Math.max(n, 1),
+ * 100)` returns NaN for NaN, and a fractional value reaches SQL as-is, so a
+ * `?limit=abc` came back as `invalid input syntax for type bigint: "NaN"` — a
+ * 500 with an internal detail in it. Anything not a finite number falls back to
+ * the default.
+ */
+function clampInt(
+  value: number | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(Math.trunc(n), min), max);
+}
+
 /** Select `session_date` as a yyyy-mm-dd string, never as a Date. */
 const DATE_COL = sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as(
   "session_date",
@@ -94,8 +112,8 @@ export class CoachReportsRepository {
     coachId: string,
     opts: { limit?: number; offset?: number } = {},
   ): Promise<ReportSummaryRow[]> {
-    const limit = Math.min(Math.max(opts.limit ?? 25, 1), 100);
-    const offset = Math.max(opts.offset ?? 0, 0);
+    const limit = clampInt(opts.limit, 25, 1, 100);
+    const offset = clampInt(opts.offset, 0, 0, Number.MAX_SAFE_INTEGER);
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
