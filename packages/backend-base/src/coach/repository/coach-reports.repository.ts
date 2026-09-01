@@ -310,6 +310,22 @@ export class CoachReportsRepository {
     }));
   }
 
+  /**
+   * Just the distinct coach ids in the store. The snapshot used to call
+   * `listAllMetrics()` for this, which loads every report's `summary` and
+   * `metrics` jsonb across the whole table to extract one distinct column.
+   */
+  async listCoachIds(): Promise<string[]> {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_reports")
+      .select("coach_id")
+      .distinct()
+      .orderBy("coach_id")
+      .execute();
+    return rows.map((r) => r.coach_id);
+  }
+
   /** Metrics for every coach — the program-wide monthly rollup. */
   async listAllMetrics(): Promise<
     Array<{
