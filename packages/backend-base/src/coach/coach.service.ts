@@ -628,7 +628,13 @@ export class CoachService {
   /** Turn an admin-added leader row into a roster record (no reports yet). */
   private static syntheticRecord(row: AddedLeaderRow): CoachRecord {
     return {
-      id: row.id,
+      // The SLUG, not the row's uuid. Every overlay — coach_reports,
+      // coach_notes, coach_recording_links — keys on the slug, so a record
+      // carrying the uuid joins to nothing and the leader sees an empty
+      // history. Harmless while the bundle supplied slug-keyed records for
+      // real leaders; after task 7.1 deletes it, EVERY leader resolves through
+      // here, so the uuid would empty every history at once.
+      id: row.slug ?? row.id,
       name: row.name || CoachService.nameFromEmail(row.email),
       email: row.email,
       group: row.group_name,
