@@ -818,8 +818,14 @@ export class CoachService {
     }
     const record = await this.resolveById(coachId);
     if (!record) return { items: [], total: 0 };
-    const limit = Math.min(Math.max(opts.limit ?? 25, 1), 100);
-    const offset = Math.max(opts.offset ?? 0, 0);
+    // Same clamp as the store path, so the bundle fallback cannot be handed a
+    // NaN slice window and quietly return nothing.
+    const limit = Number.isFinite(Number(opts.limit))
+      ? Math.min(Math.max(Math.trunc(Number(opts.limit)), 1), 100)
+      : 25;
+    const offset = Number.isFinite(Number(opts.offset))
+      ? Math.max(Math.trunc(Number(opts.offset)), 0)
+      : 0;
     const page = record.reports.slice(offset, offset + limit);
     return {
       items: page.map((r) => ({

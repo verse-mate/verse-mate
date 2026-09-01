@@ -209,14 +209,17 @@ const plugin = new Elysia()
           const me = await coachService.getMe(currentUserId);
           if (!me?.profile) throw new ForbiddenError("Not a coaching account");
           return coachService.getReportSummaries(me.profile.id, {
-            limit: query.limit ? Number(query.limit) : undefined,
-            offset: query.offset ? Number(query.offset) : undefined,
+            limit: query.limit,
+            offset: query.offset,
           });
         },
         {
+          // Validated at the boundary: a non-numeric page input is a CLIENT
+          // error. Parsed as strings and coerced with Number() it reached SQL
+          // as NaN and returned a 500 quoting Postgres.
           query: t.Object({
-            limit: t.Optional(t.String()),
-            offset: t.Optional(t.String()),
+            limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
+            offset: t.Optional(t.Numeric({ minimum: 0 })),
           }),
           response: {
             200: t.Object({
