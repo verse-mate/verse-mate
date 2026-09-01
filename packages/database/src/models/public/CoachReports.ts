@@ -23,6 +23,12 @@ export default interface CoachReportsTable {
 
   body: ColumnType<unknown, unknown, unknown>;
 
+  evidence: ColumnType<
+    unknown | null,
+    unknown | null | undefined,
+    unknown | null
+  >;
+
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
