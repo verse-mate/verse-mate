@@ -36,6 +36,21 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("is_benchmark", "boolean", (col) =>
       col.notNull().defaultTo(false),
     )
+    // Intake attribution, migrated from the host's config/leader_map.json.
+    // The recording bot files EVERY leader's meeting under one shared host
+    // address, so the sender cannot identify the leader — the session TITLE
+    // does. These keywords are what task 4.2 matches on, and the file they came
+    // from has no home once the host is retired. In the database and
+    // admin-editable (design open question 6, decided): changing a keyword is
+    // an UPDATE, not a deploy.
+    .addColumn("title_match", sql`text[]`, (col) =>
+      col.notNull().defaultTo(sql`ARRAY[]::text[]`),
+    )
+    // Alternate addresses the SAME leader may appear under. Delivery still goes
+    // to `email`.
+    .addColumn("alt_emails", sql`text[]`, (col) =>
+      col.notNull().defaultTo(sql`ARRAY[]::text[]`),
+    )
     .execute();
 
   await db.schema
@@ -61,6 +76,8 @@ export async function down(db: Kysely<Database>): Promise<void> {
   await sql`DROP INDEX IF EXISTS coach_leaders_slug_uidx`.execute(db);
   await db.schema
     .alterTable("coach_leaders")
+    .dropColumn("alt_emails")
+    .dropColumn("title_match")
     .dropColumn("is_benchmark")
     .dropColumn("zoom_link")
     .dropColumn("is_coach")
