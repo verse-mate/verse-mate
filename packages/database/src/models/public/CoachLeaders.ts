@@ -34,6 +34,18 @@ export default interface CoachLeadersTable {
 
   alt_emails: ColumnType<string[], string[] | undefined, string[]>;
 
+  not_teaching_attested_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
+
+  not_teaching_attested_by: ColumnType<
+    UserId | null,
+    UserId | null | undefined,
+    UserId | null
+  >;
+
   invited_by: ColumnType<UserId | null, UserId | null, UserId | null>;
 
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
