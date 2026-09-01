@@ -9,9 +9,11 @@ import type { default as BookIntroductionsTable } from "./BookIntroductions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
 import type { default as CoachClassesTable } from "./CoachClasses";
+import type { default as CoachDatasetMetaTable } from "./CoachDatasetMeta";
 import type { default as CoachLeadersTable } from "./CoachLeaders";
 import type { default as CoachNotesTable } from "./CoachNotes";
 import type { default as CoachRecordingLinksTable } from "./CoachRecordingLinks";
+import type { default as CoachReportsTable } from "./CoachReports";
 import type { default as CoachZoomLinksTable } from "./CoachZoomLinks";
 import type { default as ConversationsTable } from "./Conversations";
 import type { default as DailyVerseHistoryTable } from "./DailyVerseHistory";
@@ -183,7 +185,11 @@ export default interface PublicSchema {
 
   coach_recording_links: CoachRecordingLinksTable;
 
+  coach_dataset_meta: CoachDatasetMetaTable;
+
   coach_notes: CoachNotesTable;
+
+  coach_reports: CoachReportsTable;
 
   notes: NotesTable;
 
