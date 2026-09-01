@@ -87,8 +87,9 @@ export interface CoachReport {
   /** Ordered PDF-parity sections rendered after Recommendations. Optional so
    *  reports generated before prose/sections export still type-check. */
   sections?: CoachSection[];
-  docUrl: string;
-  pdfUrl: string;
+  /** Legacy Google Drive links. Present only on backfilled reports (6.4). */
+  docUrl?: string;
+  pdfUrl?: string;
   /** Admin-editable recording URL, overlaid from coach_recording_links.
    *  Optional so bundled reports (which don't carry one) still type-check. */
   recordingUrl?: string;
@@ -559,8 +560,9 @@ export class CoachService {
     "dimensions",
     "bigIdeas",
     "feedback",
-    "docUrl",
-    "pdfUrl",
+    // docUrl / pdfUrl are NOT here: the Drive stage is not ported, so nothing
+    // can supply them and requiring them would move the same wall one step
+    // earlier, to the write boundary.
   ];
 
   /**
