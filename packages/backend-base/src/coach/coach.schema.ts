@@ -114,8 +114,15 @@ export const ReportSchema = t.Object({
   // Ordered PDF-parity sections rendered after Recommendations. Optional so
   // reports generated before this feature still validate.
   sections: t.Optional(t.Array(SectionSchema)),
-  docUrl: t.String(),
-  pdfUrl: t.String(),
+  // OPTIONAL (task 6.4). These were t.String(), unlike every optional field
+  // beside them, so the first report produced without a Google Drive doc would
+  // have failed response validation — and because the list response is
+  // validated as a whole, one such report broke the leader's ENTIRE session
+  // list. The Drive upload stage is not ported (it lived on the retired host),
+  // so nothing produces them for new reports; the 112 backfilled reports still
+  // carry theirs and are unaffected.
+  docUrl: t.Optional(t.String()),
+  pdfUrl: t.Optional(t.String()),
   // Admin-editable recording URL + coaching notes, overlaid from the DB.
   // Optional so bundled reports without them still validate.
   recordingUrl: t.Optional(t.String()),
