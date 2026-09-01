@@ -168,6 +168,11 @@ import {
 } from "../bible/audio/audio-cleanup.worker";
 import { audioGenerationQueue } from "../bible/audio/audio-generation.queue";
 import { audioGenerationWorker } from "../bible/audio/audio-generation.worker";
+import { coachIntakeQueue } from "../coach/coach-intake.queue";
+import {
+  coachIntakeWorker,
+  registerCoachIntakeCron,
+} from "../coach/coach-intake.worker";
 import { verseNotificationQueue } from "../notifications/verse-notification.queue";
 import {
   registerVerseNotificationCron,
@@ -232,6 +237,20 @@ setup.onStart(async () => {
     await registerVerseNotificationCron();
   } catch (error) {
     console.error("[QUEUE] Failed to register verse notification cron:", error);
+  }
+
+  if (!coachIntakeWorker.isRunning()) {
+    console.log("[QUEUE] Coach intake worker not running, starting it now...");
+    coachIntakeWorker.run();
+    console.log("[QUEUE] Coach intake worker started successfully");
+  } else {
+    console.log("[QUEUE] Coach intake worker already running");
+  }
+
+  try {
+    await registerCoachIntakeCron();
+  } catch (error) {
+    console.error("[QUEUE] Failed to register coach intake cron:", error);
   }
 
   // Check for existing active batches and start monitoring them
@@ -299,6 +318,8 @@ setup.onStop(async () => {
   audioCleanupWorker.close();
   verseNotificationQueue.close();
   verseNotificationWorker.close();
+  coachIntakeQueue.close();
+  coachIntakeWorker.close();
 });
 
 export default setup;
