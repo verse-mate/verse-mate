@@ -439,35 +439,52 @@ export class CoachService {
       }
     }
 
-    const accepted: Array<{
-      id: string;
-      coachId: string;
-      date: string;
-      created: boolean;
-    }> = [];
-    for (const report of input.reports) {
-      const result = await this.reportsRepository.upsert({
-        id:
-          report.id ||
-          CoachService.mintReportId(
-            report.coachId,
-            report.date,
-            report.sourceSessionId,
+    // ONE transaction for the whole batch. Without it a database error at
+    // report k left reports 1..k-1 committed AND skipped the provenance bump,
+    // so the store held rows that `coach_dataset_meta` did not account for and
+    // no caller could tell a partial publish from a complete one. Rolling back
+    // also leaves the batch intact for the caller to retry.
+    const { accepted, meta } = await this.reportsRepository.transaction(
+      async (writer) => {
+        const written: Array<{
+          id: string;
+          coachId: string;
+          date: string;
+          created: boolean;
+        }> = [];
+        for (const report of input.reports) {
+          written.push(
+            await this.reportsRepository.upsert(
+              {
+                id:
+                  report.id ||
+                  CoachService.mintReportId(
+                    report.coachId,
+                    report.date,
+                    report.sourceSessionId,
+                  ),
+                coach_id: report.coachId,
+                session_date: report.date,
+                source_session_id: report.sourceSessionId,
+                legacy_ids: [],
+                summary: report.summary ?? {},
+                metrics: report.metrics ?? {},
+                body: report.body ?? {},
+              },
+              writer,
+            ),
+          );
+        }
+        return {
+          accepted: written,
+          meta: await this.reportsRepository.bumpMeta(
+            input.generatedAt ?? null,
+            writer,
           ),
-        coach_id: report.coachId,
-        session_date: report.date,
-        source_session_id: report.sourceSessionId,
-        legacy_ids: [],
-        summary: report.summary ?? {},
-        metrics: report.metrics ?? {},
-        body: report.body ?? {},
-      });
-      accepted.push(result);
-    }
-
-    const meta = await this.reportsRepository.bumpMeta(
-      input.generatedAt ?? null,
+        };
+      },
     );
+
     return {
       accepted,
       version: meta.version,
