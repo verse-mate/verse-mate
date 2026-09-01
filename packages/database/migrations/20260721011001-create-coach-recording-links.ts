@@ -4,7 +4,9 @@ import type Database from "../src/models/Database";
 /**
  * Bible-Coach portal: per-session recording link.
  *
- * A session's report is served from the bundled dataset; the recording URL
+ * A session's report was served from a compiled-in bundle when this was
+ * written, and from coach_reports since (change: port-coach-pipeline); the
+ * recording URL
  * (Zoom / Fireflies / Drive) is admin-editable and overlaid onto the report at
  * serve time. Keyed by (coach_id, report_id) — the same string ids used in the
  * dataset — so it needs no foreign key into a reports table (there isn't one).
