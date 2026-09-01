@@ -507,6 +507,83 @@ const plugin = new Elysia()
       // ─── Admin oversight (program admins only) ──────────────────────────
       // Every /coach/admin/* route requires isAdmin(); non-admin coaches get
       // 403 so the web client keeps them in their own dashboard.
+      //
+      // Pending re-share requests (tasks 6.3b, 8.5a). Admin-guarded because
+      // sending emails a leader in VerseMate's name: an unguarded endpoint
+      // would let anyone who knows a session id do that.
+      .get(
+        "/admin/reshares",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return { requests: await coachService.listPendingReshares() };
+        },
+        {
+          response: {
+            200: t.Object({
+              requests: t.Array(
+                t.Object({
+                  sourceSessionId: t.String(),
+                  coachId: t.Union([t.String(), t.Null()]),
+                  title: t.String(),
+                  sessionDate: t.String(),
+                  requestedAt: t.Date(),
+                  attempts: t.Number(),
+                }),
+              ),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/reshares/:sourceSessionId/send",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.sendReshareRequest(
+            params.sourceSessionId,
+          );
+          if (!result.sent) {
+            throw new ValidationError(
+              `Re-share not sent: ${result.refusal ?? "unknown"}`,
+            );
+          }
+          return { sent: true };
+        },
+        {
+          response: {
+            200: t.Object({ sent: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/reshares/:sourceSessionId/resolve",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const cleared = await coachService.resolveReshare(
+            params.sourceSessionId,
+          );
+          if (!cleared) throw new NotFoundError("No pending re-share request");
+          // The session re-enters retrieval; intake idempotence means the
+          // report it eventually produces is not a duplicate.
+          return { resolved: true };
+        },
+        {
+          response: {
+            200: t.Object({ resolved: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/admin/coaches",
         async ({ store: { coachService }, currentUserId }) => {

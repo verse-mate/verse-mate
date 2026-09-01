@@ -389,6 +389,44 @@ export class CoachService {
     return this.retainedMedia.mint(input);
   }
 
+  /**
+   * Sessions whose recording could not be retrieved and whose re-share request
+   * is still outstanding — the admin surface for task 8.5a.
+   */
+  async listPendingReshares() {
+    const { CoachRetrievalService } = await import("./coach-retrieval.service");
+    const { CoachArchiveService } = await import("./coach-archive.service");
+    const { HttpFirefliesClient } = await import("./fireflies.client");
+    // Listing needs no provider call; the client is only constructed because
+    // the sweep shares this service.
+    return new CoachRetrievalService(
+      this.db,
+      new CoachArchiveService(this.db, new HttpFirefliesClient()),
+    ).pendingReshares();
+  }
+
+  /** Clear a re-share request and return the session to retrieval (4.9a). */
+  async resolveReshare(sourceSessionId: string): Promise<boolean> {
+    const { CoachRetrievalService } = await import("./coach-retrieval.service");
+    const { CoachArchiveService } = await import("./coach-archive.service");
+    const { HttpFirefliesClient } = await import("./fireflies.client");
+    return new CoachRetrievalService(
+      this.db,
+      new CoachArchiveService(this.db, new HttpFirefliesClient()),
+    ).resolveReshare(sourceSessionId);
+  }
+
+  /** Send the re-share request for one pending session (6.3b). */
+  async sendReshareRequest(sourceSessionId: string) {
+    const { CoachReshareService } = await import("./coach-reshare.service");
+    if (!this.notification) {
+      return { sent: false, refusal: "send-failed" as const };
+    }
+    return new CoachReshareService(this.db, this.notification).send(
+      sourceSessionId,
+    );
+  }
+
   /** Whether a session has retained material. Mints nothing. */
   async describeRetainedMedia(coachId: string, reportIds: string[]) {
     return this.retainedMedia.describeMany(coachId, reportIds);
