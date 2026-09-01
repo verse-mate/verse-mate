@@ -370,9 +370,15 @@ export class CoachService {
    * and already-delivered `?s=<id>` links stay valid. The response carries each
    * report's assigned id so the publisher can build links without deriving one.
    *
-   * Guards the corpus against a stale publisher: when `expectedCount` is given
-   * and is lower than what the store already holds, the publish is refused
-   * rather than allowed to shrink live data.
+   * Guards the corpus against a stale writer: when `expectedCounts` names a
+   * leader whose claimed total is lower than what the store already holds FOR
+   * THAT LEADER, the write is refused rather than allowed to shrink live data.
+   *
+   * Per leader, not global. Compared against the whole store, one leader's
+   * incremental session looked like a corpus of 1 replacing a corpus of N, so
+   * every valid incremental write was refused — and the guard is only meaningful
+   * per leader anyway, since a write naming one leader says nothing about
+   * another's history. A leader absent from `expectedCounts` is not judged.
    */
   async ingestReports(input: {
     reports: Array<{
@@ -386,7 +392,11 @@ export class CoachService {
       body: Record<string, unknown>;
     }>;
     generatedAt?: string | null;
-    expectedCount?: number | null;
+    /**
+     * The writer's claimed TOTAL number of reports per leader, keyed by coach
+     * id. A leader not named here is not judged by this batch.
+     */
+    expectedCounts?: Record<string, number> | null;
   }): Promise<{
     accepted: Array<{
       id: string;
@@ -397,14 +407,16 @@ export class CoachService {
     version: string;
     reportCount: number;
   }> {
-    const stored = await this.reportsRepository.totalReports();
-    if (
-      typeof input.expectedCount === "number" &&
-      input.expectedCount < stored
-    ) {
-      throw new ConflictError(
-        `Publish refused: publisher reports ${input.expectedCount} sessions but the store holds ${stored} — refusing to shrink the corpus`,
-      );
+    for (const [coachId, expected] of Object.entries(
+      input.expectedCounts ?? {},
+    )) {
+      if (typeof expected !== "number") continue;
+      const stored = await this.reportsRepository.countForCoach(coachId);
+      if (expected < stored) {
+        throw new ConflictError(
+          `Write refused for ${coachId}: the writer reports ${expected} sessions but the store holds ${stored} for that leader — refusing to shrink the live corpus`,
+        );
+      }
     }
 
     // Validate the WHOLE batch before writing anything, so a bad report at
