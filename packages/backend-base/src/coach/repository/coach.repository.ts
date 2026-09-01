@@ -31,9 +31,15 @@ export interface CoachClassWithOwner extends CoachClassRow {
   userId: string;
 }
 
-/** An admin-added leader row (roster placeholder before any report exists). */
+/** A roster leader row from coach_leaders. */
 export interface AddedLeaderRow {
   id: string;
+  /**
+   * The dataset slug every overlay keys on — coach_reports.coach_id,
+   * coach_notes.coach_id, coach_recording_links.coach_id. Null only for a row
+   * added before task 3.1, or one 3.10's backfill has not reached.
+   */
+  slug: string | null;
   email: string;
   name: string;
   group_name: string;
@@ -278,7 +284,7 @@ export class CoachRepository {
     return this.db
       .getOrCreateConnection()
       .selectFrom("coach_leaders")
-      .select(["id", "email", "name", "group_name", "coach_name"])
+      .select(["id", "slug", "email", "name", "group_name", "coach_name"])
       .execute();
   }
 
@@ -288,7 +294,7 @@ export class CoachRepository {
       .getOrCreateConnection()
       .selectFrom("coach_leaders")
       .where("email", "=", email.trim().toLowerCase())
-      .select(["id", "email", "name", "group_name", "coach_name"])
+      .select(["id", "slug", "email", "name", "group_name", "coach_name"])
       .executeTakeFirst();
     return row ?? null;
   }
@@ -311,7 +317,7 @@ export class CoachRepository {
         coach_name: input.coachName,
         invited_by: input.invitedBy,
       })
-      .returning(["id", "email", "name", "group_name", "coach_name"])
+      .returning(["id", "slug", "email", "name", "group_name", "coach_name"])
       .executeTakeFirstOrThrow();
   }
 
