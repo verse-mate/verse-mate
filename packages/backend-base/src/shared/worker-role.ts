@@ -3,7 +3,7 @@
  *
  * Production is one `verse-mate-backend` container today, and every worker
  * starts unconditionally from `shared.plugin`'s `onStart`. Adding a second
- * container of the same image would therefore run EVERY worker twice — two
+ * container of the same image would therefore run EVERY worker twice, two
  * intake polls against the same provider quota, two audio generators competing
  * for the same jobs.
  *

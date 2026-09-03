@@ -12,7 +12,7 @@ import { ObjectStorageService } from "../shared/storage/storage.service";
  * often revisited; a transcript is small and is the evidence a score is
  * defended with, so it is NOT pruned and lives as long as its report.
  *
- * The third rule — a session's material goes when its report is deleted — is
+ * The third rule, a session's material goes when its report is deleted, is
  * not implemented here at all. It is an ON DELETE CASCADE in migration 7, so
  * it is a database guarantee rather than a step someone has to remember to
  * call.
@@ -43,7 +43,7 @@ export class CoachRetentionService {
 
     // Rank each leader's recordings newest-first and take everything past the
     // bound. Ranked in SQL rather than by loading every asset and sorting in
-    // memory — this runs against the whole corpus. Raw, because this kysely
+    // memory, this runs against the whole corpus. Raw, because this kysely
     // version has no window-function builder.
     const doomed = await sql<{ id: string; storage_key: string }>`
       SELECT id, storage_key FROM (
@@ -53,6 +53,14 @@ export class CoachRetentionService {
                ) AS rank
         FROM coach_session_assets
         WHERE kind = 'recording'
+          -- Unattributed sessions are EXCLUDED from the bound. The archive
+          -- writes coach_id = '' when attribution has not resolved, so every
+          -- such recording shared one partition and everything past the 4th
+          -- was deleted from object storage. That destroyed the source material
+          -- for exactly the sessions an admin still needs in order to fix the
+          -- attribution. They are bounded by their report's lifetime instead,
+          -- through migration 7's cascade.
+          AND coach_id <> ''
       ) ranked
       WHERE rank > ${RECORDINGS_KEPT_PER_LEADER}
     `.execute(conn);
@@ -63,7 +71,7 @@ export class CoachRetentionService {
       const ok = await this.storage.deleteObject(asset.storage_key);
       if (!ok) {
         // Leave the row. Deleting it while the bytes survive orphans them
-        // permanently — nothing would ever name that key again.
+        // permanently, nothing would ever name that key again.
         failed += 1;
         continue;
       }

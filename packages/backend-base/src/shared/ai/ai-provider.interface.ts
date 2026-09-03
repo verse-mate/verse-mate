@@ -6,8 +6,8 @@
  * `new OpenAI(...)` directly.
  *
  * Initial implementations:
- *  - openai (OpenAiProvider) — production, uses `openai` SDK
- *  - stub (StubAiProvider) — tests / dev, returns deterministic fixture
+ *  - openai (OpenAiProvider), production, uses `openai` SDK
+ *  - stub (StubAiProvider), tests / dev, returns deterministic fixture
  *
  * Future providers (Anthropic, Vertex, Bedrock, etc.) plug in here without
  * touching consumer code. Selected via `AI_PROVIDER` env (default: openai).
@@ -21,7 +21,7 @@ export interface AiChatMessage {
    *
    * Additive: existing callers pass none and are unaffected. Added for coach
    * session scoring, where the Visual Aids dimension asks whether charts,
-   * slides or word-study tools were on screen — a question the transcript
+   * slides or word-study tools were on screen, a question the transcript
    * cannot answer, because it is only in the picture. A provider that cannot
    * accept images ignores these rather than failing.
    */
@@ -29,11 +29,11 @@ export interface AiChatMessage {
 }
 
 export interface AiChatOptions {
-  /** Model identifier — provider-specific. e.g. "gpt-5", "gpt-5-nano", "stub". */
+  /** Model identifier, provider-specific. e.g. "gpt-5", "gpt-5-nano", "stub". */
   model: string;
   /** Conversation messages in order. */
   messages: AiChatMessage[];
-  /** 0..2 — sampling randomness. Provider may clamp. */
+  /** 0..2, sampling randomness. Provider may clamp. */
   temperature?: number;
   /** Optional max tokens for the response. */
   maxTokens?: number;
@@ -83,7 +83,7 @@ export interface AiResponseResult {
 }
 
 /**
- * Files API — used by admin batch operations to upload JSONL request files
+ * Files API, used by admin batch operations to upload JSONL request files
  * and download result files. Per OpenAI semantics: upload returns a file_id
  * which is then referenced by Batch operations.
  */
@@ -110,7 +110,7 @@ export interface AiFileResult {
 }
 
 /**
- * Batch API — used by admin to enqueue large JSONL request batches against
+ * Batch API, used by admin to enqueue large JSONL request batches against
  * OpenAI's batch endpoint. Per OpenAI semantics: batch references an uploaded
  * input_file_id and produces an output_file_id (and possibly an error_file_id).
  */
@@ -119,7 +119,7 @@ export interface AiBatchCreateOptions {
   inputFileId: string;
   /** Endpoint the batched requests target. */
   endpoint: "/v1/responses" | "/v1/chat/completions" | "/v1/embeddings";
-  /** Completion window — currently OpenAI only accepts "24h". */
+  /** Completion window, currently OpenAI only accepts "24h". */
   completionWindow?: "24h";
   /** Optional metadata (echoed back on retrieve). */
   metadata?: Record<string, string>;

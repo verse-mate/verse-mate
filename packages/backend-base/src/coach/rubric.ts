@@ -1,5 +1,5 @@
 /**
- * The coaching rubric — the ONE authoritative definition of the cluster names
+ * The coaching rubric, the ONE authoritative definition of the cluster names
  * and weights, the dimension-to-cluster mapping, each dimension's plain-English
  * description and research-backed target, and the band labels.
  *
@@ -7,7 +7,7 @@
  * it existed the same values were hand-maintained in `dimensionInfo.ts`,
  * `CoachAdminScreen.tsx`, `CoachTrendCharts.tsx`, `dashboardTheme.ts` and
  * `coachService.statusColor` in the portal, and again in the retired host's
- * generator — so changing a weight meant finding every copy, and a missed one
+ * generator, so changing a weight meant finding every copy, and a missed one
  * showed a leader a breakdown that did not add up to their own score.
  * A second hand-maintained copy of these values is a defect (spec: "Rubric
  * Definition Is Single-Source").
@@ -50,7 +50,7 @@ export const DIMENSIONS: readonly RubricDimension[] = [
     n: 1,
     name: "Session Structure & Flow",
     cluster: "Teaching Craft",
-    what: "How well the session follows the 10-step blueprint — fellowship, opening prayer, newcomer welcome, Big Ideas review, context, scripture reading, teaching, application, and closing prayer.",
+    what: "How well the session follows the 10-step blueprint, fellowship, opening prayer, newcomer welcome, Big Ideas review, context, scripture reading, teaching, application, and closing prayer.",
     target: "All 10 steps, well-paced",
   },
   {
@@ -64,14 +64,14 @@ export const DIMENSIONS: readonly RubricDimension[] = [
     n: 3,
     name: "Scripture Engagement",
     cluster: "Teaching Craft",
-    what: "Depth of engagement with the text — how many cross-references are used and how much of the discussion stays grounded in scripture.",
+    what: "Depth of engagement with the text, how many cross-references are used and how much of the discussion stays grounded in scripture.",
     target: "6+ cross-references (Lifeway / REVEAL)",
   },
   {
     n: 4,
     name: "Facilitation vs. Lecture",
     cluster: "Engaging People",
-    what: "The balance of discussion vs. lecture — how much the room does the thinking versus the leader talking (measured discussion-only, excluding scripture reading and the newcomer welcome).",
+    what: "The balance of discussion vs. lecture, how much the room does the thinking versus the leader talking (measured discussion-only, excluding scripture reading and the newcomer welcome).",
     target: "Leader talk ≤ 30–35% (Lifeway 30% Rule)",
   },
   {
@@ -99,7 +99,7 @@ export const DIMENSIONS: readonly RubricDimension[] = [
     n: 8,
     name: "Vulnerability / Authenticity",
     cluster: "Being Real",
-    what: "Personal honesty with real cost, weighted by depth rather than count — the modeling that builds a room safe enough for members to open up. Scored against the leader’s rolling baseline.",
+    what: "Personal honesty with real cost, weighted by depth rather than count, the modeling that builds a room safe enough for members to open up. Scored against the leader’s rolling baseline.",
     target: "Costly, sustained authenticity",
   },
   {
@@ -113,26 +113,26 @@ export const DIMENSIONS: readonly RubricDimension[] = [
     n: 10,
     name: "Homework References",
     cluster: "Building Ministry",
-    what: "Use of homework — Precept workbooks and “The Guarantee” — referenced and rewarded so prepared members are differentiated.",
+    what: "Use of homework, Precept workbooks and “The Guarantee”, referenced and rewarded so prepared members are differentiated.",
     target: "Referenced and rewarded",
   },
   {
     n: 11,
     name: "Prayer",
     cluster: "Being Real",
-    what: "Prayer woven through the session — delegated opening and closing prayer, prayer requests, and prayer-chain infrastructure.",
+    what: "Prayer woven through the session, delegated opening and closing prayer, prayer requests, and prayer-chain infrastructure.",
     target: "Delegated open + close",
   },
   {
     n: 12,
     name: "Leader Development",
     cluster: "Building Ministry",
-    what: "Observable, in-session development of another leader — a named apprentice, a delegated facilitation window, or public coaching (2 Timothy 2:2).",
+    what: "Observable, in-session development of another leader, a named apprentice, a delegated facilitation window, or public coaching (2 Timothy 2:2).",
     target: "Visible apprentice hand-off",
   },
 ];
 
-/** Composite bands, highest first — the first whose `min` is met wins. */
+/** Composite bands, highest first, the first whose `min` is met wins. */
 export const STATUS_BANDS: readonly StatusBand[] = [
   { min: 85, label: "Exceptional", emoji: "\u{1F537}" },
   { min: 72, label: "Strong", emoji: "\u{1F7E2}" },
@@ -162,7 +162,7 @@ export function statusForScore(score: number): StatusBand {
 /**
  * Each cluster's percentage: the sum of its scored dimensions over five times
  * how many were scored. A not-applicable dimension (null) is excluded from the
- * DENOMINATOR rather than counted as zero, so it never penalizes — a cluster
+ * DENOMINATOR rather than counted as zero, so it never penalizes, a cluster
  * scored on its remaining dimensions can still reach 100% of its full weight.
  * A cluster with nothing scored is null, not 0/0.
  */
@@ -215,6 +215,61 @@ export function composeBaseScore(scores: ReadonlyMap<number, number | null>): {
     base: clusters.reduce((n, c) => n + c.contribution, 0),
     clusters,
   };
+}
+
+/**
+ * The two bonuses that sit on top of the weighted base (task 5.2).
+ *
+ * Derived from the 119 published reports in the bundled corpus, which fix the
+ * rule exactly: `newcomerBonus` is the first-timer count capped at 5, and
+ * `sizeBonus` starts at 16 attendees and adds half a point per head to a
+ * maximum of 3. Every one of the 119 reproduces its published score from these
+ * two numbers plus its base, so this is measured, not guessed.
+ *
+ * Publishing used to accept both as optional inputs and nothing ever computed
+ * them, so every ported report scored base-only and a busy session with five
+ * first-timers was rewarded exactly as much as an empty one.
+ */
+export const NEWCOMER_BONUS_MAX = 5;
+export const SIZE_BONUS_MAX = 3;
+/** The head count above which size starts to earn anything. */
+export const SIZE_BONUS_THRESHOLD = 15;
+export const SIZE_BONUS_PER_HEAD = 0.5;
+
+export interface ScoreBonuses {
+  newcomerBonus: number;
+  sizeBonus: number;
+}
+
+export function composeBonuses(input: {
+  attendees?: number | null;
+  newcomers?: number | null;
+}): ScoreBonuses {
+  const attendees = Math.max(0, Math.floor(input.attendees ?? 0));
+  const newcomers = Math.max(0, Math.floor(input.newcomers ?? 0));
+  const size = (attendees - SIZE_BONUS_THRESHOLD) * SIZE_BONUS_PER_HEAD;
+  return {
+    newcomerBonus: Math.min(newcomers, NEWCOMER_BONUS_MAX),
+    sizeBonus: Math.min(Math.max(size, 0), SIZE_BONUS_MAX),
+  };
+}
+
+/**
+ * The published composite: base plus bonuses, capped at 100.
+ *
+ * TWO decimals, which is what the 119 published reports carry (84.04, 95.76).
+ * Publishing rounded to one, so a backfilled report and a new one computed from
+ * the same numbers would have disagreed in the third digit, and a leader
+ * comparing this month to last would have seen scores that do not line up.
+ *
+ * The cap matters because the base alone can reach 100 and the bonuses add up
+ * to 8 more. Nothing in the corpus came close (95.76 is the highest), but every
+ * surface renders the number as "x / 100", so a 103 would make the portal, the
+ * email and the PDF all state something untrue.
+ */
+export function composeComposite(base: number, bonuses: ScoreBonuses): number {
+  const total = base + bonuses.newcomerBonus + bonuses.sizeBonus;
+  return Math.round(Math.min(total, 100) * 100) / 100;
 }
 
 export interface RubricContract {

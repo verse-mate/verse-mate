@@ -61,7 +61,7 @@ describe("roster and monthly backfill (DB)", () => {
       .where("email", "in", BUNDLE_EMAILS)
       .execute();
     expect(rows.length).toBe(EXPECTED_LEADERS);
-    // the slug is what coach_reports joins on — a null one is a broken roster
+    // the slug is what coach_reports joins on, a null one is a broken roster
     expect(rows.every((r) => Boolean(r.slug))).toBe(true);
     expect(new Set(rows.map((r) => r.slug))).toEqual(new Set(BUNDLE_SLUGS));
   });

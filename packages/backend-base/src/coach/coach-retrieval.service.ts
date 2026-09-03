@@ -1,7 +1,10 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
-import type { CoachArchiveService } from "./coach-archive.service";
+import type {
+  CoachArchiveService,
+  RetainResult,
+} from "./coach-archive.service";
 
 /**
  * Holding, retrying and giving up on a session's recording (change:
@@ -9,7 +12,7 @@ import type { CoachArchiveService } from "./coach-archive.service";
  *
  * A recording is often not ready the moment intake sees the session, so a
  * single failed fetch must not condemn it. Equally, retrying forever hides a
- * genuine problem behind a queue that never drains — so the retry budget is
+ * genuine problem behind a queue that never drains, so the retry budget is
  * STATED, and running out of it is an event with a name and a visible
  * consequence rather than silence.
  *
@@ -26,6 +29,15 @@ import type { CoachArchiveService } from "./coach-archive.service";
  */
 export const RETRIEVAL_ATTEMPT_LIMIT = 5;
 
+/**
+ * How many sessions one tick will work through.
+ *
+ * The sweep is unbounded work over a growing table, and each item can move
+ * gigabytes. A cap keeps one tick's cost predictable; the cron runs every 30
+ * minutes, so a backlog still drains.
+ */
+export const SWEEP_BATCH_LIMIT = 20;
+
 export interface PendingReshare {
   sourceSessionId: string;
   coachId: string | null;
@@ -33,6 +45,8 @@ export interface PendingReshare {
   sessionDate: string;
   requestedAt: Date;
   attempts: number;
+  /** True once the leader has actually been emailed about it. */
+  asked: boolean;
 }
 
 export interface SweepResult {
@@ -62,6 +76,10 @@ export class CoachRetrievalService {
       .select(["source_session_id", "retry_count"])
       .where("state", "in", ["observed", "held"])
       .orderBy("observed_at")
+      // A bounded budget per tick. Without it one slow morning of sessions
+      // starves everything behind them, and the tick runs every 30 minutes
+      // anyway so the backlog still drains.
+      .limit(SWEEP_BATCH_LIMIT)
       .execute();
 
     const result: SweepResult = {
@@ -73,7 +91,25 @@ export class CoachRetrievalService {
 
     for (const session of due) {
       result.attempted += 1;
-      const outcome = await this.archive.retain(session.source_session_id);
+
+      // A THROW counts as a failed attempt, exactly like a returned failure.
+      // `retain` throws on a provider error and on a storage error, and an
+      // uncaught one aborted the whole tick BEFORE incrementing retry_count —
+      // so the oldest broken session never reached the attempt limit, never
+      // entered `retrieval_failed`, and never raised a re-share request, while
+      // every session behind it was starved indefinitely. The escape hatch
+      // could not open because the loop never got far enough to open it.
+      let outcome: RetainResult;
+      try {
+        outcome = await this.archive.retain(session.source_session_id);
+      } catch (error) {
+        console.error(
+          `[COACH-RETRIEVAL] ${session.source_session_id} threw:`,
+          error,
+        );
+        outcome = { retained: false, reason: "retrieval-failed" };
+      }
+
       if (outcome.retained) {
         result.retained += 1;
         continue; // the archive has already moved it to `retained`
@@ -89,7 +125,9 @@ export class CoachRetrievalService {
           // The pending re-share request is persisted at the moment the budget
           // runs out, so the admin surface has something to show and the
           // operator has something to send (task 6.3b).
-          ...(exhausted ? { reshare_requested_at: sql`NOW()` } : {}),
+          ...(exhausted
+            ? { reshare_requested_at: sql`NOW()`, reshare_sent_at: null }
+            : {}),
           updated_at: sql`NOW()`,
         })
         .where("source_session_id", "=", session.source_session_id)
@@ -111,6 +149,7 @@ export class CoachRetrievalService {
         "title",
         "retry_count",
         "reshare_requested_at",
+        "reshare_sent_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("state", "=", "retrieval_failed")
@@ -125,6 +164,7 @@ export class CoachRetrievalService {
       sessionDate: r.date,
       requestedAt: new Date(r.reshare_requested_at as unknown as string),
       attempts: r.retry_count,
+      asked: r.reshare_sent_at !== null,
     }));
   }
 
@@ -146,6 +186,9 @@ export class CoachRetrievalService {
         state: "observed",
         retry_count: 0,
         reshare_resolved_at: sql`NOW()`,
+        // Cleared alongside the counter. Left set, a session that fails
+        // retrieval again could never be asked about a second time.
+        reshare_sent_at: null,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", sourceSessionId)

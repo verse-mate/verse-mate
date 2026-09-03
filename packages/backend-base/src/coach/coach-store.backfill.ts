@@ -8,7 +8,7 @@ import coachDataJson from "./coach.data.json";
  * `coach.data.json` (change: coach-reports-store). Idempotent: upserts on the id
  * (which equals the deployed slug at backfill), so re-running loads the same
  * corpus with no duplicates. Sets the meta report_count from the file's own
- * count — never a hardcoded number.
+ * count, never a hardcoded number.
  *
  * Returns the number of reports loaded so the caller can assert it against the
  * deployed file.

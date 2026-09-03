@@ -14,10 +14,12 @@ import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
+  CoverageReportSchema,
   LeaderMonthlyResponseSchema,
   MonthlySchema,
   NoteSchema,
   ReportSchema,
+  ReviewStateSchema,
   RubricContractSchema,
 } from "./coach.schema";
 import { CoachService } from "./coach.service";
@@ -32,7 +34,7 @@ import {
 } from "./dto/coach.dto";
 import { rubricContract } from "./rubric";
 
-/** Empty (clear) or a well-formed http(s) URL — shared by zoom + recording. */
+/** Empty (clear) or a well-formed http(s) URL, shared by zoom + recording. */
 const isBlankOrHttpUrl = (v: string): boolean =>
   v === "" || /^https?:\/\/\S+$/i.test(v);
 
@@ -40,7 +42,7 @@ const isBlankOrHttpUrl = (v: string): boolean =>
 const isEmail = (v: string): boolean => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
 // ─── Response schemas ──────────────────────────────────────────────────────
-// ReportSchema (and its parts) live in coach.schema.ts — a side-effect-free
+// ReportSchema (and its parts) live in coach.schema.ts, a side-effect-free
 // module so the response contract can be unit-tested without booting the
 // plugin. Elysia strips any response field not declared in that schema, which
 // is why the coaching prose must be present there to reach the portal.
@@ -161,7 +163,7 @@ const TrendsSchema = t.Object({
 //
 // Auth: every route derives `currentUserId` from the bearer token. A missing
 // / invalid token → 401 (UnauthorizedError). A valid token whose account is
-// not in the coaching roster → 403 (ForbiddenError) — the web client renders
+// not in the coaching roster → 403 (ForbiddenError), the web client renders
 // its "not a coaching account" gate on 403 and its "sign in" gate on 401.
 
 const plugin = new Elysia()
@@ -276,7 +278,7 @@ const plugin = new Elysia()
       // minted for ONE session at a time and lives 24 hours, so a paginated
       // list mints nothing; the detail response says only WHETHER material
       // exists. A browser media element cannot send a bearer header, so the
-      // API never proxies the bytes — object storage serves them, Range
+      // API never proxies the bytes, object storage serves them, Range
       // requests included.
       .get(
         "/reports/:reportId/recording-url",
@@ -290,7 +292,7 @@ const plugin = new Elysia()
             requesterCoachId: me.profile?.id ?? null,
             isAdmin: me.isAdmin,
           });
-          // One answer for every refusal — not this leader's session, no
+          // One answer for every refusal, not this leader's session, no
           // session, no retained asset. A 'you may not' that reads differently
           // from a 'there is nothing' tells an unrelated leader which sessions
           // exist.
@@ -511,6 +513,77 @@ const plugin = new Elysia()
       // Pending re-share requests (tasks 6.3b, 8.5a). Admin-guarded because
       // sending emails a leader in VerseMate's name: an unguarded endpoint
       // would let anyone who knows a session id do that.
+      // Dimension review and correction (task 5.7). Admin-guarded: it changes
+      // the score a leader will be shown.
+      .get(
+        "/admin/reports/:reportId/review",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const state = await coachService.reviewReport(params.reportId);
+          if (!state) throw new NotFoundError("No scores for that report");
+          return state;
+        },
+        { response: { 200: ReviewStateSchema, ...StandardErrorResponses } },
+      )
+      .post(
+        "/admin/reports/:reportId/dimensions/:dimensionN",
+        async ({ store: { coachService }, currentUserId, params, body }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.correctDimension({
+            reportId: params.reportId,
+            dimensionN: Number(params.dimensionN),
+            score: body.score ?? null,
+            rationale: body.rationale,
+            correctedByUserId: currentUserId,
+          });
+          if (!result.ok)
+            throw new ValidationError(
+              `Correction refused: ${result.refusal ?? "unknown"}`,
+            );
+          return { base: result.base ?? 0, status: result.status?.label ?? "" };
+        },
+        {
+          body: t.Object({
+            score: t.Union([t.Number(), t.Null()]),
+            rationale: t.String(),
+          }),
+          response: {
+            200: t.Object({ base: t.Number(), status: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Recording-bot coverage, the gate task 9.1 reads before retiring the
+      // old host (task 4.7).
+      .get(
+        "/admin/coverage",
+        async ({ store: { coachService }, currentUserId, query }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const report = await coachService.assessCoverage(
+            query.windowDays ?? 30,
+          );
+          return {
+            windowDays: report.windowDays,
+            allCovered: report.allCovered,
+            leaders: report.leaders,
+          };
+        },
+        {
+          query: t.Object({
+            windowDays: t.Optional(t.Numeric({ minimum: 1, maximum: 365 })),
+          }),
+          response: { 200: CoverageReportSchema, ...StandardErrorResponses },
+        },
+      )
       .get(
         "/admin/reshares",
         async ({ store: { coachService }, currentUserId }) => {
@@ -531,6 +604,7 @@ const plugin = new Elysia()
                   sessionDate: t.String(),
                   requestedAt: t.Date(),
                   attempts: t.Number(),
+                  asked: t.Boolean(),
                 }),
               ),
             }),
@@ -672,7 +746,7 @@ const plugin = new Elysia()
           },
         },
       )
-      // Every leader's classes + owner identity — the single feed the Fireflies
+      // Every leader's classes + owner identity, the single feed the Fireflies
       // operator reads to configure which meeting links the bot auto-joins.
       .get(
         "/admin/classes",
@@ -748,7 +822,7 @@ const plugin = new Elysia()
           },
         },
       )
-      // Write a coaching note on a session — persisted + emailed to the leader.
+      // Write a coaching note on a session, persisted + emailed to the leader.
       .post(
         "/admin/coaches/:id/reports/:reportId/notes",
         async ({ params, body, store: { coachService }, currentUserId }) => {

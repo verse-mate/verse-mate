@@ -12,7 +12,7 @@ import { CLUSTERS, RUBRIC_MODEL_VERSION, STATUS_BANDS } from "./rubric";
  * harvested version emitted only `coaches[].reports`, on the assumption that
  * the roster, admins, monthly structures and rubric still lived in the bundle
  * and the caller would merge into the existing file. After group 3 they live in
- * the database, and after task 7.1 there is no file left to merge into — so a
+ * the database, and after task 7.1 there is no file left to merge into, so a
  * reports-only export would leave step 10 of the migration plan with no
  * rollback at all.
  *
@@ -36,7 +36,7 @@ export async function snapshotReportsByCoach(): Promise<
 > {
   const repo = new CoachReportsRepository(Database);
   const byCoach: Record<string, Record<string, unknown>[]> = {};
-  // One query for the ids, then one per coach — never one per report.
+  // One query for the ids, then one per coach, never one per report.
   for (const coachId of await repo.listCoachIds()) {
     const reports = (await repo.listFullReports(coachId)).map((detail) =>
       rowToReport({

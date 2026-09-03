@@ -6,7 +6,7 @@ import type Database from "../src/models/Database";
  *
  * Per-dimension score provenance. The bundle carried dimension scores as prose
  * inside a report's jsonb, with no record of whether a number came from the
- * model or from an admin's correction — so a re-score silently overwrote human
+ * model or from an admin's correction, so a re-score silently overwrote human
  * judgement and an admin could not see which was which.
  *
  * A row per (report, dimension) rather than a jsonb blob, because task 5.7

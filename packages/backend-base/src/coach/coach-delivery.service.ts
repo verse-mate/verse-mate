@@ -16,7 +16,7 @@ import { statusForScore } from "./rubric";
  *
  * Everything a leader receives goes through here. A report assembled by a
  * one-off script and mailed directly would skip the governance rules, the
- * three-recipient rule and the live check all at once — which is why delivery
+ * three-recipient rule and the live check all at once, which is why delivery
  * is a single path rather than a convention.
  */
 
@@ -27,7 +27,7 @@ export const COACH_REPLY_TO_NAME = "VerseMate Coaching";
 
 export type DeliveryRefusal =
   | "unknown-report"
-  | "not-live"
+  | "already-delivered"
   | "governance-blocked"
   | "send-failed";
 
@@ -43,7 +43,7 @@ export interface DeliveryResult {
 /**
  * The subject line (task 6.7).
  *
- * Session date, leader name, and the sanitized RECORDED SESSION TITLE — the
+ * Session date, leader name, and the sanitized RECORDED SESSION TITLE, the
  * same field intake attributes the leader from. The old convention used the
  * leader-authored email subject, which no longer exists once the email path is
  * dropped, so deriving it is not a preference but the only option left.
@@ -73,7 +73,7 @@ export class CoachDeliveryService {
    *
    * Rule 2 asks whether a quote was used in an EARLIER report, and two reports
    * produced in one poll cycle would otherwise each see the other as not yet
-   * existing — both would ship with the same quote. Serializing per leader is
+   * existing, both would ship with the same quote. Serializing per leader is
    * what gives "earlier" a meaning.
    */
   private readonly inFlight = new Map<string, Promise<unknown>>();
@@ -123,12 +123,21 @@ export class CoachDeliveryService {
   ): Promise<DeliveryResult> {
     const conn = this.db.getOrCreateConnection();
 
+    // ONE read, and it is also the liveness check the spec asks for ("confirm
+    // the report is live before sending", scenario "Report is not yet live").
+    // Publishing commits before delivery is called, so a readable row IS a
+    // report the portal serves. There used to be a second `isLive` query three
+    // statements below this one, asking the same question of the same row: a
+    // refusal that could never fire, which read as a check and was decoration.
+    // Missing means the row went away mid-delivery, which is refused rather
+    // than thrown.
     const report = await conn
       .selectFrom("coach_reports")
       .select(["id", "coach_id", "summary", "body"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("id", "=", reportId)
-      .executeTakeFirstOrThrow();
+      .executeTakeFirst();
+    if (!report) return { delivered: false, refusal: "unknown-report" };
 
     const leader = await conn
       .selectFrom("coach_leaders")
@@ -138,11 +147,20 @@ export class CoachDeliveryService {
 
     const summary = (report.summary ?? {}) as Record<string, unknown>;
 
-    // 6.6 — refuse to send when the report is not live on the portal. An email
-    // whose link 404s is worse than no email: the leader is told a report
-    // exists and cannot read it.
-    const live = await this.isLive(reportId);
-    if (!live) return { delivered: false, refusal: "not-live" };
+    // Already sent? Delivery is driven by a scheduled worker, so anything that
+    // re-enters the pipeline for a session already reported (a retry, a
+    // re-scored report, a session row that did not advance) mailed all three
+    // recipients a second copy. The state the pipeline writes on success is
+    // the record of that, so it is also the guard.
+    const alreadyDelivered = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("source_session_id")
+      .where("report_id", "=", reportId)
+      .where("state", "=", "delivered")
+      .executeTakeFirst();
+    if (alreadyDelivered) {
+      return { delivered: false, refusal: "already-delivered" };
+    }
 
     // 6.2 at delivery time, against what is already persisted.
     const verdict = await this.governance.check({
@@ -202,7 +220,7 @@ export class CoachDeliveryService {
       });
     }
 
-    // 6.5 — delivery is complete only when EVERY recipient's send is confirmed.
+    // 6.5, delivery is complete only when EVERY recipient's send is confirmed.
     // A partial delivery reported as success is how an admin stops seeing a
     // leader's reports without anyone noticing.
     const allSent = sends.length > 0 && sends.every((s) => s.delivered);
@@ -220,19 +238,8 @@ export class CoachDeliveryService {
     return { delivered: true, sends, subject };
   }
 
-  /** Live means a reader can open it: the report row exists and is published. */
-  private async isLive(reportId: string): Promise<boolean> {
-    const row = await this.db
-      .getOrCreateConnection()
-      .selectFrom("coach_reports")
-      .select("id")
-      .where("id", "=", reportId)
-      .executeTakeFirst();
-    return Boolean(row);
-  }
-
   /**
-   * 6.5 — the three-recipient rule: the leader, the benchmark leader, and the
+   * 6.5, the three-recipient rule: the leader, the benchmark leader, and the
    * program admin. Its stated exceptions: a recipient with no address is
    * skipped rather than blocking, and nobody is mailed twice when they hold
    * two of the roles.

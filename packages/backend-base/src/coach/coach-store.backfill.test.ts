@@ -22,7 +22,7 @@ const perLeader = new Map(
 
 // Scope every delete to the coaches THIS file writes. An unscoped
 // `deleteFrom(coach_reports)` wipes the whole corpus on whatever database
-// POSTGRES_URL happens to point at — which is how a dev run reaches production.
+// POSTGRES_URL happens to point at, which is how a dev run reaches production.
 async function clear() {
   await conn
     .deleteFrom("coach_reports")

@@ -67,7 +67,7 @@ describe("the program-admin role is data, not a deploy", () => {
     await cleanup();
   });
 
-  it("the program admin — who is not a roster leader — is granted the role explicitly", async () => {
+  it("the program admin, who is not a roster leader, is granted the role explicitly", async () => {
     // coach.service.ts resolved admin authority from the bundle's `admins`
     // array; deleting the bundle (7.1) removes the ONLY source of admin
     // authority, so the row has to exist independently of the roster.

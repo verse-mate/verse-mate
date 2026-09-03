@@ -1,7 +1,7 @@
 /**
  * Migration-gate fallback: while the store holds no rows for a coach, the
  * compiled-in bundle still answers. That is the whole "ship before the backfill
- * runs" story, and every branch of it was previously unasserted — each could be
+ * runs" story, and every branch of it was previously unasserted, each could be
  * deleted with the suite green, which in production meant a blank session list
  * or an admin unable to attach a note to a not-yet-backfilled session.
  */

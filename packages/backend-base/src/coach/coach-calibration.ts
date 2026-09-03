@@ -9,7 +9,7 @@ import { DIMENSIONS, composeBaseScore } from "./rubric";
  * is pure, so the whole thing is testable without spending a model call.
  *
  * Running it for real against the backfilled corpus is a separate, deliberate
- * act — see `runCalibration` in the script that drives it.
+ * act, see `runCalibration` in the script that drives it.
  */
 
 export interface HandScoredReport {
@@ -20,7 +20,19 @@ export interface HandScoredReport {
   dimensions: Array<{ n: number; score: number | null; rationale: string }>;
 }
 
-export type IneligibleReason = "no-rationale-anywhere";
+export type IneligibleReason =
+  | "no-rationale-anywhere"
+  /**
+   * The hand report does not carry all twelve dimensions.
+   *
+   * An omitted dimension is not a not-applicable one, and the difference is
+   * load-bearing: `composeBaseScore` excludes a null from the denominator, so
+   * a hand report missing four dimensions had its composite computed over the
+   * remaining eight while the machine's was computed over twelve. Comparing
+   * those two numbers measures nothing, and it flattered the agreement,
+   * because a partial composite sits closer to the middle of the range.
+   */
+  | "incomplete-dimensions";
 
 export interface EligibilityResult {
   eligible: HandScoredReport[];
@@ -45,7 +57,7 @@ export interface EligibilityResult {
  *
  * The count is DERIVED, never asserted. Design D3 says "nine reports"; measured
  * against the 2026-09-01 bundle it is nineteen, and the empty-rationale entries
- * (228) are entirely explained by them — no report has only SOME rationales
+ * (228) are entirely explained by them, no report has only SOME rationales
  * missing. A hardcoded nine would have quietly admitted ten unusable reports.
  */
 export function selectEligible(corpus: HandScoredReport[]): EligibilityResult {
@@ -66,6 +78,19 @@ export function selectEligible(corpus: HandScoredReport[]): EligibilityResult {
         reportId: report.reportId,
         coachId: report.coachId,
         reason: "no-rationale-anywhere",
+      });
+      continue;
+    }
+
+    // Every dimension present, whatever its value. A null is a judgement
+    // ("nothing in this session speaks to it"); an absent entry is a gap in
+    // the corpus, and the two cannot be compared the same way.
+    const present = new Set(report.dimensions.map((d) => d.n));
+    if (DIMENSIONS.some((d) => !present.has(d.n))) {
+      excluded.push({
+        reportId: report.reportId,
+        coachId: report.coachId,
+        reason: "incomplete-dimensions",
       });
       continue;
     }

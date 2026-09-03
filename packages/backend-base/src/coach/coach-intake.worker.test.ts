@@ -1,10 +1,15 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 
 import {
   COACH_INTAKE_DEFAULT_CRON,
   COACH_INTAKE_JOB,
   COACH_INTAKE_QUEUE,
 } from "./coach-intake.queue";
+import {
+  COACH_INTAKE_WORKER_OPTIONS,
+  coachIntakeWorker,
+  runCoachIntakeTick,
+} from "./coach-intake.worker";
 
 /**
  * Task 4.3's scenario is "No operator host is involved". What makes that true
@@ -39,21 +44,35 @@ describe("the pipeline's clock lives inside VerseMate", () => {
     }
   });
 
-  it("the worker does not autorun — the plugin starts it, as every other worker is started", async () => {
-    const source = await Bun.file(
-      new URL("./coach-intake.worker.ts", import.meta.url).pathname,
-    ).text();
-    expect(source).toMatch(/autorun:\s*false/);
+  it("the worker does not autorun, the plugin starts it, as every other worker is started", () => {
+    // The VALUES, not a regex against this module's text: a source scan passes
+    // on a commented-out line and on `concurrency: 10`.
+    expect(COACH_INTAKE_WORKER_OPTIONS.autorun).toBe(false);
     // One tick at a time: two would poll the same window and spend provider
     // quota twice for nothing.
-    expect(source).toMatch(/concurrency:\s*1/);
+    expect(COACH_INTAKE_WORKER_OPTIONS.concurrency).toBe(1);
   });
 
   it("a missing credential SKIPS loudly rather than reporting an empty poll", async () => {
-    const source = await Bun.file(
-      new URL("./coach-intake.worker.ts", import.meta.url).pathname,
-    ).text();
-    expect(source).toMatch(/firefliesConfigured\(\)/);
-    expect(source).toMatch(/no-credential/);
+    // RUN it. The old version asserted that the source text contains
+    // `firefliesConfigured()`, which stays true however the call is used.
+    // Without the credential every tick would poll nothing and report success,
+    // which is indistinguishable from a quiet week.
+    const key = process.env.FIREFLIES_API_KEY;
+    Reflect.deleteProperty(process.env, "FIREFLIES_API_KEY");
+    try {
+      const result = await runCoachIntakeTick();
+      expect(result.skipped).toBe("no-credential");
+      expect(result.observed).toBe(0);
+      expect(result.delivered).toBe(0);
+    } finally {
+      if (key !== undefined) process.env.FIREFLIES_API_KEY = key;
+    }
   });
+});
+
+// The module constructs a BullMQ worker at import time, which opens a Redis
+// connection. Closed here so the test process exits.
+afterAll(async () => {
+  await coachIntakeWorker.close();
 });

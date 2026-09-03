@@ -41,12 +41,6 @@ export default interface CoachSessionAssetsTable {
     string | null
   >;
 
-  retained_until: ColumnType<
-    Date | null,
-    Date | string | null | undefined,
-    Date | string | null
-  >;
-
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 

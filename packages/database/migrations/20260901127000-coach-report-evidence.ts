@@ -6,14 +6,14 @@ import type Database from "../src/models/Database";
  *
  * The structured evidence governance rule 2 queries: the quotes and timestamps
  * a report cites. A COLUMN, not prose, so the reuse check never parses a
- * report body — parsing prose to enforce a rule about prose is how a governance
+ * report body, parsing prose to enforce a rule about prose is how a governance
  * check becomes unreliable in exactly the cases that matter.
  *
  * NULLABLE, and that is the whole design of the comparison set. A NULL means
  * "this report predates the evidence field", which is true of every backfilled
  * report: none carries a quote field at any snapshot, and only a minority carry
  * a structured timestamp. Seeding the set from what happens to exist would
- * enforce rule 2 unevenly — hard on the leaders whose old reports happen to
+ * enforce rule 2 unevenly, hard on the leaders whose old reports happen to
  * have timestamps, not at all on the rest. So it starts EMPTY for everyone, and
  * the accepted residual is stated: reuse of material that appears only in
  * pre-cutover reports is not detected.

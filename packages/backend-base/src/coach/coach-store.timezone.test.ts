@@ -3,7 +3,7 @@
  *
  * `session_date` is a DATE column. pg parses a DATE at LOCAL midnight, so
  * `new Date(...).toISOString().slice(0,10)` returns the PREVIOUS day on any
- * UTC+ host — every date the store served was a day early in Europe/Asia, and
+ * UTC+ host, every date the store served was a day early in Europe/Asia, and
  * the suite stayed green because the dev machine sits at UTC-3.
  *
  * This file SETS the timezone itself rather than relying on a shell prefix, so

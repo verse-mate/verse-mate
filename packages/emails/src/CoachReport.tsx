@@ -13,7 +13,7 @@ import {
 export interface CoachReportProps {
   /** Leader's display name (falls back to a generic greeting when empty). */
   name?: string;
-  /** The session this report is about, e.g. "Obadiah — 22 August 2026". */
+  /** The session this report is about, e.g. "Obadiah, 22 August 2026". */
   sessionLabel: string;
   /** Composite score out of 100. */
   score: number;
@@ -54,7 +54,7 @@ export default function CoachReport({
           </Text>
           <Section style={scoreBox}>
             <Text style={scoreText}>
-              {score} / 100 — {status}
+              {score} / 100, {status}
             </Text>
           </Section>
           <Text style={text}>{headline}</Text>
@@ -64,7 +64,7 @@ export default function CoachReport({
             </Button>
           </Section>
           <Text style={muted}>
-            The full breakdown — every dimension, its score and the reasoning —
+            The full breakdown, every dimension, its score and the reasoning —
             is on the portal. Reply to this email if anything looks wrong.
           </Text>
         </Container>

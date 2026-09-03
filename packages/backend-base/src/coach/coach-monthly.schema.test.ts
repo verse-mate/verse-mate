@@ -21,7 +21,7 @@ describe("the monthly structures live in the database", () => {
     }
   });
 
-  it("one narrative per month — a re-publish updates rather than duplicating", async () => {
+  it("one narrative per month, a re-publish updates rather than duplicating", async () => {
     await sql`
       INSERT INTO coach_monthly_narratives (month, executive_summary, trends)
       VALUES ('1999-01', '["a"]'::jsonb, '["b"]'::jsonb)
@@ -47,12 +47,12 @@ describe("the monthly structures live in the database", () => {
       INSERT INTO coach_monthly_leader_summaries (coach_id, month, summary)
       VALUES ('probe-leader', '1999-01', '{"composite":80}'::jsonb)
     `.execute(conn);
-    // same leader, different month — allowed
+    // same leader, different month, allowed
     await sql`
       INSERT INTO coach_monthly_leader_summaries (coach_id, month, summary)
       VALUES ('probe-leader', '1999-02', '{"composite":81}'::jsonb)
     `.execute(conn);
-    // same leader AND month — refused
+    // same leader AND month, refused
     await expect(
       sql`
         INSERT INTO coach_monthly_leader_summaries (coach_id, month, summary)

@@ -40,14 +40,14 @@ export default function CoachReshareRequest({
           <Text style={text}>{name ? `Hi ${name},` : "Hi,"}</Text>
           <Text style={text}>
             We tried {attempts} times to retrieve the recording for{" "}
-            <strong>{sessionLabel}</strong> and could not — usually this means
+            <strong>{sessionLabel}</strong> and could not, usually this means
             downloads are turned off for the link, or the recording has been
             removed.
           </Text>
           <Text style={text}>
             Reply to this email with a shareable link (downloads enabled) and
             we'll pick it up automatically. No report is produced for this
-            session until we can see the recording — we don't score a session
+            session until we can see the recording, we don't score a session
             from partial material.
           </Text>
         </Container>

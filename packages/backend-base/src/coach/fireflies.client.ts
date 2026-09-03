@@ -10,7 +10,7 @@ import { firefliesApiKey } from "./fireflies.config";
  * `mine: false` asks for TEAM-WIDE results. That is the whole point: the bot
  * records every leader's meeting under one shared host address, so a per-user
  * query would see nothing. It is also why the key must be an admin key
- * (see fireflies.config.ts — recorded as an accepted risk).
+ * (see fireflies.config.ts, recorded as an accepted risk).
  *
  * The interface is separate from the HTTP implementation so intake can be
  * driven by a recorded fixture. That is not only for tests: VerseMate does not
@@ -37,7 +37,7 @@ export interface FirefliesTranscriptDetail extends FirefliesTranscript {
   audio_url: string | null;
   video_url: string | null;
   transcript_url: string | null;
-  /** Participant COUNT only — see below. */
+  /** Participant COUNT only, see below. */
   participantCount: number;
   summary: { overview?: string } | null;
   /**
@@ -46,7 +46,7 @@ export interface FirefliesTranscriptDetail extends FirefliesTranscript {
    * Dimensions 4 (Facilitation vs. Lecture) and 6 (Participant Engagement) both
    * need to tell the leader apart from the room, which the provider only
    * expresses by name. So the name is used ONCE, inside this client, to decide
-   * which speaker is the leader — and then dropped. Nothing downstream ever
+   * which speaker is the leader, and then dropped. Nothing downstream ever
    * receives it, which is what makes open question 4's answer hold for the
    * retained transcript and not only for the report surfaces.
    */
@@ -64,6 +64,8 @@ export interface FirefliesClient {
   listTranscripts(opts: {
     since: Date | null;
     limit: number;
+    /** Rows to skip, the poll PAGES through history rather than taking one. */
+    skip?: number;
   }): Promise<FirefliesTranscript[]>;
 }
 
@@ -79,8 +81,8 @@ export interface FirefliesDetailClient extends FirefliesClient {
 }
 
 const Q_TRANSCRIPTS = `
-query Transcripts($fromDate: DateTime, $limit: Int) {
-  transcripts(fromDate: $fromDate, limit: $limit, mine: false) {
+query Transcripts($fromDate: DateTime, $limit: Int, $skip: Int) {
+  transcripts(fromDate: $fromDate, limit: $limit, skip: $skip, mine: false) {
     id
     title
     host_email
@@ -150,12 +152,14 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
   async listTranscripts(opts: {
     since: Date | null;
     limit: number;
+    skip?: number;
   }): Promise<FirefliesTranscript[]> {
     const data = await query<{ transcripts: FirefliesTranscript[] | null }>(
       Q_TRANSCRIPTS,
       {
         fromDate: opts.since ? opts.since.toISOString() : null,
         limit: opts.limit,
+        skip: opts.skip ?? 0,
       },
     );
     return data.transcripts ?? [];
@@ -185,7 +189,7 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
 
     // Names are resolved to pseudonyms HERE and go no further. A stable number
     // per distinct name keeps the two speaker-aware dimensions computable while
-    // nothing downstream — the retained transcript included — holds a name.
+    // nothing downstream, the retained transcript included, holds a name.
     const pseudonyms = new Map<string, string>();
     const leader = (leaderName ?? "").trim().toLowerCase();
     const pseudonymised = (sentences ?? []).map((s) => {

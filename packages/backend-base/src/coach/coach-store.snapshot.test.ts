@@ -33,7 +33,7 @@ function canonical(value: unknown): string {
   return JSON.stringify(walk(value));
 }
 
-/** The bundle with its coaches in a defined order — the database has none. */
+/** The bundle with its coaches in a defined order, the database has none. */
 function normalized(dataset: Bundle): Bundle {
   return {
     ...dataset,

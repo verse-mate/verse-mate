@@ -3,7 +3,7 @@
  * rows (change: coach-reports-store). Kept side-effect-free so the field-housing
  * contract is unit-testable without a database.
  *
- * Every field of a dataset report is housed — id → the row's immutable id
+ * Every field of a dataset report is housed, id → the row's immutable id
  * (the existing slug, so overlay joins survive), date → session_date,
  * everything else split across summary / metrics / body. `recordingUrl` and
  * `notes` are NOT dataset-report fields (they are overlay-joined at read time),
@@ -59,16 +59,30 @@ const BODY_KEYS = ["bigIdeas", "feedback", "sections"];
 /**
  * The `source_session_id` a backfilled report takes. Deterministic, so a second
  * backfill run matches the row the first one wrote rather than inserting beside
- * it — the whole reason the column is NOT NULL.
+ * it, the whole reason the column is NOT NULL.
+ *
+ * `ordinal` separates two sessions the same leader ran on the same day. The
+ * unique key is (coach_id, session_date, source_session_id), so without it the
+ * second such report would have upserted OVER the first and one session's
+ * report would have disappeared with nothing raised. Today's bundle has no such
+ * pair, but a leader running a Saturday morning and a make-up class on one date
+ * is an ordinary week, not an exotic case. The first report on a date keeps the
+ * unsuffixed id, so every row the current backfill wrote still matches.
  */
-export function legacySourceSessionId(coachId: string, date: string): string {
-  return `legacy:${coachId}:${date}`;
+export function legacySourceSessionId(
+  coachId: string,
+  date: string,
+  ordinal = 0,
+): string {
+  const base = `legacy:${coachId}:${date}`;
+  return ordinal === 0 ? base : `${base}#${ordinal}`;
 }
 
 /** One dataset report (under coach `coachId`) → one coach_reports row. */
 export function reportToRow(
   coachId: string,
   report: Record<string, unknown>,
+  ordinal = 0,
 ): CoachReportRow {
   return {
     id: String(report.id),
@@ -80,7 +94,11 @@ export function reportToRow(
     // `bryan-bailey-2026-08-22-saturday-morning-group-austin-ri`), which report
     // identity forbids and which stops the backfill being idempotent across a
     // re-title.
-    source_session_id: legacySourceSessionId(coachId, String(report.date)),
+    source_session_id: legacySourceSessionId(
+      coachId,
+      String(report.date),
+      ordinal,
+    ),
     legacy_ids: [],
     summary: pick(report, SUMMARY_KEYS),
     metrics: pick(report, METRICS_KEYS),
@@ -101,8 +119,14 @@ export function datasetToRows(dataset: unknown): CoachReportRow[] {
   const rows: CoachReportRow[] = [];
   for (const coach of coaches) {
     const reports = (coach.reports as Array<Record<string, unknown>>) ?? [];
+    // Counted per leader per date, in file order, so a second session on one
+    // day gets its own sentinel instead of overwriting the first.
+    const seenOnDate = new Map<string, number>();
     for (const report of reports) {
-      rows.push(reportToRow(String(coach.id), report));
+      const key = String(report.date);
+      const ordinal = seenOnDate.get(key) ?? 0;
+      seenOnDate.set(key, ordinal + 1);
+      rows.push(reportToRow(String(coach.id), report, ordinal));
     }
   }
   return rows;

@@ -35,7 +35,7 @@ export interface CoachClassWithOwner extends CoachClassRow {
 export interface AddedLeaderRow {
   id: string;
   /**
-   * The dataset slug every overlay keys on — coach_reports.coach_id,
+   * The dataset slug every overlay keys on, coach_reports.coach_id,
    * coach_notes.coach_id, coach_recording_links.coach_id. Null only for a row
    * added before task 3.1, or one 3.10's backfill has not reached.
    */
@@ -58,9 +58,9 @@ export interface CoachNoteRow {
 
 /**
  * Persistence for the coach portal's mutable state:
- *   - coach_zoom_links — the leader's single quick meeting link + affiliated
+ *   - coach_zoom_links, the leader's single quick meeting link + affiliated
  *     church (one row per user)
- *   - coach_classes    — the leader's registered classes (many rows per user)
+ *   - coach_classes   , the leader's registered classes (many rows per user)
  *
  * Reports + trends come from the bundled dataset; these tables are the only
  * user-writable state.
@@ -165,7 +165,7 @@ export class CoachRepository {
   private static toIsoDate(value: Date | string | null): string | null {
     if (value == null) return null;
     if (value instanceof Date) return value.toISOString().slice(0, 10);
-    // Already a string like "2026-07-21" (or an ISO timestamp) — keep the day.
+    // Already a string like "2026-07-21" (or an ISO timestamp), keep the day.
     return String(value).slice(0, 10);
   }
 

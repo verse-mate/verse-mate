@@ -7,7 +7,7 @@ import { CLUSTERS, DIMENSIONS, STATUS_BANDS } from "./rubric";
 const app = new Elysia().use(coachPlugin);
 
 describe("GET /coach/rubric serves the whole contract", () => {
-  it("is readable without a coaching session — the explainer is not private", async () => {
+  it("is readable without a coaching session, the explainer is not private", async () => {
     const res = await app.handle(new Request("http://localhost/coach/rubric"));
     expect(res.status).toBe(200);
   });
@@ -46,7 +46,7 @@ describe("GET /coach/rubric serves the whole contract", () => {
     }
   });
 
-  it("serves both band scales — composite status and the 1-5 dimension labels", async () => {
+  it("serves both band scales, composite status and the 1-5 dimension labels", async () => {
     const res = await app.handle(new Request("http://localhost/coach/rubric"));
     const body = (await res.json()) as {
       statusBands: Array<{ min: number; label: string; emoji: string }>;

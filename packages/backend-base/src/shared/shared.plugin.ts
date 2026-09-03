@@ -16,7 +16,7 @@ export type cache = typeof redisClient;
 export type db = typeof Database;
 
 // Security (audit #2): never sign sessions with a hardcoded or publicly-known
-// secret — either lets any attacker forge a valid JWT for any user. Fail closed
+// secret, either lets any attacker forge a valid JWT for any user. Fail closed
 // at startup when the secret is unset OR still the historical default that was
 // shipped in .env.example on a public repo (so setting it to that known value
 // does not sneak past this guard).

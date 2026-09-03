@@ -45,6 +45,12 @@ export default interface CoachIntakeSessionsTable {
     Date | string | null
   >;
 
+  reshare_sent_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
+
   reshare_resolved_at: ColumnType<
     Date | null,
     Date | string | null | undefined,

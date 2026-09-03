@@ -5,7 +5,7 @@ import type Database from "../src/models/Database";
  * Bible-Coach portal: per-leader meeting link.
  *
  * The coach portal's reports + trends are served from the coaching-pipeline
- * dataset — a compiled-in bundle at the time, the coach_* tables since
+ * dataset, a compiled-in bundle at the time, the coach_* tables since
  * (change: port-coach-pipeline); the leader's Zoom / Meet
  * link is the one mutable field, stored here keyed by user. One row per user.
  */

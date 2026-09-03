@@ -4,6 +4,8 @@ import { db as Database } from "database";
 import { CoachCoverageService } from "./coach-coverage.service";
 
 const conn = Database.getOrCreateConnection();
+/** The leader slugs this file owns; every delete is scoped to them. */
+const SLUGS = ["cov-observed", "cov-silent", "cov-attested", "cov-noaccount"];
 const EMAILS = [
   "cov-observed@example.test",
   "cov-silent@example.test",
@@ -12,7 +14,13 @@ const EMAILS = [
 ];
 
 async function clear() {
-  await conn.deleteFrom("coach_intake_sessions").execute();
+  // Scoped. This ran unscoped in BOTH beforeEach and afterEach across 9 tests
+  //, 18 full wipes of the intake ledger per run, which strands every
+  // published report's watermark, dedupe record and report_id link.
+  await conn
+    .deleteFrom("coach_intake_sessions")
+    .where("coach_id", "in", SLUGS)
+    .execute();
   const users = await conn
     .selectFrom("user")
     .select("id")
@@ -85,7 +93,7 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
   afterEach(clear);
 
   it("a leader with a session observed inside the window is covered", async () => {
-    // No provider API lists the bot's configured joins — Fireflies exposes
+    // No provider API lists the bot's configured joins, Fireflies exposes
     // Users / Transcripts / Transcript / Bites / Analytics / Active Meetings
     // and nothing that enumerates upcoming or configured joins. So coverage is
     // what intake has actually seen.
@@ -125,7 +133,7 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
     expect(row?.basis).toBe("attested-not-teaching");
   });
 
-  it("an uncovered leader is SURFACED — the whole point, since they would silently get no reports", async () => {
+  it("an uncovered leader is SURFACED, the whole point, since they would silently get no reports", async () => {
     await leader("cov-silent", "cov-silent@example.test");
 
     const report = await new CoachCoverageService(Database).assess({
@@ -165,10 +173,10 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
     expect(row?.linkedClassName).toBe("cov-silent class");
   });
 
-  it("a class row with an EMPTY link raises NOTHING — presence is not intent", async () => {
+  it("a class row with an EMPTY link raises NOTHING, presence is not intent", async () => {
     // zoom_link is notNull().defaultTo(""), so every class row has the column.
     // Treating the ROW as intent would alert on every leader who ever opened
-    // the class form, which is noise an admin learns to ignore — and an alert
+    // the class form, which is noise an admin learns to ignore, and an alert
     // that gets ignored is worse than no alert.
     await withClass("cov-silent", "cov-silent@example.test", "");
 
@@ -181,7 +189,7 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
     expect(row?.linkedClassName).toBeNull();
   });
 
-  it("a linked class does NOT make a leader covered — it is intent, not proof", async () => {
+  it("a linked class does NOT make a leader covered, it is intent, not proof", async () => {
     await withClass(
       "cov-silent",
       "cov-silent@example.test",

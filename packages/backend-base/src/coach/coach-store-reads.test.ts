@@ -116,7 +116,7 @@ describe("store-backed report reads", () => {
       coach_id: bundledCoach,
     });
 
-    // Write the note addressed by the OLD id — what a stale admin UI would send.
+    // Write the note addressed by the OLD id, what a stale admin UI would send.
     const saved = await service.addNote(
       bundledCoach,
       "retitled-id",

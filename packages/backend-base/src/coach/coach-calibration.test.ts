@@ -66,7 +66,7 @@ describe("eligibility is an explicit filter, and its count is derived", () => {
   it("the DEPLOYED corpus's exclusions are measured, not taken from the design", () => {
     // Design D3 says nine reports were reconstructed. Measured against the
     // bundle this run reads it is more than that, and the empty-rationale
-    // entries are entirely explained by them — no report has only SOME
+    // entries are entirely explained by them, no report has only SOME
     // rationales missing. A hardcoded nine would have quietly admitted the
     // rest into the calibration set.
     const bundle = coachDataJson as unknown as {
@@ -100,11 +100,79 @@ describe("eligibility is an explicit filter, and its count is derived", () => {
     const totalReports = corpus.length;
     expect(result.eligible.length + result.excluded.length).toBe(totalReports);
     // Every excluded report contributes exactly its full dimension set to the
-    // empty count — which is the evidence that the share is whole reports and
+    // empty count, which is the evidence that the share is whole reports and
     // not scattered gaps.
     const excludedEntries = result.excluded.length * DIMENSIONS.length;
     expect(result.emptyRationaleEntries).toBe(excludedEntries);
     expect(result.excluded.length).toBeGreaterThan(0);
+  });
+});
+
+describe("an incomplete hand report is not a partial comparison", () => {
+  it("excludes a report missing dimensions rather than comparing eight against twelve", () => {
+    // composeBaseScore drops a null from the DENOMINATOR, which is right for a
+    // judged not-applicable and wrong for a gap in the corpus: the hand
+    // composite would be computed over the dimensions that happen to be there
+    // and the machine's over all twelve, and the difference between those two
+    // numbers is not agreement.
+    const partial = report("c1", "r-partial", "2026-01-01", 4);
+    partial.dimensions = partial.dimensions.slice(0, 8);
+
+    const { eligible, excluded } = selectEligible([
+      partial,
+      report("c1", "r-whole", "2026-01-02", 4),
+    ]);
+    expect(eligible.map((r) => r.reportId)).toEqual(["r-whole"]);
+    expect(excluded).toEqual([
+      { reportId: "r-partial", coachId: "c1", reason: "incomplete-dimensions" },
+    ]);
+  });
+
+  it("a not-applicable dimension is a JUDGEMENT and stays eligible", () => {
+    // The distinction the exclusion rests on: null means the leader's session
+    // gave nothing to score, which is a real observation, not a missing row.
+    const withNulls = report("c1", "r-nulls", "2026-01-01", 4);
+    withNulls.dimensions[3] = { n: 4, score: null, rationale: "nothing on it" };
+
+    const { eligible, excluded } = selectEligible([withNulls]);
+    expect(eligible.map((r) => r.reportId)).toEqual(["r-nulls"]);
+    expect(excluded).toEqual([]);
+  });
+
+  it("the BUNDLED corpus carries all twelve on every report", () => {
+    // Measured, not assumed: if a future bundle drops dimensions, the
+    // calibration's eligible count moves and this says so.
+    const corpus = (
+      coachDataJson as {
+        coaches: Array<{
+          id: string;
+          reports: Array<{
+            id: string;
+            date: string;
+            dimensions: Array<{
+              n: number;
+              score: number | null;
+              note?: string;
+            }>;
+          }>;
+        }>;
+      }
+    ).coaches.flatMap((c) =>
+      c.reports.map((r) => ({
+        coachId: c.id,
+        reportId: r.id,
+        date: r.date,
+        dimensions: r.dimensions.map((d) => ({
+          n: d.n,
+          score: d.score,
+          rationale: d.note ?? "",
+        })),
+      })),
+    );
+    const { excluded } = selectEligible(corpus);
+    expect(
+      excluded.filter((e) => e.reason === "incomplete-dimensions"),
+    ).toEqual([]);
   });
 });
 
@@ -125,7 +193,7 @@ describe("the replay is stateful, in date order, per leader", () => {
     ]);
   });
 
-  it("keeps leaders apart — the baseline is per leader, not per programme", () => {
+  it("keeps leaders apart, the baseline is per leader, not per programme", () => {
     const ordered = replayOrder([
       report("a", "a1", "2026-01-01", 4),
       report("b", "b1", "2026-01-02", 4),
@@ -150,7 +218,7 @@ describe("agreement is reported per leader as well as overall", () => {
   it("one leader cannot carry the average alone", () => {
     // The benchmark leader is ~5x the median leader's share and is the only
     // one scored against his own rolling baseline, so his agreement is not
-    // comparable to the others' — it has to be visible separately.
+    // comparable to the others', it has to be visible separately.
     const corpus = [
       report("bench", "b1", "2026-01-01", 5),
       report("bench", "b2", "2026-01-08", 5),
@@ -209,9 +277,18 @@ describe("the tolerance is a delivery gate, not a report", () => {
     expect(verdict.shortfalls).toEqual([]);
   });
 
+  it("the gate is 5 points of MAE and 90% of dimensions within one", () => {
+    // PINNED. The drift tests below used to be written relative to these
+    // constants (`TOLERANCE_COMPOSITE_MAE + 1`), so widening the gate to 50
+    // points would have kept every one of them green. What the numbers are is
+    // a product decision, so the test states them.
+    expect(TOLERANCE_COMPOSITE_MAE).toBe(5);
+    expect(TOLERANCE_DIMENSIONS_WITHIN_ONE).toBe(0.9);
+  });
+
   it("blocks and NAMES the shortfall when the composite drifts", () => {
     const verdict = checkTolerance({
-      compositeMae: TOLERANCE_COMPOSITE_MAE + 1,
+      compositeMae: 6,
       dimensionsWithinOne: 0.99,
       comparisons: 100,
       reports: 10,
@@ -225,7 +302,7 @@ describe("the tolerance is a delivery gate, not a report", () => {
     // individual judgement is wrong.
     const verdict = checkTolerance({
       compositeMae: 0,
-      dimensionsWithinOne: TOLERANCE_DIMENSIONS_WITHIN_ONE - 0.1,
+      dimensionsWithinOne: 0.8,
       comparisons: 100,
       reports: 10,
     });
@@ -233,7 +310,19 @@ describe("the tolerance is a delivery gate, not a report", () => {
     expect(verdict.shortfalls.join(" ")).toContain("within 1");
   });
 
-  it("an EMPTY measurement never passes — no evidence is not agreement", () => {
+  it("the boundary itself passes: exactly 5 and exactly 90%", () => {
+    // Both comparisons are strict, so the stated tolerance is inclusive. A
+    // backtest landing exactly on it is not a failure.
+    const verdict = checkTolerance({
+      compositeMae: 5,
+      dimensionsWithinOne: 0.9,
+      comparisons: 100,
+      reports: 10,
+    });
+    expect(verdict.withinTolerance).toBe(true);
+  });
+
+  it("an EMPTY measurement never passes, no evidence is not agreement", () => {
     // Passing here would ship unvalidated machine scores to leaders on the
     // strength of having measured nothing.
     const verdict = checkTolerance({

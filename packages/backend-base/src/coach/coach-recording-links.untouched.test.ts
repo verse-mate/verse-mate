@@ -21,7 +21,7 @@ async function cleanup() {
 }
 
 /**
- * Task 4.5a. `coach_recording_links` holds links an admin PASTED — material
+ * Task 4.5a. `coach_recording_links` holds links an admin PASTED, material
  * VerseMate does not host. They are explicitly out of scope for the archive
  * requirement, and retiring them is not part of this change. This is the guard
  * that the archive work left them alone.

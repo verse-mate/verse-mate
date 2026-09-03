@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
+import coachData from "./coach.data.json";
 import {
   CLUSTERS,
   DIMENSIONS,
@@ -7,6 +8,8 @@ import {
   STATUS_BANDS,
   clusterPercentages,
   composeBaseScore,
+  composeBonuses,
+  composeComposite,
   dimensionBandLabel,
   rubricContract,
   statusForScore,
@@ -38,7 +41,7 @@ describe("the rubric is defined exactly once", () => {
     }
   });
 
-  it("a cluster weight is read, never restated — the contract quotes the definition", () => {
+  it("a cluster weight is read, never restated, the contract quotes the definition", () => {
     // The single-source property, made falsifiable: the served contract is
     // derived from CLUSTERS/DIMENSIONS, so a second hand-maintained copy would
     // drift and this comparison would catch it.
@@ -167,5 +170,78 @@ describe("the composite is computed from that definition", () => {
       const defined = CLUSTERS.find((x) => x.name === c.name);
       expect(c.contribution).toBeCloseTo(defined?.weight as number, 6);
     }
+  });
+});
+
+describe("the two bonuses on top of the base", () => {
+  it("REPLAYS all 119 published reports: base + bonuses reproduces every score", () => {
+    // The rule was not documented anywhere, so it was measured. Each of the
+    // reports in the bundled corpus carries its head counts, its base and its
+    // published score, which pins the arithmetic exactly: any change to
+    // composeBonuses that does not match the live programme fails here.
+    const reports = coachData.coaches.flatMap((c) => c.reports);
+    expect(reports.length).toBe(119);
+
+    const wrong = reports.filter((r) => {
+      const bonuses = composeBonuses({
+        attendees: r.attendees,
+        newcomers: r.newcomers,
+      });
+      return (
+        bonuses.newcomerBonus !== r.newcomerBonus ||
+        bonuses.sizeBonus !== r.sizeBonus ||
+        composeComposite(r.base, bonuses) !== r.score
+      );
+    });
+    expect(wrong).toEqual([]);
+  });
+
+  it("the newcomer bonus is the first-timer count, capped at five", () => {
+    expect(composeBonuses({ newcomers: 0 }).newcomerBonus).toBe(0);
+    expect(composeBonuses({ newcomers: 3 }).newcomerBonus).toBe(3);
+    expect(composeBonuses({ newcomers: 5 }).newcomerBonus).toBe(5);
+    // The corpus has a session with 24 first-timers. It still scores 5.
+    expect(composeBonuses({ newcomers: 24 }).newcomerBonus).toBe(5);
+  });
+
+  it("the size bonus starts at sixteen and stops at three", () => {
+    expect(composeBonuses({ attendees: 15 }).sizeBonus).toBe(0);
+    expect(composeBonuses({ attendees: 16 }).sizeBonus).toBe(0.5);
+    expect(composeBonuses({ attendees: 20 }).sizeBonus).toBe(2.5);
+    expect(composeBonuses({ attendees: 21 }).sizeBonus).toBe(3);
+    expect(composeBonuses({ attendees: 35 }).sizeBonus).toBe(3);
+  });
+
+  it("junk head counts are zero, never NaN", () => {
+    // These arrive from a provider payload and from a model's JSON.
+    expect(composeBonuses({ attendees: null, newcomers: null })).toEqual({
+      newcomerBonus: 0,
+      sizeBonus: 0,
+    });
+    expect(composeBonuses({ attendees: -4, newcomers: -1 })).toEqual({
+      newcomerBonus: 0,
+      sizeBonus: 0,
+    });
+    expect(composeBonuses({ attendees: 17.9 }).sizeBonus).toBe(1);
+  });
+
+  it("the composite is CAPPED at 100", () => {
+    // The base alone reaches 100 and the bonuses add eight more. Every surface
+    // renders the number as "x / 100", so an uncapped 103 would make the
+    // portal, the email and the PDF all state something untrue.
+    expect(composeComposite(100, { newcomerBonus: 5, sizeBonus: 3 })).toBe(100);
+    expect(composeComposite(98, { newcomerBonus: 5, sizeBonus: 3 })).toBe(100);
+    expect(composeComposite(90, { newcomerBonus: 5, sizeBonus: 3 })).toBe(98);
+  });
+
+  it("keeps TWO decimals, the precision the published corpus carries", () => {
+    // Rounding to one would make a backfilled report and a new one computed
+    // from the same numbers disagree in the third digit.
+    expect(composeComposite(78.06, { newcomerBonus: 0, sizeBonus: 0.5 })).toBe(
+      78.56,
+    );
+    expect(
+      composeComposite(76.041666, { newcomerBonus: 5, sizeBonus: 3 }),
+    ).toBe(84.04);
   });
 });

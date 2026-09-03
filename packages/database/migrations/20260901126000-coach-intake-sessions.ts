@@ -10,8 +10,8 @@ import type Database from "../src/models/Database";
  * resolution (4.9a). One table, because all of it is state about ONE source
  * session.
  *
- * The poll watermark is derived from this table — `max(observed_at)` less a
- * fixed overlap — rather than stored beside it. A stored cursor and a dedupe
+ * The poll watermark is derived from this table, `max(observed_at)` less a
+ * fixed overlap, rather than stored beside it. A stored cursor and a dedupe
  * set can disagree, and when they do the cursor wins and a session is skipped
  * forever; derived, the two cannot drift. The overlap is what makes a
  * late-arriving transcript still visible, and the dedupe is what stops the
@@ -25,7 +25,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
   console.log("Creating coach_intake_sessions ...");
   await db.schema
     .createTable("coach_intake_sessions")
-    // The provider's own session id — the natural key intake dedupes on.
+    // The provider's own session id, the natural key intake dedupes on.
     .addColumn("source_session_id", "text", (col) => col.primaryKey())
     // NULL while unattributed. The session is kept, not dropped.
     .addColumn("coach_id", "text")
@@ -52,6 +52,10 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     .addColumn("retry_count", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("reshare_requested_at", "timestamp")
+    // When the request was actually EMAILED, separate from when it was raised.
+    // Without it a successful send left every part of "pending" true, so a
+    // second click on the admin surface mailed the leader again.
+    .addColumn("reshare_sent_at", "timestamp")
     .addColumn("reshare_resolved_at", "timestamp")
     // Set once the session produces a report; cleared rather than orphaned if
     // that report is deleted, because the session was still genuinely observed.

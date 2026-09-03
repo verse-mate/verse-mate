@@ -55,7 +55,7 @@ function isoDate(value: unknown): string {
 /**
  * Clamp a pagination input to a whole number in range. `Math.min(Math.max(n, 1),
  * 100)` returns NaN for NaN, and a fractional value reaches SQL as-is, so a
- * `?limit=abc` came back as `invalid input syntax for type bigint: "NaN"` — a
+ * `?limit=abc` came back as `invalid input syntax for type bigint: "NaN"`, a
  * 500 with an internal detail in it. Anything not a finite number falls back to
  * the default.
  */
@@ -87,7 +87,7 @@ const DATE_COL = sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as(
  */
 /**
  * A write executor: the pooled connection, or an open transaction. The write
- * methods take one so a caller can make a whole batch atomic — a mid-batch
+ * methods take one so a caller can make a whole batch atomic, a mid-batch
  * failure must not leave some reports committed and the provenance bump skipped.
  */
 export type CoachReportsWriter = Transaction<Database>;
@@ -181,7 +181,7 @@ export class CoachReportsRepository {
    * One session's full content, for a SPECIFIC coach. Resolves by immutable id
    * OR by a legacy id a link was previously issued under, so older delivered
    * links keep working. Returns null when the id matches nothing FOR THAT COACH
-   * — the caller reports not-found rather than silently showing a different
+   *, the caller reports not-found rather than silently showing a different
    * session, and a leader can never read another leader's report.
    */
   async getDetail(
@@ -200,7 +200,7 @@ export class CoachReportsRepository {
       .where((eb) =>
         eb.or([
           eb("id", "=", reportId),
-          eb(sql`${reportId}`, "=", sql`ANY(legacy_ids)`),
+          eb(sql`legacy_ids`, "@>", sql`ARRAY[${reportId}]::text[]`),
         ]),
       )
       // An exact id always wins over another report's legacy alias, so the
@@ -229,7 +229,7 @@ export class CoachReportsRepository {
       .where((eb) =>
         eb.or([
           eb("id", "=", reportId),
-          eb(sql`${reportId}`, "=", sql`ANY(legacy_ids)`),
+          eb(sql`legacy_ids`, "@>", sql`ARRAY[${reportId}]::text[]`),
         ]),
       )
       .executeTakeFirst();
@@ -249,7 +249,7 @@ export class CoachReportsRepository {
       .where((eb) =>
         eb.or([
           eb("id", "=", reportId),
-          eb(sql`${reportId}`, "=", sql`ANY(legacy_ids)`),
+          eb(sql`legacy_ids`, "@>", sql`ARRAY[${reportId}]::text[]`),
         ]),
       )
       .executeTakeFirst();
@@ -289,7 +289,7 @@ export class CoachReportsRepository {
    * Every report of a coach, complete, in ONE query. Replaces a
    * listMetrics-then-getDetail-per-row loop that fired N+1 queries and, via
    * Promise.all, queued N connection acquisitions against a 10-connection pool
-   * — one leader's dashboard could monopolise the whole pool.
+   *, one leader's dashboard could monopolise the whole pool.
    */
   async listFullReports(coachId: string): Promise<ReportDetailRow[]> {
     const rows = await this.db
@@ -326,7 +326,7 @@ export class CoachReportsRepository {
     return rows.map((r) => r.coach_id);
   }
 
-  /** Metrics for every coach — the program-wide monthly rollup. */
+  /** Metrics for every coach, the program-wide monthly rollup. */
   async listAllMetrics(): Promise<
     Array<{
       id: string;
@@ -368,7 +368,7 @@ export class CoachReportsRepository {
     };
   }
 
-  /** Total rows in the store — the truth `report_count` must reflect. */
+  /** Total rows in the store, the truth `report_count` must reflect. */
   async totalReports(writer?: CoachReportsWriter): Promise<number> {
     const row = await (writer ?? this.db.getOrCreateConnection())
       .selectFrom("coach_reports")
@@ -418,7 +418,7 @@ export class CoachReportsRepository {
    *
    * The store is the sole assigner of ids: when a report for that leader, date
    * AND source session already exists its id is kept (so overlay rows and
-   * delivered links stay valid) and the payload's id — if different — is
+   * delivered links stay valid) and the payload's id, if different, is
    * recorded in `legacy_ids`. A brand-new report takes the id the caller
    * proposes, or a generated one.
    *
@@ -431,9 +431,17 @@ export class CoachReportsRepository {
     writer?: CoachReportsWriter,
   ): Promise<UpsertedReport> {
     // ONE atomic statement: a SELECT-then-INSERT races two concurrent publishes
-    // for the same leader+date into a unique-constraint 500. ON CONFLICT also
-    // preserves the report's identity — the incoming id is appended to
+    // for the same session into a unique-constraint 500. ON CONFLICT also
+    // preserves the report's identity, the incoming id is appended to
     // legacy_ids instead of replacing it, so delivered links keep resolving.
+    //
+    // The conflict target is the SOURCE SESSION, not (leader, date, session).
+    // Keyed by the triple, re-attributing a session (an admin fixing a wrong
+    // match, a roster edit changing which keyword wins) found no row for the
+    // new leader and inserted a SECOND report, leaving the first standing under
+    // the wrong one: two reports, two emails, and one session counted twice
+    // across two leaders' trends. Re-attribution now MOVES the report, which is
+    // why coach_id and session_date are in the update list.
     const result = await sql<{ id: string; created: boolean }>`
       INSERT INTO coach_reports
         (id, coach_id, session_date, source_session_id,
@@ -446,7 +454,9 @@ export class CoachReportsRepository {
         ${JSON.stringify(row.metrics)}::jsonb,
         ${JSON.stringify(row.body)}::jsonb
       )
-      ON CONFLICT (coach_id, session_date, source_session_id) DO UPDATE SET
+      ON CONFLICT (source_session_id) DO UPDATE SET
+        coach_id = EXCLUDED.coach_id,
+        session_date = EXCLUDED.session_date,
         summary = EXCLUDED.summary,
         metrics = EXCLUDED.metrics,
         body    = EXCLUDED.body,

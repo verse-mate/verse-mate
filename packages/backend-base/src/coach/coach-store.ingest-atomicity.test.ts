@@ -71,7 +71,7 @@ describe("the batch report write is atomic", () => {
 
     // A batch whose SECOND report the database rejects: the date passes the
     // service's yyyy-mm-dd shape check but is not a real calendar date, so it
-    // fails at the ::date cast — inside the loop, after report one is written.
+    // fails at the ::date cast, inside the loop, after report one is written.
     await expect(
       service.ingestReports({
         reports: [
@@ -82,7 +82,7 @@ describe("the batch report write is atomic", () => {
       }),
     ).rejects.toThrow();
 
-    // Nothing from the failed batch survives — not the report that had already
+    // Nothing from the failed batch survives, not the report that had already
     // been written when the error hit.
     expect(await storedCount()).toBe(1);
     const after = await conn

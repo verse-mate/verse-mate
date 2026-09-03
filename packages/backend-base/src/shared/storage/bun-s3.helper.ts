@@ -47,7 +47,7 @@ type BunS3Client = ReturnType<
 
 /**
  * Multipart part size. S3 allows at most 10,000 parts per object, so this
- * number times 10,000 IS the supported object ceiling — task 4.3b asks for that
+ * number times 10,000 IS the supported object ceiling, task 4.3b asks for that
  * ceiling to be stated rather than discovered by a failed upload.
  */
 export const MULTIPART_PART_SIZE_BYTES = 16 * 1024 * 1024;
@@ -59,7 +59,7 @@ const S3_MAX_PARTS = 10_000;
  * The largest object this helper can store: ~160 GB.
  *
  * Worth stating because the surface it replaces could not say this. A single
- * PUT — the only thing `putObject` ever did — caps at S3's 5 GB single-object
+ * PUT, the only thing `putObject` ever did, caps at S3's 5 GB single-object
  * limit, which a long recorded session can exceed, and the failure arrives at
  * upload time with no warning beforehand.
  */
@@ -75,7 +75,7 @@ export const MAX_STREAMED_OBJECT_BYTES =
  * against MinIO local and DigitalOcean Spaces production.
  *
  * Bucket-level provisioning (createBucket, putBucketPolicy) is intentionally
- * not modeled here — buckets are pre-provisioned at the infrastructure layer.
+ * not modeled here, buckets are pre-provisioned at the infrastructure layer.
  */
 export class BunS3Helper {
   private readonly client: BunS3Client;
@@ -109,7 +109,7 @@ export class BunS3Helper {
   /**
    * Upload a stream as a multipart object, returning the byte count written.
    *
-   * The whole object never sits in memory — which is the difference between
+   * The whole object never sits in memory, which is the difference between
    * staging a session recording and OOM-ing the container on one. Also lifts
    * the ceiling from S3's 5 GB single-PUT limit to
    * `MAX_STREAMED_OBJECT_BYTES`.
@@ -131,6 +131,18 @@ export class BunS3Helper {
         const { done, value } = await reader.read();
         if (done) break;
         if (!value) continue;
+        // ENFORCED, not merely documented. MAX_STREAMED_OBJECT_BYTES was
+        // declared and then compared against nothing, so the "supported upper
+        // size" was a comment: a stream of any length was written until S3
+        // refused it, having already been billed for the parts. A source whose
+        // length is not declared up front, which is every chunked response —
+        // could run indefinitely.
+        if (written + value.byteLength > MAX_STREAMED_OBJECT_BYTES) {
+          await reader.cancel();
+          throw new InternalServerError(
+            `Bun S3 putObjectStream refused ${key}: exceeds ${MAX_STREAMED_OBJECT_BYTES} bytes`,
+          );
+        }
         await writer.write(value);
         written += value.byteLength;
       }
@@ -165,7 +177,7 @@ export class BunS3Helper {
   }
 
   /**
-   * A byte range, INCLUSIVE at both ends — the semantics of an HTTP `Range`
+   * A byte range, INCLUSIVE at both ends, the semantics of an HTTP `Range`
    * header, so a caller serving one does not have to convert. `end` omitted
    * runs to the end of the object. Null when the key does not exist.
    */
@@ -263,9 +275,9 @@ export class BunS3Helper {
 
   /**
    * Generate a presigned URL for an object.
-   * @param key — S3 key
-   * @param expiresInSeconds — URL TTL (per `storage.constants.ts`: 3h public, 3d private)
-   * @param method — HTTP method the URL grants. Default GET.
+   * @param key, S3 key
+   * @param expiresInSeconds, URL TTL (per `storage.constants.ts`: 3h public, 3d private)
+   * @param method, HTTP method the URL grants. Default GET.
    */
   presignUrl(
     key: string,

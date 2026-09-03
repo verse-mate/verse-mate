@@ -9,7 +9,7 @@ import type Database from "../src/models/Database";
  *
  * Keyed on (coach_id, month): one summary per leader per month, so a
  * re-publish updates in place while a leader's other months are untouched.
- * `coach_id` is the roster slug — the same key `coach_reports` uses — so the
+ * `coach_id` is the roster slug, the same key `coach_reports` uses, so the
  * two join without a translation table.
  */
 export async function up(db: Kysely<Database>): Promise<void> {

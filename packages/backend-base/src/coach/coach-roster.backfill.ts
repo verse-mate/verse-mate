@@ -17,7 +17,7 @@ import coachDataJson from "./coach.data.json";
  *
  * Idempotent, and deliberately NOT a full overwrite. Attribution keywords are
  * admin-editable once seeded (design open question 6), so a re-run must not
- * revert an admin's edit — `title_match` and `alt_emails` are written only when
+ * revert an admin's edit, `title_match` and `alt_emails` are written only when
  * the stored value is still empty.
  */
 

@@ -16,8 +16,8 @@ import type Database from "../src/models/Database";
  * sharing a slug would each see the other's sessions.
  *
  * `is_benchmark` marks the one leader the coaching model is benchmarked
- * against. Governance rule 1 — his name must not appear in another leader's
- * report — is unimplementable without a marker, and the roster carried none:
+ * against. Governance rule 1, his name must not appear in another leader's
+ * report, is unimplementable without a marker, and the roster carried none:
  * its fields were id / name / email / group / coachName / isCoach / zoomLink.
  * A partial unique index enforces "at most one", because the rule is written in
  * the singular and a second benchmark leader would make it ambiguous rather
@@ -38,7 +38,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     // Intake attribution, migrated from the host's config/leader_map.json.
     // The recording bot files EVERY leader's meeting under one shared host
-    // address, so the sender cannot identify the leader — the session TITLE
+    // address, so the sender cannot identify the leader, the session TITLE
     // does. These keywords are what task 4.2 matches on, and the file they came
     // from has no home once the host is retired. In the database and
     // admin-editable (design open question 6, decided): changing a keyword is
@@ -53,8 +53,8 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     // Coverage attestation (task 4.7). A leader who is genuinely not teaching
     // looks exactly like a leader the recording bot fails to cover: both are
-    // silent. No provider API can tell them apart — Fireflies exposes nothing
-    // that lists configured or upcoming joins — so the distinction is recorded
+    // silent. No provider API can tell them apart, Fireflies exposes nothing
+    // that lists configured or upcoming joins, so the distinction is recorded
     // by a human, explicitly, and never inferred.
     .addColumn("not_teaching_attested_at", "timestamp")
     .addColumn("not_teaching_attested_by", "uuid", (col) =>
