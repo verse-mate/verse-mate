@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { db as Database } from "database";
 
 import { CoachArchiveService } from "./coach-archive.service";
@@ -10,6 +18,23 @@ import type {
   FirefliesTranscript,
   FirefliesTranscriptDetail,
 } from "./fireflies.client";
+
+/**
+ * The fixture host stands in for the provider's CDN, so it has to be on the
+ * allowlist the archive checks before it fetches anything. Set here rather
+ * than by rewriting the fixtures to a real Fireflies hostname: the point of
+ * these tests is retention, and pinning them to a production hostname would
+ * make a CDN change look like a retention bug.
+ */
+const ORIGINAL_ALLOWLIST = process.env.COACH_VIDEO_HOST_ALLOWLIST;
+beforeAll(() => {
+  process.env.COACH_VIDEO_HOST_ALLOWLIST = "provider.test";
+});
+afterAll(() => {
+  if (ORIGINAL_ALLOWLIST === undefined)
+    Reflect.deleteProperty(process.env, "COACH_VIDEO_HOST_ALLOWLIST");
+  else process.env.COACH_VIDEO_HOST_ALLOWLIST = ORIGINAL_ALLOWLIST;
+});
 
 const conn = Database.getOrCreateConnection();
 const COACH = "archive-svc-coach";
@@ -135,7 +160,6 @@ function service(
   bodies: Record<string, string>,
 ) {
   return new CoachArchiveService(Database, client, {
-    // biome-ignore lint/suspicious/noExplicitAny: test double
     storage: storage as any,
     fetch: fakeFetch(bodies),
   });
@@ -211,7 +235,7 @@ describe("a report's evidence outlives the provider's share link", () => {
     expect(assets.length).toBe(2);
   });
 
-  it("a session with NO video is not retained — no audio-only report", async () => {
+  it("a session with NO video is not retained, no audio-only report", async () => {
     // 'no report at all without retained source material' is the rule; an
     // audio-only report would score Visual Aids against nothing.
     await seedSession("ff-1");
@@ -252,7 +276,7 @@ describe("a report's evidence outlives the provider's share link", () => {
     expect(assets.length).toBe(0);
   });
 
-  it("the STORED transcript carries no speaker name — the guard on what is written, not on the type", async () => {
+  it("the STORED transcript carries no speaker name, the guard on what is written, not on the type", async () => {
     // The type that leaves the client has no name field (task 4.3a), but that
     // says nothing about what the archive chooses to persist. This is the
     // assertion that caught a mutation writing the provider payload alongside

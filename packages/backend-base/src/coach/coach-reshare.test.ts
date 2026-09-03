@@ -124,18 +124,62 @@ describe("asking a leader to re-share a recording", () => {
   });
 
   it("a successful send is recorded against the request", async () => {
-    const old = new Date("2026-08-25T00:00:00Z");
-    await seed("retrieval_failed", { reshare_requested_at: old });
+    const requestedAt = new Date("2026-08-25T00:00:00Z");
+    await seed("retrieval_failed", { reshare_requested_at: requestedAt });
     await new CoachReshareService(Database, new FakeMailer()).send(
       "ff-reshare",
     );
     const row = await conn
       .selectFrom("coach_intake_sessions")
-      .select("reshare_requested_at")
+      .select(["reshare_requested_at", "reshare_sent_at"])
       .where("source_session_id", "=", "ff-reshare")
       .executeTakeFirstOrThrow();
-    expect(
-      new Date(row.reshare_requested_at as Date).getTime(),
-    ).toBeGreaterThan(old.getTime());
+    // The SEND is what gets stamped. Refreshing the request timestamp instead
+    // left every part of "still pending" true, which is what let the same
+    // request go out twice.
+    expect(row.reshare_sent_at).not.toBeNull();
+    expect(new Date(row.reshare_requested_at as Date).toISOString()).toBe(
+      requestedAt.toISOString(),
+    );
+  });
+
+  it("does NOT ask the same leader twice for the same session", async () => {
+    // Two clicks on the admin surface, or a page reload that re-posts, used to
+    // send the leader a second copy of the same request.
+    await seed("retrieval_failed", {
+      reshare_requested_at: new Date("2026-08-25T00:00:00Z"),
+    });
+    const mailer = new FakeMailer();
+    const svc = new CoachReshareService(Database, mailer);
+
+    expect((await svc.send("ff-reshare")).sent).toBe(true);
+    const second = await svc.send("ff-reshare");
+    expect(second.sent).toBe(false);
+    expect(second.refusal).toBe("already-asked");
+    expect(mailer.sent.length).toBe(1);
+  });
+
+  it("a session that fails AGAIN can be asked about again", async () => {
+    // The marker is cleared when the request resolves and when a fresh failure
+    // raises a new one, so a re-shared recording that fails a second time is
+    // not silently unaskable.
+    await seed("retrieval_failed", {
+      reshare_requested_at: new Date("2026-08-25T00:00:00Z"),
+    });
+    const mailer = new FakeMailer();
+    const svc = new CoachReshareService(Database, mailer);
+    await svc.send("ff-reshare");
+
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({
+        reshare_sent_at: null,
+        reshare_requested_at: new Date("2026-09-01T00:00:00Z"),
+      })
+      .where("source_session_id", "=", "ff-reshare")
+      .execute();
+
+    expect((await svc.send("ff-reshare")).sent).toBe(true);
+    expect(mailer.sent.length).toBe(2);
   });
 });

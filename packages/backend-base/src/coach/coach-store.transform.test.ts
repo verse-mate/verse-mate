@@ -80,3 +80,57 @@ describe("coach-store transform", () => {
     expect(summary).not.toHaveProperty("bigIdeas");
   });
 });
+
+describe("two sessions on one day are two reports", () => {
+  it("gives the SECOND same-day report its own source session id", () => {
+    // The unique key is (coach_id, session_date, source_session_id). With one
+    // sentinel per (leader, date) the second report upserted over the first,
+    // and one session's report disappeared with nothing raised.
+    const rows = datasetToRows({
+      coaches: [
+        {
+          id: "bryan-bailey",
+          reports: [
+            { id: "morning", date: "2026-08-22" },
+            { id: "makeup", date: "2026-08-22" },
+            { id: "next-week", date: "2026-08-29" },
+          ],
+        },
+      ],
+    });
+    const ids = rows.map((r) => r.source_session_id);
+    expect(new Set(ids).size).toBe(3);
+    // The first report on a date keeps the unsuffixed id, so every row the
+    // current backfill already wrote still matches.
+    expect(ids[0]).toBe("legacy:bryan-bailey:2026-08-22");
+    expect(ids[1]).toBe("legacy:bryan-bailey:2026-08-22#1");
+    expect(ids[2]).toBe("legacy:bryan-bailey:2026-08-29");
+  });
+
+  it("the sentinel is still TITLE-FREE, so a re-title stays idempotent", () => {
+    const before = datasetToRows({
+      coaches: [
+        {
+          id: "c",
+          reports: [{ id: "saturday-morning-group", date: "2026-08-22" }],
+        },
+      ],
+    });
+    const after = datasetToRows({
+      coaches: [
+        { id: "c", reports: [{ id: "renamed-entirely", date: "2026-08-22" }] },
+      ],
+    });
+    expect(before[0].source_session_id).toBe(after[0].source_session_id);
+  });
+
+  it("the BUNDLED corpus is unchanged by the ordinal", () => {
+    // Measured: no leader in today's bundle has two reports on one date, so
+    // every sentinel is still the unsuffixed form the first backfill wrote.
+    const rows = datasetToRows(coachDataJson);
+    expect(rows.filter((r) => r.source_session_id.includes("#"))).toEqual([]);
+    expect(new Set(rows.map((r) => r.source_session_id)).size).toBe(
+      rows.length,
+    );
+  });
+});

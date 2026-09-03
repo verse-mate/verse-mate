@@ -7,7 +7,7 @@ import type { db } from "../shared/shared.plugin";
  *
  * Exactly two, and this module claims nothing beyond them. The QA checklist has
  * many more rules; every other one stays human-checked, and pretending
- * otherwise would be worse than not checking at all — a checklist people
+ * otherwise would be worse than not checking at all, a checklist people
  * believe is automated stops being read.
  *
  * Rule 1: the benchmark leader's name must not appear in ANOTHER leader's
@@ -39,7 +39,7 @@ export interface GovernanceVerdict {
  *
  * A STATED LIMIT: verbatim reuse only. A quote re-punctuated or trimmed by a
  * word is not detected, and pretending to catch that would need a similarity
- * threshold nobody has calibrated — a threshold that blocks a leader's report
+ * threshold nobody has calibrated, a threshold that blocks a leader's report
  * on a judgement call is worse than a narrow rule that never surprises them.
  */
 export function normalizeQuote(quote: string): string {
@@ -49,8 +49,8 @@ export function normalizeQuote(quote: string): string {
 /**
  * Rule 1, as a pure check.
  *
- * There is NO attendee-list exception. Open question 4 is answered — attendance
- * is a count, never names — so there is no appendix for a name to sit in, and
+ * There is NO attendee-list exception. Open question 4 is answered, attendance
+ * is a count, never names, so there is no appendix for a name to sit in, and
  * the rule is unconditional outside his own reports.
  */
 export function checkBenchmarkName(input: {
@@ -113,7 +113,7 @@ export class CoachGovernanceService {
    * Check a report at DELIVERY time, against what is already persisted.
    *
    * Delivery time, not scoring time, because "earlier" has to mean "already
-   * delivered" — and per-leader delivery is serialized by the caller so that
+   * delivered", and per-leader delivery is serialized by the caller so that
    * two reports produced in one poll cycle still have an order. Without that,
    * two same-cycle reports could each see the other as not-yet-existing and
    * both ship with the same quote.
@@ -140,8 +140,8 @@ export class CoachGovernanceService {
     });
 
     // Only this leader's reports, and only those carrying structured evidence.
-    // A NULL evidence column means the report predates the field — every
-    // backfilled report — and the comparison set starts empty at cutover
+    // A NULL evidence column means the report predates the field, every
+    // backfilled report, and the comparison set starts empty at cutover
     // rather than being seeded unevenly from whatever happens to exist.
     const earlierRows = await conn
       .selectFrom("coach_reports")

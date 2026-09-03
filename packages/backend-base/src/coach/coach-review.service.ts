@@ -17,7 +17,7 @@ import { composeBaseScore, statusForScore } from "./rubric";
  * different act and needs its own decision.
  *
  * A report nobody corrects is delivered as machine-scored. Review is not a
- * required step — making it one would put a human back in the loop the port
+ * required step, making it one would put a human back in the loop the port
  * exists to remove.
  */
 

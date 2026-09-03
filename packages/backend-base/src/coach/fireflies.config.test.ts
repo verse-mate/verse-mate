@@ -5,7 +5,7 @@ import { firefliesApiKey, firefliesConfigured } from "./fireflies.config";
 const ORIGINAL = process.env.FIREFLIES_API_KEY;
 
 // Reflect.deleteProperty, not `delete`: biome bans the operator, and its
-// suggested fix — assigning undefined — stores the STRING "undefined" in
+// suggested fix, assigning undefined, stores the STRING "undefined" in
 // process.env, which would make "missing" tests pass for the wrong reason.
 function unsetKey(): void {
   Reflect.deleteProperty(process.env, "FIREFLIES_API_KEY");
@@ -26,7 +26,7 @@ describe("the Fireflies credential is required, never defaulted", () => {
   it("fails loudly when it is missing, naming the variable", () => {
     unsetKey();
     expect(firefliesConfigured()).toBe(false);
-    // Never a silent degrade to "no sessions today" — an unset credential and
+    // Never a silent degrade to "no sessions today", an unset credential and
     // a genuinely quiet week are indistinguishable to a reader, and the quiet
     // week is the one that is fine.
     expect(() => firefliesApiKey()).toThrow(/FIREFLIES_API_KEY/);

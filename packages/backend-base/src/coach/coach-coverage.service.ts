@@ -4,7 +4,7 @@ import type { db } from "../shared/shared.plugin";
  * Recording-bot coverage (change: port-coach-pipeline, task 4.7, design D6).
  *
  * With the email path dropped, intake is the only way a session reaches the
- * pipeline — so a leader the bot does not cover silently receives no reports.
+ * pipeline, so a leader the bot does not cover silently receives no reports.
  * This is the mechanism that surfaces them, and task 9.1 gates an irreversible
  * step (retiring the host) on it.
  *
@@ -12,13 +12,13 @@ import type { db } from "../shared/shared.plugin";
  * **no provider API returns the bot's configured joins.** The Fireflies public
  * API exposes Users, Transcripts, Transcript, Bites, Analytics, Active Meetings
  * (in-progress only), AI Apps, AskFred, Channels, Contacts, Live Action Items,
- * Rule Executions and Audit Events — nothing that lists upcoming or configured
+ * Rule Executions and Audit Events, nothing that lists upcoming or configured
  * joins. The host's own client (`fireflies_client.py`) has no such query
  * either. So "is this leader covered" can only be answered by what intake has
  * actually seen.
  *
  * Which leaves one case the data cannot settle: a leader who is genuinely not
- * teaching looks exactly like a leader the bot fails to cover — both are
+ * teaching looks exactly like a leader the bot fails to cover, both are
  * silent. That distinction is recorded by a human, explicitly, and never
  * inferred.
  */
@@ -48,7 +48,7 @@ export interface LeaderCoverage {
   linkedClassName: string | null;
   /**
    * Their registered class disagrees with what intake observed: they entered a
-   * meeting link and nothing arrived. Leader-entered INTENT, never proof — the
+   * meeting link and nothing arrived. Leader-entered INTENT, never proof, the
    * alert asks an admin to check the bot's calendar configuration.
    */
   classAlert: boolean;
@@ -95,7 +95,7 @@ export class CoachCoverageService {
       .selectFrom("coach_classes")
       .innerJoin("user", "user.id", "coach_classes.user_id")
       .select(["user.email as email", "coach_classes.name as name"])
-      // notNull().defaultTo("") — the ROW existing proves nothing, only a
+      // notNull().defaultTo(""), the ROW existing proves nothing, only a
       // non-empty link is leader-entered intent.
       .where("coach_classes.zoom_link", "<>", "")
       .execute();

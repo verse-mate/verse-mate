@@ -21,12 +21,12 @@ async function clear() {
  *
  * A roster record's id has to be the SLUG. Every overlay keys on it —
  * coach_reports.coach_id, coach_notes.coach_id, coach_recording_links.coach_id
- * — so a record carrying coach_leaders' uuid joins to nothing.
+ *, so a record carrying coach_leaders' uuid joins to nothing.
  *
  * It looked harmless while the compiled-in bundle supplied slug-keyed records
  * for every real leader and only admin-added placeholders (who have no reports)
  * came through the database path. After 7.1 deletes the bundle, EVERY leader
- * resolves through that path — so the uuid would empty every leader's history
+ * resolves through that path, so the uuid would empty every leader's history
  * at once, silently, on the deploy that removed the file.
  */
 describe("a roster leader resolves to their reports", () => {

@@ -32,7 +32,7 @@ async function seed(coach: string, n: number, kind = "recording") {
 }
 
 async function clear() {
-  for (const c of [A, B]) {
+  for (const c of [A, B, ""]) {
     await conn
       .deleteFrom("coach_session_assets")
       .where("coach_id", "=", c)
@@ -43,7 +43,6 @@ async function clear() {
 
 function service() {
   const storage = new FakeStorage();
-  // biome-ignore lint/suspicious/noExplicitAny: test double
   return { svc: new CoachRetentionService(Database, storage as any), storage };
 }
 
@@ -78,7 +77,7 @@ describe("recordings are bounded per leader", () => {
     expect(storage.deleted).toEqual([`coach/sessions/ff-${A}-1/recording`]);
   });
 
-  it("the bound is PER LEADER — one busy leader does not evict another's", async () => {
+  it("the bound is PER LEADER, one busy leader does not evict another's", async () => {
     for (const n of [1, 2, 3, 4, 5, 6]) await seed(A, n);
     for (const n of [1, 2]) await seed(B, n);
     const { svc } = service();
@@ -97,7 +96,22 @@ describe("recordings are bounded per leader", () => {
     expect((await keysFor(A)).length).toBe(4);
   });
 
-  it("TRANSCRIPTS are not pruned — they last the report's life", async () => {
+  it("UNATTRIBUTED recordings are never pruned, however many pile up", async () => {
+    // The archive writes coach_id = '' when attribution has not resolved, so
+    // every unattributed session shared one partition and everything past the
+    // fourth was deleted from object storage. That destroyed the source
+    // material for exactly the sessions an admin still needs in order to fix
+    // the attribution.
+    for (const n of [1, 2, 3, 4, 5, 6]) await seed("", n);
+    const { svc, storage } = service();
+
+    const result = await svc.prune();
+    expect(result.deleted).toBe(0);
+    expect(storage.deleted).toEqual([]);
+    expect((await keysFor("")).length).toBe(6);
+  });
+
+  it("TRANSCRIPTS are not pruned, they last the report's life", async () => {
     // The rule is bounded RECORDINGS. A transcript is small and is the
     // evidence a score is defended with, so it lives as long as the report.
     for (const n of [1, 2, 3, 4, 5, 6]) await seed(A, n, "transcript");
@@ -108,7 +122,7 @@ describe("recordings are bounded per leader", () => {
     expect(storage.deleted).toEqual([]);
   });
 
-  it("pruning is idempotent — a second run deletes nothing more", async () => {
+  it("pruning is idempotent, a second run deletes nothing more", async () => {
     for (const n of [1, 2, 3, 4, 5]) await seed(A, n);
     const { svc } = service();
     await svc.prune();
@@ -116,7 +130,7 @@ describe("recordings are bounded per leader", () => {
     expect(second.deleted).toBe(0);
   });
 
-  it("the row goes only if the object went — a failed delete is retried next sweep", async () => {
+  it("the row goes only if the object went, a failed delete is retried next sweep", async () => {
     for (const n of [1, 2, 3, 4, 5]) await seed(A, n);
     const failing = {
       deleted: [] as string[],
@@ -125,7 +139,6 @@ describe("recordings are bounded per leader", () => {
         return false;
       },
     };
-    // biome-ignore lint/suspicious/noExplicitAny: test double
     const svc = new CoachRetentionService(Database, failing as any);
 
     const result = await svc.prune();
@@ -167,7 +180,7 @@ describe("recordings are bounded per leader", () => {
       .where("source_session_id", "=", "ff-ret-1")
       .execute();
     // Enforced by the schema (ON DELETE CASCADE), not by remembering to call
-    // something — a retention rule nobody can forget.
+    // something, a retention rule nobody can forget.
     expect(left.length).toBe(0);
   });
 });

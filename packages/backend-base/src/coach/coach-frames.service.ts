@@ -5,7 +5,7 @@ import { ObjectStorageService } from "../shared/storage/storage.service";
  * task 5.4, design D9).
  *
  * Dimension 7 asks whether the leader used charts, slides, maps or on-screen
- * word-study tools. That is not in the transcript — it is only in the picture —
+ * word-study tools. That is not in the transcript, it is only in the picture —
  * so it is the one dimension that cannot be scored from text.
  *
  * The video is STREAMED from object storage through ffmpeg's stdin and the

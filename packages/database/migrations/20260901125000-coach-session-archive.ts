@@ -10,7 +10,7 @@ import type Database from "../src/models/Database";
  * Keyed on `source_session_id`, not on the report: material is retrieved and
  * staged BEFORE a report exists for it (a session can be held and retried for
  * days), so a report-keyed table could not record what it is holding. When the
- * report is produced, `report_id` is filled in — and the ON DELETE CASCADE is
+ * report is produced, `report_id` is filled in, and the ON DELETE CASCADE is
  * what makes "remove a session's material when its report is deleted" a
  * database guarantee rather than a step someone has to remember.
  *
@@ -37,9 +37,6 @@ export async function up(db: Kysely<Database>): Promise<void> {
     .addColumn("storage_key", "text", (col) => col.notNull())
     .addColumn("byte_size", "bigint")
     .addColumn("content_type", "text")
-    // A stored horizon, so the prune is a query rather than a rule reimplemented
-    // in whichever job happens to run it.
-    .addColumn("retained_until", "timestamp")
     .addColumn("created_at", "timestamp", (col) =>
       col.defaultTo(sql`CURRENT_TIMESTAMP`).notNull(),
     )

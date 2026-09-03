@@ -80,7 +80,7 @@ export class ObjectStorageService {
   }
 
   /**
-   * A byte range, inclusive at both ends — HTTP `Range` semantics, so a caller
+   * A byte range, inclusive at both ends, HTTP `Range` semantics, so a caller
    * serving one does not have to convert. Null when the key does not exist.
    */
   public async getGlobalObjectRange(

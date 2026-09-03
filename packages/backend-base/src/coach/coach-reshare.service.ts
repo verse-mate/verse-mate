@@ -16,6 +16,7 @@ import type { CoachMailer, CoachSendResult } from "./coach.service";
 export type ReshareRefusal =
   | "unknown-session"
   | "not-pending"
+  | "already-asked"
   | "no-leader-address"
   | "send-failed";
 
@@ -52,6 +53,7 @@ export class CoachReshareService {
         "retry_count",
         "reshare_requested_at",
         "reshare_resolved_at",
+        "reshare_sent_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("source_session_id", "=", sourceSessionId)
@@ -66,6 +68,16 @@ export class CoachReshareService {
       session.reshare_requested_at !== null &&
       session.reshare_resolved_at === null;
     if (!pending) return { sent: false, refusal: "not-pending" };
+
+    // Already asked? A successful send used only to refresh
+    // `reshare_requested_at`, which leaves every part of `pending` still true,
+    // so a second click on the admin surface emailed the leader again. The
+    // module's own claim that "nobody sends the same request twice by accident"
+    // was unimplemented until this check existed. `reshare_sent_at` is the
+    // resolution timestamp's sibling.
+    if (session.reshare_sent_at !== null) {
+      return { sent: false, refusal: "already-asked" };
+    }
 
     const leader = session.coach_id
       ? await conn
@@ -106,7 +118,7 @@ export class CoachReshareService {
 
     await conn
       .updateTable("coach_intake_sessions")
-      .set({ reshare_requested_at: sql`NOW()`, updated_at: sql`NOW()` })
+      .set({ reshare_sent_at: sql`NOW()`, updated_at: sql`NOW()` })
       .where("source_session_id", "=", sourceSessionId)
       .execute();
 

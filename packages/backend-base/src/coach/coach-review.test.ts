@@ -89,11 +89,57 @@ describe("an admin can correct a dimension before delivery", () => {
     });
 
     expect(result.ok).toBe(true);
-    // Not patched by a delta — recomputed, so the composite always equals what
+    // Not patched by a delta, recomputed, so the composite always equals what
     // its dimensions say.
     expect(result.base).toBeLessThan(before?.base as number);
     const after = await svc.review(REPORT);
     expect(after?.base).toBeCloseTo(result.base as number, 6);
+  });
+
+  it("records WHO corrected it, not just that someone did", async () => {
+    // Every other test here passes correctedByUserId: null, so the audit
+    // column was never written by anything and a regression dropping it from
+    // the update would have gone unnoticed. It is the only record of which
+    // admin changed a leader's score.
+    const admin = await conn
+      .insertInto("user")
+      .values({
+        email: `review-admin-${Date.now()}@test.local`,
+        firstName: "Review",
+        lastName: "Admin",
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    try {
+      const result = await svc.correct({
+        reportId: REPORT,
+        dimensionN: 3,
+        score: 2,
+        rationale: "corrected by a person",
+        correctedByUserId: admin.id,
+      });
+      expect(result.ok).toBe(true);
+
+      const row = await conn
+        .selectFrom("coach_report_dimension_scores")
+        .select(["corrected_by", "provenance"])
+        .where("report_id", "=", REPORT)
+        .where("dimension_n", "=", 3)
+        .executeTakeFirstOrThrow();
+      expect(row.corrected_by).toBe(admin.id);
+      expect(row.provenance).toBe("human");
+
+      // The dimensions nobody touched carry no attribution.
+      const untouched = await conn
+        .selectFrom("coach_report_dimension_scores")
+        .select("corrected_by")
+        .where("report_id", "=", REPORT)
+        .where("dimension_n", "=", 4)
+        .executeTakeFirstOrThrow();
+      expect(untouched.corrected_by).toBeNull();
+    } finally {
+      await conn.deleteFrom("user").where("id", "=", admin.id).execute();
+    }
   });
 
   it("the corrected dimension is marked human, and the rest stay machine", async () => {
@@ -127,7 +173,7 @@ describe("an admin can correct a dimension before delivery", () => {
     expect(state?.dimensions.find((d) => d.n === 2)?.score).toBeNull();
   });
 
-  it("a report nobody corrects is delivered as MACHINE-scored — review is not required", async () => {
+  it("a report nobody corrects is delivered as MACHINE-scored, review is not required", async () => {
     // Making review mandatory would put a human back in the loop the port
     // exists to remove.
     const state = await svc.review(REPORT);

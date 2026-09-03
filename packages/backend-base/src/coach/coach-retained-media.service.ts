@@ -1,4 +1,6 @@
+import { sql } from "kysely";
 import type { db } from "../shared/shared.plugin";
+
 import { ObjectStorageService } from "../shared/storage/storage.service";
 
 /**
@@ -9,7 +11,7 @@ import { ObjectStorageService } from "../shared/storage/storage.service";
  * proxy route would be unconsumable by a `<video src>`. The mechanism that
  * actually works is: an authenticated API call checks the requester, MINTS a
  * short-lived address for ONE asset, and object storage serves the bytes —
- * Range requests included — with the API never in the data path.
+ * Range requests included, with the API never in the data path.
  *
  * The authorization therefore happens at mint time and nowhere else, which is
  * why a refused request mints nothing rather than minting and denying: an
@@ -21,7 +23,7 @@ import { ObjectStorageService } from "../shared/storage/storage.service";
  *
  * Open question 5, answered provisionally 2026-09-01 (Andy confirms the
  * forwarding residual before cutover): 24 hours. The residual is real and worth
- * restating — a leader who forwards the address inside that window shares the
+ * restating, a leader who forwards the address inside that window shares the
  * recording with whoever receives it, because storage serves it without
  * knowing who is asking.
  */
@@ -54,8 +56,8 @@ export class RetainedMediaService {
   /**
    * A short-lived address for ONE session's recording, or null.
    *
-   * Null covers every refusal — not this leader's session, no session, no
-   * retained asset — deliberately without distinguishing them to the caller:
+   * Null covers every refusal, not this leader's session, no session, no
+   * retained asset, deliberately without distinguishing them to the caller:
    * a 'you may not' that differs from a 'there is nothing' tells an unrelated
    * leader which sessions exist.
    */
@@ -65,6 +67,30 @@ export class RetainedMediaService {
     isAdmin: boolean;
   }): Promise<string | null> {
     const conn = this.db.getOrCreateConnection();
+
+    // Resolve a possibly-LEGACY id first. Delivered `?s=` links carry the id a
+    // report had when the email went out, and the report itself resolves those
+    // via `legacy_ids`, so looking the asset up by the raw id meant an older
+    // link opened the report fine and then 404'd on its recording.
+    const canonical = await conn
+      .selectFrom("coach_reports")
+      .select("id")
+      .where((eb) =>
+        eb.or([
+          eb("id", "=", input.reportId),
+          // `@>` so the GIN index on legacy_ids can actually serve this.
+          // `= ANY(...)` cannot use an array GIN index, and this query has no
+          // coach_id predicate to bound it, so it degraded to a sequential
+          // scan of every report on the request path for each "watch the
+          // recording" click.
+          eb(sql`legacy_ids`, "@>", sql`ARRAY[${input.reportId}]::text[]`),
+        ]),
+      )
+      .orderBy(sql`case when id = ${input.reportId} then 0 else 1 end`)
+      .limit(1)
+      .executeTakeFirst();
+    const reportId = canonical?.id ?? input.reportId;
+
     let q = conn
       .selectFrom("coach_session_assets")
       .innerJoin(
@@ -73,12 +99,12 @@ export class RetainedMediaService {
         "coach_session_assets.report_id",
       )
       .select("coach_session_assets.storage_key")
-      .where("coach_session_assets.report_id", "=", input.reportId)
+      .where("coach_session_assets.report_id", "=", reportId)
       .where("coach_session_assets.kind", "=", "recording");
 
     // The program admin reviews any session; a leader sees their own and
     // nothing else. Scoped in the QUERY, so there is no path where the row is
-    // fetched and the check is forgotten — the shape of the COACH-1 IDOR.
+    // fetched and the check is forgotten, the shape of the COACH-1 IDOR.
     if (!input.isAdmin) {
       if (!input.requesterCoachId) return null;
       q = q.where("coach_reports.coach_id", "=", input.requesterCoachId);
@@ -114,7 +140,7 @@ export class RetainedMediaService {
     );
   }
 
-  /** The same, for a page of sessions — still minting nothing. */
+  /** The same, for a page of sessions, still minting nothing. */
   async describeMany(
     coachId: string,
     reportIds: string[],

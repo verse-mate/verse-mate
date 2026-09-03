@@ -16,7 +16,7 @@ async function columns(table: string): Promise<Set<string>> {
 describe("the leader roster lives in coach_leaders", () => {
   it("carries the slug the reports key on, plus the bundle's roster fields", async () => {
     const cols = await columns("coach_leaders");
-    // `slug` is the join to coach_reports.coach_id — the roster is unusable
+    // `slug` is the join to coach_reports.coach_id, the roster is unusable
     // from the database without it, because every report keys on the slug.
     for (const c of [
       "slug",
@@ -68,7 +68,7 @@ describe("the leader roster lives in coach_leaders", () => {
       .execute();
   });
 
-  it("slug is unique — two leaders cannot share the key reports join on", async () => {
+  it("slug is unique, two leaders cannot share the key reports join on", async () => {
     await sql`
       INSERT INTO coach_leaders (slug, email, name)
       VALUES ('dup-slug', 'dup-1@example.test', 'One')

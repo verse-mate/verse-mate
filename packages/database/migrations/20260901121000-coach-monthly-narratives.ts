@@ -4,8 +4,8 @@ import type Database from "../src/models/Database";
 /**
  * Migration 3 of 9 (change: port-coach-pipeline, design D13).
  *
- * The program-wide monthly narrative — an executive summary and a set of trend
- * paragraphs — moves out of the compiled-in bundle's `monthlyNarratives` map,
+ * The program-wide monthly narrative, an executive summary and a set of trend
+ * paragraphs, moves out of the compiled-in bundle's `monthlyNarratives` map,
  * where publishing one required a deploy.
  *
  * `month` is the primary key (`YYYY-MM`), so re-publishing a month updates it

@@ -24,7 +24,7 @@ const MAIL = {
 /**
  * Capture the request body ourselves rather than reading it back off the spy:
  * spyOn re-registers on the same global, and reading `mock.calls[0]` picked up
- * an earlier test's call — which made an assertion pass for the wrong reason.
+ * an earlier test's call, which made an assertion pass for the wrong reason.
  */
 function mockFetch(status: number, body: unknown = { id: "ok" }) {
   const sent: string[] = [];
@@ -96,7 +96,7 @@ describe("the sender reports what happened", () => {
 describe("Reply-To has a mechanism", () => {
   it("sends h:Reply-To when asked", async () => {
     // From must be the Mailgun-authenticated sending domain or the message
-    // fails SPF/DMARC and lands coaching reports in spam — so a leader's reply
+    // fails SPF/DMARC and lands coaching reports in spam, so a leader's reply
     // needs somewhere else to go.
     const { spy, sent } = mockFetch(200);
     await consumer().sendEmail({

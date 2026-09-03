@@ -52,7 +52,7 @@ describe("retained session material is tracked in the database", () => {
     expect(rows[0].report_id).toBeNull();
   });
 
-  it("one asset per session and kind — a re-poll cannot stage a second copy", async () => {
+  it("one asset per session and kind, a re-poll cannot stage a second copy", async () => {
     await conn
       .insertInto("coach_session_assets")
       .values({
@@ -118,7 +118,25 @@ describe("retained session material is tracked in the database", () => {
     expect(left.length).toBe(0);
   });
 
-  it("retention is a stored horizon, so the prune is a query and not a guess", async () => {
+  it("retention is bounded by the REPORT's lifetime, through the cascade", async () => {
+    // There was a `retained_until` column here, described as the horizon the
+    // prune reads. Nothing ever wrote it and the prune is a per-leader count
+    // ("keep the four most recent"), so the column was dead schema attached to
+    // a claim about the design that was not true. What actually bounds an
+    // asset is its report: delete the report and the asset row goes with it.
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: "r-cascade",
+        coach_id: COACH,
+        session_date: "2026-08-22",
+        source_session_id: "ff-5",
+        legacy_ids: [],
+        summary: {},
+        metrics: {},
+        body: {},
+      })
+      .execute();
     await conn
       .insertInto("coach_session_assets")
       .values({
@@ -126,14 +144,19 @@ describe("retained session material is tracked in the database", () => {
         source_session_id: "ff-5",
         kind: "recording",
         storage_key: "x",
-        retained_until: new Date("2026-12-31T00:00:00Z"),
+        report_id: "r-cascade",
       })
       .execute();
-    const row = await conn
+
+    await conn
+      .deleteFrom("coach_reports")
+      .where("id", "=", "r-cascade")
+      .execute();
+    const left = await conn
       .selectFrom("coach_session_assets")
-      .select(["retained_until"])
+      .select("id")
       .where("source_session_id", "=", "ff-5")
-      .executeTakeFirstOrThrow();
-    expect(row.retained_until).toBeTruthy();
+      .execute();
+    expect(left).toEqual([]);
   });
 });

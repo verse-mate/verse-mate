@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { MAX_STREAMED_OBJECT_BYTES } from "../shared/storage/bun-s3.helper";
 import { ObjectStorageService } from "../shared/storage/storage.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
 
@@ -10,7 +11,7 @@ import type { FirefliesDetailClient } from "./fireflies.client";
  *
  * The provider's share links expire. A report is a judgement about a session,
  * and a judgement whose evidence has evaporated cannot be reviewed, disputed or
- * re-scored — so the recording and the transcript are copied into VerseMate's
+ * re-scored, so the recording and the transcript are copied into VerseMate's
  * own storage and addressed by OUR key. After that the provider link expiring
  * changes nothing.
  */
@@ -19,7 +20,54 @@ export type RetainFailure =
   | "unknown-session"
   | "no-transcript"
   | "no-video"
+  | "untrusted-video-host"
+  | "recording-too-large"
   | "retrieval-failed";
+
+/**
+ * How long we will wait for the provider to serve the bytes. Without a deadline
+ * a hung provider socket holds the sweep open forever, and the sweep is serial.
+ */
+const RETRIEVAL_TIMEOUT_MS = 10 * 60 * 1000;
+
+/**
+ * Hosts the recording may be fetched from.
+ *
+ * `video_url` is PROVIDER-SUPPLIED and was fetched verbatim, so a compromised
+ * or mis-scoped provider response could point the backend at anything the
+ * container can reach, link-local metadata, an internal service, and the
+ * response was streamed straight into our bucket. That is server-side request
+ * forgery with a write primitive. An allowlist is the cheap correct answer, and
+ * anything off it is a retrieval failure, which the retry and re-share path
+ * already handles.
+ *
+ * Override with COACH_VIDEO_HOST_ALLOWLIST so a provider CDN move is a config
+ * change rather than a deploy.
+ */
+function allowedVideoHosts(): string[] {
+  const configured = (process.env.COACH_VIDEO_HOST_ALLOWLIST ?? "")
+    .split(",")
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean);
+  return configured.length > 0
+    ? configured
+    : ["fireflies.ai", "s3.amazonaws.com"];
+}
+
+/** True when the URL is https and its host is on the allowlist. */
+export function isAllowedVideoUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const host = url.hostname.toLowerCase();
+  return allowedVideoHosts().some(
+    (allowed) => host === allowed || host.endsWith(`.${allowed}`),
+  );
+}
 
 export interface RetainResult {
   retained: boolean;
@@ -33,7 +81,7 @@ export interface ArchiveDeps {
     ObjectStorageService,
     "putGlobalObjectStream" | "putGlobalObject" | "deleteObject"
   >;
-  fetch?: (url: string) => Promise<Response>;
+  fetch?: (url: string, init?: RequestInit) => Promise<Response>;
 }
 
 export class CoachArchiveService {
@@ -46,7 +94,8 @@ export class CoachArchiveService {
     deps: ArchiveDeps = {},
   ) {
     this.storage = deps.storage ?? new ObjectStorageService();
-    this.fetchImpl = deps.fetch ?? ((url: string) => fetch(url));
+    this.fetchImpl =
+      deps.fetch ?? ((url: string, init?: RequestInit) => fetch(url, init));
   }
 
   /** Where a session's material lives. Our key, never the provider's URL. */
@@ -89,9 +138,25 @@ export class CoachArchiveService {
     // from every other report.
     if (!detail.video_url) return { retained: false, reason: "no-video" };
 
-    const response = await this.fetchImpl(detail.video_url);
+    // The provider hands us this URL; it is not ours to trust.
+    if (!isAllowedVideoUrl(detail.video_url)) {
+      console.error(
+        `[COACH-ARCHIVE] refusing ${sourceSessionId}: video host not allowed`,
+      );
+      return { retained: false, reason: "untrusted-video-host" };
+    }
+
+    const response = await this.fetchImpl(detail.video_url, {
+      signal: AbortSignal.timeout(RETRIEVAL_TIMEOUT_MS),
+    });
     if (!response.ok || !response.body) {
       return { retained: false, reason: "retrieval-failed" };
+    }
+
+    // Refuse before spending the upload, when the provider declares the size.
+    const declared = Number(response.headers.get("content-length") ?? "");
+    if (Number.isFinite(declared) && declared > MAX_STREAMED_OBJECT_BYTES) {
+      return { retained: false, reason: "recording-too-large" };
     }
 
     // Stream, never buffer: a recorded session is far larger than anything

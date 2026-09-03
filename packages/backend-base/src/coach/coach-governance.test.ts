@@ -71,7 +71,7 @@ async function clear() {
   await conn.deleteFrom("coach_leaders").where("email", "in", EMAILS).execute();
 }
 
-describe("rule 1 — the benchmark leader's name", () => {
+describe("rule 1, the benchmark leader's name", () => {
   it("leaking into ANOTHER leader's report is a violation", () => {
     const v = checkBenchmarkName({
       reportCoachId: OTHER,
@@ -83,7 +83,7 @@ describe("rule 1 — the benchmark leader's name", () => {
     expect(v[0].rule).toBe("benchmark-name");
   });
 
-  it("HIS OWN report is not blocked — comparison to his history is the point", () => {
+  it("HIS OWN report is not blocked, comparison to his history is the point", () => {
     const v = checkBenchmarkName({
       reportCoachId: BENCH,
       benchmarkCoachId: BENCH,
@@ -93,7 +93,7 @@ describe("rule 1 — the benchmark leader's name", () => {
     expect(v).toEqual([]);
   });
 
-  it("he ATTENDED another leader's session — his name still appears NOWHERE in it", () => {
+  it("he ATTENDED another leader's session, his name still appears NOWHERE in it", () => {
     // Open question 4 is answered: attendance is a count, never names. There is
     // no appendix attendee list for the name to sit in, so the rule is
     // unconditional outside his own reports, and delivery proceeds precisely
@@ -129,7 +129,7 @@ describe("rule 1 — the benchmark leader's name", () => {
   });
 });
 
-describe("rule 2 — no quote or timestamp reused by one leader", () => {
+describe("rule 2, no quote or timestamp reused by one leader", () => {
   it("catches a reused quote", () => {
     const v = checkEvidenceReuse(evidence(["the LORD is my shepherd"]), [
       evidence(["the LORD is my shepherd"]),
@@ -145,7 +145,7 @@ describe("rule 2 — no quote or timestamp reused by one leader", () => {
     expect(v.length).toBe(1);
   });
 
-  it("does NOT claim to catch a re-punctuated quote — a stated limit", () => {
+  it("does NOT claim to catch a re-punctuated quote, a stated limit", () => {
     // A similarity threshold nobody has calibrated would block a leader's
     // report on a judgement call, which is worse than a narrow rule.
     const v = checkEvidenceReuse(evidence(['"The LORD is my shepherd."']), [
@@ -217,7 +217,7 @@ describe("the check runs against what is persisted", () => {
 
   it("a pre-cutover report contributes NOTHING, however rich its prose", async () => {
     // The seeding boundary, made testable. "Starts empty" holds because
-    // backfilled reports have a NULL evidence column — not because of prose
+    // backfilled reports have a NULL evidence column, not because of prose
     // they do or do not contain. A future change that mined quotes out of a
     // report BODY would seed the set unevenly, hard on the leaders whose old
     // reports happen to carry material and not at all on the rest. This is the
@@ -264,7 +264,7 @@ describe("the check runs against what is persisted", () => {
     expect(verdict.violations[0].rule).toBe("reused-quote");
   });
 
-  it("reuse is scoped to ONE leader — two leaders may cite the same verse", async () => {
+  it("reuse is scoped to ONE leader, two leaders may cite the same verse", async () => {
     await seedReport(BENCH, "bench-1", evidence(["the LORD is my shepherd"]));
     await seedReport(OTHER, "other-1", null);
 

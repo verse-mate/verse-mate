@@ -8,8 +8,8 @@ import type Database from "../src/models/Database";
  * written, and from coach_reports since (change: port-coach-pipeline); the
  * recording URL
  * (Zoom / Fireflies / Drive) is admin-editable and overlaid onto the report at
- * serve time. Keyed by (coach_id, report_id) — the same string ids used in the
- * dataset — so it needs no foreign key into a reports table (there isn't one).
+ * serve time. Keyed by (coach_id, report_id), the same string ids used in the
+ * dataset, so it needs no foreign key into a reports table (there isn't one).
  * One row per session.
  */
 export async function up(db: Kysely<Database>): Promise<void> {

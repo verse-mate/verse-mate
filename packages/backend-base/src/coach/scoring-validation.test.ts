@@ -29,7 +29,7 @@ describe("what the scoring model returns is gated before it is stored", () => {
     expect(result.issues[0].problem).toBe("score-out-of-range");
   });
 
-  it("rejects a fractional score — the rubric is whole points", () => {
+  it("rejects a fractional score, the rubric is whole points", () => {
     const result = validateDimensionScores([good(1, 3.5)]);
     expect(result.ok).toBe(false);
     expect(result.issues[0].problem).toBe("score-not-integer");
@@ -100,10 +100,10 @@ describe("what the scoring model returns is gated before it is stored", () => {
     expect(result.issues.length).toBe(3);
   });
 
-  it("SILENCE is not not-applicable — an omitted dimension is missing", () => {
+  it("SILENCE is not not-applicable, an omitted dimension is missing", () => {
     // A model that omits a dimension has said nothing about it. Treating that
     // as 'not observable' would shrink the cluster denominator and inflate the
-    // composite — a leader would be rewarded for the model's omission.
+    // composite, a leader would be rewarded for the model's omission.
     const partial = validateDimensionScores([good(1), good(2), good(3)]);
     expect(partial.ok).toBe(true);
     expect(missingDimensions(partial.scores as Map<number, unknown>)).toEqual([

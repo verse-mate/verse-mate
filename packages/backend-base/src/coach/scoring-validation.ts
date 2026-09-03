@@ -7,7 +7,7 @@ import { DIMENSIONS } from "./rubric";
  *
  * The rule these enforce is that a score is a JUDGEMENT WITH A REASON. A number
  * with no rationale cannot be reviewed by the admin path (task 5.7) or disputed
- * by the leader it is about, so it is rejected rather than stored — and a
+ * by the leader it is about, so it is rejected rather than stored, and a
  * dimension the session gives no evidence for is recorded as NOT APPLICABLE,
  * never guessed and never scored low. Scoring low would be a silent, false
  * judgement about the leader; not-applicable is excluded from the cluster

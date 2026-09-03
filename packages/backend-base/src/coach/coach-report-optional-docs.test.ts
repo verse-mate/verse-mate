@@ -50,7 +50,7 @@ describe("a report produced without a Drive doc is valid", () => {
   afterEach(clear);
 
   it("the response contract does not REQUIRE docUrl or pdfUrl", () => {
-    // They were t.String() — unlike every optional field beside them — so the
+    // They were t.String(), unlike every optional field beside them, so the
     // first report produced without a Drive doc would have failed response
     // validation, and the leader's whole session list fails with it (the array
     // is validated as a whole).

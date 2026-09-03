@@ -56,7 +56,7 @@ async function clear() {
     .execute();
   await conn
     .deleteFrom("coach_reports")
-    .where("coach_id", "=", COACH)
+    .where("coach_id", "in", [COACH, `${COACH}-2`])
     .execute();
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
@@ -88,12 +88,12 @@ describe("scoring a session is what makes it live", () => {
       .where("source_session_id", "=", "ff-pub-1")
       .executeTakeFirstOrThrow();
     expect(row.report_id).toBe(result.reportId);
-    // The report row existing IS the session being live — there is no second
+    // The report row existing IS the session being live, there is no second
     // flag to forget to set.
     expect(row.state).toBe("scored");
   });
 
-  it("re-publishing the same session updates in place — never a second report", async () => {
+  it("re-publishing the same session updates in place, never a second report", async () => {
     const first = await svc.publish(input());
     const second = await svc.publish(input({ base: 80 }));
 
@@ -127,6 +127,47 @@ describe("scoring a session is what makes it live", () => {
     expect(detail?.score).toBeCloseTo(85.1, 6);
     // 85.1 lands in the top band.
     expect(detail?.status).toBe("Exceptional");
+  });
+
+  it("DERIVES the bonuses from the head counts when the caller gives none", async () => {
+    // Nothing computed them, so every report published through the pipeline
+    // scored base-only: a 26-person session with five first-timers was
+    // rewarded exactly as much as an empty one.
+    const result = await svc.publish(
+      input({ base: 76.04, attendees: 26, newcomers: 5 }),
+    );
+    const detail = await reader.getReportDetail(COACH, result.reportId);
+    // 5 first-timers (capped at 5) + 11 heads over the threshold (capped at 3).
+    expect(detail?.score).toBeCloseTo(84.04, 6);
+  });
+
+  it("caps the composite at 100, whatever the bonuses add", async () => {
+    const result = await svc.publish(
+      input({ base: 99, attendees: 30, newcomers: 9 }),
+    );
+    const detail = await reader.getReportDetail(COACH, result.reportId);
+    // Every surface renders this as "x / 100".
+    expect(detail?.score).toBe(100);
+  });
+
+  it("a RE-ATTRIBUTED session MOVES its report rather than making a second one", async () => {
+    // An admin correcting a wrong match, or a roster edit changing which
+    // keyword wins, used to leave the first report standing under the wrong
+    // leader and insert a second under the right one: two reports, two emails,
+    // and one session counted twice across two leaders' trends.
+    const first = await svc.publish(input());
+    const moved = await svc.publish(input({ coachId: "publish-coach-2" }));
+
+    const rows = await conn
+      .selectFrom("coach_reports")
+      .select(["id", "coach_id"])
+      .where("source_session_id", "=", "ff-pub-1")
+      .execute();
+    expect(rows.length).toBe(1);
+    expect(rows[0].coach_id).toBe("publish-coach-2");
+    // And the identity survives the move, so a link already emailed still
+    // resolves.
+    expect(moved.reportId).toBe(first.reportId);
   });
 
   it("publishing advances the provenance version, so a stale view is detectable", async () => {

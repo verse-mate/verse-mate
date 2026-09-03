@@ -15,9 +15,9 @@ import type Database from "../src/models/Database";
  * place while a second session on the same date becomes its own report. `legacy_ids` records ids a report was
  * previously known by (populated only when a re-title changes a derived id).
  *
- * `coach_dataset_meta` is a single-row provenance signal — a monotonic `version`
+ * `coach_dataset_meta` is a single-row provenance signal, a monotonic `version`
  * (a trigger enforces it only ever advances) and the `report_count` it
- * represents — so a stale or partial publish is detectable rather than able to
+ * represents, so a stale or partial publish is detectable rather than able to
  * overwrite live data (the date-only `generated_at` could not provide this).
  */
 export async function up(db: Kysely<Database>): Promise<void> {
@@ -28,14 +28,14 @@ export async function up(db: Kysely<Database>): Promise<void> {
     // The immutable report id: the deployed slug for backfilled rows, an opaque
     // value for reports first published after the backfill. Never re-derived.
     .addColumn("id", "text", (col) => col.primaryKey())
-    // The coach slug (e.g. "bryan-bailey") — the same key the overlay tables use.
+    // The coach slug (e.g. "bryan-bailey"), the same key the overlay tables use.
     .addColumn("coach_id", "text", (col) => col.notNull())
     .addColumn("session_date", "date", (col) => col.notNull())
     // The provider's identifier for the recorded session this report evaluates.
     // NOT NULL is load-bearing: Postgres treats NULLs as distinct in a unique
     // index, so a nullable column would switch the guard OFF for exactly the
     // backfilled rows and a second backfill run would double the corpus.
-    // Backfilled rows — which have no source session — take the title-free
+    // Backfilled rows, which have no source session, take the title-free
     // sentinel `legacy:<coach_id>:<session_date>`; deriving it from the legacy
     // report id would embed the session title, which report identity forbids
     // and which breaks idempotence across a re-title.
@@ -97,7 +97,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
     )
     .execute();
 
-  // The provenance signal must only ever advance — enforced in the schema, not
+  // The provenance signal must only ever advance, enforced in the schema, not
   // just app code, so a regressing publish cannot rewrite it.
   await sql`
     CREATE FUNCTION coach_dataset_meta_version_monotonic()

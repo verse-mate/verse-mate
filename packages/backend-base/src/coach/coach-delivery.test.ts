@@ -17,6 +17,8 @@ interface Sent {
   to: string;
   subject: string;
   replyTo?: string;
+  text: string;
+  html: string;
 }
 
 class FakeMailer {
@@ -26,11 +28,17 @@ class FakeMailer {
     subject: string;
     to: { name: string; email: string };
     replyTo?: { name: string; email: string };
+    // Captured, not discarded. The body is what the requirement is ABOUT
+    // ("delivery carries the portal link"), and no test could see it.
+    text?: string;
+    html?: string;
   }) {
     this.sent.push({
       to: data.to.email,
       subject: data.subject,
       replyTo: data.replyTo?.email,
+      text: data.text ?? "",
+      html: data.html ?? "",
     });
     return this.fail(data.to.email)
       ? { delivered: false, error: "rejected" }
@@ -145,7 +153,7 @@ describe("delivery", () => {
 
     expect(result.delivered).toBe(true);
     // Derived, not hardcoded: the rule is the leader, the benchmark leader and
-    // EVERY program admin — and migration 5 seeds a real one, so a fixture-only
+    // EVERY program admin, and migration 5 seeds a real one, so a fixture-only
     // expectation would have been wrong about the rule while looking right.
     const admins = await conn
       .selectFrom("coach_admins")
@@ -226,16 +234,43 @@ describe("delivery", () => {
     expect(row.state).toBe("scored");
   });
 
-  it("refuses to send a report that is not live on the portal", async () => {
-    // An email whose link 404s is worse than no email: the leader is told a
-    // report exists and cannot read it.
+  it("a report id nobody holds is an unknown report", async () => {
     const mailer = new FakeMailer();
     const result = await new CoachDeliveryService(Database, mailer).deliver({
       reportId: "never-created",
       evidence: evidence(),
     });
-    expect(result.delivered).toBe(false);
+    // Named, not just falsy: this was the only case that ever reached the
+    // refusal path, so asserting only "not delivered" proved nothing about
+    // WHICH refusal fired.
+    expect(result.refusal).toBe("unknown-report");
     expect(mailer.sent.length).toBe(0);
+  });
+
+  it("does NOT mail a second copy of a report already delivered", async () => {
+    // The pipeline runs on a schedule. Anything that re-enters it for a
+    // session already reported (a retry, a re-score, a session row that did
+    // not advance) mailed all three recipients again.
+    await seedReport("r-twice", LEADER);
+    const mailer = new FakeMailer();
+    const svc = new CoachDeliveryService(Database, mailer);
+
+    const first = await svc.deliver({
+      reportId: "r-twice",
+      evidence: evidence(),
+    });
+    expect(first.delivered).toBe(true);
+    // The recipient set is whatever the roster holds, so the count that
+    // matters is how many MORE arrive on the second call.
+    const afterFirst = mailer.sent.length;
+    expect(afterFirst).toBeGreaterThanOrEqual(3);
+
+    const second = await svc.deliver({
+      reportId: "r-twice",
+      evidence: evidence(["a different quote"]),
+    });
+    expect(second.refusal).toBe("already-delivered");
+    expect(mailer.sent.length).toBe(afterFirst);
   });
 
   it("a governance violation BLOCKS the send and is not discarded", async () => {
@@ -294,6 +329,26 @@ describe("delivery", () => {
       .where("id", "=", "r1")
       .executeTakeFirstOrThrow();
     expect((row.evidence as ReportEvidence).quotes).toEqual(["recorded line"]);
+  });
+
+  it("the email CARRIES the portal link, in both the html and the text part", async () => {
+    // The requirement is "delivery carries a prominent link to the report on
+    // the live portal". The mailer double used to discard text and html, so
+    // nothing could see whether the link was there at all.
+    await seedReport("r-link", LEADER);
+    const mailer = new FakeMailer();
+    await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-link",
+      evidence: evidence(),
+    });
+
+    expect(mailer.sent.length).toBeGreaterThan(0);
+    for (const sent of mailer.sent) {
+      expect(sent.text).toContain("/coach");
+      expect(sent.text).toContain("r-link");
+      // A link element, not a bare URL pasted into the prose.
+      expect(sent.html).toMatch(/<a[^>]+href="[^"]*r-link/);
+    }
   });
 
   it("a report that passes both checks is delivered and marked so", async () => {

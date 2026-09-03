@@ -29,7 +29,7 @@ describe("coach report store schema", () => {
     }
   });
 
-  it("coach_dataset_meta.version cannot decrease — the guard is in the schema, not app code", async () => {
+  it("coach_dataset_meta.version cannot decrease, the guard is in the schema, not app code", async () => {
     await sql`
       INSERT INTO coach_dataset_meta (id, version, report_count)
       VALUES (true, 10, 1)

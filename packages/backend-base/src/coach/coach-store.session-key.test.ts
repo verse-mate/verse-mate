@@ -82,7 +82,7 @@ describe("the reports natural key disambiguates by source session", () => {
     expect(stored[0].legacy_ids).toEqual([]);
   });
 
-  it("source_session_id is NOT NULL — a nullable column would leave the guard off for backfilled rows", async () => {
+  it("source_session_id is NOT NULL, a nullable column would leave the guard off for backfilled rows", async () => {
     await expect(
       conn
         .insertInto("coach_reports")
@@ -90,7 +90,6 @@ describe("the reports natural key disambiguates by source session", () => {
           id: "r-null",
           coach_id: COACH,
           session_date: "2026-08-22",
-          // biome-ignore lint/suspicious/noExplicitAny: deliberately violating the type
           source_session_id: null as any,
           legacy_ids: [],
           summary: {},

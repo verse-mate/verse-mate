@@ -3,7 +3,7 @@
  *
  * On the retired host this key lived in `/etc/fireflies-env` and was read by
  * `fireflies_client.py`. Intake cannot work without it, and delivery cannot work
- * without the Mailgun credentials — which VerseMate already carries
+ * without the Mailgun credentials, which VerseMate already carries
  * (`MAILGUN_API_KEY`, `MAILGUN_DOMAIN`), so this is the only credential the port
  * adds.
  *

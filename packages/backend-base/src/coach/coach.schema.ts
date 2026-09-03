@@ -57,7 +57,7 @@ export const CoachClassSchema = t.Object({
   zoomLink: t.String(),
 });
 
-// One class in the admin export — the class fields plus the leader it belongs
+// One class in the admin export, the class fields plus the leader it belongs
 // to (name / email / roster id) so the Fireflies operator can map each meeting
 // link to a coach without a second lookup.
 export const AdminCoachClassSchema = t.Object({
@@ -105,7 +105,7 @@ export const ReportSchema = t.Object({
     strengths: t.Array(t.String()),
     improvements: t.Array(t.String()),
     recommendations: t.Array(t.String()),
-    // NEW — long-form prose (desktop). Optional so pre-prose reports validate.
+    // NEW, long-form prose (desktop). Optional so pre-prose reports validate.
     overview: t.Optional(t.Array(t.String())),
     strengthsProse: t.Optional(t.Array(FeedbackPointSchema)),
     improvementsProse: t.Optional(t.Array(FeedbackPointSchema)),
@@ -116,7 +116,7 @@ export const ReportSchema = t.Object({
   sections: t.Optional(t.Array(SectionSchema)),
   // OPTIONAL (task 6.4). These were t.String(), unlike every optional field
   // beside them, so the first report produced without a Google Drive doc would
-  // have failed response validation — and because the list response is
+  // have failed response validation, and because the list response is
   // validated as a whole, one such report broke the leader's ENTIRE session
   // list. The Drive upload stage is not ported (it lived on the retired host),
   // so nothing produces them for new reports; the 112 backfilled reports still
@@ -127,7 +127,7 @@ export const ReportSchema = t.Object({
   // Optional so bundled reports without them still validate.
   recordingUrl: t.Optional(t.String()),
   // DETAIL-ONLY (task 4.5). Says whether VerseMate holds a recording, never
-  // where it is — the address is minted per session by
+  // where it is, the address is minted per session by
   // GET /coach/reports/:reportId/recording-url. Kept off `recordingUrl`
   // because that field is overlaid onto every row of every list, so carrying
   // an address here would sign one URL per session on each page load.
@@ -173,7 +173,7 @@ export const MonthlySchema = t.Object({
     delta: t.Union([t.Number(), t.Null()]),
   }),
   leaders: t.Array(MonthlyLeaderSchema),
-  // Months (YYYY-MM) that actually have reports, newest first — drives the
+  // Months (YYYY-MM) that actually have reports, newest first, drives the
   // portal's month picker so only completed months are selectable.
   availableMonths: t.Array(t.String()),
   // Program-wide narrative prose for the month (Executive Summary + Trends),
@@ -294,8 +294,8 @@ export const LeaderMonthlyResponseSchema = t.Object({
  * The rubric contract served by GET /coach/rubric. Every field exists because a
  * portal surface needs it: cluster names and weights for the breakdown,
  * dimension -> cluster with each explainer and research-backed target for the
- * expandable dimension detail, and BOTH band scales — composite status and the
- * 1-5 dimension labels — so no client keeps its own list.
+ * expandable dimension detail, and BOTH band scales, composite status and the
+ * 1-5 dimension labels, so no client keeps its own list.
  */
 export const RubricContractSchema = t.Object({
   model: t.String(),
@@ -314,4 +314,40 @@ export const RubricContractSchema = t.Object({
     t.Object({ min: t.Number(), label: t.String(), emoji: t.String() }),
   ),
   dimensionBands: t.Array(t.Object({ min: t.Number(), label: t.String() })),
+});
+
+/** What an admin sees reviewing a report's dimension scores (task 5.7). */
+export const ReviewStateSchema = t.Object({
+  reportId: t.String(),
+  delivered: t.Boolean(),
+  base: t.Number(),
+  humanCorrected: t.Boolean(),
+  dimensions: t.Array(
+    t.Object({
+      n: t.Number(),
+      score: t.Union([t.Number(), t.Null()]),
+      rationale: t.String(),
+      provenance: t.String(),
+      modelVersion: t.Union([t.String(), t.Null()]),
+    }),
+  ),
+});
+
+/** Recording-bot coverage across the roster (task 4.7; the 9.1 gate). */
+export const CoverageReportSchema = t.Object({
+  windowDays: t.Number(),
+  allCovered: t.Boolean(),
+  leaders: t.Array(
+    t.Object({
+      coachId: t.String(),
+      name: t.String(),
+      email: t.String(),
+      covered: t.Boolean(),
+      basis: t.String(),
+      observedSessions: t.Number(),
+      accountStatus: t.String(),
+      linkedClassName: t.Union([t.String(), t.Null()]),
+      classAlert: t.Boolean(),
+    }),
+  ),
 });

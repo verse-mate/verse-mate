@@ -6,7 +6,7 @@ import type Database from "../src/models/Database";
  *
  * The program-admin role becomes data. `coach.service.ts` resolved admin
  * authority from the compiled-in bundle's `admins` array, so deleting the
- * bundle (task 7.1) would remove the ONLY source of admin authority — this
+ * bundle (task 7.1) would remove the ONLY source of admin authority, this
  * table is what stops the ungated half of the change taking away every admin
  * capability. The program admin is not a roster leader, so the grant is
  * explicit rather than derived from `coach_leaders`.

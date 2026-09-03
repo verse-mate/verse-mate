@@ -1,6 +1,6 @@
 /**
  * Trends, the admin roster and monthly previously read the compiled-in bundle
- * while reports came from the store — so a freshly published session appeared
+ * while reports came from the store, so a freshly published session appeared
  * in the session list but NOT in the trend chart or the roster count, until the
  * next deploy. These assert all three now reflect the store.
  */

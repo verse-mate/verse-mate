@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("a container knows which workers are its job", () => {
-  it("defaults to ALL — today's single-container deployment is unchanged", () => {
+  it("defaults to ALL, today's single-container deployment is unchanged", () => {
     // A default of 'api' would have silently stopped media work on the existing
     // deployment the moment this shipped.
     Reflect.deleteProperty(process.env, "VERSEMATE_ROLE");
@@ -33,7 +33,7 @@ describe("a container knows which workers are its job", () => {
 
   it("the two roles together cover every worker exactly once", () => {
     // The property that matters: split across two containers, each worker runs
-    // in exactly one — no job processed twice, none dropped.
+    // in exactly one, no job processed twice, none dropped.
     process.env.VERSEMATE_ROLE = "api";
     const api = { media: runsMediaWorkers(), apiSide: runsApiWorkers() };
     process.env.VERSEMATE_ROLE = "media-worker";

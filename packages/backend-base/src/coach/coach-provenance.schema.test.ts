@@ -65,7 +65,7 @@ describe("every dimension score carries its provenance", () => {
     expect(rows[0].model_version).toBe("v3-weighted-100");
   });
 
-  it("provenance is constrained — an unknown value cannot be stored", async () => {
+  it("provenance is constrained, an unknown value cannot be stored", async () => {
     await seedReport("prov-2");
     await expect(
       sql`

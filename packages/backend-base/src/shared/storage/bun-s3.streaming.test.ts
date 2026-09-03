@@ -7,7 +7,7 @@ import { BunS3Helper, MAX_STREAMED_OBJECT_BYTES } from "./bun-s3.helper";
  * `putObject(Buffer)` and a `getObjectBytes` that materialised the entire
  * object through `arrayBuffer()`. Design D9's staged-and-streamed session video
  * and D10's Range support had no API to call, and a single PUT caps at S3's
- * 5 GB single-object limit — below what a long recorded session reaches.
+ * 5 GB single-object limit, below what a long recorded session reaches.
  */
 
 interface FakeWriter {
@@ -129,7 +129,7 @@ describe("object storage can stream, not only buffer", () => {
     expect(written).toBe(8);
     expect(fake.writers.length).toBe(1);
     expect(fake.writers[0].ended).toBe(true);
-    // Parts arrived separately — the point of the exercise.
+    // Parts arrived separately, the point of the exercise.
     expect(fake.writers[0].chunks.length).toBe(3);
     expect([...(stored.get("coach/ff-1/recording.mp4") as Uint8Array)]).toEqual(
       [1, 2, 3, 4, 5, 6, 7, 8],
@@ -153,7 +153,7 @@ describe("object storage can stream, not only buffer", () => {
     expect(await helper.getObjectStream("absent")).toBeNull();
   });
 
-  it("a ranged get returns only the requested bytes — what a video element asks for", async () => {
+  it("a ranged get returns only the requested bytes, what a video element asks for", async () => {
     const stored = new Map([["k", new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7])]]);
     const { helper } = helperWith(stored);
 

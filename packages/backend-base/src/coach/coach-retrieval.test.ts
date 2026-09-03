@@ -12,7 +12,7 @@ const COACH = "retrieval-coach";
 
 /**
  * Stands in for the archive: answers whatever the test queues up, and honours
- * the part of the real contract this service depends on — a successful retain
+ * the part of the real contract this service depends on, a successful retain
  * moves the session to `retained` (the archive owns that transition, not the
  * retrieval sweep). A double that skipped it would let the sweep look correct
  * while production disagreed.
@@ -69,7 +69,6 @@ async function clear() {
 
 function service(results: RetainResult[]) {
   const archive = new FakeArchive(results);
-  // biome-ignore lint/suspicious/noExplicitAny: test double
   return { svc: new CoachRetrievalService(Database, archive as any), archive };
 }
 
@@ -123,7 +122,7 @@ describe("a session whose video is not ready is HELD, not failed", () => {
     expect(r.reshare_resolved_at).toBeNull();
   });
 
-  it("a failed session is NOT retried forever — the sweep leaves it alone", async () => {
+  it("a failed session is NOT retried forever, the sweep leaves it alone", async () => {
     await seed("ff-1", {
       state: "retrieval_failed",
       retry_count: RETRIEVAL_ATTEMPT_LIMIT,
@@ -136,7 +135,7 @@ describe("a session whose video is not ready is HELD, not failed", () => {
     expect((await row("ff-1")).state).toBe("retrieval_failed");
   });
 
-  it("a provider refusing to serve the bytes — download disabled — is the same failure path", async () => {
+  it("a provider refusing to serve the bytes, download disabled, is the same failure path", async () => {
     // The system never works around a provider-side restriction; it retries to
     // the stated limit and then asks the leader to re-share.
     await seed("ff-1");
@@ -190,7 +189,7 @@ describe("a pending re-share is visible, and there is a way back in", () => {
     expect((await row("ff-1")).state).toBe("retained");
   });
 
-  it("the re-shared recording produces NO duplicate — it is the same source session", async () => {
+  it("the re-shared recording produces NO duplicate, it is the same source session", async () => {
     // Intake idempotence does the work: the session keeps its id, so whatever
     // report it produces upserts on the same natural key (task 2.4).
     await seed("ff-1", {

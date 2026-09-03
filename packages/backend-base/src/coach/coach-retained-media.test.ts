@@ -25,7 +25,6 @@ class FakeStorage {
 }
 
 function service(storage = new FakeStorage()) {
-  // biome-ignore lint/suspicious/noExplicitAny: test double
   return { svc: new RetainedMediaService(Database, storage as any), storage };
 }
 
@@ -95,7 +94,7 @@ describe("retained media is minted per request, never listed", () => {
     expect(storage.presigns[0].key).toContain("ff-own");
   });
 
-  it("another leader gets NO address issued — not a denied one, none minted", async () => {
+  it("another leader gets NO address issued, not a denied one, none minted", async () => {
     await seedReport(OWNER, "r-own", "ff-own");
     await seedAsset(OWNER, "ff-own", "r-own");
     const { svc, storage } = service();
@@ -138,7 +137,7 @@ describe("retained media is minted per request, never listed", () => {
     expect(url).toBeTruthy();
   });
 
-  it("an issued address EXPIRES — 24 hours (open question 5, provisional)", async () => {
+  it("an issued address EXPIRES, 24 hours (open question 5, provisional)", async () => {
     await seedReport(OWNER, "r-own", "ff-own");
     await seedAsset(OWNER, "ff-own", "r-own");
     const { svc, storage } = service();
