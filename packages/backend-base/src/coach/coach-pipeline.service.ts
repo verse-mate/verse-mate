@@ -163,8 +163,23 @@ export class CoachPipelineService {
       base: scored.base ?? 0,
       clusters: scored.clusters ?? [],
       dimensions: scored.dimensions,
+      // WELL-FORMED, even though the port produces no narrative prose. The
+      // list response is validated as a whole against ReportSchema, which
+      // requires `feedback` and its four arrays, so a report published with
+      // `feedback: {}` failed validation and took the leader's ENTIRE session
+      // list down with it (422, "Something went wrong loading your coaching
+      // data"). The same failure mode the docUrl/pdfUrl comment in
+      // coach.schema.ts describes, found by running the pipeline end to end.
+      //
+      // Empty rather than invented: the dimension scores and their rationales
+      // are the real output, and prose generation is not part of this port.
       bigIdeas: [],
-      feedback: {},
+      feedback: {
+        headline: "",
+        strengths: [],
+        improvements: [],
+        recommendations: [],
+      },
       attendees: detail.participantCount,
       newcomers: scored.newcomers ?? 0,
       duration: `${detail.duration ?? 0} min`,
