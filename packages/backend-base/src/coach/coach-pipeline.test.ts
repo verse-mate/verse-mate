@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { Value } from "@sinclair/typebox/value";
 import { db as Database } from "database";
+import { sql } from "kysely";
+
+import { rowToReport } from "./coach-store.transform";
+import { ReportSchema } from "./coach.schema";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import {
@@ -179,6 +184,37 @@ describe("a retained session reaches a delivered report", () => {
       .executeTakeFirstOrThrow();
     // Eleven 4s with dimension 7 at 3 from the vision stub.
     expect((report.summary as { score: number }).score).toBeGreaterThan(70);
+  });
+
+  it("the report it publishes SATISFIES the API's own response schema", async () => {
+    // Found by running the pipeline end to end against a real database and a
+    // real portal: the report published fine, and then `GET /coach/reports`
+    // answered 422 for every one of the leader's sessions, because the list is
+    // validated as a whole and this report's `feedback` was `{}`. The leader's
+    // dashboard read "Something went wrong loading your coaching data" and
+    // showed nothing at all. One malformed report hides an entire history.
+    await pipeline(new FakeMailer()).run();
+    const row = await conn
+      .selectFrom("coach_reports")
+      .select(["id", "summary", "metrics", "body"])
+      .select(
+        sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("session_date"),
+      )
+      .where("coach_id", "=", COACH)
+      .executeTakeFirstOrThrow();
+
+    const report = rowToReport({
+      id: row.id,
+      session_date: row.session_date,
+      summary: row.summary as Record<string, unknown>,
+      metrics: row.metrics as Record<string, unknown>,
+      body: row.body as Record<string, unknown>,
+    });
+    const errors = [...Value.Errors(ReportSchema, report)].map(
+      (e) => `${e.path}: ${e.message}`,
+    );
+    expect(errors).toEqual([]);
+    expect(Value.Check(ReportSchema, report)).toBe(true);
   });
 
   it("every dimension is persisted INTO the published report", async () => {
