@@ -61,6 +61,388 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "bryan-bailey-2026-09-05-saturday-morning-group-austin-ri",
+          "date": "2026-09-05",
+          "dateLabel": "September 5, 2026",
+          "session": "Saturday Morning Group (Austin Ridge) — Joel Chapter 2, In Depth",
+          "topic": "Joel 1:15, 2:1-27 — the Day of the Lord and the call to repentance",
+          "duration": "~1h58m confirmed (~2h10m total; first ~11 min unrecoverable, see note)",
+          "attendees": 30,
+          "newcomers": 4,
+          "score": 92.49,
+          "base": 85.49,
+          "newcomerBonus": 4,
+          "sizeBonus": 3,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 92,
+              "contribution": 30.36
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 73.3,
+              "contribution": 22.73
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 5,
+              "note": "Big Ideas review at open and close, multi-reader scripture engagement, a live chiastic-structure lesson, and a delegated closing prayer — the most complete blueprint execution of the tracked arc"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 3,
+              "note": "4 first-timers individually introduced, but the welcome window ran ~2.5 min against the 7-25 min target — brief compared to 8/29's ~8 min"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "6 distinct cross-references actually opened and read live — above the 6+ benchmark"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4,
+              "note": "Discussion-only leader talk ~40% — still above the Lifeway benchmark but a real improvement from 8/29's ~55%"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5,
+              "note": "8 logged Big-Idea drivers, majority DOK 3-4; confession rate (6) and follow-up probe frequency (5+) both well above target"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "27 of ~29 identified attendees contributed substantively — arc-high breadth"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3,
+              "note": "One confirmed live-drawn diagram (chiastic structure) — a real improvement over the prior two weeks' zero, though not sustained across the session"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 5,
+              "note": "Six first-person disclosures this week, up from 8/29's 4/5 within the ±1 swing cap"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 5,
+              "note": "Genuine cold-recall question at open and a group-driven cumulative recitation at close — fixes the arc's two-week decline"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Full, explicit \\\"Guarantee\\\" statement delivered at the open"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4,
+              "note": "Closing prayer delegated to Bryce and substantive, plus strong prayer-chain accountability content; opening prayer unconfirmable due to the transcription gap rather than confirmed absent"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3,
+              "note": "Explicit named delegation of newcomer follow-up calls and prayer-chain accountability; still no delegated teaching-window or in-lesson role"
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "Second consecutive Joel deep-dive; the group recaps at both open and close this week.",
+            "strengths": [
+              "Both Opening AND Closing Cumulative Big Ideas Review, Fixing Last Week's Flagged Gap",
+              "A Live Chiastic-Structure Lesson, Using a Real Visual Aid",
+              "An Arc-High, Six-Confession Application Arc"
+            ],
+            "improvements": [
+              "Newcomer Welcome Compressed to ~2.5 Minutes, Well Under Target",
+              "Discussion-Only Leader Talk Still Above the Lifeway Benchmark",
+              "The Chiastic-Structure Technique Was Never Named for the Room to Reuse"
+            ],
+            "recommendations": [
+              "Budget a Floor of 60-90 Seconds Per Newcomer, Even When Time Feels Tight",
+              "Add One More Follow-Up Question Before Supplying the Cross-Reference Connection",
+              "Name the Bible-Study Technique Being Modeled So Members Can Reuse It"
+            ],
+            "overview": [
+              "Second consecutive Joel deep-dive; the group recaps at both open and close this week.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 92.49/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Both Opening AND Closing Cumulative Big Ideas Review, Fixing Last Week's Flagged Gap",
+                "paragraphs": [
+                  "8/29's report flagged Memory Reinforcement as the arc's weakest dimension, two weeks running, with no opening recap. This session opens with a genuine cold-recall question — \"somebody tell me something that we learned from Joel one... I'll fill in the gaps. But somebody tell me something we've learned just from chapter one\" [00:19:26]-[00:19:47] — and closes with a group-driven recitation: \"Russ, give us our big ideas back there. Did we get anything worthwhile?\" [02:04:04]-[02:04:10], producing \"repentance is a cry about something... don't forget about the day of the Lord... it's common, and you have a chance to repent, and God wants to restore you\" [02:04:17]-[02:04:53]. This is exactly the fix recommended in the prior report, executed at both bookends of the session."
+                ]
+              },
+              {
+                "title": "A Live Chiastic-Structure Lesson, Using a Real Visual Aid",
+                "paragraphs": [
+                  "Rather than telling the room where the book's center is, Bryan draws the structure live: \"I'm going to draw you all a picture... let's get back in front of the mirror now\" [01:23:08]-[01:23:29], building the 1-2-3-4-3-2-1 rabbinical writing pattern from scratch and landing on \"the center of Joel is verse 17\" [01:25:48]-[01:25:51]. This is Framework Building at its most advanced — teaching a transferable Bible-study method, not just this passage — and it is the first confirmed on-screen visual aid use in three consecutive Saturday sessions."
+                ]
+              },
+              {
+                "title": "An Arc-High, Six-Confession Application Arc",
+                "paragraphs": [
+                  "Six distinct first-person confessional responses surfaced this week — double 8/29's rate and well above the ≥2 target: a member's drinking-to-sobriety journey (\"I just don't drink at all\") [01:49:10]-[01:49:27], a pornography \"harming God\" admission [01:44:39]-[01:44:46], JP's self-preservation-of-sin confession [01:54:14]-[01:54:57], Justin's near-death \"God have your way\" fear story tied to a mission-trip prayer [02:01:06]-[02:01:57], Chris's tender disclosure about his eight-year-old son praying during a thunderstorm [02:03:33]-[02:03:59], and a two-attempt fasting testimony [01:12:20]-[01:14:05]. Leader Follow-up Probe Frequency cleared 5+ prompts, extending nearly every one of these before Bryan synthesized."
+                ]
+              },
+              {
+                "title": "“What Is Literally Stopping You?” — Refusing a Deflecting Answer",
+                "paragraphs": [
+                  "When a member answers the \"what's stopping you from wholeheartedly repenting\" question with \"I don't want to,\" Bryan pushes back directly rather than accepting it: \"I don't want to hear that, what's literally stopping me\" [01:53:37]-[01:53:52]. He holds the question open across several members rather than resolving it himself, a textbook execution of \"redirect, don't rescue\" applied to a pastoral confrontation, not just a content question."
+                ]
+              },
+              {
+                "title": "Six Cross-References Woven Into a Single Cohesive Argument",
+                "paragraphs": [
+                  "Revelation 9:1-11, 1 Corinthians 10:12-14, James 1:14, Exodus 34:6, Deuteronomy 7:9, and Deuteronomy 24:5 were all opened and read live by named participants, each tied directly back to the Joel 2 text rather than dropped in as isolated citations — well above the 6+ Lifeway benchmark, sustaining the arc's recent strength in Scripture Engagement."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Newcomer Welcome Compressed to ~2.5 Minutes, Well Under Target",
+                "paragraphs": [
+                  "Four first-timers were welcomed and each spoke, but the entire welcome window ran just ~2.5 minutes ([00:16:20]-[00:18:56]) against the 7-25 min target — roughly a third of 8/29's ~8-minute version. Fix (transferable): budget a floor of 60-90 seconds per newcomer even on a week the room feels large or time feels tight; a rushed welcome reads as a checklist rather than an invitation, regardless of how warmly it's delivered."
+                ]
+              },
+              {
+                "title": "Discussion-Only Leader Talk Still Above the Lifeway Benchmark",
+                "paragraphs": [
+                  "Down from 8/29's ~55% to ~40% this week — real progress — but still above the 30-35% target, driven by connective narration threading the six cross-references together. Fix (transferable): after opening a cross-reference and getting the room's first read of it, ask one more layered follow-up (\"what's the connection you see here?\") before supplying the link himself."
+                ]
+              },
+              {
+                "title": "The Chiastic-Structure Technique Was Never Named for the Room to Reuse",
+                "paragraphs": [
+                  "The chiastic-structure lesson (Strength 2) is a sophisticated, transferable Bible-study method, but it is never labeled as one — the room watches Bryan find the center of the book without being told this is a repeatable skill. Fix (transferable): once the pattern lands, name it explicitly — \"this is called a chiastic structure: find the center, and you've usually found the big idea\" — so members can apply it to their own homework passages."
+                ]
+              },
+              {
+                "title": "A Provocative Claim About the Church and Israel Left Unprocessed",
+                "paragraphs": [
+                  "Discussing \"reproach,\" Bryan states plainly that \"the church now hates it [Israel]... a lot of these emails are like celebrating a hamburger, 10 pounds... idiotic\" [01:34:22]-[01:34:22], a strong claim that the room doesn't get to discuss, question, or apply before the lesson moves on. Fix (transferable): when a strong theological or cultural claim is dropped mid-lesson, follow it with one direct question to the room (\"does that match what you're seeing?\") before moving forward, so a provocative statement becomes a discussion rather than a drive-by."
+                ]
+              },
+              {
+                "title": "No Delegated In-Session Teaching Role, Despite a Large Room",
+                "paragraphs": [
+                  "With ~30 people present, Bryan delegated real follow-up tasks (newcomer phone calls, prayer-chain accountability, the closing prayer) but no note-taker, screen operator, or teaching-window role — the same gap flagged in 8/29's report. Fix (transferable): in a large-room week, name one member for one specific in-lesson role at the open — \"you're tracking our cross-references today\" — exercising the 2 Timothy 2:2 muscle inside the teaching itself, not just in the closing announcements."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Budget a Floor of 60-90 Seconds Per Newcomer, Even When Time Feels Tight",
+                "paragraphs": [
+                  "This week's welcome ran ~2.5 min for four first-timers — a third of 8/29's window. Before: efficient but compressed floor time. After: a hard floor of 60-90 seconds per newcomer regardless of how the rest of the session is paced. Transferable to any week with more than one first-timer."
+                ]
+              },
+              {
+                "title": "Add One More Follow-Up Question Before Supplying the Cross-Reference Connection",
+                "paragraphs": [
+                  "Discussion-only leader talk improved to ~40% but is still above target. Before: read the passage, then Bryan supplies the connection. After: read the passage, ask \"what's the connection you see?\", then supply it only after a room attempt. Transferable to any cross-reference-heavy session."
+                ]
+              },
+              {
+                "title": "Name the Bible-Study Technique Being Modeled So Members Can Reuse It",
+                "paragraphs": [
+                  "The chiastic-structure lesson was executed live but never labeled as a method. Before: the room watches Bryan find the center of the book. After: name it once — \"this is a chiastic structure — find the center, you've usually found the big idea\" — at the moment it lands. Transferable to any technique-rich teaching segment."
+                ]
+              },
+              {
+                "title": "Follow a Strong Aside With One Direct Question to the Room",
+                "paragraphs": [
+                  "The claim about the church and Israel passed without room engagement. Before: the assertion, then straight to the next verse. After: \"does that match what you're seeing, or does it surprise you?\" before moving on. Transferable to any session where a strong claim gets dropped mid-lesson."
+                ]
+              },
+              {
+                "title": "Delegate One In-Lesson Role, Not Just a Closing Follow-Up Task",
+                "paragraphs": [
+                  "Bryan delegated newcomer calls and the closing prayer but no teaching-window or tracking role inside the lesson itself. Before: Bryan carries pacing, cross-reference tracking, and synthesis alone. After: name one member at the open — \"you're tracking our cross-references today.\" Transferable to any session, most valuable in large-room weeks."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: ~30 (29 named/inferred non-leader voices + Bryan) — a lower bound. No gallery-grid frame or participant panel this pass (audio-only Whisper transcript); count built from named individuals who self-answer or are called on: Matt (regular), Matt (newcomer), Mason, Russ, Noah, Michael, Elijah, Ricky, Shrey, Fred, Chris, Jake, Rob, David, Cameron, Jordan, Pat, JP, Mitch, Stephen, Brendan, Zach, John, Justin, Jonathan, Trentumus, Bryce, Austin, Jay, plus 3 unnamed newcomers  (Target: Consistent participation)  → STRONG",
+                "Newcomers / first-timers: 4 confirmed first-timers with individual floor time: an unnamed guest \"back and forth to Austin since 2019\" who met Bryan outside church \"last Sunday\" [00:16:35]-[00:16:57]; Matt, a 3-4-year Ridge attendee new to this Saturday group, met Bryan at \"Warrior night\" [00:17:21]-[00:17:50]; an unnamed guest connected through \"Big Tom\" Colley [00:18:00]-[00:18:14]; and an unnamed guest who saw Bryan \"up on the screen\" at the David Pollock event [00:18:29]-[00:18:50]  (Target: Organic growth over time)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 6 distinct passages beyond Joel itself actually opened and read live: Revelation 9:1-11 (fifth-trumpet locust army), 1 Corinthians 10:12-14 (temptation / way of escape), James 1:14 (tempted by our own desire), Exodus 34:6 (compassionate and gracious), Deuteronomy 7:9 (paraphrased from memory), Deuteronomy 24:5 (newly-married exemption) — above the 6+ benchmark  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Passages actually read aloud: Joel 1:15 and Joel 2:1-27 read essentially in full across multiple rotating named readers (Mason, Elijah/Michael, Matt, Cameron, Jordan, Mitch, Stephen, Austin), plus all 6 cross-references above read live by named participants  (Target: Text in front of the group)  → STRONG",
+                "Leader talk ratio (whole session, includes reading): ~48% — a real reduction from 8/29's ~58%, driven by the relentlessly Socratic cadence and the sheer number of named reading assignments  (Target: ≤35%)  → NEEDS WORK",
+                "Leader talk ratio (discussion only — graded): ~40% — still above the Lifeway benchmark but a clear improvement over 8/29's ~55%  (Target: ≤30-35% (Lifeway 30% Rule))  → NEEDS WORK",
+                "Time to first scripture reading: ~4 min after the newcomer welcome ended (welcome closed ~[00:18:56]; a Joel 1 recall question opens at [00:19:26]; Joel 1:15 read at [00:22:56]) — measured from the end of introductions per Metric Adjustment #1  (Target: Within ~10 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~95% — the entire session tracks either the Joel text or one of the six opened cross-references; no extended off-text tangent  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~1h58m confirmed content ([00:11:17]-[02:09:37]); full recording ~2h10m, but the first ~11 min is a Whisper transcription-failure artifact, not confirmed content (see Transcription Note) — under the 120-min target  (Target: 120 min (Bryan's Austin Ridge groups))  → ON TARGET",
+                "Newcomer welcome: ~2.5 min ([00:16:20]-[00:18:56]) — four first-timers each given individual (if brief) floor time; efficient, but well under the 7-25 min target compared to 8/29's ~8 min  (Target: 7-25 min)  → NEEDS WORK",
+                "Teaching block — Joel 1:15, 2:1-27, chiastic structure, and restoration arc: [00:19:26]-[02:04:04] (~1h45m) — Joel 1 recap, Day-of-the-Lord passages, the chiastic-structure lesson, and the extended wholehearted-repentance application arc  (Target: Woven, purposeful)  → STRONG",
+                "Application / closing charge: [02:04:04]-[02:09:37] (~5.5 min) — group Big Ideas recitation, prayer-chain accountability charge, newcomer follow-up assignments, and delegated closing prayer  (Target: Woven throughout)  → STRONG",
+                "Big Ideas review at open: Present — \"somebody tell me something that we learned from Joel one\" [00:19:26]-[00:19:47], a genuine cold-recall question before diving into chapter 2 — fixes 8/29's flagged gap  (Target: Cumulative review at start)  → STRONG",
+                "Pacing (self-managed): Self-managed throughout — no external redirect identified; Bryan closed on his own initiative after completing the full application arc and announcements  (Target: Self-managed throughout)  → STRONG",
+                "Tangent time: ~4% — brief HVAC-system joke, a Bob Dylan/Joel-Osteen riff, and light ribbing around Josiah's newborn name, none derailing the lesson  (Target: < 5% off-topic)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 8 logged drivers — \"is to repent mean to cry about it?\" (DOK 3) [00:21:25], \"what appears to be the purpose of this judgment?\" (DOK 3) [00:54:11], \"what does that tell you about repentance?\" (DOK 3-4) [00:55:47], \"what does it mean to be a reproach?\" (DOK 2-3) [01:34:15], \"what do you make of verse 25 about being part of the Army?\" (DOK 3) [01:43:07], \"give me an example of wholehearted repentance from your life\" (DOK 4) [01:48:59], \"what is literally stopping you from wholeheartedly repenting?\" (DOK 4) [01:53:13], \"why do you fear saying, God, have your way with me?\" (DOK 4) [02:01:55]  (Target: 5-7 per session)  → STRONG",
+                "DOK Level distribution: Majority DOK 3-4 — all eight logged questions land at reason/justify or apply-to-life; recall/navigation prompts (\"what does verse two say\") excluded as scaffolding per Metric Adjustment #3  (Target: Majority DOK 2-3 (Webb))  → STRONG",
+                "Application spacing: Well distributed — application-weight questions surface from the opening repentance definition at [00:21:25] through the closing \"God have your way\" question at [02:01:55], not clustered only at the close  (Target: Woven throughout)  → STRONG",
+                "Confession / Personal-Response Rate: 6 first-person confessional responses — arc-high: a member's drinking-to-sobriety journey [01:49:10], a member's pornography \"harming God\" admission [01:44:39], JP's self-preservation-of-sin confession [01:54:14], Justin's near-death \"God have your way\" fear story [02:01:06], Chris's parenting-prayer disclosure about his son [02:03:33], and the two-attempt fasting testimony [01:12:20] — well above the ≥2 target  (Target: ≥2 per session)  → STRONG",
+                "Leader follow-up probe frequency: 5+ — repeated \"tell me more\" / \"say more\" probes (e.g. [00:52:09], [01:19:12], [02:01:10] \"why did you have fear of it?\") extending member answers before Bryan synthesizes  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Named substantive contributors: 27 of ~29 identified non-leader attendees interpreted a passage, answered a Socratic prompt, or shared personal application — Russ, Noah, Ricky, Shrey, Fred, Chris, Rob, David, Pat, JP, Brendan, Zach, John, Justin, Jonathan, Trentumus, and others  (Target: 70-80% of attendees)  → STRONG",
+                "Substantive % of group: ~93% of the identified room — arc-high breadth, on a large room this week  (Target: ≥70%)  → STRONG",
+                "Read-aloud assignments (reported, not scored): ~10 blocks across Joel and the six cross-references — Mason, Elijah/Michael, Matt, Cameron, Jordan, Mitch, Stephen, Austin each read one or more blocks. Reported here, never counted as engagement  (Target: Reported only)  → N/A — reported",
+                "Wait time / productive struggle: The \"what is literally stopping you\" question was held open and repeatedly re-asked when members offered vague or deflecting answers, refusing to accept \"I don't want to\" as a real answer  (Target: 3-5 sec (Rowe 1972))  → STRONG",
+                "Quiet member flag: Cannot be determined this week — with no gallery frame or diarized transcript, only speaking participants are identifiable; anyone who attended without speaking is invisible to this analysis rather than confirmed silent  (Target: All regulars contribute)  → N/A — unrecoverable",
+                "Delegated in-session roles: None identified for the teaching itself; Bryan did delegate concrete follow-up tasks (newcomer phone calls, prayer-chain accountability) and the closing prayer, but no note-taker, screen operator, or teaching-window delegate  (Target: Roles distributed)  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: 6 distinct moments with real personal cost — see Confession/Personal-Response Rate above — an arc-high week for breadth of disclosure  (Target: ≥1 per session with depth)  → STRONG",
+                "Vulnerability depth (rolling baseline ±1): See Dim 8 in Appendix A8 — 5/5. Up from 8/29's 4/5, within the ±1 swing cap, driven by the sheer number and depth of first-person disclosures this week (near-death story, self-preservation confession, parenting-prayer disclosure)  (Target: 3-5/5 for experienced leader)  → STRONG",
+                "Extended monologues > 90 sec: 3 over the threshold — matching last week's count, still above the ≤2 target. Each is named with its specific fix in the Monologues section below  (Target: ≤2 per session (each named with fix))  → NEEDS WORK",
+                "Monologue details: See Monologues section — the opening testimony/Guarantee pitch, the chiastic-structure explanation, and the Revelation narrative overview"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~70% — \"what do you see,\" \"what does that tell you,\" and \"tell me more\" prompts dominate over closed navigation prompts  (Target: ≥60%)  → STRONG",
+                "% text-requiring questions: ~80% — nearly every question sent the room back into a just-read verse rather than relying on memory or opinion alone  (Target: ≥50%)  → STRONG",
+                "Leader follow-up probes: 5+ — see Application Questions above; clears target  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle rate: Bryan held the \"what is literally stopping you\" question open across multiple deflected answers rather than accepting the first response and moving on  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Peer-to-peer exchanges: A member adds detail on the bridal-chamber custom immediately after another explains it [01:21:59]-[01:22:03]; the Deuteronomy 24:5 addition builds directly on the prior speaker rather than routing through Bryan  (Target: Members respond to each other)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Study flow: [Unrecoverable opening] → homework/Guarantee pitch → newcomer welcome (4 first-timers) → Joel 1 recall question → Joel 1:15 / Joel 2:1-11 (Day of the Lord, locust army, Revelation 9 cross-reference) → 1 Corinthians 10 / James 1 detour on temptation → Joel 2:12-17 (return to me, Exodus 34, solemn assembly, Deuteronomy 24 exemption) → chiastic-structure lesson (drawn live) → Joel 2:18-27 (restoration) → extended wholehearted-repentance application arc → group Big Ideas recap → announcements → delegated closing prayer  (Target: Blueprint-aligned)  → STRONG",
+                "Bumper stickers generated: \"Repentance ain't crying about it — it's doing something about it\" [01:05:45]-[01:05:58]; \"God's got his cleats on\" [01:09:47]-[01:10:10]; \"Sorry is as sorry does\" (Bryan's father's saying) [00:59:09]-[00:59:17]; \"Only God can recover what sin and judgment has cost you\" [01:44:12]-[01:44:29]; the group's closing recap (\"repentance is a cry about something... it's common, and you have a chance to repent, and God wants to restore you\") [02:04:17]-[02:04:53]  (Target: 3-5 per session)  → STRONG",
+                "Visual aids: One clear instance — Bryan narrates drawing a chiastic-structure diagram live on the board (\"I'm going to draw you all a picture... let's get back in front of the mirror now\") [01:23:08]-[01:23:29], used to teach how the book's center (verse 17) carries the big idea. A single instance rather than sustained use, but a real improvement over the zero-visual-aid pattern of the last two Saturday sessions  (Target: Multiple tools (Mayer))  → ON TARGET",
+                "Tone & delivery: Warm, high-energy, and physically animated (moving around the room per the audio-system note at [00:19:03]-[00:19:23]), with frequent humor (Joel Osteen riff, jiu-jitsu-adjacent ribbing, the Bob Dylan quote) balancing the session's heavier judgment/repentance content. Assessed from audio only — no video frames reviewed this pass  (Target: Vocal variety, pace, command voice)  → N/A — audio only",
+                "Topic drift: ~4% — the HVAC-system joke, the Josiah-naming ribbing, and a brief aside about the Israel/antisemitism theme that wasn't fully unpacked (see Improvements)  (Target: < 5% off-topic)  → STRONG",
+                "Big Ideas at close: Present and group-driven — \"Russ, give us our big ideas back there, did we get anything worthwhile?\" [02:04:04]-[02:04:10] produces a genuine multi-idea group recitation, not a single leader-delivered line — a real upgrade over 8/29's partial closing capstone  (Target: Cumulative review at close)  → STRONG"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "Three leader monologues ran past the 90-second threshold — matching last week's count, still above the ≤2 target. Each is named below with its specific fix.",
+                "Bryan's own story of becoming a believer, meeting his wife, and starting Precept at 39, folded into the full \"Guarantee\" pitch, delivered solo before the newcomer welcome begins. High-conversion content (see Study Method row), but carried entirely by one voice. Fix: break the testimony at the halfway point with a question to a veteran member — \"what got you to actually start the homework?\" — before finishing the pitch himself.",
+                "The Eastern-vs-Western writing-style explanation and the live diagram-drawing, delivered as one connected block with only brief room interjections. Fix: after drawing the outer structure (1-2-3, 3-2-1) but before revealing the center, ask the room to guess what they think the center verse will be about.",
+                "The scroll/seven-seals/seven-trumpets overview setting up the Revelation 9 reading, delivered solo. Fix: convert \"nobody has the power to open the scroll\" into a question first — \"who do you think could possibly be worthy?\" — before naming the Lamb."
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "“What Is Literally Stopping You?” — Refusing a Deflecting Answer  (🟢 Capitalized · Being Real)\n\nWhat happened: Bryan asks the room directly: \"what is stopping you right now from wholeheartedly repenting if you're living with your girlfriend, what is stopping you from moving out today?\" When a member answers \"you don't want to trust,\" Bryan pushes back — \"I don't want to hear that, what's literally stopping me\" [01:53:37]-[01:53:52] — and holds the question open, drawing out real answers: fear of confrontation, self-preservation of sin (JP), and fear of \"proving right that I'm not lovable\" (a separate member, [01:56:32]-[01:56:46]).\n\nWhy it mattered: Vague spiritual language (\"I don't want to trust,\" \"I'm working on it\") lets men avoid the actual barrier keeping them stuck — cohabitation, addiction, fear. By refusing to accept the first answer and re-asking until something concrete surfaced, Bryan modeled the exact \"redirect, don't rescue\" pattern the research benchmarks reward, applied to a pastoral confrontation rather than a content question — precisely the moment where a room's honesty ceiling gets set.\n\nWhat would make it bigger: Naming what just happened to the room once the pattern lands — \"notice I wouldn't let that vague answer stand — that's on purpose, and you can do the same thing with each other after we close\" — turns a personal confrontation technique into something the room can practice on one another.",
+                  "timestamp": "[01:53:13]-[01:56:53]"
+                },
+                {
+                  "detail": "A Near-Death Story, Engaged But Not Fully Sat With  (🔵 Pivot Point · Being Real)\n\nWhat happened: Asked why he fears the prayer \"God, have your way with me,\" Justin recounts reading Dangerous Prayers, being prayed over on a mission trip, and then blacking out while driving home — \"I just get deranged, and I'm just blacked out. And then I come to... my first thought was just thank you, Jesus\" [02:01:14]-[02:01:48]. Bryan follows up directly — \"why do you fear... why does that not roll off our tongue?\" [02:01:55]-[02:02:14] — but the room's answer stays general (\"because oftentimes God's will is not aligned with how our life is set up\") before Bryan pivots to a different question about his own hardest prayers for his sons.\n\nWhy it mattered: A literal near-death experience tied directly to a surrender prayer is one of the highest-stakes disclosures the format can produce. Engaging it with a direct follow-up (rather than moving on immediately) is real credit — but the room moves to a broader, more abstract reflection before Justin's specific story is fully processed, leaving some of its weight untapped.\n\nWhat would make it bigger: One more beat directed at Justin specifically — \"what did that moment change about how you pray now?\" — before broadening to the group, would let the room learn from his story rather than only from the general theme it prompted.",
+                  "timestamp": "[02:01:06]-[02:02:57]"
+                },
+                {
+                  "detail": "The Chiastic Structure, Drawn Live and Discovered as a Method  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Bryan draws the Eastern rabbinical writing pattern (1-2-3-4-3-2-1) on the board live, contrasting it with Western sequential writing, then has the room land on \"the center of Joel is verse 17\" [01:25:48]-[01:25:51] — the priests' cry, \"spare your people, O Lord\" — as the book's structural and thematic hinge.\n\nWhy it mattered: This is Theological Sophistication at its most advanced — not explaining what a verse means, but teaching the room a repeatable method for finding a book's big idea. It is also the session's one confirmed visual-aid moment, breaking a two-week zero-visual-aid streak.\n\nWhat would make it bigger: Name the technique explicitly once it lands (see Improvement 3) so the room can apply \"find the center\" to their own homework passages, not just this one.",
+                  "timestamp": "[01:23:08]-[01:26:02]"
+                },
+                {
+                  "detail": "A Strong Claim About the Church and Israel, Dropped Without Discussion  (🟠 Missed Opportunity · Teaching Craft)\n\nWhat happened: While unpacking \"reproach,\" Bryan states: \"the church now hates it [Israel]... I'm like, what? Do you not read the Bible? Well, people, a lot of these emails are like celebrating a hamburger, 10 pounds. They're just, they're just, you know. Idiotic\" [01:33:59]-[01:34:22]. The lesson moves immediately to the next verse with no room response invited.\n\nWhy it mattered: This is a strong, potentially divisive claim delivered as an aside rather than a discussion — the kind of statement that could land very differently across a 30-person room depending on each man's background and views, and it passes without any chance for the room to engage, question, or push back.\n\nWhat would make it bigger: A single direct question after the claim — \"does that match what you're seeing, or does it surprise you?\" — converts an assertion into a discussion the room can actually process, rather than something they simply absorb.",
+                  "timestamp": "[01:34:00]-[01:34:22]"
+                }
+              ],
+              "paragraphs": [
+                "Four disproportionately important moments — named so the pattern is replicable."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "\"Is to repent mean to cry about it?\" [00:21:25]-[00:21:27] — Level 3 — Reason/justify — Set up the \"tears don't mean anything... what means something is when you cry enough to turn around\" teaching that followed.",
+                "\"What appears to be the purpose of this judgment and this day of the locusts?\" [00:54:11]-[00:54:20] — Level 3 — Reason/justify — Drew \"return\" and \"unify them with God\" from the room before Bryan connected it to verse 12.",
+                "\"What does that tell you about repentance?\" [00:55:47]-[00:56:00] — Level 3-4 — Reason/apply — Followed \"who knows whether he will not turn and relent\"; produced \"you don't dictate God's response.\"",
+                "\"What does it mean to be a reproach, Brian?\" [01:34:15]-[01:34:19] — Level 2-3 — Compare/analyze — See Key Moments — the follow-up claim about the church and Israel went unprocessed.",
+                "\"What do you make of verse 25 about being part of the Army now that we're here?\" [01:43:07]-[01:43:19] — Level 3 — Reason/justify — Connected the locusts-guided-by-wind imagery back to \"that's my arm.\"",
+                "\"Give me an example from your life where you've demonstrated wholehearted repentance\" [01:48:59]-[01:49:07] — Level 4 — Apply to life — Produced the drinking-to-sobriety testimony and the pornography \"harming God\" confession.",
+                "\"What is literally stopping you from wholeheartedly repenting?\" [01:53:13]-[01:53:52] — Level 4 — Apply to life — See Key Moments — held open across a deflecting answer until a real one surfaced.",
+                "\"Why do you fear saying, God, have your way with me?\" [02:01:55]-[02:02:14] — Level 4 — Apply to life — See Key Moments — Justin's near-death story."
+              ],
+              "paragraphs": [
+                "Eight logged Big-Idea drivers, majority at Webb DOK 3-4. Recall/navigation prompts (\"what does verse two say?\") are excluded as scaffolding per Metric Adjustment #3."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 92.0% × weight 33 → 30.36 pts",
+                "Building Ministry: 73.3% × weight 31 → 22.73 pts",
+                "Engaging People: 90.0% × weight 18 → 16.20 pts",
+                "Being Real: 90.0% × weight 18 → 16.20 pts",
+                "BASE (pre-bonus): — × weight 100 → 85.49 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "https://drive.google.com/file/d/1VGxYIzbhIb0xD-N77kyHGjtIhSAQjyuI/view?usp=drivesdk",
+          "docUrl": "https://drive.google.com/file/d/1do_6HqEr-ZXkzdCGDbGsC9dvROYVMZLp/view?usp=drivesdk"
+        },
+        {
           "id": "bryan-bailey-2026-09-03-thursday-evening-group-zoom-joel",
           "date": "2026-09-03",
           "dateLabel": "September 3, 2026",
@@ -41102,14 +41484,14 @@
   "monthlyNarratives": {
     "2026-09": {
       "executiveSummary": [
-        "In September 2026, 2 leaders delivered 2 evaluated sessions, and the program held a weighted average composite of 70.9 / 100 — On Target on the v3 scale. The cohort is developing well, with one or two clusters still trailing the target.",
-        "Across the cohort the month broke down as 1 Strong and 1 On Target. Cameron Relic led the field at 78.2 (Strong), while Bryan Bailey anchored the other end at 63.5 (On Target) — the clearest place to concentrate coaching attention.",
-        "Bryan Bailey posted the biggest jump off the August 2026 baseline, climbing roughly 81 to 63.5 (+-17.2 pts), the strongest muscle program-wide was Application Questions (5.00 / 5), and the thinnest was Visual Aids (1.50 / 5), where one shared training would lift the most leaders at once.",
+        "In September 2026, 2 leaders delivered 3 evaluated sessions, and the program held a weighted average composite of 78.1 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 2 Strong. Cameron Relic led the field at 78.2 (Strong), while Bryan Bailey anchored the other end at 78.0 (Strong) — the clearest place to concentrate coaching attention.",
+        "Bryan Bailey posted the biggest jump off the August 2026 baseline, climbing roughly 81 to 78.0 (+-2.8 pts), the strongest muscle program-wide was Application Questions (5.00 / 5), and the thinnest was Visual Aids (2.00 / 5), where one shared training would lift the most leaders at once.",
         "Heading into the next month, the highest-leverage program move is a focused push on Visual Aids, with Bryan Bailey flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's September 2026 composite of 70.9 / 100 lands it in the On Target band. Month over month, Bryan Bailey is the standout mover off the August 2026 baseline, up -17.2 points.",
-        "Dimension by dimension, Application Questions is the cohort's anchor strength (5.00 / 5), while Visual Aids (1.50 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's September 2026 composite of 78.1 / 100 lands it in the Strong band. Month over month, Bryan Bailey is the standout mover off the August 2026 baseline, up -2.8 points.",
+        "Dimension by dimension, Application Questions is the cohort's anchor strength (5.00 / 5), while Visual Aids (2.00 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-08": {
@@ -41218,19 +41600,19 @@
         "leaderId": "bryan-bailey",
         "leaderName": "Bryan Bailey",
         "group": "Saturday Morning Study — Austin Ridge",
-        "sessionsCount": 1,
-        "composite": 63.6,
+        "sessionsCount": 2,
+        "composite": 78,
         "status": {
-          "label": "On Target",
-          "emoji": "🟡"
+          "label": "Strong",
+          "emoji": "🟢"
         },
         "priorComposite": 80.8,
-        "delta": -17.2,
+        "delta": -2.8,
         "clusterAvg": {
-          "tc": 64,
-          "bm": 53,
-          "ep": 60,
-          "br": 70
+          "tc": 78,
+          "bm": 63,
+          "ep": 75,
+          "br": 80
         },
         "glance": {
           "rows": [
@@ -41243,15 +41625,25 @@
               "br": 70,
               "composite": 63.6,
               "status": "On Target"
+            },
+            {
+              "date": "2026-09-05",
+              "session": "Saturday Morning Group (Austin Ridge) — Joel Chapter 2, In Depth",
+              "bm": 73,
+              "tc": 92,
+              "ep": 90,
+              "br": 90,
+              "composite": 92.5,
+              "status": "Exceptional"
             }
           ],
           "avg": {
-            "bm": 53,
-            "tc": 64,
-            "ep": 60,
-            "br": 70,
-            "composite": 63.6,
-            "status": "On Target"
+            "bm": 63,
+            "tc": 78,
+            "ep": 75,
+            "br": 80,
+            "composite": 78,
+            "status": "Strong"
           }
         },
         "trajectory": [
@@ -41261,6 +41653,13 @@
             "composite": 63.6,
             "status": "On Target",
             "delta": null
+          },
+          {
+            "date": "2026-09-05",
+            "session": "Saturday Morning Group (Austin Ridge) — Joel Chapter 2, In Depth",
+            "composite": 92.5,
+            "status": "Exceptional",
+            "delta": 28.9
           }
         ],
         "clusters": [
@@ -41268,65 +41667,65 @@
             "key": "tc",
             "name": "Teaching Craft",
             "weight": 33,
-            "avgPct": 64,
-            "statusLabel": "On Target",
+            "avgPct": 78,
+            "statusLabel": "Strong",
             "strongestDim": {
               "name": "Application Questions",
               "val": 5
             },
             "weakestDim": {
               "name": "Visual Aids",
-              "val": 1
+              "val": 2
             },
-            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — developing well. Visual Aids is the bottleneck this month."
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Visual Aids is the bottleneck this month."
           },
           {
             "key": "bm",
             "name": "Building Ministry",
             "weight": 31,
-            "avgPct": 53,
-            "statusLabel": "Developing",
+            "avgPct": 63,
+            "statusLabel": "On Target",
             "strongestDim": {
-              "name": "Newcomer Welcome",
-              "val": 3
+              "name": "Homework References",
+              "val": 4
             },
             "weakestDim": {
               "name": "Leader Development",
-              "val": 2
+              "val": 2.5
             },
-            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — primary growth area. Lift the floor on Leader Development."
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — developing well. Lift the floor on Leader Development."
           },
           {
             "key": "ep",
             "name": "Engaging People",
             "weight": 18,
-            "avgPct": 60,
-            "statusLabel": "On Target",
+            "avgPct": 75,
+            "statusLabel": "Strong",
             "strongestDim": {
-              "name": "Facilitation vs. Lecture",
-              "val": 3
+              "name": "Participant Engagement",
+              "val": 4
             },
             "weakestDim": {
               "name": "Facilitation vs. Lecture",
-              "val": 3
+              "val": 3.5
             },
-            "insight": "Engaging People (Facilitation + Participation) — developing well. Single biggest lever: cut leader talk in discussion segments toward the Lifeway 30% target."
+            "insight": "Engaging People (Facilitation + Participation) — strong. Continue to broaden participation beyond the core 6–8 voices."
           },
           {
             "key": "br",
             "name": "Being Real",
             "weight": 18,
-            "avgPct": 70,
-            "statusLabel": "On Target",
+            "avgPct": 80,
+            "statusLabel": "Strong",
             "strongestDim": {
               "name": "Vulnerability / Authenticity",
-              "val": 4
+              "val": 4.5
             },
             "weakestDim": {
               "name": "Prayer",
-              "val": 3
+              "val": 3.5
             },
-            "insight": "Being Real (Vulnerability + Prayer) — developing well. Prayer is the lift this month."
+            "insight": "Being Real (Vulnerability + Prayer) — strong. Prayer is the lift this month."
           }
         ],
         "strengths": [
@@ -41341,6 +41740,14 @@
           {
             "text": "Held a Genuinely Deep Question Open Across Three Voices Rather Than Rescuing It",
             "session": "2026-09-03"
+          },
+          {
+            "text": "Both Opening AND Closing Cumulative Big Ideas Review, Fixing Last Week's Flagged Gap",
+            "session": "2026-09-05"
+          },
+          {
+            "text": "A Live Chiastic-Structure Lesson, Using a Real Visual Aid",
+            "session": "2026-09-05"
           }
         ],
         "growth": [
@@ -41355,33 +41762,42 @@
           {
             "text": "Cross-Reference Count Below Benchmark",
             "session": "2026-09-03"
+          },
+          {
+            "text": "Newcomer Welcome Compressed to ~2.5 Minutes, Well Under Target",
+            "session": "2026-09-05"
+          },
+          {
+            "text": "Discussion-Only Leader Talk Still Above the Lifeway Benchmark",
+            "session": "2026-09-05"
           }
         ],
         "trends": [
-          "Highest-scoring dimension this month: Application Questions (avg 5.0 / 5). Lowest: Visual Aids (avg 1.0 / 5).",
-          "Composite vs. August 2026 (~81): down 17.2. Inspect the cluster regressions in the Cluster Deep Dive above."
+          "Within-month arc: 63.5 → 92.5 (+28.9). Trajectory improved.",
+          "Highest-scoring dimension this month: Application Questions (avg 5.0 / 5). Lowest: Visual Aids (avg 2.0 / 5).",
+          "Composite vs. August 2026 (~81): down 2.8. Inspect the cluster regressions in the Cluster Deep Dive above."
         ],
         "conversationGuide": [
           {
             "label": "Celebrate the strength",
-            "q": "Being Real averaged 70% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+            "q": "Being Real averaged 80% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
           },
           {
             "label": "Explore the growth area",
-            "q": "Building Ministry averaged 53%. What's getting in the way? What would have to be true for that to lift 10 points by October 2026?"
+            "q": "Building Ministry averaged 63%. What's getting in the way? What would have to be true for that to lift 10 points by October 2026?"
           },
           {
             "label": "Trajectory",
-            "q": "Your one September 2026 session scored 63.5 (On Target). What was different about your prep or delivery this time?"
+            "q": "Composite went from 63.5 on 2026-09-03 to 92.5 on 2026-09-05. What changed in your prep or delivery?"
           },
           {
             "label": "Group dynamics",
-            "q": "Participant Engagement averaged 3.0 / 5 in September 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+            "q": "Participant Engagement averaged 4.0 / 5 in September 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
           }
         ],
         "focus": {
           "clusterName": "Building Ministry",
-          "clusterPct": 53,
+          "clusterPct": 63,
           "goals": [
             "Identify and name an apprentice/co-leader for October 2026; have them visibly co-teach one segment.",
             "Reference the Precept workbook / homework explicitly at least 3 times per session.",
@@ -41479,6 +41895,98 @@
                 "cluster": "Building Ministry",
                 "score": 2,
                 "note": "Reading assignments broadly delegated, but no named teaching window, note-taker role, or explicit in-session apprenticeship comment this week — second dip in three tracked weeks"
+              }
+            ]
+          },
+          {
+            "date": "2026-09-05",
+            "session": "Saturday Morning Group (Austin Ridge) — Joel Chapter 2, In Depth",
+            "composite": 92.5,
+            "status": "Exceptional",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Big Ideas review at open and close, multi-reader scripture engagement, a live chiastic-structure lesson, and a delegated closing prayer — the most complete blueprint execution of the tracked arc"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": 3,
+                "note": "4 first-timers individually introduced, but the welcome window ran ~2.5 min against the 7-25 min target — brief compared to 8/29's ~8 min"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "6 distinct cross-references actually opened and read live — above the 6+ benchmark"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "Discussion-only leader talk ~40% — still above the Lifeway benchmark but a real improvement from 8/29's ~55%"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "8 logged Big-Idea drivers, majority DOK 3-4; confession rate (6) and follow-up probe frequency (5+) both well above target"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "27 of ~29 identified attendees contributed substantively — arc-high breadth"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 3,
+                "note": "One confirmed live-drawn diagram (chiastic structure) — a real improvement over the prior two weeks' zero, though not sustained across the session"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "Six first-person disclosures this week, up from 8/29's 4/5 within the ±1 swing cap"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Genuine cold-recall question at open and a group-driven cumulative recitation at close — fixes the arc's two-week decline"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Full, explicit \\\"Guarantee\\\" statement delivered at the open"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Closing prayer delegated to Bryce and substantive, plus strong prayer-chain accountability content; opening prayer unconfirmable due to the transcription gap rather than confirmed absent"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 3,
+                "note": "Explicit named delegation of newcomer follow-up calls and prayer-chain accountability; still no delegated teaching-window or in-lesson role"
               }
             ]
           }
