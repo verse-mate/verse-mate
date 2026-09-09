@@ -5,7 +5,8 @@ import type Database from "../src/models/Database";
  * Bible-Coach portal: per-leader affiliated church.
  *
  * The coach portal's reports + trends are served from the coaching-pipeline
- * dataset (backend-base/src/coach/coach.data.json); the leader's meeting link
+ * dataset, a compiled-in bundle at the time, the coach_* tables since
+ * (change: port-coach-pipeline); the leader's meeting link
  * already lives in coach_zoom_links (one row per user). The affiliated church
  * is the second user-writable setup field, so it rides on the same row rather
  * than a new table.

@@ -1,6 +1,6 @@
 import { safePromise } from "../../shared/utils/safe-promise";
 
-interface MailData {
+export interface MailData {
   subject: string;
   to: {
     name: string;
@@ -10,8 +10,38 @@ interface MailData {
     name: string;
     email: string;
   };
+  /**
+   * Where a reply should go, when that is not the From address.
+   *
+   * Added for coaching delivery (task 6.3a): From has to be the Mailgun-
+   * authenticated sending domain or the message fails SPF/DMARC and lands in
+   * spam, but a leader replying should reach the coach mailbox. Without this
+   * there was no mechanism for that at all.
+   */
+  replyTo?: {
+    name: string;
+    email: string;
+  };
   text: string;
   html?: string;
+}
+
+/**
+ * What happened to a send.
+ *
+ * A RESULT, deliberately, not a thrown error. `auth.service.ts:574` fires the
+ * password-reset mail WITHOUT awaiting it, so a throwing sender would surface
+ * as an unhandled rejection on a path that is otherwise fine. Every existing
+ * caller may ignore this and behave exactly as before; the coaching paths
+ * (6.3, 6.5, 6.9) check it, because "confirm three sends" and "reported rather
+ * than reported as delivered" are unverifiable if no caller can tell.
+ */
+export interface SendResult {
+  delivered: boolean;
+  /** True when the environment does not send at all (dev/test). */
+  suppressed?: boolean;
+  status?: number;
+  error?: string;
 }
 
 export class EmailNotificationConsumer {
@@ -45,7 +75,7 @@ export class EmailNotificationConsumer {
     this.mailgunDomain = mailgunDomain;
   }
 
-  async sendEmail(data: MailData) {
+  async sendEmail(data: MailData): Promise<SendResult> {
     if (["production", "staging"].includes(this.environment)) {
       const body = new URLSearchParams();
       body.append(
@@ -59,6 +89,13 @@ export class EmailNotificationConsumer {
       body.append("text", data.text);
       if (data.html) {
         body.append("html", data.html);
+      }
+      if (data.replyTo) {
+        // Mailgun passes any `h:` parameter through as a header.
+        body.append(
+          "h:Reply-To",
+          `${data.replyTo.name} <${data.replyTo.email}>`,
+        );
       }
 
       const authBtoa = btoa(`api:${this.mailgunApiKey}`);
@@ -81,21 +118,22 @@ export class EmailNotificationConsumer {
         console.log(jsonError);
       }
 
-      console.debug(res);
-
       if (res.status !== 200) {
+        const error =
+          json?.message ?? res.statusText ?? "unknown mail api error";
         console.log(
-          `[${EmailNotificationConsumer.name}]: Send email error: ${
-            json?.message ?? res.statusText ?? "unknown mail api error"
-          }`,
+          `[${EmailNotificationConsumer.name}]: Send email error: ${error}`,
         );
+        return { delivered: false, status: res.status, error };
       }
-    } else {
-      console.debug(
-        `[${EmailNotificationConsumer.name}]: sendMail: ${JSON.stringify(
-          data,
-        )}`,
-      );
+      return { delivered: true, status: res.status };
     }
+
+    console.debug(
+      `[${EmailNotificationConsumer.name}]: sendMail: ${JSON.stringify(data)}`,
+    );
+    // Not a failure: the environment is not configured to send. Saying
+    // `delivered: true` here would let a dev run "confirm three sends".
+    return { delivered: false, suppressed: true };
   }
 }

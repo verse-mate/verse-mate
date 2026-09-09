@@ -8,10 +8,18 @@ import type { default as BibleVersionsTable } from "./BibleVersions";
 import type { default as BookIntroductionsTable } from "./BookIntroductions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
+import type { default as CoachAdminsTable } from "./CoachAdmins";
 import type { default as CoachClassesTable } from "./CoachClasses";
+import type { default as CoachDatasetMetaTable } from "./CoachDatasetMeta";
+import type { default as CoachIntakeSessionsTable } from "./CoachIntakeSessions";
 import type { default as CoachLeadersTable } from "./CoachLeaders";
+import type { default as CoachMonthlyLeaderSummariesTable } from "./CoachMonthlyLeaderSummaries";
+import type { default as CoachMonthlyNarrativesTable } from "./CoachMonthlyNarratives";
 import type { default as CoachNotesTable } from "./CoachNotes";
 import type { default as CoachRecordingLinksTable } from "./CoachRecordingLinks";
+import type { default as CoachReportDimensionScoresTable } from "./CoachReportDimensionScores";
+import type { default as CoachReportsTable } from "./CoachReports";
+import type { default as CoachSessionAssetsTable } from "./CoachSessionAssets";
 import type { default as CoachZoomLinksTable } from "./CoachZoomLinks";
 import type { default as ConversationsTable } from "./Conversations";
 import type { default as DailyVerseHistoryTable } from "./DailyVerseHistory";
@@ -183,7 +191,23 @@ export default interface PublicSchema {
 
   coach_recording_links: CoachRecordingLinksTable;
 
+  coach_dataset_meta: CoachDatasetMetaTable;
+
   coach_notes: CoachNotesTable;
+
+  coach_reports: CoachReportsTable;
+
+  coach_admins: CoachAdminsTable;
+
+  coach_report_dimension_scores: CoachReportDimensionScoresTable;
+
+  coach_session_assets: CoachSessionAssetsTable;
+
+  coach_intake_sessions: CoachIntakeSessionsTable;
+
+  coach_monthly_narratives: CoachMonthlyNarrativesTable;
+
+  coach_monthly_leader_summaries: CoachMonthlyLeaderSummariesTable;
 
   notes: NotesTable;
 

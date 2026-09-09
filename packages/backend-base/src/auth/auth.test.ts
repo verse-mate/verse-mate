@@ -38,7 +38,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -283,7 +283,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -335,7 +335,7 @@ describe("Auth - Rate Limiting", () => {
 
     // Mock sendEmail for all signup attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // Make 3 successful signup attempts (rate limit max)
@@ -406,14 +406,14 @@ describe("Auth - Rate Limiting", () => {
     await cacheService.delete(`rate-limit:login:${loginEmail}`);
   });
 
-  // refresh rate-limit test removed per D-005 — /auth/refresh endpoint deleted.
+  // refresh rate-limit test removed per D-005, /auth/refresh endpoint deleted.
 
   it("forgot-password rate limit - returns 429 after 3 attempts", async () => {
     const testEmail = faker.internet.email().toLocaleLowerCase();
 
     // Mock sendEmail for all attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // First, create a user so forgot-password can find them
@@ -495,7 +495,7 @@ describe("Auth - Security (audit fixes)", () => {
         if (message.text.includes("?key=")) {
           lastVerifyToken = message.text.split("?key=").at(-1) ?? "";
         }
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
     await Backend.store.cache.delete("rate-limit:signup:unknown");
@@ -503,11 +503,11 @@ describe("Auth - Security (audit fixes)", () => {
 
   // Audit #3: a verification token is bound to the account it was minted for.
   // Before the fix, verifyEmail's guard compared user.id to the id it selected
-  // by — always true — so any valid token, including one issued for a DIFFERENT
+  // by, always true, so any valid token, including one issued for a DIFFERENT
   // account, verified the caller. That forged the "verified" badge on a victim's
   // pre-registered email. This proves the token→account binding is enforced.
   it("verify-email rejects a token minted for a different account (audit #3)", async () => {
-    // Account A — the attacker's session, unverified, on a victim's address.
+    // Account A, the attacker's session, unverified, on a victim's address.
     const aEmail = faker.internet.email().toLocaleLowerCase();
     const { data: aData, error: aErr } = await client.auth.signup.post({
       email: aEmail,
@@ -518,7 +518,7 @@ describe("Auth - Security (audit fixes)", () => {
     if (aErr) throw aErr;
     expect(aData?.accessToken).toBeDefined();
 
-    // Account B — a second account the attacker controls; capture its valid
+    // Account B, a second account the attacker controls; capture its valid
     // verification token (still sitting in the cache).
     await client.auth.signup.post({
       email: faker.internet.email().toLocaleLowerCase(),
@@ -539,7 +539,7 @@ describe("Auth - Security (audit fixes)", () => {
       (data as { accessToken?: string } | null)?.accessToken,
     ).toBeUndefined();
 
-    // A must remain unverified — the cross-account token did nothing.
+    // A must remain unverified, the cross-account token did nothing.
     const aUser = await Backend.store.db
       .getOrCreateConnection()
       .selectFrom("user")
