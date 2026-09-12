@@ -39581,6 +39581,283 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "jt-dettman-2026-09-12-daniel-2-1-49-nebuchadnezzar-s-d",
+          "date": "2026-09-12",
+          "dateLabel": "September 12, 2026",
+          "session": "Daniel 2:1-49 — Nebuchadnezzar's Dream of the Statue",
+          "topic": "Four kingdoms, the stone cut without hands, Daniel's character",
+          "duration": "~1 hr 56 min (incl. a ~6 min transcription gap)",
+          "attendees": 8,
+          "newcomers": 0,
+          "score": 76.56,
+          "base": 76.56,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 72,
+              "contribution": 23.76
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 60,
+              "contribution": 18.6
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 100,
+              "contribution": 18
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Full arc from icebreaker through application to a captured, delegated closing prayer; opening prayer not on this recording"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null,
+              "note": "Name-round icebreaker never confirmed new vs. returning attendance — reduces Building Ministry max 15→10, no penalty"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 4,
+              "note": "5 external cross-references (Isaiah 2, Isaiah 28, 1 Peter 2, Matthew 24, Mark 1) plus Daniel 1 back-references"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 5,
+              "note": "Near-continuously Socratic; held the church/kingdom question open rather than resolving it fast; ~25% estimated discussion-only talk"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "5-7 DOK-scored Big Idea questions, majority DOK 3-4, well-spaced across the session"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "~85-90% of the room contributed substantively; eight named members read and commented"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 2,
+              "note": "A room-built whiteboard character-traits list; all word studies stayed verbal, none on a screen/lookup tool"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "A relatable application story plus a member's recovery-adjacent disclosure; within the established rolling baseline"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 4,
+              "note": "Room-generated cold recall of Daniel 1 opened the session; explicit callbacks to the food test and Daniel's character theme"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 4,
+              "note": "Week's homework intro read aloud and used as the session's interpretive frame; Isaiah 28 cross-ref traced directly to it"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5,
+              "note": "Closing prayer delegated to Colin; prayer-partner cards + phone-number exchange operationalize a weekly accountability structure"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 2,
+              "note": "Readers assigned by name (navigational); a real leader-meeting/Bruce collaboration stayed an unnamed aside"
+            }
+          ],
+          "bigIdeas": [
+            "Daniel prayed before he panicked",
+            "God is bigger than your biggest problem"
+          ],
+          "feedback": {
+            "headline": "Context: a dream icebreaker and whiteboard drove engagement; growth edge stays visual aids.",
+            "strengths": [
+              "A Thematic Icebreaker That Bridged Straight Into the Text",
+              "Cold-Recall of Daniel 1 Before Touching New Text",
+              "A Genuinely Rich Cross-Reference Chain, Not Just a List"
+            ],
+            "improvements": [
+              "Word Studies Stayed Entirely Verbal Again",
+              "Leader Development Remains Flat at 2/5 — Third Session Running",
+              "A Real Personal-Application Story Got No Named Follow-Up"
+            ],
+            "recommendations": [
+              "Pre-Load One On-Screen Word Study Each Week",
+              "Delegate One Facilitation Beat and Narrate Leader Prep Out Loud",
+              "Follow a Personal Story With a Named Second Voice"
+            ],
+            "overview": [
+              "Context: a dream icebreaker and whiteboard drove engagement; growth edge stays visual aids.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 76.56/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "A Thematic Icebreaker That Bridged Straight Into the Text",
+                "paragraphs": [
+                  "Rather than opening cold on Daniel 2, JT ran a round-robin where every member shared a memorable dream from childhood — a low-stakes, on-theme warm-up that primed the room for \"Nebuchadnezzar had dreams\" before a single verse was read. The bridge was earned, not decorative: several members' dreams (being chased, falling, a recurring nightmare) mirrored the fear and confusion Nebuchadnezzar experiences in verse 1-3.",
+                  "The device paid off immediately — JT closed the round by naming the connection himself, then moved straight into the text riding the room's own energy."
+                ]
+              },
+              {
+                "title": "Cold-Recall of Daniel 1 Before Touching New Text",
+                "paragraphs": [
+                  "Before opening Daniel 2, JT ran a room-generated recap of the prior chapter — who Daniel is, the food test, the character theme — pulling the summary from the group rather than restating it himself. This is exactly the kind of spaced, effortful retrieval (Ebbinghaus) that keeps a multi-week study cumulative instead of episodic."
+                ]
+              },
+              {
+                "title": "A Genuinely Rich Cross-Reference Chain, Not Just a List",
+                "paragraphs": [
+                  "The stone-cut-without-hands discussion pulled in Isaiah 2:1-5 (the mountain of the Lord), Isaiah 28:16 (the tested cornerstone), 1 Peter 2:4-8 (the rejected stone), and closed with Matthew 24:13-14 and Mark 1:15 on the kingdom's timing — five substantive cross-references used to build a single theological arc (the stone is Jesus; the kingdom is the church) rather than dropped in isolation."
+                ]
+              },
+              {
+                "title": "Consistent Named Reader Rotation Kept the Room Owning the Text",
+                "paragraphs": [
+                  "Six different members (Aidan, Joey, Louis, Colin, Mark, Michael) were each called by name to read a section of Daniel 2 aloud in sequence, keeping the text itself in the room's collective voice rather than the leader's."
+                ]
+              },
+              {
+                "title": "Homework Explicitly Folded Into the Opening Frame",
+                "paragraphs": [
+                  "JT opened by reading the week's homework introduction aloud — the contrast between Daniel's access to God and the believer's indwelling Holy Spirit under the new covenant — turning a take-home reading assignment into the session's actual interpretive lens before the text was even opened."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Word Studies Stayed Entirely Verbal Again",
+                "paragraphs": [
+                  "The session ran real word studies on \"prudence\" and \"discretion\" (looked up and discussed at length) plus etymology on \"counsel,\" and none of it appeared on a screen. A single pre-loaded lookup tool (Blue Letter Bible, VerseMate, Logos) would let the whole room see the root and range of a word at once instead of one person reading a definition aloud."
+                ]
+              },
+              {
+                "title": "Leader Development Remains Flat at 2/5 — Third Session Running",
+                "paragraphs": [
+                  "Every scripture reading was assigned by JT by name — warm and inclusive, but a navigational act, not a leadership one. No delegated facilitation window or named apprentice moment was observable in-session, the same gap flagged in both July reports."
+                ]
+              },
+              {
+                "title": "A Real Personal-Application Story Got No Named Follow-Up",
+                "paragraphs": [
+                  "Asked where the room goes first when afraid, a member (likely JT himself) shared a specific, relatable story — a hail-damage scare and a spouse's anxious research spiral — but the room moved on with a laugh rather than JT naming a second member directly to share their own go-to. That leaves the Leader Follow-up Probe count under the ≥3 target this session."
+                ]
+              },
+              {
+                "title": "The Name-Round Icebreaker Left Newcomer Status Ambiguous",
+                "paragraphs": [
+                  "Several members stated their first name before sharing a dream (\"I'm Howard,\" \"My name is Jody,\" \"My name is Colin\") — a pattern that could mean genuine newcomers were present, or could simply be a naming convention for the recording. Either way, nothing in the session confirmed which, echoing the same ambiguity flagged with Lewis's arrival in the July 18 report."
+                ]
+              },
+              {
+                "title": "The Extended Cold-Open Pushed First Scripture Contact Past Target",
+                "paragraphs": [
+                  "Between the commentary-methodology discussion, the dream icebreaker, and the Daniel 1 recap, the group didn't reach Daniel 2:1 until roughly 21 minutes in — over the ~10-minute post-welcome target. Each piece was valuable on its own, but stacked together they ran long; trimming the recap to its highest-value 2-3 minutes would recover most of the gap."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Pre-Load One On-Screen Word Study Each Week",
+                "paragraphs": [
+                  "Pick the richest word in the week's homework — this week prudence, discretion, or counsel all qualified — and open a lookup tool (Blue Letter Bible, VerseMate, or Logos) to it before the session starts. This is the same standing lever flagged in prior reports; even one on-screen word moves the lowest-scoring content dimension without changing anything about JT's teaching style."
+                ]
+              },
+              {
+                "title": "Delegate One Facilitation Beat and Narrate Leader Prep Out Loud",
+                "paragraphs": [
+                  "Hand one man an actual teaching beat next week — he sets up a passage and asks the first question — and name it out loud. Separately, when leaning on prep done with Bruce or another leader, say so explicitly (\"Bruce and I worked through this together this week\"). Both moves convert invisible investment into a scoreable Leader-Development signal, the lowest-scoring dimension three sessions running."
+                ]
+              },
+              {
+                "title": "Follow a Personal Story With a Named Second Voice",
+                "paragraphs": [
+                  "When someone shares a real personal-application story (this week's hail/mold scare), name a second specific member to answer the same question before moving on — that pushes the Leader Follow-up Probe count toward the ≥3 target and surfaces voices who don't self-select into sharing."
+                ]
+              },
+              {
+                "title": "Ask One Clarifying Question During Name-Round Icebreakers",
+                "paragraphs": [
+                  "Icebreakers that have members state their name are a good instinct, but a single follow-up clarifies whether anyone is new — turning an ambiguous signal into a scoreable one either way."
+                ]
+              },
+              {
+                "title": "Photograph the Board Before the Room Clears",
+                "paragraphs": [
+                  "The character-traits whiteboard was the session's best visual aid precisely because the room built it live. A 10-second photo and a group text afterward extends that same artifact's memory-reinforcement value into the week instead of leaving it on a board that gets erased."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the four weighted clusters and any session bonuses combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 72% × weight 33 → 23.76 pts",
+                "Building Ministry: 60% × weight 31 → 18.60 pts",
+                "Engaging People: 100% × weight 18 → 18.00 pts",
+                "Being Real: 90% × weight 18 → 16.20 pts",
+                "Base (sum of cluster contributions): 76.56 / 100",
+                "Session score: 76.56 / 100"
+              ]
+            },
+            {
+              "title": "Coaching notes by dimension",
+              "paragraphs": [
+                "The per-dimension rationale behind each score on the 12-dimension scorecard."
+              ],
+              "bullets": [
+                "Session Structure & Flow (4/5): Full arc from icebreaker through application to a captured, delegated closing prayer; opening prayer not on this recording",
+                "Newcomer Welcome (N/A): Name-round icebreaker never confirmed new vs. returning attendance — reduces Building Ministry max 15→10, no penalty",
+                "Scripture Engagement (4/5): 5 external cross-references (Isaiah 2, Isaiah 28, 1 Peter 2, Matthew 24, Mark 1) plus Daniel 1 back-references",
+                "Facilitation vs. Lecture (5/5): Near-continuously Socratic; held the church/kingdom question open rather than resolving it fast; ~25% estimated discussion-only talk",
+                "Application Questions (4/5): 5-7 DOK-scored Big Idea questions, majority DOK 3-4, well-spaced across the session",
+                "Participant Engagement (5/5): ~85-90% of the room contributed substantively; eight named members read and commented",
+                "Visual Aids (2/5): A room-built whiteboard character-traits list; all word studies stayed verbal, none on a screen/lookup tool",
+                "Vulnerability / Authenticity (4/5): A relatable application story plus a member's recovery-adjacent disclosure; within the established rolling baseline",
+                "Memory Reinforcement (4/5): Room-generated cold recall of Daniel 1 opened the session; explicit callbacks to the food test and Daniel's character theme",
+                "Homework References (4/5): Week's homework intro read aloud and used as the session's interpretive frame; Isaiah 28 cross-ref traced directly to it",
+                "Prayer (5/5): Closing prayer delegated to Colin; prayer-partner cards + phone-number exchange operationalize a weekly accountability structure",
+                "Leader Development (2/5): Readers assigned by name (navigational); a real leader-meeting/Bruce collaboration stayed an unnamed aside"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://docs.google.com/document/d/1dbgSHr_orlvPOGdt-oLOUxbcJot-rcr5/edit?usp=drivesdk"
+        },
+        {
           "id": "jt-dettman-2026-07-18-revelation-church-of-laodicea-re",
           "date": "2026-07-18",
           "dateLabel": "July 18, 2026",
@@ -44925,14 +45202,14 @@
   "monthlyNarratives": {
     "2026-09": {
       "executiveSummary": [
-        "In September 2026, 7 leaders delivered 12 evaluated sessions, and the program held a weighted average composite of 78.3 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
-        "Across the cohort the month broke down as 1 Exceptional and 6 Strong. Brendan & Elizabeth led the field at 90.7 (Exceptional), while James Davis anchored the other end at 72.5 (Strong) — the clearest place to concentrate coaching attention.",
-        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 90.7 (+16.8 pts), the strongest muscle program-wide was Scripture Engagement (4.83 / 5), and the thinnest was Leader Development (2.50 / 5), where one shared training would lift the most leaders at once.",
+        "In September 2026, 8 leaders delivered 13 evaluated sessions, and the program held a weighted average composite of 78.1 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 1 Exceptional and 7 Strong. Brendan & Elizabeth led the field at 90.7 (Exceptional), while James Davis anchored the other end at 72.5 (Strong) — the clearest place to concentrate coaching attention.",
+        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 90.7 (+16.8 pts), the strongest muscle program-wide was Scripture Engagement (4.77 / 5), and the thinnest was Leader Development (2.46 / 5), where one shared training would lift the most leaders at once.",
         "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Bryan Bailey and Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's September 2026 composite of 78.3 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 16.8 points.",
-        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.83 / 5), while Leader Development (2.50 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's September 2026 composite of 78.1 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 16.8 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.77 / 5), while Leader Development (2.46 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-08": {
@@ -66388,6 +66665,278 @@
       }
     },
     "jt-dettman": {
+      "2026-09": {
+        "month": "2026-09",
+        "monthLabel": "September 2026",
+        "priorMonthLabel": "August 2026",
+        "leaderId": "jt-dettman",
+        "leaderName": "JT Dettman",
+        "group": "Revelation Study",
+        "sessionsCount": 1,
+        "composite": 76.6,
+        "status": {
+          "label": "Strong",
+          "emoji": "🟢"
+        },
+        "priorComposite": null,
+        "delta": null,
+        "clusterAvg": {
+          "tc": 72,
+          "bm": 60,
+          "ep": 100,
+          "br": 90
+        },
+        "glance": {
+          "rows": [
+            {
+              "date": "2026-09-12",
+              "session": "Daniel 2:1-49 — Nebuchadnezzar's Dream of the Statue",
+              "bm": 60,
+              "tc": 72,
+              "ep": 100,
+              "br": 90,
+              "composite": 76.6,
+              "status": "Strong"
+            }
+          ],
+          "avg": {
+            "bm": 60,
+            "tc": 72,
+            "ep": 100,
+            "br": 90,
+            "composite": 76.6,
+            "status": "Strong"
+          }
+        },
+        "trajectory": [
+          {
+            "date": "2026-09-12",
+            "session": "Daniel 2:1-49 — Nebuchadnezzar's Dream of the Statue",
+            "composite": 76.6,
+            "status": "Strong",
+            "delta": null
+          }
+        ],
+        "clusters": [
+          {
+            "key": "tc",
+            "name": "Teaching Craft",
+            "weight": 33,
+            "avgPct": 72,
+            "statusLabel": "Strong",
+            "strongestDim": {
+              "name": "Session Structure & Flow",
+              "val": 4
+            },
+            "weakestDim": {
+              "name": "Visual Aids",
+              "val": 2
+            },
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Visual Aids is the bottleneck this month."
+          },
+          {
+            "key": "bm",
+            "name": "Building Ministry",
+            "weight": 31,
+            "avgPct": 60,
+            "statusLabel": "On Target",
+            "strongestDim": {
+              "name": "Homework References",
+              "val": 4
+            },
+            "weakestDim": {
+              "name": "Leader Development",
+              "val": 2
+            },
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — developing well. Lift the floor on Leader Development."
+          },
+          {
+            "key": "ep",
+            "name": "Engaging People",
+            "weight": 18,
+            "avgPct": 100,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 5
+            },
+            "insight": "Engaging People (Facilitation + Participation) — elite tier. Continue to broaden participation beyond the core 6–8 voices."
+          },
+          {
+            "key": "br",
+            "name": "Being Real",
+            "weight": 18,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Prayer",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 4
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — elite tier. Vulnerability / Authenticity is the lift this month."
+          }
+        ],
+        "strengths": [
+          {
+            "text": "A Thematic Icebreaker That Bridged Straight Into the Text",
+            "session": "2026-09-12"
+          },
+          {
+            "text": "Cold-Recall of Daniel 1 Before Touching New Text",
+            "session": "2026-09-12"
+          },
+          {
+            "text": "A Genuinely Rich Cross-Reference Chain, Not Just a List",
+            "session": "2026-09-12"
+          }
+        ],
+        "growth": [
+          {
+            "text": "Word Studies Stayed Entirely Verbal Again",
+            "session": "2026-09-12"
+          },
+          {
+            "text": "Leader Development Remains Flat at 2/5 — Third Session Running",
+            "session": "2026-09-12"
+          },
+          {
+            "text": "A Real Personal-Application Story Got No Named Follow-Up",
+            "session": "2026-09-12"
+          }
+        ],
+        "trends": [
+          "Highest-scoring dimension this month: Facilitation vs. Lecture (avg 5.0 / 5). Lowest: Leader Development (avg 2.0 / 5)."
+        ],
+        "conversationGuide": [
+          {
+            "label": "Celebrate the strength",
+            "q": "Engaging People averaged 100% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+          },
+          {
+            "label": "Explore the growth area",
+            "q": "Building Ministry averaged 60%. What's getting in the way? What would have to be true for that to lift 10 points by October 2026?"
+          },
+          {
+            "label": "Trajectory",
+            "q": "Your one September 2026 session scored 76.6 (Strong). What was different about your prep or delivery this time?"
+          },
+          {
+            "label": "Group dynamics",
+            "q": "Participant Engagement averaged 5.0 / 5 in September 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+          }
+        ],
+        "focus": {
+          "clusterName": "Building Ministry",
+          "clusterPct": 60,
+          "goals": [
+            "Identify and name an apprentice/co-leader for October 2026; have them visibly co-teach one segment.",
+            "Reference the Precept workbook / homework explicitly at least 3 times per session.",
+            "Welcome a newcomer with a member testimony first (7–25 min block) when they appear.",
+            "In every October 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
+          ]
+        },
+        "sessions": [
+          {
+            "date": "2026-09-12",
+            "session": "Daniel 2:1-49 — Nebuchadnezzar's Dream of the Statue",
+            "composite": 76.6,
+            "status": "Strong",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Full arc from icebreaker through application to a captured, delegated closing prayer; opening prayer not on this recording"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": null,
+                "note": "Name-round icebreaker never confirmed new vs. returning attendance — reduces Building Ministry max 15→10, no penalty"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "5 external cross-references (Isaiah 2, Isaiah 28, 1 Peter 2, Matthew 24, Mark 1) plus Daniel 1 back-references"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "Near-continuously Socratic; held the church/kingdom question open rather than resolving it fast; ~25% estimated discussion-only talk"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "5-7 DOK-scored Big Idea questions, majority DOK 3-4, well-spaced across the session"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "~85-90% of the room contributed substantively; eight named members read and commented"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 2,
+                "note": "A room-built whiteboard character-traits list; all word studies stayed verbal, none on a screen/lookup tool"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "A relatable application story plus a member's recovery-adjacent disclosure; within the established rolling baseline"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Room-generated cold recall of Daniel 1 opened the session; explicit callbacks to the food test and Daniel's character theme"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 4,
+                "note": "Week's homework intro read aloud and used as the session's interpretive frame; Isaiah 28 cross-ref traced directly to it"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "Closing prayer delegated to Colin; prayer-partner cards + phone-number exchange operationalize a weekly accountability structure"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 2,
+                "note": "Readers assigned by name (navigational); a real leader-meeting/Bruce collaboration stayed an unnamed aside"
+              }
+            ]
+          }
+        ]
+      },
       "2026-07": {
         "month": "2026-07",
         "monthLabel": "July 2026",
