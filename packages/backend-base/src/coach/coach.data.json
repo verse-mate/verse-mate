@@ -28628,6 +28628,385 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "russell-davis-2026-09-17-jonah-1-1-9-first-session-of-jon",
+          "date": "2026-09-17",
+          "dateLabel": "September 17, 2026",
+          "session": "Jonah 1:1-9 (first session of Jonah)",
+          "topic": "Jonah's flight from God's call; can we escape the Lord's presence?",
+          "duration": "~1 hr 19 min captured of a ~2 hr 23 min meeting — see Recording Note",
+          "attendees": 15,
+          "newcomers": 0,
+          "score": 74.28,
+          "base": 74.28,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 76,
+              "contribution": 25.08
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 60,
+              "contribution": 18.6
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Solid historical-to-textual flow (2 Kgs 14 → apologetics → keyword ID → Jonah 1:1-9); closing structure not observable (recording gap)"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null,
+              "note": "No newcomers present or welcomed this session"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "9-10 cross-references (2 Kgs, Matt, Gen 3-4, 2 Thess, Exod, Ps, Jer, Dan, Amos) plus a sustained Hebrew word study"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 4,
+              "note": "Two well-received but solo teaching blocks (~40% discussion-only talk ratio); open interpretive tension (fear of God) held well across multiple voices"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5,
+              "note": "10 DOK-scored questions woven throughout, ~50% DOK-4, 3 confessional first-person responses"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "~73% substantive across ~15 attendees; wide range of voices including three vulnerable disclosures"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3,
+              "note": "2 on-screen visuals (historical chart + leader-made map) — no live word-lookup tool despite a strong opportunity (ra word study)"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "Exceptional member-level authenticity the leader made space for; no fresh costly leader disclosure this week; within ±1 swing cap of baseline"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 2,
+              "note": "First session of a new book — no cumulative Big Ideas recap; a historical bridge to the prior prophetic era was given instead"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Page-specific throughout (pp. 4-7, 15); the core apologetics question was pulled directly from the homework"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4,
+              "note": "Opening delegated to an ill member as a dignity-restoring choice; closing prayer not observable due to the recording gap"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 1,
+              "note": "No observable in-session coaching or apprenticeship signal this week"
+            }
+          ],
+          "bigIdeas": [
+            "You can run from God's call, but never from His presence",
+            "Busyness is often just a polite way of avoiding what God is asking"
+          ],
+          "feedback": {
+            "headline": "Jonah 1:1-9 — Fleeing the Presence of the Lord",
+            "strengths": [
+              "Delegated the Opening Prayer to the Sickest Man in the Room",
+              "Met a Real Doubt Question Head-On Instead of Skating Past It",
+              "Built a Room Safe Enough for Three Different Members to Confess Avoidance of God"
+            ],
+            "improvements": [
+              "No On-Screen Word-Study Tool for the ra (Calamity/Evil) Study",
+              "A Sharp Interpretive Disagreement on Cain's Punishment Was Left Hanging",
+              "A Reading-Assignment Mix-Up Cost Momentum Mid-Discussion"
+            ],
+            "recommendations": [
+              "Open a Live Lookup Tool the Moment a Word-Study or Interpretive Question Lands",
+              "Track Reading Assignments on a Visible List",
+              "Model a Personal Disclosure, Not Just Invite One"
+            ],
+            "overview": [
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 74.28/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Delegated the Opening Prayer to the Sickest Man in the Room",
+                "paragraphs": [
+                  "John Crabb joined mid-session one day after a second round of liver stents (tumor-driven liver failure, described earlier in the call by another member as a serious, ongoing crisis), visibly weak. Rather than let him observe quietly, Russell asked him directly to open the group in prayer: “Would you honor us by opening us in prayer tonight?” John accepted, delivered a warm, others-focused prayer, and the group's response (“Thank you, John, that's wonderful”) treated his contribution as a gift to the room, not a burden on him.",
+                  "This is the clearest kind of dignity-restoring leadership move available in a pastoral setting: it tells a suffering member his voice still matters at full weight, not a diminished one."
+                ]
+              },
+              {
+                "title": "Met a Real Doubt Question Head-On Instead of Skating Past It",
+                "paragraphs": [
+                  "Rather than avoid the homework's pointed “is this a true story?” question, Russell named it directly (“might as well get the elephant out in the room, talk about it”), brought real apologetics research (documented cases of large fish swallowing people and surviving), and anchored the resolution in Jesus's own testimony (Matthew 12:39-41) rather than in speculation alone.",
+                  "Treating a doubt question as worth real preparation — not just a one-line dismissal — models exactly the kind of intellectually honest faith this group's homework was pushing them toward."
+                ]
+              },
+              {
+                "title": "Built a Room Safe Enough for Three Different Members to Confess Avoidance of God",
+                "paragraphs": [
+                  "The “can we really escape God's presence” discussion produced back-to-back first-person admissions: Ron compared his avoidance of God to giving someone the silent treatment after a fight; Andy named busyness as his own excuse for tuning out God's voice; and a third member described real anxiety walking into prison ministry alone after losing his longtime partner, resolved only after praying out loud in the moment.",
+                  "None of these were prompted with a leading, ready-made answer — Russell asked the open question and let the room supply its own convictions, which is why three different men were willing to go first."
+                ]
+              },
+              {
+                "title": "Made His Own Teaching Aid When the Homework's Was Inadequate",
+                "paragraphs": [
+                  "Rather than rely on the workbook's map of Jonah's flight to Tarshish, Russell built and screen-shared his own — explicitly because the printed one “cuts the map off” and understates the distance Jonah was willing to travel to flee God's call. Pairing that with the kings/prophets historical chart gave the room two visual anchors in a single session, both purpose-built rather than recycled."
+                ]
+              },
+              {
+                "title": "Let a Genuine Theological Tension Stay Open Across Three Voices",
+                "paragraphs": [
+                  "When the group reached Jonah's proclamation — “I fear the Lord God of heaven” — spoken by a man actively fleeing that same God, Russell didn't resolve the paradox himself. Uri and Cameron each offered a different angle (terror-fear vs. obedience-fear; a half-confession vs. a genuine one), and the room arrived collectively at a two-definitions-of-fear framework no single voice had stated at the outset."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "No On-Screen Word-Study Tool for the ra (Calamity/Evil) Study",
+                "paragraphs": [
+                  "The session's best word-study opportunity — tracking the Hebrew ra across Jonah 1:2, 1:7, and the Jeremiah/Amos cross-references — was explained verbally and well, but never opened live in Blue Letter Bible, VerseMate, or Logos. Displaying the word on screen at the moment it's introduced would let the room see the linguistic thread rather than just hear it asserted."
+                ]
+              },
+              {
+                "title": "A Sharp Interpretive Disagreement on Cain's Punishment Was Left Hanging",
+                "paragraphs": [
+                  "Two members gave conflicting readings of Genesis 4's aftermath — one calling God's protection of Cain mercy, the other reading the “no one is to kill Cain” clause as an extension of his punishment (prolonged misery over a quick death). Russell didn't adjudicate, follow up with a cross-reference, or table it for research — the group simply moved on with the tension unresolved."
+                ]
+              },
+              {
+                "title": "A Reading-Assignment Mix-Up Cost Momentum Mid-Discussion",
+                "paragraphs": [
+                  "Andy and Ron were both assigned Amos 3:6-7, discovered only after a member interrupted to flag it (“Russell, you said two different people are reading the same verses”). The correction was handled smoothly, but tracking assignments on-screen (a visible checklist) rather than from memory would prevent this recurring during dense, cross-reference-heavy sessions."
+                ]
+              },
+              {
+                "title": "Leader Talk Ratio Ran Elevated With No Self-Check",
+                "paragraphs": [
+                  "Two extended teaching blocks — the fish-species apologetics research and the Jeroboam historical chart — each ran past 90 seconds solo. Both were substantive and well-received, but combined with steady Socratic transitions throughout, the discussion-only talk ratio landed around 40%, above the Lifeway 30% guideline, with no mid-session self-check of pace or share of voice."
+                ]
+              },
+              {
+                "title": "No Fresh Personal Disclosure From the Leader Himself This Session",
+                "paragraphs": [
+                  "Russell created real space for others to be vulnerable — Ron, Andy, and the prison-ministry member all went first — but he did not model it himself this week with a costly disclosure of his own. Leader-modeled vulnerability (not just leader-invited vulnerability) is what raises the room's ceiling further over time; this week the room did the modeling, not the leader."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Open a Live Lookup Tool the Moment a Word-Study or Interpretive Question Lands",
+                "paragraphs": [
+                  "The ra (calamity/evil) word study and the Cain's-punishment disagreement were both handled verbally from memory. Keep Blue Letter Bible, VerseMate, or Logos open in a tab and pull it up live — turning a good explanation into a modeled research habit the room can see."
+                ]
+              },
+              {
+                "title": "Track Reading Assignments on a Visible List",
+                "paragraphs": [
+                  "Andy and Ron were both assigned the same verses this week, caught only after a member flagged it mid-session. A simple on-screen or shared-doc checklist of who's reading what would prevent the mix-up during dense, cross-reference-heavy weeks."
+                ]
+              },
+              {
+                "title": "Model a Personal Disclosure, Not Just Invite One",
+                "paragraphs": [
+                  "Three members went first on vulnerability this week; Russell facilitated well but didn't add a costly disclosure of his own. A brief, genuine personal example before opening the floor raises the room's ceiling further and shares the emotional labor of going first."
+                ]
+              },
+              {
+                "title": "Run a Clock Check Given How Long This Group's Sessions Run",
+                "paragraphs": [
+                  "The Zoom notification for this session reports a 2 hr 23 min meeting — well past the 90-120 min target — consistent with prior sessions in this arc. A single mid-session pace check, regardless of how rich the material is, protects both the group's stamina and the leader's own bandwidth."
+                ]
+              },
+              {
+                "title": "Confirm the Full Recording Downloads Before the Week Closes Out",
+                "paragraphs": [
+                  "This week's shared Zoom link only served 55% of the actual meeting. Checking the Zoom recording page for a second file (or confirming total duration matches before sharing) would prevent a repeat of this gap, which cost this report the session's second half."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total Attendees: ~15 named voices on Zoom (Russell, Bradford, Steve, Craig, J.R., John Crabb, Cameron, Ron, Andy, Rich Sorensen, Jamie, Phil, Frank, Uri, Upton); Barry Smitherman, Warren, and Mark absent (per roll call)  (Target: ≥70% roster attendance)  → ON TARGET",
+                "Newcomers: 0 — no newcomer present or welcomed this session  (Target: 1+ per session)  → N/A",
+                "Group Size Context: ~15 — right at, not clearly over, the 15-attendee bonus threshold; no explicit headcount announced  (Target: Extra facilitation required ≥15)  → —"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Leader Talk — Whole Session (incl. reading): ~42% (captured portion) — Russell read no scripture himself (all reading blocks delegated) but carried dense apologetics/historical exposition  (Target: ≤35% (Lifeway))  → NEEDS WORK",
+                "Leader Talk — Discussion Only (graded): ~40% (captured portion)  (Target: ≤30% (Lifeway 30% Rule))  → NEEDS WORK",
+                "% Verse-Grounded Responses: ~85%  (Target: ≥80%)  → STRONG",
+                "Cross-References Used: 9-10 passages beyond the primary text (2 Kgs 14:23-27; Matt 12:39-41; Gen 3:1-18; Gen 4; 2 Thess 1:8-9; Exod 33:14-15; Ps 16:10-11; Jer 18:7-11; Dan 9:11-14; Amos 3:6-7)  (Target: 6+ per session)  → STRONG",
+                "Word Studies: 1 sustained — the Hebrew ra (“evil/calamity”) tracked across Jonah 1:2, 1:7, Jeremiah, and Amos [01:04:58-01:13:00]  (Target: 1-2 per session)  → STRONG",
+                "Word Studies Displayed on Screen: None — no BLB/VerseMate/Logos tab shown; the ra word study was explained verbally, not looked up live  (Target: 1+ per session (BLB / VerseMate / Logos))  → NEEDS WORK",
+                "Time to First Scripture: ~9 min after prayer ended — 2 Kings 14:23-27 read at [00:30:34], prayer ended [00:21:53]  (Target: ≤10 min from end of intros)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total Session Duration: ~1 hr 19 min CAPTURED of a ~2 hr 23 min Zoom recording  (Target: 90-120 min)  → N/A — Incomplete Recording",
+                "Opening (Banter + Roll Call + Prayer): ~12 min [00:10-00:22] once speech begins (first 10 min of the file is silence — recording started before members were speaking)  (Target: 5-15 min)  → ON TARGET",
+                "Cumulative Review of Prior Chapters: N/A — first session of a new book (Jonah); a ~2-min historical bridge to the Amos/Hosea-era prophets was given instead [00:31:57-00:34:00]  (Target: 5-15 min)  → N/A — New Book",
+                "Main Lesson + Discussion (captured): ~57 min [00:22-01:18:38] — apologetics grounding + Jonah 1:1-9 verse-by-verse  (Target: 60-90 min)  → N/A — Partial Capture Only",
+                "Closing Application: Not captured — recording ends mid-discussion on Jonah 1:9  (Target: 5-10 min)  → N/A — Not Captured",
+                "Closing Prayer + Announcements: Not captured — recording ends before this point  (Target: 5-10 min)  → N/A — Not Captured",
+                "Pacing Self-Management: Not observable within the captured window; cannot confirm whether a self-check occurred later in the uncaptured portion  (Target: Self-managed)  → N/A — Not Observable"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea Questions (DOK-scored): 10 within the captured portion  (Target: 5-7 per session)  → STRONG",
+                "DOK Level 1 (Recall): 0% (excluded)  (Target: <20%)  → STRONG",
+                "DOK Level 2 (Compare/Analyze): ~20%  (Target: 30-40%)  → NEEDS WORK",
+                "DOK Level 3 (Reason/Justify): ~30%  (Target: 30-40%)  → ON TARGET",
+                "DOK Level 4 (Apply to Life): ~50% — the “escaping God's presence” and “does he really fear God” blocks pushed deep into first-person territory  (Target: 20-30%)  → STRONG",
+                "Question Spacing: Woven throughout, not grouped at the end  (Target: Spaced across session)  → STRONG",
+                "Confession/Personal-Response Rate: 3 first-person (Ron's “when I goof, I don't want to talk to you God” [00:43:16]; Andy's “I do crowd out the voice of the Lord” [00:42:27]; a member's prison-ministry anxiety confession [00:46:12])  (Target: ≥2 per session)  → STRONG",
+                "Leader Follow-up Probe Frequency: 4 (“any other comments before we move on?” [00:35:08]; “anything else on the presence of the Lord?” [00:59:52]; “any other thoughts before we move on?” [01:00:51]; “anything else before we move to the next section?” [01:16:52])  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Substantive Contributors: ~11 of ~15 (~73%) — graded number  (Target: ≥70-80% (Hattie 0.82))  → STRONG",
+                "Read-Aloud Assignments (not scored): 6+ (Jamie x2, J.R. x1, Richard Sorensen x1, Craig x1, John Crabb x1, Andy/Ron x1 mixed up then corrected)  (Target: Reported separately)  → —",
+                "Wait Time Used: Rapid, warm turn-taking; Russell drew out several voices by name (Steve, Craig, Andy, Ron) during the pastoral roll call  (Target: 3-5 sec (Rowe 1972))  → ON TARGET",
+                "Quiet Member Flag: Frank and Jamie — Frank joined mid-call with minimal contribution beyond banter; Jamie mostly limited to reading assignments this week  (Target: Activate all members)  → NEEDS WORK",
+                "Visual Aids Shown on Screen: 2 — a kings/prophets historical chart [00:31:57] and a leader-made map of Jonah's flight route to Tarshish [00:38:32]  (Target: 1+ per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Leader Vulnerability Moments: Light — no fresh personal disclosure from Russell himself this session; strength was in creating space for others (see Dim 8)  (Target: 1-2 depth moments)  → NEEDS WORK",
+                "Member Vulnerability Surfaced: 3+ (Ron's grudge-with-God confession [00:43:16]; Andy's busyness confession [00:42:27]; a member's prison-ministry anxiety-to-peace testimony [00:46:12]; John Crabb's illness update)  (Target: 2+ unprompted)  → STRONG",
+                "Monologues >90 sec in Discussion: 2 — the fish-species apologetics research [~00:26:00-00:29:00] and the Jeroboam historical chart [~00:31:57-00:34:00]; both well-received, content-rich, not stalling  (Target: ≤2 during discussion)  → ON TARGET",
+                "Productive Struggle Used: Held the “does Jonah really fear God” question open across three voices (Uri, Cameron, and the room) without Russell supplying a single answer  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Pacing Self-Management: Not observable within the captured window (see Recording Note)  (Target: Self-managed)  → N/A — Not Observable"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "Open-Ended Questions: ~75%  (Target: ≥80%)  → ON TARGET",
+                "Text-Requiring Questions: ~70%  (Target: ≥70%)  → ON TARGET",
+                "Follow-Up Probes: Used regularly — “any other comments before we move on?”; “what does that tell you right there?”  (Target: Used regularly)  → STRONG",
+                "Question vs. Statement Ratio: ~55% question / ~45% statement  (Target: ≥60% question)  → ON TARGET",
+                "Homework-Anchored Questions: Explicit workbook page references throughout (pp. 4, 5, 6, 7, 15)  (Target: Integrated throughout)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Homework Integration: Explicit references pp. 4-7, 15; the “is this a true story” apologetics question came directly from the Day 5 homework  (Target: Referenced throughout)  → STRONG",
+                "Word Study Method: 1 sustained (Hebrew ra / calamity across Jonah, Jeremiah, Amos) — explained verbally, no on-screen lookup tool used  (Target: 1-2 displayed per session)  → ON TARGET",
+                "Topic Drift: Light — the whale-shark/aquarium aside [~00:27:00-00:28:30] ran under 2 min with a natural return to the apologetics point  (Target: ≤10%)  → STRONG",
+                "Study Flow: Historical background (2 Kgs 14, Jeroboam chart) → apologetics grounding (Matt 12, fish research) → keyword ID → Jonah 1:1-9 verse-by-verse with cross-references  (Target: OIA: text → meaning → application)  → STRONG",
+                "Big Ideas at Close: Not observable — recording ends mid-discussion before any closing synthesis (see Recording Note)  (Target: 3-5 bumper-sticker close)  → N/A — Not Captured",
+                "Tone & Delivery: N/A — audio only (no video frames); warm, patient, high pastoral-care register given three member health updates surfaced at the open  (Target: Varied tone)  → N/A"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "Two stretches exceeded the 90-second discussion threshold (Stuart & Rutherford) within the captured portion — both were content-rich apologetics/history teaching, not stalling, but both were solo.",
+                "Monologue 1 — Fish-species apologetics research [00:26:00-00:29:00] (~3:00): Sperm whale vs. whale shark research supporting the “is this a true story” apologetics question — informative and well-received, but largely solo before the room re-engaged. Fix: pause once mid-explanation with a check-in question (“does that change how you read this?”) to keep it a dialogue.",
+                "Monologue 2 — Kings/prophets historical chart [00:31:57-00:34:00] (~2:00): Jeroboam II / Amos-Hosea-Isaiah-Micah contemporaries walkthrough — valuable context, delivered as one unbroken explanation. Fix: break the chart walkthrough into two beats with a “what does this tell us?” pause after the northern-kingdom timeline, before moving to the southern-kingdom parallel."
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "Asking the Sickest Man in the Room to Lead the Group in Prayer  (🟢 Capitalized · Being Real)\n\nWhat happened: John Crabb joined the call visibly weak, one day after a second round of liver stents for a tumor-driven liver failure that the group had just spent several minutes discussing with real concern. Rather than let him sit quietly, Russell said, “In fact, would you honor us by opening us in prayer tonight?” John accepted immediately (“I would love to”) and delivered a warm, others-focused prayer naming the whole group and asking for guidance through the story of Jonah. The room responded with a genuine, unhurried “Thank you, John, that's wonderful” rather than moving straight on.\n\nWhy it mattered: A room learns whether suffering members are still seen as full contributors or quietly sidelined by watching exactly this kind of moment. Asking John to lead — not just checking in on him — told every other member watching that illness doesn't demote you to an audience member in this group.\n\nWhat would make it bigger: Naming the choice explicitly (“John, I want you to lead us tonight because your faith right now is exactly what we need to hear”) would make the dignity-restoring intent unmistakable rather than implicit.",
+                  "timestamp": "[00:21:03-00:21:53]"
+                },
+                {
+                  "detail": "A Member's Prison-Ministry Anxiety, Named and Resolved in Real Time  (🟢 Capitalized · Being Real)\n\nWhat happened: During the “can we really escape God's presence” discussion, a member disclosed that he'd lost his ministry partner of three years and now walks into prison ministry alone, which had produced real anxiety that week. He described talking to God out loud before entering — “Lord, I know you're with me, I know you're going to give me your Holy Spirit” — and the anxiety lifting once he was inside. Another member immediately connected it to Paul's imprisonment for encouragement.\n\nWhy it mattered: This is first-person, named-cost vulnerability (losing a ministry partner, doing hard ministry alone) tied directly to a concrete, repeatable spiritual practice — exactly the kind of “how do I actually live this out” answer the open question was designed to surface, and it surfaced unprompted.\n\nWhat would make it bigger: A brief follow-up — “what do you say to God out loud, specifically?” — would have turned a inspiring testimony into a reusable script the rest of the room could borrow.",
+                  "timestamp": "[00:46:12-00:47:05]"
+                },
+                {
+                  "detail": "“He Did Fear God, But He Did Not Fear God” — a Paradox Held Open, Not Resolved  (🟢 Capitalized · Engaging People)\n\nWhat happened: When Jonah tells the sailors “I fear the Lord God of heaven” while actively fleeing that same God, Uri offered one reading (Jonah is convinced he fears God but is at a spiritual “crossroads”) and Cameron pushed further (“wouldn't it be considered a confessional?”). Russell let both stand, summarizing the tension — terror-fear vs. obedience-fear — rather than declaring a winner. The recording ends moments later, mid-conversation, still on this question.\n\nWhy it mattered: This is a genuinely hard theological distinction (fear-as-terror vs. fear-as-obedience) that most groups would flatten into a single tidy answer. Letting two members build it together produces deeper retention than a leader's one-line resolution would.\n\nWhat would make it bigger: Naming the technique for the room (“I'm not going to answer that one — sit in it”) would make the move teachable for the next rotating leader.",
+                  "timestamp": "[01:17:02-01:18:38]"
+                },
+                {
+                  "detail": "Naming the Doubt Question Instead of Skating Past It  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Russell opened the substantive teaching by naming the homework's most uncomfortable question directly — “is this a true story?” — rather than letting it pass unaddressed. He brought prepared research (documented large-fish survival cases) and anchored the final answer in Jesus's own testimony about Jonah (Matthew 12:39-41), read aloud by Steve.\n\nWhy it mattered: Treating a credibility question as worth real preparation, instead of a dismissive one-liner, models an intellectually honest faith and gives the room permission to voice their own doubts on other passages later.\n\nWhat would make it bigger: Already well-executed; the only gap was not displaying the Matthew 12 cross-reference or the fish-species sources on screen for the room to see directly.",
+                  "timestamp": "[00:25:59-00:30:00]"
+                },
+                {
+                  "detail": "Cain's Punishment — Two Conflicting Readings, Neither Chased Down  (🟠 Missed Opportunity · Teaching Craft)\n\nWhat happened: One member read Genesis 4's “no one is to kill Cain” as mercy; another pushed back that it was actually an extension of punishment (“he's going to stay in misery... sometimes better to die”). Russell did not adjudicate, offer a cross-reference, or commit to researching it — the group moved on with the disagreement unresolved.\n\nWhy it mattered: This is the same recurring gap as the ra word study: a live interpretive question with no lookup tool or follow-up commitment to close the loop, so members are left holding two contradictory readings of the same verse.\n\nWhat would make it bigger: “Good catch — let's put a pin in that and I'll bring a commentary note next week” would have honored both readings without leaving the room in ambiguity.",
+                  "timestamp": "[00:52:47-00:53:09]"
+                }
+              ],
+              "paragraphs": [
+                "Five moments carried disproportionate weight in the captured portion — a dignity-restoring prayer request, a real vulnerability breakthrough, a theological tension held open well, honest doubt-handling, and one interpretive question left on the table. Ordered by impact."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 76.0% × weight 33 → 25.08 pts",
+                "Building Ministry: 60.0% × weight 31 → 18.60 pts",
+                "Engaging People: 90.0% × weight 18 → 16.20 pts",
+                "Being Real: 80.0% × weight 18 → 14.40 pts",
+                "SESSION SCORE: — × weight 100 → 74.3 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/file/d/1Qp5ISaB11lp2P1oaPDMCfV5QVLSDrr15/view?usp=drivesdk"
+        },
+        {
           "id": "russell-davis-2026-09-10-joel-2-28-3-21-pentecost-the-day",
           "date": "2026-09-10",
           "dateLabel": "September 10, 2026",
@@ -45595,14 +45974,14 @@
   "monthlyNarratives": {
     "2026-09": {
       "executiveSummary": [
-        "In September 2026, 8 leaders delivered 14 evaluated sessions, and the program held a weighted average composite of 78.1 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "In September 2026, 8 leaders delivered 15 evaluated sessions, and the program held a weighted average composite of 77.9 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
         "Across the cohort the month broke down as 1 Exceptional and 7 Strong. Brendan & Elizabeth led the field at 90.7 (Exceptional), while James Davis anchored the other end at 72.5 (Strong) — the clearest place to concentrate coaching attention.",
-        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 90.7 (+16.8 pts), the strongest muscle program-wide was Scripture Engagement (4.79 / 5), and the thinnest was Leader Development (2.43 / 5), where one shared training would lift the most leaders at once.",
+        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 90.7 (+16.8 pts), the strongest muscle program-wide was Scripture Engagement (4.80 / 5), and the thinnest was Leader Development (2.33 / 5), where one shared training would lift the most leaders at once.",
         "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Bryan Bailey and Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's September 2026 composite of 78.1 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 16.8 points.",
-        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.79 / 5), while Leader Development (2.43 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's September 2026 composite of 77.9 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 16.8 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.80 / 5), while Leader Development (2.33 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-08": {
@@ -60236,18 +60615,18 @@
         "leaderId": "russell-davis",
         "leaderName": "Russell Davis",
         "group": "Men’s Study",
-        "sessionsCount": 1,
-        "composite": 72.5,
+        "sessionsCount": 2,
+        "composite": 73.4,
         "status": {
           "label": "Strong",
           "emoji": "🟢"
         },
         "priorComposite": 71.5,
-        "delta": 0.9,
+        "delta": 1.8,
         "clusterAvg": {
           "tc": 76,
           "bm": 60,
-          "ep": 80,
+          "ep": 85,
           "br": 80
         },
         "glance": {
@@ -60261,14 +60640,24 @@
               "br": 80,
               "composite": 72.5,
               "status": "Strong"
+            },
+            {
+              "date": "2026-09-17",
+              "session": "Jonah 1:1-9 (first session of Jonah)",
+              "bm": 60,
+              "tc": 76,
+              "ep": 90,
+              "br": 80,
+              "composite": 74.3,
+              "status": "Strong"
             }
           ],
           "avg": {
             "bm": 60,
             "tc": 76,
-            "ep": 80,
+            "ep": 85,
             "br": 80,
-            "composite": 72.5,
+            "composite": 73.4,
             "status": "Strong"
           }
         },
@@ -60279,6 +60668,13 @@
             "composite": 72.5,
             "status": "Strong",
             "delta": null
+          },
+          {
+            "date": "2026-09-17",
+            "session": "Jonah 1:1-9 (first session of Jonah)",
+            "composite": 74.3,
+            "status": "Strong",
+            "delta": 1.8
           }
         ],
         "clusters": [
@@ -60294,7 +60690,7 @@
             },
             "weakestDim": {
               "name": "Visual Aids",
-              "val": 2
+              "val": 2.5
             },
             "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Visual Aids is the bottleneck this month."
           },
@@ -60318,17 +60714,17 @@
             "key": "ep",
             "name": "Engaging People",
             "weight": 18,
-            "avgPct": 80,
-            "statusLabel": "Strong",
+            "avgPct": 85,
+            "statusLabel": "Exceptional",
             "strongestDim": {
               "name": "Participant Engagement",
               "val": 5
             },
             "weakestDim": {
               "name": "Facilitation vs. Lecture",
-              "val": 3
+              "val": 3.5
             },
-            "insight": "Engaging People (Facilitation + Participation) — strong. Continue to broaden participation beyond the core 6–8 voices."
+            "insight": "Engaging People (Facilitation + Participation) — elite tier. Continue to broaden participation beyond the core 6–8 voices."
           },
           {
             "key": "br",
@@ -60338,11 +60734,11 @@
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Prayer",
-              "val": 5
+              "val": 4.5
             },
             "weakestDim": {
               "name": "Vulnerability / Authenticity",
-              "val": 3
+              "val": 3.5
             },
             "insight": "Being Real (Vulnerability + Prayer) — strong. Vulnerability / Authenticity is the lift this month."
           }
@@ -60359,6 +60755,14 @@
           {
             "text": "Real Pastoral Care Woven Through Three Simultaneous Crises",
             "session": "2026-09-10"
+          },
+          {
+            "text": "Delegated the Opening Prayer to the Sickest Man in the Room",
+            "session": "2026-09-17"
+          },
+          {
+            "text": "Met a Real Doubt Question Head-On Instead of Skating Past It",
+            "session": "2026-09-17"
           }
         ],
         "growth": [
@@ -60373,16 +60777,25 @@
           {
             "text": "A Sharp Member Question Was Praised, Then Left Unanswered",
             "session": "2026-09-10"
+          },
+          {
+            "text": "No On-Screen Word-Study Tool for the ra (Calamity/Evil) Study",
+            "session": "2026-09-17"
+          },
+          {
+            "text": "A Sharp Interpretive Disagreement on Cain's Punishment Was Left Hanging",
+            "session": "2026-09-17"
           }
         ],
         "trends": [
+          "Within-month arc: 72.5 → 74.3 (+1.8). Trajectory improved.",
           "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Leader Development (avg 1.0 / 5).",
-          "Composite vs. August 2026 (~72): held steady (+0.9). Consistency is the headline."
+          "Composite vs. August 2026 (~72): up 1.8. Forward momentum."
         ],
         "conversationGuide": [
           {
             "label": "Celebrate the strength",
-            "q": "Engaging People averaged 80% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+            "q": "Engaging People averaged 85% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
           },
           {
             "label": "Explore the growth area",
@@ -60390,7 +60803,7 @@
           },
           {
             "label": "Trajectory",
-            "q": "Your one September 2026 session scored 72.5 (Strong). What was different about your prep or delivery this time?"
+            "q": "Composite went from 72.5 on 2026-09-10 to 74.3 on 2026-09-17. What changed in your prep or delivery?"
           },
           {
             "label": "Group dynamics",
@@ -60490,6 +60903,98 @@
                 "cluster": "Being Real",
                 "score": 5,
                 "note": "Delegated open and close; specific named requests (John's recovery, Craig's sister, a member's brother Jay, Austin's homeless community)"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 1,
+                "note": "No observable in-session coaching or apprenticeship signal this week"
+              }
+            ]
+          },
+          {
+            "date": "2026-09-17",
+            "session": "Jonah 1:1-9 (first session of Jonah)",
+            "composite": 74.3,
+            "status": "Strong",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Solid historical-to-textual flow (2 Kgs 14 → apologetics → keyword ID → Jonah 1:1-9); closing structure not observable (recording gap)"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": null,
+                "note": "No newcomers present or welcomed this session"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "9-10 cross-references (2 Kgs, Matt, Gen 3-4, 2 Thess, Exod, Ps, Jer, Dan, Amos) plus a sustained Hebrew word study"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "Two well-received but solo teaching blocks (~40% discussion-only talk ratio); open interpretive tension (fear of God) held well across multiple voices"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "10 DOK-scored questions woven throughout, ~50% DOK-4, 3 confessional first-person responses"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "~73% substantive across ~15 attendees; wide range of voices including three vulnerable disclosures"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 3,
+                "note": "2 on-screen visuals (historical chart + leader-made map) — no live word-lookup tool despite a strong opportunity (ra word study)"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Exceptional member-level authenticity the leader made space for; no fresh costly leader disclosure this week; within ±1 swing cap of baseline"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 2,
+                "note": "First session of a new book — no cumulative Big Ideas recap; a historical bridge to the prior prophetic era was given instead"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Page-specific throughout (pp. 4-7, 15); the core apologetics question was pulled directly from the homework"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "Opening delegated to an ill member as a dignity-restoring choice; closing prayer not observable due to the recording gap"
               },
               {
                 "n": 12,
