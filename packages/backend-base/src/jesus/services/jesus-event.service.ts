@@ -5,6 +5,7 @@ import {
   JESUS_EVENT_EXPLANATION_TYPES,
   JESUS_FACET_META,
   JESUS_FACET_TYPES,
+  JESUS_RELATED_LIMIT,
   JESUS_SECTIONS,
   JESUS_SECTION_META,
   type JesusEventExplanationType,
@@ -609,11 +610,16 @@ export class JesusEventService {
   /** Events sharing themes, nearest in the timeline first. */
   private async getRelated(event: JesusEventRow, languageCode: string) {
     if (event.themes.length === 0) return [];
+    // One over the limit: the event itself comes back among its own theme's
+    // events and is filtered out below, so asking for exactly the limit would
+    // return one short.
     const candidates = await this.events.listEvents(
       { themeSlug: event.themes[0].slug },
-      { limit: 7, languageCode },
+      { limit: JESUS_RELATED_LIMIT + 1, languageCode },
     );
-    return candidates.filter((e) => e.event_id !== event.event_id).slice(0, 6);
+    return candidates
+      .filter((e) => e.event_id !== event.event_id)
+      .slice(0, JESUS_RELATED_LIMIT);
   }
 }
 
