@@ -13054,6 +13054,361 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "joel-hurt-2026-09-19-daniel-3-shadrach-meshach-abedne",
+          "date": "2026-09-19",
+          "dateLabel": "September 19, 2026",
+          "session": "Daniel 3 — Shadrach, Meshach & Abednego in the Fiery Furnace",
+          "topic": "Idolatry, Conviction Before Crisis, and the Jealousy of God",
+          "duration": "~1 hr 52 min scored (~2 hr recorded; first ~10 min excluded per Joel's note)",
+          "attendees": 13,
+          "newcomers": 0,
+          "score": 66.76,
+          "base": 66.76,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "On Target",
+          "statusEmoji": "🟡",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 72,
+              "contribution": 23.76
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 40,
+              "contribution": 12.4
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 90,
+              "contribution": 16.2
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 3,
+              "note": "ON TARGET"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 2,
+              "note": "NEEDS WORK"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "STRONG"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "ON TARGET"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5,
+              "note": "STRONG"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "STRONG"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 1,
+              "note": "NEEDS WORK"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 5,
+              "note": "STRONG"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 4,
+              "note": "STRONG"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 1,
+              "note": "NEEDS WORK"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 4,
+              "note": "STRONG"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 3,
+              "note": "ON TARGET"
+            }
+          ],
+          "bigIdeas": [],
+          "feedback": {
+            "headline": "Prior (8/29): 79.2 — Strong. This session: 66.8 — On Target. Dip concentrated in Building Ministry process items; teaching quality held steady. See Score Composition.",
+            "strengths": [
+              "An Unusually Dense, Wide-Ranging Cross-Reference Arc",
+              "Signature Socratic Density Held Up Across a Long, Two-Part Session",
+              "Exceptionally High Confession / Personal-Response Rate"
+            ],
+            "improvements": [
+              "No Verbalized Newcomer Check This Week",
+              "Zero Visual Aids for the Entire Two-Hour Session",
+              "No Homework or Workbook Reference All Session"
+            ],
+            "recommendations": [
+              "",
+              "",
+              ""
+            ],
+            "overview": [
+              "Prior (8/29): 79.2 — Strong. This session: 66.8 — On Target. Dip concentrated in Building Ministry process items; teaching quality held steady. See Score Composition.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 66.76/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "An Unusually Dense, Wide-Ranging Cross-Reference Arc",
+                "paragraphs": [
+                  "Eighteen-plus distinct passages were woven into a single-chapter lesson — from the Daniel 2:47 callback to Exodus 20, Deuteronomy 4 and 31, and a full four-verse walk through Ezekiel 23's two-sisters allegory. The Ezekiel 23 block in particular reframed Israel's history as a marriage story rather than a list of rule violations, and the room visibly tracked the shift."
+                ]
+              },
+              {
+                "title": "Signature Socratic Density Held Up Across a Long, Two-Part Session",
+                "paragraphs": [
+                  "Structure question after structure question — observation, then interpretation, then application — was routed back to the room by name rather than answered directly, sustaining the same call-and-response rhythm from the session's first minute to its last."
+                ]
+              },
+              {
+                "title": "Exceptionally High Confession / Personal-Response Rate",
+                "paragraphs": [
+                  "At least six distinct first-person, costly disclosures surfaced this session — more than double the ≥2 target — spanning a spectrum from a lighter admission about anger and self-awareness to the session's two highest-stakes moments (see Key Moments). The room's trust ceiling this week was unusually high."
+                ]
+              },
+              {
+                "title": "A Substantive, Big-Idea-Anchored Closing Prayer",
+                "paragraphs": [
+                  "David's closing prayer didn't just bookend the session — it directly named the lesson's central theme (idols placed in positions of preeminence, restoration to right relationship), giving the room a final, prayed-through encounter with the night's application rather than a generic close."
+                ]
+              },
+              {
+                "title": "Sustained Productive Struggle on the Hardest Interpretive Question of the Night",
+                "paragraphs": [
+                  "Rather than supplying the answer, Joel let the room sit with why Nebuchadnezzar added a fourth man to the furnace rather than simply sparing the three, drawing out multiple competing theories (display of power, foreshadowing of Christ, a genuine miracle-cover story) before affirming the strongest thread himself."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "No Verbalized Newcomer Check This Week",
+                "paragraphs": [
+                  "Every other tracked Joel session this quarter opens with an explicit \"anybody new?\" moment. This week's opening instead moved straight into a prior-knowledge check about Daniel — a different question that doesn't establish whether a guest was in the room. Without that ritual, we can't confirm newcomer status either way, and a genuine newcomer this week may have gone unwelcomed."
+                ]
+              },
+              {
+                "title": "Zero Visual Aids for the Entire Two-Hour Session",
+                "paragraphs": [
+                  "Sampled video frames across the full session (15, 30, 45, 60, 75, and 90-minute marks) show no on-screen scripture text, timeline, or word-study tool at any point — only a closed laptop and idle screensaver displays on the wall-mounted TVs. For a session citing 18+ passages by chapter and verse from memory, even one shared visual anchor was absent all night."
+                ]
+              },
+              {
+                "title": "No Homework or Workbook Reference All Session",
+                "paragraphs": [
+                  "The session closed straight from the final application question into prayer, with no explicit \"before next week...\" tie-in to workbook pages or take-home study — a contrast with weeks that anchor the application push to a specific homework assignment."
+                ]
+              },
+              {
+                "title": "Two Extended Teaching Expositions Pushed Discussion-Only Talk Above Target",
+                "paragraphs": [
+                  "The Babylon/Revelation history intro and the marriage-covenant/jealousy exposition each ran past the 90-second monologue threshold, pulling the leadership side's discussion-only talk ratio to an estimated 40–42%, above the ≤30–35% Lifeway target."
+                ]
+              },
+              {
+                "title": "No Big Ideas Recap Before the Closing Prayer",
+                "paragraphs": [
+                  "The session generated a strong closing anchor phrase (\"conviction has to precede crisis\") in the discussion itself, but Joel never explicitly restated it — or any cumulative Big Idea — before handing off to David's closing prayer, missing the memory-reinforcement close that recent sessions (8/29) had captured cleanly."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "",
+                "paragraphs": []
+              },
+              {
+                "title": "",
+                "paragraphs": []
+              },
+              {
+                "title": "",
+                "paragraphs": []
+              },
+              {
+                "title": "",
+                "paragraphs": []
+              },
+              {
+                "title": "",
+                "paragraphs": []
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: ~13 at Joel's table — roll call named Miles, JT, David, Shepherd, Scotland, Nico, Lucas, Boris, Deb, Cesar, Vlad, plus Joel; Brian, Lewis, and Aiden were introduced but no individually attributable comment is isolable for them this session. A separate table led by Chris (~12-13 men) met elsewhere in the building this week and is not captured in this recording.  (Target: Larger room than usual)  → N/A",
+                "Newcomers / first-timers: Not confirmed — no \"anybody new?\" check was verbalized this session, unlike 8/15 and 8/29  (Target: Organic inflow over time (BSF benchmark))  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 18+ — Daniel 2:47 plus the full Daniel 3 narrative; Galatians 5; Romans 12:2 (cited twice); Exodus 20:1-6; Deuteronomy 4:15-20, 23-24; Deuteronomy 31; Ezekiel 6:9; Ezekiel 23:4, 11, 22, 35; 1 Peter 4:12; James 1:2-4; Isaiah 2:19-20 and 45:23; Revelation 14:8 and 17:5; 1 Thessalonians 4:16; Hosea (referenced)  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Leader talk — whole session (includes reading): ~48-50% (Joel plus his father's video-call contribution combined as the leadership side, per Metric Adjustment #2; every scripture passage was read aloud by a member, never the leadership side)  (Target: Reported only)  → N/A",
+                "Leader talk — discussion only (graded): ~40-42% (excludes scripture reading) — elevated above Joel's usual range by two extended teaching expositions (the Babylon/Revelation history intro and the marriage-covenant/jealousy exposition)  (Target: ≤30–35% (Lifeway 30% Rule, Flanders))  → ON TARGET",
+                "Time to first scripture reading: ~6 min — from the end of the prior-knowledge check (00:10:53) to Daniel 2:47 read aloud by Boris (00:17:14)  (Target: Within ~10 min of lesson start)  → STRONG",
+                "% discussion scripture-grounded: ~90%+ — nearly every exchange anchored to Daniel 3, a named cross-reference, or the closing Exodus/Deuteronomy/Ezekiel idolatry block  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~2 hr recorded (per Joel's email); ~1 hr 52 min scored  (Target: —)  → N/A",
+                "Pre-session window (excluded from scoring): ~10 min (00:00–00:10) — informal catch-up, table/AV setup, roll call — excluded from evaluation at Joel's explicit request  (Target: —)  → N/A",
+                "Main lesson (Daniel 3 + idolatry study): ~1 hr 49 min (00:10:53–01:59:39) — Daniel 3 read and discussed across three blocks, then bridged into Exodus 20, Deuteronomy 4, and Ezekiel 6 & 23 on idolatry  (Target: 60–90 min)  → ON TARGET",
+                "Pacing (self-managed): Joel self-paced across all three Daniel 3 reading blocks plus the closing idolatry study without any external redirect  (Target: Self-managed throughout)  → STRONG",
+                "Session close: ~2 min (01:59:39–02:02:06) — closing prayer delegated to David; no Big Ideas recap or homework tie-in before the prayer  (Target: —)  → N/A"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 15+ questions identified  (Target: 5–7 per session)  → STRONG",
+                "DOK Level 4 (apply to life): ~53% (8 questions — \"do people think of you as a servant of the Most High God,\" \"where is God calling you to repent from idolatry right now,\" \"does this hurt God,\" and others)  (Target: 35–50% for DOK 4)  → STRONG",
+                "DOK Level 3 (reason/justify): ~47% (7 questions — \"is that a lack of faith,\" \"why is it okay for God to be jealous,\" \"why does he do it that way with a fourth man,\" and others)  (Target: 35–50% for DOK 3)  → STRONG",
+                "DOK Level 2 (compare/analyze): 0% this session — every Big Idea question pushed to reasoning or application  (Target: Minority)  → N/A",
+                "Confession / Personal-Response Rate: 6+ first-person responses — the anger/self-awareness admission ([00:55:32]), the purposelessness-before-faith admission ([00:57:01]), Christian's active-grief prayer story ([01:00:00]), Joel's own \"maybe I'm being too stringent\" admission ([00:47:12]), the pornography confession ([01:53:12]), and the work/family-time confession ([01:54:57])  (Target: ≥2 per session)  → STRONG",
+                "Leader follow-up probe frequency: 20+ probes (\"What do you think?\", \"Why?\", \"Go ahead\", \"What do you guys think about this?\")  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Named substantive contributors: 11 of ~12 non-leader attendees — Miles, JT, David, Shepherd, Scotland, Nico, Lucas, Boris, Cesar, Vlad, and Christian all interpreted or applied the text beyond reading  (Target: 70–80% of attendees (Gini coefficient))  → STRONG",
+                "Substantive % of Joel's table: ~92% (11 of 12) interpreted or applied the text, not just read it  (Target: ≥70% for STRONG)  → STRONG",
+                "Read-aloud assignments (not scored): Boris (Dan 2:47), JT (Dan 3:1–7), Scotland (Dan 3:8–18), Nico (Dan 3:19–30), a member (Exod 20:1–6), Brian (Deut 4:15–20, 23–24), Shepherd (Isa 45:23), a member (Ezek 6:9), Nico/Christian (Ezek 23 excerpts)  (Target: Reported only)  → N/A",
+                "Wait time / productive struggle: Joel repeatedly left genuine ambiguity open — why Nebuchadnezzar included a fourth man in the furnace, why he never asked the fourth man's name — before the room reasoned it through  (Target: 3–5 sec (Rowe 1972))  → STRONG",
+                "Quiet member flag: Deb — directly asked \"you haven't said anything so far, do you have any thoughts?\" and declined (\"No\") with no follow-up softening or later re-invitation; Brian, Lewis, and Aiden were named at roll call but no individually attributable substantive comment is isolable this session  (Target: All regulars contribute)  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: 6+ — see A7 for the full list  (Target: ≥1 with depth per session)  → STRONG",
+                "Vulnerability depth: 5/5 — the pornography confession and Christian's active-grief prayer story are both exceptionally costly disclosures, joined by four more first-person admissions and Joel's own modeled self-doubt; a full point above 8/29's 4/5, within the ±1 rolling-baseline swing cap  (Target: 4–5/5 for experienced leader)  → STRONG",
+                "Extended monologues > 90 sec: 2 — the Babylon/Revelation history intro ([00:12:19]–[00:14:26], ~127 sec) and the marriage-covenant/jealousy exposition ([01:34:48]–[01:37:22], ~162 sec, leadership side). See Monologues section for fixes.  (Target: ≤ 2 per session)  → ON TARGET",
+                "Leader Development (delegated segments): 1 likely handoff — \"Dad, go ahead\" [01:34:48] appears to hand an extended teaching block to Joel's father joining by video; the transcript has no speaker labels, so this read carries lower confidence than 8/29's explicit, named handoff  (Target: Named apprentice; observable signal)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~85%  (Target: ≥60%)  → STRONG",
+                "% text-requiring questions: ~75%  (Target: ≥50%)  → STRONG",
+                "Leader follow-up probes: 20+ (\"Why?\", \"What do you guys think?\", \"Go ahead\")  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle rate: Genuine open questions left for the room — \"why did he do it that way,\" \"is that a lack of faith\" — before Joel confirmed or added his own view  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Peer-to-peer exchanges: Multiple members built directly on each other's answers unprompted, especially in the \"idols can't love us back\" and sin's-ripple-effects chain among Cesar, David, and others  (Target: Members respond to each other)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Study flow: Text → historical/theological context → meaning → application, opened with a rapid-fire retrieval-practice recap of Daniel 1–2 before the Daniel 3 reading  (Target: OIA method)  → STRONG",
+                "Bumper stickers generated: One clear closing anchor phrase: \"Conviction has to precede crisis\" — co-surfaced by a member and repeated by Joel as the session's takeaway  (Target: 3–5 per session)  → NEEDS WORK",
+                "Tone & delivery: N/A — audio only; warm, energetic, sustained humor throughout (the movie-theater/FOMO riff, the Texas-football aside, \"preach, Miles\")  (Target: N/A — audio only)  → N/A",
+                "Topic drift: ~10 min of pre-session fellowship excluded per Joel's note; within the ~1hr49min lesson block, drift was minimal (<5%) — even personal tangents (Christian's friend's dying father, the work/family-time aside) looped directly back to the passage's application  (Target: < 5% off-topic content)  → STRONG",
+                "Big Ideas at close: No explicit Big Ideas recap was stated before the closing prayer this week — the session moved directly from the final application question into David's prayer  (Target: Cumulative review at close)  → NEEDS WORK"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "Two monologues crossed the 90-second threshold this session — at the target ceiling of ≤2. Both were self-managed (no external redirect needed) and each is named below with its specific fix.",
+                "",
+                ""
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "🔵 The Pornography Confession — High Stakes, No Personal Circle-Back  (🔵 Pivot Point (mixed) | Being Real)\n\nWhat happened: In front of a mixed-generation table that includes teenage sons, a member disclosed a sustained past struggle with pornography: \"The darkness in my soul, like even my relationships with people, how I look at the world... in the darkest times of my life, I felt soulless, just like I was just walking around empty. It's like drinking seawater. It just makes you more thirsty.\" Joel's response was warm but brief — \"Oh, come on. Yes. Yes. It's a great analogy\" — before immediately pivoting to the next teaching question.\n\nWhy it mattered: This is one of the costliest disclosures on file for this group — named in front of the man's own peers and, notably, in front of teenagers at the table. The room's trust ceiling was clearly high enough for it to surface. But no direct, personal word landed back on the man who said it before the topic widened to a general theological point about Jesus as the source of life.\n\nWhat would make it bigger: One sentence before moving on — \"thank you for trusting us with that, man — is that still something you're fighting, or is that in the past for you now?\" — would have closed the loop on the individual before using the disclosure as a launchpad for the group's theological point.",
+                  "timestamp": "[01:53:12]–[01:54:08]"
+                },
+                {
+                  "detail": "🟢 \"Even If He Doesn't, He's Still God\" — A Live Pastoral Prayer Story  (🟢 Capitalized | Being Real)\n\nWhat happened: Christian shared an active, unresolved situation — his best friend's father was dying, and he'd just prayed with his friend the night before, wrestling in real time with how to pray honestly (\"I want to pray positive, good thing, like God can heal him... but I knew... he may not make it through the week\") while still trusting God's sovereignty (\"even if he doesn't, and even if he won't, we trust him\").\n\nWhy it mattered: This wasn't a resolved past struggle — it was live, current grief, shared with real theological honesty about the discomfort of praying for a hard outcome. Naming it and immediately affirming it modeled exactly the kind of vulnerability the session's whole theme (trusting God even when he doesn't rescue) was building toward.",
+                  "timestamp": "[01:00:00]–[01:01:53]"
+                },
+                {
+                  "detail": "🟢 \"Do People Think of You as a Servant of the Most High God?\" — A Direct Identity Question  (🟢 Capitalized | Teaching Craft)\n\nWhat happened: Pivoting off Nebuchadnezzar's description of Shadrach, Meshach, and Abednego as \"servants of the Most High God,\" Joel turned the question directly on the room: \"Do people think of you as a servant of the Most High God? Does the way that you live your life communicate that?\" He added his own preparation note — \"I wrote at the beginning of the study, would I die for God?\"\n\nWhy it mattered: This converted a third-person narrative detail (how the king described three ancient men) into a first-person identity question with no escape hatch — not \"do you believe the right things\" but \"does your visible behavior communicate this.\"",
+                  "timestamp": "[01:22:03]–[01:22:44]"
+                },
+                {
+                  "detail": "🔵 Deb's Quiet-Member Check Falls Flat — No Fallback Follow-Up  (🔵 Pivot Point (mixed) | Engaging People)\n\nWhat happened: Mid-discussion, Joel proactively named a quiet member by name: \"Deb, you haven't said anything so far. Do you have any thoughts before we move on?\" Deb answered simply, \"No,\" and the discussion moved on without further engagement.\n\nWhy it mattered: The proactive check-in itself is good practice and exactly the behavior the Quiet Member Flag is designed to encourage — Joel didn't let Deb go unnoticed. But a direct, open-ended \"any thoughts?\" is a high bar for someone who hasn't spoken all session; when it produced a flat decline, there was no lower-stakes fallback (e.g., a specific, easier question) to try instead.\n\nWhat would make it bigger: A fallback second attempt with a narrower, lower-stakes question — \"Deb, even just — does this idolatry stuff show up in your week at all?\" — gives a quiet member an easier on-ramp than a fully open \"any thoughts?\" after a long silence.",
+                  "timestamp": "[01:06:04]–[01:06:07]"
+                },
+                {
+                  "detail": "🟢 Joel Models His Own Doubt in Real Time  (🟢 Capitalized | Being Real)\n\nWhat happened: While discussing the social cost of taking a moral stand (skipping a movie with objectionable content), the leadership side voiced an internal doubt out loud rather than only modeling certainty: \"I'd kind of feel like a little bit of an outsider, or maybe I'm being — I'm the weirdo... maybe I'm just being too stringent here. Maybe I just need to... just chill out. Just go to the movie, just bow down.\" A member immediately responded, \"those are thoughts that — I'm with you, Joel. Those are the thoughts that we have internally.\"\n\nWhy it mattered: 8/29's report noted no fresh leadership-side confession that week, with all vulnerability coming from members. This week the leadership side modeled the same kind of internal wrestling being asked of the room — a direct example of Vulnerability as Authority (Bryan's technique #8) rather than only inviting it from others.",
+                  "timestamp": "[00:47:12]–[00:47:33]"
+                }
+              ],
+              "paragraphs": [
+                "Five pivot points defined this session — the night's most costly disclosure landing without a personal follow-up, a pastoral grief story handled with real care, a personal-identity question that produced two immediate confessions, a proactive quiet-member check that fell flat, and Joel modeling his own vulnerability in real time."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 72.0% × weight 33 → 23.76 pts",
+                "Building Ministry: 40.0% × weight 31 → 12.40 pts",
+                "Engaging People: 80.0% × weight 18 → 14.40 pts",
+                "Being Real: 90.0% × weight 18 → 16.20 pts",
+                "BASE (pre-bonus): — × weight 100 → 66.76 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/file/d/16wGlgSMz06aGujYWYmlFySZWhUww0Uf9/view?usp=drivesdk"
+        },
+        {
           "id": "joel-hurt-2026-08-29-daniel-1-the-resolve-not-to-defi",
           "date": "2026-08-29",
           "dateLabel": "August 29, 2026",
@@ -47892,14 +48247,14 @@
   "monthlyNarratives": {
     "2026-09": {
       "executiveSummary": [
-        "In September 2026, 8 leaders delivered 20 evaluated sessions, and the program held a weighted average composite of 79.2 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
-        "Across the cohort the month broke down as 1 Exceptional and 7 Strong. Brendan & Elizabeth led the field at 92.2 (Exceptional), while Russell Davis anchored the other end at 73.4 (Strong) — the clearest place to concentrate coaching attention.",
-        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 92.2 (+18.4 pts), the strongest muscle program-wide was Scripture Engagement (4.80 / 5), and the thinnest was Leader Development (2.50 / 5), where one shared training would lift the most leaders at once.",
-        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Bryan Bailey and Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+        "In September 2026, 9 leaders delivered 21 evaluated sessions, and the program held a weighted average composite of 78.6 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 1 Exceptional, 7 Strong, and 1 On Target. Brendan & Elizabeth led the field at 92.2 (Exceptional), while Joel Hurt anchored the other end at 66.8 (On Target) — the clearest place to concentrate coaching attention.",
+        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 92.2 (+18.4 pts), the strongest muscle program-wide was Scripture Engagement (4.81 / 5), and the thinnest was Leader Development (2.52 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Joel Hurt, Bryan Bailey, and Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's September 2026 composite of 79.2 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 18.4 points.",
-        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.80 / 5), while Leader Development (2.50 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's September 2026 composite of 78.6 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 18.4 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.81 / 5), while Leader Development (2.52 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-08": {
@@ -53407,6 +53762,279 @@
       }
     },
     "joel-hurt": {
+      "2026-09": {
+        "month": "2026-09",
+        "monthLabel": "September 2026",
+        "priorMonthLabel": "August 2026",
+        "leaderId": "joel-hurt",
+        "leaderName": "Joel Hurt",
+        "group": "Thursday Men’s Study",
+        "sessionsCount": 1,
+        "composite": 66.8,
+        "status": {
+          "label": "On Target",
+          "emoji": "🟡"
+        },
+        "priorComposite": 82,
+        "delta": -15.2,
+        "clusterAvg": {
+          "tc": 72,
+          "bm": 40,
+          "ep": 80,
+          "br": 90
+        },
+        "glance": {
+          "rows": [
+            {
+              "date": "2026-09-19",
+              "session": "Daniel 3 — Shadrach, Meshach & Abednego in the Fiery Furnace",
+              "bm": 40,
+              "tc": 72,
+              "ep": 80,
+              "br": 90,
+              "composite": 66.8,
+              "status": "On Target"
+            }
+          ],
+          "avg": {
+            "bm": 40,
+            "tc": 72,
+            "ep": 80,
+            "br": 90,
+            "composite": 66.8,
+            "status": "On Target"
+          }
+        },
+        "trajectory": [
+          {
+            "date": "2026-09-19",
+            "session": "Daniel 3 — Shadrach, Meshach & Abednego in the Fiery Furnace",
+            "composite": 66.8,
+            "status": "On Target",
+            "delta": null
+          }
+        ],
+        "clusters": [
+          {
+            "key": "tc",
+            "name": "Teaching Craft",
+            "weight": 33,
+            "avgPct": 72,
+            "statusLabel": "Strong",
+            "strongestDim": {
+              "name": "Scripture Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Visual Aids",
+              "val": 1
+            },
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Visual Aids is the bottleneck this month."
+          },
+          {
+            "key": "bm",
+            "name": "Building Ministry",
+            "weight": 31,
+            "avgPct": 40,
+            "statusLabel": "Early Stage",
+            "strongestDim": {
+              "name": "Leader Development",
+              "val": 3
+            },
+            "weakestDim": {
+              "name": "Homework References",
+              "val": 1
+            },
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — primary growth area. Lift the floor on Homework References."
+          },
+          {
+            "key": "ep",
+            "name": "Engaging People",
+            "weight": 18,
+            "avgPct": 80,
+            "statusLabel": "Strong",
+            "strongestDim": {
+              "name": "Participant Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 3
+            },
+            "insight": "Engaging People (Facilitation + Participation) — strong. Continue to broaden participation beyond the core 6–8 voices."
+          },
+          {
+            "key": "br",
+            "name": "Being Real",
+            "weight": 18,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Prayer",
+              "val": 4
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — elite tier. Prayer is the lift this month."
+          }
+        ],
+        "strengths": [
+          {
+            "text": "An Unusually Dense, Wide-Ranging Cross-Reference Arc",
+            "session": "2026-09-19"
+          },
+          {
+            "text": "Signature Socratic Density Held Up Across a Long, Two-Part Session",
+            "session": "2026-09-19"
+          },
+          {
+            "text": "Exceptionally High Confession / Personal-Response Rate",
+            "session": "2026-09-19"
+          }
+        ],
+        "growth": [
+          {
+            "text": "No Verbalized Newcomer Check This Week",
+            "session": "2026-09-19"
+          },
+          {
+            "text": "Zero Visual Aids for the Entire Two-Hour Session",
+            "session": "2026-09-19"
+          },
+          {
+            "text": "No Homework or Workbook Reference All Session",
+            "session": "2026-09-19"
+          }
+        ],
+        "trends": [
+          "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Homework References (avg 1.0 / 5).",
+          "Composite vs. August 2026 (~82): down 15.3. Inspect the cluster regressions in the Cluster Deep Dive above."
+        ],
+        "conversationGuide": [
+          {
+            "label": "Celebrate the strength",
+            "q": "Being Real averaged 90% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+          },
+          {
+            "label": "Explore the growth area",
+            "q": "Building Ministry averaged 40%. What's getting in the way? What would have to be true for that to lift 10 points by October 2026?"
+          },
+          {
+            "label": "Trajectory",
+            "q": "Your one September 2026 session scored 66.8 (On Target). What was different about your prep or delivery this time?"
+          },
+          {
+            "label": "Group dynamics",
+            "q": "Participant Engagement averaged 5.0 / 5 in September 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+          }
+        ],
+        "focus": {
+          "clusterName": "Building Ministry",
+          "clusterPct": 40,
+          "goals": [
+            "Identify and name an apprentice/co-leader for October 2026; have them visibly co-teach one segment.",
+            "Reference the Precept workbook / homework explicitly at least 3 times per session.",
+            "Welcome a newcomer with a member testimony first (7–25 min block) when they appear.",
+            "In every October 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
+          ]
+        },
+        "sessions": [
+          {
+            "date": "2026-09-19",
+            "session": "Daniel 3 — Shadrach, Meshach & Abednego in the Fiery Furnace",
+            "composite": 66.8,
+            "status": "On Target",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 3,
+                "note": "ON TARGET"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": 2,
+                "note": "NEEDS WORK"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "STRONG"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 3,
+                "note": "ON TARGET"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "STRONG"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "STRONG"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 1,
+                "note": "NEEDS WORK"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "STRONG"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "STRONG"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 1,
+                "note": "NEEDS WORK"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "STRONG"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 3,
+                "note": "ON TARGET"
+              }
+            ]
+          }
+        ]
+      },
       "2026-08": {
         "month": "2026-08",
         "monthLabel": "August 2026",
