@@ -174,13 +174,17 @@ describe("the composite is computed from that definition", () => {
 });
 
 describe("the two bonuses on top of the base", () => {
-  it("REPLAYS all 119 published reports: base + bonuses reproduces every score", () => {
+  it("REPLAYS every published report: base + bonuses reproduces every score", () => {
     // The rule was not documented anywhere, so it was measured. Each of the
     // reports in the bundled corpus carries its head counts, its base and its
     // published score, which pins the arithmetic exactly: any change to
     // composeBonuses that does not match the live programme fails here.
     const reports = coachData.coaches.flatMap((c) => c.reports);
-    expect(reports.length).toBe(119);
+    // DERIVED, never asserted. The bundle is refreshed on a timer, so a
+    // literal here dates the moment it was written rather than testing
+    // anything: it was 119 at the 2026-09-01 bundle and 140 three weeks later.
+    // The floor is the claim that matters, that the corpus is actually loaded.
+    expect(reports.length).toBeGreaterThan(100);
 
     const wrong = reports.filter((r) => {
       const bonuses = composeBonuses({
