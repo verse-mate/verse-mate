@@ -22,6 +22,30 @@ export default interface CoachLeadersTable {
 
   coach_name: ColumnType<string, string | undefined, string>;
 
+  slug: ColumnType<string | null, string | null | undefined, string | null>;
+
+  is_coach: ColumnType<boolean, boolean | undefined, boolean>;
+
+  zoom_link: ColumnType<string, string | undefined, string>;
+
+  is_benchmark: ColumnType<boolean, boolean | undefined, boolean>;
+
+  title_match: ColumnType<string[], string[] | undefined, string[]>;
+
+  alt_emails: ColumnType<string[], string[] | undefined, string[]>;
+
+  not_teaching_attested_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
+
+  not_teaching_attested_by: ColumnType<
+    UserId | null,
+    UserId | null | undefined,
+    UserId | null
+  >;
+
   invited_by: ColumnType<UserId | null, UserId | null, UserId | null>;
 
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;

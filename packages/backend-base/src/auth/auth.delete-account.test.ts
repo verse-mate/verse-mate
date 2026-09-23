@@ -28,7 +28,7 @@ describe("Auth - Delete Account", () => {
     };
 
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     const { data: signupData, error: signupError } =
@@ -65,7 +65,7 @@ describe("Auth - Delete Account", () => {
     };
 
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     const { data: signupData } = await client.auth.signup.post(testUser);
@@ -254,7 +254,7 @@ describe("Auth - Delete Account", () => {
     };
 
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     const { data: signupData } = await client.auth.signup.post(testUser);
@@ -318,7 +318,7 @@ describe("Auth - Delete Account", () => {
     };
 
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     const { data: signupData } = await client.auth.signup.post(testUser);
