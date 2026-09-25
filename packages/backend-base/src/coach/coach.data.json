@@ -61,6 +61,403 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "bryan-bailey-2026-09-24-thursday-evening-group-zoom-jona",
+          "date": "2026-09-24",
+          "dateLabel": "September 24, 2026",
+          "session": "Thursday Evening Group (Zoom) — Jonah, Lesson 2 of 2",
+          "topic": "Jonah 3–4 — Nineveh's repentance, God relenting, and Jonah's anger at the mercy he preached",
+          "duration": "~2h 09m ([00:00:00]–[02:09:00]), fully coherent throughout",
+          "attendees": 18,
+          "newcomers": 3,
+          "score": 84.81,
+          "base": 80.31,
+          "newcomerBonus": 3,
+          "sizeBonus": 1.5,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 88,
+              "contribution": 29.04
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 66.7,
+              "contribution": 20.67
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 100,
+              "contribution": 18
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 5,
+              "note": "Full 10-step blueprint present, including a Big-Ideas cold-recall open (a generalized implementation of 9/17's Recommendation 1) and both prayers delegated and fully recoverable"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 3,
+              "note": "3 visitors welcomed with individual floor time, but ~3.5 min — under the 7-min floor — with no member-testimony chorus this week"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "17 cross-references opened and read — an arc-high, more than double 9/17's count and well above the 6+ benchmark"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "Discussion-only leader talk ~44% — improved slightly from 9/17 but still above the 30–35% target"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5,
+              "note": "13 logged drivers, majority DOK 3–4, Confession/Personal-Response Rate (7+) and Follow-up Probe Frequency (8+) both well above target"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4,
+              "note": "~59% raw substantive of an arc-high 18-person room — size-normalized, this is more absolute engagement than 9/17's smaller room"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 3,
+              "note": "First on-screen tool (Assyria/Nineveh timeline) in six consecutive Thursday-group sessions — single instance, rocky start"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 5,
+              "note": "The arc's deepest and broadest session — 7+ first-person confessions across multiple members plus Bryan's own reciprocal disclosure — top of the established ±1 swing band"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": 4,
+              "note": "Big-Ideas cold-recall open implemented; closing synthesis present but not a crisp bumper-sticker recitation drill"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Explicit Amos framing plus a personal accountability offer (\\\"reach out to me to get it\\\")"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5,
+              "note": "Opening prayer delegated and fully recoverable this week; closing prayer delegated to a different member, invites unspoken prayer requests"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 2,
+              "note": "No named apprentice, delegated teaching window, or development comment appeared — sixth-plus consecutive week"
+            }
+          ],
+          "bigIdeas": [
+            "God's relenting is deliberate and strategic — never a surprise reaction",
+            "Knowing God's mercy is not the same as sharing God's mercy",
+            "Right theology with a resentful heart is still disobedience",
+            "Sackcloth shows repentance — it doesn't produce it",
+            "God's compassion outlasts human anger"
+          ],
+          "feedback": {
+            "headline": "The Jonah arc closes on its richest cross-referencing night of the arc (17 passages) and its first on-screen visual aid and Big-Ideas cold-recall open of the arc — offset by a compressed newcomer welcome and a second straight week where a member's raw personal disclosure drew no named follow-up.",
+            "strengths": [
+              "An Arc-High 17 Cross-References Anchor Two Full Systematic-Theology Blocks",
+              "The Closing \"How Are You Like Jonah?\" Round Draws Six-Plus Unprompted Confessions",
+              "The Coaching Feedback Loop Closes for the First Time This Arc"
+            ],
+            "improvements": [
+              "Newcomer Welcome Compressed to ~3.5 Minutes With No Member-Testimony Chorus",
+              "A Second Straight Week Where a Raw Personal Disclosure Drew No Named Follow-Up",
+              "The Member Carrying a Friend's Crisis Gets No Check-In Himself"
+            ],
+            "recommendations": [
+              "Assign a Named Follow-Up the Moment Any Member Names a Real Struggle — No Exceptions This Time",
+              "Turn the Question Back on Whoever Is Carrying Someone Else's Crisis",
+              "Protect a 60–90-Second Testimony Slot in the Welcome, Even on a Fast-Moving Night"
+            ],
+            "overview": [
+              "The Jonah arc closes on its richest cross-referencing night of the arc (17 passages) and its first on-screen visual aid and Big-Ideas cold-recall open of the arc — offset by a compressed newcomer welcome and a second straight week where a member's raw personal disclosure drew no named follow-up.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 84.81/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "An Arc-High 17 Cross-References Anchor Two Full Systematic-Theology Blocks",
+                "paragraphs": [
+                  "Exodus 32:11–14, 1 Chronicles 21:14–17, Psalm 106:40–46, Jeremiah 18:5–11, and Ezekiel 24:13–14/3:16–21 build a single argument about God relenting; Matthew 5:21–22, Galatians 5:19–21, James 1:19–20, Ezekiel 33:11, 1 Timothy 2:3–4, 2 Peter 3:9, Matthew 5:43–48, Romans 12:14–21, and 1 John 2:9–11/4:19–21 build a second on anger and agape love — more than double 9/17's 8 cross-references, and reading several in two translations (NIV then NASB, e.g. Ezekiel 24:13) to let the room feel the difference directly rather than being told about it."
+                ]
+              },
+              {
+                "title": "The Closing \"How Are You Like Jonah?\" Round Draws Six-Plus Unprompted Confessions",
+                "paragraphs": [
+                  "Rather than one dramatic disclosure, the closing application round produces a cascade: Marcus admits \"for me, either it's like with a coworker judging him instead of just loving him\" [01:57:34]–[01:57:44], and Sean names his own pattern directly: \"I know there's times that I could have intervened and probably did not... a lot of times I don't do it because I don't want the friction, which is basically self[ish]\" [01:58:48]–[01:59:58]. Six-plus members choosing to answer \"fill in the blank for yourself\" honestly, back to back, is a room-trust signal that no single quote can carry alone."
+                ]
+              },
+              {
+                "title": "The Coaching Feedback Loop Closes for the First Time This Arc",
+                "paragraphs": [
+                  "Two of 9/17's five named recommendations are visibly implemented this session, not just heard: the session opens with a Socratic cold-recall of Lesson 1 rather than a lecture (Recommendation 1, generalized from the historical-overview fix to the entire opening review), and an on-screen visual aid appears for the first time in six consecutive Thursday-group sessions (Recommendation 4, generalized from a word-study lookup to a historical timeline chart). See Key Moments 3 and 5 for the full detail on each."
+                ]
+              },
+              {
+                "title": "A Misreading Becomes a Precision Lesson, Not a Correction to Shrug Off",
+                "paragraphs": [
+                  "Reading Jonah 4:4, Cole adds a word to the text (\"Lord said, do you not have good reason to be angry?\"). Bryan catches it immediately and without shaming him: \"No, that's not what it says. Reread that again. You added a word... that changes everything. The words you add\" [01:20:05]–[01:20:16]. Cole re-reads correctly, and the room gets a live demonstration that in Bible study, one added word can flip a rhetorical question into a leading one — precision as a teaching point, delivered with warmth (\"make sure your wife is with you when you read to your children, okay?\")."
+                ]
+              },
+              {
+                "title": "A Member's Own Analogy for God's Patience Gets Exported to Another One of Bryan's Classes",
+                "paragraphs": [
+                  "Discussing God's patient, incremental approach to Jonah's anger, a member offers: \"In the military, we call that the use of force model. Use the minimum amount of force to get the compliance that you want\" [01:21:14]–[01:21:26]. Bryan doesn't just affirm it — he adopts it on the spot: \"I love that. I think that's the right analogy. I'm going to steal that one for Saturday morning\" [01:21:37]–[01:21:46]. A member's framing becoming curriculum for a different one of Bryan's own groups is a live, observable instance of ideas multiplying outward, not just praise flowing inward."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Newcomer Welcome Compressed to ~3.5 Minutes With No Member-Testimony Chorus",
+                "paragraphs": [
+                  "Three visitors were given individual floor time, but the whole welcome ran under the 7-minute floor with explicit framing as rushed (\"why don't we do a super quick intro, like, Shre, 30 seconds\" [00:07:26]) and no veteran member layered in a testimony or Guarantee pitch the way six members did on 9/17. Fix (transferable): even on a fast-moving, content-heavy night, reserve one 60–90-second slot for a single veteran to speak directly to each visitor before moving into the lesson."
+                ]
+              },
+              {
+                "title": "A Second Straight Week Where a Raw Personal Disclosure Drew No Named Follow-Up",
+                "paragraphs": [
+                  "Nick discloses that ignoring God's promptings \"became consequences, drugs and alcohol\" [00:18:41]–[00:18:55] — a materially heavier admission than 9/17's flagged gap (Jason's newborn-season struggle), and just as unclaimed: no one, including Bryan, assigns a specific person to check in on it before the session ends. This is now a two-session pattern, not an isolated miss. Fix (transferable): the moment any member names a real struggle — newcomer or veteran, light or heavy — assign a named person to follow up before the session ends, every time, without exception."
+                ]
+              },
+              {
+                "title": "The Member Carrying a Friend's Crisis Gets No Check-In Himself",
+                "paragraphs": [
+                  "Marcus discloses being \"two or three more calls away from\" a crisis with someone who \"only calls me when he's down\" [02:00:57]–[02:01:14] — real emotional weight from carrying another person's hardest season. The room moves on to the next question without anyone checking on Marcus. Fix (transferable): when a member names the burden of being someone else's crisis line, that member himself becomes the one who needs a named check-in — not just the person he's carrying."
+                ]
+              },
+              {
+                "title": "Leader Development Signal Absent for a Sixth-Plus Consecutive Week",
+                "paragraphs": [
+                  "No named apprentice, delegated teaching window, or in-session development comment appeared again this session — the same gap flagged across Obadiah, all three Joel weeks, and now both Jonah weeks. Fix (transferable): the Jonah-to-Amos transition next week is a natural moment to say it out loud — \"I've been talking with [name] about opening us into Amos next week\" — converting six-plus weeks of invisible investment into the one observable signal Dimension 12 can score."
+                ]
+              },
+              {
+                "title": "Facilitation Ratio Stayed Elevated Despite the Monologue-Count Improvement",
+                "paragraphs": [
+                  "Monologues dropped from 3 to 2, but discussion-only leader talk only improved from ~47% to ~44% — still well above the 30–35% target — because the relenting/anger cross-reference block required extensive leader interpretive talk between readings. Fix (transferable): before the densest cross-reference stretches, pre-mark 2–3 passages to pause on and ask \"what does this tell you\" BEFORE explaining, converting planned interpretive talk into retrieval the room does itself."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Assign a Named Follow-Up the Moment Any Member Names a Real Struggle — No Exceptions This Time",
+                "paragraphs": [
+                  "This is the second straight week a real disclosure (Jason's newborn season on 9/17, Nick's substance-related consequences this week) passed with no named check-in. Before: a stated need passes without a response. After: \"someone text [name] this week, no pressure, just checking in\" — said out loud, every time, starting next session. Transferable to any stated need, any week."
+                ]
+              },
+              {
+                "title": "Turn the Question Back on Whoever Is Carrying Someone Else's Crisis",
+                "paragraphs": [
+                  "Marcus named the weight of being someone's only crisis contact and got no check-in himself. Before: the room's attention follows the person being discussed. After: when a member names carrying someone else's hard season, ask \"who's checking on you?\" before moving to the next answer. Transferable to any disclosure about supporting a third party."
+                ]
+              },
+              {
+                "title": "Protect a 60–90-Second Testimony Slot in the Welcome, Even on a Fast-Moving Night",
+                "paragraphs": [
+                  "This week's welcome ran ~3.5 minutes with no member testimony, a regression from 9/17's six-member chorus. Before: \"super quick intro, 30 seconds\" for each visitor, then straight into the lesson. After: one veteran speaks 60–90 seconds directly to each visitor before the teaching begins — protects the pattern even when the pace is tight. Transferable to any newcomer-present session."
+                ]
+              },
+              {
+                "title": "Pre-Load the Screen Share and Add Two Pause Points to Any Timeline or Chart",
+                "paragraphs": [
+                  "This week's first visual aid in six weeks opened with technical fumbling and then ran ~3.6 minutes uninterrupted. Before: open the share cold and narrate straight through. After: open the file before the session starts, and plan 2 pause-and-ask beats into any chart or timeline walk-through. Transferable to any future on-screen tool."
+                ]
+              },
+              {
+                "title": "Name a Potential Apprentice Out Loud at the Jonah-to-Amos Transition",
+                "paragraphs": [
+                  "Leader Development has shown zero positive movement across six-plus consecutive Thursday-group sessions. Before: development happens off-camera, if at all. After: at next week's arc opener, say \"I've been talking with [name] about opening us into Amos\" — one sentence converts invisible investment into an observable Dimension 12 signal. Transferable to any arc transition, a natural moment to say it."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: ~18 (17 named non-leader voices + Bryan) — a lower bound: Daryl, Marcus/Marco, Paul, Russ, Bass, Devin, Shre, Mason, Stephen, Nick, Mark Perry, Cole, Fashawn, Justin, Chris Gallagher, Nandan, Sean. Confirmed absent this week: Craig, Brad Gardner (dropping out of the group), Lance (veteran), Craig Rooker, Hunter (officiating a wedding); Chris Marsh greeted but noted as driving, not a present voice  (Target: Consistent participation)  → STRONG",
+                "Newcomers / first-timers: 3 given full individual-intro welcome — Shre and Mason are existing members of Bryan's own Saturday-morning Precepts class visiting Thursday for the first time; Stephen is a genuine first-timer (recently began attending Austin Ridge, formerly Buddhist). See note on the Growth Bonus judgment call below  (Target: Organic growth over time)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 17 opened and read — Exodus 32:11–14, 1 Chronicles 21:14–17, Psalm 106:40–46, Jeremiah 18:5–11, Ezekiel 24:13–14, Ezekiel 3:16–21, Matthew 5:21–22, Galatians 5:19–21, James 1:19–20, Ezekiel 33:11, 1 Timothy 2:3–4, 2 Peter 3:9, Matthew 5:43–48, Romans 12:14–21, 1 John 2:9–11, 1 John 4:19–21, plus Matthew 12:38–41 re-opened from Lesson 1 — an arc-high, more than double the 9/17 count and well above the 6+ benchmark  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Passages read aloud: Jonah 3–4 read in full across multiple rotating readers (Daryl, Marcus, Cole, Nick), plus all 17 cross-references above, several read in two translations (NIV then NASB) for comparison  (Target: Text in front of the group)  → STRONG",
+                "Leader talk ratio (whole session, incl. reading): ~50% — elevated by the dense relenting/anger theology block and the timeline screen-share, offset by extensive rotating reading and cold-calling  (Target: ≤35%)  → NEEDS WORK",
+                "Leader talk ratio (discussion only — graded): ~44% — improved slightly from 9/17's ~47% but still above the Lifeway 30% target; newcomer-welcome content is excluded from this number per Metric Adjustment #2  (Target: ≤30–35% (Lifeway 30% Rule))  → NEEDS WORK",
+                "Time to first scripture reading: ~9–10 min after the newcomer welcome ended ([00:11:00]→[00:20:54] Daryl reads Jonah 3:1–4) — right at the ~10-min target; the intervening ~5.5 min is a Big-Ideas cold-recall of Lesson 1, not lecture, and is credited separately (see A2, Dim 9)  (Target: Within ~10 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~90% — the whole session tracks an opened verse of Jonah or a named cross-reference; the colonoscopy banter (pre-session) and the closing football jokes (post-content) are the only real departures  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~2h 09m ([00:00:00]–[02:09:00]), fully coherent throughout — no transcription-quality issues this week  (Target: 120 min ± 10 min (Bryan's Austin Ridge groups))  → ON TARGET",
+                "Newcomer welcome: ~3.5 min ([00:07:26]–[00:11:00]) — three visitors, each given individual floor time and a warm personal response (\"Well, glad you made it,\" the baptism-list joke for Stephen), but under the 7-min floor with no member-testimony chorus this week, unlike 9/17's six-member Guarantee chorus  (Target: 7–25 min)  → NEEDS WORK",
+                "Big Ideas review at open: ~5.5 min ([00:11:04]–[00:16:54]) — a Socratic cold-recall of Jonah 1–2 (\"Somebody tell me how he got there... What does he got to do?\"), answered from memory by the room rather than lectured by Bryan. This is a direct, generalized application of 9/17's Recommendation 1 (open with group-recall, not lecture)  (Target: 5–15 min)  → STRONG",
+                "Historical/contextual overview: ~3.6 min ([01:03:01]–[01:06:47]) — an on-screen Assyria/Nineveh destruction-date timeline, placed mid-session rather than at the open; see Visual Aids and Key Moments  (Target: 5–10 min)  → ON TARGET",
+                "Teaching block — Jonah 3–4 verse-by-verse: [00:16:54]–[02:04:22] (~107 min) — the bulk of the session, the arc's most cross-referenced and theologically dense stretch  (Target: Woven, purposeful)  → STRONG",
+                "Application / closing: [01:57:11]–[02:04:22] (~7 min dedicated) plus woven application throughout — the \"How are you like Jonah?\" round draws six-plus unprompted confessions  (Target: Woven throughout)  → STRONG",
+                "Pacing (self-managed): Self-managed — no external redirect from a mentor or peer; Bryan closed the teaching on his own initiative and handed off to Paul for the closing prayer  (Target: Self-managed throughout)  → STRONG",
+                "Tangent time: ~4% — the fish-adjacent colonoscopy banter is pre-session, not counted; the closing Aggie/Longhorns/Rocky Top football jokes land after the content has already closed  (Target: < 10%)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 13 logged drivers, including \"Has God ever asked you to do something you are completely unwilling to do?\" (DOK 4, the kickoff question that drew Nick's confession), \"Where does this deviate from the prosperity gospel?\" (DOK 4, member-initiated), and \"How are you like Jonah?\" (DOK 4, closing round) — an arc-high, well above the 5–7 target  (Target: 5–7 per session)  → STRONG",
+                "DOK Level distribution: Majority DOK 3–4 — almost no simple-recall questions; navigation/recall prompts excluded as scaffolding per Metric Adjustment #3  (Target: Majority DOK 2–3 (Webb))  → STRONG",
+                "Application spacing: Woven throughout the Jonah 3–4 walk (the recurring \"what do you learn about God\" refrain) plus a dedicated closing round — woven AND dedicated  (Target: Woven throughout)  → STRONG",
+                "Confession / Personal-Response Rate: 7+ first-person confessional responses — Nick's substance-related confession [00:18:41]; Shre's recovering-alcoholic disclosure during his intro [00:07:53]; Marcus's soft-pedaling-the-gospel confession [00:56:21]; an unnamed member's wife-sacrifice confession [~01:54:39]; Bryan's own reciprocal financial/marital-sacrifice disclosure [01:55:34]; Marcus's coworker-judging confession [01:57:34]; Sean's non-intervention confession [01:58:48]; Marcus's crisis-carrying-friend disclosure [02:00:57] — well above the ≥2 target and above 9/17's 3  (Target: ≥2 per session)  → STRONG",
+                "Leader follow-up probe frequency: 8+ — repeated \"say more,\" \"tell me more about your question,\" \"why do you not intervene,\" and direct cold-calls by name throughout — above target  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Named substantive contributors: ~10 of the ~17 identified non-leader attendees interpreted a passage or gave a personal application response: Daryl, Marcus, Russ, Cole, Fashawn, Nick, Mark Perry, Nandan, Sean, Shre  (Target: 70–80% of attendees)  → ON TARGET",
+                "Substantive % of group (size-normalized): ~59% raw of the identified room — below the ≥70% raw target, but in an arc-high 18-person room (vs. 9/17's 13). Per the model's explicit group-size normalization, 10 substantive contributors in an 18-person room is MORE absolute engagement than 9/17's ~10 in a 13-person room, not less — never dock for size  (Target: ≥70% (size-adjusted))  → ON TARGET",
+                "Read-aloud assignments (reported, not scored): Cole, Justin, Chris Gallagher, Sean, Paul, and several others each read at least one passage across Jonah 3–4 and the 17 cross-references  (Target: Reported only)  → N/A — reported",
+                "Wait time / productive struggle: The room is left to work out the Jonah 2:2–3/4:1 tension between prayer-based and deeds-based relenting itself (a member's own question, [01:06:47]–[01:09:11]) before Bryan weighs in — genuine productive struggle rather than an immediate answer  (Target: 3–5 sec (Rowe 1972))  → STRONG",
+                "Quiet member flag: Mason and Stephen (full individual welcome, no further substantive turn); Chris Gallagher, Paul, Bass, Devin (read-aloud or greeting only, no interpretive turn this week)  (Target: All regulars contribute)  → STRONG — flagged",
+                "Delegated in-session roles: Opening prayer delegated (to \"Mark\"); closing prayer delegated to Paul — different member than the opener; reading assignments spread across 8+ different members  (Target: Roles distributed)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: The arc's deepest and broadest session: Nick's substance-related confession, Shre's recovering-alcoholic disclosure, Marcus's soft-pedaling and coworker-judging confessions, an unnamed member's and Bryan's own reciprocal marital-sacrifice disclosures, Sean's non-intervention confession, Marcus's crisis-carrying-friend disclosure  (Target: ≥1 per session with depth)  → STRONG",
+                "Vulnerability depth (rolling baseline ±1): See Dim 8 in Appendix A8 — 5/5, at the top of the established ±1 swing band off 9/17's 4/5 baseline; the sheer breadth of member disclosure (not just one dramatic event) is the evidence, per Metric Adjustment #4  (Target: 3–5/5 for experienced leader)  → STRONG",
+                "Extended monologues > 90 sec: 2 — at the ≤2-per-session ceiling, an improvement from 9/17's 3. Both named with fixes in the Monologues section below  (Target: ≤2 per session (each named with fix))  → ON TARGET",
+                "Monologue details: See Monologues section — the Assyria/Nineveh timeline screen-share and the \"best life\" / prosperity-gospel answer"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~75% — \"what do you learn about God / what do you make of this\" recurs throughout the Jonah 3–4 walk  (Target: ≥60%)  → STRONG",
+                "% text-requiring questions: ~85% — nearly every question sent the room back into the verse or cross-reference just read  (Target: ≥50%)  → STRONG",
+                "Leader follow-up probes: 8+ — see Application Questions above  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle rate: Strong — the prayer-based vs. deeds-based relenting tension is left for the room to work out before Bryan weighs in ([01:06:47]–[01:09:11]); Cole's misreading of Jonah 4:4 is caught and corrected rather than silently passed over  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG",
+                "Peer-to-peer exchanges: A member proposes the \"use of force continuum\" analogy for God's patience with Jonah [01:21:14]–[01:21:26], and Bryan adopts it on the spot (\"I love that... I'm going to steal that one for Saturday morning\") — a member's framing exported to another one of Bryan's own classes  (Target: Members respond to each other)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Study flow: Pre-session fellowship → delegated opening prayer → three-visitor welcome → Big-Ideas cold-recall of Lesson 1 → Jonah 3–4 read and taught with 17 cross-references → dedicated closing application round → Amos homework logistics → delegated closing prayer → goodbyes  (Target: Blueprint-aligned)  → STRONG",
+                "Bumper stickers generated: Three this week, two member-coined — \"Do what God says the first time\" (member, [00:21:47]) and the recurring \"God's table is round\" (Bryan, [00:29:28]) plus \"Sackcloth shows repentance, it doesn't produce it\" (Bryan, [00:32:54])  (Target: 3–5 per session)  → STRONG",
+                "Visual aids: One on-screen tool this week — a shared-screen Assyria/Nineveh destruction-date timeline ([01:03:01]–[01:06:47]) — the first visual aid in six consecutive Thursday-group sessions, though execution had minor stumbling (\"everything's dark,\" \"this darn things not updated\") before it displayed cleanly  (Target: Multiple tools (Mayer))  → ON TARGET",
+                "Tone & delivery: Warm and personal with three visitors (the baptism-list joke, \"glad you made it\"), direct and unhurried through the densest theology block of the arc. Assessed from audio only — no video frames reviewed this pass  (Target: Vocal variety, pace, command voice)  → N/A — audio only",
+                "Topic drift: ~4% — the colonoscopy banter is pre-session and the closing football jokes land after the content has closed; both are the only real departures  (Target: < 5% off-topic)  → STRONG",
+                "Big Ideas at close: Partial — the session closes with \"why do you think this book is in the Bible?\", a genuine thematic synthesis (a member: \"I see God pursuing the heart of the Ninevites, that is the core of this book\"), but not a crisp bumper-sticker cold-recall drill of the kind Recommendation 2 asked for  (Target: Cumulative review at close)  → ON TARGET"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "Two leader monologues ran past the 90-second threshold this week — at the ≤2 ceiling, an improvement from 9/17's three. Both named below with their fixes.",
+                "Bryan shares his screen to walk through a timeline of Jeroboam's reign, two plagues in Nineveh, a solar eclipse, Assyria's rise to power, and its eventual destruction in 612 BC, almost entirely in his own voice, with some early technical stumbling (\"everything's dark,\" \"this darn things not updated\"). Fix: pause after showing the first 2–3 dates and ask \"what does this tell you about how patient God's been with them\" before continuing through the rest of the timeline — the visual aid itself is a genuine win (see Key Moments); the delivery just needs a mid-point question.",
+                "Answering a member's genuine question about how this teaching differs from the prosperity gospel, Bryan delivers an extended, largely uninterrupted answer about the \"true prosperity\" of obedience, landing on a memorable (if colorful) marriage illustration. Fix: pause mid-answer and ask \"what's one command that's protected you from a consequence you'd have had otherwise\" before landing the final point — the content still lands, the room does more of the work."
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "A Substance-Related Consequence Confession Gets No Named Follow-Up — the Same Gap as Last Week, on a Heavier Disclosure  (🟠 Missed Opportunity · Being Real)\n\nWhat happened: Answering \"is there anything right now that God has asked you to do, but you haven't yet chosen to obey,\" a member discloses: \"It's more that I recently chose to obey, but kept ignoring God and what he was asking me to do. And then asking became telling and then telling became consequences, drugs and alcohol.\"\n\nWhy it mattered: 9/17's Improvement 3 flagged the same shape of gap on Jason's newborn-season struggle. This week the disclosure is materially heavier — substance-related consequences, named on camera — and it still passes with no one, including Bryan, assigning a specific person to check in. Two consecutive weeks of the identical gap is no longer a one-off; it is a pattern the ministry's own prayer-chain infrastructure is built to catch and isn't.\n\nWhat would make it bigger: A ten-second beat — \"someone check in with [name] this week, no pressure, just a text\" — closes the loop the same way the prayer chain closes other loops. Given this is now a two-session pattern, it is worth a direct conversation with Bryan about building the beat into his own closing habit, not just naming it in another report.",
+                  "timestamp": "[00:18:41]–[00:18:55]"
+                },
+                {
+                  "detail": "The Member Carrying a Friend's Crisis Gets No Check-In Himself  (🟠 Missed Opportunity · Being Real)\n\nWhat happened: In the closing round, Marcus discloses: \"I've gotten close, someone last year that I was two or three more calls away from... it was someone who, like, I was his go-to, and he only calls me when he's down... it was like, man, a couple more of these, and frustrating.\"\n\nWhy it mattered: This names real weight — carrying another person's hardest, possibly crisis-adjacent season with no relief. The room's attention (rightly) tracks the person Marcus is worried about, but no one turns the question back toward Marcus's own load.\n\nWhat would make it bigger: One follow-up sentence — \"who's checking on you while you're checking on him?\" — turns a disclosure about someone else's crisis into visible care for the man in the room.",
+                  "timestamp": "[02:00:57]–[02:01:14]"
+                },
+                {
+                  "detail": "The Chapter-1 Cold-Recall Open Directly Implements Last Week's Named Fix  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Rather than summarizing Jonah 1–2 himself, Bryan opens the review with \"Somebody tell me how he got there. Why? Why? How does a man find himself in the belly of a fish? What does he got to do?\" A member answers from memory, correctly and at length, without prompting.\n\nWhy it mattered: 9/17's Recommendation 1 named exactly this fix for a different segment (the Nineveh/Assyria historical overview): \"open with a group-recall version instead... so the overview starts as retrieval, not lecture.\" Seeing the leader generalize a named fix from one segment (historical background) to another (session-opening review) in the very next session is the clearest evidence available that coaching feedback is landing, not just being heard.\n\nWhat would make it bigger: Already well-executed; naming the technique explicitly to the room (\"that's exactly why we do this instead of me just telling you\") would make it a repeatable habit the room recognizes, not just experiences.",
+                  "timestamp": "[00:11:04]–[00:11:41]"
+                },
+                {
+                  "detail": "Bryan Models Reciprocal Vulnerability at the Exact Moment a Member Opens Up  (🟢 Capitalized · Being Real)\n\nWhat happened: Immediately after a member confesses being \"called to love my wife really sacrificially and to put what I want to do on the back burner,\" Bryan responds in kind: \"I moved twice for my wife and left a lot of money behind when we moved to Texas. I've been, I would have retired a lot sooner if I had stayed in Ohio. But God, God could do that. He can make it where you can love your wife and not resent it.\"\n\nWhy it mattered: This is Bryan's signature \"Vulnerability as Authority\" technique fired at precisely the right moment — not a rehearsed testimony dropped at a scheduled point, but a real-time match to a member's own disclosure, modeling that costly obedience (not just Jonah's) is the leader's own lived experience too.\n\nWhat would make it bigger: Already well-executed; the reciprocal timing is the whole point and needs no addition.",
+                  "timestamp": "[01:55:34]–[01:56:06]"
+                },
+                {
+                  "detail": "The First On-Screen Visual Aid in Six Weeks Lands, With Rough Execution  (🔵 Pivot Point (mixed) · Teaching Craft / Visual Aids)\n\nWhat happened: Bryan shares his screen to walk the room through an Assyria/Nineveh destruction-date timeline: \"check this out... here's a timeline for us.\" The share opens with technical friction (\"everything's dark,\" \"this darn things not updated\") before displaying cleanly.\n\nWhy it mattered: 9/17's Improvement 4 named the exact gap this closes — \"zero visual aids... five consecutive Thursday-group sessions.\" A tool finally appearing is a genuine, coaching-responsive win. But the rocky start and the ~3.6-minute uninterrupted delivery once it displayed (Monologue 1) mean the fix landed only partway — present, but not yet polished or interactive.\n\nWhat would make it bigger: Pre-load the screen share before the session starts (removing the fumbling), and break the timeline into 2–3 question-and-pause beats rather than one continuous reveal.",
+                  "timestamp": "[01:03:01]–[01:06:47]"
+                }
+              ],
+              "paragraphs": [
+                "Five disproportionately important moments — named so the pattern is replicable."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "\"Has God ever asked you to do something you are completely unwilling to do?\" [00:17:06]–[00:17:12] — Level 4 — Apply to life — Kickoff question; drew Nick's substance-related confession (Key Moments, Improvements).",
+                "\"Is there anything right now that God has asked you to do, but you haven't yet chosen to obey?\" [00:18:10]–[00:18:21] — Level 4 — Apply to life — Direct follow-up to the kickoff; deepened the same confession.",
+                "\"Would you go so far as to say it's demonic? [belief that never changes conduct]\" [00:20:33]–[00:20:43] — Level 3 — Reason/justify — Sharpened the obedience-vs-belief distinction before the Jonah 3 reading.",
+                "\"Why do you think he listened so easily? ... why do some people listen and other people don't?\" [00:29:57]–[00:30:06] — Level 4 — Apply to life — Built the king-of-Nineveh's humility contrast that runs through the chapter.",
+                "\"Where does this deviate from like the prosperity gospel that I hear about?\" [00:49:35]–[00:49:49] — Level 4 — Apply to life — Member-initiated; unpacked obedience-connected blessing vs. entitlement theology.",
+                "\"Have you ever found yourself sharing the gospel and kind of trying to... make a sales pitch out of it?\" [00:55:19]–[00:56:06] — Level 4 — Apply to life — Drew Marcus's soft-pedaling-the-gospel confession.",
+                "\"Which one's being kinder, actually? Straight up or gentle?\" [00:57:26]–[00:57:38] — Level 3 — Reason/justify — Resolved the Ezekiel 3 watchman passage's tension between kindness and directness.",
+                "\"Where have I obeyed outwardly, while inwardly, I didn't want to?\" [01:09:51]–[01:10:18] — Level 4 — Apply to life — Bryan's own written application question at the top of chapter 4.",
+                "\"What do you make of this approach by God? [do you have good reason to be angry]\" [01:20:43]–[01:20:48] — Level 3 — Reason/justify — Surfaced the \"use of force continuum\" analogy (Strength 5).",
+                "\"How, how are you like Jonah?\" [01:57:11]–[01:57:17] — Level 4 — Apply to life — Closing round; drew six-plus unprompted first-person confessions (Strength 2).",
+                "\"Why do you not intervene?\" [01:59:23]–[01:59:27] — Level 4 — Apply to life — Follow-up probe inside the closing round; drew Sean's confession.",
+                "\"Pity for the plant or pity for the people?\" [01:48:49]–[01:49:01] — Level 3 — Reason/justify — Named the core contrast of the chapter's ending.",
+                "\"Somebody take a crack, why do you think this book is in the Bible?\" [02:02:31]–[02:02:44] — Level 4 — Apply to life — Closing synthesis; a member's \"God pursuing the heart of the Ninevites\" answer."
+              ],
+              "paragraphs": [
+                "Thirteen logged Big-Idea drivers — an arc-high — spanning the Jonah 3 repentance sequence and the Jonah 4 anger-at-mercy sequence. Navigation/recall prompts are excluded as scaffolding per Metric Adjustment #3."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 88.0% × weight 33 → 29.04 pts",
+                "Building Ministry: 66.7% × weight 31 → 20.67 pts",
+                "Engaging People: 70.0% × weight 18 → 12.60 pts",
+                "Being Real: 100.0% × weight 18 → 18.00 pts",
+                "BASE (pre-bonus): — × weight 100 → 80.31 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "PLACEHOLDER_PDF_LINK",
+          "docUrl": "PLACEHOLDER_APPENDIX_LINK"
+        },
+        {
           "id": "bryan-bailey-2026-09-19-saturday-morning-group-austin-ri",
           "date": "2026-09-19",
           "dateLabel": "September 19, 2026",
@@ -48247,14 +48644,14 @@
   "monthlyNarratives": {
     "2026-09": {
       "executiveSummary": [
-        "In September 2026, 9 leaders delivered 21 evaluated sessions, and the program held a weighted average composite of 78.6 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "In September 2026, 9 leaders delivered 22 evaluated sessions, and the program held a weighted average composite of 78.9 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
         "Across the cohort the month broke down as 1 Exceptional, 7 Strong, and 1 On Target. Brendan & Elizabeth led the field at 92.2 (Exceptional), while Joel Hurt anchored the other end at 66.8 (On Target) — the clearest place to concentrate coaching attention.",
-        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 92.2 (+18.4 pts), the strongest muscle program-wide was Scripture Engagement (4.81 / 5), and the thinnest was Leader Development (2.52 / 5), where one shared training would lift the most leaders at once.",
-        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Joel Hurt, Bryan Bailey, and Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+        "Brendan & Elizabeth posted the biggest jump off the August 2026 baseline, climbing roughly 74 to 92.2 (+18.4 pts), the strongest muscle program-wide was Scripture Engagement (4.82 / 5), and the thinnest was Leader Development (2.50 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Joel Hurt and Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's September 2026 composite of 78.6 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 18.4 points.",
-        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.81 / 5), while Leader Development (2.52 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's September 2026 composite of 78.9 / 100 lands it in the Strong band. Month over month, Brendan & Elizabeth is the standout mover off the August 2026 baseline, up 18.4 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.82 / 5), while Leader Development (2.50 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-08": {
@@ -48363,19 +48760,19 @@
         "leaderId": "bryan-bailey",
         "leaderName": "Bryan Bailey",
         "group": "Saturday Morning Study — Austin Ridge",
-        "sessionsCount": 6,
-        "composite": 78.4,
+        "sessionsCount": 7,
+        "composite": 79.3,
         "status": {
           "label": "Strong",
           "emoji": "🟢"
         },
         "priorComposite": 80.8,
-        "delta": -2.4,
+        "delta": -1.5,
         "clusterAvg": {
-          "tc": 74,
-          "bm": 76,
-          "ep": 68,
-          "br": 78
+          "tc": 76,
+          "bm": 74,
+          "ep": 69,
+          "br": 81
         },
         "glance": {
           "rows": [
@@ -48438,14 +48835,24 @@
               "br": 80,
               "composite": 88.5,
               "status": "Exceptional"
+            },
+            {
+              "date": "2026-09-24",
+              "session": "Thursday Evening Group (Zoom) — Jonah, Lesson 2 of 2",
+              "bm": 67,
+              "tc": 88,
+              "ep": 70,
+              "br": 100,
+              "composite": 84.8,
+              "status": "Strong"
             }
           ],
           "avg": {
-            "bm": 76,
-            "tc": 74,
-            "ep": 68,
-            "br": 78,
-            "composite": 78.4,
+            "bm": 74,
+            "tc": 76,
+            "ep": 69,
+            "br": 81,
+            "composite": 79.3,
             "status": "Strong"
           }
         },
@@ -48491,6 +48898,13 @@
             "composite": 88.5,
             "status": "Exceptional",
             "delta": 10.4
+          },
+          {
+            "date": "2026-09-24",
+            "session": "Thursday Evening Group (Zoom) — Jonah, Lesson 2 of 2",
+            "composite": 84.8,
+            "status": "Strong",
+            "delta": -3.7
           }
         ],
         "clusters": [
@@ -48498,7 +48912,7 @@
             "key": "tc",
             "name": "Teaching Craft",
             "weight": 33,
-            "avgPct": 74,
+            "avgPct": 76,
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Application Questions",
@@ -48506,7 +48920,7 @@
             },
             "weakestDim": {
               "name": "Visual Aids",
-              "val": 2
+              "val": 2.1
             },
             "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Visual Aids is the bottleneck this month."
           },
@@ -48514,15 +48928,15 @@
             "key": "bm",
             "name": "Building Ministry",
             "weight": 31,
-            "avgPct": 76,
+            "avgPct": 74,
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Homework References",
-              "val": 4.5
+              "val": 4.6
             },
             "weakestDim": {
               "name": "Leader Development",
-              "val": 2.8
+              "val": 2.7
             },
             "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — strong. Lift the floor on Leader Development."
           },
@@ -48530,7 +48944,7 @@
             "key": "ep",
             "name": "Engaging People",
             "weight": 18,
-            "avgPct": 68,
+            "avgPct": 69,
             "statusLabel": "On Target",
             "strongestDim": {
               "name": "Participant Engagement",
@@ -48538,7 +48952,7 @@
             },
             "weakestDim": {
               "name": "Facilitation vs. Lecture",
-              "val": 2.8
+              "val": 2.9
             },
             "insight": "Engaging People (Facilitation + Participation) — developing well. Single biggest lever: cut leader talk in discussion segments toward the Lifeway 30% target."
           },
@@ -48546,15 +48960,15 @@
             "key": "br",
             "name": "Being Real",
             "weight": 18,
-            "avgPct": 78,
+            "avgPct": 81,
             "statusLabel": "Strong",
             "strongestDim": {
               "name": "Vulnerability / Authenticity",
-              "val": 4.3
+              "val": 4.4
             },
             "weakestDim": {
               "name": "Prayer",
-              "val": 3.5
+              "val": 3.7
             },
             "insight": "Being Real (Vulnerability + Prayer) — strong. Prayer is the lift this month."
           }
@@ -48604,22 +49018,22 @@
           }
         ],
         "trends": [
-          "Within-month arc: 63.5 → 88.5 (+24.9). Trajectory improved.",
-          "Highest-scoring dimension this month: Application Questions (avg 5.0 / 5). Lowest: Visual Aids (avg 2.0 / 5).",
-          "Composite vs. August 2026 (~81): down 2.4. Inspect the cluster regressions in the Cluster Deep Dive above."
+          "Within-month arc: 63.5 → 84.8 (+21.3). Trajectory improved.",
+          "Highest-scoring dimension this month: Application Questions (avg 5.0 / 5). Lowest: Visual Aids (avg 2.1 / 5).",
+          "Composite vs. August 2026 (~81): held steady (-1.5). Consistency is the headline."
         ],
         "conversationGuide": [
           {
             "label": "Celebrate the strength",
-            "q": "Being Real averaged 78% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+            "q": "Being Real averaged 81% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
           },
           {
             "label": "Explore the growth area",
-            "q": "Engaging People averaged 68%. What's getting in the way? What would have to be true for that to lift 10 points by October 2026?"
+            "q": "Engaging People averaged 69%. What's getting in the way? What would have to be true for that to lift 10 points by October 2026?"
           },
           {
             "label": "Trajectory",
-            "q": "Composite went from 63.5 on 2026-09-03 to 88.5 on 2026-09-19. What changed in your prep or delivery?"
+            "q": "Composite went from 63.5 on 2026-09-03 to 84.8 on 2026-09-24. What changed in your prep or delivery?"
           },
           {
             "label": "Group dynamics",
@@ -48628,7 +49042,7 @@
         ],
         "focus": {
           "clusterName": "Engaging People",
-          "clusterPct": 68,
+          "clusterPct": 69,
           "goals": [
             "Cut leader talk in discussion to <40% by end of October 2026 (use a 5-second wait-time count and a one-question-then-stop rule).",
             "Hit 70%+ participation in 2 of the next 4 sessions (track which members spoke each week).",
@@ -49185,6 +49599,98 @@
                 "cluster": "Building Ministry",
                 "score": 4,
                 "note": "Named, trackable follow-up delegated across four different members for one newcomer — no named teaching apprentice or delegated facilitation window this session"
+              }
+            ]
+          },
+          {
+            "date": "2026-09-24",
+            "session": "Thursday Evening Group (Zoom) — Jonah, Lesson 2 of 2",
+            "composite": 84.8,
+            "status": "Strong",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Full 10-step blueprint present, including a Big-Ideas cold-recall open (a generalized implementation of 9/17's Recommendation 1) and both prayers delegated and fully recoverable"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": 3,
+                "note": "3 visitors welcomed with individual floor time, but ~3.5 min — under the 7-min floor — with no member-testimony chorus this week"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "17 cross-references opened and read — an arc-high, more than double 9/17's count and well above the 6+ benchmark"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 3,
+                "note": "Discussion-only leader talk ~44% — improved slightly from 9/17 but still above the 30–35% target"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "13 logged drivers, majority DOK 3–4, Confession/Personal-Response Rate (7+) and Follow-up Probe Frequency (8+) both well above target"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "~59% raw substantive of an arc-high 18-person room — size-normalized, this is more absolute engagement than 9/17's smaller room"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 3,
+                "note": "First on-screen tool (Assyria/Nineveh timeline) in six consecutive Thursday-group sessions — single instance, rocky start"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "The arc's deepest and broadest session — 7+ first-person confessions across multiple members plus Bryan's own reciprocal disclosure — top of the established ±1 swing band"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Big-Ideas cold-recall open implemented; closing synthesis present but not a crisp bumper-sticker recitation drill"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Explicit Amos framing plus a personal accountability offer (\\\"reach out to me to get it\\\")"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "Opening prayer delegated and fully recoverable this week; closing prayer delegated to a different member, invites unspoken prayer requests"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 2,
+                "note": "No named apprentice, delegated teaching window, or development comment appeared — sixth-plus consecutive week"
               }
             ]
           }
