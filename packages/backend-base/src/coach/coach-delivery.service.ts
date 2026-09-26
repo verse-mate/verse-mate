@@ -27,9 +27,12 @@ export const COACH_REPLY_TO_NAME = "VerseMate Coaching";
 
 export const DELIVERY_ATTEMPT_LIMIT = 5;
 
+export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
+
 export type DeliveryRefusal =
   | "unknown-report"
   | "already-delivered"
+  | "in-flight"
   | "governance-blocked"
   | "send-failed";
 
@@ -141,6 +144,62 @@ export class CoachDeliveryService {
       .executeTakeFirst();
     if (!report) return { delivered: false, refusal: "unknown-report" };
 
+    const claim = await this.claim(reportId);
+    if (claim !== "claimed") return { delivered: false, refusal: claim };
+    return this.deliverClaimed(reportId, coachId, evidence, report);
+  }
+
+  private async claim(
+    reportId: string,
+  ): Promise<"claimed" | "already-delivered" | "in-flight" | "unknown-report"> {
+    const conn = this.db.getOrCreateConnection();
+    try {
+      const claimed = await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state: "delivering", updated_at: sql`NOW()` })
+        .where("report_id", "=", reportId)
+        .where((eb) =>
+          eb.or([
+            eb("state", "in", ["scored", "delivery_pending"]),
+            eb.and([
+              eb("state", "=", "delivering"),
+              eb("updated_at", "<", STALE_DELIVERY_CLAIM),
+            ]),
+          ]),
+        )
+        .returning("source_session_id")
+        .executeTakeFirst();
+      if (claimed) return "claimed";
+    } catch (error) {
+      if ((error as { code?: string }).code !== "23505") throw error;
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state: "delivery_pending", updated_at: sql`NOW()` })
+        .where("report_id", "=", reportId)
+        .where("state", "=", "scored")
+        .execute();
+      return "in-flight";
+    }
+    const session = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("state")
+      .where("report_id", "=", reportId)
+      .executeTakeFirst();
+    if (!session) return "unknown-report";
+    return session.state === "delivered" ? "already-delivered" : "in-flight";
+  }
+
+  private async deliverClaimed(
+    reportId: string,
+    coachId: string,
+    evidence: ReportEvidence,
+    report: {
+      summary: unknown;
+      body: unknown;
+      date: string;
+    },
+  ): Promise<DeliveryResult> {
+    const conn = this.db.getOrCreateConnection();
     const leader = await conn
       .selectFrom("coach_leaders")
       .select(["name", "email"])
@@ -148,21 +207,6 @@ export class CoachDeliveryService {
       .executeTakeFirst();
 
     const summary = (report.summary ?? {}) as Record<string, unknown>;
-
-    // Already sent? Delivery is driven by a scheduled worker, so anything that
-    // re-enters the pipeline for a session already reported (a retry, a
-    // re-scored report, a session row that did not advance) mailed all three
-    // recipients a second copy. The state the pipeline writes on success is
-    // the record of that, so it is also the guard.
-    const alreadyDelivered = await conn
-      .selectFrom("coach_intake_sessions")
-      .select("source_session_id")
-      .where("report_id", "=", reportId)
-      .where("state", "=", "delivered")
-      .executeTakeFirst();
-    if (alreadyDelivered) {
-      return { delivered: false, refusal: "already-delivered" };
-    }
 
     // 6.2 at delivery time, against what is already persisted.
     const verdict = await this.governance.check({
@@ -172,9 +216,12 @@ export class CoachDeliveryService {
       evidence,
     });
     if (!verdict.passed) {
-      // Returned to the admin review path, NOT discarded. A blocked report is
-      // a report somebody needs to look at, and throwing it away loses the
-      // session's work entirely.
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state: "scored", updated_at: sql`NOW()` })
+        .where("report_id", "=", reportId)
+        .where("state", "=", "delivering")
+        .execute();
       return {
         delivered: false,
         refusal: "governance-blocked",
@@ -262,7 +309,7 @@ export class CoachDeliveryService {
         updated_at: sql`NOW()`,
       })
       .where("report_id", "=", reportId)
-      .where("state", "in", ["scored", "delivery_pending"])
+      .where("state", "=", "delivering")
       .execute();
   }
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import {
   CoachDeliveryService,
@@ -410,5 +411,116 @@ describe("delivery", () => {
       .where("report_id", "=", "r1")
       .executeTakeFirstOrThrow();
     expect(row.state).toBe("delivered");
+  });
+});
+
+describe("delivery is claimed in the database, so separate workers cannot both send", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(clear);
+
+  it("two workers delivering the same report send it once", async () => {
+    await seedReport("r-race");
+    const mailer = new FakeMailer();
+    const [a, b] = await Promise.all([
+      new CoachDeliveryService(Database, mailer).deliver({
+        reportId: "r-race",
+        evidence: evidence(),
+      }),
+      new CoachDeliveryService(Database, mailer).deliver({
+        reportId: "r-race",
+        evidence: evidence(),
+      }),
+    ]);
+    expect([a, b].filter((r) => r.delivered).length).toBe(1);
+    expect(mailer.sent.length).toBe(new Set(mailer.sent.map((s) => s.to)).size);
+  });
+
+  it("two workers delivering two reports that share a quote do not both ship it", async () => {
+    await seedReport("r-q1");
+    await seedReport("r-q2");
+    const mailer = new FakeMailer();
+    const results = await Promise.all([
+      new CoachDeliveryService(Database, mailer).deliver({
+        reportId: "r-q1",
+        evidence: evidence(["the shared line across workers"]),
+      }),
+      new CoachDeliveryService(Database, mailer).deliver({
+        reportId: "r-q2",
+        evidence: evidence(["the shared line across workers"]),
+      }),
+    ]);
+    expect(results.filter((r) => r.delivered).length).toBe(1);
+
+    const loser = results[0].delivered ? "r-q2" : "r-q1";
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("state")
+      .where("report_id", "=", loser)
+      .executeTakeFirstOrThrow();
+    expect(["delivery_pending", "scored"]).toContain(row.state);
+
+    const retry = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: loser,
+      evidence: evidence(["the shared line across workers"]),
+    });
+    expect(retry.refusal).toBe("governance-blocked");
+    expect(retry.violations?.[0].rule).toBe("reused-quote");
+  });
+
+  it("a report another worker is delivering is refused and left for a later tick", async () => {
+    await seedReport("r-busy-1");
+    await seedReport("r-busy-2");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivering" })
+      .where("report_id", "=", "r-busy-1")
+      .execute();
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-busy-2",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(false);
+    expect(mailer.sent).toEqual([]);
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("state")
+      .where("report_id", "=", "r-busy-2")
+      .executeTakeFirstOrThrow();
+    expect(row.state).toBe("delivery_pending");
+  });
+
+  it("a governance block releases the claim back to the review path", async () => {
+    await seedReport("r-blocked", LEADER, {
+      feedback: { headline: "Not yet at Bryan Bailey's level" },
+    });
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({ reportId: "r-blocked", evidence: evidence() });
+    expect(result.refusal).toBe("governance-blocked");
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("state")
+      .where("report_id", "=", "r-blocked")
+      .executeTakeFirstOrThrow();
+    expect(row.state).toBe("scored");
+  });
+
+  it("a claim abandoned by a crashed worker is taken over once it is stale", async () => {
+    await seedReport("r-stale");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivering", updated_at: sql`NOW() - interval '1 day'` })
+      .where("report_id", "=", "r-stale")
+      .execute();
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({ reportId: "r-stale", evidence: evidence() });
+    expect(result.delivered).toBe(true);
   });
 });

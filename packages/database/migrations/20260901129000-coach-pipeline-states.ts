@@ -14,6 +14,7 @@ const AFTER = [
   ...BEFORE,
   "scoring_failed",
   "delivery_pending",
+  "delivering",
   "delivery_failed",
 ];
 
@@ -28,13 +29,21 @@ async function allowStates(db: Kysely<Database>, states: string[]) {
 
 export async function up(db: Kysely<Database>): Promise<void> {
   await allowStates(db, AFTER);
+  await sql`
+    CREATE UNIQUE INDEX coach_intake_sessions_one_delivery_per_leader_uidx
+    ON coach_intake_sessions (coach_id)
+    WHERE state = 'delivering'
+  `.execute(db);
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await sql`DROP INDEX IF EXISTS coach_intake_sessions_one_delivery_per_leader_uidx`.execute(
+    db,
+  );
   await sql`UPDATE coach_intake_sessions SET state = 'retained' WHERE state = 'scoring_failed'`.execute(
     db,
   );
-  await sql`UPDATE coach_intake_sessions SET state = 'scored' WHERE state IN ('delivery_pending', 'delivery_failed')`.execute(
+  await sql`UPDATE coach_intake_sessions SET state = 'scored' WHERE state IN ('delivery_pending', 'delivering', 'delivery_failed')`.execute(
     db,
   );
   await allowStates(db, BEFORE);
