@@ -5,7 +5,10 @@ import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
-import { RetainedMediaService } from "./coach-retained-media.service";
+import {
+  type RetainedKind,
+  RetainedMediaService,
+} from "./coach-retained-media.service";
 import { rowToReport, rowToSummary } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
@@ -382,10 +385,11 @@ export class CoachService {
    * for every refusal alike (task 4.5). Delegates so the plugin stays thin and
    * the authorization lives in one place.
    */
-  async mintRecordingUrl(input: {
+  async mintRetainedUrl(input: {
     reportId: string;
     requesterCoachId: string | null;
     isAdmin: boolean;
+    kind: RetainedKind;
   }): Promise<string | null> {
     return this.retainedMedia.mint(input);
   }
