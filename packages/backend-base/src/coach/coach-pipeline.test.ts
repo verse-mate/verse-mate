@@ -9,6 +9,7 @@ import { ReportSchema } from "./coach.schema";
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import {
   CoachPipelineService,
+  PIPELINE_ATTEMPT_LIMIT,
   PIPELINE_BATCH_LIMIT,
   evidenceFrom,
 } from "./coach-pipeline.service";
@@ -320,6 +321,113 @@ describe("a retained session reaches a delivered report", () => {
     }
     const results = await pipeline(new FakeMailer()).run();
     expect(results.length).toBe(PIPELINE_BATCH_LIMIT);
+  });
+});
+
+class PoisonClient implements FirefliesDetailClient {
+  private readonly healthy = new FakeClient();
+  async listTranscripts(): Promise<FirefliesTranscript[]> {
+    return [];
+  }
+  async getTranscript(id: string): Promise<FirefliesTranscriptDetail | null> {
+    return id.startsWith("ff-extra-poison")
+      ? null
+      : this.healthy.getTranscript();
+  }
+}
+
+function poisonPipeline(mailer: FakeMailer) {
+  return new CoachPipelineService(Database, new PoisonClient(), mailer as any, {
+    scoring: new CoachScoringService(Database, new FakeAi()),
+    frames: noFrames as any,
+  });
+}
+
+async function intakeRow(id: string) {
+  return conn
+    .selectFrom("coach_intake_sessions")
+    .select(["state", "retry_count"])
+    .where("source_session_id", "=", id)
+    .executeTakeFirstOrThrow();
+}
+
+async function seedPoison(count: number, retryCount = 0) {
+  for (let i = 0; i < count; i += 1) {
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: `ff-extra-poison-${i}`,
+        coach_id: COACH,
+        matched_by: "title_match",
+        title: "Obadiah, Lesson 4",
+        session_date: "2026-08-22",
+        state: "retained",
+        retry_count: retryCount,
+        observed_at: sql`NOW() - interval '1 day'`,
+      })
+      .execute();
+  }
+}
+
+describe("a session that fails scoring is counted, capped and taken out of the queue", () => {
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
+      .execute();
+  });
+  afterEach(clear);
+
+  it("a failed scoring attempt is counted and the session stays queued", async () => {
+    await seedPoison(1);
+    const [result] = await poisonPipeline(new FakeMailer()).run();
+    expect(result.outcome).toBe("scoring-failed");
+    expect(await intakeRow("ff-extra-poison-0")).toEqual({
+      state: "retained",
+      retry_count: 1,
+    });
+  });
+
+  it("the attempt that reaches the cap moves it to scoring_failed, where the queue no longer takes it", async () => {
+    await seedPoison(1, PIPELINE_ATTEMPT_LIMIT - 1);
+    await poisonPipeline(new FakeMailer()).run();
+    expect(await intakeRow("ff-extra-poison-0")).toEqual({
+      state: "scoring_failed",
+      retry_count: PIPELINE_ATTEMPT_LIMIT,
+    });
+    expect(await poisonPipeline(new FakeMailer()).run()).toEqual([]);
+  });
+
+  it("a thrown scoring attempt is counted like a returned failure", async () => {
+    await seedRetained("ff-pipe-throws");
+    const throwing = new CoachPipelineService(
+      Database,
+      {
+        listTranscripts: async () => [],
+        getTranscript: async () => {
+          throw new Error("provider exploded");
+        },
+      },
+      new FakeMailer() as any,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: noFrames as any,
+      },
+    );
+    const [result] = await throwing.run();
+    expect(result.outcome).toBe("scoring-failed");
+    expect((await intakeRow("ff-pipe-throws")).retry_count).toBe(1);
+  });
+
+  it("sessions that keep failing do not starve a new session behind them", async () => {
+    await seedPoison(PIPELINE_BATCH_LIMIT);
+    await poisonPipeline(new FakeMailer()).run();
+    await seedRetained("ff-pipe-fresh");
+
+    const second = await poisonPipeline(new FakeMailer()).run();
+    const fresh = second.find((r) => r.sourceSessionId === "ff-pipe-fresh");
+    expect(fresh?.outcome).toBe("scored-and-delivered");
   });
 });
 

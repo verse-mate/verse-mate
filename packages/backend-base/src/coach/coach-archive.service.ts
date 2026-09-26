@@ -206,7 +206,7 @@ export class CoachArchiveService {
 
     await conn
       .updateTable("coach_intake_sessions")
-      .set({ state: "retained", updated_at: sql`NOW()` })
+      .set({ state: "retained", retry_count: 0, updated_at: sql`NOW()` })
       .where("source_session_id", "=", sourceSessionId)
       .execute();
 
