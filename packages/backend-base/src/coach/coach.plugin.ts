@@ -670,6 +670,26 @@ const plugin = new Elysia()
         },
       )
       .post(
+        "/admin/pipeline-failures/:sourceSessionId/requeue",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const requeued = await coachService.requeuePipelineFailure(
+            params.sourceSessionId,
+          );
+          if (!requeued) throw new NotFoundError("No parked session");
+          return { requeued: true };
+        },
+        {
+          response: {
+            200: t.Object({ requeued: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
         "/admin/reshares/:sourceSessionId/send",
         async ({ store: { coachService }, currentUserId, params }) => {
           if (!currentUserId)

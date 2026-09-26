@@ -31,6 +31,8 @@ const store = app.store as unknown as { coachService: unknown };
 const realService = store.coachService;
 
 const minted: Array<Record<string, unknown>> = [];
+const requeued: string[] = [];
+let admin = true;
 let token = "";
 
 beforeAll(async () => {
@@ -43,7 +45,11 @@ beforeAll(async () => {
   token = await signer.decorator.jwt.sign({ sub: USER });
   await redisClient.set(cacheConstants.accessToken(USER), [token], "5m");
   store.coachService = {
-    isAdmin: async () => true,
+    isAdmin: async () => admin,
+    requeuePipelineFailure: async (id: string) => {
+      requeued.push(id);
+      return id === "ff-parked";
+    },
     getProfileById: async () => bundledProfile,
     getReportsById: async () => [
       { ...bundledReport, hasRetainedRecording: true },
@@ -129,5 +135,49 @@ describe("the pipeline-failures surface carries why a session is held", () => {
     expect(body.sessions.map((s) => s.reason)).toEqual([
       "held for calibration: no calibration is recorded for v3",
     ]);
+  });
+});
+
+describe("re-queueing a parked session is an admin action", () => {
+  async function post(path: string, auth = true) {
+    return app.handle(
+      new Request(`http://localhost${path}`, {
+        method: "POST",
+        headers: auth ? { authorization: `Bearer ${token}` } : {},
+      }),
+    );
+  }
+
+  it("an admin re-queues a parked session", async () => {
+    admin = true;
+    requeued.length = 0;
+    const res = await post("/coach/admin/pipeline-failures/ff-parked/requeue");
+    expect(res.status).toBe(200);
+    expect(requeued).toEqual(["ff-parked"]);
+  });
+
+  it("a session that is not parked is not found", async () => {
+    admin = true;
+    const res = await post("/coach/admin/pipeline-failures/ff-live/requeue");
+    expect(res.status).toBe(404);
+  });
+
+  it("a signed-in non-admin is refused and nothing is re-queued", async () => {
+    admin = false;
+    requeued.length = 0;
+    const res = await post("/coach/admin/pipeline-failures/ff-parked/requeue");
+    admin = true;
+    expect(res.status).toBe(403);
+    expect(requeued).toEqual([]);
+  });
+
+  it("an anonymous caller is refused", async () => {
+    requeued.length = 0;
+    const res = await post(
+      "/coach/admin/pipeline-failures/ff-parked/requeue",
+      false,
+    );
+    expect(res.status).toBe(401);
+    expect(requeued).toEqual([]);
   });
 });

@@ -457,6 +457,22 @@ export class CoachService {
     }));
   }
 
+  async requeuePipelineFailure(sourceSessionId: string): Promise<boolean> {
+    const requeued = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({
+        state: sql`CASE WHEN state = 'scoring_failed' THEN 'retained' ELSE 'delivery_pending' END`,
+        retry_count: 0,
+        hold_reason: null,
+        updated_at: sql`NOW()`,
+      })
+      .where("source_session_id", "=", sourceSessionId)
+      .where("state", "in", ["scoring_failed", "delivery_failed"])
+      .executeTakeFirst();
+    return Number(requeued.numUpdatedRows ?? 0) > 0;
+  }
+
   /** Clear a re-share request and return the session to retrieval (4.9a). */
   async resolveReshare(sourceSessionId: string): Promise<boolean> {
     const { CoachRetrievalService } = await import("./coach-retrieval.service");

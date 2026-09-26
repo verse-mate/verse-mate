@@ -541,6 +541,56 @@ describe("a session that fails scoring is counted, capped and taken out of the q
     });
   });
 
+  it("an admin re-queue puts a capped session back in the queue with a fresh budget", async () => {
+    await seedPoison(1, PIPELINE_ATTEMPT_LIMIT - 1);
+    await poisonPipeline(new FakeMailer()).run();
+    const service = new CoachService(Database);
+    expect(await service.requeuePipelineFailure("ff-extra-poison-0")).toBe(
+      true,
+    );
+    expect(await intakeRow("ff-extra-poison-0")).toEqual({
+      state: "retained",
+      retry_count: 0,
+    });
+    const [result] = await pipeline(new FakeMailer()).run();
+    expect(result).toMatchObject({
+      sourceSessionId: "ff-extra-poison-0",
+      outcome: "scored-and-delivered",
+    });
+  });
+
+  it("a session that exhausted its delivery attempts is re-queued for delivery, not re-scored", async () => {
+    await seedRetained("ff-pipe-dead");
+    await pipeline(new FakeMailer(false)).run();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_failed", retry_count: 5 })
+      .where("source_session_id", "=", "ff-pipe-dead")
+      .execute();
+    expect(
+      await new CoachService(Database).requeuePipelineFailure("ff-pipe-dead"),
+    ).toBe(true);
+    expect(await intakeRow("ff-pipe-dead")).toEqual({
+      state: "delivery_pending",
+      retry_count: 0,
+    });
+    const results = await pipeline(new FakeMailer()).run();
+    expect(results.map((r) => [r.sourceSessionId, r.outcome])).toEqual([
+      ["ff-pipe-dead", "scored-and-delivered"],
+    ]);
+  });
+
+  it("re-queue refuses a session that is not parked", async () => {
+    await seedRetained("ff-pipe-live");
+    expect(
+      await new CoachService(Database).requeuePipelineFailure("ff-pipe-live"),
+    ).toBe(false);
+    expect(
+      await new CoachService(Database).requeuePipelineFailure("ff-pipe-none"),
+    ).toBe(false);
+    expect((await intakeRow("ff-pipe-live")).state).toBe("retained");
+  });
+
   it("a thrown scoring attempt is counted like a returned failure", async () => {
     await seedRetained("ff-pipe-throws");
     const throwing = new CoachPipelineService(
