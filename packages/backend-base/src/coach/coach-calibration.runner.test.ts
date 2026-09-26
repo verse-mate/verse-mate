@@ -12,9 +12,8 @@ import {
   selectEligible,
 } from "./coach-calibration";
 import {
-  type CalibrationTranscriptSource,
-  DirectoryTranscriptSource,
   handScoredCorpus,
+  readTranscript,
   runCalibration,
 } from "./coach-calibration.runner";
 import { CoachScoringService } from "./coach-scoring.service";
@@ -28,11 +27,13 @@ const byId = new Map(corpus.map((r) => [r.reportId, r]));
 class HandCopyAi implements AiProvider {
   readonly name = "fake";
   calls = 0;
+  scored: string[] = [];
   constructor(private readonly skew = 0) {}
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
     this.calls += 1;
     const text = opts.messages.map((m) => m.content).join("\n");
     const id = /REPORT:(\S+)/.exec(text)?.[1] ?? "";
+    this.scored.push(id);
     const hand = byId.get(id) as HandScoredReport;
     return {
       content: JSON.stringify({
@@ -62,28 +63,25 @@ class HandCopyAi implements AiProvider {
   batchesCancel = () => this.no("batchesCancel");
 }
 
-class MarkedTranscripts implements CalibrationTranscriptSource {
-  asked: HandScoredReport[] = [];
-  constructor(private readonly available = true) {}
-  async transcriptFor(report: HandScoredReport) {
-    this.asked.push(report);
-    return this.available
-      ? [
-          {
-            speakerId: "speaker-1",
-            isLeader: true,
-            text: `REPORT:${report.reportId}`,
-          },
-        ]
-      : null;
+function transcriptsFor(reports: HandScoredReport[]): string {
+  const dir = mkdtempSync(join(tmpdir(), "coach-calibration-run-"));
+  for (const r of reports) {
+    writeFileSync(
+      join(dir, `${r.reportId}.txt`),
+      `LEADER: REPORT:${r.reportId}`,
+    );
   }
+  return dir;
 }
 
-function deps(ai: HandCopyAi, transcripts: CalibrationTranscriptSource) {
+const everyTranscript = transcriptsFor(corpus);
+const noTranscripts = mkdtempSync(join(tmpdir(), "coach-calibration-none-"));
+
+function deps(ai: HandCopyAi, transcriptsDir = everyTranscript) {
   return {
     db: Database,
     scoring: new CoachScoringService(Database, ai),
-    transcripts,
+    transcriptsDir,
   };
 }
 
@@ -149,10 +147,10 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
     const bundle = coachDataJson as unknown as {
       coaches: Array<{ reports: unknown[] }>;
     };
-    const result = await runCalibration(
-      deps(new HandCopyAi(), new MarkedTranscripts()),
-      { dryRun: true, limit: 4 },
-    );
+    const result = await runCalibration(deps(new HandCopyAi()), {
+      dryRun: true,
+      limit: 4,
+    });
     expect(result.corpusReports).toBe(
       bundle.coaches.reduce((n, c) => n + c.reports.length, 0),
     );
@@ -168,10 +166,10 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
 
   it("a dry run scores and measures but records nothing", async () => {
     const before = await runsFor(RUBRIC_MODEL_VERSION);
-    const result = await runCalibration(
-      deps(new HandCopyAi(), new MarkedTranscripts()),
-      { dryRun: true, limit: 4 },
-    );
+    const result = await runCalibration(deps(new HandCopyAi()), {
+      dryRun: true,
+      limit: 4,
+    });
     expect(result.report.overall.reports).toBe(4);
     expect(result.recordedRunId).toBeNull();
     expect(result.notRecordedBecause).toBe("dry run");
@@ -180,27 +178,25 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
 
   it("the limit caps model calls and spreads across leaders, each in date order", async () => {
     const ai = new HandCopyAi();
-    const transcripts = new MarkedTranscripts();
     const leaders = replayOrder(selectEligible(corpus).eligible);
     const limit = leaders.size + 2;
-    await runCalibration(deps(ai, transcripts), { dryRun: true, limit });
+    await runCalibration(deps(ai), { dryRun: true, limit });
 
-    expect(transcripts.asked.length).toBe(limit);
+    const asked = ai.scored.map((id) => byId.get(id) as HandScoredReport);
+    expect(asked.length).toBe(limit);
     expect(ai.calls).toBe(limit);
-    expect(new Set(transcripts.asked.map((r) => r.coachId)).size).toBe(
-      leaders.size,
-    );
+    expect(new Set(asked.map((r) => r.coachId)).size).toBe(leaders.size);
     for (const [coach, reports] of leaders) {
-      const asked = transcripts.asked.filter((r) => r.coachId === coach);
-      expect(asked).toEqual(reports.slice(0, asked.length));
+      const mine = asked.filter((r) => r.coachId === coach);
+      expect(mine).toEqual(reports.slice(0, mine.length));
     }
   });
 
   it("a real run records the agreement under the model version it ran, and the delivery gate reads it", async () => {
-    const result = await runCalibration(
-      deps(new HandCopyAi(), new MarkedTranscripts()),
-      { dryRun: false, limit: 6 },
-    );
+    const result = await runCalibration(deps(new HandCopyAi()), {
+      dryRun: false,
+      limit: 6,
+    });
     expect(result.modelVersion).toBe(RUBRIC_MODEL_VERSION);
     expect(result.verdict.withinTolerance).toBe(true);
     expect(result.recordedRunId).not.toBeNull();
@@ -213,10 +209,10 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
   });
 
   it("a model that disagrees is recorded as outside tolerance, and the gate holds its reports", async () => {
-    const result = await runCalibration(
-      deps(new HandCopyAi(2), new MarkedTranscripts()),
-      { dryRun: false, limit: 6 },
-    );
+    const result = await runCalibration(deps(new HandCopyAi(2)), {
+      dryRun: false,
+      limit: 6,
+    });
     expect(result.verdict.withinTolerance).toBe(false);
 
     await modelScoredReport("calib-runner-r2");
@@ -228,10 +224,10 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
   it("reports with no transcript are counted, and nothing is recorded when nothing was scored", async () => {
     const before = await runsFor(RUBRIC_MODEL_VERSION);
     const ai = new HandCopyAi();
-    const result = await runCalibration(
-      deps(ai, new MarkedTranscripts(false)),
-      { dryRun: false, limit: 3 },
-    );
+    const result = await runCalibration(deps(ai, noTranscripts), {
+      dryRun: false,
+      limit: 3,
+    });
     expect(ai.calls).toBe(0);
     expect(result.unscored.map((u) => u.reason)).toEqual([
       "no-transcript",
@@ -248,12 +244,6 @@ describe("transcripts come from a directory the operator points at", () => {
   const dir = join(outside, "transcripts");
   mkdirSync(dir);
   writeFileSync(join(outside, "secret.txt"), "LEADER: not a transcript");
-  const report = (reportId: string): HandScoredReport => ({
-    coachId: "c",
-    reportId,
-    date: "2026-01-01",
-    dimensions: [],
-  });
 
   it("reads our pseudonymised JSON, bare or as a retained transcript file", async () => {
     writeFileSync(
@@ -265,9 +255,7 @@ describe("transcripts come from a directory the operator points at", () => {
         ],
       }),
     );
-    const lines = await new DirectoryTranscriptSource(dir).transcriptFor(
-      report("r-json"),
-    );
+    const lines = readTranscript(dir, "r-json");
     expect(lines).toEqual([
       { speakerId: "speaker-1", isLeader: true, text: "welcome" },
       { speakerId: "speaker-2", isLeader: false, text: "hi" },
@@ -279,18 +267,15 @@ describe("transcripts come from a directory the operator points at", () => {
       join(dir, "r-text.txt"),
       "LEADER: welcome everyone\n\nspeaker-2: glad to be here\n",
     );
-    expect(
-      await new DirectoryTranscriptSource(dir).transcriptFor(report("r-text")),
-    ).toEqual([
+    expect(readTranscript(dir, "r-text")).toEqual([
       { speakerId: "leader", isLeader: true, text: "welcome everyone" },
       { speakerId: "speaker-2", isLeader: false, text: "glad to be here" },
     ]);
   });
 
   it("a report with no file, or an id that tries to leave the directory, has no transcript", async () => {
-    const source = new DirectoryTranscriptSource(dir);
-    expect(await source.transcriptFor(report("missing"))).toBeNull();
-    expect(await source.transcriptFor(report("../secret"))).toBeNull();
+    expect(readTranscript(dir, "missing")).toBeNull();
+    expect(readTranscript(dir, "../secret")).toBeNull();
   });
 });
 
