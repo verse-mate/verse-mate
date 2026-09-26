@@ -988,8 +988,18 @@ export class CoachService {
     ]);
   }
 
-  private async isBackfilled(coachId: string): Promise<boolean> {
-    return (await this.reportsRepository.backfilledCoachIds()).has(coachId);
+  private static fullyBackfilled(
+    counts: Map<string, number>,
+    record: Pick<CoachRecord, "id" | "reports">,
+  ): boolean {
+    return (counts.get(record.id) ?? 0) >= record.reports.length;
+  }
+
+  private async isBackfilled(record: CoachRecord): Promise<boolean> {
+    return CoachService.fullyBackfilled(
+      await this.reportsRepository.backfilledCounts(),
+      record,
+    );
   }
 
   private async reportsFor(record: CoachRecord): Promise<CoachReport[]> {
@@ -1007,14 +1017,14 @@ export class CoachService {
     return CoachService.withBundle(
       stored,
       record.reports,
-      await this.isBackfilled(record.id),
+      await this.isBackfilled(record),
     );
   }
 
   private async recordsWithStoreReports(): Promise<CoachRecord[]> {
     const records = await this.allRecords();
     const rows = await this.reportsRepository.listAllMetrics();
-    const backfilled = await this.reportsRepository.backfilledCoachIds();
+    const backfilled = await this.reportsRepository.backfilledCounts();
     const byCoach = new Map<string, CoachReport[]>();
     for (const r of rows) {
       const report = rowToReport({
@@ -1033,7 +1043,7 @@ export class CoachService {
       reports: CoachService.withBundle(
         CoachService.newestFirst(byCoach.get(r.id) ?? []),
         r.reports,
-        backfilled.has(r.id),
+        CoachService.fullyBackfilled(backfilled, r),
       ),
     }));
   }
@@ -1044,7 +1054,7 @@ export class CoachService {
   ): Promise<{ items: Record<string, unknown>[]; total: number }> {
     const record = await this.resolveById(coachId);
     const bundled = record?.reports ?? [];
-    if (bundled.length === 0 || (await this.isBackfilled(coachId))) {
+    if (bundled.length === 0 || (record && (await this.isBackfilled(record)))) {
       const total = await this.reportsRepository.countForCoach(coachId);
       if (total === 0) return { items: [], total: 0 };
       const rows = await this.reportsRepository.listSummaries(coachId, opts);

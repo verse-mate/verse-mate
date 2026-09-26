@@ -20,49 +20,50 @@ export async function backfillCoachStore(
   const rows = datasetToRows(dataset);
   const meta = datasetMeta(dataset);
 
-  for (const row of rows) {
-    await conn
-      .insertInto("coach_reports")
-      .values({
-        id: row.id,
-        coach_id: row.coach_id,
-        session_date: row.session_date,
-        source_session_id: row.source_session_id,
-        legacy_ids: row.legacy_ids,
-        summary: row.summary,
-        metrics: row.metrics,
-        body: row.body,
-      })
-      .onConflict((oc) =>
-        oc.column("source_session_id").doUpdateSet({
+  await conn.transaction().execute(async (trx) => {
+    for (const row of rows) {
+      await trx
+        .insertInto("coach_reports")
+        .values({
+          id: row.id,
+          coach_id: row.coach_id,
+          session_date: row.session_date,
+          source_session_id: row.source_session_id,
+          legacy_ids: row.legacy_ids,
           summary: row.summary,
           metrics: row.metrics,
           body: row.body,
+        })
+        .onConflict((oc) =>
+          oc.column("source_session_id").doUpdateSet({
+            summary: row.summary,
+            metrics: row.metrics,
+            body: row.body,
+            updated_at: new Date(),
+          }),
+        )
+        .execute();
+    }
+
+    await trx
+      .insertInto("coach_dataset_meta")
+      .values({
+        id: true,
+        version: "1",
+        report_count: meta.report_count,
+        generated_at: meta.generated_at,
+        schema_version: meta.schema_version,
+      })
+      .onConflict((oc) =>
+        oc.column("id").doUpdateSet({
+          report_count: meta.report_count,
+          generated_at: meta.generated_at,
+          schema_version: meta.schema_version,
           updated_at: new Date(),
         }),
       )
       .execute();
-  }
-
-  // Seed the provenance row (single-row table; upsert on the fixed id).
-  await conn
-    .insertInto("coach_dataset_meta")
-    .values({
-      id: true,
-      version: "1", // bigint column is typed as string by kanel
-      report_count: meta.report_count,
-      generated_at: meta.generated_at,
-      schema_version: meta.schema_version,
-    })
-    .onConflict((oc) =>
-      oc.column("id").doUpdateSet({
-        report_count: meta.report_count,
-        generated_at: meta.generated_at,
-        schema_version: meta.schema_version,
-        updated_at: new Date(),
-      }),
-    )
-    .execute();
+  });
 
   return { loaded: rows.length };
 }

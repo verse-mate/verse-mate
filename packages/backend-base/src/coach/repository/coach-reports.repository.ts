@@ -326,15 +326,16 @@ export class CoachReportsRepository {
     return rows.map((r) => r.coach_id);
   }
 
-  async backfilledCoachIds(): Promise<Set<string>> {
+  async backfilledCounts(): Promise<Map<string, number>> {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
       .select(sql<string>`split_part(source_session_id, ':', 2)`.as("coach_id"))
-      .distinct()
+      .select((eb) => eb.fn.countAll<string>().as("n"))
       .where("source_session_id", "like", "legacy:%")
+      .groupBy(sql`split_part(source_session_id, ':', 2)`)
       .execute();
-    return new Set(rows.map((r) => r.coach_id));
+    return new Map(rows.map((r) => [r.coach_id, Number(r.n)]));
   }
 
   /** Metrics for every coach, the program-wide monthly rollup. */
