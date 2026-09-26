@@ -12,13 +12,14 @@ import {
   selectEligible,
 } from "./coach-calibration";
 import {
+  formatCalibration,
   handScoredCorpus,
   readTranscript,
   runCalibration,
 } from "./coach-calibration.runner";
 import { CoachScoringService } from "./coach-scoring.service";
 import coachDataJson from "./coach.data.json";
-import { RUBRIC_MODEL_VERSION } from "./rubric";
+import { DIMENSIONS, RUBRIC_MODEL_VERSION } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const corpus = handScoredCorpus();
@@ -293,5 +294,82 @@ describe("the runner is an operator step, never automatic", () => {
       if (source.includes("coach-calibration.runner")) importers.push(file);
     }
     expect(importers).toEqual([]);
+  });
+});
+
+describe("the backtest replays each leader's history, so authenticity has its baseline", () => {
+  it("each session is scored against the rounded mean of the leader's earlier hand scores, the first against none", async () => {
+    const history = (reportId: string, date: string, authenticity: number) => ({
+      coachId: "calib-replay-leader",
+      reportId,
+      date,
+      dimensions: DIMENSIONS.map((d) => ({
+        n: d.n,
+        score: d.n === 8 ? authenticity : 3,
+        rationale: "r",
+      })),
+    });
+    const leaderCorpus = [
+      history("calib-replay-3", "2026-03-01", 4),
+      history("calib-replay-1", "2026-01-01", 2),
+      history("calib-replay-2", "2026-02-01", 4),
+    ];
+    const dir = mkdtempSync(join(tmpdir(), "coach-calibration-replay-"));
+    for (const r of leaderCorpus) {
+      writeFileSync(
+        join(dir, `${r.reportId}.txt`),
+        `LEADER: REPORT:${r.reportId}`,
+      );
+      byId.set(r.reportId, r);
+    }
+    const scoring = new CoachScoringService(Database, new HandCopyAi());
+    const baselines: Array<number | null | undefined> = [];
+    await runCalibration(
+      {
+        db: Database,
+        corpus: leaderCorpus,
+        transcriptsDir: dir,
+        scoring: {
+          scoreSession: (input) => {
+            baselines.push(input.authenticityBaseline);
+            return scoring.scoreSession(input);
+          },
+        },
+      },
+      { dryRun: true },
+    );
+    expect(baselines).toEqual([null, 2, 3]);
+  });
+
+  it("states the dimension-8 agreement floor the cap imposes, derived from the corpus", async () => {
+    const scored = (reportId: string, date: string, authenticity: number) => ({
+      coachId: "calib-floor-leader",
+      reportId,
+      date,
+      dimensions: DIMENSIONS.map((d) => ({
+        n: d.n,
+        score: d.n === 8 ? authenticity : 3,
+        rationale: "r",
+      })),
+    });
+    const result = await runCalibration(
+      {
+        ...deps(new HandCopyAi(), noTranscripts),
+        corpus: [
+          scored("calib-floor-1", "2026-01-01", 3),
+          scored("calib-floor-2", "2026-02-01", 3),
+          scored("calib-floor-3", "2026-03-01", 5),
+          scored("calib-floor-4", "2026-04-01", 4),
+        ],
+      },
+      { dryRun: true },
+    );
+    expect(result.authenticityFloor).toEqual({
+      unreachable: 1,
+      transitions: 3,
+    });
+    expect(formatCalibration(result)).toContain(
+      "1 of 3 hand-scored authenticity transitions",
+    );
   });
 });

@@ -10,7 +10,11 @@ import {
 import { CoachFrameService } from "./coach-frames.service";
 import type { ReportEvidence } from "./coach-governance.service";
 import { CoachPublishService } from "./coach-publish.service";
-import { CoachScoringService } from "./coach-scoring.service";
+import {
+  AUTHENTICITY_DIMENSION,
+  CoachScoringService,
+  authenticityBaseline,
+} from "./coach-scoring.service";
 import type { CoachMailer } from "./coach.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
 
@@ -152,6 +156,43 @@ export class CoachPipelineService {
     return out;
   }
 
+  private async authenticityBaselineFor(
+    coachId: string,
+    sessionDate: string,
+    sourceSessionId: string,
+  ): Promise<number | null> {
+    const prior = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_reports")
+      .leftJoin("coach_report_dimension_scores as corrected", (join) =>
+        join
+          .onRef("corrected.report_id", "=", "coach_reports.id")
+          .on("corrected.dimension_n", "=", AUTHENTICITY_DIMENSION),
+      )
+      .select([
+        "corrected.report_id as correctedReport",
+        "corrected.score as correctedScore",
+        sql<string | null>`(
+          SELECT d->>'score' FROM jsonb_array_elements(coach_reports.metrics->'dimensions') d
+          WHERE (d->>'n')::int = ${AUTHENTICITY_DIMENSION}
+          LIMIT 1
+        )`.as("storedScore"),
+      ])
+      .where("coach_reports.coach_id", "=", coachId)
+      .where("coach_reports.session_date", "<", sql<Date>`${sessionDate}::date`)
+      .where("coach_reports.source_session_id", "!=", sourceSessionId)
+      .orderBy("coach_reports.session_date", "desc")
+      .execute();
+    return authenticityBaseline(
+      prior.map((p) => {
+        const value = p.correctedReport ? p.correctedScore : p.storedScore;
+        const n =
+          value === null || value === undefined ? Number.NaN : Number(value);
+        return Number.isFinite(n) ? n : null;
+      }),
+    );
+  }
+
   private async countScoringFailure(
     sourceSessionId: string,
     retryCount: number,
@@ -212,6 +253,11 @@ export class CoachPipelineService {
       transcript: detail.sentences,
       sessionTitle: session.title,
       frames,
+      authenticityBaseline: await this.authenticityBaselineFor(
+        coachId,
+        session.date,
+        session.source_session_id,
+      ),
     });
     if (!scored.ok || !scored.dimensions) {
       return {
