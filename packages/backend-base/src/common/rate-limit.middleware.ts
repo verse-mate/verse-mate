@@ -1,4 +1,5 @@
 import type { cache } from "../shared/shared.plugin";
+import { clientIp } from "./client-ip";
 
 interface RateLimitOptions {
   /**
@@ -71,19 +72,11 @@ export const authRateLimiters = {
     message: "Too many login attempts, please try again in a minute",
   }),
 
-  /**
-   * Signup rate limiter: 3 signups per IP per hour
-   */
   signup: createRateLimit({
     windowSeconds: 3600,
     max: 3,
-    keyGenerator: (context) => {
-      const ip =
-        context.request.headers.get("x-forwarded-for") ||
-        context.request.headers.get("x-real-ip") ||
-        "unknown";
-      return `signup:${ip}`;
-    },
+    keyGenerator: (context) =>
+      `signup:${clientIp(context.request, context.server)}`,
     message: "Too many signup attempts, please try again later",
   }),
 
@@ -99,25 +92,11 @@ export const authRateLimiters = {
 
   // refresh limiter removed per D-005 — /auth/refresh endpoint deleted.
 
-  /**
-   * SSO rate limiter: 10 SSO attempts per IP per minute
-   * More lenient than login since SSO flows can have legitimate retries
-   * (e.g., user cancels OAuth flow and tries again)
-   */
   sso: createRateLimit({
     windowSeconds: 60,
     max: 10,
-    keyGenerator: (context) => {
-      // Parse first IP from x-forwarded-for (may be comma-separated) to prevent spoofing
-      const xff = context.request.headers.get("x-forwarded-for") || "";
-      const xri = context.request.headers.get("x-real-ip") || "";
-      const firstXff = xff
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean)[0];
-      const ip = firstXff || xri || "unknown";
-      return `sso:${ip}`;
-    },
+    keyGenerator: (context) =>
+      `sso:${clientIp(context.request, context.server)}`,
     message: "Too many SSO attempts, please try again in a minute",
   }),
 
