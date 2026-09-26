@@ -137,6 +137,7 @@ export class CoachPublishService {
       .set({
         report_id: upserted.id,
         state: "scored",
+        retry_count: 0,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", input.sourceSessionId)

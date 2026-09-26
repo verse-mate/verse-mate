@@ -2,7 +2,10 @@ import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import { CoachArchiveService } from "./coach-archive.service";
-import { CoachDeliveryService } from "./coach-delivery.service";
+import {
+  CoachDeliveryService,
+  type DeliveryResult,
+} from "./coach-delivery.service";
 import { CoachFrameService } from "./coach-frames.service";
 import type { ReportEvidence } from "./coach-governance.service";
 import { CoachPublishService } from "./coach-publish.service";
@@ -87,7 +90,7 @@ export class CoachPipelineService {
       .limit(PIPELINE_BATCH_LIMIT)
       .execute();
 
-    const out: PipelineResult[] = [];
+    const out: PipelineResult[] = await this.redeliver();
     for (const session of due) {
       let result: PipelineResult;
       try {
@@ -110,6 +113,37 @@ export class CoachPipelineService {
         );
       }
       out.push(result);
+    }
+    return out;
+  }
+
+  private async redeliver(): Promise<PipelineResult[]> {
+    const delivery = this.delivery;
+    if (!delivery) return [];
+    const conn = this.db.getOrCreateConnection();
+    const pending = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["source_session_id", "report_id"])
+      .where("state", "=", "delivery_pending")
+      .where("report_id", "is not", null)
+      .orderBy("retry_count")
+      .orderBy("updated_at")
+      .limit(PIPELINE_BATCH_LIMIT)
+      .execute();
+
+    const out: PipelineResult[] = [];
+    for (const session of pending) {
+      const reportId = session.report_id as string;
+      const cited = await conn
+        .selectFrom("coach_report_dimension_scores")
+        .select("rationale")
+        .where("report_id", "=", reportId)
+        .execute();
+      const result = await delivery.deliver({
+        reportId,
+        evidence: evidenceFrom(cited.map((c) => ({ note: c.rationale }))),
+      });
+      out.push(deliveryOutcome(session.source_session_id, reportId, result));
     }
     return out;
   }
@@ -240,24 +274,31 @@ export class CoachPipelineService {
       reportId: published.reportId,
       evidence: evidenceFrom(scored.dimensions),
     });
-    if (result.delivered) {
-      return {
-        sourceSessionId: session.source_session_id,
-        outcome: "scored-and-delivered",
-        reportId: published.reportId,
-      };
-    }
-    return {
-      sourceSessionId: session.source_session_id,
-      outcome:
-        result.refusal === "governance-blocked"
-          ? "delivery-blocked"
-          : "delivery-failed",
-      reportId: published.reportId,
-      detail:
-        result.violations?.map((v) => v.rule).join(", ") ?? result.refusal,
-    };
+    return deliveryOutcome(
+      session.source_session_id,
+      published.reportId,
+      result,
+    );
   }
+}
+
+function deliveryOutcome(
+  sourceSessionId: string,
+  reportId: string,
+  result: DeliveryResult,
+): PipelineResult {
+  if (result.delivered) {
+    return { sourceSessionId, outcome: "scored-and-delivered", reportId };
+  }
+  return {
+    sourceSessionId,
+    outcome:
+      result.refusal === "governance-blocked"
+        ? "delivery-blocked"
+        : "delivery-failed",
+    reportId,
+    detail: result.violations?.map((v) => v.rule).join(", ") ?? result.refusal,
+  };
 }
 
 /**

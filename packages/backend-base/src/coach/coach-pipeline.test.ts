@@ -5,6 +5,7 @@ import { sql } from "kysely";
 
 import { rowToReport } from "./coach-store.transform";
 import { ReportSchema } from "./coach.schema";
+import { CoachService } from "./coach.service";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import {
@@ -69,6 +70,14 @@ class FakeAi implements AiProvider {
   batchesCreate = () => this.no("batchesCreate");
   batchesRetrieve = () => this.no("batchesRetrieve");
   batchesCancel = () => this.no("batchesCancel");
+}
+
+class CountingAi extends FakeAi {
+  calls = 0;
+  override async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+    this.calls += 1;
+    return super.chatComplete(opts);
+  }
 }
 
 class FakeClient implements FirefliesDetailClient {
@@ -275,15 +284,76 @@ describe("a retained session reaches a delivered report", () => {
     expect(result.reportId).toBeTruthy();
   });
 
-  it("a failed send does NOT mark the session delivered", async () => {
-    const [result] = await pipeline(new FakeMailer(false)).run();
+  it("a failed send stays retryable, and a later tick delivers it without scoring it again", async () => {
+    const ai = new CountingAi();
+    const [result] = await pipeline(new FakeMailer(false), ai).run();
     expect(result.outcome).toBe("delivery-failed");
     const row = await conn
       .selectFrom("coach_intake_sessions")
       .select("state")
       .where("source_session_id", "=", "ff-pipe-1")
       .executeTakeFirstOrThrow();
-    expect(row.state).not.toBe("delivered");
+    expect(row.state).toBe("delivery_pending");
+    const scoringCalls = ai.calls;
+
+    const mailer = new FakeMailer();
+    const retried = await pipeline(mailer, ai).run();
+    expect(retried.map((r) => [r.sourceSessionId, r.outcome])).toEqual([
+      ["ff-pipe-1", "scored-and-delivered"],
+    ]);
+    expect(mailer.sent.length).toBeGreaterThan(0);
+    expect(ai.calls).toBe(scoringCalls);
+    const after = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("state")
+      .where("source_session_id", "=", "ff-pipe-1")
+      .executeTakeFirstOrThrow();
+    expect(after.state).toBe("delivered");
+  });
+
+  it("delivery attempts are counted from zero, not on top of earlier scoring failures", async () => {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ retry_count: PIPELINE_ATTEMPT_LIMIT - 1 })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    await pipeline(new FakeMailer(false)).run();
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", "retry_count"])
+      .where("source_session_id", "=", "ff-pipe-1")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ state: "delivery_pending", retry_count: 1 });
+  });
+
+  it("the redelivery carries the evidence the report cited, so rule 2 still sees it", async () => {
+    await pipeline(new FakeMailer(false)).run();
+    await pipeline(new FakeMailer()).run();
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select("evidence")
+      .where("coach_id", "=", COACH)
+      .executeTakeFirstOrThrow();
+    expect(
+      (report.evidence as { timestamps: string[] }).timestamps.length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("a session that exhausted its delivery attempts is listed for an admin and no longer retried", async () => {
+    await pipeline(new FakeMailer(false)).run();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_failed" })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    const mailer = new FakeMailer();
+    expect(await pipeline(mailer).run()).toEqual([]);
+    expect(mailer.sent).toEqual([]);
+
+    const failures = await new CoachService(Database).listPipelineFailures();
+    expect(
+      failures.find((f) => f.sourceSessionId === "ff-pipe-1"),
+    ).toMatchObject({ coachId: COACH, state: "delivery_failed" });
   });
 
   it("a session that is not retained yet is left alone", async () => {
@@ -397,6 +467,19 @@ describe("a session that fails scoring is counted, capped and taken out of the q
       retry_count: PIPELINE_ATTEMPT_LIMIT,
     });
     expect(await poisonPipeline(new FakeMailer()).run()).toEqual([]);
+  });
+
+  it("a session capped out of scoring is listed for an admin", async () => {
+    await seedPoison(1, PIPELINE_ATTEMPT_LIMIT - 1);
+    await poisonPipeline(new FakeMailer()).run();
+    const failures = await new CoachService(Database).listPipelineFailures();
+    expect(
+      failures.find((f) => f.sourceSessionId === "ff-extra-poison-0"),
+    ).toMatchObject({
+      coachId: COACH,
+      state: "scoring_failed",
+      attempts: PIPELINE_ATTEMPT_LIMIT,
+    });
   });
 
   it("a thrown scoring attempt is counted like a returned failure", async () => {

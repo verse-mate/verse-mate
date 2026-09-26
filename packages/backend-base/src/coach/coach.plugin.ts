@@ -612,6 +612,35 @@ const plugin = new Elysia()
           },
         },
       )
+      .get(
+        "/admin/pipeline-failures",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return { sessions: await coachService.listPipelineFailures() };
+        },
+        {
+          response: {
+            200: t.Object({
+              sessions: t.Array(
+                t.Object({
+                  sourceSessionId: t.String(),
+                  coachId: t.Union([t.String(), t.Null()]),
+                  title: t.String(),
+                  sessionDate: t.String(),
+                  state: t.String(),
+                  attempts: t.Number(),
+                  reportId: t.Union([t.String(), t.Null()]),
+                  updatedAt: t.Date(),
+                }),
+              ),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .post(
         "/admin/reshares/:sourceSessionId/send",
         async ({ store: { coachService }, currentUserId, params }) => {

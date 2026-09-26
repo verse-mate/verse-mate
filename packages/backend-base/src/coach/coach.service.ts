@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { sql } from "kysely";
 
 import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
@@ -403,6 +404,50 @@ export class CoachService {
       this.db,
       new CoachArchiveService(this.db, new HttpFirefliesClient()),
     ).pendingReshares();
+  }
+
+  async listPipelineFailures(): Promise<
+    Array<{
+      sourceSessionId: string;
+      coachId: string | null;
+      title: string;
+      sessionDate: string;
+      state: string;
+      attempts: number;
+      reportId: string | null;
+      updatedAt: Date;
+    }>
+  > {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_intake_sessions")
+      .select([
+        "source_session_id",
+        "coach_id",
+        "title",
+        "state",
+        "retry_count",
+        "report_id",
+        "updated_at",
+      ])
+      .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
+      .where("state", "in", [
+        "scoring_failed",
+        "delivery_pending",
+        "delivery_failed",
+      ])
+      .orderBy("updated_at", "desc")
+      .execute();
+    return rows.map((r) => ({
+      sourceSessionId: r.source_session_id,
+      coachId: r.coach_id,
+      title: r.title,
+      sessionDate: r.date,
+      state: r.state,
+      attempts: r.retry_count,
+      reportId: r.report_id,
+      updatedAt: new Date(r.updated_at as unknown as string),
+    }));
   }
 
   /** Clear a re-share request and return the session to retrieval (4.9a). */
