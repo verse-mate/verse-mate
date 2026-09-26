@@ -451,3 +451,29 @@ describe("the recording fetch re-checks the allowlist on every redirect hop", ()
     expect(storage.puts).toEqual([]);
   });
 });
+
+describe("retain() applies its guards at the call, not only in the helpers", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  it("a first-hop video URL off the allowlist is never requested", async () => {
+    await seedSession("ff-1");
+    const offList = "https://169.254.169.254/latest/meta-data/recording.mp4";
+    const requested: string[] = [];
+    const storage = new FakeStorage();
+    const result = await new CoachArchiveService(
+      Database,
+      new FakeClient(detail({ video_url: offList })),
+      {
+        storage: storage as any,
+        fetch: async (url: string) => {
+          requested.push(url);
+          return new Response("SECRET");
+        },
+      },
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "untrusted-video-host" });
+    expect(requested).toEqual([]);
+    expect(storage.puts).toEqual([]);
+  });
+});
