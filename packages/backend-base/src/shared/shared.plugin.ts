@@ -180,91 +180,73 @@ import {
 } from "../notifications/verse-notification.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
-import { runsApiWorkers, runsMediaWorkers, workerRole } from "./worker-role";
+import {
+  type WorkerRole,
+  runsApiWorkers,
+  runsMediaWorkers,
+  workerRole,
+} from "./worker-role";
+
+export interface QueueWorkerEntry {
+  name: string;
+  side: "api" | "media";
+  worker: { isRunning(): boolean; run(): unknown };
+  registerCron?: () => Promise<unknown>;
+}
+
+export const QUEUE_WORKERS: QueueWorkerEntry[] = [
+  { name: "Monitoring", side: "api", worker: batchMonitoringWorker },
+  { name: "Processing", side: "api", worker: batchProcessingWorker },
+  { name: "Audio generation", side: "media", worker: audioGenerationWorker },
+  {
+    name: "Audio cleanup",
+    side: "media",
+    worker: audioCleanupWorker,
+    registerCron: registerAudioCleanupCron,
+  },
+  {
+    name: "Verse notification",
+    side: "api",
+    worker: verseNotificationWorker,
+    registerCron: registerVerseNotificationCron,
+  },
+  {
+    name: "Coach intake",
+    side: "media",
+    worker: coachIntakeWorker,
+    registerCron: registerCoachIntakeCron,
+  },
+];
+
+export async function startQueueWorkers(
+  role: WorkerRole,
+  entries: QueueWorkerEntry[],
+): Promise<void> {
+  console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
+  for (const entry of entries) {
+    const owned =
+      entry.side === "media" ? runsMediaWorkers(role) : runsApiWorkers(role);
+    if (!owned) {
+      console.log(`[QUEUE] ${entry.name} worker belongs to another role`);
+      continue;
+    }
+    if (entry.worker.isRunning()) {
+      console.log(`[QUEUE] ${entry.name} worker already running`);
+    } else {
+      entry.worker.run();
+      console.log(`[QUEUE] ${entry.name} worker started successfully`);
+    }
+    if (!entry.registerCron) continue;
+    try {
+      await entry.registerCron();
+    } catch (error) {
+      console.error(`[QUEUE] Failed to register ${entry.name} cron:`, error);
+    }
+  }
+}
 
 setup.onStart(async () => {
-  // Which workers are this container's job (task 5.3a). Default "all", so a
-  // single-container deployment is unchanged; splitting is an opt-in taken the
-  // day a second service is added.
-  const role = workerRole();
-  const apiSide = runsApiWorkers(role);
-  const media = runsMediaWorkers(role);
-  console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
-  if (apiSide && !batchMonitoringWorker.isRunning()) {
-    console.log("[QUEUE] Monitoring worker not running, starting it now...");
-    batchMonitoringWorker.run();
-    console.log("[QUEUE] Monitoring worker started successfully");
-  } else {
-    console.log("[QUEUE] Monitoring worker already running");
-  }
-
-  if (apiSide && !batchProcessingWorker.isRunning()) {
-    console.log("[QUEUE] Processing worker not running, starting it now...");
-    batchProcessingWorker.run();
-    console.log("[QUEUE] Processing worker started successfully");
-  } else {
-    console.log("[QUEUE] Processing worker already running");
-  }
-
-  if (media && !audioGenerationWorker.isRunning()) {
-    console.log(
-      "[QUEUE] Audio generation worker not running, starting it now...",
-    );
-    audioGenerationWorker.run();
-    console.log("[QUEUE] Audio generation worker started successfully");
-  } else {
-    console.log("[QUEUE] Audio generation worker already running");
-  }
-
-  if (media && !audioCleanupWorker.isRunning()) {
-    console.log("[QUEUE] Audio cleanup worker not running, starting it now...");
-    audioCleanupWorker.run();
-    console.log("[QUEUE] Audio cleanup worker started successfully");
-  } else {
-    console.log("[QUEUE] Audio cleanup worker already running");
-  }
-
-  try {
-    // Registered by the container that RUNS the worker, so a repeatable job
-    // cannot be scheduled by a container that would never process it.
-    if (media) await registerAudioCleanupCron();
-  } catch (error) {
-    console.error("[QUEUE] Failed to register audio cleanup cron:", error);
-  }
-
-  if (apiSide && !verseNotificationWorker.isRunning()) {
-    console.log(
-      "[QUEUE] Verse notification worker not running, starting it now...",
-    );
-    verseNotificationWorker.run();
-    console.log("[QUEUE] Verse notification worker started successfully");
-  } else {
-    console.log("[QUEUE] Verse notification worker already running");
-  }
-
-  try {
-    // Registered by the container that RUNS the worker, so a repeatable job
-    // cannot be scheduled by a container that would never process it.
-    if (apiSide) await registerVerseNotificationCron();
-  } catch (error) {
-    console.error("[QUEUE] Failed to register verse notification cron:", error);
-  }
-
-  if (media && !coachIntakeWorker.isRunning()) {
-    console.log("[QUEUE] Coach intake worker not running, starting it now...");
-    coachIntakeWorker.run();
-    console.log("[QUEUE] Coach intake worker started successfully");
-  } else {
-    console.log("[QUEUE] Coach intake worker already running");
-  }
-
-  try {
-    // Registered by the container that RUNS the worker, so a repeatable job
-    // cannot be scheduled by a container that would never process it.
-    if (media) await registerCoachIntakeCron();
-  } catch (error) {
-    console.error("[QUEUE] Failed to register coach intake cron:", error);
-  }
+  await startQueueWorkers(workerRole(), QUEUE_WORKERS);
 
   // Check for existing active batches and start monitoring them
   console.log("[QUEUE] Checking for existing active batches to monitor...");
