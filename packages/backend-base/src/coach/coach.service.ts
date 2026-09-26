@@ -872,45 +872,14 @@ export class CoachService {
     return this.bundle.coaches.find((c) => c.id === coachId) ?? null;
   }
 
-  /**
-   * Is this address a program admin?
-   *
-   * Reads `coach_admins`, the table migration 5 created for exactly this, and
-   * falls back to the compiled-in list only while the table is empty, i.e.
-   * before 3.10's backfill has run.
-   *
-   * It read the bundle ONLY before this. That made the table decorative:
-   * `DELETE FROM coach_admins` silently did nothing, so revoking the highest
-   * privilege in the system (every leader's private report, and their
-   * confidential notes) needed a commit and a deploy, and the failure mode was
-   * fail-open. It also meant task 7.1, deleting the bundle, would have
-   * removed every admin capability, which is the exact outcome task 3.3 says it
-   * exists to prevent.
-   */
   private async isAdminEmailAsync(email: string): Promise<boolean> {
-    const target = email.trim().toLowerCase();
     const row = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_admins")
       .select("email")
-      .where("email", "=", target)
+      .where("email", "=", email.trim().toLowerCase())
       .executeTakeFirst();
-    if (row) return true;
-
-    const anyAdmin = await this.db
-      .getOrCreateConnection()
-      .selectFrom("coach_admins")
-      .select("email")
-      .limit(1)
-      .executeTakeFirst();
-    // Table populated and this address is not in it → genuinely not an admin.
-    // Empty table → not yet backfilled, so the bundle still answers.
-    return anyAdmin ? false : this.isAdminEmail(email);
-  }
-
-  private isAdminEmail(email: string): boolean {
-    const target = email.trim().toLowerCase();
-    return (this.bundle.admins ?? []).includes(target);
+    return row !== undefined;
   }
 
   private async emailFor(userId: string): Promise<string | null> {
