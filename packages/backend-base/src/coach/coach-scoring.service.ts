@@ -44,10 +44,47 @@ export interface ScoringInput {
    * about the leader, made systematically.
    */
   frames?: Uint8Array[];
+  authenticityBaseline?: number | null;
 }
 
 /** The dimension that can only be answered from the picture. */
 export const VISUAL_AIDS_DIMENSION = 7;
+
+export const AUTHENTICITY_DIMENSION = 8;
+
+export const AUTHENTICITY_SWING = 1;
+
+export function authenticityBaseline(
+  priorScores: Array<number | null>,
+): number | null {
+  const scored = priorScores.filter((s): s is number => s !== null);
+  if (scored.length === 0) return null;
+  return Math.round(scored.reduce((sum, s) => sum + s, 0) / scored.length);
+}
+
+export function holdAuthenticityToBaseline(
+  scores: Map<number, number | null>,
+  rationales: Map<number, string>,
+  baseline: number | null,
+): { scores: Map<number, number | null>; rationales: Map<number, string> } {
+  const raw = scores.get(AUTHENTICITY_DIMENSION);
+  if (baseline === null || raw === null || raw === undefined) {
+    return { scores, rationales };
+  }
+  const held = Math.min(
+    baseline + AUTHENTICITY_SWING,
+    Math.max(baseline - AUTHENTICITY_SWING, raw),
+  );
+  if (held === raw) return { scores, rationales };
+  const said = rationales.get(AUTHENTICITY_DIMENSION) ?? "";
+  return {
+    scores: new Map(scores).set(AUTHENTICITY_DIMENSION, held),
+    rationales: new Map(rationales).set(
+      AUTHENTICITY_DIMENSION,
+      `${said} (held at ${held} by the ±${AUTHENTICITY_SWING} swing cap off the established baseline of ${baseline}; the model scored ${raw})`,
+    ),
+  };
+}
 
 export type ScoringFailure =
   | "model-returned-unparseable-output"
@@ -240,10 +277,13 @@ export class CoachScoringService {
       };
     }
 
-    // Every number below is computed here, from the rubric definition.
-    const { base, clusters } = composeBaseScore(
+    const { scores, rationales } = holdAuthenticityToBaseline(
       validated.scores as Map<number, number | null>,
+      validated.rationales as Map<number, string>,
+      input.authenticityBaseline ?? null,
     );
+
+    const { base, clusters } = composeBaseScore(scores);
 
     // NOT persisted here. `coach_report_dimension_scores.report_id` is a NOT
     // NULL foreign key to `coach_reports.id`, and only publishing creates that
@@ -260,14 +300,12 @@ export class CoachScoringService {
       status: statusForScore(base),
       modelVersion: RUBRIC_MODEL_VERSION,
       ...(uniformMax ? { needsReview: true } : {}),
-      dimensions: [...(validated.scores as Map<number, number | null>)].map(
-        ([n, score]) => ({
-          n,
-          name: DIMENSIONS.find((d) => d.n === n)?.name ?? `Dimension ${n}`,
-          score,
-          note: (validated.rationales as Map<number, string>).get(n) ?? "",
-        }),
-      ),
+      dimensions: [...scores].map(([n, score]) => ({
+        n,
+        name: DIMENSIONS.find((d) => d.n === n)?.name ?? `Dimension ${n}`,
+        score,
+        note: rationales.get(n) ?? "",
+      })),
     };
   }
 

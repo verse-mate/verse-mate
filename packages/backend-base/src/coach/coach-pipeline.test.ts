@@ -166,6 +166,62 @@ async function clear() {
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
 
+async function priorReport(
+  id: string,
+  date: string,
+  authenticity: number,
+  corrected?: number,
+) {
+  await conn
+    .insertInto("coach_reports")
+    .values({
+      id,
+      coach_id: COACH,
+      session_date: date,
+      source_session_id: `ff-pipe-prior-${id}`,
+      legacy_ids: [],
+      summary: {},
+      metrics: JSON.stringify({
+        dimensions: [
+          { n: 1, score: 3, note: "r" },
+          { n: 8, score: authenticity, note: "r" },
+        ],
+      }),
+      body: {},
+    })
+    .execute();
+  if (corrected !== undefined) {
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: id,
+        dimension_n: 8,
+        score: corrected,
+        rationale: "corrected",
+        provenance: "human",
+        model_version: RUBRIC_MODEL_VERSION,
+      })
+      .execute();
+  }
+}
+
+async function storedAuthenticity() {
+  return conn
+    .selectFrom("coach_report_dimension_scores")
+    .innerJoin(
+      "coach_intake_sessions",
+      "coach_intake_sessions.report_id",
+      "coach_report_dimension_scores.report_id",
+    )
+    .select([
+      "coach_report_dimension_scores.score",
+      "coach_report_dimension_scores.rationale",
+    ])
+    .where("coach_intake_sessions.source_session_id", "=", "ff-pipe-1")
+    .where("coach_report_dimension_scores.dimension_n", "=", 8)
+    .executeTakeFirstOrThrow();
+}
+
 let calibrationRun: number | null = null;
 
 async function calibrate() {
@@ -415,6 +471,34 @@ describe("a retained session reaches a delivered report", () => {
       held.reportId as string,
     );
     expect(result).toEqual({ delivered: false, refusal: "no-mailer" });
+  });
+
+  it("the pipeline scores authenticity against the leader's most recent prior session", async () => {
+    await priorReport("prior-json-only", "2026-08-15", 2);
+    await pipeline(new FakeMailer()).run();
+    expect(await storedAuthenticity()).toMatchObject({ score: 3 });
+    expect((await storedAuthenticity()).rationale).toContain("held at 3");
+  });
+
+  it("the baseline is the rounded mean of every prior session, so one dip does not move it", async () => {
+    await priorReport("prior-a", "2026-07-01", 5);
+    await priorReport("prior-b", "2026-07-15", 5);
+    await priorReport("prior-dip", "2026-08-15", 2);
+    await pipeline(new FakeMailer()).run();
+    expect(await storedAuthenticity()).toMatchObject({ score: 4 });
+    expect((await storedAuthenticity()).rationale).not.toContain("held at");
+  });
+
+  it("a human correction to the prior session is the baseline, not the machine's first answer", async () => {
+    await priorReport("prior-corrected", "2026-08-15", 2, 4);
+    await pipeline(new FakeMailer()).run();
+    expect(await storedAuthenticity()).toMatchObject({ score: 4 });
+  });
+
+  it("a later session is not a baseline for an earlier one", async () => {
+    await priorReport("later-session", "2026-09-30", 1);
+    await pipeline(new FakeMailer()).run();
+    expect(await storedAuthenticity()).toMatchObject({ score: 4 });
   });
 
   it("with NO mailer the report is still published, and nothing is claimed sent", async () => {

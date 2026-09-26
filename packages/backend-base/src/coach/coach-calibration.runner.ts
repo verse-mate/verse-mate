@@ -15,9 +15,12 @@ import {
   replayOrder,
   selectEligible,
 } from "./coach-calibration";
-import type {
-  CoachScoringService,
-  ScoringInput,
+import {
+  AUTHENTICITY_DIMENSION,
+  AUTHENTICITY_SWING,
+  type CoachScoringService,
+  type ScoringInput,
+  authenticityBaseline,
 } from "./coach-scoring.service";
 import coachDataJson from "./coach.data.json";
 
@@ -38,6 +41,7 @@ export interface CalibrationRunResult {
   sampled: number;
   unscored: Array<{ reportId: string; coachId: string; reason: string }>;
   modelVersion: string | null;
+  authenticityFloor: { unreachable: number; transitions: number };
   report: CalibrationReport;
   verdict: ToleranceVerdict;
   recordedRunId: number | null;
@@ -168,6 +172,7 @@ export async function runCalibration(
       transcript,
       sessionTitle: "",
       frames: [],
+      authenticityBaseline: handBaseline(corpus, hand),
     });
     if (!scored.ok || !scored.dimensions) {
       unscored.push({
@@ -212,11 +217,45 @@ export async function runCalibration(
     sampled: sample.length,
     unscored,
     modelVersion,
+    authenticityFloor: authenticityFloor(corpus),
     report,
     verdict,
     recordedRunId,
     notRecordedBecause,
   };
+}
+
+export function authenticityFloor(corpus: HandScoredReport[]): {
+  unreachable: number;
+  transitions: number;
+} {
+  let unreachable = 0;
+  let transitions = 0;
+  for (const report of corpus) {
+    const score = authenticityOf(report);
+    const baseline = handBaseline(corpus, report);
+    if (score === null || baseline === null) continue;
+    transitions += 1;
+    if (Math.abs(score - baseline) > AUTHENTICITY_SWING) unreachable += 1;
+  }
+  return { unreachable, transitions };
+}
+
+function authenticityOf(report: HandScoredReport): number | null {
+  return (
+    report.dimensions.find((d) => d.n === AUTHENTICITY_DIMENSION)?.score ?? null
+  );
+}
+
+function handBaseline(
+  corpus: HandScoredReport[],
+  report: HandScoredReport,
+): number | null {
+  return authenticityBaseline(
+    corpus
+      .filter((r) => r.coachId === report.coachId && r.date < report.date)
+      .map(authenticityOf),
+  );
 }
 
 function ids(r: HandScoredReport) {
@@ -246,7 +285,8 @@ export function formatCalibration(result: CalibrationRunResult): string {
     result.verdict.withinTolerance
       ? "Verdict: within tolerance"
       : `Verdict: OUTSIDE tolerance: ${result.verdict.shortfalls.join("; ")}`,
-    "Limits: Visual Aids is not compared (no frames for historical sessions); Authenticity is scored per session, without the rolling baseline.",
+    "Limits: Visual Aids is not compared (no frames for historical sessions).",
+    `Authenticity floor: ${result.authenticityFloor.unreachable} of ${result.authenticityFloor.transitions} hand-scored authenticity transitions sit more than ${AUTHENTICITY_SWING} point from the rounded mean of the leader's earlier sessions. The cap makes those scores unreachable for the model, so they are a property of the rule, not a model disagreement.`,
     result.recordedRunId !== null
       ? `Recorded as calibration run ${result.recordedRunId}`
       : `Not recorded: ${result.notRecordedBecause}`,

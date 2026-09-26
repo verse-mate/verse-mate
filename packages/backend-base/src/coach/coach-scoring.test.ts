@@ -2,8 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
-import { CoachScoringService } from "./coach-scoring.service";
-import { DIMENSIONS, RUBRIC_MODEL_VERSION } from "./rubric";
+import {
+  CoachScoringService,
+  authenticityBaseline,
+} from "./coach-scoring.service";
+import { DIMENSIONS, RUBRIC_MODEL_VERSION, composeBaseScore } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "scoring-coach";
@@ -456,5 +459,85 @@ describe("the first-timer count the newcomer bonus is built from", () => {
     await new CoachScoringService(Database, ai).scoreSession(INPUT);
     expect(ai.lastPrompt).toContain("newcomers");
     expect(ai.lastPrompt).toContain("report 0 rather than");
+  });
+});
+
+describe("authenticity is scored against the leader's established baseline", () => {
+  const withAuthenticity = (score: number, others = 3) =>
+    payload(
+      DIMENSIONS.map((d) => ({
+        n: d.n,
+        score: d.n === 8 ? score : others,
+        rationale:
+          d.n === 8
+            ? "a single dramatic confession"
+            : `a genuine reason for dimension ${d.n}`,
+      })),
+    );
+
+  async function score(model: string, authenticityBaseline?: number | null) {
+    return new CoachScoringService(Database, new FakeAi(model)).scoreSession({
+      ...INPUT,
+      authenticityBaseline,
+    });
+  }
+
+  const authenticity = (r: Awaited<ReturnType<typeof score>>) =>
+    r.dimensions?.find((d) => d.n === 8);
+
+  it("the baseline is the rounded mean of the prior scored sessions", () => {
+    expect(authenticityBaseline([3, 4])).toBe(4);
+    expect(authenticityBaseline([4, 4, 5])).toBe(4);
+    expect(authenticityBaseline([4, 5, 5])).toBe(5);
+    expect(authenticityBaseline([2, null, 3])).toBe(3);
+    expect(authenticityBaseline([])).toBeNull();
+    expect(authenticityBaseline([null])).toBeNull();
+  });
+
+  it("one dramatic confession does not vault a developing leader's score", async () => {
+    const result = await score(withAuthenticity(5), 2);
+    expect(result.ok).toBe(true);
+    expect(authenticity(result)?.score).toBe(3);
+    expect(authenticity(result)?.note).toContain(
+      "a single dramatic confession",
+    );
+    expect(authenticity(result)?.note).toContain("held at 3");
+    expect(authenticity(result)?.note).toContain("baseline of 2");
+    expect(result.base).toBeCloseTo(
+      composeBaseScore(
+        new Map(
+          DIMENSIONS.map((d) => [d.n, d.n === 8 ? 3 : d.n === 7 ? null : 3]),
+        ),
+      ).base,
+      6,
+    );
+  });
+
+  it("a quiet week does not crater an established leader", async () => {
+    const result = await score(withAuthenticity(2, 4), 5);
+    expect(authenticity(result)?.score).toBe(4);
+    expect(authenticity(result)?.note).toContain("held at 4");
+  });
+
+  it("a first session has no baseline, so the score is set directly", async () => {
+    const result = await score(withAuthenticity(5), null);
+    expect(authenticity(result)).toMatchObject({
+      score: 5,
+      note: "a single dramatic confession",
+    });
+  });
+
+  it("a move of one point is inside the band and left alone", async () => {
+    const result = await score(withAuthenticity(4), 3);
+    expect(authenticity(result)).toMatchObject({
+      score: 4,
+      note: "a single dramatic confession",
+    });
+  });
+
+  it("the tripwire still reads the model's raw answer, so a coerced maximum is flagged even when the cap holds it", async () => {
+    const result = await score(withAuthenticity(5, 5), 3);
+    expect(authenticity(result)?.score).toBe(4);
+    expect(result.needsReview).toBe(true);
   });
 });
