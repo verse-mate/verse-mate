@@ -33,20 +33,13 @@ export async function backfillCoachStore(
         metrics: row.metrics,
         body: row.body,
       })
-      // Conflict on the NATURAL key, not the id: a session already ingested
-      // under a minted id would otherwise hit the unique index and abort the
-      // backfill partway. The key includes source_session_id, so this matches
-      // only the row a previous backfill wrote (same deterministic sentinel)
-      // and never an ingested session that happens to share the date.
       .onConflict((oc) =>
-        oc
-          .columns(["coach_id", "session_date", "source_session_id"])
-          .doUpdateSet({
-            summary: row.summary,
-            metrics: row.metrics,
-            body: row.body,
-            updated_at: new Date(),
-          }),
+        oc.column("source_session_id").doUpdateSet({
+          summary: row.summary,
+          metrics: row.metrics,
+          body: row.body,
+          updated_at: new Date(),
+        }),
       )
       .execute();
   }
