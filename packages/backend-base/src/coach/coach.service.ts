@@ -427,6 +427,7 @@ export class CoachService {
       attempts: number;
       reportId: string | null;
       reason: string | null;
+      action: "release" | "requeue" | null;
       updatedAt: Date;
     }>
   > {
@@ -444,11 +445,19 @@ export class CoachService {
         "updated_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
-      .where("state", "in", [
-        "scoring_failed",
-        "delivery_pending",
-        "delivery_failed",
-      ])
+      .where((eb) =>
+        eb.or([
+          eb("state", "in", [
+            "scoring_failed",
+            "delivery_pending",
+            "delivery_failed",
+          ]),
+          eb.and([
+            eb("state", "=", "scored"),
+            eb("hold_reason", "is not", null),
+          ]),
+        ]),
+      )
       .orderBy("updated_at", "desc")
       .execute();
     return rows.map((r) => ({
@@ -460,6 +469,12 @@ export class CoachService {
       attempts: r.retry_count,
       reportId: r.report_id,
       reason: r.hold_reason,
+      action:
+        r.state === "scored"
+          ? ("release" as const)
+          : r.state === "delivery_pending"
+            ? null
+            : ("requeue" as const),
       updatedAt: new Date(r.updated_at as unknown as string),
     }));
   }

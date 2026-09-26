@@ -661,6 +661,11 @@ const plugin = new Elysia()
                   attempts: t.Number(),
                   reportId: t.Union([t.String(), t.Null()]),
                   reason: t.Union([t.String(), t.Null()]),
+                  action: t.Union([
+                    t.Literal("release"),
+                    t.Literal("requeue"),
+                    t.Null(),
+                  ]),
                   updatedAt: t.Date(),
                 }),
               ),

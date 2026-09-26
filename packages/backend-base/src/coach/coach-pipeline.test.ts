@@ -589,7 +589,11 @@ describe("a retained session reaches a delivered report", () => {
     const failures = await new CoachService(Database).listPipelineFailures();
     expect(
       failures.find((f) => f.sourceSessionId === "ff-pipe-1"),
-    ).toMatchObject({ coachId: COACH, state: "delivery_failed" });
+    ).toMatchObject({
+      coachId: COACH,
+      state: "delivery_failed",
+      action: "requeue",
+    });
   });
 
   it("a session that is not retained yet is left alone", async () => {
@@ -719,6 +723,7 @@ describe("a session that fails scoring is counted, capped and taken out of the q
       coachId: COACH,
       state: "scoring_failed",
       attempts: PIPELINE_ATTEMPT_LIMIT,
+      action: "requeue",
     });
   });
 
@@ -926,6 +931,64 @@ describe("a held report is not on the leader's portal until it is released", () 
 
     expect(await leaderSees(reportId)).toEqual(hidden);
     expect(await adminSees(reportId)).toBe(true);
+  });
+
+  it("a tripwire hold is listed with the report id and why, and that id releases it", async () => {
+    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    const service = new CoachService(Database, new FakeMailer() as any);
+    const row = (await service.listPipelineFailures()).find(
+      (f) => f.sourceSessionId === "ff-pipe-1",
+    );
+    expect(row).toMatchObject({
+      state: "scored",
+      reportId: held.reportId,
+      action: "release",
+    });
+    expect(row?.reason).toContain("maximum");
+
+    expect(
+      (await service.releaseHeldReport(row?.reportId as string)).delivered,
+    ).toBe(true);
+    expect(
+      (await service.listPipelineFailures()).some(
+        (f) => f.sourceSessionId === "ff-pipe-1",
+      ),
+    ).toBe(false);
+  });
+
+  it("a governance block is listed with the rule it broke, as releasable", async () => {
+    await pipeline(new FakeMailer()).run();
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "ff-pipe-2",
+        coach_id: COACH,
+        matched_by: "title_match",
+        title: "Obadiah, Lesson 5",
+        session_date: "2026-08-29",
+        state: "retained",
+      })
+      .execute();
+    const [blocked] = await pipeline(new FakeMailer()).run();
+
+    const row = (await new CoachService(Database).listPipelineFailures()).find(
+      (f) => f.sourceSessionId === "ff-pipe-2",
+    );
+    expect(row).toMatchObject({
+      state: "scored",
+      reportId: blocked.reportId,
+      action: "release",
+    });
+    expect(row?.reason).toContain("governance");
+  });
+
+  it("a scored report that is not held is not listed", async () => {
+    await pipeline(null).run();
+    expect(
+      (await new CoachService(Database).listPipelineFailures()).some(
+        (f) => f.sourceSessionId === "ff-pipe-1",
+      ),
+    ).toBe(false);
   });
 
   it("a clean report with no mailer configured is still live", async () => {

@@ -32,7 +32,7 @@ function input(over: Record<string, unknown> = {}) {
     attendees: 12,
     newcomers: 1,
     duration: "62 min",
-    held: false,
+    holdReason: null,
     ...over,
   };
 }

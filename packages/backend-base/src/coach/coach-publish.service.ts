@@ -44,7 +44,7 @@ export interface PublishInput {
   duration: string;
   newcomerBonus?: number;
   sizeBonus?: number;
-  held: boolean;
+  holdReason: string | null;
 }
 
 export interface PublishResult {
@@ -124,7 +124,7 @@ export class CoachPublishService {
       summary,
       metrics,
       body,
-      held: input.held,
+      held: input.holdReason !== null,
     });
 
     // Provenance advances on every publish, so a reader can tell a stale view
@@ -140,6 +140,7 @@ export class CoachPublishService {
         report_id: upserted.id,
         state: "scored",
         retry_count: 0,
+        hold_reason: input.holdReason,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", input.sourceSessionId)
