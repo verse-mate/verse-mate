@@ -804,6 +804,136 @@ describe("a session that fails scoring is counted, capped and taken out of the q
   });
 });
 
+describe("a held report is not on the leader's portal until it is released", () => {
+  let leaderUser = "";
+
+  async function leaderSees(reportId: string) {
+    const service = new CoachService(Database);
+    const reports = (await service.getReports(leaderUser)) ?? [];
+    const summaries = await service.getReportSummaries(COACH);
+    const trends = await service.getTrends(leaderUser);
+    const monthly = await service.getMyMonthlySummary(leaderUser, "2026-08");
+    return {
+      list: reports.some((r) => r.id === reportId),
+      summary: summaries.items.some((r) => r.id === reportId),
+      total: summaries.total,
+      detail: (await service.getReportDetail(COACH, reportId)) !== null,
+      trends: trends?.scoreSeries.length ?? 0,
+      monthly: monthly?.summary !== null,
+    };
+  }
+
+  const hidden = {
+    list: false,
+    summary: false,
+    total: 0,
+    detail: false,
+    trends: 0,
+    monthly: false,
+  };
+
+  async function adminSees(reportId: string) {
+    const reports = await new CoachService(Database).getReportsById(COACH);
+    return (reports ?? []).some((r) => r.id === reportId);
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
+      .execute();
+    leaderUser = (
+      await conn
+        .insertInto("user")
+        .values({
+          email: EMAIL,
+          firstName: "Pipe",
+          lastName: "Leader",
+          emailVerified: true,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+    await seedRetained();
+    await calibrate();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
+    await uncalibrate();
+  });
+
+  it("a report the injection tripwire held is readable by the admin and by no leader read path", async () => {
+    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    expect(held.outcome).toBe("scored-awaiting-review");
+    const reportId = held.reportId as string;
+
+    expect(await leaderSees(reportId)).toEqual(hidden);
+    expect(await adminSees(reportId)).toBe(true);
+  });
+
+  it("releasing it puts it on the leader's portal", async () => {
+    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    const reportId = held.reportId as string;
+    const released = await new CoachService(
+      Database,
+      new FakeMailer() as any,
+    ).releaseHeldReport(reportId);
+    expect(released.delivered).toBe(true);
+
+    const seen = await leaderSees(reportId);
+    expect(seen.list).toBe(true);
+    expect(seen.summary).toBe(true);
+    expect(seen.detail).toBe(true);
+    expect(seen.monthly).toBe(true);
+  });
+
+  it("a report governance blocked is held from the leader too", async () => {
+    const [first] = await pipeline(new FakeMailer()).run();
+    expect(first.outcome).toBe("scored-and-delivered");
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "ff-pipe-2",
+        coach_id: COACH,
+        matched_by: "title_match",
+        title: "Obadiah, Lesson 5",
+        session_date: "2026-08-29",
+        state: "retained",
+      })
+      .execute();
+
+    const [second] = await pipeline(new FakeMailer()).run();
+    expect(second.outcome).toBe("delivery-blocked");
+    const reportId = second.reportId as string;
+
+    const seen = await leaderSees(reportId);
+    expect(seen.list).toBe(false);
+    expect(seen.summary).toBe(false);
+    expect(seen.total).toBe(1);
+    expect(seen.detail).toBe(false);
+    expect(seen.trends).toBe(1);
+    expect(await adminSees(reportId)).toBe(true);
+  });
+
+  it("a report held for calibration is held from the leader too", async () => {
+    await uncalibrate();
+    const [blocked] = await pipeline(new FakeMailer()).run();
+    expect(blocked.outcome).toBe("delivery-blocked");
+    const reportId = blocked.reportId as string;
+
+    expect(await leaderSees(reportId)).toEqual(hidden);
+    expect(await adminSees(reportId)).toBe(true);
+  });
+
+  it("a clean report with no mailer configured is still live", async () => {
+    const [result] = await pipeline(null).run();
+    expect((await leaderSees(result.reportId as string)).detail).toBe(true);
+  });
+});
+
 describe("the evidence rule 2 compares is built from what the model cited", () => {
   it("pulls quoted strings and timestamps out of the rationales", () => {
     const ev = evidenceFrom([

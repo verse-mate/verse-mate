@@ -29,6 +29,8 @@ export default interface CoachReportsTable {
     unknown | null
   >;
 
+  held: ColumnType<boolean, boolean | undefined, boolean>;
+
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;

@@ -297,6 +297,7 @@ export class CoachPipelineService {
       attendees: detail.participantCount,
       newcomers: scored.newcomers ?? 0,
       duration: `${detail.duration ?? 0} min`,
+      held: scored.needsReview === true,
     });
     await this.scoring.persistDimensions(published.reportId, scored.dimensions);
 

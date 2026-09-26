@@ -20,6 +20,7 @@ export interface CoachReportRow {
   summary: Record<string, unknown>;
   metrics: Record<string, unknown>;
   body: Record<string, unknown>;
+  held?: boolean;
 }
 
 /** Pick a subset of keys that are present on the source object. */

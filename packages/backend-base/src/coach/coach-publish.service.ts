@@ -44,6 +44,7 @@ export interface PublishInput {
   duration: string;
   newcomerBonus?: number;
   sizeBonus?: number;
+  held: boolean;
 }
 
 export interface PublishResult {
@@ -123,6 +124,7 @@ export class CoachPublishService {
       summary,
       metrics,
       body,
+      held: input.held,
     });
 
     // Provenance advances on every publish, so a reader can tell a stale view

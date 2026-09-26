@@ -110,7 +110,7 @@ export class CoachReportsRepository {
   /** One page of a coach's sessions, newest first. Prose is NOT loaded. */
   async listSummaries(
     coachId: string,
-    opts: { limit?: number; offset?: number } = {},
+    opts: { limit?: number; offset?: number; includeHeld?: boolean } = {},
   ): Promise<ReportSummaryRow[]> {
     const limit = clampInt(opts.limit, 25, 1, 100);
     const offset = clampInt(opts.offset, 0, 0, Number.MAX_SAFE_INTEGER);
@@ -120,6 +120,7 @@ export class CoachReportsRepository {
       .select(["id", "coach_id", "summary"])
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
+      .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
       .orderBy("session_date", "desc")
       .limit(limit)
       .offset(offset)
@@ -135,12 +136,14 @@ export class CoachReportsRepository {
   /** How many sessions a coach has (for pagination + roster counts). */
   async countForCoach(
     coachId: string,
-    writer?: CoachReportsWriter,
+    opts: { includeHeld: boolean },
   ): Promise<number> {
-    const row = await (writer ?? this.db.getOrCreateConnection())
+    const row = await this.db
+      .getOrCreateConnection()
       .selectFrom("coach_reports")
       .select((eb) => eb.fn.countAll<string>().as("n"))
       .where("coach_id", "=", coachId)
+      .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
       .executeTakeFirst();
     return Number(row?.n ?? 0);
   }
@@ -187,6 +190,7 @@ export class CoachReportsRepository {
   async getDetail(
     coachId: string,
     reportId: string,
+    opts: { includeHeld?: boolean } = {},
   ): Promise<ReportDetailRow | null> {
     const row = await this.db
       .getOrCreateConnection()
@@ -197,6 +201,7 @@ export class CoachReportsRepository {
       // slugs, so an unscoped lookup lets any leader read another leader's
       // private report and the admin notes attached to it.
       .where("coach_id", "=", coachId)
+      .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
       .where((eb) =>
         eb.or([
           eb("id", "=", reportId),
@@ -291,13 +296,17 @@ export class CoachReportsRepository {
    * Promise.all, queued N connection acquisitions against a 10-connection pool
    *, one leader's dashboard could monopolise the whole pool.
    */
-  async listFullReports(coachId: string): Promise<ReportDetailRow[]> {
+  async listFullReports(
+    coachId: string,
+    opts: { includeHeld?: boolean } = {},
+  ): Promise<ReportDetailRow[]> {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
       .select(["id", "coach_id", "summary", "metrics", "body"])
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
+      .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
       .orderBy("session_date", "desc")
       .execute();
     return rows.map((r) => ({
@@ -457,16 +466,18 @@ export class CoachReportsRepository {
     const result = await sql<{ id: string; created: boolean }>`
       INSERT INTO coach_reports
         (id, coach_id, session_date, source_session_id,
-         legacy_ids, summary, metrics, body)
+         legacy_ids, summary, metrics, body, held)
       VALUES (
         ${row.id}, ${row.coach_id}, ${row.session_date}::date,
         ${row.source_session_id},
         ${sql.val(row.legacy_ids ?? [])}::text[],
         ${JSON.stringify(row.summary)}::jsonb,
         ${JSON.stringify(row.metrics)}::jsonb,
-        ${JSON.stringify(row.body)}::jsonb
+        ${JSON.stringify(row.body)}::jsonb,
+        COALESCE(${row.held ?? null}::boolean, false)
       )
       ON CONFLICT (source_session_id) DO UPDATE SET
+        held = COALESCE(${row.held ?? null}::boolean, coach_reports.held),
         coach_id = EXCLUDED.coach_id,
         session_date = EXCLUDED.session_date,
         summary = EXCLUDED.summary,
