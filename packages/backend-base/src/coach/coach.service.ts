@@ -19,7 +19,12 @@ import {
   type CoachNoteRow,
   CoachRepository,
 } from "./repository/coach.repository";
-import { CLUSTERS, RUBRIC_MODEL_VERSION, STATUS_BANDS } from "./rubric";
+import {
+  CLUSTERS,
+  DIMENSIONS,
+  RUBRIC_MODEL_VERSION,
+  STATUS_BANDS,
+} from "./rubric";
 
 /** A registered class as returned to the portal. */
 export type CoachClass = CoachClassRow;
@@ -1544,10 +1549,172 @@ export class CoachService {
     month: string,
   ): Promise<LeaderMonthlyResponse> {
     const byMonth = await this.importedSummaries(record.id);
+    const reports = await this.reportsFor(record);
+    const months = new Set([
+      ...Object.keys(byMonth),
+      ...reports.map((r) => r.date.slice(0, 7)),
+    ]);
     return {
       profile: { id: record.id, name: record.name, group: record.group },
-      summary: byMonth[month] ?? null,
-      availableMonths: Object.keys(byMonth).sort((a, b) => (a < b ? 1 : -1)),
+      summary:
+        byMonth[month] ??
+        CoachService.deriveMonthlySummary(record, month, reports),
+      availableMonths: [...months].sort((a, b) => (a < b ? 1 : -1)),
+    };
+  }
+
+  private static readonly CLUSTER_KEYS: Record<
+    string,
+    keyof LeaderMonthlyClusterAvg
+  > = {
+    "Teaching Craft": "tc",
+    "Building Ministry": "bm",
+    "Engaging People": "ep",
+    "Being Real": "br",
+  };
+
+  private static deriveMonthlySummary(
+    record: CoachRecord,
+    month: string,
+    reports: CoachReport[],
+  ): LeaderMonthlySummary | null {
+    const chrono = (m: string) =>
+      reports
+        .filter((r) => r.date.startsWith(m))
+        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    const inMonth = chrono(month);
+    if (inMonth.length === 0) return null;
+    const prior = CoachService.prevMonth(month);
+    const composite = CoachService.mean(inMonth.map((r) => r.score)) ?? 0;
+    const priorComposite = CoachService.mean(chrono(prior).map((r) => r.score));
+    const status = CoachService.statusFor(composite);
+    const round1 = (n: number) => Math.round(n * 10) / 10;
+
+    const clusterPct = (r: CoachReport, name: string) => {
+      const pct = r.clusters.find((c) => c.name === name)?.scorePct;
+      return pct === null || pct === undefined ? null : Math.round(pct);
+    };
+    const clusterMean = (name: string) => {
+      const pcts = inMonth
+        .map((r) => clusterPct(r, name))
+        .filter((p): p is number => p !== null);
+      return pcts.length ? Math.round(CoachService.mean(pcts) as number) : null;
+    };
+    const byKey = (pick: (name: string) => number | null) => {
+      const out: LeaderMonthlyClusterAvg = {
+        tc: null,
+        bm: null,
+        ep: null,
+        br: null,
+      };
+      for (const c of CLUSTERS)
+        out[CoachService.CLUSTER_KEYS[c.name]] = pick(c.name);
+      return out;
+    };
+    const clusterAvg = byKey(clusterMean);
+
+    const dimMeans = DIMENSIONS.map((d) => ({
+      ...d,
+      avg: CoachService.mean(
+        inMonth
+          .flatMap((r) => r.dimensions.filter((x) => x.n === d.n))
+          .map((x) => x.score)
+          .filter((x): x is number => x !== null),
+      ),
+    }));
+    const clusters = CLUSTERS.map((c) => {
+      const scored = dimMeans
+        .filter((d) => d.cluster === c.name && d.avg !== null)
+        .map((d) => ({ name: d.name, val: d.avg as number }));
+      const avgPct = clusterMean(c.name);
+      return {
+        key: CoachService.CLUSTER_KEYS[c.name],
+        name: c.name,
+        weight: c.weight,
+        avgPct,
+        statusLabel: CoachService.statusFor(avgPct).label,
+        strongestDim: scored.length
+          ? scored.reduce((a, b) => (b.val > a.val ? b : a))
+          : null,
+        weakestDim: scored.length
+          ? scored.reduce((a, b) => (b.val < a.val ? b : a))
+          : null,
+        insight: "",
+      };
+    });
+    const focus = clusters
+      .filter((c) => c.avgPct !== null)
+      .reduce<(typeof clusters)[number] | null>(
+        (a, b) =>
+          a === null || (b.avgPct as number) < (a.avgPct as number) ? b : a,
+        null,
+      );
+    const clusterOf = new Map(DIMENSIONS.map((d) => [d.n, d.cluster]));
+
+    return {
+      month,
+      monthLabel: CoachService.monthLabel(month),
+      priorMonthLabel: CoachService.monthLabel(prior),
+      leaderId: record.id,
+      leaderName: record.name,
+      group: record.group,
+      sessionsCount: inMonth.length,
+      composite,
+      status,
+      priorComposite,
+      delta:
+        priorComposite === null ? null : round1(composite - priorComposite),
+      clusterAvg,
+      glance: {
+        rows: inMonth.map((r) => ({
+          date: r.date,
+          session: r.session,
+          ...byKey((name) => clusterPct(r, name)),
+          composite: r.score,
+          status: r.status,
+        })),
+        avg: { ...clusterAvg, composite, status: status.label },
+      },
+      trajectory: inMonth.map((r, i) => ({
+        date: r.date,
+        session: r.session,
+        composite: r.score,
+        status: r.status,
+        delta: i === 0 ? null : round1(r.score - inMonth[i - 1].score),
+      })),
+      clusters,
+      strengths: inMonth.flatMap((r) =>
+        (r.feedback?.strengths ?? []).map((text) => ({
+          text,
+          session: r.date,
+        })),
+      ),
+      growth: inMonth.flatMap((r) =>
+        (r.feedback?.improvements ?? []).map((text) => ({
+          text,
+          session: r.date,
+        })),
+      ),
+      trends: [],
+      conversationGuide: [],
+      focus: {
+        clusterName: focus?.name ?? "",
+        clusterPct: focus?.avgPct ?? null,
+        goals: [],
+      },
+      sessions: inMonth.map((r) => ({
+        date: r.date,
+        session: r.session,
+        composite: r.score,
+        status: r.status,
+        dimensions: r.dimensions.map((d) => ({
+          n: d.n,
+          name: d.name,
+          cluster: clusterOf.get(d.n) ?? "",
+          score: d.score,
+          note: d.note ?? "",
+        })),
+      })),
     };
   }
 
