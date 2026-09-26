@@ -790,13 +790,11 @@ export class CoachService {
     return added ? CoachService.syntheticRecord(added) : null;
   }
 
-  /** Resolve a coaching record by id, bundled roster first, then an
-   *  admin-added leader (uuid id). */
   private async resolveById(coachId: string): Promise<CoachRecord | null> {
     const bundled = this.findById(coachId);
     if (bundled) return bundled;
     const added = (await this.coachRepository.listAddedLeaders()).find(
-      (r) => r.id === coachId,
+      (r) => (r.slug ?? r.id) === coachId,
     );
     return added ? CoachService.syntheticRecord(added) : null;
   }
