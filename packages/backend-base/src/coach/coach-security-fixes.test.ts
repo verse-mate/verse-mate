@@ -174,7 +174,12 @@ describe("admin authority is data, and revoking it takes effect", () => {
     // the highest privilege in the system needed a deploy.
     const user = await conn
       .insertInto("user")
-      .values({ email: ADMIN, firstName: "Sec", lastName: "Fix" })
+      .values({
+        email: ADMIN,
+        firstName: "Sec",
+        lastName: "Fix",
+        emailVerified: true,
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
     const service = new CoachService(Database);
@@ -189,7 +194,12 @@ describe("admin authority is data, and revoking it takes effect", () => {
   it("a non-admin is refused while the table is populated", async () => {
     const user = await conn
       .insertInto("user")
-      .values({ email: ADMIN, firstName: "Sec", lastName: "Fix" })
+      .values({
+        email: ADMIN,
+        firstName: "Sec",
+        lastName: "Fix",
+        emailVerified: true,
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
     // The seeded program admin keeps the table non-empty.

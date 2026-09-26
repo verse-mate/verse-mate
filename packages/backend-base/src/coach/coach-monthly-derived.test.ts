@@ -117,7 +117,12 @@ describe("a leader whose sessions came through the pipeline gets a monthly summa
   it("the leader reads the same summary on their own trends screen", async () => {
     const user = await conn
       .insertInto("user")
-      .values({ email: EMAIL, firstName: "Pipeline", lastName: "Only" })
+      .values({
+        email: EMAIL,
+        firstName: "Pipeline",
+        lastName: "Only",
+        emailVerified: true,
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
     const mine = await service.getMyMonthlySummary(user.id, "2031-03");

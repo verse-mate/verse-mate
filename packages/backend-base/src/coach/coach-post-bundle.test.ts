@@ -78,7 +78,12 @@ describe("with the bundle deleted, the coach reads come from the database", () =
   it("the rubric a leader is served comes from the code, not the bundle", async () => {
     const user = await conn
       .insertInto("user")
-      .values({ email: EMAIL, firstName: "Post", lastName: "Bundle" })
+      .values({
+        email: EMAIL,
+        firstName: "Post",
+        lastName: "Bundle",
+        emailVerified: true,
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
     const me = await noBundle.getMe(user.id);
