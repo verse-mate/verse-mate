@@ -8,6 +8,7 @@ import { ReportSchema } from "./coach.schema";
 import { CoachService } from "./coach.service";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
+import { recordCalibration } from "./coach-calibration";
 import {
   CoachPipelineService,
   PIPELINE_ATTEMPT_LIMIT,
@@ -20,7 +21,7 @@ import type {
   FirefliesTranscript,
   FirefliesTranscriptDetail,
 } from "./fireflies.client";
-import { DIMENSIONS } from "./rubric";
+import { DIMENSIONS, RUBRIC_MODEL_VERSION } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "pipe-coach";
@@ -165,6 +166,26 @@ async function clear() {
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
 
+let calibrationRun: number | null = null;
+
+async function calibrate() {
+  calibrationRun = await recordCalibration(Database, RUBRIC_MODEL_VERSION, {
+    compositeMae: 2,
+    dimensionsWithinOne: 0.95,
+    comparisons: 120,
+    reports: 10,
+  });
+}
+
+async function uncalibrate() {
+  if (calibrationRun === null) return;
+  await conn
+    .deleteFrom("coach_calibration_runs")
+    .where("id", "=", calibrationRun)
+    .execute();
+  calibrationRun = null;
+}
+
 describe("a retained session reaches a delivered report", () => {
   beforeEach(async () => {
     await clear();
@@ -173,8 +194,22 @@ describe("a retained session reaches a delivered report", () => {
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
     await seedRetained();
+    await calibrate();
   });
-  afterEach(clear);
+  afterEach(async () => {
+    await clear();
+    await uncalibrate();
+  });
+
+  it("an uncalibrated scoring model publishes the report but does not send it", async () => {
+    await uncalibrate();
+    const mailer = new FakeMailer();
+    const [result] = await pipeline(mailer).run();
+    expect(result.outcome).toBe("delivery-blocked");
+    expect(result.detail).toContain(RUBRIC_MODEL_VERSION);
+    expect(result.reportId).toBeTruthy();
+    expect(mailer.sent).toEqual([]);
+  });
 
   it("scores it, publishes it, and emails it, in that order", async () => {
     const mailer = new FakeMailer();
@@ -466,8 +501,12 @@ describe("a session that fails scoring is counted, capped and taken out of the q
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
+    await calibrate();
   });
-  afterEach(clear);
+  afterEach(async () => {
+    await clear();
+    await uncalibrate();
+  });
 
   it("a failed scoring attempt is counted and the session stays queued", async () => {
     await seedPoison(1);

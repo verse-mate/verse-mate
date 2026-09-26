@@ -2,6 +2,7 @@ import { sql } from "kysely";
 
 import { CoachReport, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
+import { calibrationShortfalls } from "./coach-calibration";
 import {
   CoachGovernanceService,
   type GovernanceViolation,
@@ -33,6 +34,7 @@ export type DeliveryRefusal =
   | "unknown-report"
   | "already-delivered"
   | "in-flight"
+  | "calibration-blocked"
   | "governance-blocked"
   | "send-failed";
 
@@ -40,6 +42,7 @@ export interface DeliveryResult {
   delivered: boolean;
   refusal?: DeliveryRefusal;
   violations?: GovernanceViolation[];
+  shortfalls?: string[];
   /** Confirmed sends. Delivery is complete only at the full recipient set. */
   sends?: Array<{ email: string; delivered: boolean; error?: string }>;
   subject?: string;
@@ -207,6 +210,20 @@ export class CoachDeliveryService {
       .executeTakeFirst();
 
     const summary = (report.summary ?? {}) as Record<string, unknown>;
+
+    const shortfalls = await calibrationShortfalls(this.db, reportId);
+    if (shortfalls.length > 0) {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state: "delivery_pending", updated_at: sql`NOW()` })
+        .where("report_id", "=", reportId)
+        .where("state", "=", "delivering")
+        .execute();
+      console.error(
+        `[COACH-DELIVERY] ${reportId} held: ${shortfalls.join("; ")}`,
+      );
+      return { delivered: false, refusal: "calibration-blocked", shortfalls };
+    }
 
     // 6.2 at delivery time, against what is already persisted.
     const verdict = await this.governance.check({

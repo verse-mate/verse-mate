@@ -9,6 +9,7 @@ import type { default as BookIntroductionsTable } from "./BookIntroductions";
 import type { default as BooksTable } from "./Books";
 import type { default as ChaptersTable } from "./Chapters";
 import type { default as CoachAdminsTable } from "./CoachAdmins";
+import type { default as CoachCalibrationRunsTable } from "./CoachCalibrationRuns";
 import type { default as CoachClassesTable } from "./CoachClasses";
 import type { default as CoachDatasetMetaTable } from "./CoachDatasetMeta";
 import type { default as CoachIntakeSessionsTable } from "./CoachIntakeSessions";
@@ -208,6 +209,8 @@ export default interface PublicSchema {
   coach_monthly_narratives: CoachMonthlyNarrativesTable;
 
   coach_monthly_leader_summaries: CoachMonthlyLeaderSummariesTable;
+
+  coach_calibration_runs: CoachCalibrationRunsTable;
 
   notes: NotesTable;
 

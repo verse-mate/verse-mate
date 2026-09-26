@@ -1,3 +1,4 @@
+import type { db } from "../shared/shared.plugin";
 import { DIMENSIONS, composeBaseScore } from "./rubric";
 
 /**
@@ -250,4 +251,63 @@ export function checkTolerance(agreement: Agreement): ToleranceVerdict {
     );
   }
   return { withinTolerance: shortfalls.length === 0, shortfalls };
+}
+
+export async function recordCalibration(
+  database: db,
+  modelVersion: string,
+  agreement: Agreement,
+): Promise<number> {
+  const row = await database
+    .getOrCreateConnection()
+    .insertInto("coach_calibration_runs")
+    .values({
+      model_version: modelVersion,
+      composite_mae: agreement.compositeMae,
+      dimensions_within_one: agreement.dimensionsWithinOne,
+      comparisons: agreement.comparisons,
+      reports: agreement.reports,
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow();
+  return row.id;
+}
+
+export async function calibrationShortfalls(
+  database: db,
+  reportId: string,
+): Promise<string[]> {
+  const conn = database.getOrCreateConnection();
+  const versions = await conn
+    .selectFrom("coach_report_dimension_scores")
+    .select("model_version")
+    .distinct()
+    .where("report_id", "=", reportId)
+    .where("provenance", "=", "machine")
+    .execute();
+
+  const shortfalls: string[] = [];
+  for (const { model_version } of versions) {
+    const version = model_version ?? "an unrecorded model version";
+    const latest = model_version
+      ? await conn
+          .selectFrom("coach_calibration_runs")
+          .selectAll()
+          .where("model_version", "=", model_version)
+          .orderBy("id", "desc")
+          .executeTakeFirst()
+      : undefined;
+    if (!latest) {
+      shortfalls.push(`no calibration is recorded for ${version}`);
+      continue;
+    }
+    const verdict = checkTolerance({
+      compositeMae: latest.composite_mae,
+      dimensionsWithinOne: latest.dimensions_within_one,
+      comparisons: latest.comparisons,
+      reports: latest.reports,
+    });
+    shortfalls.push(...verdict.shortfalls.map((s) => `${version}: ${s}`));
+  }
+  return shortfalls;
 }
