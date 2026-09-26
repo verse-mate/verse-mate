@@ -213,6 +213,7 @@ export class CoachDeliveryService {
 
     const shortfalls = await calibrationShortfalls(this.db, reportId);
     if (shortfalls.length > 0) {
+      await this.setHeld(reportId, true);
       await conn
         .updateTable("coach_intake_sessions")
         .set({
@@ -237,6 +238,7 @@ export class CoachDeliveryService {
       evidence,
     });
     if (!verdict.passed) {
+      await this.setHeld(reportId, true);
       await conn
         .updateTable("coach_intake_sessions")
         .set({ state: "scored", updated_at: sql`NOW()` })
@@ -298,6 +300,7 @@ export class CoachDeliveryService {
     }
 
     await this.governance.recordEvidence(reportId, evidence);
+    await this.setHeld(reportId, false);
     await conn
       .updateTable("coach_intake_sessions")
       .set({ state: "delivered", hold_reason: null, updated_at: sql`NOW()` })
@@ -305,6 +308,15 @@ export class CoachDeliveryService {
       .execute();
 
     return { delivered: true, sends, subject };
+  }
+
+  private async setHeld(reportId: string, held: boolean): Promise<void> {
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_reports")
+      .set({ held })
+      .where("id", "=", reportId)
+      .execute();
   }
 
   private async send(

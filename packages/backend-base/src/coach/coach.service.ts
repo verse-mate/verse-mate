@@ -614,7 +614,9 @@ export class CoachService {
       input.expectedCounts ?? {},
     )) {
       if (typeof expected !== "number") continue;
-      const stored = await this.reportsRepository.countForCoach(coachId);
+      const stored = await this.reportsRepository.countForCoach(coachId, {
+        includeHeld: true,
+      });
       if (expected < stored) {
         throw new ConflictError(
           `Write refused for ${coachId}: the writer reports ${expected} sessions but the store holds ${stored} for that leader, refusing to shrink the live corpus`,
@@ -978,8 +980,13 @@ export class CoachService {
     );
   }
 
-  private async reportsFor(record: CoachRecord): Promise<CoachReport[]> {
-    const rows = await this.reportsRepository.listFullReports(record.id);
+  private async reportsFor(
+    record: CoachRecord,
+    audience: "leader" | "admin",
+  ): Promise<CoachReport[]> {
+    const rows = await this.reportsRepository.listFullReports(record.id, {
+      includeHeld: audience === "admin",
+    });
     const stored = rows.map(
       (d) =>
         rowToReport({
@@ -1031,7 +1038,9 @@ export class CoachService {
     const record = await this.resolveById(coachId);
     const bundled = record?.reports ?? [];
     if (bundled.length === 0 || (record && (await this.isBackfilled(record)))) {
-      const total = await this.reportsRepository.countForCoach(coachId);
+      const total = await this.reportsRepository.countForCoach(coachId, {
+        includeHeld: false,
+      });
       if (total === 0) return { items: [], total: 0 };
       const rows = await this.reportsRepository.listSummaries(coachId, opts);
       return {
@@ -1078,8 +1087,11 @@ export class CoachService {
   async getReportDetail(
     coachId: string,
     reportId: string,
+    audience: "leader" | "admin" = "leader",
   ): Promise<CoachReport | null> {
-    const row = await this.reportsRepository.getDetail(coachId, reportId);
+    const row = await this.reportsRepository.getDetail(coachId, reportId, {
+      includeHeld: audience === "admin",
+    });
     if (row) {
       const report = rowToReport({
         id: row.id,
@@ -1118,7 +1130,7 @@ export class CoachService {
     const fallback = stored?.zoomLink ?? record.zoomLink ?? "";
     return this.overlayReports(
       record.id,
-      await this.reportsFor(record),
+      await this.reportsFor(record, "leader"),
       fallback,
     );
   }
@@ -1126,7 +1138,7 @@ export class CoachService {
   async getTrends(userId: string): Promise<CoachTrends | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return CoachService.buildTrends(await this.reportsFor(record));
+    return CoachService.buildTrends(await this.reportsFor(record, "leader"));
   }
 
   // ─── Admin oversight (every leader) ──────────────────────────────────────
@@ -1170,7 +1182,7 @@ export class CoachService {
       "";
     const reports = await this.overlayReports(
       record.id,
-      await this.reportsFor(record),
+      await this.reportsFor(record, "admin"),
       fallback,
     );
     const media = await this.describeRetainedMedia(
@@ -1187,7 +1199,7 @@ export class CoachService {
   async getTrendsById(coachId: string): Promise<CoachTrends | null> {
     const record = await this.resolveById(coachId);
     return record
-      ? CoachService.buildTrends(await this.reportsFor(record))
+      ? CoachService.buildTrends(await this.reportsFor(record, "admin"))
       : null;
   }
 
@@ -1308,7 +1320,7 @@ export class CoachService {
     const canonical = await this.canonicalReportId(coachId, reportId, record);
     if (!canonical) return null;
     const report =
-      (await this.getReportDetail(coachId, canonical)) ??
+      (await this.getReportDetail(coachId, canonical, "admin")) ??
       record.reports.find((r) => r.id === canonical);
     if (!report) return null;
 
@@ -1516,9 +1528,10 @@ export class CoachService {
   private async leaderMonthlyFor(
     record: CoachRecord,
     month: string,
+    audience: "leader" | "admin",
   ): Promise<LeaderMonthlyResponse> {
     const byMonth = await this.importedSummaries(record.id);
-    const reports = await this.reportsFor(record);
+    const reports = await this.reportsFor(record, audience);
     const months = new Set([
       ...Object.keys(byMonth),
       ...reports.map((r) => r.date.slice(0, 7)),
@@ -1695,7 +1708,7 @@ export class CoachService {
   ): Promise<LeaderMonthlyResponse | null> {
     const record = await this.recordFor(userId);
     if (!record) return null;
-    return this.leaderMonthlyFor(record, month);
+    return this.leaderMonthlyFor(record, month, "leader");
   }
 
   /** A specific leader's monthly summary (admin drill-in). null → unknown id. */
@@ -1705,7 +1718,7 @@ export class CoachService {
   ): Promise<LeaderMonthlyResponse | null> {
     const record = await this.resolveById(coachId);
     if (!record) return null;
-    return this.leaderMonthlyFor(record, month);
+    return this.leaderMonthlyFor(record, month, "admin");
   }
 
   private static mean(nums: number[]): number | null {

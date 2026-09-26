@@ -113,7 +113,7 @@ describe("CoachReportsRepository", () => {
     expect(page.length).toBe(2);
     expect(page[0].date).toBe("2026-08-15"); // newest first
     expect(page[0]).not.toHaveProperty("body");
-    expect(await repo.countForCoach("c1")).toBe(3);
+    expect(await repo.countForCoach("c1", { includeHeld: true })).toBe(3);
   });
 
   it("bumpMeta advances version and syncs report_count to the real row count", async () => {
