@@ -103,4 +103,26 @@ describe("coach-store backfill (DB)", () => {
     }
     expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(deployedCount);
   });
+  it("re-running after a session was re-attributed updates it instead of aborting on the one-report-per-session index", async () => {
+    await backfillCoachStore();
+    const sample = bundle.coaches[0].reports[0];
+    const otherLeader = bundle.coaches[1].id;
+    await conn
+      .updateTable("coach_reports")
+      .set({ coach_id: otherLeader })
+      .where("id", "=", sample.id)
+      .execute();
+
+    const { loaded } = await backfillCoachStore();
+    expect(loaded).toBe(deployedCount);
+
+    const rows = await conn
+      .selectFrom("coach_reports")
+      .select(["id", "coach_id"])
+      .where("id", "=", sample.id)
+      .execute();
+    expect(rows).toEqual([{ id: sample.id, coach_id: otherLeader }]);
+    const counts = await countsByCoach();
+    expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(deployedCount);
+  });
 });
