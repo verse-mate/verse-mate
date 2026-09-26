@@ -25,6 +25,13 @@ describe("the re-share admin surface is guarded", () => {
     expect(res.status).toBe(401);
   });
 
+  it("minting a transcript address requires authentication", async () => {
+    const res = await app.handle(
+      new Request("http://localhost/coach/reports/r-1/transcript-url"),
+    );
+    expect(res.status).toBe(401);
+  });
+
   it("SENDING a request requires authentication", async () => {
     // The one that emails a leader. An unguarded endpoint would let anyone who
     // knows a session id send mail in VerseMate's name.

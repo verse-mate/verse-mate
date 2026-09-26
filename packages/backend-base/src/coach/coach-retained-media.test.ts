@@ -237,3 +237,88 @@ describe("the detail response says WHETHER material exists, never where", () => 
     expect(storage.presigns.length).toBe(0);
   });
 });
+
+describe("the retained transcript is reachable the same way as the recording", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  async function seedTranscript(
+    coach: string,
+    sessionId: string,
+    reportId: string,
+  ) {
+    await conn
+      .insertInto("coach_session_assets")
+      .values({
+        coach_id: coach,
+        source_session_id: sessionId,
+        report_id: reportId,
+        kind: "transcript",
+        storage_key: `coach/sessions/${sessionId}/transcript.json`,
+      })
+      .execute();
+  }
+
+  it("a leader mints an address for their own session's transcript, not its recording", async () => {
+    await seedReport(OWNER, "r-own", "ff-own");
+    await seedAsset(OWNER, "ff-own", "r-own");
+    await seedTranscript(OWNER, "ff-own", "r-own");
+    const { svc, storage } = service();
+
+    const url = await svc.mint({
+      reportId: "r-own",
+      requesterCoachId: OWNER,
+      isAdmin: false,
+      kind: "transcript",
+    });
+    expect(url).toContain("transcript.json");
+    expect(storage.presigns).toEqual([
+      {
+        key: "coach/sessions/ff-own/transcript.json",
+        ttl: MINTED_URL_LIFETIME_SECONDS,
+      },
+    ]);
+  });
+
+  it("another leader gets no transcript address, and nothing is signed", async () => {
+    await seedReport(OWNER, "r-own", "ff-own");
+    await seedTranscript(OWNER, "ff-own", "r-own");
+    const { svc, storage } = service();
+    expect(
+      await svc.mint({
+        reportId: "r-own",
+        requesterCoachId: OTHER,
+        isAdmin: false,
+        kind: "transcript",
+      }),
+    ).toBeNull();
+    expect(storage.presigns).toEqual([]);
+  });
+
+  it("the program admin reads any session's transcript", async () => {
+    await seedReport(OWNER, "r-own", "ff-own");
+    await seedTranscript(OWNER, "ff-own", "r-own");
+    const { svc } = service();
+    expect(
+      await svc.mint({
+        reportId: "r-own",
+        requesterCoachId: null,
+        isAdmin: true,
+        kind: "transcript",
+      }),
+    ).toContain("transcript.json");
+  });
+
+  it("a session holding only a transcript mints no recording address", async () => {
+    await seedReport(OWNER, "r-own", "ff-own");
+    await seedTranscript(OWNER, "ff-own", "r-own");
+    const { svc } = service();
+    expect(
+      await svc.mint({
+        reportId: "r-own",
+        requesterCoachId: OWNER,
+        isAdmin: false,
+      }),
+    ).toBeNull();
+  });
+});

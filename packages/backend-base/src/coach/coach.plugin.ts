@@ -287,16 +287,43 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           const me = await coachService.getMe(currentUserId);
           if (!me) throw new ForbiddenError("Not a coaching account");
-          const url = await coachService.mintRecordingUrl({
+          const url = await coachService.mintRetainedUrl({
             reportId: params.reportId,
             requesterCoachId: me.profile?.id ?? null,
             isAdmin: me.isAdmin,
+            kind: "recording",
           });
           // One answer for every refusal, not this leader's session, no
           // session, no retained asset. A 'you may not' that reads differently
           // from a 'there is nothing' tells an unrelated leader which sessions
           // exist.
           if (!url) throw new NotFoundError("No retained recording");
+          return { url, expiresInSeconds: MINTED_URL_LIFETIME_SECONDS };
+        },
+        {
+          response: {
+            200: t.Object({
+              url: t.String(),
+              expiresInSeconds: t.Number(),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/reports/:reportId/transcript-url",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me) throw new ForbiddenError("Not a coaching account");
+          const url = await coachService.mintRetainedUrl({
+            reportId: params.reportId,
+            requesterCoachId: me.profile?.id ?? null,
+            isAdmin: me.isAdmin,
+            kind: "transcript",
+          });
+          if (!url) throw new NotFoundError("No retained transcript");
           return { url, expiresInSeconds: MINTED_URL_LIFETIME_SECONDS };
         },
         {

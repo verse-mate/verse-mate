@@ -31,6 +31,8 @@ export const MINTED_URL_LIFETIME_SECONDS = 24 * 60 * 60;
 
 export type PreferredRecording = "attached" | "retained" | "none";
 
+export type RetainedKind = "recording" | "transcript";
+
 export interface RetainedMediaState {
   /** Whether VerseMate holds a recording. Never WHERE it is. */
   hasRetainedRecording: boolean;
@@ -65,6 +67,7 @@ export class RetainedMediaService {
     reportId: string;
     requesterCoachId: string | null;
     isAdmin: boolean;
+    kind?: RetainedKind;
   }): Promise<string | null> {
     const conn = this.db.getOrCreateConnection();
 
@@ -100,7 +103,7 @@ export class RetainedMediaService {
       )
       .select("coach_session_assets.storage_key")
       .where("coach_session_assets.report_id", "=", reportId)
-      .where("coach_session_assets.kind", "=", "recording");
+      .where("coach_session_assets.kind", "=", input.kind ?? "recording");
 
     // The program admin reviews any session; a leader sees their own and
     // nothing else. Scoped in the QUERY, so there is no path where the row is
