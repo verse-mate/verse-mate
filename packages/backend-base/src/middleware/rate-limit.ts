@@ -1,11 +1,14 @@
 import type { Context } from "elysia";
 
+import { clientIp } from "../common/client-ip";
+
 const WINDOW_MS = 60_000;
 const DEFAULT_MAX_REQUESTS = 100;
 
 type RateLimitHandler = (args: {
   request: Request;
   set: Context["set"];
+  server?: Context["server"];
 }) => { error: string; message: string } | undefined;
 
 /**
@@ -21,9 +24,8 @@ export function createIpRateLimit(
 ): RateLimitHandler {
   const windows = new Map<string, { count: number; resetAt: number }>();
 
-  return ({ request, set }) => {
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+  return ({ request, set, server }) => {
+    const ip = clientIp(request, server);
     const now = Date.now();
     const entry = windows.get(ip);
 
