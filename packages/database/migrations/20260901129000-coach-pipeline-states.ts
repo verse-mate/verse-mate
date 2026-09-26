@@ -10,7 +10,12 @@ const BEFORE = [
   "delivered",
 ];
 
-const AFTER = [...BEFORE, "scoring_failed"];
+const AFTER = [
+  ...BEFORE,
+  "scoring_failed",
+  "delivery_pending",
+  "delivery_failed",
+];
 
 async function allowStates(db: Kysely<Database>, states: string[]) {
   await sql`ALTER TABLE coach_intake_sessions DROP CONSTRAINT IF EXISTS coach_intake_sessions_state_check`.execute(
@@ -27,6 +32,9 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
 export async function down(db: Kysely<Database>): Promise<void> {
   await sql`UPDATE coach_intake_sessions SET state = 'retained' WHERE state = 'scoring_failed'`.execute(
+    db,
+  );
+  await sql`UPDATE coach_intake_sessions SET state = 'scored' WHERE state IN ('delivery_pending', 'delivery_failed')`.execute(
     db,
   );
   await allowStates(db, BEFORE);

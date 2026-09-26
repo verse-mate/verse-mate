@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
-import { CoachDeliveryService, reportSubject } from "./coach-delivery.service";
+import {
+  CoachDeliveryService,
+  DELIVERY_ATTEMPT_LIMIT,
+  reportSubject,
+} from "./coach-delivery.service";
 import type { ReportEvidence } from "./coach-governance.service";
 
 const conn = Database.getOrCreateConnection();
@@ -219,7 +223,7 @@ describe("delivery", () => {
     );
   });
 
-  it("a failed delivery does NOT mark the session delivered", async () => {
+  it("a failed delivery leaves the session retryable, with the attempt counted", async () => {
     await seedReport("r1");
     const mailer = new FakeMailer(() => true);
     await new CoachDeliveryService(Database, mailer).deliver({
@@ -228,10 +232,51 @@ describe("delivery", () => {
     });
     const row = await conn
       .selectFrom("coach_intake_sessions")
+      .select(["state", "retry_count"])
+      .where("report_id", "=", "r1")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ state: "delivery_pending", retry_count: 1 });
+  });
+
+  it("the failed send that reaches the cap moves the session to delivery_failed", async () => {
+    await seedReport("r1");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({
+        state: "delivery_pending",
+        retry_count: DELIVERY_ATTEMPT_LIMIT - 1,
+      })
+      .where("report_id", "=", "r1")
+      .execute();
+    await new CoachDeliveryService(
+      Database,
+      new FakeMailer(() => true),
+    ).deliver({ reportId: "r1", evidence: evidence() });
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", "retry_count"])
+      .where("report_id", "=", "r1")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      state: "delivery_failed",
+      retry_count: DELIVERY_ATTEMPT_LIMIT,
+    });
+  });
+
+  it("a mailer that throws is a failed send, not a lost session", async () => {
+    await seedReport("r1");
+    const result = await new CoachDeliveryService(Database, {
+      sendEmail: async () => {
+        throw new Error("mailgun down");
+      },
+    } as any).deliver({ reportId: "r1", evidence: evidence() });
+    expect(result.refusal).toBe("send-failed");
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
       .select("state")
       .where("report_id", "=", "r1")
       .executeTakeFirstOrThrow();
-    expect(row.state).toBe("scored");
+    expect(row.state).toBe("delivery_pending");
   });
 
   it("a report id nobody holds is an unknown report", async () => {

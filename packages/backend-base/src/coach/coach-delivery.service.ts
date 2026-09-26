@@ -25,6 +25,8 @@ export const COACH_REPLY_TO_EMAIL =
   process.env.COACH_REPLY_TO_EMAIL ?? "coach@versemate.app";
 export const COACH_REPLY_TO_NAME = "VerseMate Coaching";
 
+export const DELIVERY_ATTEMPT_LIMIT = 5;
+
 export type DeliveryRefusal =
   | "unknown-report"
   | "already-delivered"
@@ -204,15 +206,13 @@ export class CoachDeliveryService {
 
     const sends: DeliveryResult["sends"] = [];
     for (const to of recipients) {
-      const result = (await this.mailer.sendEmail({
+      const result = await this.send({
         subject,
         to,
-        // From is the authenticated sending domain; a Gmail address Mailgun
-        // cannot authorize fails SPF/DMARC and lands coaching reports in spam.
         replyTo: { name: COACH_REPLY_TO_NAME, email: COACH_REPLY_TO_EMAIL },
         text: `${subject}\n\n${portalUrlFor(reportId)}`,
         html,
-      })) as CoachSendResult | undefined;
+      });
       sends.push({
         email: to.email,
         delivered: result?.delivered === true,
@@ -225,6 +225,7 @@ export class CoachDeliveryService {
     // leader's reports without anyone noticing.
     const allSent = sends.length > 0 && sends.every((s) => s.delivered);
     if (!allSent) {
+      await this.countSendFailure(reportId);
       return { delivered: false, refusal: "send-failed", sends, subject };
     }
 
@@ -236,6 +237,33 @@ export class CoachDeliveryService {
       .execute();
 
     return { delivered: true, sends, subject };
+  }
+
+  private async send(
+    data: Parameters<CoachMailer["sendEmail"]>[0],
+  ): Promise<CoachSendResult | undefined> {
+    try {
+      return (await this.mailer.sendEmail(data)) as CoachSendResult | undefined;
+    } catch (error) {
+      return {
+        delivered: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  private async countSendFailure(reportId: string): Promise<void> {
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({
+        retry_count: sql`retry_count + 1`,
+        state: sql`CASE WHEN retry_count + 1 >= ${DELIVERY_ATTEMPT_LIMIT} THEN 'delivery_failed' ELSE 'delivery_pending' END`,
+        updated_at: sql`NOW()`,
+      })
+      .where("report_id", "=", reportId)
+      .where("state", "in", ["scored", "delivery_pending"])
+      .execute();
   }
 
   /**
