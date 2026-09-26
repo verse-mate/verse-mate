@@ -9,7 +9,10 @@ import {
 } from "bun:test";
 import { db as Database } from "database";
 
-import { CoachArchiveService } from "./coach-archive.service";
+import {
+  CoachArchiveService,
+  MAX_VIDEO_REDIRECTS,
+} from "./coach-archive.service";
 
 const CoachArchiveServiceTranscriptKey = (id: string) =>
   CoachArchiveService.transcriptKey(id);
@@ -355,5 +358,96 @@ describe("a report's evidence outlives the provider's share link", () => {
       .executeTakeFirstOrThrow();
     expect(asset.storage_key).not.toContain("provider.test");
     expect(storage.puts.some((p) => p.key === asset.storage_key)).toBe(true);
+  });
+});
+
+describe("the recording fetch re-checks the allowlist on every redirect hop", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  function hopFetch(routes: Record<string, () => Response>) {
+    const calls: Array<{ url: string; redirect?: RequestRedirect }> = [];
+    const impl = async (url: string, init?: RequestInit): Promise<Response> => {
+      calls.push({ url, redirect: init?.redirect });
+      const route = routes[url];
+      return route ? route() : new Response(null, { status: 404 });
+    };
+    return { calls, impl };
+  }
+
+  function redirectTo(location: string) {
+    return () => new Response(null, { status: 302, headers: { location } });
+  }
+
+  function archive(
+    fetchImpl: (url: string, init?: RequestInit) => Promise<Response>,
+    storage: FakeStorage,
+  ) {
+    return new CoachArchiveService(Database, new FakeClient(detail()), {
+      storage: storage as any,
+      fetch: fetchImpl,
+    });
+  }
+
+  it("every request is made with redirects handled manually", async () => {
+    await seedSession("ff-1");
+    const { calls, impl } = hopFetch({
+      "https://provider.test/video.mp4": () => new Response("V"),
+    });
+    await archive(impl, new FakeStorage()).retain("ff-1");
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.every((c) => c.redirect === "manual")).toBe(true);
+  });
+
+  it("a redirect to a host off the allowlist is refused before it is requested", async () => {
+    await seedSession("ff-1");
+    const storage = new FakeStorage();
+    const metadata =
+      "https://169.254.169.254/latest/meta-data/iam/security-credentials/";
+    const { calls, impl } = hopFetch({
+      "https://provider.test/video.mp4": redirectTo(metadata),
+      [metadata]: () => new Response("SECRET"),
+    });
+    const result = await archive(impl, storage).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "untrusted-video-host" });
+    expect(calls.map((c) => c.url)).not.toContain(metadata);
+    expect(storage.puts).toEqual([]);
+  });
+
+  it("a relative redirect is resolved against the hop it came from and followed", async () => {
+    await seedSession("ff-1");
+    const storage = new FakeStorage();
+    const { impl } = hopFetch({
+      "https://provider.test/video.mp4": redirectTo(
+        "https://cdn.provider.test/signed",
+      ),
+      "https://cdn.provider.test/signed": redirectTo("/final.mp4"),
+      "https://cdn.provider.test/final.mp4": () => new Response("VIDEO"),
+    });
+    const result = await archive(impl, storage).retain("ff-1");
+    expect(result.retained).toBe(true);
+    expect(storage.puts.find((p) => p.key.includes("recording"))?.bytes).toBe(
+      "VIDEO".length,
+    );
+  });
+
+  it("a redirect chain longer than the hop cap is a retrieval failure", async () => {
+    await seedSession("ff-1");
+    const routes: Record<string, () => Response> = {
+      "https://provider.test/video.mp4": redirectTo(
+        "https://provider.test/hop-0",
+      ),
+    };
+    for (let i = 0; i < 50; i += 1) {
+      routes[`https://provider.test/hop-${i}`] = redirectTo(
+        `https://provider.test/hop-${i + 1}`,
+      );
+    }
+    const { calls, impl } = hopFetch(routes);
+    const storage = new FakeStorage();
+    const result = await archive(impl, storage).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "retrieval-failed" });
+    expect(calls.length).toBeLessThanOrEqual(MAX_VIDEO_REDIRECTS + 1);
+    expect(storage.puts).toEqual([]);
   });
 });

@@ -27,6 +27,16 @@ describe("the provider's video URL is not trusted", () => {
     expect(isAllowedVideoUrl("https://fireflies.ai/rec/abc.mp4")).toBe(true);
   });
 
+  it("the default allowlist does not admit every AWS bucket", () => {
+    Reflect.deleteProperty(process.env, "COACH_VIDEO_HOST_ALLOWLIST");
+    expect(
+      isAllowedVideoUrl("https://attacker-bucket.s3.amazonaws.com/x.mp4"),
+    ).toBe(false);
+    expect(isAllowedVideoUrl("https://s3.amazonaws.com/any-bucket/x.mp4")).toBe(
+      false,
+    );
+  });
+
   it("refuses cloud instance metadata OVER HTTPS", () => {
     // The SSRF that mattered: the response was streamed straight into our
     // bucket, so this was a read primitive with a write sink.
