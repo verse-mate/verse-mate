@@ -64,6 +64,12 @@ export default interface CoachIntakeSessionsTable {
   >;
 
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
+
+  hold_reason: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
 }
 
 export type CoachIntakeSessions = Selectable<CoachIntakeSessionsTable>;
