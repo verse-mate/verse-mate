@@ -59,7 +59,11 @@ beforeAll(async () => {
     },
     getProfileById: async () => bundledProfile,
     getReportsById: async () => [
-      { ...bundledReport, hasRetainedRecording: true },
+      {
+        ...bundledReport,
+        hasRetainedRecording: true,
+        attachedRecordingUrl: "https://drive.example.test/r.mp4",
+      },
     ],
     listPipelineFailures: async () => [
       {
@@ -130,6 +134,16 @@ describe("the admin drill-in list carries the retained-recording flag through th
       reports: Array<{ hasRetainedRecording?: boolean }>;
     };
     expect(body.reports.map((r) => r.hasRetainedRecording)).toEqual([true]);
+  });
+
+  it("attachedRecordingUrl reaches the client on each report", async () => {
+    const res = await get(`/coach/admin/coaches/${bundledCoach.id}/reports`);
+    const body = (await res.json()) as {
+      reports: Array<{ attachedRecordingUrl?: string | null }>;
+    };
+    expect(body.reports.map((r) => r.attachedRecordingUrl)).toEqual([
+      "https://drive.example.test/r.mp4",
+    ]);
   });
 });
 
