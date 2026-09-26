@@ -30,6 +30,8 @@ export type RetainFailure =
  */
 const RETRIEVAL_TIMEOUT_MS = 10 * 60 * 1000;
 
+export const MAX_VIDEO_REDIRECTS = 3;
+
 /**
  * Hosts the recording may be fetched from.
  *
@@ -49,9 +51,7 @@ function allowedVideoHosts(): string[] {
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean);
-  return configured.length > 0
-    ? configured
-    : ["fireflies.ai", "s3.amazonaws.com"];
+  return configured.length > 0 ? configured : ["fireflies.ai"];
 }
 
 /** True when the URL is https and its host is on the allowlist. */
@@ -146,9 +146,11 @@ export class CoachArchiveService {
       return { retained: false, reason: "untrusted-video-host" };
     }
 
-    const response = await this.fetchImpl(detail.video_url, {
-      signal: AbortSignal.timeout(RETRIEVAL_TIMEOUT_MS),
-    });
+    const fetched = await this.fetchFollowingAllowedRedirects(detail.video_url);
+    if (!(fetched instanceof Response)) {
+      return { retained: false, reason: fetched };
+    }
+    const response = fetched;
     if (!response.ok || !response.body) {
       return { retained: false, reason: "retrieval-failed" };
     }
@@ -211,6 +213,30 @@ export class CoachArchiveService {
       .execute();
 
     return { retained: true, recordingBytes };
+  }
+
+  private async fetchFollowingAllowedRedirects(
+    first: string,
+  ): Promise<Response | RetainFailure> {
+    const signal = AbortSignal.timeout(RETRIEVAL_TIMEOUT_MS);
+    let url = first;
+    for (let hop = 0; hop <= MAX_VIDEO_REDIRECTS; hop += 1) {
+      const response = await this.fetchImpl(url, {
+        signal,
+        redirect: "manual",
+      });
+      const location = response.headers.get("location");
+      if (response.status < 300 || response.status >= 400 || !location) {
+        return response;
+      }
+      await response.body?.cancel();
+      url = new URL(location, url).toString();
+      if (!isAllowedVideoUrl(url)) {
+        console.error("[COACH-ARCHIVE] refusing a redirect off the allowlist");
+        return "untrusted-video-host";
+      }
+    }
+    return "retrieval-failed";
   }
 
   /**
