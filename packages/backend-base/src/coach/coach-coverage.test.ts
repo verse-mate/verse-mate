@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import type { db } from "../shared/shared.plugin";
 import { CoachCoverageService } from "./coach-coverage.service";
 
 const conn = Database.getOrCreateConnection();
 /** The leader slugs this file owns; every delete is scoped to them. */
 const SLUGS = ["cov-observed", "cov-silent", "cov-attested", "cov-noaccount"];
 const EMAILS = [
+  "cov-noslug@example.test",
   "cov-observed@example.test",
   "cov-silent@example.test",
   "cov-attested@example.test",
@@ -213,5 +215,43 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
     });
     expect(report.allCovered).toBe(true);
     expect(report.uncovered.length).toBe(0);
+  });
+
+  it("an empty roster answers, and does not read as every leader covered", async () => {
+    const rolledBack = new Error("rolled back");
+    let report: Awaited<ReturnType<CoachCoverageService["assess"]>> | undefined;
+    await conn
+      .transaction()
+      .execute(async (trx) => {
+        await trx
+          .updateTable("coach_leaders")
+          .set({ is_coach: false })
+          .execute();
+        const scoped = { getOrCreateConnection: () => trx } as unknown as db;
+        report = await new CoachCoverageService(scoped).assess({
+          windowDays: 30,
+        });
+        throw rolledBack;
+      })
+      .catch((e) => {
+        if (e !== rolledBack) throw e;
+      });
+    expect(report?.leaders).toEqual([]);
+    expect(report?.allCovered).toBe(false);
+  });
+
+  it("a leader added without a slug is listed as uncovered, not left out", async () => {
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: null, email: "cov-noslug@example.test", name: "No Slug" })
+      .execute();
+    const report = await new CoachCoverageService(Database).assess({
+      windowDays: 30,
+    });
+    const row = report.uncovered.find(
+      (l) => l.email === "cov-noslug@example.test",
+    );
+    expect(row?.basis).toBe("no-observation");
+    expect(row?.coachId).toBeTruthy();
   });
 });

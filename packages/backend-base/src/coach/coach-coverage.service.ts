@@ -71,10 +71,10 @@ export class CoachCoverageService {
 
     const leaders = await conn
       .selectFrom("coach_leaders")
-      .select(["slug", "name", "email", "not_teaching_attested_at"])
-      .where("slug", "is not", null)
+      .select(["id", "slug", "name", "email", "not_teaching_attested_at"])
       .where("is_coach", "=", true)
       .orderBy("slug")
+      .orderBy("email")
       .execute();
 
     const observations = await conn
@@ -103,25 +103,29 @@ export class CoachCoverageService {
       classRows.map((c) => [c.email.toLowerCase(), c.name]),
     );
 
-    const accounts = await conn
-      .selectFrom("user")
-      .select("email")
-      .where(
-        "email",
-        "in",
-        leaders.map((l) => l.email),
-      )
-      .execute();
+    const accounts =
+      leaders.length === 0
+        ? []
+        : await conn
+            .selectFrom("user")
+            .select("email")
+            .where(
+              "email",
+              "in",
+              leaders.map((l) => l.email),
+            )
+            .execute();
     const withAccount = new Set(accounts.map((a) => a.email.toLowerCase()));
 
     const assessed: LeaderCoverage[] = leaders.map((l) => {
       const email = l.email.toLowerCase();
-      const observed = observedByCoach.get(l.slug as string) ?? 0;
+      const coachId = l.slug ?? l.id;
+      const observed = observedByCoach.get(coachId) ?? 0;
       const attested = Boolean(l.not_teaching_attested_at);
       const covered = observed > 0 || attested;
       const linkedClassName = classByEmail.get(email) ?? null;
       return {
-        coachId: l.slug as string,
+        coachId,
         name: l.name,
         email: l.email,
         covered,
@@ -143,7 +147,7 @@ export class CoachCoverageService {
       windowDays: opts.windowDays,
       leaders: assessed,
       uncovered,
-      allCovered: uncovered.length === 0,
+      allCovered: assessed.length > 0 && uncovered.length === 0,
     };
   }
 }
