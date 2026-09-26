@@ -868,21 +868,36 @@ export class CoachService {
     };
   }
 
-  /**
-   * A coach's reports from the STORE, or null when the store holds none for
-   * them yet (migration-gate: the compiled-in bundle still answers until the
-   * backfill has run for that coach, never as a runtime outage fallback).
-   */
-  private async storeReports(coachId: string): Promise<CoachReport[] | null> {
-    // Gate on the DATASET-level signal, not this coach's row count. Gating on
-    // rows meant a single ingest landing before the backfill flipped the coach
-    // to store-only and their history appeared deleted (23 sessions -> 1).
-    const meta = await this.reportsRepository.getMeta();
-    if (!meta) return null;
-    // ONE query for the whole history, not listMetrics + getDetail per row.
-    const rows = await this.reportsRepository.listFullReports(coachId);
-    if (rows.length === 0) return null;
-    return rows.map(
+  private static newestFirst<T extends { date?: unknown }>(list: T[]): T[] {
+    return list.sort((a, b) =>
+      String(a.date) < String(b.date)
+        ? 1
+        : String(a.date) > String(b.date)
+          ? -1
+          : 0,
+    );
+  }
+
+  private static withBundle<T extends { id?: unknown; date?: unknown }>(
+    stored: T[],
+    bundled: T[],
+    backfilled: boolean,
+  ): T[] {
+    if (backfilled || bundled.length === 0) return stored;
+    const ids = new Set(stored.map((r) => r.id));
+    return CoachService.newestFirst([
+      ...stored,
+      ...bundled.filter((r) => !ids.has(r.id)),
+    ]);
+  }
+
+  private async isBackfilled(coachId: string): Promise<boolean> {
+    return (await this.reportsRepository.backfilledCoachIds()).has(coachId);
+  }
+
+  private async reportsFor(record: CoachRecord): Promise<CoachReport[]> {
+    const rows = await this.reportsRepository.listFullReports(record.id);
+    const stored = rows.map(
       (d) =>
         rowToReport({
           id: d.id,
@@ -892,22 +907,17 @@ export class CoachService {
           body: d.body,
         }) as unknown as CoachReport,
     );
+    return CoachService.withBundle(
+      stored,
+      record.reports,
+      await this.isBackfilled(record.id),
+    );
   }
 
-  /**
-   * Every coach's reports from the store, keyed by coach id, ONE query, and
-   * without prose, because the consumers of this view (trends, roster, monthly)
-   * only read score / status / clusters / dimensions / date. Null when the
-   * store is not yet backfilled, so the bundle keeps answering.
-   */
-  private async storeReportsByCoach(): Promise<Map<
-    string,
-    CoachReport[]
-  > | null> {
-    const meta = await this.reportsRepository.getMeta();
-    if (!meta) return null;
+  private async recordsWithStoreReports(): Promise<CoachRecord[]> {
+    const records = await this.allRecords();
     const rows = await this.reportsRepository.listAllMetrics();
-    if (rows.length === 0) return null;
+    const backfilled = await this.reportsRepository.backfilledCoachIds();
     const byCoach = new Map<string, CoachReport[]>();
     for (const r of rows) {
       const report = rowToReport({
@@ -921,45 +931,25 @@ export class CoachService {
       list.push(report);
       byCoach.set(r.coachId, list);
     }
-    // The contract everywhere else is newest-first.
-    for (const list of byCoach.values()) {
-      list.sort((a, b) => (a.date < b.date ? 1 : -1));
-    }
-    return byCoach;
+    return records.map((r) => ({
+      ...r,
+      reports: CoachService.withBundle(
+        CoachService.newestFirst(byCoach.get(r.id) ?? []),
+        r.reports,
+        backfilled.has(r.id),
+      ),
+    }));
   }
 
-  /**
-   * Roster records whose `reports` come from the store where it has them, so
-   * trends / roster / monthly reflect a publish immediately instead of lagging
-   * until the next deploy (they previously all read the compiled-in bundle).
-   */
-  private async recordsWithStoreReports(): Promise<CoachRecord[]> {
-    const records = await this.allRecords();
-    const byCoach = await this.storeReportsByCoach();
-    if (!byCoach) return records;
-    return records.map((r) => {
-      const stored = byCoach.get(r.id);
-      return stored ? { ...r, reports: stored } : r;
-    });
-  }
-
-  /** Reports for a roster record: store first, bundled dataset until backfilled. */
-  private async reportsFor(record: CoachRecord): Promise<CoachReport[]> {
-    const fromStore = await this.storeReports(record.id);
-    return fromStore ?? record.reports;
-  }
-
-  /**
-   * One page of a coach's sessions as list rows, summary only, never prose, so
-   * a long history stays bounded. Falls back to projecting the bundled reports
-   * while the store has not been backfilled for that coach.
-   */
   async getReportSummaries(
     coachId: string,
     opts: { limit?: number; offset?: number } = {},
   ): Promise<{ items: Record<string, unknown>[]; total: number }> {
-    const total = await this.reportsRepository.countForCoach(coachId);
-    if (total > 0) {
+    const record = await this.resolveById(coachId);
+    const bundled = record?.reports ?? [];
+    if (bundled.length === 0 || (await this.isBackfilled(coachId))) {
+      const total = await this.reportsRepository.countForCoach(coachId);
+      if (total === 0) return { items: [], total: 0 };
       const rows = await this.reportsRepository.listSummaries(coachId, opts);
       return {
         items: rows.map((r) =>
@@ -968,19 +958,13 @@ export class CoachService {
         total,
       };
     }
-    const record = await this.resolveById(coachId);
-    if (!record) return { items: [], total: 0 };
-    // Same clamp as the store path, so the bundle fallback cannot be handed a
-    // NaN slice window and quietly return nothing.
-    const limit = Number.isFinite(Number(opts.limit))
-      ? Math.min(Math.max(Math.trunc(Number(opts.limit)), 1), 100)
-      : 25;
-    const offset = Number.isFinite(Number(opts.offset))
-      ? Math.max(Math.trunc(Number(opts.offset)), 0)
-      : 0;
-    const page = record.reports.slice(offset, offset + limit);
-    return {
-      items: page.map((r) => ({
+    const stored = (await this.reportsRepository.listFullReports(coachId)).map(
+      (r) =>
+        rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
+    );
+    const all = CoachService.withBundle(
+      stored,
+      bundled.map((r) => ({
         id: r.id,
         date: r.date,
         dateLabel: r.dateLabel,
@@ -990,9 +974,16 @@ export class CoachService {
         status: r.status,
         statusEmoji: r.statusEmoji,
         pdfUrl: r.pdfUrl,
-      })),
-      total: record.reports.length,
-    };
+      })) as Record<string, unknown>[],
+      false,
+    );
+    const limit = Number.isFinite(Number(opts.limit))
+      ? Math.min(Math.max(Math.trunc(Number(opts.limit)), 1), 100)
+      : 25;
+    const offset = Number.isFinite(Number(opts.offset))
+      ? Math.max(Math.trunc(Number(opts.offset)), 0)
+      : 0;
+    return { items: all.slice(offset, offset + limit), total: all.length };
   }
 
   /**
