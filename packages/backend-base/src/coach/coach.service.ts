@@ -913,10 +913,10 @@ export class CoachService {
     return (this.bundle.admins ?? []).includes(target);
   }
 
-  /** The signed-in user's email (lowercased), or null. */
   private async emailFor(userId: string): Promise<string | null> {
     const user = await this.userService.findOne(userId);
-    return user?.email ? user.email.trim().toLowerCase() : null;
+    if (!user?.email || user.emailVerified !== true) return null;
+    return user.email.trim().toLowerCase();
   }
 
   /** Resolve the signed-in user to their coaching record, or null if the

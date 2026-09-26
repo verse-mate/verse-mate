@@ -55,7 +55,12 @@ describe("a roster leader resolves to their reports", () => {
   it("getMe returns the SLUG as the profile id, not the roster row's uuid", async () => {
     const user = await conn
       .insertInto("user")
-      .values({ email: EMAIL, firstName: "Slug", lastName: "Leader" })
+      .values({
+        email: EMAIL,
+        firstName: "Slug",
+        lastName: "Leader",
+        emailVerified: true,
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
 
@@ -71,7 +76,12 @@ describe("a roster leader resolves to their reports", () => {
   it("the id getMe returns actually finds that leader's reports", async () => {
     const user = await conn
       .insertInto("user")
-      .values({ email: EMAIL, firstName: "Slug", lastName: "Leader" })
+      .values({
+        email: EMAIL,
+        firstName: "Slug",
+        lastName: "Leader",
+        emailVerified: true,
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
 
@@ -90,7 +100,12 @@ describe("a roster leader resolves to their reports", () => {
       .execute();
     const user = await conn
       .insertInto("user")
-      .values({ email: EMAIL, firstName: "Slug", lastName: "Leader" })
+      .values({
+        email: EMAIL,
+        firstName: "Slug",
+        lastName: "Leader",
+        emailVerified: true,
+      })
       .returning("id")
       .executeTakeFirstOrThrow();
 

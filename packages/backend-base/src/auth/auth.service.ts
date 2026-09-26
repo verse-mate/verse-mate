@@ -218,6 +218,10 @@ export class AuthService {
       .executeTakeFirst();
 
     if (user) {
+      if (!user.emailVerified) {
+        await this.userSsoAccountRepository.deleteAllByUserId(user.id);
+        await this.logoutAll(user.id);
+      }
       // User exists, create SSO link to existing account
       // Handle potential unique constraint race conditions
       try {
@@ -253,7 +257,6 @@ export class AuthService {
       // untouched and keeps their password.
       if (user.password && !user.emailVerified) {
         updates.password = null;
-        await this.logoutAll(user.id);
       }
 
       if (!user.emailVerified && emailVerified) {
@@ -445,7 +448,7 @@ export class AuthService {
     const uuid = randomUUID();
     await this.cache.set(
       cacheConstants.verifyEmail(uuid),
-      { id: userId },
+      { id: userId, email: user.email.trim().toLowerCase() },
       "1h",
     );
 
@@ -662,9 +665,11 @@ export class AuthService {
     }
 
     const cacheKey = cacheConstants.verifyEmail(token);
-    const payload = await this.cache.get<{ id: string }>(cacheKey);
+    const payload = await this.cache.get<{ id: string; email?: string }>(
+      cacheKey,
+    );
 
-    if (!payload) {
+    if (!payload || payload.email !== user.email.trim().toLowerCase()) {
       throw new ValidationError("Invalid verification token");
     }
 
@@ -739,14 +744,31 @@ export class AuthService {
     if (typeof email === "string")
       updatePayload.email = email.toLowerCase().trim();
 
+    const current = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .select("email")
+      .where("id", "=", userId)
+      .executeTakeFirst();
+    const emailChanged =
+      updatePayload.email !== undefined &&
+      current !== undefined &&
+      updatePayload.email !== current.email.trim().toLowerCase();
+
     if (Object.keys(updatePayload).length > 0) {
       await this.db
         .getOrCreateConnection()
         .updateTable("user")
-        .set(updatePayload)
+        .set(
+          emailChanged
+            ? { ...updatePayload, emailVerified: false }
+            : updatePayload,
+        )
         .where("id", "=", userId)
         .execute();
     }
+
+    if (emailChanged) await this.sendVerifyEmail(userId);
 
     // Return the updated user information
     return this.getUserById(userId);
