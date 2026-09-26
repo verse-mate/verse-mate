@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import type { db } from "../shared/shared.plugin";
 import { isAllowedVideoUrl } from "./coach-archive.service";
 import {
   CoachRetrievalService,
   SWEEP_BATCH_LIMIT,
 } from "./coach-retrieval.service";
-import { CoachService } from "./coach.service";
+import coachData from "./coach.data.json";
+import { type CoachDataset, CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "secfix-coach";
@@ -189,6 +191,39 @@ describe("admin authority is data, and revoking it takes effect", () => {
 
     await conn.deleteFrom("coach_admins").where("email", "=", ADMIN).execute();
     expect(await service.isAdmin(user.id)).toBe(false);
+  });
+
+  it("deleting the last coach_admins row revokes, and the bundle's admin list does not come back", async () => {
+    const rolledBack = new Error("rolled back");
+    let afterRevoke: boolean | undefined;
+    await conn
+      .transaction()
+      .execute(async (trx) => {
+        const user = await trx
+          .insertInto("user")
+          .values({
+            email: ADMIN,
+            firstName: "Sec",
+            lastName: "Fix",
+            emailVerified: true,
+          })
+          .returning("id")
+          .executeTakeFirstOrThrow();
+        await trx.deleteFrom("coach_admins").execute();
+        const scoped = { getOrCreateConnection: () => trx } as unknown as db;
+        const bundle = {
+          ...(coachData as unknown as CoachDataset),
+          admins: [ADMIN],
+        };
+        afterRevoke = await new CoachService(scoped, undefined, bundle).isAdmin(
+          user.id,
+        );
+        throw rolledBack;
+      })
+      .catch((e) => {
+        if (e !== rolledBack) throw e;
+      });
+    expect(afterRevoke).toBe(false);
   });
 
   it("a non-admin is refused while the table is populated", async () => {
