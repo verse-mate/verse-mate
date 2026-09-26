@@ -45,6 +45,8 @@ export interface PipelineResult {
 /** How many retained sessions one tick carries through to a report. */
 export const PIPELINE_BATCH_LIMIT = 5;
 
+export const PIPELINE_ATTEMPT_LIMIT = 5;
+
 export class CoachPipelineService {
   private readonly scoring: CoachScoringService;
   private readonly frames: CoachFrameService;
@@ -74,10 +76,11 @@ export class CoachPipelineService {
     const due = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
-      .select(["source_session_id", "coach_id", "title"])
+      .select(["source_session_id", "coach_id", "title", "retry_count"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("state", "=", "retained")
       .where("coach_id", "is not", null)
+      .orderBy("retry_count")
       .orderBy("observed_at")
       // Bounded: each session is a model call plus a frame extraction, so an
       // unbounded tick could spend an unbounded amount of money.
@@ -86,21 +89,48 @@ export class CoachPipelineService {
 
     const out: PipelineResult[] = [];
     for (const session of due) {
+      let result: PipelineResult;
       try {
-        out.push(await this.runOne(session));
+        result = await this.runOne(session);
       } catch (error) {
         console.error(
           `[COACH-PIPELINE] ${session.source_session_id} threw:`,
           error,
         );
-        out.push({
+        result = {
           sourceSessionId: session.source_session_id,
           outcome: "scoring-failed",
           detail: error instanceof Error ? error.message : String(error),
-        });
+        };
       }
+      if (result.outcome === "scoring-failed") {
+        await this.countScoringFailure(
+          session.source_session_id,
+          session.retry_count,
+        );
+      }
+      out.push(result);
     }
     return out;
+  }
+
+  private async countScoringFailure(
+    sourceSessionId: string,
+    retryCount: number,
+  ): Promise<void> {
+    const attempts = retryCount + 1;
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({
+        retry_count: attempts,
+        state:
+          attempts >= PIPELINE_ATTEMPT_LIMIT ? "scoring_failed" : "retained",
+        updated_at: sql`NOW()`,
+      })
+      .where("source_session_id", "=", sourceSessionId)
+      .where("state", "=", "retained")
+      .execute();
   }
 
   private async runOne(session: {

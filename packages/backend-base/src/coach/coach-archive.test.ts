@@ -218,6 +218,25 @@ describe("a report's evidence outlives the provider's share link", () => {
     expect(row.state).toBe("retained");
   });
 
+  it("retaining resets the attempt count, so retrieval retries do not spend the scoring budget", async () => {
+    await seedSession("ff-1", "held");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ retry_count: 4 })
+      .where("source_session_id", "=", "ff-1")
+      .execute();
+    await service(new FakeClient(detail()), new FakeStorage(), {
+      "https://provider.test/video.mp4": "V",
+    }).retain("ff-1");
+
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", "retry_count"])
+      .where("source_session_id", "=", "ff-1")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ state: "retained", retry_count: 0 });
+  });
+
   it("retaining twice does not stage a second copy", async () => {
     await seedSession("ff-1");
     const storage = new FakeStorage();
