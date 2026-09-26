@@ -7,6 +7,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { datasetToRows } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 import { CoachService } from "./coach.service";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
@@ -24,7 +25,7 @@ function storeRow(id: string, date: string, score: number) {
     id,
     coach_id: COACH,
     session_date: date,
-    source_session_id: `legacy:${COACH}:${date}`,
+    source_session_id: `ff-${id}`,
     legacy_ids: [] as string[],
     summary: {
       dateLabel: date,
@@ -54,17 +55,20 @@ async function clear() {
 describe("trends / roster / monthly read the store", () => {
   beforeAll(async () => {
     await clear();
-    await repo.upsert(storeRow("agg-1", "2026-09-05", 60));
-    await repo.upsert(storeRow("agg-2", "2026-09-12", 80));
-    await repo.bumpMeta("2026-09-12");
+    await conn
+      .insertInto("coach_reports")
+      .values(datasetToRows({ coaches: [bundled] }))
+      .execute();
+    await repo.upsert(storeRow("agg-1", "2026-10-03", 60));
+    await repo.upsert(storeRow("agg-2", "2026-10-10", 80));
+    await repo.bumpMeta("2026-10-10");
   });
   afterAll(clear);
 
-  it("trends plot the store's sessions, not the bundle's", async () => {
+  it("trends plot the sessions published to the store", async () => {
     const trends = await service.getTrendsById(COACH);
-    expect(trends?.scoreSeries.length).toBe(2);
-    expect(trends?.scoreSeries.map((p) => p.score)).toEqual([60, 80]);
-    // delta is computed from the two most recent STORE sessions
+    expect(trends?.scoreSeries.length).toBe(bundled.reports.length + 2);
+    expect(trends?.scoreSeries.slice(-2).map((p) => p.score)).toEqual([60, 80]);
     expect(trends?.delta?.to).toBe(80);
     expect(trends?.delta?.from).toBe(60);
   });
@@ -72,16 +76,16 @@ describe("trends / roster / monthly read the store", () => {
   it("the admin roster counts the store's sessions and shows its latest", async () => {
     const roster = await service.listCoaches();
     const entry = roster.find((c) => c.id === COACH);
-    expect(entry?.sessionCount).toBe(2);
-    expect(entry?.latest?.date).toBe("2026-09-12");
+    expect(entry?.sessionCount).toBe(bundled.reports.length + 2);
+    expect(entry?.latest?.date).toBe("2026-10-10");
     expect(entry?.latest?.score).toBe(80);
   });
 
   it("the monthly rollup includes a session published to the store", async () => {
-    const monthly = await service.getMonthly("2026-09");
+    const monthly = await service.getMonthly("2026-10");
     const leader = monthly.leaders.find((l) => l.id === COACH);
     expect(leader?.sessions).toBe(2);
-    expect(leader?.avgScore).toBe(70); // (60 + 80) / 2
-    expect(monthly.availableMonths).toContain("2026-09");
+    expect(leader?.avgScore).toBe(70);
+    expect(monthly.availableMonths).toContain("2026-10");
   });
 });
