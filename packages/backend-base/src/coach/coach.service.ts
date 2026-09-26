@@ -103,6 +103,7 @@ export interface CoachReport {
   /** Admin-editable recording URL, overlaid from coach_recording_links.
    *  Optional so bundled reports (which don't carry one) still type-check. */
   recordingUrl?: string;
+  attachedRecordingUrl?: string | null;
   /** Detail-only: VerseMate holds a recording for this session (task 4.5). */
   hasRetainedRecording?: boolean;
   /** Coaching notes on this session, newest first, overlaid from coach_notes.
@@ -864,6 +865,7 @@ export class CoachService {
       return {
         ...r,
         recordingUrl,
+        attachedRecordingUrl: explicit ? explicit : null,
         notes: (notesByReport.get(r.id) ?? []).map(CoachService.toNoteView),
       };
     });
