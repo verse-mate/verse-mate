@@ -9,6 +9,8 @@ import {
 } from "bun:test";
 import { db as Database } from "database";
 
+import { MAX_STREAMED_OBJECT_BYTES } from "../shared/storage/bun-s3.helper";
+
 import {
   CoachArchiveService,
   MAX_VIDEO_REDIRECTS,
@@ -455,6 +457,26 @@ describe("the recording fetch re-checks the allowlist on every redirect hop", ()
 describe("retain() applies its guards at the call, not only in the helpers", () => {
   beforeEach(clear);
   afterEach(clear);
+
+  it("a recording whose declared size is over the ceiling is refused before anything is stored", async () => {
+    await seedSession("ff-1");
+    const storage = new FakeStorage();
+    const result = await new CoachArchiveService(
+      Database,
+      new FakeClient(detail()),
+      {
+        storage: storage as any,
+        fetch: async () =>
+          new Response("V", {
+            headers: {
+              "content-length": String(MAX_STREAMED_OBJECT_BYTES + 1),
+            },
+          }),
+      },
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "recording-too-large" });
+    expect(storage.puts).toEqual([]);
+  });
 
   it("a first-hop video URL off the allowlist is never requested", async () => {
     await seedSession("ff-1");
