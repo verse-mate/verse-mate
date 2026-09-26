@@ -6,10 +6,11 @@ import type { db } from "../shared/shared.plugin";
 import {
   type Agreement,
   type CalibrationReport,
+  type CalibrationVerdict,
   type HandScoredReport,
+  MIN_GATED_LEADER_REPORTS,
   type MachineScoring,
-  type ToleranceVerdict,
-  checkTolerance,
+  checkCalibration,
   measureAgreement,
   recordCalibration,
   replayOrder,
@@ -43,7 +44,7 @@ export interface CalibrationRunResult {
   modelVersion: string | null;
   authenticityFloor: { unreachable: number; transitions: number };
   report: CalibrationReport;
-  verdict: ToleranceVerdict;
+  verdict: CalibrationVerdict;
   recordedRunId: number | null;
   notRecordedBecause: string | null;
 }
@@ -190,7 +191,7 @@ export async function runCalibration(
   }
 
   const report = measureAgreement(attempted, machine);
-  const verdict = checkTolerance(report.overall);
+  const verdict = checkCalibration(report);
 
   let recordedRunId: number | null = null;
   let notRecordedBecause: string | null = null;
@@ -200,11 +201,7 @@ export async function runCalibration(
     notRecordedBecause =
       "no report was scored, so there is no agreement to record";
   } else {
-    recordedRunId = await recordCalibration(
-      deps.db,
-      modelVersion,
-      report.overall,
-    );
+    recordedRunId = await recordCalibration(deps.db, modelVersion, report);
   }
 
   return {
@@ -280,8 +277,12 @@ export function formatCalibration(result: CalibrationRunResult): string {
     `Model version: ${result.modelVersion ?? "none (nothing scored)"}`,
     `Overall: ${describeAgreement(result.report.overall)}`,
     ...[...result.report.perLeader].map(
-      ([coach, a]) => `  ${coach}: ${describeAgreement(a)}`,
+      ([coach, a]) =>
+        `  ${coach}: ${describeAgreement(a)}${result.verdict.ungated.includes(coach) ? " (measured, not gated)" : ""}`,
     ),
+    result.verdict.ungated.length > 0
+      ? `Measured but not gated, fewer than ${MIN_GATED_LEADER_REPORTS} reports compared: ${result.verdict.ungated.join(", ")}`
+      : `Every compared leader is gated (${MIN_GATED_LEADER_REPORTS} or more reports compared)`,
     result.verdict.withinTolerance
       ? "Verdict: within tolerance"
       : `Verdict: OUTSIDE tolerance: ${result.verdict.shortfalls.join("; ")}`,
