@@ -1134,11 +1134,19 @@ export class CoachService {
       (await this.coachRepository.getZoomLinkByEmail(record.email)) ||
       record.zoomLink ||
       "";
-    return this.overlayReports(
+    const reports = await this.overlayReports(
       record.id,
       await this.reportsFor(record),
       fallback,
     );
+    const media = await this.describeRetainedMedia(
+      record.id,
+      reports.map((r) => r.id),
+    );
+    return reports.map((r) => ({
+      ...r,
+      hasRetainedRecording: media.get(r.id)?.hasRetainedRecording ?? false,
+    }));
   }
 
   /** A specific coach's trends by id (admin drill-in). null → unknown id. */
