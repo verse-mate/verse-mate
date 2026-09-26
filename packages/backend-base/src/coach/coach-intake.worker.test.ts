@@ -71,8 +71,7 @@ describe("the pipeline's clock lives inside VerseMate", () => {
   });
 });
 
-// The module constructs a BullMQ worker at import time, which opens a Redis
-// connection. Closed here so the test process exits.
 afterAll(async () => {
+  await coachIntakeWorker.waitUntilReady();
   await coachIntakeWorker.close();
 });
