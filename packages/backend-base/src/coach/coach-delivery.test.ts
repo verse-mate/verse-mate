@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import { recordCalibration } from "./coach-calibration";
 import {
   CoachDeliveryService,
   DELIVERY_ATTEMPT_LIMIT,
@@ -522,5 +523,102 @@ describe("delivery is claimed in the database, so separate workers cannot both s
       new FakeMailer(),
     ).deliver({ reportId: "r-stale", evidence: evidence() });
     expect(result.delivered).toBe(true);
+  });
+});
+
+describe("a model-produced report waits for its model version to be calibrated", () => {
+  const VERSION = "v-test-calibration";
+  const runs: number[] = [];
+
+  async function modelScored(id: string) {
+    await seedReport(id);
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: id,
+        dimension_n: 1,
+        score: 4,
+        rationale: "a reason",
+        provenance: "machine",
+        model_version: VERSION,
+      })
+      .execute();
+  }
+
+  async function record(compositeMae: number, dimensionsWithinOne: number) {
+    runs.push(
+      await recordCalibration(Database, VERSION, {
+        compositeMae,
+        dimensionsWithinOne,
+        comparisons: 120,
+        reports: 10,
+      }),
+    );
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(async () => {
+    await clear();
+    if (runs.length > 0) {
+      await conn
+        .deleteFrom("coach_calibration_runs")
+        .where("id", "in", runs.splice(0))
+        .execute();
+    }
+  });
+
+  it("an uncalibrated model version blocks delivery and says so", async () => {
+    await modelScored("r-cal");
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-cal",
+      evidence: evidence(),
+    });
+    expect(result.refusal).toBe("calibration-blocked");
+    expect(result.shortfalls?.join(" ")).toContain(VERSION);
+    expect(mailer.sent).toEqual([]);
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", "retry_count"])
+      .where("report_id", "=", "r-cal")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ state: "delivery_pending", retry_count: 0 });
+  });
+
+  it("agreement outside tolerance blocks delivery with the shortfall named", async () => {
+    await modelScored("r-cal");
+    await record(9, 0.95);
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-cal",
+      evidence: evidence(),
+    });
+    expect(result.refusal).toBe("calibration-blocked");
+    expect(result.shortfalls?.join(" ")).toContain("composite MAE");
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("agreement within tolerance lets it go out", async () => {
+    await modelScored("r-cal");
+    await record(3, 0.95);
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({ reportId: "r-cal", evidence: evidence() });
+    expect(result.delivered).toBe(true);
+  });
+
+  it("the latest measurement for the version is the one that counts", async () => {
+    await modelScored("r-cal");
+    await record(3, 0.95);
+    await record(3, 0.5);
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({ reportId: "r-cal", evidence: evidence() });
+    expect(result.refusal).toBe("calibration-blocked");
   });
 });

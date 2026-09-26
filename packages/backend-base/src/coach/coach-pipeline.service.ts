@@ -302,11 +302,15 @@ function deliveryOutcome(
   return {
     sourceSessionId,
     outcome:
-      result.refusal === "governance-blocked"
+      result.refusal === "governance-blocked" ||
+      result.refusal === "calibration-blocked"
         ? "delivery-blocked"
         : "delivery-failed",
     reportId,
-    detail: result.violations?.map((v) => v.rule).join(", ") ?? result.refusal,
+    detail:
+      result.violations?.map((v) => v.rule).join(", ") ??
+      result.shortfalls?.join("; ") ??
+      result.refusal,
   };
 }
 
