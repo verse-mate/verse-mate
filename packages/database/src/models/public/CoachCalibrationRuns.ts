@@ -24,6 +24,12 @@ export default interface CoachCalibrationRunsTable {
   reports: ColumnType<number, number, number>;
 
   measured_at: ColumnType<Date, Date | string | undefined, Date | string>;
+
+  per_leader: ColumnType<
+    unknown | null,
+    unknown | null | undefined,
+    unknown | null
+  >;
 }
 
 export type CoachCalibrationRuns = Selectable<CoachCalibrationRunsTable>;

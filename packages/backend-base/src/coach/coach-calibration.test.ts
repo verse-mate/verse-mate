@@ -1,12 +1,20 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
+import { db as Database } from "database";
 
 import {
+  type Agreement,
   type HandScoredReport,
+  MIN_CALIBRATION_LEADERS,
+  MIN_CALIBRATION_REPORTS,
+  MIN_GATED_LEADER_REPORTS,
   type MachineScoring,
   TOLERANCE_COMPOSITE_MAE,
   TOLERANCE_DIMENSIONS_WITHIN_ONE,
+  calibrationShortfalls,
+  checkCalibration,
   checkTolerance,
   measureAgreement,
+  recordCalibration,
   replayOrder,
   selectEligible,
 } from "./coach-calibration";
@@ -333,5 +341,181 @@ describe("the tolerance is a delivery gate, not a report", () => {
     });
     expect(verdict.withinTolerance).toBe(false);
     expect(verdict.shortfalls.join(" ")).toContain("unmeasured");
+  });
+});
+
+function agreement(reports: number, compositeMae: number): Agreement {
+  return {
+    compositeMae,
+    dimensionsWithinOne: compositeMae <= 1 ? 0.95 : 0.6,
+    comparisons: reports * 11,
+    reports,
+  };
+}
+
+function passingRun(leaders = MIN_CALIBRATION_LEADERS) {
+  const perReport = Math.ceil(MIN_CALIBRATION_REPORTS / leaders);
+  const perLeader = new Map(
+    Array.from({ length: leaders }, (_, i) => [
+      `leader-${i}`,
+      agreement(perReport, 1),
+    ]),
+  );
+  return {
+    overall: agreement(perReport * leaders, 1),
+    perLeader,
+  };
+}
+
+describe("the calibration gate applies its per-leader rule and a minimum sample", () => {
+  it("the sample floors are pinned", () => {
+    expect(MIN_CALIBRATION_REPORTS).toBe(60);
+    expect(MIN_CALIBRATION_LEADERS).toBe(10);
+    expect(MIN_GATED_LEADER_REPORTS).toBe(3);
+  });
+
+  it("a run that meets every rule passes", () => {
+    expect(checkCalibration(passingRun())).toEqual({
+      withinTolerance: true,
+      shortfalls: [],
+      ungated: [],
+    });
+  });
+
+  it("one benchmark leader cannot carry fifteen the model disagrees with", () => {
+    const perLeader = new Map<string, Agreement>([
+      ["benchmark", agreement(120, 1)],
+    ]);
+    for (let i = 0; i < 15; i += 1)
+      perLeader.set(`leader-${i}`, agreement(3, 12));
+    const overall = {
+      compositeMae: (120 * 1 + 45 * 12) / 165,
+      dimensionsWithinOne: 0.92,
+      comparisons: 165 * 11,
+      reports: 165,
+    };
+    expect(overall.compositeMae).toBe(4);
+    expect(checkTolerance(overall).withinTolerance).toBe(true);
+
+    const verdict = checkCalibration({ overall, perLeader });
+    expect(verdict.withinTolerance).toBe(false);
+    for (let i = 0; i < 15; i += 1)
+      expect(verdict.shortfalls.join("\n")).toContain(
+        `leader-${i}: composite MAE 12.00`,
+      );
+    expect(verdict.shortfalls.join("\n")).not.toContain("benchmark:");
+  });
+
+  it("a leader with fewer than three compared reports is measured and named, but does not block", () => {
+    const run = passingRun();
+    run.perLeader.set("thin-leader", agreement(2, 12));
+    const verdict = checkCalibration(run);
+    expect(verdict.withinTolerance).toBe(true);
+    expect(verdict.ungated).toEqual(["thin-leader"]);
+  });
+
+  it("a leader with exactly three compared reports is gated", () => {
+    const run = passingRun();
+    run.perLeader.set("three-report-leader", agreement(3, 12));
+    const verdict = checkCalibration(run);
+    expect(verdict.withinTolerance).toBe(false);
+    expect(verdict.shortfalls.join(" ")).toContain(
+      "three-report-leader: composite MAE 12.00",
+    );
+  });
+
+  it("too few reports is a shortfall however well they agree", () => {
+    const run = passingRun();
+    run.overall = { ...run.overall, reports: MIN_CALIBRATION_REPORTS - 1 };
+    const verdict = checkCalibration(run);
+    expect(verdict.withinTolerance).toBe(false);
+    expect(verdict.shortfalls.join(" ")).toContain(
+      `${MIN_CALIBRATION_REPORTS - 1} reports compared, below ${MIN_CALIBRATION_REPORTS}`,
+    );
+  });
+
+  it("too few leaders is a shortfall however well they agree", () => {
+    const run = passingRun();
+    run.perLeader.delete("leader-0");
+    const verdict = checkCalibration(run);
+    expect(verdict.withinTolerance).toBe(false);
+    expect(verdict.shortfalls.join(" ")).toContain(
+      `${MIN_CALIBRATION_LEADERS - 1} leaders compared, below ${MIN_CALIBRATION_LEADERS}`,
+    );
+  });
+});
+
+describe("the delivery gate reads the per-leader agreement it was recorded with", () => {
+  const VERSION = "calib-per-leader-test";
+  const REPORT = "calib-per-leader-report";
+  const conn = Database.getOrCreateConnection();
+
+  afterEach(async () => {
+    await conn
+      .deleteFrom("coach_calibration_runs")
+      .where("model_version", "=", VERSION)
+      .execute();
+    await conn.deleteFrom("coach_reports").where("id", "=", REPORT).execute();
+  });
+
+  async function reportScoredBy(version: string) {
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: REPORT,
+        coach_id: "calib-per-leader-coach",
+        session_date: "2026-09-01",
+        source_session_id: `ff-${REPORT}`,
+        legacy_ids: [],
+        summary: {},
+        metrics: {},
+        body: {},
+      })
+      .execute();
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: REPORT,
+        dimension_n: 1,
+        score: 4,
+        rationale: "r",
+        provenance: "machine",
+        model_version: version,
+      })
+      .execute();
+  }
+
+  it("a stored run whose leaders disagree holds delivery", async () => {
+    const run = passingRun();
+    run.perLeader.set("leader-0", agreement(6, 12));
+    await recordCalibration(Database, VERSION, run);
+    await reportScoredBy(VERSION);
+
+    expect((await calibrationShortfalls(Database, REPORT)).join(" ")).toContain(
+      "leader-0: composite MAE 12.00",
+    );
+  });
+
+  it("a stored passing run releases delivery", async () => {
+    await recordCalibration(Database, VERSION, passingRun());
+    await reportScoredBy(VERSION);
+    expect(await calibrationShortfalls(Database, REPORT)).toEqual([]);
+  });
+
+  it("a run recorded without per-leader agreement fails closed", async () => {
+    await conn
+      .insertInto("coach_calibration_runs")
+      .values({
+        model_version: VERSION,
+        composite_mae: 1,
+        dimensions_within_one: 0.95,
+        comparisons: 1000,
+        reports: 100,
+      })
+      .execute();
+    await reportScoredBy(VERSION);
+    expect((await calibrationShortfalls(Database, REPORT)).join(" ")).toContain(
+      "no per-leader agreement",
+    );
   });
 });

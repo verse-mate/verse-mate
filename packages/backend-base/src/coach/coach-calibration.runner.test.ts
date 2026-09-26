@@ -196,12 +196,18 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
   it("a real run records the agreement under the model version it ran, and the delivery gate reads it", async () => {
     const result = await runCalibration(deps(new HandCopyAi()), {
       dryRun: false,
-      limit: 6,
     });
     expect(result.modelVersion).toBe(RUBRIC_MODEL_VERSION);
     expect(result.verdict.withinTolerance).toBe(true);
     expect(result.recordedRunId).not.toBeNull();
     expect(result.report.perLeader.size).toBeGreaterThan(1);
+    expect(result.verdict.ungated).toContain("danny-thomas");
+    const printed = formatCalibration(result);
+    expect(printed).toContain(
+      "Measured but not gated, fewer than 3 reports compared:",
+    );
+    expect(printed).toContain("danny-thomas: 1 reports, composite MAE");
+    expect(printed).toMatch(/danny-thomas: .*\(measured, not gated\)/);
 
     await modelScoredReport("calib-runner-r1");
     expect(await calibrationShortfalls(Database, "calib-runner-r1")).toEqual(
@@ -220,6 +226,20 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
     expect(
       (await calibrationShortfalls(Database, "calib-runner-r2")).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("one favourable report does not unblock the programme", async () => {
+    const result = await runCalibration(deps(new HandCopyAi()), {
+      dryRun: false,
+      limit: 1,
+    });
+    expect(result.report.overall.reports).toBe(1);
+    expect(result.verdict.withinTolerance).toBe(false);
+
+    await modelScoredReport("calib-runner-r3");
+    expect(
+      (await calibrationShortfalls(Database, "calib-runner-r3")).join(" "),
+    ).toContain("1 reports compared");
   });
 
   it("reports with no transcript are counted, and nothing is recorded when nothing was scored", async () => {

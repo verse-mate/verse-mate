@@ -227,10 +227,23 @@ export function measureAgreement(
 export const TOLERANCE_COMPOSITE_MAE = 5;
 export const TOLERANCE_DIMENSIONS_WITHIN_ONE = 0.9;
 
+export const MIN_CALIBRATION_REPORTS = 60;
+export const MIN_CALIBRATION_LEADERS = 10;
+export const MIN_GATED_LEADER_REPORTS = 3;
+
 export interface ToleranceVerdict {
   withinTolerance: boolean;
   /** Named shortfalls, so a failure is reported rather than merely refused. */
   shortfalls: string[];
+}
+
+export interface CalibrationRun {
+  overall: Agreement;
+  perLeader: Map<string, Agreement>;
+}
+
+export interface CalibrationVerdict extends ToleranceVerdict {
+  ungated: string[];
 }
 
 export function checkTolerance(agreement: Agreement): ToleranceVerdict {
@@ -253,20 +266,47 @@ export function checkTolerance(agreement: Agreement): ToleranceVerdict {
   return { withinTolerance: shortfalls.length === 0, shortfalls };
 }
 
+export function checkCalibration(run: CalibrationRun): CalibrationVerdict {
+  const shortfalls = [...checkTolerance(run.overall).shortfalls];
+  if (run.overall.reports < MIN_CALIBRATION_REPORTS) {
+    shortfalls.push(
+      `${run.overall.reports} reports compared, below ${MIN_CALIBRATION_REPORTS}`,
+    );
+  }
+  const compared = [...run.perLeader].filter(([, a]) => a.reports > 0);
+  if (compared.length < MIN_CALIBRATION_LEADERS) {
+    shortfalls.push(
+      `${compared.length} leaders compared, below ${MIN_CALIBRATION_LEADERS}`,
+    );
+  }
+  const ungated: string[] = [];
+  for (const [coachId, agreement] of compared) {
+    if (agreement.reports < MIN_GATED_LEADER_REPORTS) {
+      ungated.push(coachId);
+      continue;
+    }
+    shortfalls.push(
+      ...checkTolerance(agreement).shortfalls.map((s) => `${coachId}: ${s}`),
+    );
+  }
+  return { withinTolerance: shortfalls.length === 0, shortfalls, ungated };
+}
+
 export async function recordCalibration(
   database: db,
   modelVersion: string,
-  agreement: Agreement,
+  run: CalibrationRun,
 ): Promise<number> {
   const row = await database
     .getOrCreateConnection()
     .insertInto("coach_calibration_runs")
     .values({
       model_version: modelVersion,
-      composite_mae: agreement.compositeMae,
-      dimensions_within_one: agreement.dimensionsWithinOne,
-      comparisons: agreement.comparisons,
-      reports: agreement.reports,
+      composite_mae: run.overall.compositeMae,
+      dimensions_within_one: run.overall.dimensionsWithinOne,
+      comparisons: run.overall.comparisons,
+      reports: run.overall.reports,
+      per_leader: JSON.stringify(Object.fromEntries(run.perLeader)),
     })
     .returning("id")
     .executeTakeFirstOrThrow();
@@ -301,11 +341,22 @@ export async function calibrationShortfalls(
       shortfalls.push(`no calibration is recorded for ${version}`);
       continue;
     }
-    const verdict = checkTolerance({
-      compositeMae: latest.composite_mae,
-      dimensionsWithinOne: latest.dimensions_within_one,
-      comparisons: latest.comparisons,
-      reports: latest.reports,
+    if (latest.per_leader === null) {
+      shortfalls.push(
+        `${version}: no per-leader agreement is recorded for calibration run ${latest.id}`,
+      );
+      continue;
+    }
+    const verdict = checkCalibration({
+      overall: {
+        compositeMae: latest.composite_mae,
+        dimensionsWithinOne: latest.dimensions_within_one,
+        comparisons: latest.comparisons,
+        reports: latest.reports,
+      },
+      perLeader: new Map(
+        Object.entries(latest.per_leader as Record<string, Agreement>),
+      ),
     });
     shortfalls.push(...verdict.shortfalls.map((s) => `${version}: ${s}`));
   }

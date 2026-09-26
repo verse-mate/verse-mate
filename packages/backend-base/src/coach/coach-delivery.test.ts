@@ -549,10 +549,18 @@ describe("a model-produced report waits for its model version to be calibrated",
   async function record(compositeMae: number, dimensionsWithinOne: number) {
     runs.push(
       await recordCalibration(Database, VERSION, {
-        compositeMae,
-        dimensionsWithinOne,
-        comparisons: 120,
-        reports: 10,
+        overall: {
+          compositeMae,
+          dimensionsWithinOne,
+          comparisons: 660,
+          reports: 60,
+        },
+        perLeader: new Map(
+          Array.from({ length: 10 }, (_, i) => [
+            `calibrated-${i}`,
+            { compositeMae, dimensionsWithinOne, comparisons: 66, reports: 6 },
+          ]),
+        ),
       }),
     );
   }

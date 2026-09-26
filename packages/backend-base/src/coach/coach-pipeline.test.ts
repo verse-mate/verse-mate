@@ -225,11 +225,17 @@ async function storedAuthenticity() {
 let calibrationRun: number | null = null;
 
 async function calibrate() {
-  calibrationRun = await recordCalibration(Database, RUBRIC_MODEL_VERSION, {
+  const leader = {
     compositeMae: 2,
     dimensionsWithinOne: 0.95,
-    comparisons: 120,
-    reports: 10,
+    comparisons: 66,
+    reports: 6,
+  };
+  calibrationRun = await recordCalibration(Database, RUBRIC_MODEL_VERSION, {
+    overall: { ...leader, comparisons: 660, reports: 60 },
+    perLeader: new Map(
+      Array.from({ length: 10 }, (_, i) => [`calibrated-${i}`, leader]),
+    ),
   });
 }
 
