@@ -419,6 +419,7 @@ export class CoachService {
       state: string;
       attempts: number;
       reportId: string | null;
+      reason: string | null;
       updatedAt: Date;
     }>
   > {
@@ -432,6 +433,7 @@ export class CoachService {
         "state",
         "retry_count",
         "report_id",
+        "hold_reason",
         "updated_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
@@ -450,6 +452,7 @@ export class CoachService {
       state: r.state,
       attempts: r.retry_count,
       reportId: r.report_id,
+      reason: r.hold_reason,
       updatedAt: new Date(r.updated_at as unknown as string),
     }));
   }

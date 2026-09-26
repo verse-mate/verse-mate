@@ -48,6 +48,19 @@ beforeAll(async () => {
     getReportsById: async () => [
       { ...bundledReport, hasRetainedRecording: true },
     ],
+    listPipelineFailures: async () => [
+      {
+        sourceSessionId: "ff-held",
+        coachId: "leader-a",
+        title: "t",
+        sessionDate: "2026-09-01",
+        state: "delivery_pending",
+        attempts: 0,
+        reportId: "r-held",
+        reason: "held for calibration: no calibration is recorded for v3",
+        updatedAt: new Date("2026-09-01T00:00:00Z"),
+      },
+    ],
     getMe: async () => ({ isAdmin: false, profile: { id: "leader-a" } }),
     mintRetainedUrl: async (input: Record<string, unknown>) => {
       minted.push(input);
@@ -103,5 +116,18 @@ describe("the admin drill-in list carries the retained-recording flag through th
       reports: Array<{ hasRetainedRecording?: boolean }>;
     };
     expect(body.reports.map((r) => r.hasRetainedRecording)).toEqual([true]);
+  });
+});
+
+describe("the pipeline-failures surface carries why a session is held", () => {
+  it("the hold reason reaches the admin client", async () => {
+    const res = await get("/coach/admin/pipeline-failures");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      sessions: Array<{ reason?: string | null }>;
+    };
+    expect(body.sessions.map((s) => s.reason)).toEqual([
+      "held for calibration: no calibration is recorded for v3",
+    ]);
   });
 });

@@ -215,7 +215,11 @@ export class CoachDeliveryService {
     if (shortfalls.length > 0) {
       await conn
         .updateTable("coach_intake_sessions")
-        .set({ state: "delivery_pending", updated_at: sql`NOW()` })
+        .set({
+          state: "delivery_pending",
+          hold_reason: `held for calibration: ${shortfalls.join("; ")}`,
+          updated_at: sql`NOW()`,
+        })
         .where("report_id", "=", reportId)
         .where("state", "=", "delivering")
         .execute();
@@ -296,7 +300,7 @@ export class CoachDeliveryService {
     await this.governance.recordEvidence(reportId, evidence);
     await conn
       .updateTable("coach_intake_sessions")
-      .set({ state: "delivered", updated_at: sql`NOW()` })
+      .set({ state: "delivered", hold_reason: null, updated_at: sql`NOW()` })
       .where("report_id", "=", reportId)
       .execute();
 

@@ -9,6 +9,7 @@ import {
   reportSubject,
 } from "./coach-delivery.service";
 import type { ReportEvidence } from "./coach-governance.service";
+import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
 const LEADER = "deliv-leader";
@@ -586,6 +587,41 @@ describe("a model-produced report waits for its model version to be calibrated",
       .where("report_id", "=", "r-cal")
       .executeTakeFirstOrThrow();
     expect(row).toEqual({ state: "delivery_pending", retry_count: 0 });
+  });
+
+  it("a held report is listed for an admin with the shortfall that holds it", async () => {
+    await modelScored("r-cal");
+    await record(9, 0.95);
+    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
+      reportId: "r-cal",
+      evidence: evidence(),
+    });
+    const failures = await new CoachService(Database).listPipelineFailures();
+    const held = failures.find((f) => f.reportId === "r-cal");
+    expect(held?.state).toBe("delivery_pending");
+    expect(held?.reason).toContain("calibration");
+    expect(held?.reason).toContain(VERSION);
+    expect(held?.reason).toContain("composite MAE");
+  });
+
+  it("the hold reason is cleared once the report goes out", async () => {
+    await modelScored("r-cal");
+    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
+      reportId: "r-cal",
+      evidence: evidence(),
+    });
+    await record(3, 0.95);
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({ reportId: "r-cal", evidence: evidence() });
+    expect(result.delivered).toBe(true);
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("hold_reason")
+      .where("report_id", "=", "r-cal")
+      .executeTakeFirstOrThrow();
+    expect(row.hold_reason).toBeNull();
   });
 
   it("agreement outside tolerance blocks delivery with the shortfall named", async () => {
