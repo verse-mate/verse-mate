@@ -5,6 +5,7 @@ import { CoachArchiveService } from "./coach-archive.service";
 import {
   CoachDeliveryService,
   type DeliveryResult,
+  STALE_DELIVERY_CLAIM,
 } from "./coach-delivery.service";
 import { CoachFrameService } from "./coach-frames.service";
 import type { ReportEvidence } from "./coach-governance.service";
@@ -124,7 +125,15 @@ export class CoachPipelineService {
     const pending = await conn
       .selectFrom("coach_intake_sessions")
       .select(["source_session_id", "report_id"])
-      .where("state", "=", "delivery_pending")
+      .where((eb) =>
+        eb.or([
+          eb("state", "=", "delivery_pending"),
+          eb.and([
+            eb("state", "=", "delivering"),
+            eb("updated_at", "<", STALE_DELIVERY_CLAIM),
+          ]),
+        ]),
+      )
       .where("report_id", "is not", null)
       .orderBy("retry_count")
       .orderBy("updated_at")

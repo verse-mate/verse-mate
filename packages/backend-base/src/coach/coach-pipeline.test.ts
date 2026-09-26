@@ -339,6 +339,19 @@ describe("a retained session reaches a delivered report", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("a session left mid-delivery by a crashed worker is picked up again once the claim is stale", async () => {
+    await pipeline(new FakeMailer(false)).run();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivering", updated_at: sql`NOW() - interval '1 day'` })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    const results = await pipeline(new FakeMailer()).run();
+    expect(results.map((r) => [r.sourceSessionId, r.outcome])).toEqual([
+      ["ff-pipe-1", "scored-and-delivered"],
+    ]);
+  });
+
   it("a session that exhausted its delivery attempts is listed for an admin and no longer retried", async () => {
     await pipeline(new FakeMailer(false)).run();
     await conn
