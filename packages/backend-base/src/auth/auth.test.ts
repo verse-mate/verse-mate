@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
+import { db as Database } from "database";
 
 import cacheConstants from "../shared/cache.constants";
 import { getTestClient } from "../shared/test-client";
@@ -404,6 +405,38 @@ describe("Auth - Rate Limiting", () => {
 
     // Clean up rate limit cache key
     await cacheService.delete(`rate-limit:login:${loginEmail}`);
+  });
+
+  it("login rate limit - the right password is refused once an account is being guessed", async () => {
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = "correct-horse-1";
+    await Database.getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "Guessed",
+        lastName: "Account",
+        password: await Bun.password.hash(password, "bcrypt"),
+        emailVerified: true,
+      })
+      .execute();
+
+    for (let i = 0; i < 5; i++) {
+      const { error } = await client.auth.login.post({
+        email,
+        password: `wrong-${i}`,
+      });
+      expect((error as any)?.status).toBe(401);
+    }
+    const { data, error } = await client.auth.login.post({ email, password });
+    expect(data).toBeNull();
+    expect((error as any)?.status).toBe(429);
+
+    await cacheService.delete(`rate-limit:login:${email}`);
+    await Database.getOrCreateConnection()
+      .deleteFrom("user")
+      .where("email", "=", email)
+      .execute();
   });
 
   // refresh rate-limit test removed per D-005, /auth/refresh endpoint deleted.
