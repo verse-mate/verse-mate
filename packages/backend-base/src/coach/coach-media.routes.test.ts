@@ -71,6 +71,7 @@ beforeAll(async () => {
         attempts: 0,
         reportId: "r-held",
         reason: "held for calibration: no calibration is recorded for v3",
+        action: null,
         updatedAt: new Date("2026-09-01T00:00:00Z"),
       },
     ],
@@ -142,6 +143,14 @@ describe("the pipeline-failures surface carries why a session is held", () => {
     expect(body.sessions.map((s) => s.reason)).toEqual([
       "held for calibration: no calibration is recorded for v3",
     ]);
+  });
+
+  it("the action an admin can take reaches the admin client", async () => {
+    const res = await get("/coach/admin/pipeline-failures");
+    const body = (await res.json()) as {
+      sessions: Array<{ action?: string | null }>;
+    };
+    expect(body.sessions.map((s) => s.action)).toEqual([null]);
   });
 });
 

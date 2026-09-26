@@ -163,7 +163,7 @@ async function runChain() {
     attendees: 9,
     newcomers: 1,
     duration: "62 min",
-    held: false,
+    holdReason: null,
   });
   return { storage, reportId: published.reportId };
 }

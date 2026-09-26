@@ -55,6 +55,9 @@ export const PIPELINE_BATCH_LIMIT = 5;
 
 export const PIPELINE_ATTEMPT_LIMIT = 5;
 
+export const TRIPWIRE_HOLD_REASON =
+  "held for review: every dimension came back at the maximum";
+
 export class CoachPipelineService {
   private readonly scoring: CoachScoringService;
   private readonly frames: CoachFrameService;
@@ -297,7 +300,7 @@ export class CoachPipelineService {
       attendees: detail.participantCount,
       newcomers: scored.newcomers ?? 0,
       duration: `${detail.duration ?? 0} min`,
-      held: scored.needsReview === true,
+      holdReason: scored.needsReview ? TRIPWIRE_HOLD_REASON : null,
     });
     await this.scoring.persistDimensions(published.reportId, scored.dimensions);
 
@@ -308,7 +311,7 @@ export class CoachPipelineService {
         sourceSessionId: session.source_session_id,
         outcome: "scored-awaiting-review",
         reportId: published.reportId,
-        detail: "every dimension came back at the maximum",
+        detail: TRIPWIRE_HOLD_REASON,
       };
     }
 

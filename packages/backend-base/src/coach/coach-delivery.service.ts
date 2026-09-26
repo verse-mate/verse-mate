@@ -241,7 +241,13 @@ export class CoachDeliveryService {
       await this.setHeld(reportId, true);
       await conn
         .updateTable("coach_intake_sessions")
-        .set({ state: "scored", updated_at: sql`NOW()` })
+        .set({
+          state: "scored",
+          hold_reason: `held by governance: ${verdict.violations
+            .map((v) => v.rule)
+            .join(", ")}`,
+          updated_at: sql`NOW()`,
+        })
         .where("report_id", "=", reportId)
         .where("state", "=", "delivering")
         .execute();
