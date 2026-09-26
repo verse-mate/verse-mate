@@ -19,6 +19,7 @@ import {
   type CoachNoteRow,
   CoachRepository,
 } from "./repository/coach.repository";
+import { CLUSTERS, RUBRIC_MODEL_VERSION, STATUS_BANDS } from "./rubric";
 
 /** A registered class as returned to the portal. */
 export type CoachClass = CoachClassRow;
@@ -261,7 +262,7 @@ export interface LeaderMonthlyResponse {
   availableMonths: string[];
 }
 
-interface CoachDataset {
+export interface CoachDataset {
   schemaVersion: number;
   generatedAt: string;
   model: string;
@@ -373,6 +374,7 @@ export class CoachService {
     /** Optional so unit tests can construct without a mailer; when present,
      *  add-leader and add-note send email through it. */
     private readonly notification?: CoachMailer,
+    private readonly bundle: CoachDataset = coachData,
   ) {
     this.userService = new UserService(db);
     this.coachRepository = new CoachRepository(db);
@@ -803,11 +805,11 @@ export class CoachService {
    *  by email (a bundled record wins if the same email exists in both). */
   private async allRecords(): Promise<CoachRecord[]> {
     const added = await this.coachRepository.listAddedLeaders();
-    const bundledEmails = new Set(coachData.coaches.map((c) => c.email));
+    const bundledEmails = new Set(this.bundle.coaches.map((c) => c.email));
     const synthetic = added
       .filter((a) => !bundledEmails.has(a.email))
       .map(CoachService.syntheticRecord);
-    return [...coachData.coaches, ...synthetic];
+    return [...this.bundle.coaches, ...synthetic];
   }
 
   /** Overlay admin-editable state (recording link + notes) onto a coach's
@@ -858,11 +860,11 @@ export class CoachService {
    *  coaching record). Case-insensitive. */
   private findByEmail(email: string): CoachRecord | null {
     const target = email.trim().toLowerCase();
-    return coachData.coaches.find((c) => c.email === target) ?? null;
+    return this.bundle.coaches.find((c) => c.email === target) ?? null;
   }
 
   private findById(coachId: string): CoachRecord | null {
-    return coachData.coaches.find((c) => c.id === coachId) ?? null;
+    return this.bundle.coaches.find((c) => c.id === coachId) ?? null;
   }
 
   /**
@@ -898,12 +900,12 @@ export class CoachService {
       .executeTakeFirst();
     // Table populated and this address is not in it → genuinely not an admin.
     // Empty table → not yet backfilled, so the bundle still answers.
-    return anyAdmin ? false : CoachService.isAdminEmail(email);
+    return anyAdmin ? false : this.isAdminEmail(email);
   }
 
-  private static isAdminEmail(email: string): boolean {
+  private isAdminEmail(email: string): boolean {
     const target = email.trim().toLowerCase();
-    return (coachData.admins ?? []).includes(target);
+    return (this.bundle.admins ?? []).includes(target);
   }
 
   /** The signed-in user's email (lowercased), or null. */
@@ -959,9 +961,9 @@ export class CoachService {
       zoomLink: stored?.zoomLink ?? record?.zoomLink ?? "",
       affiliatedChurch: stored?.affiliatedChurch ?? "",
       bibleCoach: stored?.bibleCoach ?? "",
-      model: coachData.model,
-      clusters: coachData.clusters,
-      statusBands: coachData.statusBands,
+      model: RUBRIC_MODEL_VERSION,
+      clusters: CLUSTERS.map((c) => ({ ...c })),
+      statusBands: STATUS_BANDS.map((b) => ({ ...b })),
     };
   }
 
@@ -1126,7 +1128,7 @@ export class CoachService {
     }
     // Migration-gate: the bundle still answers for reports not yet backfilled —
     // scoped to THIS coach only, never a global search across every leader.
-    const bundled = coachData.coaches.find((c) => c.id === coachId);
+    const bundled = this.bundle.coaches.find((c) => c.id === coachId);
     const found = bundled?.reports.find((r) => r.id === reportId);
     if (found) {
       const [overlaid] = await this.overlayReports(coachId, [found]);
@@ -1479,7 +1481,7 @@ export class CoachService {
         activeLeaders: leaders.length,
         newcomers: programNewcomers,
         avgScore: programAvg,
-        clusters: coachData.clusters.map((cl) => {
+        clusters: CLUSTERS.map((cl) => {
           const acc = clusterSums.get(cl.name);
           return {
             name: cl.name,
@@ -1494,29 +1496,58 @@ export class CoachService {
       },
       leaders,
       availableMonths,
-      narrative: coachData.monthlyNarratives?.[month] ?? null,
+      narrative: await this.narrativeFor(month),
     };
   }
 
   // ─── Per-leader monthly summary ──────────────────────────────────────────
 
-  /** Months a leader has a monthly summary for, newest first. */
-  private monthsForCoach(coachId: string): string[] {
-    const byMonth = coachData.monthlyLeaderSummaries?.[coachId];
-    if (!byMonth) return [];
-    return Object.keys(byMonth).sort((a, b) => (a < b ? 1 : -1));
+  private async narrativeFor(
+    month: string,
+  ): Promise<CoachMonthlyNarrative | null> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_monthly_narratives")
+      .select(["executive_summary", "trends"])
+      .where("month", "=", month)
+      .executeTakeFirst();
+    if (row)
+      return {
+        executiveSummary: row.executive_summary as string[],
+        trends: row.trends as string[],
+      };
+    return this.bundle.monthlyNarratives?.[month] ?? null;
   }
 
-  /** Build the response for a resolved coach record + requested month. */
-  private leaderMonthlyFor(
+  private async importedSummaries(
+    coachId: string,
+  ): Promise<Record<string, LeaderMonthlySummary>> {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_monthly_leader_summaries")
+      .select(["month", "summary"])
+      .where("coach_id", "=", coachId)
+      .execute();
+    return {
+      ...this.bundle.monthlyLeaderSummaries?.[coachId],
+      ...Object.fromEntries(
+        rows.map((r) => [
+          r.month,
+          r.summary as unknown as LeaderMonthlySummary,
+        ]),
+      ),
+    };
+  }
+
+  private async leaderMonthlyFor(
     record: CoachRecord,
     month: string,
-  ): LeaderMonthlyResponse {
-    const byMonth = coachData.monthlyLeaderSummaries?.[record.id];
+  ): Promise<LeaderMonthlyResponse> {
+    const byMonth = await this.importedSummaries(record.id);
     return {
       profile: { id: record.id, name: record.name, group: record.group },
-      summary: byMonth?.[month] ?? null,
-      availableMonths: this.monthsForCoach(record.id),
+      summary: byMonth[month] ?? null,
+      availableMonths: Object.keys(byMonth).sort((a, b) => (a < b ? 1 : -1)),
     };
   }
 
@@ -1554,7 +1585,7 @@ export class CoachService {
     emoji: string;
   } {
     if (score === null) return { label: "", emoji: "" };
-    const band = coachData.statusBands.find((b) => score >= b.min);
+    const band = STATUS_BANDS.find((b) => score >= b.min);
     return band
       ? { label: band.label, emoji: band.emoji }
       : { label: "", emoji: "" };
