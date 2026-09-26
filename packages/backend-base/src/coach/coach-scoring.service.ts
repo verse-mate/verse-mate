@@ -212,11 +212,12 @@ export class CoachScoringService {
     // rejected, it is flagged for the admin review path (task 5.7) rather than
     // published unseen. Validation cannot tell a coerced 5 from an earned one;
     // a human can.
-    const uniformMax =
-      validated.ok &&
-      [...(validated.scores as Map<number, number | null>).values()].every(
-        (s) => s === 5,
-      );
+    const scored = validated.ok
+      ? [...(validated.scores as Map<number, number | null>).values()].filter(
+          (s) => s !== null,
+        )
+      : [];
+    const uniformMax = scored.length > 0 && scored.every((s) => s === 5);
     if (!validated.ok) {
       return {
         ok: false,

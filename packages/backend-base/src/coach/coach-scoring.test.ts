@@ -378,6 +378,28 @@ describe("a session is scored without an operator present", () => {
     expect(result.base).toBeCloseTo(100, 6);
   });
 
+  it("a uniform maximum with no frames is flagged too, judged on the dimensions actually scored", async () => {
+    const fives = payload(DIMENSIONS.map((d) => ({ n: d.n, score: 5 })));
+    const result = await new CoachScoringService(
+      Database,
+      new FakeAi(fives),
+    ).scoreSession(INPUT);
+    expect(result.ok).toBe(true);
+    expect(result.needsReview).toBe(true);
+  });
+
+  it("a report with a single dimension below the maximum is not flagged", async () => {
+    const almost = payload(
+      DIMENSIONS.map((d) => ({ n: d.n, score: d.n === 1 ? 4 : 5 })),
+    );
+    const result = await new CoachScoringService(
+      Database,
+      new FakeAi(almost),
+    ).scoreSession(INPUT);
+    expect(result.ok).toBe(true);
+    expect(result.needsReview).toBeUndefined();
+  });
+
   it("an ordinary mixed report is NOT flagged", async () => {
     const ai = new FakeAi(ALL_FOURS);
     const result = await new CoachScoringService(Database, ai).scoreSession(

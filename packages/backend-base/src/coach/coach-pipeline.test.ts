@@ -278,6 +278,13 @@ describe("a retained session reaches a delivered report", () => {
     expect(result.reportId).toBeTruthy();
   });
 
+  it("a coerced maximum on the routine frameless path still waits for a human", async () => {
+    const mailer = new FakeMailer();
+    const [result] = await pipeline(mailer, new FakeAi(5)).run();
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(mailer.sent).toEqual([]);
+  });
+
   it("with NO mailer the report is still published, and nothing is claimed sent", async () => {
     const [result] = await pipeline(null).run();
     expect(result.outcome).toBe("scored-awaiting-review");
