@@ -23,10 +23,6 @@ import coachDataJson from "./coach.data.json";
 
 export type TranscriptLine = ScoringInput["transcript"][number];
 
-export interface CalibrationTranscriptSource {
-  transcriptFor(report: HandScoredReport): Promise<TranscriptLine[] | null>;
-}
-
 export interface CalibrationRunOptions {
   limit?: number;
   dryRun: boolean;
@@ -48,21 +44,16 @@ export interface CalibrationRunResult {
   notRecordedBecause: string | null;
 }
 
-export class DirectoryTranscriptSource implements CalibrationTranscriptSource {
-  constructor(private readonly dir: string) {}
-
-  async transcriptFor(
-    report: HandScoredReport,
-  ): Promise<TranscriptLine[] | null> {
-    if (basename(report.reportId) !== report.reportId) return null;
-    const json = join(this.dir, `${report.reportId}.json`);
-    if (existsSync(json))
-      return parseJsonTranscript(readFileSync(json, "utf8"));
-    const text = join(this.dir, `${report.reportId}.txt`);
-    if (existsSync(text))
-      return parseTextTranscript(readFileSync(text, "utf8"));
-    return null;
-  }
+export function readTranscript(
+  dir: string,
+  reportId: string,
+): TranscriptLine[] | null {
+  if (basename(reportId) !== reportId) return null;
+  const json = join(dir, `${reportId}.json`);
+  if (existsSync(json)) return parseJsonTranscript(readFileSync(json, "utf8"));
+  const text = join(dir, `${reportId}.txt`);
+  if (existsSync(text)) return parseTextTranscript(readFileSync(text, "utf8"));
+  return null;
 }
 
 function parseJsonTranscript(raw: string): TranscriptLine[] {
@@ -150,7 +141,7 @@ export async function runCalibration(
   deps: {
     db: db;
     scoring: Pick<CoachScoringService, "scoreSession">;
-    transcripts: CalibrationTranscriptSource;
+    transcriptsDir: string;
     corpus?: HandScoredReport[];
   },
   options: CalibrationRunOptions,
@@ -168,7 +159,7 @@ export async function runCalibration(
   let modelVersion: string | null = null;
 
   for (const hand of sample) {
-    const transcript = await deps.transcripts.transcriptFor(hand);
+    const transcript = readTranscript(deps.transcriptsDir, hand.reportId);
     if (!transcript || transcript.length === 0) {
       unscored.push({ ...ids(hand), reason: "no-transcript" });
       continue;
@@ -288,7 +279,7 @@ if (import.meta.main) {
     {
       db: Database,
       scoring: new CoachScoringService(Database),
-      transcripts: new DirectoryTranscriptSource(values.transcripts),
+      transcriptsDir: values.transcripts,
     },
     { limit, dryRun: values["dry-run"] === true },
   );
