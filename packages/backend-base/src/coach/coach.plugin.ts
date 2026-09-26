@@ -670,6 +670,32 @@ const plugin = new Elysia()
         },
       )
       .post(
+        "/admin/reports/:reportId/release",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.releaseHeldReport(params.reportId);
+          if (result.refusal === "not-held")
+            throw new NotFoundError("No report held for review");
+          if (result.refusal === "no-mailer")
+            throw new ConflictError("No mailer is configured");
+          return result;
+        },
+        {
+          response: {
+            200: t.Object({
+              delivered: t.Boolean(),
+              refusal: t.Optional(t.String()),
+              violations: t.Optional(t.Array(t.String())),
+              shortfalls: t.Optional(t.Array(t.String())),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
         "/admin/pipeline-failures/:sourceSessionId/requeue",
         async ({ store: { coachService }, currentUserId, params }) => {
           if (!currentUserId)

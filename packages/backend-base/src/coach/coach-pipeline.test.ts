@@ -320,6 +320,103 @@ describe("a retained session reaches a delivered report", () => {
     expect(mailer.sent).toEqual([]);
   });
 
+  it("an admin releases a report held for review, and it is delivered", async () => {
+    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    expect(held.outcome).toBe("scored-awaiting-review");
+    const mailer = new FakeMailer();
+    const result = await new CoachService(
+      Database,
+      mailer as any,
+    ).releaseHeldReport(held.reportId as string);
+    expect(result.delivered).toBe(true);
+    expect(mailer.sent.length).toBeGreaterThan(0);
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("state")
+      .where("source_session_id", "=", "ff-pipe-1")
+      .executeTakeFirstOrThrow();
+    expect(row.state).toBe("delivered");
+  });
+
+  it("a released report still meets governance, and a violation keeps it held", async () => {
+    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        body: JSON.stringify({
+          bigIdeas: [],
+          feedback: { headline: "Not yet at Bryan Bailey's level" },
+        }),
+      })
+      .where("id", "=", held.reportId as string)
+      .execute();
+    await conn
+      .insertInto("coach_leaders")
+      .values({
+        slug: "pipe-bench",
+        email: "pipe-bench@example.test",
+        name: "Bryan Bailey",
+        is_benchmark: true,
+      })
+      .onConflict((oc) => oc.column("slug").doNothing())
+      .execute();
+    const mailer = new FakeMailer();
+    try {
+      const result = await new CoachService(
+        Database,
+        mailer as any,
+      ).releaseHeldReport(held.reportId as string);
+      expect(result.delivered).toBe(false);
+      expect(result.refusal).toBe("governance-blocked");
+      expect(mailer.sent).toEqual([]);
+      const row = await conn
+        .selectFrom("coach_intake_sessions")
+        .select("state")
+        .where("source_session_id", "=", "ff-pipe-1")
+        .executeTakeFirstOrThrow();
+      expect(row.state).toBe("scored");
+    } finally {
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", "pipe-bench")
+        .execute();
+    }
+  });
+
+  it("a released report still waits for calibration", async () => {
+    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    await uncalibrate();
+    const mailer = new FakeMailer();
+    const result = await new CoachService(
+      Database,
+      mailer as any,
+    ).releaseHeldReport(held.reportId as string);
+    expect(result.refusal).toBe("calibration-blocked");
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("only a report held for review can be released", async () => {
+    const [delivered] = await pipeline(new FakeMailer()).run();
+    expect(delivered.outcome).toBe("scored-and-delivered");
+    const mailer = new FakeMailer();
+    const service = new CoachService(Database, mailer as any);
+    expect(
+      (await service.releaseHeldReport(delivered.reportId as string)).refusal,
+    ).toBe("not-held");
+    expect((await service.releaseHeldReport("no-such-report")).refusal).toBe(
+      "not-held",
+    );
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("with no mailer configured a release is refused rather than claimed sent", async () => {
+    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    const result = await new CoachService(Database).releaseHeldReport(
+      held.reportId as string,
+    );
+    expect(result).toEqual({ delivered: false, refusal: "no-mailer" });
+  });
+
   it("with NO mailer the report is still published, and nothing is claimed sent", async () => {
     const [result] = await pipeline(null).run();
     expect(result.outcome).toBe("scored-awaiting-review");

@@ -143,14 +143,9 @@ export class CoachPipelineService {
     const out: PipelineResult[] = [];
     for (const session of pending) {
       const reportId = session.report_id as string;
-      const cited = await conn
-        .selectFrom("coach_report_dimension_scores")
-        .select("rationale")
-        .where("report_id", "=", reportId)
-        .execute();
       const result = await delivery.deliver({
         reportId,
-        evidence: evidenceFrom(cited.map((c) => ({ note: c.rationale }))),
+        evidence: await storedEvidence(this.db, reportId),
       });
       out.push(deliveryOutcome(session.source_session_id, reportId, result));
     }
@@ -312,6 +307,19 @@ function deliveryOutcome(
       result.shortfalls?.join("; ") ??
       result.refusal,
   };
+}
+
+export async function storedEvidence(
+  database: db,
+  reportId: string,
+): Promise<ReportEvidence> {
+  const cited = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_report_dimension_scores")
+    .select("rationale")
+    .where("report_id", "=", reportId)
+    .execute();
+  return evidenceFrom(cited.map((c) => ({ note: c.rationale })));
 }
 
 /**

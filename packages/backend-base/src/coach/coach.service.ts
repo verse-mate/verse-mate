@@ -457,6 +457,37 @@ export class CoachService {
     }));
   }
 
+  async releaseHeldReport(reportId: string): Promise<{
+    delivered: boolean;
+    refusal?: string;
+    violations?: string[];
+    shortfalls?: string[];
+  }> {
+    const held = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_intake_sessions")
+      .select("source_session_id")
+      .where("report_id", "=", reportId)
+      .where("state", "=", "scored")
+      .executeTakeFirst();
+    if (!held) return { delivered: false, refusal: "not-held" };
+    if (!this.notification) return { delivered: false, refusal: "no-mailer" };
+    const { CoachDeliveryService } = await import("./coach-delivery.service");
+    const { storedEvidence } = await import("./coach-pipeline.service");
+    const result = await new CoachDeliveryService(
+      this.db,
+      this.notification,
+    ).deliver({ reportId, evidence: await storedEvidence(this.db, reportId) });
+    return {
+      delivered: result.delivered,
+      ...(result.refusal ? { refusal: result.refusal } : {}),
+      ...(result.violations
+        ? { violations: result.violations.map((v) => v.rule) }
+        : {}),
+      ...(result.shortfalls ? { shortfalls: result.shortfalls } : {}),
+    };
+  }
+
   async requeuePipelineFailure(sourceSessionId: string): Promise<boolean> {
     const requeued = await this.db
       .getOrCreateConnection()

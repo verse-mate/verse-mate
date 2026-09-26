@@ -32,6 +32,7 @@ const realService = store.coachService;
 
 const minted: Array<Record<string, unknown>> = [];
 const requeued: string[] = [];
+const released: string[] = [];
 let admin = true;
 let token = "";
 
@@ -46,6 +47,12 @@ beforeAll(async () => {
   await redisClient.set(cacheConstants.accessToken(USER), [token], "5m");
   store.coachService = {
     isAdmin: async () => admin,
+    releaseHeldReport: async (id: string) => {
+      released.push(id);
+      return id === "r-held"
+        ? { delivered: true }
+        : { delivered: false, refusal: "not-held" };
+    },
     requeuePipelineFailure: async (id: string) => {
       requeued.push(id);
       return id === "ff-parked";
@@ -179,5 +186,45 @@ describe("re-queueing a parked session is an admin action", () => {
     );
     expect(res.status).toBe(401);
     expect(requeued).toEqual([]);
+  });
+});
+
+describe("releasing a held report is an admin action", () => {
+  async function release(id: string, auth = true) {
+    return app.handle(
+      new Request(`http://localhost/coach/admin/reports/${id}/release`, {
+        method: "POST",
+        headers: auth ? { authorization: `Bearer ${token}` } : {},
+      }),
+    );
+  }
+
+  it("an admin releases a held report", async () => {
+    admin = true;
+    released.length = 0;
+    const res = await release("r-held");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ delivered: true });
+    expect(released).toEqual(["r-held"]);
+  });
+
+  it("a report that is not held is not found", async () => {
+    admin = true;
+    expect((await release("r-other")).status).toBe(404);
+  });
+
+  it("a signed-in non-admin is refused and nothing is released", async () => {
+    admin = false;
+    released.length = 0;
+    const res = await release("r-held");
+    admin = true;
+    expect(res.status).toBe(403);
+    expect(released).toEqual([]);
+  });
+
+  it("an anonymous caller is refused", async () => {
+    released.length = 0;
+    expect((await release("r-held", false)).status).toBe(401);
+    expect(released).toEqual([]);
   });
 });
