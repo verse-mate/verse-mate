@@ -133,6 +133,22 @@ export class CoachReportsRepository {
     }));
   }
 
+  async listSessionDates(
+    coachId: string,
+    opts: { includeHeld: boolean },
+  ): Promise<Array<{ id: string; date: string }>> {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_reports")
+      .select("id")
+      .select(DATE_COL)
+      .where("coach_id", "=", coachId)
+      .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
+      .orderBy("session_date", "desc")
+      .execute();
+    return rows.map((r) => ({ id: r.id, date: isoDate(r.session_date) }));
+  }
+
   /** How many sessions a coach has (for pagination + roster counts). */
   async countForCoach(
     coachId: string,

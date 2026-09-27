@@ -128,6 +128,18 @@ function normalizeClassBody(body: {
   };
 }
 
+const SummaryPageSchema = t.Object({
+  items: t.Array(t.Record(t.String(), t.Unknown())),
+  total: t.Number(),
+  streakWeeks: t.Number(),
+  quarterSessions: t.Number(),
+});
+
+const PageQuery = t.Object({
+  limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
+  offset: t.Optional(t.Numeric({ minimum: 0 })),
+});
+
 const ProfileHeaderSchema = t.Object({
   id: t.String(),
   name: t.String(),
@@ -264,10 +276,7 @@ const plugin = new Elysia()
             offset: t.Optional(t.Numeric({ minimum: 0 })),
           }),
           response: {
-            200: t.Object({
-              items: t.Array(t.Record(t.String(), t.Unknown())),
-              total: t.Number(),
-            }),
+            200: SummaryPageSchema,
             ...StandardErrorResponses,
           },
         },
@@ -827,6 +836,55 @@ const plugin = new Elysia()
               profile: ProfileHeaderSchema,
               reports: t.Array(ReportSchema),
             }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/coaches/:id/reports/summary",
+        async ({ params, query, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (!(await coachService.getProfileById(params.id)))
+            throw new NotFoundError("Coach not found");
+          return coachService.getReportSummaries(
+            params.id,
+            { limit: query.limit, offset: query.offset },
+            "admin",
+          );
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          query: PageQuery,
+          response: {
+            200: SummaryPageSchema,
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/coaches/:id/reports/:reportId",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const report = await coachService.getReportDetail(
+            params.id,
+            params.reportId,
+            "admin",
+          );
+          if (!report) throw new NotFoundError("Session not found");
+          return { report };
+        },
+        {
+          params: t.Object({ id: t.String(), reportId: t.String() }),
+          response: {
+            200: t.Object({ report: ReportSchema }),
             404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
           },
