@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 
-import { EmailNotificationConsumer } from "./email-notification.consumer";
+import {
+  EmailNotificationConsumer,
+  MAILGUN_TIMEOUT_MS,
+} from "./email-notification.consumer";
 
 const ENV = { ...process.env };
 afterEach(() => {
@@ -116,5 +119,31 @@ describe("Reply-To has a mechanism", () => {
     expect(sent.length).toBe(1);
     expect(readable(sent[0])).not.toContain("Reply-To");
     spy.mockRestore();
+  });
+});
+
+describe("a send cannot hang the caller", () => {
+  it("the request carries a timeout signal", async () => {
+    let signal: unknown;
+    const spy = spyOn(globalThis, "fetch").mockImplementation(
+      async (_url: unknown, init?: unknown) => {
+        signal = (init as { signal?: unknown })?.signal;
+        return new Response(JSON.stringify({ id: "ok" }), { status: 200 });
+      },
+    );
+    await consumer().sendEmail(MAIL);
+    spy.mockRestore();
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(MAILGUN_TIMEOUT_MS).toBe(30_000);
+  });
+
+  it("a request that times out or never connects is a failed send, not a throw", async () => {
+    const spy = spyOn(globalThis, "fetch").mockImplementation(async () => {
+      throw new DOMException("The operation timed out.", "TimeoutError");
+    });
+    const result = await consumer().sendEmail(MAIL);
+    spy.mockRestore();
+    expect(result.delivered).toBe(false);
+    expect(result.error).toContain("timed out");
   });
 });

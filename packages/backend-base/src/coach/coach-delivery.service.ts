@@ -30,6 +30,12 @@ export const DELIVERY_ATTEMPT_LIMIT = 5;
 
 export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
 
+const CLAIM_TOKEN = sql<string>`updated_at::text`;
+
+type Claim =
+  | { status: "claimed"; token: string; deliveredTo: string[] }
+  | { status: "already-delivered" | "in-flight" | "unknown-report" };
+
 export type DeliveryRefusal =
   | "unknown-report"
   | "already-delivered"
@@ -148,18 +154,17 @@ export class CoachDeliveryService {
     if (!report) return { delivered: false, refusal: "unknown-report" };
 
     const claim = await this.claim(reportId);
-    if (claim !== "claimed") return { delivered: false, refusal: claim };
-    return this.deliverClaimed(reportId, coachId, evidence, report);
+    if (claim.status !== "claimed")
+      return { delivered: false, refusal: claim.status };
+    return this.deliverClaimed(reportId, coachId, evidence, report, claim);
   }
 
-  private async claim(
-    reportId: string,
-  ): Promise<"claimed" | "already-delivered" | "in-flight" | "unknown-report"> {
+  private async claim(reportId: string): Promise<Claim> {
     const conn = this.db.getOrCreateConnection();
     try {
       const claimed = await conn
         .updateTable("coach_intake_sessions")
-        .set({ state: "delivering", updated_at: sql`NOW()` })
+        .set({ state: "delivering", updated_at: sql`clock_timestamp()` })
         .where("report_id", "=", reportId)
         .where((eb) =>
           eb.or([
@@ -170,9 +175,15 @@ export class CoachDeliveryService {
             ]),
           ]),
         )
-        .returning("source_session_id")
+        .returning(["delivered_to", CLAIM_TOKEN.as("token")])
         .executeTakeFirst();
-      if (claimed) return "claimed";
+      if (claimed) {
+        return {
+          status: "claimed",
+          token: claimed.token,
+          deliveredTo: claimed.delivered_to,
+        };
+      }
     } catch (error) {
       if ((error as { code?: string }).code !== "23505") throw error;
       await conn
@@ -181,15 +192,46 @@ export class CoachDeliveryService {
         .where("report_id", "=", reportId)
         .where("state", "=", "scored")
         .execute();
-      return "in-flight";
+      return { status: "in-flight" };
     }
     const session = await conn
       .selectFrom("coach_intake_sessions")
       .select("state")
       .where("report_id", "=", reportId)
       .executeTakeFirst();
-    if (!session) return "unknown-report";
-    return session.state === "delivered" ? "already-delivered" : "in-flight";
+    if (!session) return { status: "unknown-report" };
+    return {
+      status: session.state === "delivered" ? "already-delivered" : "in-flight",
+    };
+  }
+
+  private async renewClaim(
+    reportId: string,
+    token: string,
+  ): Promise<string | null> {
+    const renewed = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({ updated_at: sql`clock_timestamp()` })
+      .where("report_id", "=", reportId)
+      .where("state", "=", "delivering")
+      .where(CLAIM_TOKEN, "=", token)
+      .returning(CLAIM_TOKEN.as("token"))
+      .executeTakeFirst();
+    return renewed?.token ?? null;
+  }
+
+  private async recordRecipient(
+    reportId: string,
+    email: string,
+  ): Promise<void> {
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({ delivered_to: sql`array_append(delivered_to, ${email})` })
+      .where("report_id", "=", reportId)
+      .where(sql<boolean>`NOT (${email} = ANY(delivered_to))`)
+      .execute();
   }
 
   private async deliverClaimed(
@@ -201,6 +243,7 @@ export class CoachDeliveryService {
       body: unknown;
       date: string;
     },
+    claim: { token: string; deliveredTo: string[] },
   ): Promise<DeliveryResult> {
     const conn = this.db.getOrCreateConnection();
     const leader = await conn
@@ -280,8 +323,15 @@ export class CoachDeliveryService {
       }),
     );
 
-    const sends: DeliveryResult["sends"] = [];
-    for (const to of recipients) {
+    const sends: NonNullable<DeliveryResult["sends"]> = [];
+    const confirmed = new Set(claim.deliveredTo);
+    let token = claim.token;
+    for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
+      const renewed = await this.renewClaim(reportId, token);
+      if (renewed === null) {
+        return { delivered: false, refusal: "in-flight", sends, subject };
+      }
+      token = renewed;
       const result = await this.send({
         subject,
         to,
@@ -294,24 +344,34 @@ export class CoachDeliveryService {
         delivered: result?.delivered === true,
         error: result?.error,
       });
+      if (result?.delivered === true) {
+        await this.recordRecipient(reportId, to.email);
+        confirmed.add(to.email);
+      }
     }
 
     // 6.5, delivery is complete only when EVERY recipient's send is confirmed.
     // A partial delivery reported as success is how an admin stops seeing a
     // leader's reports without anyone noticing.
-    const allSent = sends.length > 0 && sends.every((s) => s.delivered);
+    const allSent =
+      recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
     if (!allSent) {
-      await this.countSendFailure(reportId);
+      await this.countSendFailure(reportId, token);
       return { delivered: false, refusal: "send-failed", sends, subject };
     }
 
-    await this.governance.recordEvidence(reportId, evidence);
-    await this.setHeld(reportId, false);
-    await conn
+    const finished = await conn
       .updateTable("coach_intake_sessions")
       .set({ state: "delivered", hold_reason: null, updated_at: sql`NOW()` })
       .where("report_id", "=", reportId)
-      .execute();
+      .where("state", "=", "delivering")
+      .where(CLAIM_TOKEN, "=", token)
+      .executeTakeFirst();
+    if (Number(finished.numUpdatedRows ?? 0) === 0) {
+      return { delivered: false, refusal: "in-flight", sends, subject };
+    }
+    await this.governance.recordEvidence(reportId, evidence);
+    await this.setHeld(reportId, false);
 
     return { delivered: true, sends, subject };
   }
@@ -338,7 +398,10 @@ export class CoachDeliveryService {
     }
   }
 
-  private async countSendFailure(reportId: string): Promise<void> {
+  private async countSendFailure(
+    reportId: string,
+    token: string,
+  ): Promise<void> {
     await this.db
       .getOrCreateConnection()
       .updateTable("coach_intake_sessions")
@@ -349,6 +412,7 @@ export class CoachDeliveryService {
       })
       .where("report_id", "=", reportId)
       .where("state", "=", "delivering")
+      .where(CLAIM_TOKEN, "=", token)
       .execute();
   }
 

@@ -70,6 +70,8 @@ export default interface CoachIntakeSessionsTable {
     string | null | undefined,
     string | null
   >;
+
+  delivered_to: ColumnType<string[], string[] | undefined, string[]>;
 }
 
 export type CoachIntakeSessions = Selectable<CoachIntakeSessionsTable>;

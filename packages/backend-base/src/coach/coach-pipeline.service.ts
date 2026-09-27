@@ -17,6 +17,7 @@ import {
 } from "./coach-scoring.service";
 import type { CoachMailer } from "./coach.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
+import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 /**
  * The pipeline, connected (change: port-coach-pipeline).
@@ -116,6 +117,7 @@ export class CoachPipelineService {
           session.source_session_id,
           session.retry_count,
         );
+        await this.queueForRedelivery(session.source_session_id);
       }
       out.push(result);
     }
@@ -139,6 +141,7 @@ export class CoachPipelineService {
         ]),
       )
       .where("report_id", "is not", null)
+      .orderBy(sql`hold_reason IS NOT NULL`)
       .orderBy("retry_count")
       .orderBy("updated_at")
       .limit(PIPELINE_BATCH_LIMIT)
@@ -191,6 +194,22 @@ export class CoachPipelineService {
         return Number.isFinite(n) ? n : null;
       }),
     );
+  }
+
+  private async queueForRedelivery(sourceSessionId: string): Promise<void> {
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_pending", updated_at: sql`NOW()` })
+      .where("source_session_id", "=", sourceSessionId)
+      .where("report_id", "is not", null)
+      .where((eb) =>
+        eb.or([
+          eb("state", "=", "delivering"),
+          eb.and([eb("state", "=", "scored"), eb("hold_reason", "is", null)]),
+        ]),
+      )
+      .execute();
   }
 
   private async countScoringFailure(
@@ -267,39 +286,41 @@ export class CoachPipelineService {
       };
     }
 
-    // Publish FIRST, this creates the report row the dimension scores' foreign
-    // key needs, then persist the dimensions into it.
-    const published = await this.publish.publish({
-      sourceSessionId: session.source_session_id,
-      coachId,
-      sessionDate: session.date,
-      sessionTitle: session.title,
-      base: scored.base ?? 0,
-      clusters: scored.clusters ?? [],
-      dimensions: scored.dimensions,
-      // WELL-FORMED, even though the port produces no narrative prose. The
-      // list response is validated as a whole against ReportSchema, which
-      // requires `feedback` and its four arrays, so a report published with
-      // `feedback: {}` failed validation and took the leader's ENTIRE session
-      // list down with it (422, "Something went wrong loading your coaching
-      // data"). The same failure mode the docUrl/pdfUrl comment in
-      // coach.schema.ts describes, found by running the pipeline end to end.
-      //
-      // Empty rather than invented: the dimension scores and their rationales
-      // are the real output, and prose generation is not part of this port.
-      bigIdeas: [],
-      feedback: {
-        headline: "",
-        strengths: [],
-        improvements: [],
-        recommendations: [],
-      },
-      attendees: detail.participantCount,
-      newcomers: scored.newcomers ?? 0,
-      duration: `${detail.duration ?? 0} min`,
-      holdReason: scored.reviewReason ?? null,
-    });
-    await this.scoring.persistDimensions(published.reportId, scored.dimensions);
+    const dimensions = scored.dimensions;
+    const published = await this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        const report = await this.publish.publish(
+          {
+            sourceSessionId: session.source_session_id,
+            coachId,
+            sessionDate: session.date,
+            sessionTitle: session.title,
+            base: scored.base ?? 0,
+            clusters: scored.clusters ?? [],
+            dimensions,
+            bigIdeas: [],
+            feedback: {
+              headline: "",
+              strengths: [],
+              improvements: [],
+              recommendations: [],
+            },
+            attendees: detail.participantCount,
+            newcomers: scored.newcomers ?? 0,
+            duration: `${detail.duration ?? 0} min`,
+            holdReason: scored.reviewReason ?? null,
+          },
+          trx as CoachReportsWriter,
+        );
+        await this.scoring.persistDimensions(
+          report.reportId,
+          dimensions,
+          trx as CoachReportsWriter,
+        );
+        return report;
+      });
 
     if (scored.reviewReason) {
       return {

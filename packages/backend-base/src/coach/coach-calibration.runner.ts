@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { parseArgs } from "node:util";
+import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import {
@@ -23,7 +24,6 @@ import {
   type ScoringInput,
   authenticityBaseline,
 } from "./coach-scoring.service";
-import coachDataJson from "./coach.data.json";
 
 export type TranscriptLine = ScoringInput["transcript"][number];
 
@@ -91,30 +91,33 @@ function parseTextTranscript(raw: string): TranscriptLine[] {
     });
 }
 
-type BundleReport = {
-  id: string;
-  date: string;
-  dimensions?: Array<{ n: number; score: number | null; note?: string }>;
-};
+type StoredDimension = { n: number; score: number | null; note?: string };
 
-export function handScoredCorpus(
-  bundle: unknown = coachDataJson,
-): HandScoredReport[] {
-  const coaches = (
-    bundle as { coaches: Array<{ id: string; reports: BundleReport[] }> }
-  ).coaches;
-  return coaches.flatMap((c) =>
-    c.reports.map((r) => ({
-      coachId: c.id,
-      reportId: r.id,
-      date: r.date,
-      dimensions: (r.dimensions ?? []).map((d) => ({
-        n: d.n,
-        score: d.score === null ? null : Number(d.score),
-        rationale: d.note ?? "",
-      })),
+export async function handScoredCorpus(
+  database: db,
+): Promise<HandScoredReport[]> {
+  const rows = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_reports")
+    .select(["id", "coach_id", "metrics"])
+    .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
+    .where("source_session_id", "like", "legacy:%")
+    .orderBy("coach_id")
+    .orderBy("session_date")
+    .orderBy("id")
+    .execute();
+  return rows.map((r) => ({
+    coachId: r.coach_id,
+    reportId: r.id,
+    date: r.date,
+    dimensions: (
+      ((r.metrics ?? {}) as { dimensions?: StoredDimension[] }).dimensions ?? []
+    ).map((d) => ({
+      n: d.n,
+      score: d.score === null ? null : Number(d.score),
+      rationale: d.note ?? "",
     })),
-  );
+  }));
 }
 
 export function sampleAcrossLeaders(
@@ -151,7 +154,7 @@ export async function runCalibration(
   },
   options: CalibrationRunOptions,
 ): Promise<CalibrationRunResult> {
-  const corpus = deps.corpus ?? handScoredCorpus();
+  const corpus = deps.corpus ?? (await handScoredCorpus(deps.db));
   const eligibility = selectEligible(corpus);
   const sample = sampleAcrossLeaders(
     replayOrder(eligibility.eligible),
