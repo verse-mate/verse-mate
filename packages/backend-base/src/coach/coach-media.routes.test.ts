@@ -34,6 +34,8 @@ const minted: Array<Record<string, unknown>> = [];
 const requeued: string[] = [];
 const released: string[] = [];
 let failuresListed = 0;
+const summaryCalls: unknown[][] = [];
+const detailCalls: unknown[][] = [];
 let admin = true;
 let token = "";
 
@@ -82,6 +84,32 @@ beforeAll(async () => {
           updatedAt: new Date("2026-09-01T00:00:00Z"),
         },
       ];
+    },
+    getReportSummaries: async (...args: unknown[]) => {
+      summaryCalls.push(args);
+      return {
+        items: [
+          {
+            id: "r-1",
+            date: "2026-09-01",
+            hasRetainedRecording: true,
+            attachedRecordingUrl: "https://drive.example.test/r.mp4",
+          },
+        ],
+        total: 1,
+        streakWeeks: 2,
+        quarterSessions: 3,
+      };
+    },
+    getReportDetail: async (...args: unknown[]) => {
+      detailCalls.push(args);
+      return args[1] === "missing"
+        ? null
+        : {
+            ...bundledReport,
+            hasRetainedRecording: true,
+            attachedRecordingUrl: "https://drive.example.test/r.mp4",
+          };
     },
     getMe: async () => ({ isAdmin: false, profile: { id: "leader-a" } }),
     mintRetainedUrl: async (input: Record<string, unknown>) => {
@@ -294,5 +322,115 @@ describe("coach routes are rate limited per caller", () => {
     await clearLimits();
     expect(statuses.slice(0, 120).every((s) => s === 200)).toBe(true);
     expect(statuses[120]).toBe(429);
+  });
+});
+
+describe("the admin reads one leader's reports a page and a report at a time", () => {
+  async function anonymous(path: string) {
+    return app.handle(new Request(`http://localhost${path}`));
+  }
+
+  it("an admin gets a page with its recording fields and the aggregates", async () => {
+    admin = true;
+    summaryCalls.length = 0;
+    const res = await get(
+      "/coach/admin/coaches/leader-a/reports/summary?limit=10&offset=20",
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      items: [
+        {
+          id: "r-1",
+          date: "2026-09-01",
+          hasRetainedRecording: true,
+          attachedRecordingUrl: "https://drive.example.test/r.mp4",
+        },
+      ],
+      total: 1,
+      streakWeeks: 2,
+      quarterSessions: 3,
+    });
+    expect(summaryCalls).toEqual([
+      ["leader-a", { limit: 10, offset: 20 }, "admin"],
+    ]);
+  });
+
+  it("a signed-in non-admin is refused the page and nothing is read", async () => {
+    admin = false;
+    summaryCalls.length = 0;
+    const res = await get("/coach/admin/coaches/leader-a/reports/summary");
+    admin = true;
+    expect(res.status).toBe(403);
+    expect(summaryCalls).toEqual([]);
+  });
+
+  it("an anonymous caller is refused the page", async () => {
+    summaryCalls.length = 0;
+    const res = await anonymous(
+      "/coach/admin/coaches/leader-a/reports/summary",
+    );
+    expect(res.status).toBe(401);
+    expect(summaryCalls).toEqual([]);
+  });
+
+  it("an admin gets one report, read as an admin", async () => {
+    admin = true;
+    detailCalls.length = 0;
+    const res = await get(
+      `/coach/admin/coaches/leader-a/reports/${bundledReport.id}`,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      report: {
+        id: string;
+        attachedRecordingUrl: string | null;
+        hasRetainedRecording: boolean;
+      };
+    };
+    expect(body.report.id).toBe(bundledReport.id as string);
+    expect(body.report.attachedRecordingUrl).toBe(
+      "https://drive.example.test/r.mp4",
+    );
+    expect(body.report.hasRetainedRecording).toBe(true);
+    expect(detailCalls).toEqual([["leader-a", bundledReport.id, "admin"]]);
+  });
+
+  it("an unknown report is not found", async () => {
+    admin = true;
+    const res = await get("/coach/admin/coaches/leader-a/reports/missing");
+    expect(res.status).toBe(404);
+  });
+
+  it("a signed-in non-admin is refused the report and nothing is read", async () => {
+    admin = false;
+    detailCalls.length = 0;
+    const res = await get(
+      `/coach/admin/coaches/leader-a/reports/${bundledReport.id}`,
+    );
+    admin = true;
+    expect(res.status).toBe(403);
+    expect(detailCalls).toEqual([]);
+  });
+
+  it("an anonymous caller is refused the report", async () => {
+    detailCalls.length = 0;
+    const res = await anonymous(
+      `/coach/admin/coaches/leader-a/reports/${bundledReport.id}`,
+    );
+    expect(res.status).toBe(401);
+    expect(detailCalls).toEqual([]);
+  });
+
+  it("the leader's own page carries the aggregates too", async () => {
+    summaryCalls.length = 0;
+    const res = await get("/coach/reports/summary");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      streakWeeks: 2,
+      quarterSessions: 3,
+    });
+    expect(summaryCalls).toEqual([
+      ["leader-a", { limit: undefined, offset: undefined }],
+    ]);
   });
 });

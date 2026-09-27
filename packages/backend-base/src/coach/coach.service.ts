@@ -1051,25 +1051,69 @@ export class CoachService {
   async getReportSummaries(
     coachId: string,
     opts: { limit?: number; offset?: number } = {},
-  ): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    audience: "leader" | "admin" = "leader",
+  ): Promise<{
+    items: Record<string, unknown>[];
+    total: number;
+    streakWeeks: number;
+    quarterSessions: number;
+  }> {
+    const includeHeld = audience === "admin";
     const record = await this.resolveById(coachId);
     const bundled = record?.reports ?? [];
-    if (bundled.length === 0 || (record && (await this.isBackfilled(record)))) {
-      const total = await this.reportsRepository.countForCoach(coachId, {
-        includeHeld: false,
-      });
-      if (total === 0) return { items: [], total: 0 };
-      const rows = await this.reportsRepository.listSummaries(coachId, opts);
-      return {
-        items: rows.map((r) =>
-          rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
-        ),
-        total,
-      };
-    }
-    const stored = (await this.reportsRepository.listFullReports(coachId)).map(
-      (r) =>
+    const backfilled =
+      bundled.length === 0 ||
+      (record !== null && (await this.isBackfilled(record)));
+    const dates = CoachService.withBundle(
+      await this.reportsRepository.listSessionDates(coachId, { includeHeld }),
+      bundled.map((r) => ({ id: r.id, date: r.date })),
+      backfilled,
+    ).map((r) => r.date);
+    const aggregates = {
+      streakWeeks: CoachService.streakWeeks(dates),
+      quarterSessions: CoachService.quarterSessions(dates),
+    };
+    const page = backfilled
+      ? await this.storedSummaryPage(coachId, opts, includeHeld)
+      : await this.mergedSummaryPage(coachId, bundled, opts, includeHeld);
+    const items =
+      audience === "admin"
+        ? await this.withRecordingFields(coachId, page.items)
+        : page.items;
+    return { items, total: page.total, ...aggregates };
+  }
+
+  private async storedSummaryPage(
+    coachId: string,
+    opts: { limit?: number; offset?: number },
+    includeHeld: boolean,
+  ): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    const total = await this.reportsRepository.countForCoach(coachId, {
+      includeHeld,
+    });
+    if (total === 0) return { items: [], total: 0 };
+    const rows = await this.reportsRepository.listSummaries(coachId, {
+      ...opts,
+      includeHeld,
+    });
+    return {
+      items: rows.map((r) =>
         rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
+      ),
+      total,
+    };
+  }
+
+  private async mergedSummaryPage(
+    coachId: string,
+    bundled: CoachReport[],
+    opts: { limit?: number; offset?: number },
+    includeHeld: boolean,
+  ): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    const stored = (
+      await this.reportsRepository.listFullReports(coachId, { includeHeld })
+    ).map((r) =>
+      rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
     );
     const all = CoachService.withBundle(
       stored,
@@ -1093,6 +1137,58 @@ export class CoachService {
       ? Math.max(Math.trunc(Number(opts.offset)), 0)
       : 0;
     return { items: all.slice(offset, offset + limit), total: all.length };
+  }
+
+  private async withRecordingFields(
+    coachId: string,
+    items: Record<string, unknown>[],
+  ): Promise<Record<string, unknown>[]> {
+    if (items.length === 0) return items;
+    const [links, media] = await Promise.all([
+      this.coachRepository.getRecordingLinksForCoach(coachId),
+      this.describeRetainedMedia(
+        coachId,
+        items.map((i) => String(i.id)),
+      ),
+    ]);
+    return items.map((i) => {
+      const id = String(i.id);
+      return {
+        ...i,
+        hasRetainedRecording: media.get(id)?.hasRetainedRecording ?? false,
+        attachedRecordingUrl: links[id] ? links[id] : null,
+      };
+    });
+  }
+
+  private static weekOf(iso: string): number {
+    const [y, m, d] = iso.split("-").map(Number);
+    const day = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+    return day.getTime() - ((day.getUTCDay() + 6) % 7) * CoachService.DAY_MS;
+  }
+
+  private static readonly DAY_MS = 24 * 60 * 60 * 1000;
+
+  static streakWeeks(dates: string[]): number {
+    if (dates.length === 0) return 0;
+    const weeks = new Set(dates.map(CoachService.weekOf));
+    let cursor = Math.max(...weeks);
+    let streak = 0;
+    while (weeks.has(cursor)) {
+      streak += 1;
+      cursor -= 7 * CoachService.DAY_MS;
+    }
+    return streak;
+  }
+
+  static quarterSessions(dates: string[]): number {
+    if (dates.length === 0) return 0;
+    const days = dates.map((d) => {
+      const [y, m, day] = d.split("-").map(Number);
+      return Date.UTC(y, (m || 1) - 1, day || 1);
+    });
+    const cutoff = Math.max(...days) - 91 * CoachService.DAY_MS;
+    return days.filter((t) => t >= cutoff).length;
   }
 
   /**
