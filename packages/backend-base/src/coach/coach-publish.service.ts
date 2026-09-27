@@ -1,7 +1,10 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
-import { CoachReportsRepository } from "./repository/coach-reports.repository";
+import {
+  CoachReportsRepository,
+  type CoachReportsWriter,
+} from "./repository/coach-reports.repository";
 import {
   type ClusterContribution,
   composeBonuses,
@@ -61,8 +64,14 @@ export class CoachPublishService {
     this.reports = new CoachReportsRepository(db);
   }
 
-  async publish(input: PublishInput): Promise<PublishResult> {
-    const conn = this.db.getOrCreateConnection();
+  async publish(
+    input: PublishInput,
+    writer?: CoachReportsWriter,
+  ): Promise<PublishResult> {
+    if (!writer) {
+      return this.reports.transaction((trx) => this.publish(input, trx));
+    }
+    const conn = writer;
     // Computed here when the caller did not, from the head counts it passed.
     // Nothing used to compute them at all, so every report scored base-only.
     const derived = composeBonuses({
@@ -105,31 +114,26 @@ export class CoachPublishService {
     };
     const body = { bigIdeas: input.bigIdeas, feedback: input.feedback };
 
-    const upserted = await this.reports.upsert({
-      // Reuse the existing row's id whenever there is one, so a delivered link
-      // keeps resolving. The constructed form is only for a new report, and it
-      // is joined with plain dashes, which is technically ambiguous (nothing
-      // stops a leader slug from ending in something date-shaped). Changing the
-      // separator now would orphan every link already emailed and every legacy
-      // alias, so it stays, and the unique index on source_session_id makes a
-      // collision a loud constraint error instead of one report overwriting
-      // another.
-      id:
-        before?.id ??
-        `${input.coachId}-${input.sessionDate}-${input.sourceSessionId}`,
-      coach_id: input.coachId,
-      session_date: input.sessionDate,
-      source_session_id: input.sourceSessionId,
-      legacy_ids: [],
-      summary,
-      metrics,
-      body,
-      held: input.holdReason !== null,
-    });
+    const upserted = await this.reports.upsert(
+      {
+        id:
+          before?.id ??
+          `${input.coachId}-${input.sessionDate}-${input.sourceSessionId}`,
+        coach_id: input.coachId,
+        session_date: input.sessionDate,
+        source_session_id: input.sourceSessionId,
+        legacy_ids: [],
+        summary,
+        metrics,
+        body,
+        held: input.holdReason !== null,
+      },
+      writer,
+    );
 
     // Provenance advances on every publish, so a reader can tell a stale view
     // from a current one.
-    await this.reports.bumpMeta(null);
+    await this.reports.bumpMeta(null, writer);
 
     // Link the session to the report it produced, and mark it scored. The
     // report row existing IS the session being live, there is no second flag

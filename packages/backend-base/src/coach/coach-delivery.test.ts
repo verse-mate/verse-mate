@@ -527,6 +527,120 @@ describe("delivery is claimed in the database, so separate workers cannot both s
   });
 });
 
+describe("a slow send cannot turn into a second copy", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(clear);
+
+  function receivedBy(...mailers: FakeMailer[]) {
+    const counts = new Map<string, number>();
+    for (const m of mailers)
+      for (const s of m.sent) counts.set(s.to, (counts.get(s.to) ?? 0) + 1);
+    return counts;
+  }
+
+  async function sessionState(id: string) {
+    return (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select("state")
+        .where("report_id", "=", id)
+        .executeTakeFirstOrThrow()
+    ).state;
+  }
+
+  it("a worker that stalls past the claim window is fenced off, and only the send in flight can repeat", async () => {
+    await seedReport("r-stall");
+    const rescuer = new FakeMailer();
+    let rescued: Promise<unknown> | null = null;
+    class StallingMailer extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        if (this.sent.length === 2 && rescued === null) {
+          await conn
+            .updateTable("coach_intake_sessions")
+            .set({ updated_at: sql`NOW() - interval '20 minutes'` })
+            .where("report_id", "=", "r-stall")
+            .execute();
+          rescued = new CoachDeliveryService(Database, rescuer).deliver({
+            reportId: "r-stall",
+            evidence: evidence(),
+          });
+          await rescued;
+        }
+        return result;
+      }
+    }
+    const stalled = new StallingMailer();
+    const first = await new CoachDeliveryService(Database, stalled).deliver({
+      reportId: "r-stall",
+      evidence: evidence(),
+    });
+
+    expect(first.delivered).toBe(false);
+    expect(first.refusal).toBe("in-flight");
+    const inFlight = stalled.sent[1].to;
+    const received = receivedBy(stalled, rescuer);
+    for (const email of EMAILS) expect(received.has(email)).toBe(true);
+    for (const [to, n] of received) expect(n).toBe(to === inFlight ? 2 : 1);
+    expect(await sessionState("r-stall")).toBe("delivered");
+  });
+
+  it("a retry after one recipient failed mails only the recipients still owed", async () => {
+    await seedReport("r-partial");
+    const flaky = new FakeMailer((to) => to === EMAILS[2]);
+    const failed = await new CoachDeliveryService(Database, flaky).deliver({
+      reportId: "r-partial",
+      evidence: evidence(),
+    });
+    expect(failed.delivered).toBe(false);
+    expect(await sessionState("r-partial")).toBe("delivery_pending");
+
+    const retry = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, retry).deliver({
+      reportId: "r-partial",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(retry.sent.map((s) => s.to)).toEqual([EMAILS[2]]);
+    expect(await sessionState("r-partial")).toBe("delivered");
+  });
+
+  it("a report re-published during the last send is not marked delivered by the stale worker", async () => {
+    await seedReport("r-republished");
+    const admins = await conn
+      .selectFrom("coach_admins")
+      .select("email")
+      .execute();
+    const recipients = new Set([
+      EMAILS[0],
+      EMAILS[1],
+      ...admins.map((a) => a.email),
+    ]).size;
+    class RepublishOnLastSend extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        if (this.sent.length === recipients) {
+          await conn
+            .updateTable("coach_intake_sessions")
+            .set({ state: "scored", updated_at: sql`NOW()` })
+            .where("report_id", "=", "r-republished")
+            .execute();
+        }
+        return result;
+      }
+    }
+    const result = await new CoachDeliveryService(
+      Database,
+      new RepublishOnLastSend(),
+    ).deliver({ reportId: "r-republished", evidence: evidence() });
+    expect(result.delivered).toBe(false);
+    expect(await sessionState("r-republished")).toBe("scored");
+  });
+});
+
 describe("a model-produced report waits for its model version to be calibrated", () => {
   const VERSION = "v-test-calibration";
   const runs: number[] = [];

@@ -1,4 +1,5 @@
 import { sql } from "kysely";
+import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 import { type AiProvider, getAiProvider } from "../shared/ai";
 import type { db } from "../shared/shared.plugin";
@@ -308,13 +309,6 @@ export class CoachScoringService {
 
     const { base, clusters } = composeBaseScore(scores);
 
-    // NOT persisted here. `coach_report_dimension_scores.report_id` is a NOT
-    // NULL foreign key to `coach_reports.id`, and only publishing creates that
-    // row, while publishing needs the composite this call produces. Writing
-    // here forced every caller to create a report row first, which is why the
-    // test seeded one and why nothing could compose the two in production. The
-    // scores travel back to the orchestrator, which publishes and then calls
-    // `persistDimensions` inside one transaction.
     return {
       ok: true,
       base,
@@ -444,17 +438,11 @@ export class CoachScoringService {
   async persistDimensions(
     reportId: string,
     dimensions: Array<{ n: number; score: number | null; note: string }>,
+    writer?: CoachReportsWriter,
   ): Promise<void> {
-    // ONE transaction. Twelve separate awaited inserts left a half-written
-    // score set behind if the seventh failed: the report was live carrying a
-    // composite computed from twelve dimensions while only six were stored,
-    // and the admin review path would show a report missing half its reasoning.
-    await this.db
-      .getOrCreateConnection()
-      .transaction()
-      .execute(async (trx) => {
-        for (const d of dimensions) {
-          await sql`
+    const write = async (trx: CoachReportsWriter) => {
+      for (const d of dimensions) {
+        await sql`
             INSERT INTO coach_report_dimension_scores
               (report_id, dimension_n, score, rationale, provenance, model_version)
             VALUES (
@@ -468,7 +456,12 @@ export class CoachScoringService {
               updated_at    = NOW()
             WHERE coach_report_dimension_scores.provenance = 'machine'
           `.execute(trx);
-        }
-      });
+      }
+    };
+    if (writer) return write(writer);
+    await this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute((trx) => write(trx as CoachReportsWriter));
   }
 }

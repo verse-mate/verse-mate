@@ -1003,6 +1003,153 @@ describe("a held report is not on the leader's portal until it is released", () 
   });
 });
 
+describe("a failure after scoring leaves the session somewhere a queue reads", () => {
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
+      .execute();
+    await seedRetained();
+    await calibrate();
+  });
+  afterEach(async () => {
+    await clear();
+    await uncalibrate();
+  });
+
+  async function reportsForSession() {
+    return conn
+      .selectFrom("coach_reports")
+      .select("id")
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+  }
+
+  it("a throw while persisting the dimensions publishes nothing, and the attempt is counted", async () => {
+    const scoring = new CoachScoringService(Database, new FakeAi());
+    scoring.persistDimensions = async () => {
+      throw new Error("the database went away mid-write");
+    };
+    const svc = new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      new FakeMailer() as any,
+      { scoring, frames: noFrames as any },
+    );
+    const [result] = await svc.run();
+
+    expect(result.outcome).toBe("scoring-failed");
+    expect(await reportsForSession()).toEqual([]);
+    expect(await intakeRow("ff-pipe-1")).toEqual({
+      state: "retained",
+      retry_count: 1,
+    });
+  });
+
+  it("a throw during delivery leaves the published session queued for redelivery", async () => {
+    const throwing = {
+      deliver: async () => {
+        throw new Error("the governance read timed out");
+      },
+    };
+    const svc = new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      new FakeMailer() as any,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: noFrames as any,
+        delivery: throwing as any,
+      },
+    );
+    await svc.run();
+    expect((await intakeRow("ff-pipe-1")).state).toBe("delivery_pending");
+
+    const mailer = new FakeMailer();
+    const retried = await pipeline(mailer).run();
+    expect(retried.map((r) => r.outcome)).toEqual(["scored-and-delivered"]);
+    expect(mailer.sent.length).toBeGreaterThan(0);
+  });
+
+  it("a report held for calibration does not starve a retryable one out of the batch", async () => {
+    for (let i = 0; i < PIPELINE_BATCH_LIMIT; i += 1) {
+      const id = `ff-extra-cal-${i}`;
+      await conn
+        .insertInto("coach_reports")
+        .values({
+          id,
+          coach_id: COACH,
+          session_date: "2026-08-01",
+          source_session_id: id,
+          legacy_ids: [],
+          summary: {},
+          metrics: {},
+          body: {},
+          held: true,
+        })
+        .execute();
+      await conn
+        .insertInto("coach_report_dimension_scores")
+        .values({
+          report_id: id,
+          dimension_n: 1,
+          score: 3,
+          rationale: "r",
+          provenance: "machine",
+          model_version: "an-uncalibrated-version",
+        })
+        .execute();
+      await conn
+        .insertInto("coach_intake_sessions")
+        .values({
+          source_session_id: id,
+          coach_id: COACH,
+          matched_by: "title_match",
+          title: "t",
+          session_date: "2026-08-01",
+          state: "delivery_pending",
+          report_id: id,
+          hold_reason: "held for calibration: no calibration is recorded",
+          retry_count: 0,
+        })
+        .execute();
+    }
+    const first = await pipeline(new FakeMailer(false)).run();
+    expect(first.find((o) => o.sourceSessionId === "ff-pipe-1")?.outcome).toBe(
+      "delivery-failed",
+    );
+    expect((await intakeRow("ff-pipe-1")).retry_count).toBe(1);
+
+    const mailer = new FakeMailer();
+    const outcomes = await pipeline(mailer).run();
+    expect(
+      outcomes.find((o) => o.sourceSessionId === "ff-pipe-1")?.outcome,
+    ).toBe("scored-and-delivered");
+  });
+
+  it("a re-score's baseline leaves out the session being re-scored", async () => {
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: "pipe-coach-first-publish",
+        coach_id: COACH,
+        session_date: "2026-08-15",
+        source_session_id: "ff-pipe-1",
+        legacy_ids: [],
+        summary: {},
+        metrics: JSON.stringify({
+          dimensions: [{ n: 8, score: 1, note: "r" }],
+        }),
+        body: {},
+      })
+      .execute();
+    await pipeline(new FakeMailer()).run();
+    expect(await storedAuthenticity()).toMatchObject({ score: 4 });
+    expect((await storedAuthenticity()).rationale).not.toContain("held at");
+  });
+});
+
 describe("the evidence rule 2 compares is built from what the model cited", () => {
   it("pulls quoted strings and timestamps out of the rationales", () => {
     const ev = evidenceFrom([

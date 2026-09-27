@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,11 +25,37 @@ import {
   runCalibration,
 } from "./coach-calibration.runner";
 import { CoachScoringService } from "./coach-scoring.service";
+import { datasetToRows } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 import { DIMENSIONS, RUBRIC_MODEL_VERSION } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
-const corpus = handScoredCorpus();
+
+const seeded: string[] = [];
+for (const row of datasetToRows(coachDataJson)) {
+  const inserted = await conn
+    .insertInto("coach_reports")
+    .values({
+      id: row.id,
+      coach_id: row.coach_id,
+      session_date: row.session_date,
+      source_session_id: row.source_session_id,
+      legacy_ids: row.legacy_ids,
+      summary: JSON.stringify(row.summary),
+      metrics: JSON.stringify(row.metrics),
+      body: JSON.stringify(row.body),
+    })
+    .onConflict((oc) => oc.column("source_session_id").doNothing())
+    .returning("id")
+    .executeTakeFirst();
+  if (inserted) seeded.push(inserted.id);
+}
+afterAll(async () => {
+  if (seeded.length > 0)
+    await conn.deleteFrom("coach_reports").where("id", "in", seeded).execute();
+});
+
+const corpus = await handScoredCorpus(Database);
 const byId = new Map(corpus.map((r) => [r.reportId, r]));
 
 class HandCopyAi implements AiProvider {
@@ -144,18 +177,15 @@ afterEach(async () => {
 });
 
 describe("the calibration runner measures the bundle's own hand-scored corpus", () => {
-  it("states the corpus, the filter and what it excluded, all derived from the bundle", async () => {
-    const bundle = coachDataJson as unknown as {
-      coaches: Array<{ reports: unknown[] }>;
-    };
+  it("states the corpus, the filter and what it excluded, all derived from the store", async () => {
     const result = await runCalibration(deps(new HandCopyAi()), {
       dryRun: true,
       limit: 4,
     });
-    expect(result.corpusReports).toBe(
-      bundle.coaches.reduce((n, c) => n + c.reports.length, 0),
+    expect(result.corpusReports).toBe(corpus.length);
+    expect(result.corpusLeaders).toBe(
+      new Set(corpus.map((r) => r.coachId)).size,
     );
-    expect(result.corpusLeaders).toBe(bundle.coaches.length);
     const expected = selectEligible(corpus);
     expect(result.eligible).toBe(expected.eligible.length);
     expect(result.excluded).toEqual(expected.excluded);
@@ -297,6 +327,84 @@ describe("transcripts come from a directory the operator points at", () => {
   it("a report with no file, or an id that tries to leave the directory, has no transcript", async () => {
     expect(readTranscript(dir, "missing")).toBeNull();
     expect(readTranscript(dir, "../secret")).toBeNull();
+  });
+});
+
+describe("the hand-scored corpus is read from the store, not the bundle task 7.1 deletes", () => {
+  const COACH = "calib-store-coach";
+  afterEach(async () => {
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", COACH)
+      .execute();
+  });
+
+  async function insert(id: string, source: string) {
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id,
+        coach_id: COACH,
+        session_date: "2026-05-01",
+        source_session_id: source,
+        legacy_ids: [],
+        summary: {},
+        metrics: JSON.stringify({
+          dimensions: [
+            { n: 1, score: 4, note: "held the room" },
+            { n: 2, score: null, note: "" },
+          ],
+        }),
+        body: {},
+      })
+      .execute();
+  }
+
+  it("a backfilled report is in the corpus with its hand scores and rationales", async () => {
+    await insert("calib-store-legacy", `legacy:${COACH}:2026-05-01`);
+    const stored = await handScoredCorpus(Database);
+    expect(stored.find((r) => r.reportId === "calib-store-legacy")).toEqual({
+      coachId: COACH,
+      reportId: "calib-store-legacy",
+      date: "2026-05-01",
+      dimensions: [
+        { n: 1, score: 4, rationale: "held the room" },
+        { n: 2, score: null, rationale: "" },
+      ],
+    });
+  });
+
+  it("a report the pipeline produced is not hand-scored and stays out", async () => {
+    await insert("calib-store-machine", "ff-calib-store-machine");
+    const stored = await handScoredCorpus(Database);
+    expect(stored.some((r) => r.reportId === "calib-store-machine")).toBe(
+      false,
+    );
+  });
+
+  it("the runner measures the stored corpus when none is passed", async () => {
+    await insert("calib-store-legacy", `legacy:${COACH}:2026-05-01`);
+    const result = await runCalibration(
+      {
+        db: Database,
+        scoring: new CoachScoringService(Database, new HandCopyAi()),
+        transcriptsDir: noTranscripts,
+      },
+      { dryRun: true, limit: 1 },
+    );
+    expect(result.corpusReports).toBe(
+      (await handScoredCorpus(Database)).length,
+    );
+    expect(result.corpusLeaders).toBe(
+      new Set((await handScoredCorpus(Database)).map((r) => r.coachId)).size,
+    );
+  });
+
+  it("the runner does not import the bundle", async () => {
+    const source = await Bun.file(
+      new URL("./coach-calibration.runner.ts", import.meta.url).pathname,
+    ).text();
+    expect(source).not.toContain("coach.data.json");
   });
 });
 

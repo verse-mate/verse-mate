@@ -44,6 +44,8 @@ export interface SendResult {
   error?: string;
 }
 
+export const MAILGUN_TIMEOUT_MS = 30_000;
+
 export class EmailNotificationConsumer {
   private readonly environment!: string;
   private readonly emailFrom!: string;
@@ -99,17 +101,27 @@ export class EmailNotificationConsumer {
       }
 
       const authBtoa = btoa(`api:${this.mailgunApiKey}`);
-      const res = await fetch(
-        `https://api.mailgun.net/v3/${this.mailgunDomain}/messages`,
-        {
-          method: "POST",
-          body: body.toString(),
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: `Basic ${authBtoa}`,
+      let res: Response;
+      try {
+        res = await fetch(
+          `https://api.mailgun.net/v3/${this.mailgunDomain}/messages`,
+          {
+            method: "POST",
+            body: body.toString(),
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: `Basic ${authBtoa}`,
+            },
+            signal: AbortSignal.timeout(MAILGUN_TIMEOUT_MS),
           },
-        },
-      );
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.log(
+          `[${EmailNotificationConsumer.name}]: Send email error: ${message}`,
+        );
+        return { delivered: false, error: message };
+      }
 
       const [json, jsonError] = await safePromise<{ message: string }>(
         res.json(),
