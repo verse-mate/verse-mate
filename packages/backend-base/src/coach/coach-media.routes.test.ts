@@ -33,6 +33,7 @@ const realService = store.coachService;
 const minted: Array<Record<string, unknown>> = [];
 const requeued: string[] = [];
 const released: string[] = [];
+let failuresListed = 0;
 let admin = true;
 let token = "";
 
@@ -65,20 +66,23 @@ beforeAll(async () => {
         attachedRecordingUrl: "https://drive.example.test/r.mp4",
       },
     ],
-    listPipelineFailures: async () => [
-      {
-        sourceSessionId: "ff-held",
-        coachId: "leader-a",
-        title: "t",
-        sessionDate: "2026-09-01",
-        state: "delivery_pending",
-        attempts: 0,
-        reportId: "r-held",
-        reason: "held for calibration: no calibration is recorded for v3",
-        action: null,
-        updatedAt: new Date("2026-09-01T00:00:00Z"),
-      },
-    ],
+    listPipelineFailures: async () => {
+      failuresListed += 1;
+      return [
+        {
+          sourceSessionId: "ff-held",
+          coachId: "leader-a",
+          title: "t",
+          sessionDate: "2026-09-01",
+          state: "delivery_pending",
+          attempts: 0,
+          reportId: "r-held",
+          reason: "held for calibration: no calibration is recorded for v3",
+          action: null,
+          updatedAt: new Date("2026-09-01T00:00:00Z"),
+        },
+      ];
+    },
     getMe: async () => ({ isAdmin: false, profile: { id: "leader-a" } }),
     mintRetainedUrl: async (input: Record<string, unknown>) => {
       minted.push(input);
@@ -157,6 +161,15 @@ describe("the pipeline-failures surface carries why a session is held", () => {
     expect(body.sessions.map((s) => s.reason)).toEqual([
       "held for calibration: no calibration is recorded for v3",
     ]);
+  });
+
+  it("a signed-in non-admin is refused and nothing is listed", async () => {
+    admin = false;
+    failuresListed = 0;
+    const res = await get("/coach/admin/pipeline-failures");
+    admin = true;
+    expect(res.status).toBe(403);
+    expect(failuresListed).toBe(0);
   });
 
   it("the action an admin can take reaches the admin client", async () => {
