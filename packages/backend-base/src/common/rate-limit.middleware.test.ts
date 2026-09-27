@@ -1,18 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 
 import { extractClientIp } from "../auth/sso/sso.utils";
 import { createIpRateLimit } from "../middleware/rate-limit";
-import { authRateLimiters } from "./rate-limit.middleware";
+import redisClient from "../shared/redis-client";
+import { clientIp } from "./client-ip";
+import { authRateLimiters, createRateLimit } from "./rate-limit.middleware";
 
 const PROXY = "10.10.10.10";
 const CLIENT = "198.51.100.7";
 
 function memoryCache() {
-  const store = new Map<string, unknown>();
+  const counts = new Map<string, number>();
   return {
-    get: async <T>(k: string) => store.get(k) as T | undefined,
-    set: async (k: string, v: unknown) => {
-      store.set(k, v);
+    increment: async (k: string) => {
+      const n = (counts.get(k) ?? 0) + 1;
+      counts.set(k, n);
+      return n;
     },
     ttl: async () => 60,
   };
@@ -20,14 +23,16 @@ function memoryCache() {
 
 function hit(
   limiter: (ctx: unknown) => Promise<void>,
-  cache: ReturnType<typeof memoryCache>,
+  cache: ReturnType<typeof memoryCache> | typeof redisClient,
   socket: string,
   headers: Record<string, string> = {},
+  body: Record<string, unknown> = {},
 ) {
   return limiter({
     request: new Request("http://localhost/auth/signup", { headers }),
     server: { requestIP: () => ({ address: socket, family: "IPv4", port: 1 }) },
     store: { cache },
+    body,
     set: {},
   }).then(
     () => "ok",
@@ -123,5 +128,133 @@ describe("the signup and SSO limiters key on an address the caller cannot choose
       limiter({ request: req("10.0.0.2"), set: {}, server } as never),
     ).toBeDefined();
     expect(extractClientIp(req("10.0.0.3"), server)).toBe(CLIENT);
+  });
+});
+
+describe("the login limiter cannot be used to lock someone else out", () => {
+  const VICTIM = "victim@example.test";
+
+  function login(
+    cache: ReturnType<typeof memoryCache>,
+    ip: string,
+    email = VICTIM,
+  ) {
+    return hit(authRateLimiters.login, cache, ip, {}, { email });
+  }
+
+  it("five guesses from one address block that address, not the account's owner", async () => {
+    const cache = memoryCache();
+    for (let i = 0; i < 5; i++)
+      expect(await login(cache, "198.51.100.1")).toBe("ok");
+    expect(await login(cache, "198.51.100.1")).toBe(429);
+    expect(await login(cache, "198.51.100.2")).toBe("ok");
+  });
+
+  it("the email is keyed case-insensitively, so casing buys no extra guesses", async () => {
+    const cache = memoryCache();
+    for (let i = 0; i < 5; i++)
+      await login(cache, "198.51.100.1", i % 2 ? VICTIM : VICTIM.toUpperCase());
+    expect(
+      await login(cache, "198.51.100.1", ` ${VICTIM.toUpperCase()} `),
+    ).toBe(429);
+  });
+
+  it("spraying many accounts from one address is throttled", async () => {
+    const cache = memoryCache();
+    const results = [];
+    for (let i = 0; i < 31; i++)
+      results.push(
+        await hit(
+          authRateLimiters.loginIp,
+          cache,
+          "198.51.100.3",
+          {},
+          {
+            email: `user-${i}@example.test`,
+          },
+        ),
+      );
+    expect(results.slice(0, 30).every((r) => r === "ok")).toBe(true);
+    expect(results[30]).toBe(429);
+  });
+});
+
+describe("the limiter counts atomically", () => {
+  it("a concurrent burst of 100 lets exactly max through", async () => {
+    const key = `atomic-${crypto.randomUUID()}`;
+    const limiter = createRateLimit({
+      windowSeconds: 60,
+      max: 5,
+      keyGenerator: () => key,
+    });
+    const results = await Promise.all(
+      Array.from({ length: 100 }, () =>
+        hit(limiter, redisClient, "203.0.113.5"),
+      ),
+    );
+    await redisClient.delete(`rate-limit:${key}`);
+    expect(results.filter((r) => r === "ok")).toHaveLength(5);
+    expect(results.filter((r) => r === 429)).toHaveLength(95);
+  });
+
+  it("the counter carries the window as its expiry", async () => {
+    const key = `atomic-ttl-${crypto.randomUUID()}`;
+    const limiter = createRateLimit({
+      windowSeconds: 60,
+      max: 5,
+      keyGenerator: () => key,
+    });
+    await hit(limiter, redisClient, "203.0.113.5");
+    const ttl = await redisClient.ttl(`rate-limit:${key}`);
+    await redisClient.delete(`rate-limit:${key}`);
+    expect(ttl).toBeGreaterThan(0);
+    expect(ttl).toBeLessThanOrEqual(60);
+  });
+
+  it("a counter left in the old JSON format is replaced rather than failing the request", async () => {
+    const key = `atomic-legacy-${crypto.randomUUID()}`;
+    await redisClient.set(`rate-limit:${key}`, { count: 3 }, "60s");
+    const limiter = createRateLimit({
+      windowSeconds: 60,
+      max: 5,
+      keyGenerator: () => key,
+    });
+    const result = await hit(limiter, redisClient, "203.0.113.5");
+    await redisClient.delete(`rate-limit:${key}`);
+    expect(result).toBe("ok");
+  });
+});
+
+describe("TRUSTED_PROXY_HOPS is loud when it cannot be read", () => {
+  const saved = process.env.TRUSTED_PROXY_HOPS;
+  afterEach(() => {
+    if (saved === undefined)
+      Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
+    else process.env.TRUSTED_PROXY_HOPS = saved;
+  });
+
+  const request = new Request("http://localhost/", {
+    headers: { "x-forwarded-for": "192.0.2.1, 192.0.2.2, 192.0.2.3" },
+  });
+  const server = { requestIP: () => ({ address: PROXY }) };
+
+  for (const raw of ["-1", "abc", "1.5", "2hops"]) {
+    it(`"${raw}" is reported and the default of one hop is used`, () => {
+      process.env.TRUSTED_PROXY_HOPS = raw;
+      const errors = spyOn(console, "error").mockImplementation(() => {});
+      try {
+        expect(clientIp(request, server)).toBe("192.0.2.3");
+        expect(errors.mock.calls.flat().join(" ")).toContain(
+          `TRUSTED_PROXY_HOPS "${raw}"`,
+        );
+      } finally {
+        errors.mockRestore();
+      }
+    });
+  }
+
+  it("a whole number is used as given", () => {
+    process.env.TRUSTED_PROXY_HOPS = "2";
+    expect(clientIp(request, server)).toBe("192.0.2.2");
   });
 });

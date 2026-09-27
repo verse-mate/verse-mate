@@ -33,42 +33,38 @@ export const createRateLimit = (options: RateLimitOptions) => {
     const key = keyGenerator(context);
     const cacheKey = `rate-limit:${key}`;
 
-    // Get current count
-    const cached = await cache.get<{ count: number }>(cacheKey);
-    const current = cached?.count || 0;
+    const count = await cache.increment(cacheKey, windowSeconds);
 
-    if (current >= max) {
+    if (count > max) {
       context.set.status = 429;
       const stableMessage =
         typeof message === "string" ? message : "Too many requests";
       // Include cacheKey to allow TTL lookup for retryAfter
       throw { status: 429, message: stableMessage, cacheKey };
     }
-
-    // Increment counter with fixed window TTL
-    const newCount = current + 1;
-    if (current === 0) {
-      // First request in window - set full TTL
-      await cache.set(cacheKey, { count: newCount }, `${windowSeconds}s`);
-    } else {
-      // Preserve remaining TTL to avoid extending window on each hit (sliding window bug)
-      const ttlSeconds = await cache.ttl(cacheKey).catch(() => -1);
-      if (ttlSeconds > 0) {
-        await cache.set(cacheKey, { count: newCount }, `${ttlSeconds}s`);
-      } else {
-        // If TTL missing or expired, reset a fresh window
-        await cache.set(cacheKey, { count: newCount }, `${windowSeconds}s`);
-      }
-    }
   };
 };
+
+const normalizedEmail = (value: unknown): string =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
 
 // Predefined rate limiters
 export const authRateLimiters = {
   login: createRateLimit({
     windowSeconds: 60,
     max: 5,
-    keyGenerator: (context) => `login:${context.body.email}`,
+    keyGenerator: (context) =>
+      `login:${normalizedEmail(context.body?.email)}:${clientIp(context.request, context.server)}`,
+    message: "Too many login attempts, please try again in a minute",
+  }),
+
+  loginIp: createRateLimit({
+    windowSeconds: 60,
+    max: 30,
+    keyGenerator: (context) =>
+      `login-ip:${clientIp(context.request, context.server)}`,
     message: "Too many login attempts, please try again in a minute",
   }),
 

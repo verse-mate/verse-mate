@@ -4,11 +4,19 @@ interface AddressSource {
 
 const DEFAULT_TRUSTED_PROXY_HOPS = 1;
 
+let reportedHops = "";
+
 function trustedProxyHops(): number {
-  const hops = Number.parseInt(process.env.TRUSTED_PROXY_HOPS ?? "", 10);
-  return Number.isInteger(hops) && hops >= 0
-    ? hops
-    : DEFAULT_TRUSTED_PROXY_HOPS;
+  const raw = (process.env.TRUSTED_PROXY_HOPS ?? "").trim();
+  if (raw === "") return DEFAULT_TRUSTED_PROXY_HOPS;
+  if (/^\d+$/.test(raw)) return Number(raw);
+  if (raw !== reportedHops) {
+    reportedHops = raw;
+    console.error(
+      `[CLIENT-IP] Unknown TRUSTED_PROXY_HOPS "${raw}"; using ${DEFAULT_TRUSTED_PROXY_HOPS}`,
+    );
+  }
+  return DEFAULT_TRUSTED_PROXY_HOPS;
 }
 
 export function clientIp(

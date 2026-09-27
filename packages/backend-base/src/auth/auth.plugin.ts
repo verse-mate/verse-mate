@@ -263,7 +263,7 @@ const plugin = new Elysia()
         },
         {
           body: AuthLoginInput,
-          beforeHandle: authRateLimiters.login,
+          beforeHandle: [authRateLimiters.loginIp, authRateLimiters.login],
           response: {
             200: AuthPayloadSchema,
             ...StandardErrorResponses,

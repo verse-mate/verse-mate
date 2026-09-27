@@ -323,6 +323,10 @@ describe("Auth - Rate Limiting", () => {
   const client = getTestClient<AuthPlugin>(Backend);
   const cacheService = Backend.store.cache;
 
+  beforeAll(async () => {
+    await cacheService.delete("rate-limit:login-ip:unknown");
+  });
+
   it("signup rate limit - returns 429 after 3 attempts", async () => {
     const signupInput = {
       email: faker.internet.email().toLocaleLowerCase(),
@@ -404,12 +408,14 @@ describe("Auth - Rate Limiting", () => {
     expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(60);
 
     // Clean up rate limit cache key
-    await cacheService.delete(`rate-limit:login:${loginEmail}`);
+    await cacheService.delete(`rate-limit:login:${loginEmail}:unknown`);
   });
 
-  it("login rate limit - the right password is refused once an account is being guessed", async () => {
+  it("login rate limit - guessing an account from one address does not lock its owner out", async () => {
     const email = faker.internet.email().toLocaleLowerCase();
     const password = "correct-horse-1";
+    const attacker = { headers: { "x-forwarded-for": "198.51.100.66" } };
+    const owner = { headers: { "x-forwarded-for": "198.51.100.77" } };
     await Database.getOrCreateConnection()
       .insertInto("user")
       .values({
@@ -422,21 +428,50 @@ describe("Auth - Rate Limiting", () => {
       .execute();
 
     for (let i = 0; i < 5; i++) {
-      const { error } = await client.auth.login.post({
-        email,
-        password: `wrong-${i}`,
-      });
+      const { error } = await client.auth.login.post(
+        { email, password: `wrong-${i}` },
+        attacker,
+      );
       expect((error as any)?.status).toBe(401);
     }
-    const { data, error } = await client.auth.login.post({ email, password });
-    expect(data).toBeNull();
-    expect((error as any)?.status).toBe(429);
+    const blocked = await client.auth.login.post({ email, password }, attacker);
+    expect((blocked.error as any)?.status).toBe(429);
 
-    await cacheService.delete(`rate-limit:login:${email}`);
+    const { data, error } = await client.auth.login.post(
+      { email, password },
+      owner,
+    );
+    expect(error).toBeNull();
+    expect(data?.accessToken).toBeDefined();
+
+    for (const ip of ["198.51.100.66", "198.51.100.77"]) {
+      await cacheService.delete(`rate-limit:login:${email}:${ip}`);
+      await cacheService.delete(`rate-limit:login-ip:${ip}`);
+    }
     await Database.getOrCreateConnection()
       .deleteFrom("user")
       .where("email", "=", email)
       .execute();
+  });
+
+  it("login rate limit - spraying many accounts from one address is throttled", async () => {
+    const sprayer = { headers: { "x-forwarded-for": "198.51.100.88" } };
+    const statuses: number[] = [];
+    const emails: string[] = [];
+    for (let i = 0; i < 31; i++) {
+      const email = faker.internet.email().toLocaleLowerCase();
+      emails.push(email);
+      const { error } = await client.auth.login.post(
+        { email, password: "guess" },
+        sprayer,
+      );
+      statuses.push((error as any)?.status);
+    }
+    await cacheService.delete("rate-limit:login-ip:198.51.100.88");
+    for (const email of emails)
+      await cacheService.delete(`rate-limit:login:${email}:198.51.100.88`);
+    expect(statuses.slice(0, 30).every((s) => s !== 429)).toBe(true);
+    expect(statuses[30]).toBe(429);
   });
 
   // refresh rate-limit test removed per D-005, /auth/refresh endpoint deleted.
