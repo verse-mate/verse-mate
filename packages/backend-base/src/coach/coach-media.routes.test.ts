@@ -251,3 +251,35 @@ describe("releasing a held report is an admin action", () => {
     expect(released).toEqual([]);
   });
 });
+
+describe("coach routes are rate limited per caller", () => {
+  async function clearLimits() {
+    await redisClient.delete(`rate-limit:coach:${USER}`);
+    await redisClient.delete(`rate-limit:coach-mint:${USER}`);
+  }
+
+  it("a caller gets 20 recording and transcript addresses a minute, then 429", async () => {
+    await clearLimits();
+    minted.length = 0;
+    const statuses: number[] = [];
+    for (let i = 0; i < 21; i += 1) {
+      const kind = i % 2 === 0 ? "recording-url" : "transcript-url";
+      statuses.push((await get(`/coach/reports/r-1/${kind}`)).status);
+    }
+    await clearLimits();
+    expect(statuses.slice(0, 20).every((s) => s === 200)).toBe(true);
+    expect(statuses[20]).toBe(429);
+    expect(minted).toHaveLength(20);
+  });
+
+  it("every coach route shares a budget of 120 requests a minute per caller", async () => {
+    await clearLimits();
+    const statuses: number[] = [];
+    for (let i = 0; i < 121; i += 1) {
+      statuses.push((await get("/coach/admin/pipeline-failures")).status);
+    }
+    await clearLimits();
+    expect(statuses.slice(0, 120).every((s) => s === 200)).toBe(true);
+    expect(statuses[120]).toBe(429);
+  });
+});

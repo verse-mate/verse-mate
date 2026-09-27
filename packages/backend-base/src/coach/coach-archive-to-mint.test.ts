@@ -145,6 +145,7 @@ async function runChain() {
 
   const storage = new FakeStorage();
   const retained = await new CoachArchiveService(Database, new FakeClient(), {
+    resolve: async () => ["93.184.216.34"],
     storage: storage as any,
     fetch: async () => new Response("VIDEO", { status: 200 }),
   }).retain(SRC);

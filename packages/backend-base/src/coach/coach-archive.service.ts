@@ -1,7 +1,8 @@
+import { lookup } from "node:dns/promises";
+import { BlockList, isIP } from "node:net";
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
-import { MAX_STREAMED_OBJECT_BYTES } from "../shared/storage/bun-s3.helper";
 import { ObjectStorageService } from "../shared/storage/storage.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
 
@@ -22,6 +23,7 @@ export type RetainFailure =
   | "no-video"
   | "untrusted-video-host"
   | "recording-too-large"
+  | "recording-truncated"
   | "retrieval-failed";
 
 /**
@@ -31,6 +33,52 @@ export type RetainFailure =
 const RETRIEVAL_TIMEOUT_MS = 10 * 60 * 1000;
 
 export const MAX_VIDEO_REDIRECTS = 3;
+
+export const MAX_RECORDING_BYTES = 8 * 1024 ** 3;
+
+const NON_PUBLIC = new BlockList();
+for (const [net, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
+] as const) {
+  NON_PUBLIC.addSubnet(net, prefix, "ipv4");
+}
+for (const [net, prefix] of [
+  ["::", 128],
+  ["::1", 128],
+  ["64:ff9b::", 96],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8],
+] as const) {
+  NON_PUBLIC.addSubnet(net, prefix, "ipv6");
+}
+
+export function isPublicAddress(address: string): boolean {
+  const family = isIP(address);
+  if (family === 0) return false;
+  return !NON_PUBLIC.check(address, family === 4 ? "ipv4" : "ipv6");
+}
+
+async function systemResolve(hostname: string): Promise<string[]> {
+  return (await lookup(hostname, { all: true })).map((a) => a.address);
+}
+
+function declaredLength(headers: Headers): number | null {
+  const raw = headers.get("content-length")?.trim() ?? "";
+  return /^\d+$/.test(raw) ? Number(raw) : null;
+}
+
+class RecordingTooLarge extends Error {}
 
 /**
  * Hosts the recording may be fetched from.
@@ -82,11 +130,15 @@ export interface ArchiveDeps {
     "putGlobalObjectStream" | "putGlobalObject" | "deleteObject"
   >;
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
+  resolve?: (hostname: string) => Promise<string[]>;
+  maxRecordingBytes?: number;
 }
 
 export class CoachArchiveService {
   private readonly storage: NonNullable<ArchiveDeps["storage"]>;
   private readonly fetchImpl: NonNullable<ArchiveDeps["fetch"]>;
+  private readonly resolve: NonNullable<ArchiveDeps["resolve"]>;
+  private readonly maxRecordingBytes: number;
 
   constructor(
     private readonly db: db,
@@ -96,6 +148,8 @@ export class CoachArchiveService {
     this.storage = deps.storage ?? new ObjectStorageService();
     this.fetchImpl =
       deps.fetch ?? ((url: string, init?: RequestInit) => fetch(url, init));
+    this.resolve = deps.resolve ?? systemResolve;
+    this.maxRecordingBytes = deps.maxRecordingBytes ?? MAX_RECORDING_BYTES;
   }
 
   /** Where a session's material lives. Our key, never the provider's URL. */
@@ -155,20 +209,46 @@ export class CoachArchiveService {
       return { retained: false, reason: "retrieval-failed" };
     }
 
-    // Refuse before spending the upload, when the provider declares the size.
-    const declared = Number(response.headers.get("content-length") ?? "");
-    if (Number.isFinite(declared) && declared > MAX_STREAMED_OBJECT_BYTES) {
+    const declared = declaredLength(response.headers);
+    if (declared !== null && declared > this.maxRecordingBytes) {
+      await response.body.cancel();
       return { retained: false, reason: "recording-too-large" };
     }
 
-    // Stream, never buffer: a recorded session is far larger than anything
-    // this container should hold in memory (task 4.3b).
+    const limit = this.maxRecordingBytes;
+    let streamed = 0;
+    const bounded = (response.body as ReadableStream<Uint8Array>).pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) {
+          streamed += chunk.byteLength;
+          if (streamed > limit) controller.error(new RecordingTooLarge());
+          else controller.enqueue(chunk);
+        },
+      }),
+    );
+
     const recordingKey = CoachArchiveService.recordingKey(sourceSessionId);
-    const recordingBytes = await this.storage.putGlobalObjectStream({
-      key: recordingKey,
-      body: response.body as ReadableStream<Uint8Array>,
-      contentType: "video/mp4",
-    });
+    let recordingBytes: number;
+    try {
+      recordingBytes = await this.storage.putGlobalObjectStream({
+        key: recordingKey,
+        body: bounded,
+        contentType: "video/mp4",
+      });
+    } catch (error) {
+      await this.storage.deleteObject(recordingKey).catch(() => false);
+      if (streamed > limit) {
+        return { retained: false, reason: "recording-too-large" };
+      }
+      throw error;
+    }
+    if (
+      recordingBytes === 0 ||
+      (declared !== null && recordingBytes !== declared)
+    ) {
+      await this.storage.deleteObject(recordingKey).catch(() => false);
+      return { retained: false, reason: "recording-truncated" };
+    }
 
     // The transcript is stored as OUR pseudonymised form, not the provider's
     // payload: the provider's carries speaker names, and open question 4 says
@@ -221,6 +301,8 @@ export class CoachArchiveService {
     const signal = AbortSignal.timeout(RETRIEVAL_TIMEOUT_MS);
     let url = first;
     for (let hop = 0; hop <= MAX_VIDEO_REDIRECTS; hop += 1) {
+      const reachable = await this.resolvesPublicly(url);
+      if (reachable !== true) return reachable;
       const response = await this.fetchImpl(url, {
         signal,
         redirect: "manual",
@@ -237,6 +319,23 @@ export class CoachArchiveService {
       }
     }
     return "retrieval-failed";
+  }
+
+  private async resolvesPublicly(url: string): Promise<true | RetainFailure> {
+    const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
+    let addresses: string[];
+    try {
+      addresses = isIP(host) ? [host] : await this.resolve(host);
+    } catch {
+      return "retrieval-failed";
+    }
+    if (addresses.length === 0 || !addresses.every(isPublicAddress)) {
+      console.error(
+        "[COACH-ARCHIVE] refusing a video host that resolves to a non-public address",
+      );
+      return "untrusted-video-host";
+    }
+    return true;
   }
 
   /**
