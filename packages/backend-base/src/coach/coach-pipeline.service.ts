@@ -55,9 +55,6 @@ export const PIPELINE_BATCH_LIMIT = 5;
 
 export const PIPELINE_ATTEMPT_LIMIT = 5;
 
-export const TRIPWIRE_HOLD_REASON =
-  "held for review: every dimension came back at the maximum";
-
 export class CoachPipelineService {
   private readonly scoring: CoachScoringService;
   private readonly frames: CoachFrameService;
@@ -300,18 +297,16 @@ export class CoachPipelineService {
       attendees: detail.participantCount,
       newcomers: scored.newcomers ?? 0,
       duration: `${detail.duration ?? 0} min`,
-      holdReason: scored.needsReview ? TRIPWIRE_HOLD_REASON : null,
+      holdReason: scored.reviewReason ?? null,
     });
     await this.scoring.persistDimensions(published.reportId, scored.dimensions);
 
-    // A uniform maximum is indistinguishable from a successful prompt
-    // injection, so it waits for a human instead of reaching the leader.
-    if (scored.needsReview) {
+    if (scored.reviewReason) {
       return {
         sourceSessionId: session.source_session_id,
         outcome: "scored-awaiting-review",
         reportId: published.reportId,
-        detail: TRIPWIRE_HOLD_REASON,
+        detail: scored.reviewReason,
       };
     }
 

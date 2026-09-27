@@ -9,12 +9,13 @@ import {
 } from "bun:test";
 import { db as Database } from "database";
 
-import { MAX_STREAMED_OBJECT_BYTES } from "../shared/storage/bun-s3.helper";
-
 import {
   CoachArchiveService,
+  MAX_RECORDING_BYTES,
   MAX_VIDEO_REDIRECTS,
 } from "./coach-archive.service";
+
+const publicAddress = async () => ["93.184.216.34"];
 
 const CoachArchiveServiceTranscriptKey = (id: string) =>
   CoachArchiveService.transcriptKey(id);
@@ -167,6 +168,7 @@ function service(
   return new CoachArchiveService(Database, client, {
     storage: storage as any,
     fetch: fakeFetch(bodies),
+    resolve: publicAddress,
   });
 }
 
@@ -388,6 +390,7 @@ describe("the recording fetch re-checks the allowlist on every redirect hop", ()
     return new CoachArchiveService(Database, new FakeClient(detail()), {
       storage: storage as any,
       fetch: fetchImpl,
+      resolve: publicAddress,
     });
   }
 
@@ -449,7 +452,8 @@ describe("the recording fetch re-checks the allowlist on every redirect hop", ()
     const storage = new FakeStorage();
     const result = await archive(impl, storage).retain("ff-1");
     expect(result).toEqual({ retained: false, reason: "retrieval-failed" });
-    expect(calls.length).toBeLessThanOrEqual(MAX_VIDEO_REDIRECTS + 1);
+    expect(MAX_VIDEO_REDIRECTS).toBe(3);
+    expect(calls.length).toBe(4);
     expect(storage.puts).toEqual([]);
   });
 });
@@ -466,10 +470,11 @@ describe("retain() applies its guards at the call, not only in the helpers", () 
       new FakeClient(detail()),
       {
         storage: storage as any,
+        resolve: publicAddress,
         fetch: async () =>
           new Response("V", {
             headers: {
-              "content-length": String(MAX_STREAMED_OBJECT_BYTES + 1),
+              "content-length": String(MAX_RECORDING_BYTES + 1),
             },
           }),
       },
@@ -488,6 +493,7 @@ describe("retain() applies its guards at the call, not only in the helpers", () 
       new FakeClient(detail({ video_url: offList })),
       {
         storage: storage as any,
+        resolve: publicAddress,
         fetch: async (url: string) => {
           requested.push(url);
           return new Response("SECRET");
@@ -497,5 +503,231 @@ describe("retain() applies its guards at the call, not only in the helpers", () 
     expect(result).toEqual({ retained: false, reason: "untrusted-video-host" });
     expect(requested).toEqual([]);
     expect(storage.puts).toEqual([]);
+  });
+});
+
+describe("the recording body is bounded and checked, whatever the headers say", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  function streamOf(bytes: number, chunk = 256): ReadableStream<Uint8Array> {
+    let sent = 0;
+    return new ReadableStream({
+      pull(controller) {
+        if (sent >= bytes) return controller.close();
+        const size = Math.min(chunk, bytes - sent);
+        sent += size;
+        controller.enqueue(new Uint8Array(size));
+      },
+    });
+  }
+
+  function archiveServing(
+    response: () => Response,
+    storage: FakeStorage,
+    maxRecordingBytes?: number,
+  ) {
+    return new CoachArchiveService(Database, new FakeClient(detail()), {
+      storage: storage as any,
+      resolve: publicAddress,
+      fetch: async () => response(),
+      ...(maxRecordingBytes === undefined ? {} : { maxRecordingBytes }),
+    });
+  }
+
+  async function sessionState() {
+    return (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select("state")
+        .where("source_session_id", "=", "ff-1")
+        .executeTakeFirstOrThrow()
+    ).state;
+  }
+
+  async function assetRows() {
+    return conn
+      .selectFrom("coach_session_assets")
+      .select("kind")
+      .where("source_session_id", "=", "ff-1")
+      .execute();
+  }
+
+  it("the recording ceiling is stated", () => {
+    expect(MAX_RECORDING_BYTES).toBe(8 * 1024 ** 3);
+  });
+
+  it("a response with no Content-Length is bounded by the stream itself", async () => {
+    await seedSession("ff-1");
+    const storage = new FakeStorage();
+    const result = await archiveServing(
+      () => new Response(streamOf(5000)),
+      storage,
+      1000,
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "recording-too-large" });
+    expect(storage.deleted).toContain(CoachArchiveService.recordingKey("ff-1"));
+    expect(await assetRows()).toEqual([]);
+    expect(await sessionState()).toBe("observed");
+  });
+
+  it("an unparseable Content-Length is unknown, not zero, and the stream bound still holds", async () => {
+    await seedSession("ff-1");
+    const storage = new FakeStorage();
+    const result = await archiveServing(
+      () =>
+        new Response(streamOf(5000), { headers: { "content-length": "abc" } }),
+      storage,
+      1000,
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "recording-too-large" });
+  });
+
+  it("an unparseable Content-Length on a recording inside the bound is retained", async () => {
+    await seedSession("ff-1");
+    const result = await archiveServing(
+      () =>
+        new Response(streamOf(500), { headers: { "content-length": "abc" } }),
+      new FakeStorage(),
+      1000,
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: true, recordingBytes: 500 });
+  });
+
+  it("a truncated retrieval is not retained, and nothing of it is kept", async () => {
+    await seedSession("ff-1");
+    const storage = new FakeStorage();
+    const result = await archiveServing(
+      () =>
+        new Response(streamOf(10), { headers: { "content-length": "100" } }),
+      storage,
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "recording-truncated" });
+    expect(storage.deleted).toContain(CoachArchiveService.recordingKey("ff-1"));
+    expect(await assetRows()).toEqual([]);
+    expect(await sessionState()).toBe("observed");
+  });
+
+  it("an empty recording is not retained", async () => {
+    await seedSession("ff-1");
+    const result = await archiveServing(
+      () => new Response(streamOf(0)),
+      new FakeStorage(),
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "recording-truncated" });
+  });
+});
+
+describe("an allowlisted name is resolved, and a private address behind it is refused", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  function resolving(
+    table: Record<string, string[]>,
+    requested: string[],
+    storage: FakeStorage,
+    routes: Record<string, () => Response> = {},
+  ) {
+    return new CoachArchiveService(Database, new FakeClient(detail()), {
+      storage: storage as any,
+      resolve: async (host: string) => {
+        const found = table[host];
+        if (!found) throw new Error(`ENOTFOUND ${host}`);
+        return found;
+      },
+      fetch: async (url: string) => {
+        requested.push(url);
+        const route = routes[url];
+        return route ? route() : new Response("VIDEO");
+      },
+    });
+  }
+
+  for (const address of [
+    "127.0.0.1",
+    "10.1.2.3",
+    "172.16.0.9",
+    "192.168.1.1",
+    "169.254.169.254",
+    "100.64.0.1",
+    "0.0.0.0",
+    "::1",
+    "fd00::1",
+    "fe80::1",
+    "::ffff:127.0.0.1",
+    "::ffff:a9fe:a9fe",
+    "64:ff9b::a9fe:a9fe",
+  ]) {
+    it(`refuses provider.test resolving to ${address}, before connecting`, async () => {
+      await seedSession("ff-1");
+      const requested: string[] = [];
+      const storage = new FakeStorage();
+      const result = await resolving(
+        { "provider.test": [address] },
+        requested,
+        storage,
+      ).retain("ff-1");
+      expect(result).toEqual({
+        retained: false,
+        reason: "untrusted-video-host",
+      });
+      expect(requested).toEqual([]);
+      expect(storage.puts).toEqual([]);
+    });
+  }
+
+  it("one private address among several is enough to refuse", async () => {
+    await seedSession("ff-1");
+    const requested: string[] = [];
+    const result = await resolving(
+      { "provider.test": ["93.184.216.34", "10.0.0.1"] },
+      requested,
+      new FakeStorage(),
+    ).retain("ff-1");
+    expect(result.reason).toBe("untrusted-video-host");
+    expect(requested).toEqual([]);
+  });
+
+  it("every redirect hop is resolved before it is requested", async () => {
+    await seedSession("ff-1");
+    const requested: string[] = [];
+    const result = await resolving(
+      {
+        "provider.test": ["93.184.216.34"],
+        "cdn.provider.test": ["127.0.0.1"],
+      },
+      requested,
+      new FakeStorage(),
+      {
+        "https://provider.test/video.mp4": () =>
+          new Response(null, {
+            status: 302,
+            headers: { location: "https://cdn.provider.test/x.mp4" },
+          }),
+      },
+    ).retain("ff-1");
+    expect(result.reason).toBe("untrusted-video-host");
+    expect(requested).toEqual(["https://provider.test/video.mp4"]);
+  });
+
+  it("a name that does not resolve is a retrieval failure, never a fetch", async () => {
+    await seedSession("ff-1");
+    const requested: string[] = [];
+    const result = await resolving({}, requested, new FakeStorage()).retain(
+      "ff-1",
+    );
+    expect(result.reason).toBe("retrieval-failed");
+    expect(requested).toEqual([]);
+  });
+
+  it("a public address is fetched", async () => {
+    await seedSession("ff-1");
+    const requested: string[] = [];
+    const result = await resolving(
+      { "provider.test": ["93.184.216.34", "2606:2800:220:1::1"] },
+      requested,
+      new FakeStorage(),
+    ).retain("ff-1");
+    expect(result.retained).toBe(true);
   });
 });

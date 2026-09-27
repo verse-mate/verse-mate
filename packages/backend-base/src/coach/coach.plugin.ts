@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
+import { clientIp } from "../common/client-ip";
 import { createErrorHandler } from "../common/error-handler";
 import {
   ConflictError,
@@ -8,6 +9,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { createRateLimit } from "../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
@@ -33,6 +35,27 @@ import {
   UpdateZoomLinkDto,
 } from "./dto/coach.dto";
 import { rubricContract } from "./rubric";
+
+const caller = (context: {
+  currentUserId?: string | null;
+  request: Request;
+  server?: { requestIP(request: Request): { address: string } | null } | null;
+}) =>
+  context.currentUserId ?? `ip:${clientIp(context.request, context.server)}`;
+
+const coachRateLimit = createRateLimit({
+  windowSeconds: 60,
+  max: 120,
+  keyGenerator: (context) => `coach:${caller(context)}`,
+  message: "Too many coaching requests, please try again in a minute",
+});
+
+const mintRateLimit = createRateLimit({
+  windowSeconds: 60,
+  max: 20,
+  keyGenerator: (context) => `coach-mint:${caller(context)}`,
+  message: "Too many recording requests, please try again in a minute",
+});
 
 /** Empty (clear) or a well-formed http(s) URL, shared by zoom + recording. */
 const isBlankOrHttpUrl = (v: string): boolean =>
@@ -189,6 +212,7 @@ const plugin = new Elysia()
         },
       })
       .resolve({ as: "scoped" }, authDerive)
+      .onBeforeHandle(coachRateLimit)
       .get(
         "/me",
         async ({ store: { coachService }, currentUserId }) => {
@@ -301,6 +325,7 @@ const plugin = new Elysia()
           return { url, expiresInSeconds: MINTED_URL_LIFETIME_SECONDS };
         },
         {
+          beforeHandle: mintRateLimit,
           response: {
             200: t.Object({
               url: t.String(),
@@ -327,6 +352,7 @@ const plugin = new Elysia()
           return { url, expiresInSeconds: MINTED_URL_LIFETIME_SECONDS };
         },
         {
+          beforeHandle: mintRateLimit,
           response: {
             200: t.Object({
               url: t.String(),
