@@ -516,6 +516,19 @@ export const JESUS_REVEAL_CHANNELS = [
 ] as const;
 export type JesusRevealChannel = (typeof JESUS_REVEAL_CHANNELS)[number];
 
+/**
+ * How many related events a Jesus detail response offers.
+ *
+ * Three is a suggestion for what to read next, not a browse view. The feature
+ * already has real browse views — the theme pages and "Follow His Life" — that
+ * a reader reaches by tapping the theme rather than by scrolling past a column
+ * of cards at the foot of the passage they came to read.
+ *
+ * Shared by the event graph and the legacy entry endpoints so one number
+ * governs the whole feature.
+ */
+export const JESUS_RELATED_LIMIT = 3;
+
 /** Generated narrative attached to an event. */
 export const JESUS_EVENT_EXPLANATION_TYPES = [
   "overview",

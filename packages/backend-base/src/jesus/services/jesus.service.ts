@@ -5,6 +5,7 @@ import {
   JESUS_EXPLANATION_TYPES,
   JESUS_KINDS,
   JESUS_KIND_META,
+  JESUS_RELATED_LIMIT,
   JESUS_SECTIONS,
   JESUS_SECTION_META,
   type JesusExplanationType,
@@ -212,7 +213,10 @@ export class JesusService {
         ? this.getPassages(entry, bibleVersion)
         : Promise.resolve([] as JesusPassage[]),
       this.getEntryExplanations(entry.entry_id, languageCode, bibleVersion),
-      this.jesusRepository.getRelatedEntryIds(entry.entry_id, 6),
+      this.jesusRepository.getRelatedEntryIds(
+        entry.entry_id,
+        JESUS_RELATED_LIMIT,
+      ),
     ]);
 
     const related = await this.jesusRepository.getEntriesByIds(
