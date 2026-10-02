@@ -69,8 +69,8 @@
           "duration": "~2h 16m",
           "attendees": 21,
           "newcomers": 1,
-          "score": 78.85,
-          "base": 74.85,
+          "score": 82.48,
+          "base": 78.48,
           "newcomerBonus": 1,
           "sizeBonus": 3,
           "status": "Strong",
@@ -79,8 +79,8 @@
             {
               "name": "Teaching Craft",
               "weight": 33,
-              "scorePct": 84,
-              "contribution": 27.72
+              "scorePct": 95,
+              "contribution": 31.35
             },
             {
               "name": "Building Ministry",
@@ -153,8 +153,8 @@
             {
               "n": 9,
               "name": "Memory Reinforcement",
-              "score": 2,
-              "note": "No cumulative Big-Ideas review at the open — regression from 9/24's implemented cold-recall; only an in-lesson bumper-sticker fill-in present"
+              "score": null,
+              "note": "Lesson 1 of the Amos arc — no prior Big Ideas exist yet to review; the metric does not apply (Teaching Craft max reduced 25→20)"
             },
             {
               "n": 10,
@@ -198,7 +198,7 @@
             ],
             "overview": [
               "The arc opens on its richest cross-referencing night yet, offset by a near-invisible newcomer welcome.",
-              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 78.85/100 on the v3 weighted model."
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 82.48/100 on the v3 weighted model."
             ],
             "strengthsProse": [
               {
@@ -321,7 +321,6 @@
               "bullets": [
                 "Total session time: ~2h 16m ([00:00:00]–[02:15:39]) — ~7 min over the 120±10 target band, driven mainly by a ~10-min prayer-chain logistics block at the close  (Target: 120 min ± 10 min (Bryan's Austin Ridge groups))  → NEEDS WORK",
                 "Newcomer welcome: <30 sec — Juan Vega is named during roll call (\"Juan, have we met before? No, I invited him\") with no individual floor time, no testimony chorus, and no on-camera appearance — the thinnest welcome of the arc, well under the 7-min floor  (Target: 7–25 min)  → NEEDS WORK",
-                "Big Ideas review at open: None — the session moves directly from the opening prayer into Amos's historical background with no cold-recall of the Jonah arc's closing themes. First week this arc without any cumulative-review open  (Target: 5–15 min)  → NEEDS WORK",
                 "Historical/contextual overview: ~5.5 min ([00:08:52]–[00:14:27]) — Amos's identity as a shepherd-prophet, the 8-nation/bullseye literary structure, and the historical setting under Jeroboam II  (Target: 5–10 min)  → STRONG",
                 "Teaching block — Amos 1–2 verse-by-verse: [00:14:27]–[01:56:52] (~102 min) — all eight oracles (Damascus, Gaza, Tyre, Edom, Ammon, Moab, Judah, Israel) walked in sequence with the recurring \"for three transgressions...and for four\" formula  (Target: Woven, purposeful)  → STRONG",
                 "Application / closing: [01:56:52]–[02:04:22] (~7.5 min dedicated \"what are you learning about God\" round) plus woven application throughout (the citadel/2026 application question, the Austin Ridge question)  (Target: Woven throughout)  → STRONG",
@@ -355,8 +354,7 @@
               "bullets": [
                 "Vulnerability moments: Hunter's not-feeling-welcomed-at-church disclosure; Paul's near-miss \"grabbing disenchanted guys\" confession; an unnamed member's fear-of-God awakening; an unnamed member's addiction-recovery disclosure; Daryl's near-death testimony (\"if you didn't turn your life around, you'd be dead by now\")  (Target: ≥1 per session with depth)  → STRONG",
                 "Vulnerability depth (rolling baseline ±1): See Dim 8 in Appendix A8 — 5/5, at the top of the established ±1 swing band off 9/24's 5/5 baseline; Daryl's near-death disclosure is arguably the single heaviest personal stake named all arc, per Metric Adjustment #4  (Target: 3–5/5 for experienced leader)  → STRONG",
-                "Extended monologues > 90 sec: 1 — an improvement from 9/24's 2, within the ≤2-per-session ceiling. Named with its fix in the Monologues section below  (Target: ≤2 per session (each named with fix))  → STRONG",
-                "Monologue details: See Monologues section — the brain-on-drugs / brain-on-porn screen-share explanation"
+                "Extended monologues > 90 sec: 1 — an improvement from 9/24's 2, within the ≤2-per-session ceiling. Named with its fix in the Monologues section below  (Target: ≤2 per session (each named with fix))  → STRONG"
               ]
             },
             {
@@ -438,16 +436,16 @@
                 "How the weighted clusters combined into the composite score."
               ],
               "bullets": [
-                "Teaching Craft: 84.0% × weight 33 → 27.72 pts",
+                "Teaching Craft: 95.0% × weight 33 → 31.35 pts",
                 "Building Ministry: 53.3% × weight 31 → 16.53 pts",
                 "Engaging People: 70.0% × weight 18 → 12.60 pts",
                 "Being Real: 100.0% × weight 18 → 18.00 pts",
-                "BASE (pre-bonus): — × weight 100 → 74.85 pts"
+                "BASE (pre-bonus): — × weight 100 → 78.48 pts"
               ]
             }
           ],
           "pdfUrl": "",
-          "docUrl": "https://drive.google.com/file/d/1xzInpRMCz9flMRrU18HLJRGn7Wm4Q6rU/view?usp=drivesdk"
+          "docUrl": "https://drive.google.com/file/d/1pVBZgs_LMHs9bMMgLIhAhloEtapYVCPV/view?usp=drivesdk"
         },
         {
           "id": "bryan-bailey-2026-09-26-saturday-morning-group-austin-ri",
@@ -51685,13 +51683,13 @@
   "monthlyNarratives": {
     "2026-10": {
       "executiveSummary": [
-        "In October 2026, 2 leaders delivered 2 evaluated sessions, and the program held a weighted average composite of 82.1 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
-        "Across the cohort the month broke down as 1 Exceptional and 1 Strong. Phil Carlberg led the field at 85.3 (Exceptional), while Bryan Bailey anchored the other end at 78.8 (Strong) — the clearest place to concentrate coaching attention.",
-        "Bryan Bailey posted the biggest jump off the September 2026 baseline, climbing roughly 81 to 78.8 (+-1.8 pts), the strongest muscle program-wide was Visual Aids (5.00 / 5), and the thinnest was Newcomer Welcome (1.00 / 5), where one shared training would lift the most leaders at once.",
-        "Heading into the next month, the highest-leverage program move is a focused push on Newcomer Welcome, with Bryan Bailey flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+        "In October 2026, 2 leaders delivered 2 evaluated sessions, and the program held a weighted average composite of 83.9 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 1 Exceptional and 1 Strong. Phil Carlberg led the field at 85.3 (Exceptional), while Bryan Bailey anchored the other end at 82.5 (Strong) — the clearest place to concentrate coaching attention.",
+        "Bryan Bailey posted the biggest jump off the September 2026 baseline, climbing roughly 81 to 82.5 (+1.8 pts), the strongest muscle program-wide was Visual Aids (5.00 / 5), and the thinnest was Newcomer Welcome (1.00 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Newcomer Welcome. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's October 2026 composite of 82.1 / 100 lands it in the Strong band. Month over month, Bryan Bailey is the standout mover off the September 2026 baseline, up -1.8 points.",
+        "The program's October 2026 composite of 83.9 / 100 lands it in the Strong band. Month over month, Bryan Bailey is the standout mover off the September 2026 baseline, up 1.8 points.",
         "Dimension by dimension, Visual Aids is the cohort's anchor strength (5.00 / 5), while Newcomer Welcome (1.00 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
@@ -51814,15 +51812,15 @@
         "leaderName": "Bryan Bailey",
         "group": "Saturday Morning Study — Austin Ridge",
         "sessionsCount": 1,
-        "composite": 78.9,
+        "composite": 82.5,
         "status": {
           "label": "Strong",
           "emoji": "🟢"
         },
         "priorComposite": 80.7,
-        "delta": -1.8,
+        "delta": 1.8,
         "clusterAvg": {
-          "tc": 84,
+          "tc": 95,
           "bm": 53,
           "ep": 70,
           "br": 100
@@ -51833,19 +51831,19 @@
               "date": "2026-10-01",
               "session": "Thursday Evening Group (Zoom) — Amos, Lesson 1",
               "bm": 53,
-              "tc": 84,
+              "tc": 95,
               "ep": 70,
               "br": 100,
-              "composite": 78.9,
+              "composite": 82.5,
               "status": "Strong"
             }
           ],
           "avg": {
             "bm": 53,
-            "tc": 84,
+            "tc": 95,
             "ep": 70,
             "br": 100,
-            "composite": 78.9,
+            "composite": 82.5,
             "status": "Strong"
           }
         },
@@ -51853,7 +51851,7 @@
           {
             "date": "2026-10-01",
             "session": "Thursday Evening Group (Zoom) — Amos, Lesson 1",
-            "composite": 78.9,
+            "composite": 82.5,
             "status": "Strong",
             "delta": null
           }
@@ -51863,17 +51861,17 @@
             "key": "tc",
             "name": "Teaching Craft",
             "weight": 33,
-            "avgPct": 84,
-            "statusLabel": "Strong",
+            "avgPct": 95,
+            "statusLabel": "Exceptional",
             "strongestDim": {
               "name": "Scripture Engagement",
               "val": 5
             },
             "weakestDim": {
-              "name": "Memory Reinforcement",
-              "val": 2
+              "name": "Session Structure & Flow",
+              "val": 4
             },
-            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — strong. Memory Reinforcement is the bottleneck this month."
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — elite tier. Session Structure & Flow is the bottleneck this month."
           },
           {
             "key": "bm",
@@ -51954,7 +51952,7 @@
         ],
         "trends": [
           "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Newcomer Welcome (avg 1.0 / 5).",
-          "Composite vs. September 2026 (~81): down 1.8. Inspect the cluster regressions in the Cluster Deep Dive above."
+          "Composite vs. September 2026 (~81): up 1.8. Forward momentum."
         ],
         "conversationGuide": [
           {
@@ -51967,7 +51965,7 @@
           },
           {
             "label": "Trajectory",
-            "q": "Your one October 2026 session scored 78.8 (Strong). What was different about your prep or delivery this time?"
+            "q": "Your one October 2026 session scored 82.5 (Strong). What was different about your prep or delivery this time?"
           },
           {
             "label": "Group dynamics",
@@ -51988,7 +51986,7 @@
           {
             "date": "2026-10-01",
             "session": "Thursday Evening Group (Zoom) — Amos, Lesson 1",
-            "composite": 78.9,
+            "composite": 82.5,
             "status": "Strong",
             "dimensions": [
               {
@@ -52051,8 +52049,8 @@
                 "n": 9,
                 "name": "Memory Reinforcement",
                 "cluster": "Teaching Craft",
-                "score": 2,
-                "note": "No cumulative Big-Ideas review at the open — regression from 9/24's implemented cold-recall; only an in-lesson bumper-sticker fill-in present"
+                "score": null,
+                "note": "Lesson 1 of the Amos arc — no prior Big Ideas exist yet to review; the metric does not apply (Teaching Craft max reduced 25→20)"
               },
               {
                 "n": 10,
