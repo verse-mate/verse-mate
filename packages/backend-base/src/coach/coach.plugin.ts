@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
+import { clientIp } from "../common/client-ip";
 import { createErrorHandler } from "../common/error-handler";
 import {
   ConflictError,
@@ -8,15 +9,20 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { createRateLimit } from "../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
+import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
+  CoverageReportSchema,
   LeaderMonthlyResponseSchema,
   MonthlySchema,
   NoteSchema,
   ReportSchema,
+  ReviewStateSchema,
+  RubricContractSchema,
 } from "./coach.schema";
 import { CoachService } from "./coach.service";
 import {
@@ -28,8 +34,30 @@ import {
   UpdateRecordingLinkDto,
   UpdateZoomLinkDto,
 } from "./dto/coach.dto";
+import { rubricContract } from "./rubric";
 
-/** Empty (clear) or a well-formed http(s) URL — shared by zoom + recording. */
+const caller = (context: {
+  currentUserId?: string | null;
+  request: Request;
+  server?: { requestIP(request: Request): { address: string } | null } | null;
+}) =>
+  context.currentUserId ?? `ip:${clientIp(context.request, context.server)}`;
+
+const coachRateLimit = createRateLimit({
+  windowSeconds: 60,
+  max: 120,
+  keyGenerator: (context) => `coach:${caller(context)}`,
+  message: "Too many coaching requests, please try again in a minute",
+});
+
+const mintRateLimit = createRateLimit({
+  windowSeconds: 60,
+  max: 20,
+  keyGenerator: (context) => `coach-mint:${caller(context)}`,
+  message: "Too many recording requests, please try again in a minute",
+});
+
+/** Empty (clear) or a well-formed http(s) URL, shared by zoom + recording. */
 const isBlankOrHttpUrl = (v: string): boolean =>
   v === "" || /^https?:\/\/\S+$/i.test(v);
 
@@ -37,7 +65,7 @@ const isBlankOrHttpUrl = (v: string): boolean =>
 const isEmail = (v: string): boolean => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
 // ─── Response schemas ──────────────────────────────────────────────────────
-// ReportSchema (and its parts) live in coach.schema.ts — a side-effect-free
+// ReportSchema (and its parts) live in coach.schema.ts, a side-effect-free
 // module so the response contract can be unit-tested without booting the
 // plugin. Elysia strips any response field not declared in that schema, which
 // is why the coaching prose must be present there to reach the portal.
@@ -100,6 +128,18 @@ function normalizeClassBody(body: {
   };
 }
 
+const SummaryPageSchema = t.Object({
+  items: t.Array(t.Record(t.String(), t.Unknown())),
+  total: t.Number(),
+  streakWeeks: t.Number(),
+  quarterSessions: t.Number(),
+});
+
+const PageQuery = t.Object({
+  limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
+  offset: t.Optional(t.Numeric({ minimum: 0 })),
+});
+
 const ProfileHeaderSchema = t.Object({
   id: t.String(),
   name: t.String(),
@@ -158,7 +198,7 @@ const TrendsSchema = t.Object({
 //
 // Auth: every route derives `currentUserId` from the bearer token. A missing
 // / invalid token → 401 (UnauthorizedError). A valid token whose account is
-// not in the coaching roster → 403 (ForbiddenError) — the web client renders
+// not in the coaching roster → 403 (ForbiddenError), the web client renders
 // its "not a coaching account" gate on 403 and its "sign in" gate on 401.
 
 const plugin = new Elysia()
@@ -170,7 +210,21 @@ const plugin = new Elysia()
   }))
   .group("/coach", (app) =>
     app
+      // ── The rubric contract ───────────────────────────────────────────
+      // The ONE definition of clusters, weights, the dimension mapping, each
+      // dimension's explainer and target, and both band scales. Declared
+      // BEFORE the session-derived routes because it carries no leader data:
+      // it is the scoring model itself, and the portal needs it to render an
+      // explainer for a score it is already showing. Serving it is what lets
+      // verse-mate-web delete its hand-maintained copies (task 8.2).
+      .get("/rubric", () => rubricContract(), {
+        response: {
+          200: RubricContractSchema,
+          ...StandardErrorResponses,
+        },
+      })
       .resolve({ as: "scoped" }, authDerive)
+      .onBeforeHandle(coachRateLimit)
       .get(
         "/me",
         async ({ store: { coachService }, currentUserId }) => {
@@ -194,6 +248,125 @@ const plugin = new Elysia()
         {
           response: {
             200: t.Object({ reports: t.Array(ReportSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // ── Paginated session list (new shape) ────────────────────────────
+      // Added ALONGSIDE /reports so the portal can migrate without a
+      // breaking change; /reports is retired once web is on this route.
+      .get(
+        "/reports/summary",
+        async ({ store: { coachService }, currentUserId, query }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me?.profile) throw new ForbiddenError("Not a coaching account");
+          return coachService.getReportSummaries(me.profile.id, {
+            limit: query.limit,
+            offset: query.offset,
+          });
+        },
+        {
+          // Validated at the boundary: a non-numeric page input is a CLIENT
+          // error. Parsed as strings and coerced with Number() it reached SQL
+          // as NaN and returned a 500 quoting Postgres.
+          query: t.Object({
+            limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
+            offset: t.Optional(t.Numeric({ minimum: 0 })),
+          }),
+          response: {
+            200: SummaryPageSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // ── One session's full content ────────────────────────────────────
+      // Resolves an immutable OR legacy id; an unknown id is an explicit
+      // 404 rather than silently rendering a different session.
+      .get(
+        "/reports/:reportId",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me?.profile) throw new ForbiddenError("Not a coaching account");
+          // SECURITY: scope to the caller's own coaching record.
+          const report = await coachService.getReportDetail(
+            me.profile.id,
+            params.reportId,
+          );
+          if (!report) throw new NotFoundError("Session not found");
+          return { report };
+        },
+        {
+          response: {
+            200: t.Object({ report: ReportSchema }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // ── One session's retained recording ──────────────────────────────
+      // A separate call on purpose (design D10, task 4.5). The address is
+      // minted for ONE session at a time and lives 24 hours, so a paginated
+      // list mints nothing; the detail response says only WHETHER material
+      // exists. A browser media element cannot send a bearer header, so the
+      // API never proxies the bytes, object storage serves them, Range
+      // requests included.
+      .get(
+        "/reports/:reportId/recording-url",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me) throw new ForbiddenError("Not a coaching account");
+          const url = await coachService.mintRetainedUrl({
+            reportId: params.reportId,
+            requesterCoachId: me.profile?.id ?? null,
+            isAdmin: me.isAdmin,
+            kind: "recording",
+          });
+          // One answer for every refusal, not this leader's session, no
+          // session, no retained asset. A 'you may not' that reads differently
+          // from a 'there is nothing' tells an unrelated leader which sessions
+          // exist.
+          if (!url) throw new NotFoundError("No retained recording");
+          return { url, expiresInSeconds: MINTED_URL_LIFETIME_SECONDS };
+        },
+        {
+          beforeHandle: mintRateLimit,
+          response: {
+            200: t.Object({
+              url: t.String(),
+              expiresInSeconds: t.Number(),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/reports/:reportId/transcript-url",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const me = await coachService.getMe(currentUserId);
+          if (!me) throw new ForbiddenError("Not a coaching account");
+          const url = await coachService.mintRetainedUrl({
+            reportId: params.reportId,
+            requesterCoachId: me.profile?.id ?? null,
+            isAdmin: me.isAdmin,
+            kind: "transcript",
+          });
+          if (!url) throw new NotFoundError("No retained transcript");
+          return { url, expiresInSeconds: MINTED_URL_LIFETIME_SECONDS };
+        },
+        {
+          beforeHandle: mintRateLimit,
+          response: {
+            200: t.Object({
+              url: t.String(),
+              expiresInSeconds: t.Number(),
+            }),
             ...StandardErrorResponses,
           },
         },
@@ -398,6 +571,236 @@ const plugin = new Elysia()
       // ─── Admin oversight (program admins only) ──────────────────────────
       // Every /coach/admin/* route requires isAdmin(); non-admin coaches get
       // 403 so the web client keeps them in their own dashboard.
+      //
+      // Pending re-share requests (tasks 6.3b, 8.5a). Admin-guarded because
+      // sending emails a leader in VerseMate's name: an unguarded endpoint
+      // would let anyone who knows a session id do that.
+      // Dimension review and correction (task 5.7). Admin-guarded: it changes
+      // the score a leader will be shown.
+      .get(
+        "/admin/reports/:reportId/review",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const state = await coachService.reviewReport(params.reportId);
+          if (!state) throw new NotFoundError("No scores for that report");
+          return state;
+        },
+        { response: { 200: ReviewStateSchema, ...StandardErrorResponses } },
+      )
+      .post(
+        "/admin/reports/:reportId/dimensions/:dimensionN",
+        async ({ store: { coachService }, currentUserId, params, body }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.correctDimension({
+            reportId: params.reportId,
+            dimensionN: Number(params.dimensionN),
+            score: body.score ?? null,
+            rationale: body.rationale,
+            correctedByUserId: currentUserId,
+          });
+          if (!result.ok)
+            throw new ValidationError(
+              `Correction refused: ${result.refusal ?? "unknown"}`,
+            );
+          return { base: result.base ?? 0, status: result.status?.label ?? "" };
+        },
+        {
+          body: t.Object({
+            score: t.Union([t.Number(), t.Null()]),
+            rationale: t.String(),
+          }),
+          response: {
+            200: t.Object({ base: t.Number(), status: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      // Recording-bot coverage, the gate task 9.1 reads before retiring the
+      // old host (task 4.7).
+      .get(
+        "/admin/coverage",
+        async ({ store: { coachService }, currentUserId, query }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const report = await coachService.assessCoverage(
+            query.windowDays ?? 30,
+          );
+          return {
+            windowDays: report.windowDays,
+            allCovered: report.allCovered,
+            leaders: report.leaders,
+          };
+        },
+        {
+          query: t.Object({
+            windowDays: t.Optional(t.Numeric({ minimum: 1, maximum: 365 })),
+          }),
+          response: { 200: CoverageReportSchema, ...StandardErrorResponses },
+        },
+      )
+      .get(
+        "/admin/reshares",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return { requests: await coachService.listPendingReshares() };
+        },
+        {
+          response: {
+            200: t.Object({
+              requests: t.Array(
+                t.Object({
+                  sourceSessionId: t.String(),
+                  coachId: t.Union([t.String(), t.Null()]),
+                  title: t.String(),
+                  sessionDate: t.String(),
+                  requestedAt: t.Date(),
+                  attempts: t.Number(),
+                  asked: t.Boolean(),
+                }),
+              ),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/pipeline-failures",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return { sessions: await coachService.listPipelineFailures() };
+        },
+        {
+          response: {
+            200: t.Object({
+              sessions: t.Array(
+                t.Object({
+                  sourceSessionId: t.String(),
+                  coachId: t.Union([t.String(), t.Null()]),
+                  title: t.String(),
+                  sessionDate: t.String(),
+                  state: t.String(),
+                  attempts: t.Number(),
+                  reportId: t.Union([t.String(), t.Null()]),
+                  reason: t.Union([t.String(), t.Null()]),
+                  action: t.Union([
+                    t.Literal("release"),
+                    t.Literal("requeue"),
+                    t.Null(),
+                  ]),
+                  updatedAt: t.Date(),
+                }),
+              ),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/reports/:reportId/release",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.releaseHeldReport(params.reportId);
+          if (result.refusal === "not-held")
+            throw new NotFoundError("No report held for review");
+          if (result.refusal === "no-mailer")
+            throw new ConflictError("No mailer is configured");
+          return result;
+        },
+        {
+          response: {
+            200: t.Object({
+              delivered: t.Boolean(),
+              refusal: t.Optional(t.String()),
+              violations: t.Optional(t.Array(t.String())),
+              shortfalls: t.Optional(t.Array(t.String())),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/pipeline-failures/:sourceSessionId/requeue",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const requeued = await coachService.requeuePipelineFailure(
+            params.sourceSessionId,
+          );
+          if (!requeued) throw new NotFoundError("No parked session");
+          return { requeued: true };
+        },
+        {
+          response: {
+            200: t.Object({ requeued: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/reshares/:sourceSessionId/send",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.sendReshareRequest(
+            params.sourceSessionId,
+          );
+          if (!result.sent) {
+            throw new ValidationError(
+              `Re-share not sent: ${result.refusal ?? "unknown"}`,
+            );
+          }
+          return { sent: true };
+        },
+        {
+          response: {
+            200: t.Object({ sent: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/reshares/:sourceSessionId/resolve",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const cleared = await coachService.resolveReshare(
+            params.sourceSessionId,
+          );
+          if (!cleared) throw new NotFoundError("No pending re-share request");
+          // The session re-enters retrieval; intake idempotence means the
+          // report it eventually produces is not a duplicate.
+          return { resolved: true };
+        },
+        {
+          response: {
+            200: t.Object({ resolved: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/admin/coaches",
         async ({ store: { coachService }, currentUserId }) => {
@@ -433,6 +836,55 @@ const plugin = new Elysia()
               profile: ProfileHeaderSchema,
               reports: t.Array(ReportSchema),
             }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/coaches/:id/reports/summary",
+        async ({ params, query, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (!(await coachService.getProfileById(params.id)))
+            throw new NotFoundError("Coach not found");
+          return coachService.getReportSummaries(
+            params.id,
+            { limit: query.limit, offset: query.offset },
+            "admin",
+          );
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          query: PageQuery,
+          response: {
+            200: SummaryPageSchema,
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/coaches/:id/reports/:reportId",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const report = await coachService.getReportDetail(
+            params.id,
+            params.reportId,
+            "admin",
+          );
+          if (!report) throw new NotFoundError("Session not found");
+          return { report };
+        },
+        {
+          params: t.Object({ id: t.String(), reportId: t.String() }),
+          response: {
+            200: t.Object({ report: ReportSchema }),
             404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
           },
@@ -486,7 +938,7 @@ const plugin = new Elysia()
           },
         },
       )
-      // Every leader's classes + owner identity — the single feed the Fireflies
+      // Every leader's classes + owner identity, the single feed the Fireflies
       // operator reads to configure which meeting links the bot auto-joins.
       .get(
         "/admin/classes",
@@ -562,7 +1014,7 @@ const plugin = new Elysia()
           },
         },
       )
-      // Write a coaching note on a session — persisted + emailed to the leader.
+      // Write a coaching note on a session, persisted + emailed to the leader.
       .post(
         "/admin/coaches/:id/reports/:reportId/notes",
         async ({ params, body, store: { coachService }, currentUserId }) => {

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
+import { db as Database } from "database";
 
 import cacheConstants from "../shared/cache.constants";
 import { getTestClient } from "../shared/test-client";
@@ -38,7 +39,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -283,7 +284,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -322,6 +323,10 @@ describe("Auth - Rate Limiting", () => {
   const client = getTestClient<AuthPlugin>(Backend);
   const cacheService = Backend.store.cache;
 
+  beforeAll(async () => {
+    await cacheService.delete("rate-limit:login-ip:unknown");
+  });
+
   it("signup rate limit - returns 429 after 3 attempts", async () => {
     const signupInput = {
       email: faker.internet.email().toLocaleLowerCase(),
@@ -335,7 +340,7 @@ describe("Auth - Rate Limiting", () => {
 
     // Mock sendEmail for all signup attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // Make 3 successful signup attempts (rate limit max)
@@ -403,17 +408,80 @@ describe("Auth - Rate Limiting", () => {
     expect((error as any)?.value?.retryAfter).toBeLessThanOrEqual(60);
 
     // Clean up rate limit cache key
-    await cacheService.delete(`rate-limit:login:${loginEmail}`);
+    await cacheService.delete(`rate-limit:login:${loginEmail}:unknown`);
   });
 
-  // refresh rate-limit test removed per D-005 — /auth/refresh endpoint deleted.
+  it("login rate limit - guessing an account from one address does not lock its owner out", async () => {
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = "correct-horse-1";
+    const attacker = { headers: { "x-forwarded-for": "198.51.100.66" } };
+    const owner = { headers: { "x-forwarded-for": "198.51.100.77" } };
+    await Database.getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "Guessed",
+        lastName: "Account",
+        password: await Bun.password.hash(password, "bcrypt"),
+        emailVerified: true,
+      })
+      .execute();
+
+    for (let i = 0; i < 5; i++) {
+      const { error } = await client.auth.login.post(
+        { email, password: `wrong-${i}` },
+        attacker,
+      );
+      expect((error as any)?.status).toBe(401);
+    }
+    const blocked = await client.auth.login.post({ email, password }, attacker);
+    expect((blocked.error as any)?.status).toBe(429);
+
+    const { data, error } = await client.auth.login.post(
+      { email, password },
+      owner,
+    );
+    expect(error).toBeNull();
+    expect(data?.accessToken).toBeDefined();
+
+    for (const ip of ["198.51.100.66", "198.51.100.77"]) {
+      await cacheService.delete(`rate-limit:login:${email}:${ip}`);
+      await cacheService.delete(`rate-limit:login-ip:${ip}`);
+    }
+    await Database.getOrCreateConnection()
+      .deleteFrom("user")
+      .where("email", "=", email)
+      .execute();
+  });
+
+  it("login rate limit - spraying many accounts from one address is throttled", async () => {
+    const sprayer = { headers: { "x-forwarded-for": "198.51.100.88" } };
+    const statuses: number[] = [];
+    const emails: string[] = [];
+    for (let i = 0; i < 31; i++) {
+      const email = faker.internet.email().toLocaleLowerCase();
+      emails.push(email);
+      const { error } = await client.auth.login.post(
+        { email, password: "guess" },
+        sprayer,
+      );
+      statuses.push((error as any)?.status);
+    }
+    await cacheService.delete("rate-limit:login-ip:198.51.100.88");
+    for (const email of emails)
+      await cacheService.delete(`rate-limit:login:${email}:198.51.100.88`);
+    expect(statuses.slice(0, 30).every((s) => s !== 429)).toBe(true);
+    expect(statuses[30]).toBe(429);
+  });
+
+  // refresh rate-limit test removed per D-005, /auth/refresh endpoint deleted.
 
   it("forgot-password rate limit - returns 429 after 3 attempts", async () => {
     const testEmail = faker.internet.email().toLocaleLowerCase();
 
     // Mock sendEmail for all attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // First, create a user so forgot-password can find them
@@ -495,7 +563,7 @@ describe("Auth - Security (audit fixes)", () => {
         if (message.text.includes("?key=")) {
           lastVerifyToken = message.text.split("?key=").at(-1) ?? "";
         }
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
     await Backend.store.cache.delete("rate-limit:signup:unknown");
@@ -503,11 +571,11 @@ describe("Auth - Security (audit fixes)", () => {
 
   // Audit #3: a verification token is bound to the account it was minted for.
   // Before the fix, verifyEmail's guard compared user.id to the id it selected
-  // by — always true — so any valid token, including one issued for a DIFFERENT
+  // by, always true, so any valid token, including one issued for a DIFFERENT
   // account, verified the caller. That forged the "verified" badge on a victim's
   // pre-registered email. This proves the token→account binding is enforced.
   it("verify-email rejects a token minted for a different account (audit #3)", async () => {
-    // Account A — the attacker's session, unverified, on a victim's address.
+    // Account A, the attacker's session, unverified, on a victim's address.
     const aEmail = faker.internet.email().toLocaleLowerCase();
     const { data: aData, error: aErr } = await client.auth.signup.post({
       email: aEmail,
@@ -518,7 +586,7 @@ describe("Auth - Security (audit fixes)", () => {
     if (aErr) throw aErr;
     expect(aData?.accessToken).toBeDefined();
 
-    // Account B — a second account the attacker controls; capture its valid
+    // Account B, a second account the attacker controls; capture its valid
     // verification token (still sitting in the cache).
     await client.auth.signup.post({
       email: faker.internet.email().toLocaleLowerCase(),
@@ -539,7 +607,7 @@ describe("Auth - Security (audit fixes)", () => {
       (data as { accessToken?: string } | null)?.accessToken,
     ).toBeUndefined();
 
-    // A must remain unverified — the cross-account token did nothing.
+    // A must remain unverified, the cross-account token did nothing.
     const aUser = await Backend.store.db
       .getOrCreateConnection()
       .selectFrom("user")

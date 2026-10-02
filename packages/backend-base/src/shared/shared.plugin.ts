@@ -16,7 +16,7 @@ export type cache = typeof redisClient;
 export type db = typeof Database;
 
 // Security (audit #2): never sign sessions with a hardcoded or publicly-known
-// secret — either lets any attacker forge a valid JWT for any user. Fail closed
+// secret, either lets any attacker forge a valid JWT for any user. Fail closed
 // at startup when the secret is unset OR still the historical default that was
 // shipped in .env.example on a public repo (so setting it to that known value
 // does not sneak past this guard).
@@ -168,6 +168,11 @@ import {
 } from "../bible/audio/audio-cleanup.worker";
 import { audioGenerationQueue } from "../bible/audio/audio-generation.queue";
 import { audioGenerationWorker } from "../bible/audio/audio-generation.worker";
+import { coachIntakeQueue } from "../coach/coach-intake.queue";
+import {
+  coachIntakeWorker,
+  registerCoachIntakeCron,
+} from "../coach/coach-intake.worker";
 import { verseNotificationQueue } from "../notifications/verse-notification.queue";
 import {
   registerVerseNotificationCron,
@@ -175,64 +180,73 @@ import {
 } from "../notifications/verse-notification.worker";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
 import { batchProcessingWorker } from "../workers/batch-processing.worker";
+import {
+  type WorkerRole,
+  runsApiWorkers,
+  runsMediaWorkers,
+  workerRole,
+} from "./worker-role";
+
+export interface QueueWorkerEntry {
+  name: string;
+  side: "api" | "media";
+  worker: { isRunning(): boolean; run(): unknown };
+  registerCron?: () => Promise<unknown>;
+}
+
+export const QUEUE_WORKERS: QueueWorkerEntry[] = [
+  { name: "Monitoring", side: "api", worker: batchMonitoringWorker },
+  { name: "Processing", side: "api", worker: batchProcessingWorker },
+  { name: "Audio generation", side: "media", worker: audioGenerationWorker },
+  {
+    name: "Audio cleanup",
+    side: "media",
+    worker: audioCleanupWorker,
+    registerCron: registerAudioCleanupCron,
+  },
+  {
+    name: "Verse notification",
+    side: "api",
+    worker: verseNotificationWorker,
+    registerCron: registerVerseNotificationCron,
+  },
+  {
+    name: "Coach intake",
+    side: "media",
+    worker: coachIntakeWorker,
+    registerCron: registerCoachIntakeCron,
+  },
+];
+
+export async function startQueueWorkers(
+  role: WorkerRole,
+  entries: QueueWorkerEntry[],
+): Promise<void> {
+  console.log(`[QUEUE] Starting BullMQ workers (role: ${role})...`);
+  for (const entry of entries) {
+    const owned =
+      entry.side === "media" ? runsMediaWorkers(role) : runsApiWorkers(role);
+    if (!owned) {
+      console.log(`[QUEUE] ${entry.name} worker belongs to another role`);
+      continue;
+    }
+    if (entry.worker.isRunning()) {
+      console.log(`[QUEUE] ${entry.name} worker already running`);
+    } else {
+      entry.worker.run();
+      console.log(`[QUEUE] ${entry.name} worker started successfully`);
+    }
+    if (!entry.registerCron) continue;
+    try {
+      await entry.registerCron();
+    } catch (error) {
+      console.error(`[QUEUE] Failed to register ${entry.name} cron:`, error);
+    }
+  }
+}
 
 setup.onStart(async () => {
-  console.log("[QUEUE] Starting BullMQ workers...");
-  if (!batchMonitoringWorker.isRunning()) {
-    console.log("[QUEUE] Monitoring worker not running, starting it now...");
-    batchMonitoringWorker.run();
-    console.log("[QUEUE] Monitoring worker started successfully");
-  } else {
-    console.log("[QUEUE] Monitoring worker already running");
-  }
-
-  if (!batchProcessingWorker.isRunning()) {
-    console.log("[QUEUE] Processing worker not running, starting it now...");
-    batchProcessingWorker.run();
-    console.log("[QUEUE] Processing worker started successfully");
-  } else {
-    console.log("[QUEUE] Processing worker already running");
-  }
-
-  if (!audioGenerationWorker.isRunning()) {
-    console.log(
-      "[QUEUE] Audio generation worker not running, starting it now...",
-    );
-    audioGenerationWorker.run();
-    console.log("[QUEUE] Audio generation worker started successfully");
-  } else {
-    console.log("[QUEUE] Audio generation worker already running");
-  }
-
-  if (!audioCleanupWorker.isRunning()) {
-    console.log("[QUEUE] Audio cleanup worker not running, starting it now...");
-    audioCleanupWorker.run();
-    console.log("[QUEUE] Audio cleanup worker started successfully");
-  } else {
-    console.log("[QUEUE] Audio cleanup worker already running");
-  }
-
-  try {
-    await registerAudioCleanupCron();
-  } catch (error) {
-    console.error("[QUEUE] Failed to register audio cleanup cron:", error);
-  }
-
-  if (!verseNotificationWorker.isRunning()) {
-    console.log(
-      "[QUEUE] Verse notification worker not running, starting it now...",
-    );
-    verseNotificationWorker.run();
-    console.log("[QUEUE] Verse notification worker started successfully");
-  } else {
-    console.log("[QUEUE] Verse notification worker already running");
-  }
-
-  try {
-    await registerVerseNotificationCron();
-  } catch (error) {
-    console.error("[QUEUE] Failed to register verse notification cron:", error);
-  }
+  await startQueueWorkers(workerRole(), QUEUE_WORKERS);
 
   // Check for existing active batches and start monitoring them
   console.log("[QUEUE] Checking for existing active batches to monitor...");
@@ -299,6 +313,8 @@ setup.onStop(async () => {
   audioCleanupWorker.close();
   verseNotificationQueue.close();
   verseNotificationWorker.close();
+  coachIntakeQueue.close();
+  coachIntakeWorker.close();
 });
 
 export default setup;

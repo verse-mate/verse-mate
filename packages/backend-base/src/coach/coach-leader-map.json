@@ -1,0 +1,98 @@
+{
+  "_provenance": {
+    "importedFrom": "github.com/andytryba/bible-study-coaching",
+    "path": "config/leader_map.json",
+    "fileCommit": "d0f755e976faa18346de561288e6b2aafed5f661",
+    "fileCommittedAt": "2026-08-17T18:50:45Z",
+    "repoHeadAtImport": "473e402fa73ddfb69eba102a17cc112938007116",
+    "importedAt": "2026-09-01",
+    "importedBy": "COACH-2 port-coach-pipeline, task 3.4/3.10",
+    "why": [
+      "The recording bot files EVERY leader's meeting under one shared host",
+      "address, so the sender cannot identify the leader - the session TITLE",
+      "does. These keywords are what intake attributes a session with.",
+      "This snapshot is SEED DATA ONLY: task 3.10 loads it into coach_leaders",
+      "once, after which the database is authoritative and admin-editable",
+      "(design open question 6). Re-running the backfill never overwrites a",
+      "keyword an admin has since edited."
+    ]
+  },
+  "coaches": [
+    {
+      "leader": "Bryan_Bailey",
+      "email": "bryanbailey59@gmail.com",
+      "title_match": ["bryan", "bailey", "austin ridge", "saturday morning"]
+    },
+    {
+      "leader": "James_Davis",
+      "email": "anthocar@gmail.com",
+      "title_match": ["james davis", "d'apolito", "dapolito"]
+    },
+    {
+      "leader": "Joel_Hurt",
+      "email": "joelhhurt@yahoo.com",
+      "title_match": ["joel", "hurt", "thursday evening", "austin stone"]
+    },
+    {
+      "leader": "Russell_Davis",
+      "email": "faith2see@gmail.com",
+      "title_match": ["russell davis"]
+    },
+    {
+      "leader": "Cole_Strong",
+      "email": "colemstrong@gmail.com",
+      "alt_emails": ["cstrong@squarecowmoovers.com"],
+      "title_match": ["cole", "strong"]
+    },
+    {
+      "leader": "Ken_Ture",
+      "email": "kenture@me.com",
+      "title_match": ["ken ture", "kenneth"]
+    },
+    {
+      "leader": "Jeff_Ward",
+      "email": "jeff@simpledonation.com",
+      "title_match": ["jeff", "ward"]
+    },
+    {
+      "leader": "Ricky_Town",
+      "email": "ricky@modhometx.com",
+      "title_match": ["ricky", "town"]
+    },
+    {
+      "leader": "Cameron_Relic",
+      "email": "",
+      "title_match": ["cameron", "relic"]
+    },
+    {
+      "leader": "Brendan_Elizabeth",
+      "email": "bocojoywed@gmail.com",
+      "title_match": ["brendan", "elizabeth", "couples precept"]
+    },
+    {
+      "leader": "JT_Dettman",
+      "email": "jt.dettman@austinstone.org",
+      "title_match": ["jt dettman", "dettman"]
+    },
+    {
+      "leader": "Josh_Samuels",
+      "email": "jdub.samuels@gmail.com",
+      "title_match": ["josh", "samuels"]
+    },
+    {
+      "leader": "Phil_Carlberg",
+      "email": "",
+      "title_match": ["phil", "carlberg"]
+    },
+    {
+      "leader": "Danny_Thomas",
+      "email": "dannythomas34@gmail.com",
+      "title_match": ["danny", "thomas"]
+    },
+    {
+      "leader": "David_Kartozia",
+      "email": "",
+      "title_match": ["david", "kartozia"]
+    }
+  ]
+}
