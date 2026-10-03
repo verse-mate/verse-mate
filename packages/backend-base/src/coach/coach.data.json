@@ -35666,6 +35666,392 @@
       "zoomLink": "",
       "reports": [
         {
+          "id": "james-davis-2026-10-03-amos-1-2-judgment-on-the-nations",
+          "date": "2026-10-03",
+          "dateLabel": "October 3, 2026",
+          "session": "Amos 1-2 — Judgment on the Nations, Judah, and Israel (Lesson 1)",
+          "topic": "God's universal judgment on sin — nations and covenant people alike",
+          "duration": "~134 min class (pre-session fellowship/A-V setup not included)",
+          "attendees": 15,
+          "newcomers": 2,
+          "score": 77.57,
+          "base": 75.57,
+          "newcomerBonus": 2,
+          "sizeBonus": 0,
+          "status": "Strong",
+          "statusEmoji": "🟢",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 90,
+              "contribution": 29.7
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 66.7,
+              "contribution": 20.67
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 70,
+              "contribution": 12.6
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Most blueprint elements present (map/structure intro, kickoff question, multi-reader scripture, closing prayer, room-generated close, forward reading assignment); the newcomer welcome ran short and two tangents ran long"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": 3,
+              "note": "2 genuine newcomers with real testimony content, but only ~3 min against the 7-25 min target"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "15+ distinct passages across Amos, Kings, Chronicles, Isaiah, John, Deuteronomy, Habakkuk, Romans, Matthew, Hebrews, Ezekiel, Ruth"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "~55-60% discussion-only leader talk (above the 30-35% target); 3 monologues exceeded 90 sec, above the ≤2/session target"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 4,
+              "note": "8 Big Idea questions, both depth targets cleared (Confession/Personal-Response Rate 2, Follow-up Probe Frequency 3+), but DOK Level 2 unused"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 4,
+              "note": "9+ substantive contributors; members independently supplied theological connections the leader hadn't pre-loaded"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 5,
+              "note": "Session-video frame captures confirm sustained Logos Bible Software usage — highlighted text, Hebrew dictionary, cross-references, and Factbook panels — well beyond the verbally-referenced map alone"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 4,
+              "note": "No fresh leader testimony; a costly member confession plus the leader's own public self-correction held the score within the ±1 swing cap of the established baseline"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": null,
+              "note": "First lesson of a new study (Amos) — no prior Big Ideas exist to review; Teaching Craft max reduced from 25 to 20"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Heavy in-session homework callbacks throughout, plus an explicit forward reading assignment (Amos 3-6) fixing last week's named gap"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 3,
+              "note": "Closing prayer occurred but delegation to a named member is unclear this week; opening prayer unconfirmed due to a quiet/low-audio stretch at session start, not scored against the leader"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 2,
+              "note": "No named apprentice handoff or delegated facilitation window occurred this session"
+            }
+          ],
+          "bigIdeas": [
+            "You're going to gather all this stuff — and you're going to be living alone.",
+            "It doesn't matter whether you're covenant or non-covenant — you're going to be judged.",
+            "You are held to a higher standard.",
+            "Repentance is turning towards Christ.",
+            "When God's word exposes sin, how do we respond instead of just pointing at others?"
+          ],
+          "feedback": {
+            "headline": "Amos 1-2 — Judgment on the Nations, Judah, and Israel",
+            "strengths": [
+              "Two of Last Week's Named Recommendations Visibly Implemented (Teaching Craft / Building Ministry)",
+              "Sustained Logos Bible Software Usage, Confirmed by Session Video, Not Just a Map (Teaching Craft)",
+              "Public Self-Correction of Last Week's Error (Being Real)"
+            ],
+            "improvements": [
+              "Leader Talk Ratio and Monologue Count Climbed This Week (Engaging People)",
+              "The Eternal-Security Discussion Ran Long Without a Structured Off-Ramp (Teaching Craft)",
+              "Newcomer Welcome Ran Well Under Target Despite Real Testimony Content (Building Ministry)"
+            ],
+            "recommendations": [
+              "Open Weighty Hypotheticals to Named Members Before Supplying the Answer",
+              "Pre-Mark Rabbit Trails With a Visible Time Budget",
+              "Insert One DOK Level 2 (Compare) Question Per Session"
+            ],
+            "overview": [
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 77.57/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Two of Last Week's Named Recommendations Visibly Implemented (Teaching Craft / Building Ministry)",
+                "paragraphs": [
+                  "Last week's report flagged a missing forward reading assignment and asked whether the room-generated closing takeaway would become a trend. Both landed this week: \"next week, we're going to be going through three, four, five, and six\" [02:33:57-02:34:04] gives an explicit chapter range (fixing the exact gap named last time), and the closing question \"What can we learn about chapter one and two?\" [02:27:35] again drew multiple members' own words rather than the leader's summary — confirming it's now a standing practice, not a one-off."
+                ]
+              },
+              {
+                "title": "Sustained Logos Bible Software Usage, Confirmed by Session Video, Not Just a Map (Teaching Craft)",
+                "paragraphs": [
+                  "The transcript alone references a geographic map used to orient the room to the surrounding nations [00:23:51-00:24:27]. Frame captures pulled from the session video independently confirm much more: sustained use of Logos Bible Software throughout the class — the passage text with color-coded highlighting, a Hebrew/Aramaic dictionary panel with Strong's/BDB-style word entries, a cross-reference panel, and a Factbook encyclopedia panel (e.g. a \"Jehoash\" king-biography card pulled up mid-lesson). This is the full on-screen word-study toolkit the coaching model credits, used consistently rather than referenced once."
+                ]
+              },
+              {
+                "title": "Public Self-Correction of Last Week's Error (Being Real)",
+                "paragraphs": [
+                  "Opening the new book, James caught and corrected himself in front of the room: \"I made a mistake last week... Nineveh is in Assyria... I want to clarify that because that was on my part\" [00:25:14-00:26:10]. In a session built entirely around \"hear the word and respond, don't just point at others,\" modeling that exact posture toward his own error is a credible, low-cost piece of vulnerability-as-authority."
+                ]
+              },
+              {
+                "title": "Members Independently Supply Theological Connections the Leader Didn't Pre-Load (Engaging People)",
+                "paragraphs": [
+                  "A member traced the nations' offenses back to Torah/Pentateuch categories unprompted: \"these are like offenses from the Torah because they're literally digging up bodies... respecting death and things like that\" [01:32:17-01:32:53], and another immediately added the historical detail that Tyre had broken a prior covenant with Solomon [01:33:09-01:33:49]. This is evidence of a group doing real outside study (the \"Institute\" reference at the session's open suggests several members study independently), not just following the leader's lead."
+                ]
+              },
+              {
+                "title": "A Costly Member Confession Drawn Out Mid-Lecture (Being Real)",
+                "paragraphs": [
+                  "Even inside the session's densest doctrinal stretch, a member volunteered a genuine, present-tense struggle: \"even when I know sin is approaching, I'm like, do I really want to go through that pain? I don't... I've had that happen to me\" [02:22:57-02:23:48]. That the room stayed safe enough to produce this kind of admission in the middle of a hard theological conversation is real evidence of the trust this leader has built."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "Leader Talk Ratio and Monologue Count Climbed This Week (Engaging People)",
+                "paragraphs": [
+                  "Discussion-only leader talk is estimated at ~55-60%, well above the 30-35% target, with 3 stretches exceeding the 90-second monologue threshold — above the ≤2/session target. Before: the room's best theological reasoning this week (Strength 4) happened when the leader stayed quiet; most of the rest of the session still runs through the leader's own voice. After: when a weighty question is posed, hold the floor open for 2-3 named responses before supplying an answer — the same discipline already working well on narrower observation questions."
+                ]
+              },
+              {
+                "title": "The Eternal-Security Discussion Ran Long Without a Structured Off-Ramp (Teaching Craft)",
+                "paragraphs": [
+                  "James flagged the \"saved at 14, 20 years in sin\" hypothetical as controversial before diving in, then held the floor for most of the resulting ~13-minute discussion himself. Before: a self-labeled \"controversial\" or \"side note\" tangent is allowed to run as long as it takes. After: state a specific time budget out loud before entering a flagged tangent (\"let's take 5 minutes on this, then back to the text\") so a rich but demanding conversation doesn't quietly consume the time that would otherwise protect the newcomer welcome or close."
+                ]
+              },
+              {
+                "title": "Newcomer Welcome Ran Well Under Target Despite Real Testimony Content (Building Ministry)",
+                "paragraphs": [
+                  "Justin Harvey and Jerry each introduced themselves, including a genuine salvation testimony from Jerry, but the whole window lasted only ~3 minutes against the 7-25 min target. Before: the welcome is whatever time is left after setup delays. After: protect a standing 7-10 min window for newcomer welcome regardless of how much pre-session time was lost to A/V troubleshooting, so testimony content isn't compressed."
+                ]
+              },
+              {
+                "title": "DOK Level 2 (Compare/Analyze) Questions Were Entirely Absent (Teaching Craft)",
+                "paragraphs": [
+                  "None of this session's 8 Big Idea questions fell at DOK Level 2, with the distribution clustering instead at Level 3 (reason) and Level 4 (apply) — expected for a framework-building opening lesson, but worth correcting even here. Before: questions move from historical background straight to application without a comparison beat. After: insert one explicit \"what's different / what's the same\" question each session (e.g., \"how does Amos judging the nations compare to Amos judging Judah?\") to round out the DOK range."
+                ]
+              },
+              {
+                "title": "Rapid-Fire Reference Call-Outs Cost Dead-Air Time (Teaching Craft)",
+                "paragraphs": [
+                  "Several citations were announced in quick succession without a pause for the room to find them, producing repeated scrambling (\"Where is it? Where is it?\" [01:36:47-01:37:39]). Before: a reference is named once and the leader moves on immediately. After: state the reference, then visibly pause while confirming by name that one or two members have found it, before continuing — a small habit that would have reclaimed real minutes this session."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Open Weighty Hypotheticals to Named Members Before Supplying the Answer",
+                "paragraphs": [
+                  "This week's eternal-security hypothetical ran ~13 minutes with the leader supplying most of the resolution himself. Before: a personally weighty question gets answered largely in the leader's own voice. After: after posing the hypothetical, name 2-3 members directly and hold the floor before giving his own take — the same Socratic discipline already working well on narrower observation questions."
+                ]
+              },
+              {
+                "title": "Pre-Mark Rabbit Trails With a Visible Time Budget",
+                "paragraphs": [
+                  "Both this week's extended digressions (eternal security, Nazarite vows) were self-labeled \"controversial\"/\"side note\" but ran 3-13 minutes unchecked. After: name a specific time budget out loud before diving in (\"let's take 5 minutes on this, then back to the text\"), regardless of topic, so a rich tangent doesn't quietly consume newcomer-welcome-sized chunks of the session."
+                ]
+              },
+              {
+                "title": "Insert One DOK Level 2 (Compare) Question Per Session",
+                "paragraphs": [
+                  "This session's 8 Big Idea questions skewed entirely DOK3/4 with no compare/analyze question. After: add one explicit \"what's different / what's the same\" comparison question (e.g., \"how does Amos judging the nations compare to Amos judging Judah?\") each session, even a framework-heavy one, to round out the DOK range."
+                ]
+              },
+              {
+                "title": "Protect Newcomer Welcome Time Independent of Pre-Session Delays",
+                "paragraphs": [
+                  "Jerry and Justin shared real testimony content in roughly 3 minutes, well under the 7-25 min target, after an extended A/V setup delay ate into the start of class. After: build in a standing 7-10 min window for newcomer welcome regardless of how much setup time was lost, so testimony content isn't compressed."
+                ]
+              },
+              {
+                "title": "Pause 3-5 Seconds After Every Verse Citation Before Moving On",
+                "paragraphs": [
+                  "Several reference call-outs this week were followed immediately by repeated \"where is it? where is it?\" from the room, costing real minutes. After: state the reference once, then visibly pause while confirming by name that one or two members have found it, before continuing."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: Not reliably countable precisely — single-track audio with no speaker diarization (same known limitation as recent sessions). Named/attributable voices: Chris, Justin Harvey, Jerry, Bradley, Cale, Dom, Jake, and several additional unidentified contributors — 9+ distinct individuals, consistent with this leader's established ~15-18 baseline, though this could not be independently confirmed  (Target: This group's established size)  → N/A",
+                "Newcomers / first-timers: 2 — Justin Harvey and Jerry both introduced themselves during the welcome window; Jerry shared a brief salvation testimony (\"I recently, December 25, repented... and gave my life to Him\" [00:19:08-00:19:19])  (Target: Organic growth over time)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 15+ distinct passages: Amos 1-2 (primary), 2 Kings 14:23-29, 2 Kings 15, 2 Chronicles 25:27, 2 Kings 13:1-5, Isaiah 5:7-8 and 5:20-25, Isaiah 7:8, Obadiah, Jonah, John 17:14-19, John 8:44, Deuteronomy 8:19 and 11:16, Habakkuk 2:18-19, Romans 1:20-25, Matthew 7, Hebrews (discipline), Ezekiel 36, Ruth — well above the 6+ benchmark  (Target: 6+ per session (Lifeway))  → STRONG",
+                "Leader talk ratio (with scripture reading): ~55-60% (estimated) — multiple extended single-voice teaching stretches, most notably a ~13-min discussion on eternal security, pulled the ratio higher than the trailing 45-50% range  (Target: ≤35%)  → NEEDS WORK",
+                "Leader talk ratio (discussion only — graded): ~55-60% (estimated; excludes scripture reading, which members mostly delivered) — 3 stretches exceeded 90 seconds this session, above the ≤2/session target  (Target: ≤30-35% (Lifeway 30% Rule))  → NEEDS WORK",
+                "Time to first scripture reading: ~7 min — measured from the end of the newcomer welcome [~00:21:00] to the first fresh reading (Amos 1:1-10, Chris) [00:27:57], within the ~10-min target  (Target: Within ~10 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~90%+ — nearly every teaching beat ties directly to the verse just read or a named cross-reference  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~134 min from the leader calling the room to order [~00:11:28] through the closing prayer's end [~02:36:10]; pre-session A/V setup chatter and screen-share troubleshooting preceded this and is excluded from lesson time  (Target: This leader's established rhythm (~116-140 min recent sessions))  → ON TARGET",
+                "Newcomer welcome: ~3 min [00:18:13-00:21:00] — both newcomers shared real testimony content (Jerry's conversion story in particular), but the window ran well under the 7-25 min target  (Target: 7-25 min when present)  → NEEDS WORK",
+                "Main lesson (Amos 1-2 O-I-A + cross-reference blocks): ~127 min [00:21:55-02:32:00]  (Target: Appropriate for this leader's Precept O-I-A format)  → ON TARGET",
+                "Tangent time: ~16-17 min combined — a ~13-min eternal-security discussion [01:56:18-02:09:35] and a ~3-min Nazarite-vow digression [02:11:47-02:14:20], both explicitly self-labeled by the leader as he entered them (\"it's going to be controversial\" / \"this is just a side note\")  (Target: < 5 min)  → NEEDS WORK",
+                "Pacing (self-managed): No mentor/peer redirect anywhere in the transcript — James closed the lesson content, the closing takeaway round, and the prayer all within his own established time window, with only a light closing aside about running long (\"we got to end this thing, we're already behind\" [02:32:42-02:32:49])  (Target: Self-managed throughout)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions",
+              "bullets": [
+                "Big Idea questions (DOK scored): 8 this session, spread from the kickoff question at ~36 min through the closing takeaway round at ~2:27  (Target: 5-8 per session)  → STRONG",
+                "DOK Level 4 (apply to life): 5 of 8 (~62%) — the kickoff question (revisited at close), \"would you be obedient?\", the eternal-security hypothetical, the Nazarite-vow application, and \"what's our idol god now?\"  (Target: 35-50%)  → STRONG",
+                "DOK Level 3 (reason/justify): 3 of 8 (~38%) — \"why is Amos having to pronounce this judgment?\", \"what do you think their mindset is?\", \"what does that tell you about God?\"  (Target: 30-40%)  → STRONG",
+                "DOK Level 2 (compare/analyze): 0 of 8 (0%) — none this session, consistent with a framework-building/historical-background-heavy opening lesson rather than a narrative session  (Target: 20-30%)  → NEEDS WORK",
+                "Application spacing: Well-distributed — questions land at ~36 min (kickoff), ~47 min, ~55 min, ~58 min, ~1:54, the extended ~1:56-2:09 stretch, ~2:12, and the closing round at ~2:27  (Target: Distributed throughout session)  → STRONG",
+                "Confession/Personal-Response Rate (first-person): 2 — a member's disclosure about his mother's rehab recovery and its effect on his own faith [02:01:04-02:01:38], and a member's admission about avoiding the \"weight\" of conviction before sin (\"do I really want to go through that pain? I don't... I've had that happen to me\" [02:22:57-02:23:48]) — at the ≥2 target  (Target: ≥2 per session)  → STRONG",
+                "Leader Follow-up Probe Frequency: 3+ — \"Would you do it? Would you go forward?\" [00:58:01-00:58:04], \"Have you ever done that?\" asked twice [02:12:14-02:13:36], and \"What's our idol god now?\" [01:54:32-01:54:43] — at the ≥3 target  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Substantive contributors (graded): 9+ identifiable voices gave interpretive/applied responses — Chris, Justin Harvey, Jerry, Bradley, Cale, Dom, Jake, and additional unidentified contributors — against an unknown total room size  (Target: ≥70% of room (size-adjusted))  → STRONG",
+                "Substantive engagement rate: ~70%+ (estimated) — members independently connected the nations' judgments to Torah/Pentateuch law [01:32:17-01:33:05] and Tyre's broken covenant with Solomon [01:33:09-01:33:49] without the leader supplying the answer first  (Target: 70% STRONG threshold)  → STRONG",
+                "Read-aloud assignments (reported, not scored): 10+ across Amos 1-2, 2 Kings, 2 Chronicles, Isaiah, John, Deuteronomy, Habakkuk, Romans — spread across Chris and other named/unnamed readers — not counted toward engagement  (Target: Multiple readers; not scored)  → N/A",
+                "Wait time after questions: Solid — James held \"Why is Amos having to pronounce this judgment? Why? Why?\" through several unanswered repetitions before supplying \"all right, so that's part of it\" [00:46:55-00:47:33]  (Target: 3-5 sec (Rowe 1972))  → STRONG",
+                "Quiet Member Flag: Not reliably attributable — single-track audio without speaker diarization  (Target: Name any non-contributor for follow-up)  → N/A"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments (leader): No new leader-specific personal testimony this session, but a public self-correction of a geography error from last week's Jonah teaching (\"I made a mistake last week... I want to clarify that because that was on my part\" [00:25:14-00:26:10]) models the same accountability the lesson itself teaches  (Target: At least 1 per session)  → ON TARGET",
+                "Monologue count (>90 sec during discussion): 3 identified this session — above the ≤2/session target, a step up from recent weeks (see Monologues section)  (Target: ≤2 per session)  → NEEDS WORK",
+                "Coaching posture: Leader closes with an explicit, warm expression of investment in the group (\"I am so encouraged by you guys... you guys mean the world to me\" [02:33:08-02:34:08]), consistent with a shepherding posture even during a demanding, theologically dense session  (Target: Self-awareness, coachable posture)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended questions: ~80%+ — the session is almost entirely Socratic prompting rather than declarative teaching, apart from the extended eternal-security stretch  (Target: ≥70%)  → STRONG",
+                "% text-requiring (members read or reference scripture): ~85%+ — nearly every question ties directly to the verse just read  (Target: 50%+)  → STRONG",
+                "Leader follow-up probes: 3+ — see Application Questions section  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle maintained: James held the \"why is Amos having to pronounce this judgment?\" line through multiple unanswered repetitions before the room converged on an answer [00:46:55-00:47:33]  (Target: Redirect, don't rescue (Hiebert 2007))  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Q vs. S ratio (questions to statements): Question-heavy through most of the session, but statement-heavy during the extended eternal-security stretch  (Target: Target: 1:1 or better)  → ON TARGET",
+                "Tone & delivery: N/A — primarily an audio-based assessment; session video confirms an engaged, screen-sharing in-person teaching setup throughout  (Target: N/A — audio only)  → N/A",
+                "On-screen/physical visual aid: Sustained this week — session-video frame captures (ffmpeg, multiple timestamps) confirm Logos Bible Software used throughout: passage text with color-coded highlighting, a Hebrew/Aramaic dictionary panel (Strong's/BDB-style entries), a cross-reference panel, and a Factbook encyclopedia panel (e.g. a \"Jehoash\" king-biography card) — in addition to the verbally-referenced geographic map [00:23:51-00:24:27]. A materially richer visual-aid picture than audio transcript alone would show  (Target: Any tool (BLB, VerseMate, Logos, chart, whiteboard, etc.))  → STRONG",
+                "Topic drift management: Two extended, leader-self-labeled tangents (eternal security, ~13 min; Nazarite vow, ~3 min) plus a brief comparative-religion aside — combined drift ran well above the < 5 min target, though both main tangents were flagged by the leader as he entered them  (Target: < 5 min drift)  → NEEDS WORK",
+                "Big Ideas at close: For a second straight week, the leader opened the floor for room-generated takeaways (\"What can we learn about chapter one and two?\" [02:27:35]) and multiple members responded in their own words — confirming last week's practice is a trend, not a one-off  (Target: Cumulative Big Idea reinforcement at close)  → STRONG"
+              ]
+            },
+            {
+              "title": "Monologues — Detail & Fix",
+              "paragraphs": [
+                "3 stretches exceeded the 90-second threshold (Stuart & Rutherford) this session — above the ≤2/session target, a step up from recent weeks. All three are substantive teaching content.",
+                "",
+                "",
+                ""
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "A Personally Weighty Question Gets Mostly Answered by the Leader, Not Wrestled With by the Room  (🔵 Pivot · Teaching Craft)\n\nWhat happened: James posed a hypothetical he flagged himself as \"controversial\": can someone claim salvation at 14, live 20 years in open sin, then say they were saved all along? [01:57:38-01:58:17]. Two members offered brief, genuine responses — one connecting it to his mother's addiction-recovery story [02:01:04-02:01:38], another comparing it to Peter vs. Judas [02:04:53-02:06:02] — but across the roughly 13-minute stretch, James supplied most of the theological resolution himself (Romans 1, Matthew 7, Hebrews) rather than holding the floor open.\n\nWhy it mattered: This is exactly the kind of personally relevant doctrinal question (\"am I actually saved?\") that could produce the session's deepest engagement if the room were given more room to wrestle with it out loud — as delivered, quieter members may have walked away with a hard teaching to privately apply, never having voiced a question or a doubt themselves.\n\nWhat would make it bigger: After posing the hypothetical, name 2-3 members directly and ask \"where do you see yourself in that story?\" before supplying the Romans 1/Matthew 7 resolution himself.",
+                  "timestamp": "[01:56:18-02:09:35]"
+                },
+                {
+                  "detail": "Leader Publicly Corrects His Own Error From Last Week  (🟢 Capitalized · Being Real)\n\nWhat happened: Opening the new book, James stopped to self-correct: \"I made a mistake last week... I said Nineveh and the masses are around Assyria — Nineveh is in Assyria, that's where Jonah went to minister... I want to clarify that because that was on my part.\"\n\nWhy it mattered: The entire Amos 1-2 lesson is about the gap between what people claim and how they actually respond when their own error is named. A leader modeling that exact response to his own small mistake — in front of the room, unprompted — makes the lesson's point more credible than any amount of teaching about it.\n\nWhat would make it bigger: A one-line callback later, when the lesson turns to \"how do you respond when sin is being revealed to you,\" would make the leader's own example explicit rather than leaving the parallel implicit.",
+                  "timestamp": "[00:25:14-00:26:10]"
+                },
+                {
+                  "detail": "A Member Names the Weight of Avoiding Conviction, Mid-Lecture  (🟢 Capitalized · Being Real)\n\nWhat happened: In the middle of the eternal-security discussion, a member volunteered: \"even when I know sin is approaching, I'm like, do I really want to go through that pain? I don't... I've had that happen to me.\"\n\nWhy it mattered: This is a genuinely costly, present-tense confession — not a past-tense testimony — surfacing inside a dense doctrinal stretch where the room could easily have stayed purely intellectual. It's direct evidence the group is safe enough to confess an ongoing struggle, not just recount an old one.\n\nWhat would make it bigger: A brief named circle-back later (\"how's that going, since we talked about it?\") would extend the disclosure into a visible accountability loop rather than a single moment.",
+                  "timestamp": "[02:22:57-02:23:48]"
+                },
+                {
+                  "detail": "Room-Generated Closing Takeaway Repeats for a Second Straight Week  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: James again closed with an open floor rather than his own summary: \"What can we learn about chapter one and two?\" Multiple members responded in their own words — \"all believers and non-believers,\" \"we can't beat the Jesus metaphors,\" \"we deserve to be judged... in Christ.\"\n\nWhy it mattered: Last week's report explicitly flagged this as a new practice worth watching \"to confirm it's a trend and not a one-off.\" It is now a trend — a real, repeated coaching-loop close rather than a single implementation.\n\nWhat would make it bigger: Naming 1-2 quieter members directly for the round, the way the kickoff question gets revisited by name, would pull in voices beyond the most consistently vocal members.",
+                  "timestamp": "[02:27:35]"
+                },
+                {
+                  "detail": "A Real Newcomer Testimony Gets 3 Minutes and No Later Callback  (🟠 Missed Opportunity · Building Ministry)\n\nWhat happened: Jerry introduced himself with a genuine conversion story — \"I recently, December 25, repented to Him... and gave my life to Him\" — alongside Justin Harvey's introduction, inside a combined ~3-minute window.\n\nWhy it mattered: A fresh salvation testimony is the single highest-leverage Building Ministry signal available in a session — both the apex newcomer-growth evidence and a natural on-ramp for weaving a new believer into the group's ongoing life. Three minutes and no callback under-weights it relative to its actual significance.\n\nWhat would make it bigger: A single mid-session callback (\"Jerry, since you just told us your story...\") during the application-heavy second half would extend the welcome's impact well past its brief opening window.",
+                  "timestamp": "[00:18:13-00:21:00]"
+                }
+              ],
+              "paragraphs": [
+                "Five disproportionately important moments — the pivots that shaped what this group will remember, believe, and do this week. Ordered by impact, not chronology."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "When God's word exposes sin, how do we move from noticing what is wrong with others to responding to what He is showing us? [00:36:10] — Level 4 — Apply to life — The session's kickoff question — posed early, revisited explicitly at the close via the \"log in your own eye\" discussion.",
+                "Why is Amos having to pronounce this judgment? [00:46:55] — Level 3 — Reason/justify — Held through multiple unanswered repetitions before the room converged on an answer.",
+                "What do you think their mindset is that their relationship towards God is? [00:54:42] — Level 3 — Reason/justify — Interpreting the nations' prosperity as false spiritual security.",
+                "What if the word of the Lord came to you... Would you be obedient? [00:57:58] — Level 4 — Apply to life — Direct personal application of Amos's own calling as a non-prophet.",
+                "What does that tell you about God? [01:20:08] — Level 3 — Reason/justify — Interpreting God's judgment of all nations, not just Israel.",
+                "Is that possible? [the saved-at-14, 20-years-in-sin hypothetical] [01:57:38] — Level 4 — Apply to life — Triggered the session's longest discussion — see Key Moment 1 and Monologue 3.",
+                "What's our idol god now? [01:54:32] — Level 4 — Apply to life — Direct personal self-examination following the Habakkuk idols reading.",
+                "Have you ever called another believer to go against something that was for God? [02:12:14] — Level 4 — Apply to life — Personal application drawn from the Nazarite-vow discussion."
+              ],
+              "paragraphs": [
+                "8 Big Idea questions this session, distributed across the full session from the kickoff question onward. DOK distribution: 62% Level 4, 38% Level 3, 0% Level 2 (Metric Adjustment #3 — scaffolding/reading-prompt questions excluded; Level 2 absence consistent with a framework-building opening lesson, Metric Adjustment #5). Confession/Personal-Response Rate: 2 (at the ≥2 target). Leader Follow-up Probe Frequency: 3+ (at the ≥3 target)."
+              ]
+            },
+            {
+              "title": "Score composition",
+              "paragraphs": [
+                "How the weighted clusters combined into the composite score."
+              ],
+              "bullets": [
+                "Teaching Craft: 90.0% × weight 33 → 29.70 pts",
+                "Building Ministry: 66.7% × weight 31 → 20.67 pts",
+                "Engaging People: 70.0% × weight 18 → 12.60 pts",
+                "Being Real: 70.0% × weight 18 → 12.60 pts",
+                "BASE (pre-bonus): — × weight 100 → 75.57 pts"
+              ]
+            }
+          ],
+          "pdfUrl": "",
+          "docUrl": "https://drive.google.com/drive/folders/1vvVpdPk2ARawV3wOM9LeXJ0BtpVJ2qjV"
+        },
+        {
           "id": "james-davis-2026-09-26-jonah-3-4-second-chance-nineveh-",
           "date": "2026-09-26",
           "dateLabel": "September 26, 2026",
@@ -42533,6 +42919,382 @@
       "isCoach": true,
       "zoomLink": "",
       "reports": [
+        {
+          "id": "brendan-elizabeth-2026-10-03-kings-prophets-study-part-4-amos",
+          "date": "2026-10-03",
+          "dateLabel": "October 3, 2026",
+          "session": "Kings & Prophets Study, Part 4 — Amos Lesson 1 (Amos 1-2, Oracles Against the Nations)",
+          "topic": "God's indictment of eight nations — including Judah and Israel — for mistreating people and rejecting his law; \\",
+          "duration": "~1 hr 58 min captured",
+          "attendees": 4,
+          "newcomers": 0,
+          "score": 85.45,
+          "base": 85.45,
+          "newcomerBonus": 0,
+          "sizeBonus": 0,
+          "status": "Exceptional",
+          "statusEmoji": "🔷",
+          "clusters": [
+            {
+              "name": "Teaching Craft",
+              "weight": 33,
+              "scorePct": 95,
+              "contribution": 31.35
+            },
+            {
+              "name": "Building Ministry",
+              "weight": 31,
+              "scorePct": 70,
+              "contribution": 21.7
+            },
+            {
+              "name": "Engaging People",
+              "weight": 18,
+              "scorePct": 80,
+              "contribution": 14.4
+            },
+            {
+              "name": "Being Real",
+              "weight": 18,
+              "scorePct": 100,
+              "contribution": 18
+            }
+          ],
+          "dimensions": [
+            {
+              "n": 1,
+              "name": "Session Structure & Flow",
+              "score": 4,
+              "note": "Teaching Craft"
+            },
+            {
+              "n": 2,
+              "name": "Newcomer Welcome",
+              "score": null,
+              "note": "Building Ministry"
+            },
+            {
+              "n": 3,
+              "name": "Scripture Engagement",
+              "score": 5,
+              "note": "Teaching Craft"
+            },
+            {
+              "n": 4,
+              "name": "Facilitation vs. Lecture",
+              "score": 3,
+              "note": "Engaging People"
+            },
+            {
+              "n": 5,
+              "name": "Application Questions",
+              "score": 5,
+              "note": "Teaching Craft"
+            },
+            {
+              "n": 6,
+              "name": "Participant Engagement",
+              "score": 5,
+              "note": "Engaging People"
+            },
+            {
+              "n": 7,
+              "name": "Visual Aids",
+              "score": 5,
+              "note": "Teaching Craft"
+            },
+            {
+              "n": 8,
+              "name": "Vulnerability / Authenticity",
+              "score": 5,
+              "note": "Being Real"
+            },
+            {
+              "n": 9,
+              "name": "Memory Reinforcement",
+              "score": null,
+              "note": "Teaching Craft"
+            },
+            {
+              "n": 10,
+              "name": "Homework References",
+              "score": 5,
+              "note": "Building Ministry"
+            },
+            {
+              "n": 11,
+              "name": "Prayer",
+              "score": 5,
+              "note": "Being Real"
+            },
+            {
+              "n": 12,
+              "name": "Leader Development",
+              "score": 2,
+              "note": "Building Ministry"
+            }
+          ],
+          "bigIdeas": [
+            "Mistreating people is itself a crime against God, not just idol worship",
+            "God's justice reaches every nation — his domain is bigger than just his own people",
+            "Claiming God's name while rejecting his law is its own, greater kind of sin",
+            "Spiritual maturity means moving from milk to solid food — able to discern good from evil",
+            "Loving God fully and loving people are the two commands everything else hangs on",
+            "You cannot outrun God's judgment, so take it seriously now, not later"
+          ],
+          "feedback": {
+            "headline": "The group opens Amos — surveying God's eight-oracle indictment against the nations and Judah before narrowing to Israel — anchored by a live Blue Letter Bible word study on \"transgression\" and a renewed, explicit absence check-in before the session even opens; the one clear gap is that Elizabeth's four-session streak of independently running a full delegated teaching segment doesn't continue this week.",
+            "strengths": [
+              "Visual Aids Fully Rebound — the Richest Visual-Tool Session of the Arc",
+              "The Absence-Naming Habit Is Restored and Strengthened",
+              "Dense, Unified Cross-Referencing Across the Whole Canon"
+            ],
+            "improvements": [
+              "The Leader Development Streak Breaks — No Delegated Teaching Segment",
+              "Discussion-Only Leader Talk Ratio Ticks Up From the Last Four Sessions",
+              "The Judah \"Lies and Truth\" Block Stayed Illustrative Rather Than Personal"
+            ],
+            "recommendations": [
+              "Restore the Delegated-Teaching-Segment Habit — This Format Makes It Easy",
+              "Keep the Live Word-Study Tool as a Standing Practice, Not a One-Off",
+              "Trend the Discussion-Only Talk Ratio Back Toward 30-35%"
+            ],
+            "overview": [
+              "The group opens Amos — surveying God's eight-oracle indictment against the nations and Judah before narrowing to Israel — anchored by a live Blue Letter Bible word study on \"transgression\" and a renewed, explicit absence check-in before the session even opens; the one clear gap is that Elizabeth's four-session streak of independently running a full delegated teaching segment doesn't continue this week.",
+              "This report carries the full written coaching for the session: 5 areas of strength, 5 areas for improvement, and 5 recommendations for next session, scored 85.45/100 on the v3 weighted model."
+            ],
+            "strengthsProse": [
+              {
+                "title": "Visual Aids Fully Rebound — the Richest Visual-Tool Session of the Arc",
+                "paragraphs": [
+                  "A live Blue Letter Bible word study on \"transgression\" (Hebrew pasha: rebellion, revolt, rejection of authority), a color-coded kings chart, and a region map consulted at every nation all appear in the same session.",
+                  "The word-study result becomes the unifying interpretive key the group reuses across all eight oracles that follow."
+                ]
+              },
+              {
+                "title": "The Absence-Naming Habit Is Restored and Strengthened",
+                "paragraphs": [
+                  "John* and Casey's absence is named and explained before the session even formally opens — going further than the originally-praised version of this habit from two sessions ago."
+                ]
+              },
+              {
+                "title": "Dense, Unified Cross-Referencing Across the Whole Canon",
+                "paragraphs": [
+                  "Thirteen-plus supporting cross-references span the Law, History, Wisdom, Prophets, Gospels, and Epistles — Proverbs, Kings, Isaiah, Joshua, Judges, Samuel, Psalms, John, Hebrews, Romans, Peter, and Matthew — each tied to a specific oracle or application thread rather than scattered for its own sake."
+                ]
+              },
+              {
+                "title": "Two Genuine First-Person Confessions Clear the Target",
+                "paragraphs": [
+                  "A disclosure about hiding a no-drinking conviction in college under family pressure, paired with an admission about minimizing God to a \"small box,\" together clear the ≥2 Confession/Personal-Response target for the first time in several sessions."
+                ]
+              },
+              {
+                "title": "The Georgetown-to-Austin Illustration Makes an Abstract Structure Stick",
+                "paragraphs": [
+                  "Naming Amos's own concentric, farthest-to-nearest rhetorical strategy and reframing it onto local geography turns a literary observation into a memorable, immediately-grasped image."
+                ]
+              }
+            ],
+            "improvementsProse": [
+              {
+                "title": "The Leader Development Streak Breaks — No Delegated Teaching Segment",
+                "paragraphs": [
+                  "Elizabeth's four-session streak of independently running a full teaching block doesn't continue this week; every one of the eight structurally identical oracle cycles stayed facilitator-driven.",
+                  "The repeated template made this an unusually low-risk week to hand off — the opportunity, not the difficulty, is what was missed."
+                ]
+              },
+              {
+                "title": "Discussion-Only Leader Talk Ratio Ticks Up From the Last Four Sessions",
+                "paragraphs": [
+                  "~40-45% is a step up from the steady 35-40% held across the last four sessions, driven by the historical-context and kings-chart block a new-book kickoff required."
+                ]
+              },
+              {
+                "title": "The Judah \"Lies and Truth\" Block Stayed Illustrative Rather Than Personal",
+                "paragraphs": [
+                  "The Jehovah's Witness and discernment discussion produced good conceptual content but no first-person confession in that specific thread — the session's actual confessions arrived later, in a different block."
+                ]
+              },
+              {
+                "title": "The \"Who Read the Whole Book\" Homework Check Produced No Usable Content",
+                "paragraphs": [
+                  "Bobby was the only one who'd read all nine chapters, but had no answer when asked to summarize the structure — a simpler, scaffolded fallback question would have salvaged the moment rather than moving on empty-handed."
+                ]
+              },
+              {
+                "title": "The Application Discussion Ran Long Before Circling Back to Amos's Own Text",
+                "paragraphs": [
+                  "The ~16-minute closing application stretch (persecution, idols, phones) was rich, but a tighter bridge back to Amos 1-2's specific big ideas would sharpen the session's own takeaway rather than leaving it to the final synthesis alone."
+                ]
+              }
+            ],
+            "recommendationsProse": [
+              {
+                "title": "Restore the Delegated-Teaching-Segment Habit — This Format Makes It Easy",
+                "paragraphs": [
+                  "The repeated \"transgression -> punishment\" oracle structure is an ideal, low-prep template. Hand Grace or Bobby one full oracle next time — they read it, ask the two standard questions themselves, and synthesize before handing back. No new material to prepare, just a different voice running a familiar pattern."
+                ]
+              },
+              {
+                "title": "Keep the Live Word-Study Tool as a Standing Practice, Not a One-Off",
+                "paragraphs": [
+                  "This week's Blue Letter Bible lookup on \"transgression\" directly unified the whole session's vocabulary. Pull up at least one term per session this way, regardless of which book or lesson, so the technique survives past this one strong week."
+                ]
+              },
+              {
+                "title": "Trend the Discussion-Only Talk Ratio Back Toward 30-35%",
+                "paragraphs": [
+                  "This week's ~40-45% is a step up from the last four sessions' steady 35-40%, driven by the historical-context load a new book requires. Next session (a single continuing storyline, not a multi-nation survey) is the moment to pull the ratio back down."
+                ]
+              },
+              {
+                "title": "Keep the Absence Check-In as the Fixed First Question, Not a Reaction to This Week's Topic",
+                "paragraphs": [
+                  "This week's version was strong specifically because it came unprompted, before the open. Lock it into the fixed opening sequence every week — \"who do we need to catch up or pray for?\" — so it survives a week when everyone shows up and there's no natural prompt."
+                ]
+              },
+              {
+                "title": "Close Illustrative Threads With a Direct Personal Commitment Question",
+                "paragraphs": [
+                  "The Baylor-coworker persecution story and the Jehovah's Witness discussion both stayed illustrative/third-person. When an example naturally invites a parallel (\"has this ever been you?\"), ask it directly — the session's best confessions this week came from exactly that kind of direct personal pivot."
+                ]
+              }
+            ]
+          },
+          "sections": [
+            {
+              "title": "Scorecard — 1. Attendees",
+              "bullets": [
+                "Total attendees: 4, in-person (Brendan & Elizabeth co-leading + Grace, Bobby)  (Target: 6-8 (arc norm, trending))  → ON TARGET — down from 5 last session, but the smaller room is never penalized (Group Size Factor)",
+                "Newcomers present: None this session  (Target: N/A this session)  → N/A",
+                "Absent regulars: John* and Casey, named and discussed before the session formally opened: \"I think [John] and Casey [are] like not feeling the best... John was like, I still want to come. Casey didn't respond\" [00:21:13-00:23:00]  (Target: Acknowledge and plan catch-up)  → STRONG — directly fixes the lapse flagged the last two sessions, and goes further by raising it unprompted before the open"
+              ]
+            },
+            {
+              "title": "Scorecard — 2. Scripture Focus",
+              "bullets": [
+                "Cross-references used: 13+ — Proverbs 6 (what God hates), 2 Kings 13 & 16 and Isaiah 7 (Damascus/Aram), Joshua 13, Judges 10 and 1 Samuel 4 (the Philistines), Psalm 83 (Tyre), John 8 and John 17 (lies and truth), Hebrews 5 (milk vs. solid food), Romans 1 (exchanging truth for a lie), 1 Peter 4 (judgment begins with the household of God), Matthew 22 (the greatest commandment)  (Target: 6+ per session (Lifeway))  → STRONG — denser than last session's already-strong 15+, spanning the Law, History, Wisdom, Prophets, Gospels, and Epistles",
+                "Leader talk ratio — whole session (incl. scripture reading): ~50-55% (combined Brendan + Elizabeth leadership side)  (Target: ≤35%)  → NEEDS WORK",
+                "Leader talk ratio — discussion only (graded; excl. reading): ~40-45% (estimated) — higher than the last four sessions' steady 35-40%, driven by the ~13-minute Amos background/kings-chart block this survey-day format required  (Target: ≤30-35% (Lifeway 30% Rule))  → NEEDS WORK — the gap widens this session, tied to the new-book historical-context load",
+                "Time to first scripture reading: ~3 min after the cumulative recap ended [00:29:00 -> 00:31:58, Amos 1:1]  (Target: Within ~10 min of lesson start)  → STRONG",
+                "Discussion scripture-grounded: ~85%+ — nearly every exchange, including the eight-oracle cycle and the extended lies/truth block, tied directly to a specific verse just read  (Target: 75%+)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 3. Time Management",
+              "bullets": [
+                "Total session time: ~1 hr 58 min captured  (Target: Consistent with this group's established ~110-125 min norm)  → ON TARGET",
+                "Pre-session fellowship + opening prayer: ~2.5 min of pre-session banter (bridal shower logistics, absence check-in) before a delegated opening prayer (Elizabeth) [00:21:05-00:23:33]  (Target: Brief orientation)  → ON TARGET",
+                "Cumulative Obadiah + Joel + Jonah Big Ideas recap: ~5.5 min [00:23:38-00:29:00]  (Target: Big Ideas review)  → STRONG — a genuine three-book recap, though Dim 9 (Memory Reinforcement) is categorically N/A this session as Lesson 1 of the Amos arc; credited here and under Structure (Dim 1) instead",
+                "Amos background — authorship, structure, historical context (kings chart): ~13 min [00:29:02-00:41:51]  (Target: Context overview before new material)  → ON TARGET — necessary new-book scaffolding, but the session's main driver of the elevated talk ratio",
+                "Amos 1:2 + \"what God hates\" cross-reference (Proverbs 6): ~3 min [00:41:51-00:45:08]  (Target: Discussion-driven content)  → STRONG",
+                "Seven-nation oracle cycle — Damascus, Gaza, Tyre, Edom, Ammon, Moab, Judah: ~56 min [00:45:08-01:41:12]  (Target: Discussion-driven content)  → STRONG — includes the live Blue Letter Bible word study",
+                "Judah \"lies and truth\" extended cross-reference block: ~7 min [01:41:12-01:48:16]  (Target: Discussion-driven content)  → STRONG",
+                "Israel oracle (2:6-16) + God's resume + Nazirite/prophets: ~9 min [01:48:50-01:57:05]  (Target: Discussion-driven content)  → STRONG",
+                "Extended application discussion (dishonoring God's people, persecution today, greatest commandment, personal idols): ~16 min [01:57:46-02:13:53]  (Target: Discussion-driven content)  → STRONG — richest confession stretch of the session",
+                "Big Ideas synthesis + closing prayer: ~4.5 min [02:13:53-02:18:38]  (Target: Discussion-driven content)  → STRONG",
+                "Pacing (self-managed): Self-managed throughout, no external redirect  (Target: Self-managed)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 4. Application Questions — DOK Breakdown",
+              "bullets": [
+                "Big Idea questions (DOK scored): ~12-14 across the session, concentrated around nations' sin, Judah's lies, and personal idols  (Target: 5-7 per session)  → STRONG",
+                "DOK Level 4 (apply to life): ~8 — \"What comes with the privilege of being a child of God?\" [01:37:36], \"Where do lies come from today? What should we watch for?\" [01:46:00], \"Have you ever dishonored one of God's children...\" [01:57:46], \"Does anything like that happen today?\" [01:59:00], \"Do we take this seriously? Do we live like it's real?\" [02:05:25], \"Do you minimize God a lot?\" [02:05:39], \"What do I love above God, and where do I treat myself better than others?\" [02:12:00], closing synthesis \"What are the big ideas we can take away?\" [02:13:53]  (Target: 35-50% for DOK 4)  → STRONG",
+                "DOK Level 3 (reason/justify): ~4 — \"What does that teach us about God?\" [01:34:52], \"What's the flip side of that though?\" [01:39:26], \"Why do you think God brings up his resume here?\" [01:54:19], \"How did Israel fall short of the law?\" [02:10:59]  (Target: 35-50% for DOK 3)  → STRONG",
+                "DOK Level 2 (compare/analyze): ~2 — comparing each nation's transgression/punishment pattern against the last [00:51:47], comparing Amos's circling nation order to a local map (\"Georgetown to Austin\") [01:49:02]  (Target: Minority)  → ON TARGET",
+                "DOK Level 1 scaffolding (excluded): Navigational reading-location and factual-recall prompts (\"what's a citadel,\" \"where is Tyre\") — excluded from scoring  (Target: Excluded from scoring)  → N/A",
+                "Confession / Personal-Response Rate: ~2-3 — hiding a no-drinking conviction in college under peer/family pressure [01:58:49-01:59:47], \"I don't always come to him with the big things... I put him in a small box\" [02:05:39-02:06:14], plus lighter phone/Instagram and Twitter admissions [02:12:16-02:12:44]  (Target: ≥2 per session)  → STRONG — clears the target for the first time in several sessions",
+                "Leader follow-up probe frequency: ~5 — \"Why do you think he brings that up?\" [01:54:22], \"What's the flip side of that though?\" [01:39:26], \"Does anything like that happen today, in America?\" [01:59:00-01:59:12], \"Do you minimize God a lot?\" [02:05:39], \"Why do you think God used this illustration here?\" [02:04:41]  (Target: ≥3 per session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 5. Engagement",
+              "bullets": [
+                "Named substantive contributors: 2 of 2 non-leader attendees present — Grace and Bobby both read scripture by name and were audibly central to every discussion thread  (Target: 70-80% of attendees)  → STRONG — 100% of this week's smaller room, never penalized for size (Metric Adjustment #8 / Group Size Factor)",
+                "Substantive % of group: Sustained, high-depth engagement across the full ~2 hours, including both the eight-oracle cycle and the extended application discussion  (Target: ≥70% for STRONG)  → STRONG",
+                "Read-aloud assignments (reported, not scored): Grace (Amos 1:1, Damascus and Tyre cross-refs, the Israel oracle reading, the Judah oracle reading), Bobby (Proverbs 6, the Gaza and Edom oracles, John 8/17, Hebrews 5, Romans 1, Matthew 22), Brendan (Amos 1:2, connective narration throughout), Elizabeth (Damascus cross-refs, the Ammon oracle)  (Target: Reported only)  → N/A",
+                "Wait time after questions: Genuine wait time throughout, especially the extended \"have you ever dishonored one of God's children\" thread [01:57:46-02:00:49], which stayed open across several personal examples before resolving  (Target: 3-5 sec (Rowe 1972))  → STRONG",
+                "Quiet member flag: None among those present — Grace and Bobby were both audibly central throughout; John* and Casey's absence is tracked separately above, not a quiet-member issue  (Target: Name + invite next study)  → N/A"
+              ]
+            },
+            {
+              "title": "Scorecard — 6. Leadership",
+              "bullets": [
+                "Vulnerability moments: 2 — see Application Questions row above and Key Moments; two genuine first-person disclosures plus two lighter admissions  (Target: ≥1 per session with depth)  → STRONG — clears the arc's recent thinner weeks",
+                "Vulnerability depth (rolling baseline ±1): 5/5 — returns to the established ceiling held for three sessions prior to last week's one-step dip; the college peer-pressure disclosure and the \"small box\" confession are genuine and specific, not generic  (Target: Prior baseline: 4/5 (Sep 26, within swing cap of a 5/5 floor))  → STRONG",
+                "Extended monologues > 90 sec: 0 — no unbroken leader stretch exceeded the threshold; even the ~13-minute Amos background block was threaded with brief member responses throughout, though it is the session's clearest driver of the elevated talk ratio  (Target: ≤2 per session)  → STRONG",
+                "Co-teaching note: Brendan led the open, the Amos background/kings-chart block, and narrated every oracle transition; Elizabeth read several oracle passages and cross-references (Damascus, Ammon) but did not independently run a delegated teaching segment this week — a break from the 4-session streak (Aug 22 - Sep 26). Combined leadership side (Brendan + Elizabeth) scored as one per co-teaching normalization."
+              ]
+            },
+            {
+              "title": "Scorecard — 7. Question Quality",
+              "bullets": [
+                "% open-ended Big Idea questions: ~11 of ~13 scored questions were open-ended (\"what comes with,\" \"how would,\" \"do we\")  (Target: ≥70%)  → STRONG",
+                "% text-requiring questions: High — nearly every question referenced the oracle or cross-reference just read  (Target: ≥60%)  → STRONG",
+                "Follow-up probes: ~5 across the session  (Target: ≥3 per session)  → STRONG",
+                "Productive struggle: Preserved on \"why does God bring up his resume here?\" [01:54:19-01:55:20], which sat open across several guesses before the group worked toward \"he was there the whole time\" on their own, and on the extended Baylor-coworker persecution example [02:01:49-02:03:21]  (Target: Redirect, don't rescue (Hiebert & Grouws 2007))  → STRONG"
+              ]
+            },
+            {
+              "title": "Scorecard — 8. Study Method & Communication",
+              "bullets": [
+                "Q-to-S ratio in discussion: ~45:55 (Leader:Student) — Grace and Bobby carried the majority of the reading and a large share of the interpretive discussion across all eight oracles  (Target: Majority-question-led)  → STRONG",
+                "Word study and visual tools: A live Blue Letter Bible lookup on \"transgression\" (Hebrew pasha: 84 occurrences, \"rebellion... revolt... rejection of authority\") [00:52:06-00:54:06], plus a color-coded kings chart (\"goes from green to not green\") [00:39:26] and a region map consulted at every nation — the richest visual-tool session of the arc  (Target: On-screen Greek/Hebrew word lookup or equivalent visual tool (tool-agnostic))  → STRONG — full rebound from last session's regression; see Key Moments (Capitalized)",
+                "Tone & delivery (vocal variety, pace, command voice): N/A — audio only (confirmed via frame extraction: video track is a name-card placeholder, not camera footage)  (Target: N/A — audio only)  → N/A",
+                "Topic drift: Minor — bridal-shower pre-session banter (credited as Pre-Session Fellowship per the 10-step blueprint, not tangent time), a brief Apple/\"jobs of the devil\" joke (~10 sec) [02:13:15-02:13:33], and a brief chicken-meme aside (~15 sec) [02:17:06-02:17:25], none displacing core content  (Target: < 5 min total)  → STRONG",
+                "Big Idea at close: Yes — sectional themes named throughout (\"mistreating people,\" \"crimes against God,\" \"lies\") plus a whole-session synthesis naming sin's consequences, God's reach beyond Israel, and urgency for the lost [02:13:53-02:18:11]  (Target: Big Idea coined or recapped each session)  → STRONG"
+              ]
+            },
+            {
+              "title": "Key Moments",
+              "moments": [
+                {
+                  "detail": "Visual Aids Fully Rebound — a Live Word Study, a Kings Chart, and a Map  (🟢 Capitalized · Teaching Craft)\n\nWhat happened: Working through Damascus's oracle, the leader hands off the word-study question directly: \"Elizabeth, could you take us to the little blue letter Bible, look up that one\" [00:52:06], pulling up the Hebrew term behind \"transgression\" live on screen.\n\nWhy it mattered: Last session flagged Visual Aids as the session's clearest regression — a displayed passage with no confirmed lookup tool. This session restores and triples the technique (word-study tool, chart, and map) in a single sitting, directly answering that gap.\n\nWhat would make it bigger: Name the technique out loud once more at session's end (\"that's why we pull the word up every time\") so it's reinforced as a standing practice, not a one-off.",
+                  "timestamp": "[00:52:06-00:54:06]"
+                },
+                {
+                  "detail": "The Leader Development Streak Breaks — No Delegated Teaching Segment This Week  (🟠 Missed Opportunity · Building Ministry)\n\nWhat happened: Asked to summarize the book's structure since he was the only one who'd read all nine chapters, Bobby has nothing to offer: \"I might have to read it again, nine chapters later... I don't have an answer to that one\" [00:30:06-00:30:14]. No member is handed an independent oracle to run for the rest of the session — every one of the eight nation-cycles stays facilitator-driven, with members only reading assigned verses.\n\nWhy it mattered: Elizabeth had independently run a full delegated teaching segment for four consecutive sessions (Aug 22 - Sep 26) — a strong, observable 2 Tim 2:2 multiplication signal. This week's oracle-cycle format (eight short, nearly identical \"transgression -> punishment\" units) was an unusually easy template to hand off, yet the pattern didn't extend to anyone, co-leader or member.\n\nWhat would make it bigger: Hand Grace or Bobby one full oracle next time — reading it and asking \"what did they do wrong / what's the punishment\" themselves — no net-new prep required since the template repeats eight times in this very chapter.",
+                  "timestamp": "[00:30:06-00:30:19]"
+                },
+                {
+                  "detail": "The Absence-Naming Habit Is Restored — and Strengthened  (🟢 Capitalized · Building Ministry)\n\nWhat happened: Before the session even formally opens, the leader names who's missing and why: \"I think [John] and Casey [are] like not feeling the best... John was like, I still want to come. Casey didn't respond. I was like, I should rest, I guess\" [00:21:13-00:23:00].\n\nWhy it mattered: The last two reports both flagged this exact gap — a specific, named absence check-in that held for one session then lapsed the next for a different member. This week's version goes further than the originally-praised one: it happens before the open, not just at it, and includes real detail on why each member is out.\n\nWhat would make it bigger: Already strong as executed — the next test is whether it survives a week when everyone shows up and there's no natural prompt to raise it.",
+                  "timestamp": "[00:21:13-00:23:00]"
+                },
+                {
+                  "detail": "\"I Don't Always Come to Him With the Big Things\"  (🟢 Capitalized · Being Real)\n\nWhat happened: Asked whether the group actually lives like God's judgment is real, one leader admits: \"I don't always come to him with... the big things... Sometimes I kind of put him in a small box... he'll show up, or he'll answer a prayer, but I don't always come to him with the big things\" [02:05:39-02:06:14].\n\nWhy it mattered: Paired with an earlier disclosure about hiding a no-drinking conviction in college under family pressure [01:58:49-01:59:47], this gives the session at least two genuine first-person confessions — clearing the ≥2 Confession/Personal-Response target that several recent sessions missed.\n\nWhat would make it bigger: A follow-up probe (\"what's one 'big thing' you could bring to him this week?\") would have converted the confession into a trackable commitment.",
+                  "timestamp": "[02:05:39-02:06:28]"
+                },
+                {
+                  "detail": "The Georgetown-to-Austin Illustration  (🔵 Pivot Point · Teaching Craft)\n\nWhat happened: Naming Amos's own literary strategy, the leader observes the eight oracles move geographically closer and closer to Israel with each one, then reframes it locally: \"Damascus is Georgetown... Israel is Austin... Judah [is] South Austin\" [01:49:33-01:49:58].\n\nWhy it mattered: This is exactly the \"bridging ancient-modern gap\" illustration quality the coaching model values — it makes a literary-structure insight (easy to state, hard to make land) stick in one sentence, and sets up the \"it's not just them, it's us\" turn toward Judah and Israel.\n\nWhat would make it bigger: Name it as a reusable bumper sticker (\"the circle always closes on us too\") so it resurfaces at the session's close during the Big Ideas synthesis, not just in the moment it's made.",
+                  "timestamp": "[01:49:02-01:49:55]"
+                }
+              ],
+              "paragraphs": [
+                "Five moments from this session — ordered by impact, not chronology, because the biggest story this week is a genuine trade: Visual Aids and Vulnerability both rebound to the arc's ceiling, while Leader Development drops to its lowest point in the arc."
+              ]
+            },
+            {
+              "title": "Application Questions",
+              "bullets": [
+                "\"What comes with the privilege of being a child of God?\" [01:37:36] — Level 4 — Apply to life — Connected directly to Judah's rejection of the law despite claiming the name.",
+                "\"Where do lies come from today? What should we watch for?\" [01:46:00] — Level 4 — Apply to life — Produced the Jehovah's Witness and discernment discussion.",
+                "\"Have you ever dishonored one of God's children by trying to persuade them to do something against their conscience?\" [01:57:46] — Level 4 — Apply to life — Produced the session's first clear first-person confession — see Key Moments (Capitalized).",
+                "\"Do we take this seriously? Do we live like it's real?\" [02:05:25] — Level 4 — Apply to life — Produced the session's deepest confession — see Key Moments (Capitalized).",
+                "\"What do I love above God, and where do I treat myself better than others?\" [02:12:00] — Level 4 — Apply to life — Produced phone/Instagram and Twitter admissions from Grace and Bobby.",
+                "\"What does that teach us about God?\" (his domain beyond Israel) [01:34:52] — Level 3 — Reason/justify — Group reasoned to \"he cares about all people\" from the pattern across all eight oracles.",
+                "\"Why do you think God brings up his resume here?\" [01:54:19] — Level 3 — Reason/justify — Sustained productive struggle before the group landed on \"he was there the whole time.\"",
+                "\"How did Israel fall short of the law?\" [02:10:59] — Level 3 — Reason/justify — Tied Jesus's greatest-commandment summary directly back to Amos's indictment."
+              ],
+              "paragraphs": [
+                "~12-14 Big Idea (DOK-scored) questions this session. Confession/Personal-Response Rate: ~2-3 (clears the ≥2 target, a rebound from last session's regression). Leader follow-up probe frequency: ~5 (exceeds the ≥3 target)."
+              ]
+            }
+          ],
+          "pdfUrl": "https://drive.google.com/file/d/1-at0_5hG-JEmTl6_JQqwyRPXfW54ihzb/view?usp=drivesdk",
+          "docUrl": "https://docs.google.com/document/d/1yKMgXE8rj9tNbmTa6RV8sZoHc0uGUHeo/edit?usp=drivesdk&ouid=102514545885668154311&rtpof=true&sd=true"
+        },
         {
           "id": "brendan-elizabeth-2026-09-26-kings-prophets-study-part-4-jona",
           "date": "2026-09-26",
@@ -52453,14 +53215,14 @@
   "monthlyNarratives": {
     "2026-10": {
       "executiveSummary": [
-        "In October 2026, 3 leaders delivered 4 evaluated sessions, and the program held a weighted average composite of 81.9 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
-        "Across the cohort the month broke down as 1 Exceptional and 2 Strong. Phil Carlberg led the field at 85.3 (Exceptional), while Ken Ture anchored the other end at 77.3 (Strong) — the clearest place to concentrate coaching attention.",
-        "Bryan Bailey posted the biggest jump off the September 2026 baseline, climbing roughly 81 to 82.4 (+1.7 pts), the strongest muscle program-wide was Scripture Engagement (4.75 / 5), and the thinnest was Leader Development (2.50 / 5), where one shared training would lift the most leaders at once.",
-        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Ken Ture flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
+        "In October 2026, 5 leaders delivered 6 evaluated sessions, and the program held a weighted average composite of 81.7 / 100 — Strong on the v3 scale. The mechanics are locked in cohort-wide; the gains still on the table are refinements, not overhauls.",
+        "Across the cohort the month broke down as 2 Exceptional and 3 Strong. Brendan & Elizabeth led the field at 85.5 (Exceptional), while Ken Ture anchored the other end at 77.3 (Strong) — the clearest place to concentrate coaching attention.",
+        "James Davis posted the biggest jump off the September 2026 baseline, climbing roughly 75 to 77.6 (+2.9 pts), the strongest muscle program-wide was Scripture Engagement (4.83 / 5), and the thinnest was Leader Development (2.33 / 5), where one shared training would lift the most leaders at once.",
+        "Heading into the next month, the highest-leverage program move is a focused push on Leader Development, with Ken Ture and Brendan & Elizabeth flagged for close 1:1 attention. Every other leader is on a sustain-and-lift track — hold the gains, then reach for the next band."
       ],
       "trends": [
-        "The program's October 2026 composite of 81.9 / 100 lands it in the Strong band. Month over month, Bryan Bailey is the standout mover off the September 2026 baseline, up 1.7 points.",
-        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.75 / 5), while Leader Development (2.50 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
+        "The program's October 2026 composite of 81.7 / 100 lands it in the Strong band. Month over month, James Davis is the standout mover off the September 2026 baseline, up 2.9 points.",
+        "Dimension by dimension, Scripture Engagement is the cohort's anchor strength (4.83 / 5), while Leader Development (2.33 / 5) is the common denominator holding scores back — making it the single most efficient target for shared training next month."
       ]
     },
     "2026-09": {
@@ -70537,6 +71299,279 @@
       }
     },
     "james-davis": {
+      "2026-10": {
+        "month": "2026-10",
+        "monthLabel": "October 2026",
+        "priorMonthLabel": "September 2026",
+        "leaderId": "james-davis",
+        "leaderName": "James Davis",
+        "group": "James D’Apolito’s Group",
+        "sessionsCount": 1,
+        "composite": 77.6,
+        "status": {
+          "label": "Strong",
+          "emoji": "🟢"
+        },
+        "priorComposite": 74.7,
+        "delta": 2.9,
+        "clusterAvg": {
+          "tc": 90,
+          "bm": 67,
+          "ep": 70,
+          "br": 70
+        },
+        "glance": {
+          "rows": [
+            {
+              "date": "2026-10-03",
+              "session": "Amos 1-2 — Judgment on the Nations, Judah, and Israel (Lesson 1)",
+              "bm": 67,
+              "tc": 90,
+              "ep": 70,
+              "br": 70,
+              "composite": 77.6,
+              "status": "Strong"
+            }
+          ],
+          "avg": {
+            "bm": 67,
+            "tc": 90,
+            "ep": 70,
+            "br": 70,
+            "composite": 77.6,
+            "status": "Strong"
+          }
+        },
+        "trajectory": [
+          {
+            "date": "2026-10-03",
+            "session": "Amos 1-2 — Judgment on the Nations, Judah, and Israel (Lesson 1)",
+            "composite": 77.6,
+            "status": "Strong",
+            "delta": null
+          }
+        ],
+        "clusters": [
+          {
+            "key": "tc",
+            "name": "Teaching Craft",
+            "weight": 33,
+            "avgPct": 90,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Scripture Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Session Structure & Flow",
+              "val": 4
+            },
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — elite tier. Session Structure & Flow is the bottleneck this month."
+          },
+          {
+            "key": "bm",
+            "name": "Building Ministry",
+            "weight": 31,
+            "avgPct": 67,
+            "statusLabel": "On Target",
+            "strongestDim": {
+              "name": "Homework References",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Leader Development",
+              "val": 2
+            },
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — developing well. Lift the floor on Leader Development."
+          },
+          {
+            "key": "ep",
+            "name": "Engaging People",
+            "weight": 18,
+            "avgPct": 70,
+            "statusLabel": "On Target",
+            "strongestDim": {
+              "name": "Participant Engagement",
+              "val": 4
+            },
+            "weakestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 3
+            },
+            "insight": "Engaging People (Facilitation + Participation) — developing well. Continue to broaden participation beyond the core 6–8 voices."
+          },
+          {
+            "key": "br",
+            "name": "Being Real",
+            "weight": 18,
+            "avgPct": 70,
+            "statusLabel": "On Target",
+            "strongestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 4
+            },
+            "weakestDim": {
+              "name": "Prayer",
+              "val": 3
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — developing well. Prayer is the lift this month."
+          }
+        ],
+        "strengths": [
+          {
+            "text": "Two of Last Week's Named Recommendations Visibly Implemented (Teaching Craft / Building Ministry)",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "Sustained Logos Bible Software Usage, Confirmed by Session Video, Not Just a Map (Teaching Craft)",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "Public Self-Correction of Last Week's Error (Being Real)",
+            "session": "2026-10-03"
+          }
+        ],
+        "growth": [
+          {
+            "text": "Leader Talk Ratio and Monologue Count Climbed This Week (Engaging People)",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "The Eternal-Security Discussion Ran Long Without a Structured Off-Ramp (Teaching Craft)",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "Newcomer Welcome Ran Well Under Target Despite Real Testimony Content (Building Ministry)",
+            "session": "2026-10-03"
+          }
+        ],
+        "trends": [
+          "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Leader Development (avg 2.0 / 5).",
+          "Composite vs. September 2026 (~75): up 2.9. Forward momentum."
+        ],
+        "conversationGuide": [
+          {
+            "label": "Celebrate the strength",
+            "q": "Teaching Craft averaged 90% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+          },
+          {
+            "label": "Explore the growth area",
+            "q": "Building Ministry averaged 67%. What's getting in the way? What would have to be true for that to lift 10 points by November 2026?"
+          },
+          {
+            "label": "Trajectory",
+            "q": "Your one October 2026 session scored 77.6 (Strong). What was different about your prep or delivery this time?"
+          },
+          {
+            "label": "Group dynamics",
+            "q": "Participant Engagement averaged 4.0 / 5 in October 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+          }
+        ],
+        "focus": {
+          "clusterName": "Building Ministry",
+          "clusterPct": 67,
+          "goals": [
+            "Identify and name an apprentice/co-leader for November 2026; have them visibly co-teach one segment.",
+            "Reference the Precept workbook / homework explicitly at least 3 times per session.",
+            "Welcome a newcomer with a member testimony first (7–25 min block) when they appear.",
+            "In every November 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
+          ]
+        },
+        "sessions": [
+          {
+            "date": "2026-10-03",
+            "session": "Amos 1-2 — Judgment on the Nations, Judah, and Israel (Lesson 1)",
+            "composite": 77.6,
+            "status": "Strong",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Most blueprint elements present (map/structure intro, kickoff question, multi-reader scripture, closing prayer, room-generated close, forward reading assignment); the newcomer welcome ran short and two tangents ran long"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": 3,
+                "note": "2 genuine newcomers with real testimony content, but only ~3 min against the 7-25 min target"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "15+ distinct passages across Amos, Kings, Chronicles, Isaiah, John, Deuteronomy, Habakkuk, Romans, Matthew, Hebrews, Ezekiel, Ruth"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 3,
+                "note": "~55-60% discussion-only leader talk (above the 30-35% target); 3 monologues exceeded 90 sec, above the ≤2/session target"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "8 Big Idea questions, both depth targets cleared (Confession/Personal-Response Rate 2, Follow-up Probe Frequency 3+), but DOK Level 2 unused"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 4,
+                "note": "9+ substantive contributors; members independently supplied theological connections the leader hadn't pre-loaded"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Session-video frame captures confirm sustained Logos Bible Software usage — highlighted text, Hebrew dictionary, cross-references, and Factbook panels — well beyond the verbally-referenced map alone"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 4,
+                "note": "No fresh leader testimony; a costly member confession plus the leader's own public self-correction held the score within the ±1 swing cap of the established baseline"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": null,
+                "note": "First lesson of a new study (Amos) — no prior Big Ideas exist to review; Teaching Craft max reduced from 25 to 20"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Heavy in-session homework callbacks throughout, plus an explicit forward reading assignment (Amos 3-6) fixing last week's named gap"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 3,
+                "note": "Closing prayer occurred but delegation to a named member is unclear this week; opening prayer unconfirmed due to a quiet/low-audio stretch at session start, not scored against the leader"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 2,
+                "note": "No named apprentice handoff or delegated facilitation window occurred this session"
+              }
+            ]
+          }
+        ]
+      },
       "2026-09": {
         "month": "2026-09",
         "monthLabel": "September 2026",
@@ -74396,6 +75431,279 @@
       }
     },
     "brendan-elizabeth": {
+      "2026-10": {
+        "month": "2026-10",
+        "monthLabel": "October 2026",
+        "priorMonthLabel": "September 2026",
+        "leaderId": "brendan-elizabeth",
+        "leaderName": "Brendan & Elizabeth",
+        "group": "Couples Precept Study",
+        "sessionsCount": 1,
+        "composite": 85.5,
+        "status": {
+          "label": "Exceptional",
+          "emoji": "🔷"
+        },
+        "priorComposite": 91.7,
+        "delta": -6.2,
+        "clusterAvg": {
+          "tc": 95,
+          "bm": 70,
+          "ep": 80,
+          "br": 100
+        },
+        "glance": {
+          "rows": [
+            {
+              "date": "2026-10-03",
+              "session": "Kings & Prophets Study, Part 4 — Amos Lesson 1 (Amos 1-2, Oracles Against the Nations)",
+              "bm": 70,
+              "tc": 95,
+              "ep": 80,
+              "br": 100,
+              "composite": 85.5,
+              "status": "Exceptional"
+            }
+          ],
+          "avg": {
+            "bm": 70,
+            "tc": 95,
+            "ep": 80,
+            "br": 100,
+            "composite": 85.5,
+            "status": "Exceptional"
+          }
+        },
+        "trajectory": [
+          {
+            "date": "2026-10-03",
+            "session": "Kings & Prophets Study, Part 4 — Amos Lesson 1 (Amos 1-2, Oracles Against the Nations)",
+            "composite": 85.5,
+            "status": "Exceptional",
+            "delta": null
+          }
+        ],
+        "clusters": [
+          {
+            "key": "tc",
+            "name": "Teaching Craft",
+            "weight": 33,
+            "avgPct": 95,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Scripture Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Session Structure & Flow",
+              "val": 4
+            },
+            "insight": "Teaching Craft (Structure + Scripture + Application + Visuals + Memory) — elite tier. Session Structure & Flow is the bottleneck this month."
+          },
+          {
+            "key": "bm",
+            "name": "Building Ministry",
+            "weight": 31,
+            "avgPct": 70,
+            "statusLabel": "On Target",
+            "strongestDim": {
+              "name": "Homework References",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Leader Development",
+              "val": 2
+            },
+            "insight": "Building Ministry (Newcomer + Homework + Leader Dev) — developing well. Lift the floor on Leader Development."
+          },
+          {
+            "key": "ep",
+            "name": "Engaging People",
+            "weight": 18,
+            "avgPct": 80,
+            "statusLabel": "Strong",
+            "strongestDim": {
+              "name": "Participant Engagement",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Facilitation vs. Lecture",
+              "val": 3
+            },
+            "insight": "Engaging People (Facilitation + Participation) — strong. Continue to broaden participation beyond the core 6–8 voices."
+          },
+          {
+            "key": "br",
+            "name": "Being Real",
+            "weight": 18,
+            "avgPct": 100,
+            "statusLabel": "Exceptional",
+            "strongestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 5
+            },
+            "weakestDim": {
+              "name": "Vulnerability / Authenticity",
+              "val": 5
+            },
+            "insight": "Being Real (Vulnerability + Prayer) — elite tier. Vulnerability / Authenticity is the lift this month."
+          }
+        ],
+        "strengths": [
+          {
+            "text": "Visual Aids Fully Rebound — the Richest Visual-Tool Session of the Arc",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "The Absence-Naming Habit Is Restored and Strengthened",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "Dense, Unified Cross-Referencing Across the Whole Canon",
+            "session": "2026-10-03"
+          }
+        ],
+        "growth": [
+          {
+            "text": "The Leader Development Streak Breaks — No Delegated Teaching Segment",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "Discussion-Only Leader Talk Ratio Ticks Up From the Last Four Sessions",
+            "session": "2026-10-03"
+          },
+          {
+            "text": "The Judah \"Lies and Truth\" Block Stayed Illustrative Rather Than Personal",
+            "session": "2026-10-03"
+          }
+        ],
+        "trends": [
+          "Highest-scoring dimension this month: Scripture Engagement (avg 5.0 / 5). Lowest: Leader Development (avg 2.0 / 5).",
+          "Composite vs. September 2026 (~92): down 6.2. Inspect the cluster regressions in the Cluster Deep Dive above."
+        ],
+        "conversationGuide": [
+          {
+            "label": "Celebrate the strength",
+            "q": "Being Real averaged 100% this month — your highest cluster. What are you doing intentionally there that you could double down on next month?"
+          },
+          {
+            "label": "Explore the growth area",
+            "q": "Building Ministry averaged 70%. What's getting in the way? What would have to be true for that to lift 10 points by November 2026?"
+          },
+          {
+            "label": "Trajectory",
+            "q": "Your one October 2026 session scored 85.5 (Exceptional). What was different about your prep or delivery this time?"
+          },
+          {
+            "label": "Group dynamics",
+            "q": "Participant Engagement averaged 5.0 / 5 in October 2026. Who's still on the edges of the group, and what's one move you could make next week to bring them in?"
+          }
+        ],
+        "focus": {
+          "clusterName": "Building Ministry",
+          "clusterPct": 70,
+          "goals": [
+            "Identify and name an apprentice/co-leader for November 2026; have them visibly co-teach one segment.",
+            "Reference the Precept workbook / homework explicitly at least 3 times per session.",
+            "Welcome a newcomer with a member testimony first (7–25 min block) when they appear.",
+            "In every November 2026 session, restate the cumulative Big Ideas at both the open and close (group recital, not leader citation)."
+          ]
+        },
+        "sessions": [
+          {
+            "date": "2026-10-03",
+            "session": "Kings & Prophets Study, Part 4 — Amos Lesson 1 (Amos 1-2, Oracles Against the Nations)",
+            "composite": 85.5,
+            "status": "Exceptional",
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "cluster": "Teaching Craft",
+                "score": 4,
+                "note": "Teaching Craft"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "cluster": "Building Ministry",
+                "score": null,
+                "note": "Building Ministry"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Teaching Craft"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "cluster": "Engaging People",
+                "score": 3,
+                "note": "Engaging People"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Teaching Craft"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "cluster": "Engaging People",
+                "score": 5,
+                "note": "Engaging People"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "cluster": "Teaching Craft",
+                "score": 5,
+                "note": "Teaching Craft"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "Being Real"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "cluster": "Teaching Craft",
+                "score": null,
+                "note": "Teaching Craft"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "cluster": "Building Ministry",
+                "score": 5,
+                "note": "Building Ministry"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "cluster": "Being Real",
+                "score": 5,
+                "note": "Being Real"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "cluster": "Building Ministry",
+                "score": 2,
+                "note": "Building Ministry"
+              }
+            ]
+          }
+        ]
+      },
       "2026-09": {
         "month": "2026-09",
         "monthLabel": "September 2026",
