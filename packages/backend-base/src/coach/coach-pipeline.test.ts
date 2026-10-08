@@ -1654,6 +1654,148 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
   });
 });
 
+describe("Every Score Carries Provenance through a re-score", () => {
+  const OTHER = "pipe-provenance-other";
+
+  async function clearOther() {
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", OTHER)
+      .execute();
+    await conn.deleteFrom("coach_leaders").where("slug", "=", OTHER).execute();
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await clearOther();
+    await conn
+      .insertInto("coach_leaders")
+      .values([
+        { slug: COACH, email: EMAIL, name: "Pipe Leader" },
+        {
+          slug: OTHER,
+          email: "pipe-provenance-other@example.test",
+          name: "Other Leader",
+        },
+      ])
+      .execute();
+    await seedRetained();
+    await calibrate();
+  });
+  afterEach(async () => {
+    await clear();
+    await clearOther();
+    await uncalibrate();
+  });
+
+  async function storedRows(reportId: string) {
+    return conn
+      .selectFrom("coach_report_dimension_scores")
+      .select(["dimension_n", "score", "rationale", "provenance"])
+      .where("report_id", "=", reportId)
+      .orderBy("dimension_n")
+      .execute();
+  }
+
+  async function expectReportShowsRows(reportId: string) {
+    const rows = await storedRows(reportId);
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select(["summary", "metrics"])
+      .where("id", "=", reportId)
+      .executeTakeFirstOrThrow();
+    const metrics = report.metrics as {
+      base: number;
+      newcomerBonus: number;
+      sizeBonus: number;
+      dimensions: Array<{ n: number; score: number | null; note: string }>;
+    };
+    const { base } = composeBaseScore(
+      new Map(rows.map((r) => [r.dimension_n, r.score])),
+    );
+    expect(metrics.base).toBeCloseTo(base, 6);
+    expect((report.summary as { score: number }).score).toBeCloseTo(
+      composeComposite(base, metrics),
+      6,
+    );
+    for (const row of rows)
+      expect(
+        metrics.dimensions.find((d) => d.n === row.dimension_n),
+      ).toMatchObject({
+        score: row.score,
+        note: row.rationale,
+      });
+    return rows;
+  }
+
+  async function correctDimensionThree(reportId: string) {
+    const result = await new CoachService(Database).correctDimension({
+      reportId,
+      dimensionN: 3,
+      score: 1,
+      rationale: "admin: dimension 3 missed",
+      correctedByUserId: null,
+    });
+    expect(result.ok).toBe(true);
+  }
+
+  it("Provenance survives a re-score: the leader's report shows the human score and the composite computed from it", async () => {
+    const [scored] = await pipeline(null).run();
+    const reportId = scored.reportId as string;
+    await correctDimensionThree(reportId);
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "retained" })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+
+    const [again] = await pipeline(null).run();
+    expect(again.reportId).toBe(reportId);
+    const rows = await expectReportShowsRows(reportId);
+    expect(rows.find((r) => r.dimension_n === 3)).toMatchObject({
+      score: 1,
+      provenance: "human",
+    });
+  });
+
+  it("A session moves to another leader: the previous leader's corrections do not carry over, and it is held until released", async () => {
+    const [scored] = await pipeline(null).run();
+    const reportId = scored.reportId as string;
+    const service = new CoachService(Database);
+    await correctDimensionThree(reportId);
+    expect(
+      await service.setFirstLesson({
+        reportId,
+        firstLesson: true,
+        byUserId: null,
+      }),
+    ).toMatchObject({ applied: true });
+
+    expect(
+      await reattributeSession(Database, "ff-pipe-1", OTHER, COACH),
+    ).toMatchObject({ ok: true, state: "retained" });
+    const mailer = new FakeMailer();
+    const [again] = await pipeline(mailer).run();
+    expect(again.outcome).toBe("scored-awaiting-review");
+    expect(mailer.sent).toEqual([]);
+
+    const rows = await expectReportShowsRows(reportId);
+    expect(rows.every((r) => r.provenance === "machine")).toBe(true);
+    expect(rows.find((r) => r.dimension_n === 3)?.score).toBe(4);
+    expect(rows.find((r) => r.dimension_n === 9)?.score).toBe(4);
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select(["coach_id", "first_lesson", "first_lesson_source"])
+      .where("id", "=", reportId)
+      .executeTakeFirstOrThrow();
+    expect(report).toEqual({
+      coach_id: OTHER,
+      first_lesson: false,
+      first_lesson_source: null,
+    });
+  });
+});
+
 describe("the evidence rule 2 compares is built from what the model cited", () => {
   it("pulls quoted strings and timestamps out of the rationales", () => {
     const ev = evidenceFrom([

@@ -15,6 +15,7 @@ import {
   AttributionChangedError,
   CoachPublishService,
 } from "./coach-publish.service";
+import { rescoreReport } from "./coach-review.service";
 import {
   AUTHENTICITY_DIMENSION,
   CoachScoringService,
@@ -336,6 +337,7 @@ export class CoachPipelineService {
           report.reportId,
           scored.passageBook,
         );
+        await rescoreReport(trx as CoachReportsWriter, report.reportId);
         return report;
       })
       .catch((error: unknown) => {
