@@ -905,3 +905,61 @@ describe("the recording is fetched from the address that was checked, on port 44
     expect(seen[1].init.tls).toEqual({ serverName: "cdn.provider.test" });
   });
 });
+
+describe("a public host off the allowlist is refused by the allowlist itself", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  const OFF_LIST = "https://media.elsewhere.example.org/video.mp4";
+
+  function serving(
+    first: string,
+    routes: Record<string, () => Response>,
+    requested: string[],
+    storage: FakeStorage,
+  ) {
+    return new CoachArchiveService(
+      Database,
+      new FakeClient(detail({ video_url: first })),
+      {
+        storage: storage as any,
+        resolve: publicAddress,
+        fetch: async (url: string) => {
+          requested.push(url);
+          const route = routes[url];
+          return route ? route() : video("VIDEO");
+        },
+      },
+    );
+  }
+
+  it("on the first hop, though it resolves to a public address", async () => {
+    await seedSession("ff-1");
+    const requested: string[] = [];
+    const storage = new FakeStorage();
+    const result = await serving(OFF_LIST, {}, requested, storage).retain(
+      "ff-1",
+    );
+    expect(result).toEqual({ retained: false, reason: "untrusted-video-host" });
+    expect(requested).toEqual([]);
+    expect(storage.puts).toEqual([]);
+  });
+
+  it("on a redirect, though it resolves to a public address", async () => {
+    await seedSession("ff-1");
+    const requested: string[] = [];
+    const storage = new FakeStorage();
+    const result = await serving(
+      "https://provider.test/video.mp4",
+      {
+        "https://provider.test/video.mp4": () =>
+          new Response(null, { status: 302, headers: { location: OFF_LIST } }),
+      },
+      requested,
+      storage,
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "untrusted-video-host" });
+    expect(requested).toEqual(["https://provider.test/video.mp4"]);
+    expect(storage.puts).toEqual([]);
+  });
+});
