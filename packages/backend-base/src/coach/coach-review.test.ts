@@ -616,6 +616,51 @@ describe("an admin edits an undelivered report's improvements", () => {
     });
   });
 
+  it("the revisions list is one timeline, newest first, with ties broken by number", async () => {
+    const at = (minutes: number) => new Date(Date.UTC(2026, 9, 1, 12, minutes));
+    const edit = (minutes: number) =>
+      conn
+        .insertInto("coach_report_edits")
+        .values({
+          report_id: REPORT,
+          changes: JSON.stringify({}),
+          edited_by: null,
+          edited_at: at(minutes),
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+    const amendment = (revision: number, minutes: number) =>
+      conn
+        .insertInto("coach_report_amendments")
+        .values({
+          report_id: REPORT,
+          coach_id: COACH,
+          revision,
+          previous: JSON.stringify({}),
+          changes: JSON.stringify({}),
+          amended_by: null,
+          amended_at: at(minutes),
+        })
+        .execute();
+    const early = await edit(0);
+    const tiedFirst = await edit(2);
+    const tiedSecond = await edit(2);
+    await amendment(1, 2);
+    await amendment(2, 3);
+
+    const order = (await new CoachService(Database).listRevisions(REPORT)).map(
+      (entry) =>
+        entry.kind === "revision" ? `revision ${entry.revision}` : entry.edit,
+    );
+    expect(order).toEqual([
+      "revision 2",
+      tiedSecond.id,
+      tiedFirst.id,
+      "revision 1",
+      early.id,
+    ]);
+  });
+
   it("a legacy report is refused", async () => {
     await conn
       .updateTable("coach_reports")
