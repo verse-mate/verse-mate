@@ -252,6 +252,44 @@ describe("a delivered report can be revised", () => {
     });
   });
 
+  it("two simultaneous amendments: each kept version is the report as the one before left it", async () => {
+    await seed();
+    delete process.env[COACH_PIPELINE_LIVE];
+    const amend = new CoachAmendService(Database, new FakeMailer());
+    const results = await Promise.all([
+      amend.amend({
+        reportId: REPORT,
+        amendment: { body: { headline: "first concurrent headline" } },
+        byUserId: null,
+      }),
+      amend.amend({
+        reportId: REPORT,
+        amendment: { body: { strengths: ["second concurrent strength"] } },
+        byUserId: null,
+      }),
+    ]);
+    expect(results.map((r) => r.revision).sort()).toEqual([1, 2]);
+
+    const revisions = await new CoachService(Database).listRevisions(REPORT);
+    const byRevision = new Map(revisions.map((r) => [r.revision, r]));
+    const first = byRevision.get(1);
+    const second = byRevision.get(2);
+    const firstChanges = (
+      first?.changes as { body: Record<string, { to: unknown }> }
+    ).body;
+    const keptBySecond = (
+      second?.previous as { body: { feedback: Record<string, unknown> } }
+    ).body.feedback;
+    for (const [field, change] of Object.entries(firstChanges))
+      expect(keptBySecond[field]).toEqual(change.to);
+
+    const feedback = (
+      (await row()).body as { feedback: Record<string, unknown> }
+    ).feedback;
+    expect(feedback.headline).toBe("first concurrent headline");
+    expect(feedback.strengths).toEqual(["second concurrent strength"]);
+  });
+
   it("An amendment breaks a governance rule: nothing is sent and the delivered version stays live", async () => {
     await seed();
     const mailer = new FakeMailer();
