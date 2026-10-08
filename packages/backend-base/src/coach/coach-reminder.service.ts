@@ -206,9 +206,10 @@ export class CoachReminderService {
       }
     }
 
-    if (result.sent.length > 0)
+    if (result.sent.length > 0) {
       result.summarySent = await this.summarize(result);
-    else if (result.failed.length > 0 && (await this.claimSummary(today))) {
+      if (result.summarySent) await this.claimSummary(today);
+    } else if (result.failed.length > 0 && (await this.claimSummary(today))) {
       result.summarySent = await this.summarize(result);
       if (!result.summarySent) await this.releaseSummary(today);
     }
