@@ -15,6 +15,11 @@
 
 export const RUBRIC_MODEL_VERSION = "v3-weighted-100";
 
+export const MEMORY_REINFORCEMENT = 9;
+
+export const FIRST_LESSON_RATIONALE =
+  "Not applicable: the first lesson of a new study, so there are no prior big ideas to review.";
+
 export interface RubricCluster {
   name: string;
   /** Points this cluster contributes at 100%. The four sum to 100. */

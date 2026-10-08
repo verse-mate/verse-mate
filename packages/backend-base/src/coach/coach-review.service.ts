@@ -1,12 +1,14 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import {
   FIRST_LESSON_RATIONALE,
   MEMORY_REINFORCEMENT,
-} from "./coach-first-lesson";
-import type { CoachReportsWriter } from "./repository/coach-reports.repository";
-import { composeBaseScore, composeComposite, statusForScore } from "./rubric";
+  composeBaseScore,
+  composeComposite,
+  statusForScore,
+} from "./rubric";
 
 export type CorrectionRefusal =
   | "legacy-report"

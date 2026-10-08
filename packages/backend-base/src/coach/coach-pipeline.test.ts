@@ -20,11 +20,11 @@ import { reattributeSession } from "./coach-attribution";
 import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE, coachPipelineLive } from "./coach-cutover";
 import { CoachDeliveryService } from "./coach-delivery.service";
+import { evidenceFrom } from "./coach-governance.service";
 import {
   CoachPipelineService,
   PIPELINE_ATTEMPT_LIMIT,
   PIPELINE_BATCH_LIMIT,
-  evidenceFrom,
 } from "./coach-pipeline.service";
 import { CoachScoringService } from "./coach-scoring.service";
 import type {

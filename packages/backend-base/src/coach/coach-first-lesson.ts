@@ -2,11 +2,7 @@ import { sql } from "kysely";
 
 import { rescoreReport } from "./coach-review.service";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
-
-export const MEMORY_REINFORCEMENT = 9;
-
-export const FIRST_LESSON_RATIONALE =
-  "Not applicable: the first lesson of a new study, so there are no prior big ideas to review.";
+import { FIRST_LESSON_RATIONALE, MEMORY_REINFORCEMENT } from "./rubric";
 
 const SINGLE_BOOKS = [
   "Genesis",

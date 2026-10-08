@@ -3,7 +3,6 @@ import { db as Database } from "database";
 
 import type { AiProvider } from "../shared/ai";
 import {
-  FIRST_LESSON_RATIONALE,
   applyFirstLessonDetection,
   bookNamedIn,
   classDay,
@@ -18,7 +17,12 @@ import {
   type ScoringResult,
 } from "./coach-scoring.service";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
-import { DIMENSIONS, composeBaseScore, composeComposite } from "./rubric";
+import {
+  DIMENSIONS,
+  FIRST_LESSON_RATIONALE,
+  composeBaseScore,
+  composeComposite,
+} from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "first-lesson-coach";
