@@ -30,6 +30,8 @@ const app = new Elysia().use(coachPlugin);
 const store = app.store as unknown as { coachService: unknown };
 const realService = store.coachService;
 
+const attributionWrites: unknown[][] = [];
+const reattributions: unknown[][] = [];
 const minted: Array<Record<string, unknown>> = [];
 const requeued: string[] = [];
 const released: string[] = [];
@@ -115,6 +117,26 @@ beforeAll(async () => {
       input.reportId === "legacy-r"
         ? { ok: false, refusal: "legacy-report" }
         : { ok: true, base: 70, status: { label: "On Target", emoji: "" } },
+    setLeaderAttribution: async (...args: unknown[]) => {
+      attributionWrites.push(args);
+      return args[0] === "leader-a"
+        ? {
+            ok: true,
+            titleMatch: ["zephaniah"],
+            altEmails: ["a@example.test"],
+            resolved: 2,
+          }
+        : { ok: false, refusal: "unknown-leader" };
+    },
+    reattributeSession: async (...args: unknown[]) => {
+      reattributions.push(args);
+      if (args[0] === "ff-flight") return { ok: false, refusal: "in-flight" };
+      if (args[0] === "ff-none")
+        return { ok: false, refusal: "unknown-session" };
+      if (args[1] !== "leader-a")
+        return { ok: false, refusal: "unknown-leader" };
+      return { ok: true, state: "observed" };
+    },
     getMe: async () => ({ isAdmin: false, profile: { id: "leader-a" } }),
     mintRetainedUrl: async (input: Record<string, unknown>) => {
       minted.push(input);
@@ -456,5 +478,103 @@ describe("An admin tries to amend a legacy report", () => {
     );
     expect(res.status).toBe(409);
     expect(await res.text()).toContain("legacy report");
+  });
+});
+
+describe("an admin recovers an unattributable session", () => {
+  async function send(method: string, path: string, body: unknown) {
+    return app.handle(
+      new Request(`http://localhost${path}`, {
+        method,
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }),
+    );
+  }
+
+  it("an admin writes a leader's keywords and alternate addresses", async () => {
+    admin = true;
+    attributionWrites.length = 0;
+    const res = await send("PUT", "/coach/admin/leaders/leader-a/attribution", {
+      titleMatch: ["Zephaniah"],
+      altEmails: ["a@example.test"],
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      titleMatch: ["zephaniah"],
+      altEmails: ["a@example.test"],
+      resolved: 2,
+    });
+    expect(attributionWrites).toEqual([
+      [
+        "leader-a",
+        { titleMatch: ["Zephaniah"], altEmails: ["a@example.test"] },
+      ],
+    ]);
+  });
+
+  it("a keyword shorter than three characters is refused before anything is written", async () => {
+    attributionWrites.length = 0;
+    const res = await send("PUT", "/coach/admin/leaders/leader-a/attribution", {
+      titleMatch: ["ab"],
+      altEmails: [],
+    });
+    expect(res.status).toBe(400);
+    expect(attributionWrites).toEqual([]);
+  });
+
+  it("an alternate address that is not an email is refused", async () => {
+    attributionWrites.length = 0;
+    const res = await send("PUT", "/coach/admin/leaders/leader-a/attribution", {
+      titleMatch: ["zephaniah"],
+      altEmails: ["not-an-address"],
+    });
+    expect(res.status).toBe(400);
+    expect(attributionWrites).toEqual([]);
+  });
+
+  it("an unknown leader's keywords are not found", async () => {
+    const res = await send("PUT", "/coach/admin/leaders/nobody/attribution", {
+      titleMatch: ["zephaniah"],
+      altEmails: [],
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("an admin assigns a session to a leader", async () => {
+    reattributions.length = 0;
+    const res = await send("POST", "/coach/admin/sessions/ff-1/attribute", {
+      coachId: "leader-a",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      coachId: "leader-a",
+      state: "observed",
+    });
+    expect(reattributions).toEqual([["ff-1", "leader-a"]]);
+  });
+
+  it("an unknown session or leader is not found, and a delivery in flight is a conflict", async () => {
+    const statuses = [
+      (
+        await send("POST", "/coach/admin/sessions/ff-none/attribute", {
+          coachId: "leader-a",
+        })
+      ).status,
+      (
+        await send("POST", "/coach/admin/sessions/ff-1/attribute", {
+          coachId: "nobody",
+        })
+      ).status,
+      (
+        await send("POST", "/coach/admin/sessions/ff-flight/attribute", {
+          coachId: "leader-a",
+        })
+      ).status,
+    ];
+    expect(statuses).toEqual([404, 404, 409]);
   });
 });

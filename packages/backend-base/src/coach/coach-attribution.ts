@@ -1,3 +1,5 @@
+import { sql } from "kysely";
+
 import type { db } from "../shared/shared.plugin";
 import type { FirefliesTranscript } from "./fireflies.client";
 
@@ -129,4 +131,149 @@ export function attributeSession(
   // admin adds a keyword and the session resolves, which a dropped session
   // could never do.
   return { coachId: null, matchedBy: "unresolved" };
+}
+
+export async function reattributeUnresolved(database: db): Promise<number> {
+  const conn = database.getOrCreateConnection();
+  const unresolved = await conn
+    .selectFrom("coach_intake_sessions")
+    .select(["source_session_id", "title"])
+    .where("coach_id", "is", null)
+    .execute();
+  if (unresolved.length === 0) return 0;
+  const roster = await loadAttributionRoster(database);
+  let resolved = 0;
+  for (const session of unresolved) {
+    const match = attributeSession(
+      { title: session.title, host_email: null, organizer_email: null },
+      roster,
+    );
+    if (!match.coachId) continue;
+    const updated = await conn
+      .updateTable("coach_intake_sessions")
+      .set({
+        coach_id: match.coachId,
+        matched_by: match.matchedBy,
+        updated_at: sql`NOW()`,
+      })
+      .where("source_session_id", "=", session.source_session_id)
+      .where("coach_id", "is", null)
+      .executeTakeFirst();
+    resolved += Number(updated.numUpdatedRows ?? 0);
+  }
+  return resolved;
+}
+
+export async function setLeaderAttribution(
+  database: db,
+  slug: string,
+  input: { titleMatch: string[]; altEmails: string[] },
+): Promise<
+  | { ok: true; titleMatch: string[]; altEmails: string[]; resolved: number }
+  | { ok: false; refusal: "unknown-leader" }
+> {
+  const normalized = (values: string[]) => [
+    ...new Set(
+      values
+        .map((v) => v.trim().replace(/\s+/g, " ").toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
+  const titleMatch = normalized(input.titleMatch);
+  const altEmails = normalized(input.altEmails);
+  const updated = await database
+    .getOrCreateConnection()
+    .updateTable("coach_leaders")
+    .set({
+      title_match: sql`${sql.val(titleMatch)}::text[]`,
+      alt_emails: sql`${sql.val(altEmails)}::text[]`,
+    })
+    .where("slug", "=", slug)
+    .executeTakeFirst();
+  if (Number(updated.numUpdatedRows ?? 0) === 0)
+    return { ok: false, refusal: "unknown-leader" };
+  return {
+    ok: true,
+    titleMatch,
+    altEmails,
+    resolved: await reattributeUnresolved(database),
+  };
+}
+
+const RESCORED_STATES = [
+  "scored",
+  "scoring_failed",
+  "delivery_pending",
+  "delivery_failed",
+  "delivered",
+];
+
+export async function reattributeSession(
+  database: db,
+  sourceSessionId: string,
+  coachId: string,
+): Promise<
+  | { ok: true; state: string }
+  | { ok: false; refusal: "unknown-leader" | "unknown-session" | "in-flight" }
+> {
+  return database
+    .getOrCreateConnection()
+    .transaction()
+    .execute(async (trx) => {
+      const leader = await trx
+        .selectFrom("coach_leaders")
+        .select("slug")
+        .where("slug", "=", coachId)
+        .where("is_coach", "=", true)
+        .executeTakeFirst();
+      if (!leader) return { ok: false, refusal: "unknown-leader" } as const;
+      const session = await trx
+        .selectFrom("coach_intake_sessions")
+        .select(["state", "report_id"])
+        .where("source_session_id", "=", sourceSessionId)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!session) return { ok: false, refusal: "unknown-session" } as const;
+      if (session.state === "delivering")
+        return { ok: false, refusal: "in-flight" } as const;
+
+      const rescore = RESCORED_STATES.includes(session.state);
+      const state = rescore ? "retained" : session.state;
+      await trx
+        .updateTable("coach_intake_sessions")
+        .set({
+          coach_id: coachId,
+          matched_by: "admin",
+          state,
+          ...(rescore
+            ? {
+                retry_count: 0,
+                hold_reason: null,
+                delivered_to: sql`ARRAY[]::text[]`,
+              }
+            : {}),
+          updated_at: sql`NOW()`,
+        })
+        .where("source_session_id", "=", sourceSessionId)
+        .execute();
+      await trx
+        .updateTable("coach_session_assets")
+        .set({ coach_id: coachId })
+        .where("source_session_id", "=", sourceSessionId)
+        .execute();
+      if (session.report_id) {
+        await trx
+          .updateTable("coach_reports")
+          .set({ coach_id: coachId, held: true, updated_at: sql`NOW()` })
+          .where("id", "=", session.report_id)
+          .execute();
+        for (const table of ["coach_notes", "coach_recording_links"] as const)
+          await trx
+            .updateTable(table)
+            .set({ coach_id: coachId })
+            .where("report_id", "=", session.report_id)
+            .execute();
+      }
+      return { ok: true, state } as const;
+    });
 }
