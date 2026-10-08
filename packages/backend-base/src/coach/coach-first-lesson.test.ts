@@ -352,6 +352,50 @@ describe("first-lesson detection on a scored report", () => {
     expect(s.dim9?.score).toBeNull();
   });
 
+  it("the previous session is the latest one: an older session's book is not read when the latest names none", async () => {
+    await seed({
+      ...AVERY[0],
+      id: "fl-thu-0917",
+      date: "2026-09-17",
+      legacy: false,
+      book: "Jonah",
+    });
+    await seed({ ...AVERY[0], legacy: false, book: null });
+    await seed(AVERY[2]);
+    expect(await detect(AVERY[2])).toBe(false);
+    expect((await state(AVERY[2].id)).dim9?.score).toBe(4);
+  });
+
+  it("a report of the same day is not the previous session", async () => {
+    await seed({ ...AVERY[0], legacy: false, book: "Jonah" });
+    await seed({
+      id: "fl-thu-1001-host",
+      date: AVERY[2].date,
+      session: "Lakeside Midweek Group (Zoom) — Amos, Lesson 1",
+      legacy: true,
+    });
+    await seed(AVERY[2]);
+    expect(await detect(AVERY[2])).toBe(true);
+  });
+
+  it("a dimension 9 score a human corrected is kept, and the report is not flagged over it", async () => {
+    await seed({ ...AVERY[0], legacy: false, book: "Jonah" });
+    await seed(AVERY[2]);
+    await new CoachReviewService(Database).correct({
+      reportId: AVERY[2].id,
+      dimensionN: 9,
+      score: 3,
+      rationale: "opened by reviewing the book's big ideas",
+      correctedByUserId: null,
+    });
+    expect(await detect(AVERY[2])).toBe(false);
+    const s = await state(AVERY[2].id);
+    expect(s.first_lesson).toBe(false);
+    expect(s.first_lesson_source).toBeNull();
+    expect(s.dim9?.score).toBe(3);
+    expect(s.dim9?.provenance).toBe("human");
+  });
+
   it("an admin's decision is not overridden by a later re-score", async () => {
     await seed({ ...AVERY[0], legacy: false, book: "Jonah" });
     await seed(AVERY[2]);
