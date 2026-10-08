@@ -1576,6 +1576,36 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
     expect(mailer.sent.length).toBeGreaterThan(0);
   });
 
+  it("a redelivery that throws is reported and does not stop the tick", async () => {
+    const throwing = {
+      deliver: async () => {
+        throw new Error("the governance read timed out");
+      },
+    };
+    const svc = new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      new FakeMailer() as any,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: noFrames as any,
+        delivery: throwing as any,
+      },
+    );
+    await svc.run();
+    expect((await intakeRow("ff-pipe-1")).state).toBe("delivery_pending");
+    await seedRetained("ff-pipe-2");
+
+    const results = await svc.run();
+    expect(
+      results.find((r) => r.sourceSessionId === "ff-pipe-1"),
+    ).toMatchObject({
+      outcome: "delivery-failed",
+      detail: "the governance read timed out",
+    });
+    expect(results.some((r) => r.sourceSessionId === "ff-pipe-2")).toBe(true);
+  });
+
   it("a report held for calibration does not starve a retryable one out of the batch", async () => {
     for (let i = 0; i < PIPELINE_BATCH_LIMIT; i += 1) {
       const id = `ff-extra-cal-${i}`;
