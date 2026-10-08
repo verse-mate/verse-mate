@@ -128,12 +128,18 @@ class FakeStorage {
   }
 }
 
-/** Serves the provider's media without a network. */
+function video(body: string): Response {
+  return new Response(body, {
+    status: 200,
+    headers: { "content-length": String(Buffer.byteLength(body)) },
+  });
+}
+
 function fakeFetch(bodies: Record<string, string>) {
   return async (url: string): Promise<Response> => {
     const body = bodies[url];
     if (body === undefined) return new Response(null, { status: 404 });
-    return new Response(body, { status: 200 });
+    return video(body);
   };
 }
 
@@ -399,7 +405,7 @@ describe("the recording fetch re-checks the allowlist on every redirect hop", ()
   it("every request is made with redirects handled manually", async () => {
     await seedSession("ff-1");
     const { calls, impl } = hopFetch({
-      "https://provider.test/video.mp4": () => new Response("V"),
+      "https://provider.test/video.mp4": () => video("V"),
     });
     await archive(impl, new FakeStorage()).retain("ff-1");
     expect(calls.length).toBeGreaterThan(0);
@@ -429,7 +435,7 @@ describe("the recording fetch re-checks the allowlist on every redirect hop", ()
         "https://cdn.provider.test/signed",
       ),
       "https://cdn.provider.test/signed": redirectTo("/final.mp4"),
-      "https://cdn.provider.test/final.mp4": () => new Response("VIDEO"),
+      "https://cdn.provider.test/final.mp4": () => video("VIDEO"),
     });
     const result = await archive(impl, storage).retain("ff-1");
     expect(result.retained).toBe(true);
@@ -588,12 +594,11 @@ describe("the recording body is bounded and checked, whatever the headers say", 
   it("an unparseable Content-Length on a recording inside the bound is retained", async () => {
     await seedSession("ff-1");
     const result = await archiveServing(
-      () =>
-        new Response(streamOf(500), { headers: { "content-length": "abc" } }),
+      () => new Response(mp4(), { headers: { "content-length": "abc" } }),
       new FakeStorage(),
       1000,
     ).retain("ff-1");
-    expect(result).toEqual({ retained: true, recordingBytes: 500 });
+    expect(result).toEqual({ retained: true, recordingBytes: 1000 });
   });
 
   it("a truncated retrieval is not retained, and nothing of it is kept", async () => {
@@ -608,6 +613,72 @@ describe("the recording body is bounded and checked, whatever the headers say", 
     expect(storage.deleted).toContain(CoachArchiveService.recordingKey("ff-1"));
     expect(await assetRows()).toEqual([]);
     expect(await sessionState()).toBe("observed");
+  });
+
+  function box(type: string, size: number): Uint8Array {
+    const bytes = new Uint8Array(size);
+    new DataView(bytes.buffer).setUint32(0, size);
+    bytes.set(new TextEncoder().encode(type), 4);
+    return bytes;
+  }
+
+  function mp4(): Uint8Array {
+    const parts = [box("ftyp", 24), box("mdat", 900), box("moov", 76)];
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    let at = 0;
+    for (const p of parts) {
+      out.set(p, at);
+      at += p.length;
+    }
+    return out;
+  }
+
+  function chunked(bytes: Uint8Array, chunk = 7): ReadableStream<Uint8Array> {
+    let at = 0;
+    return new ReadableStream({
+      pull(controller) {
+        if (at >= bytes.length) return controller.close();
+        controller.enqueue(bytes.slice(at, at + chunk));
+        at += chunk;
+      },
+    });
+  }
+
+  for (const cut of [600, 980, 928])
+    it(`a recording with no Content-Length cut at byte ${cut}, inside a box, is truncated and nothing of it is kept`, async () => {
+      await seedSession("ff-1");
+      const storage = new FakeStorage();
+      const result = await archiveServing(
+        () => new Response(chunked(mp4().slice(0, cut))),
+        storage,
+      ).retain("ff-1");
+      expect(result).toEqual({
+        retained: false,
+        reason: "recording-truncated",
+      });
+      expect(storage.deleted).toContain(
+        CoachArchiveService.recordingKey("ff-1"),
+      );
+      expect(await assetRows()).toEqual([]);
+      expect(await sessionState()).toBe("observed");
+    });
+
+  it("a recording with no Content-Length that never carried its moov box is truncated", async () => {
+    await seedSession("ff-1");
+    const result = await archiveServing(
+      () => new Response(chunked(mp4().slice(0, 924))),
+      new FakeStorage(),
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: false, reason: "recording-truncated" });
+  });
+
+  it("a recording with no Content-Length whose boxes end exactly at the last byte is retained", async () => {
+    await seedSession("ff-1");
+    const result = await archiveServing(
+      () => new Response(chunked(mp4())),
+      new FakeStorage(),
+    ).retain("ff-1");
+    expect(result).toEqual({ retained: true, recordingBytes: 1000 });
   });
 
   it("an empty recording is not retained", async () => {
@@ -640,7 +711,7 @@ describe("an allowlisted name is resolved, and a private address behind it is re
       fetch: async (url: string) => {
         requested.push(url);
         const route = routes[url];
-        return route ? route() : new Response("VIDEO");
+        return route ? route() : video("VIDEO");
       },
     });
   }
@@ -775,7 +846,7 @@ describe("the recording is fetched from the address that was checked, on port 44
           fetch: async (url: string) => {
             requested.push(url);
             const route = (routes as Record<string, () => Response>)[url];
-            return route ? route() : new Response("VIDEO");
+            return route ? route() : video("VIDEO");
           },
         },
       ).retain("ff-1");
@@ -800,7 +871,7 @@ describe("the recording is fetched from the address that was checked, on port 44
         resolve: async () => answers.shift() ?? ["127.0.0.1"],
         fetch: async (_url: string, _init: RequestInit, address: string) => {
           connectedTo.push(address);
-          return new Response("VIDEO");
+          return video("VIDEO");
         },
       },
     ).retain("ff-1");

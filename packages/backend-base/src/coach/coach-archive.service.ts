@@ -80,6 +80,51 @@ function declaredLength(headers: Headers): number | null {
 
 class RecordingTooLarge extends Error {}
 
+export class Mp4BoxWalk {
+  private seen = 0;
+  private boxEnd = 0;
+  private header: number[] = [];
+  private broken = false;
+  private readonly types = new Set<string>();
+
+  feed(chunk: Uint8Array): void {
+    let i = 0;
+    while (i < chunk.length && !this.broken) {
+      if (this.seen < this.boxEnd) {
+        const skip = Math.min(chunk.length - i, this.boxEnd - this.seen);
+        i += skip;
+        this.seen += skip;
+        continue;
+      }
+      this.header.push(chunk[i]);
+      i += 1;
+      this.seen += 1;
+      this.readHeader();
+    }
+  }
+
+  private readHeader(): void {
+    if (this.header.length < 8) return;
+    const head = Uint8Array.from(this.header);
+    const view = new DataView(head.buffer);
+    const short = view.getUint32(0);
+    if (short === 1 && this.header.length < 16) return;
+    const size =
+      short === 1 ? view.getUint32(8) * 2 ** 32 + view.getUint32(12) : short;
+    if (size < this.header.length) {
+      this.broken = true;
+      return;
+    }
+    this.types.add(String.fromCharCode(...head.subarray(4, 8)));
+    this.boxEnd = this.seen - this.header.length + size;
+    this.header = [];
+  }
+
+  complete(): boolean {
+    return !this.broken && this.seen === this.boxEnd && this.types.has("moov");
+  }
+}
+
 /**
  * Hosts the recording may be fetched from.
  *
@@ -238,12 +283,16 @@ export class CoachArchiveService {
 
     const limit = this.maxRecordingBytes;
     let streamed = 0;
+    const boxes = new Mp4BoxWalk();
     const bounded = (response.body as ReadableStream<Uint8Array>).pipeThrough(
       new TransformStream<Uint8Array, Uint8Array>({
         transform(chunk, controller) {
           streamed += chunk.byteLength;
           if (streamed > limit) controller.error(new RecordingTooLarge());
-          else controller.enqueue(chunk);
+          else {
+            if (declared === null) boxes.feed(chunk);
+            controller.enqueue(chunk);
+          }
         },
       }),
     );
@@ -265,7 +314,7 @@ export class CoachArchiveService {
     }
     if (
       recordingBytes === 0 ||
-      (declared !== null && recordingBytes !== declared)
+      (declared === null ? !boxes.complete() : recordingBytes !== declared)
     ) {
       await this.storage.deleteObject(recordingKey).catch(() => false);
       return { retained: false, reason: "recording-truncated" };
