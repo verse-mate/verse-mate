@@ -1703,12 +1703,18 @@ export class CoachService {
     reportId: string,
     authorUserId: string | null,
     body: string,
-  ): Promise<CoachNoteView | null> {
+  ): Promise<CoachNoteView | "held" | null> {
     const record = await this.resolveById(coachId);
     if (!record) return null;
-    // Canonicalise a possibly-legacy id, then resolve the session for the email.
     const canonical = await this.canonicalReportId(coachId, reportId, record);
     if (!canonical) return null;
+    const stored = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_reports")
+      .select("held")
+      .where("id", "=", canonical)
+      .executeTakeFirst();
+    if (stored?.held) return "held";
     const report =
       (await this.getReportDetail(coachId, canonical, "admin")) ??
       record.reports.find((r) => r.id === canonical);

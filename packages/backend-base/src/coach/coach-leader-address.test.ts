@@ -325,3 +325,80 @@ describe("a leader's address change is audited and announced to the old address"
     expect(sent).toEqual([]);
   });
 });
+
+describe("notes and invites mail only real addresses, about reports the leader can open", () => {
+  let sent: string[] = [];
+  const mailer = {
+    sendEmail: async (data: { to: { email: string } }) => {
+      sent.push(data.to.email);
+      return { delivered: true };
+    },
+  };
+  const mailing = new CoachService(Database, mailer);
+  const INVITED = "addr-invited@needs-real-email.invalid";
+
+  beforeEach(() => {
+    sent = [];
+  });
+  afterEach(async () => {
+    await conn.deleteFrom("coach_notes").where("coach_id", "=", SLUG).execute();
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("email", "=", INVITED)
+      .execute();
+  });
+
+  async function notes() {
+    return conn
+      .selectFrom("coach_notes")
+      .select(["body", "emailed"])
+      .where("coach_id", "=", SLUG)
+      .execute();
+  }
+
+  it("a note to a leader with a real address is mailed", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: REAL })
+      .where("slug", "=", SLUG)
+      .execute();
+    expect(
+      await mailing.addNote(SLUG, "addr-report-1", null, "well led"),
+    ).toMatchObject({ body: "well led" });
+    expect(sent).toEqual([REAL]);
+  });
+
+  it("a note to a leader on a placeholder address is kept but not mailed", async () => {
+    expect(
+      await mailing.addNote(SLUG, "addr-report-1", null, "well led"),
+    ).toMatchObject({ body: "well led" });
+    expect(sent).toEqual([]);
+    expect(await notes()).toEqual([{ body: "well led", emailed: false }]);
+  });
+
+  it("a note on a report held from its leader is refused, kept nowhere and mailed to nobody", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: REAL })
+      .where("slug", "=", SLUG)
+      .execute();
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: true })
+      .where("id", "=", "addr-report-1")
+      .execute();
+    expect(
+      await mailing.addNote(SLUG, "addr-report-1", null, "about a held one"),
+    ).toBe("held");
+    expect(sent).toEqual([]);
+    expect(await notes()).toEqual([]);
+  });
+
+  it("an invite to a placeholder address adds the leader and mails nobody", async () => {
+    const admin = await account(REAL);
+    expect(
+      await mailing.addLeader(admin, { email: INVITED, name: "Addr Invited" }),
+    ).toMatchObject({ ok: true });
+    expect(sent).toEqual([]);
+  });
+});
