@@ -423,13 +423,15 @@ function deliveryOutcome(
     sourceSessionId,
     outcome:
       result.refusal === "governance-blocked" ||
-      result.refusal === "calibration-blocked"
+      result.refusal === "calibration-blocked" ||
+      result.refusal === "cold-recall-improvement"
         ? "delivery-blocked"
         : "delivery-failed",
     reportId,
     detail:
       result.violations?.map((v) => v.rule).join(", ") ??
       result.shortfalls?.join("; ") ??
+      result.coldRecall?.join("; ") ??
       result.refusal,
   };
 }

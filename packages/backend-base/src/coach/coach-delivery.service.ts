@@ -9,6 +9,7 @@ import {
   CoachGovernanceService,
   type GovernanceViolation,
   type ReportEvidence,
+  coldRecallInFeedback,
 } from "./coach-governance.service";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 import { statusForScore } from "./rubric";
@@ -57,6 +58,7 @@ export type DeliveryRefusal =
   | "parallel-run"
   | "calibration-blocked"
   | "governance-blocked"
+  | "cold-recall-improvement"
   | "send-failed";
 
 export interface DeliveryResult {
@@ -64,6 +66,7 @@ export interface DeliveryResult {
   refusal?: DeliveryRefusal;
   violations?: GovernanceViolation[];
   shortfalls?: string[];
+  coldRecall?: string[];
   /** Confirmed sends. Delivery is complete only at the full recipient set. */
   sends?: Array<{ email: string; delivered: boolean; error?: string }>;
   skipped?: string[];
@@ -176,7 +179,7 @@ export class CoachDeliveryService {
     const report = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "summary", "body"])
+      .select(["id", "coach_id", "summary", "body", "first_lesson"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("id", "=", reportId)
       .executeTakeFirst();
@@ -268,6 +271,7 @@ export class CoachDeliveryService {
     report: {
       summary: unknown;
       body: unknown;
+      first_lesson: boolean;
       date: string;
     },
     claim: { token: string; deliveredTo: string[] },
@@ -325,6 +329,30 @@ export class CoachDeliveryService {
         delivered: false,
         refusal: "governance-blocked",
         violations: verdict.violations,
+      };
+    }
+
+    const coldRecall = report.first_lesson
+      ? coldRecallInFeedback(
+          ((report.body ?? {}) as { feedback?: unknown }).feedback,
+        )
+      : [];
+    if (coldRecall.length > 0) {
+      await this.setHeld(reportId, true);
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({
+          state: "scored",
+          hold_reason: `held: a first lesson with a cold-recall improvement: ${coldRecall.join("; ")}`,
+          updated_at: sql`NOW()`,
+        })
+        .where("report_id", "=", reportId)
+        .where("state", "=", "delivering")
+        .execute();
+      return {
+        delivered: false,
+        refusal: "cold-recall-improvement",
+        coldRecall,
       };
     }
 

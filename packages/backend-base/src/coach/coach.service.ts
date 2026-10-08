@@ -547,6 +547,7 @@ export class CoachService {
     refusal?: string;
     violations?: string[];
     shortfalls?: string[];
+    coldRecall?: string[];
     skipped?: string[];
   }> {
     const held = await this.db
@@ -578,6 +579,7 @@ export class CoachService {
         ? { violations: result.violations.map((v) => v.rule) }
         : {}),
       ...(result.shortfalls ? { shortfalls: result.shortfalls } : {}),
+      ...(result.coldRecall ? { coldRecall: result.coldRecall } : {}),
       ...(result.skipped?.length ? { skipped: result.skipped } : {}),
     };
   }

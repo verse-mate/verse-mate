@@ -106,6 +106,35 @@ export function checkEvidenceReuse(
   return violations;
 }
 
+const RECALL = /\b(recall|review|recap|recite|recitation)\b/i;
+const PRIOR =
+  /\b(big ideas?|prior|previous|last (week|session|lesson)'?s?|earlier lessons?)\b/i;
+
+function itemText(item: unknown): string {
+  if (typeof item === "string") return item;
+  if (item && typeof item === "object")
+    return Object.values(item as Record<string, unknown>)
+      .map(itemText)
+      .join(" ");
+  return "";
+}
+
+export function coldRecallImprovements(improvements: unknown): string[] {
+  if (!Array.isArray(improvements)) return [];
+  return improvements.map(itemText).filter((text) => {
+    if (/\bcold[- ]recall\b/i.test(text)) return true;
+    return RECALL.test(text) && PRIOR.test(text);
+  });
+}
+
+export function coldRecallInFeedback(feedback: unknown): string[] {
+  const f = (feedback ?? {}) as Record<string, unknown>;
+  return [
+    ...coldRecallImprovements(f.improvements),
+    ...coldRecallImprovements(f.improvementsProse),
+  ];
+}
+
 export class CoachGovernanceService {
   constructor(private readonly db: Pick<db, "getOrCreateConnection">) {}
 
