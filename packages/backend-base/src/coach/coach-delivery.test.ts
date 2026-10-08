@@ -623,7 +623,7 @@ describe("a slow send cannot turn into a second copy", () => {
     ).state;
   }
 
-  it("a worker that stalls past the claim window is fenced off, and only the send in flight can repeat", async () => {
+  it("a worker that stalls past the claim window is fenced off, no send repeats, and its late confirmation still counts", async () => {
     await seedReport("r-stall");
     const rescuer = new FakeMailer();
     let rescued: Promise<unknown> | null = null;
@@ -653,10 +653,17 @@ describe("a slow send cannot turn into a second copy", () => {
 
     expect(first.delivered).toBe(false);
     expect(first.refusal).toBe("in-flight");
-    const inFlight = stalled.sent[1].to;
     const received = receivedBy(stalled, rescuer);
     for (const email of EMAILS) expect(received.has(email)).toBe(true);
-    for (const [to, n] of received) expect(n).toBe(to === inFlight ? 2 : 1);
+    for (const [, n] of received) expect(n).toBe(1);
+
+    const last = new FakeMailer();
+    const settled = await new CoachDeliveryService(Database, last).deliver({
+      reportId: "r-stall",
+      evidence: evidence(),
+    });
+    expect(settled.delivered).toBe(true);
+    expect(last.sent).toEqual([]);
     expect(await sessionState("r-stall")).toBe("delivered");
   });
 
@@ -1403,28 +1410,131 @@ describe("a pipeline report is shown to its leader at its first confirmed send",
     expect(await heldOf("r-crashed")).toBe(false);
   });
 
-  it("a run whose claim is taken between recording its first recipient and publishing leaves the report hidden", async () => {
-    await seedHeld("r-taken-late");
-    const service = new CoachDeliveryService(Database, new FakeMailer());
+  function crashAt(
+    service: CoachDeliveryService,
+    when: "before-record" | "after-record",
+  ) {
     const internals = service as unknown as {
       recordRecipient: (...args: unknown[]) => Promise<boolean>;
     };
     const record = internals.recordRecipient.bind(service);
     internals.recordRecipient = async (...args: unknown[]) => {
-      const recorded = await record(...args);
-      await conn
-        .updateTable("coach_intake_sessions")
-        .set({ updated_at: sql`clock_timestamp() + interval '1 second'` })
-        .where("report_id", "=", "r-taken-late")
-        .execute();
-      return recorded;
+      if (when === "after-record") await record(...args);
+      throw new Error("connection lost");
     };
-    const result = await service.deliver({
-      reportId: "r-taken-late",
+  }
+
+  async function ageClaim(id: string) {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ updated_at: sql`NOW() - interval '16 minutes'` })
+      .where("report_id", "=", id)
+      .execute();
+  }
+
+  it("a crash after an accepted send and before it is recorded: the next run opens the report first, skips the gates, and does not mail that recipient again until requeued", async () => {
+    await seedHeld("r-crash-sent");
+    const first = new FakeMailer();
+    const crashing = new CoachDeliveryService(Database, first);
+    crashAt(crashing, "before-record");
+    await expect(
+      crashing.deliver({ reportId: "r-crash-sent", evidence: evidence() }),
+    ).rejects.toThrow("connection lost");
+    expect(first.sent.map((s) => s.to)).toEqual([EMAILS[0]]);
+
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        body: { feedback: { headline: "Not yet at Avery Hollis's level" } },
+      })
+      .where("id", "=", "r-crash-sent")
+      .execute();
+    await ageClaim("r-crash-sent");
+
+    const heldAtSend: boolean[] = [];
+    class Watching extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        heldAtSend.push(await heldOf("r-crash-sent"));
+        return super.sendEmail(data);
+      }
+    }
+    const next = new Watching();
+    const result = await new CoachDeliveryService(Database, next).deliver({
+      reportId: "r-crash-sent",
       evidence: evidence(),
     });
-    expect(result.refusal).toBe("in-flight");
-    expect(await heldOf("r-taken-late")).toBe(true);
+    expect(result.refusal).toBe("send-failed");
+    const resent = next.sent.map((s) => s.to);
+    expect(resent).not.toContain(EMAILS[0]);
+    expect(resent).toContain(EMAILS[1]);
+    expect(resent).toContain(EMAILS[2]);
+    expect(heldAtSend.every((held) => held === false)).toBe(true);
+    expect(await heldOf("r-crash-sent")).toBe(false);
+    const edit = await new CoachReviewService(Database).editImprovements({
+      reportId: "r-crash-sent",
+      improvements: ["Ask one open question per passage"],
+      byUserId: null,
+    });
+    expect(edit.refusal).toBe("partially-delivered");
+
+    const service = new CoachService(Database);
+    const listed = (await service.listPipelineFailures()).sessions.find(
+      (s) => s.reportId === "r-crash-sent",
+    );
+    expect(listed?.reason).toContain(EMAILS[0]);
+    expect(listed?.reason).toContain("requeue");
+
+    for (let attempt = 2; attempt <= DELIVERY_ATTEMPT_LIMIT; attempt += 1) {
+      const idle = new FakeMailer();
+      await new CoachDeliveryService(Database, idle).deliver({
+        reportId: "r-crash-sent",
+        evidence: evidence(),
+      });
+      expect(idle.sent).toEqual([]);
+    }
+    const exhausted = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("state")
+      .where("report_id", "=", "r-crash-sent")
+      .executeTakeFirstOrThrow();
+    expect(exhausted.state).toBe("delivery_failed");
+    expect(await heldOf("r-crash-sent")).toBe(false);
+
+    expect(await service.requeuePipelineFailure("ff-r-crash-sent")).toBe(true);
+    const requeued = new FakeMailer();
+    const done = await new CoachDeliveryService(Database, requeued).deliver({
+      reportId: "r-crash-sent",
+      evidence: evidence(),
+    });
+    expect(done.delivered).toBe(true);
+    expect(requeued.sent.map((s) => s.to)).toEqual([EMAILS[0]]);
+  });
+
+  it("a crash right after an accepted send is recorded leaves the report open, and the next run mails only the recipients still owed", async () => {
+    await seedHeld("r-crash-recorded");
+    const crashing = new CoachDeliveryService(Database, new FakeMailer());
+    crashAt(crashing, "after-record");
+    await expect(
+      crashing.deliver({ reportId: "r-crash-recorded", evidence: evidence() }),
+    ).rejects.toThrow("connection lost");
+    expect(await heldOf("r-crash-recorded")).toBe(false);
+    expect(
+      await new CoachService(Database).getReportDetail(
+        LEADER,
+        "r-crash-recorded",
+        "leader",
+      ),
+    ).not.toBeNull();
+
+    await ageClaim("r-crash-recorded");
+    const next = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, next).deliver({
+      reportId: "r-crash-recorded",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(next.sent.map((s) => s.to)).not.toContain(EMAILS[0]);
+    expect(next.sent.map((s) => s.to)).toContain(EMAILS[1]);
   });
 
   it("a report whose every recipient is a placeholder is published with nothing sent", async () => {
