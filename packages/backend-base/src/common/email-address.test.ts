@@ -45,6 +45,8 @@ describe("the sender's guard lets one address through and nothing that adds a se
     "Leader <a@example.org>",
     '"a"@example.org',
     "a@b@example.org",
+    "first,second@example.org",
+    "first@example.org,",
   ])("stops %p", (address) => {
     expect(isSingleRecipient(address)).toBe(false);
   });
