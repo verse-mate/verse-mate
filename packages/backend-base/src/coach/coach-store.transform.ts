@@ -103,7 +103,27 @@ export function reportToRow(
     legacy_ids: [],
     summary: pick(report, SUMMARY_KEYS),
     metrics: pick(report, METRICS_KEYS),
-    body: pick(report, BODY_KEYS),
+    body: withoutMonologueDetails(pick(report, BODY_KEYS)),
+  };
+}
+
+export function withoutMonologueDetails(
+  body: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!Array.isArray(body.sections)) return body;
+  return {
+    ...body,
+    sections: body.sections.map((section: Record<string, unknown>) =>
+      Array.isArray(section?.bullets)
+        ? {
+            ...section,
+            bullets: section.bullets.filter(
+              (b: unknown) =>
+                !(typeof b === "string" && b.startsWith("Monologue details")),
+            ),
+          }
+        : section,
+    ),
   };
 }
 
