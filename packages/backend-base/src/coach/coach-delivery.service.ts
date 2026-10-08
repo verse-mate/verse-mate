@@ -285,7 +285,10 @@ export class CoachDeliveryService {
 
     const summary = (report.summary ?? {}) as Record<string, unknown>;
 
-    const shortfalls = await calibrationShortfalls(this.db, reportId);
+    const alreadyEmailed = claim.deliveredTo.length > 0;
+    const shortfalls = alreadyEmailed
+      ? []
+      : await calibrationShortfalls(this.db, reportId);
     if (shortfalls.length > 0) {
       await this.setHeld(reportId, true);
       await conn
@@ -304,13 +307,14 @@ export class CoachDeliveryService {
       return { delivered: false, refusal: "calibration-blocked", shortfalls };
     }
 
-    // 6.2 at delivery time, against what is already persisted.
-    const verdict = await this.governance.check({
-      reportId,
-      coachId,
-      body: JSON.stringify(report.body ?? {}),
-      evidence,
-    });
+    const verdict = alreadyEmailed
+      ? { passed: true, violations: [] }
+      : await this.governance.check({
+          reportId,
+          coachId,
+          body: JSON.stringify(report.body ?? {}),
+          evidence,
+        });
     if (!verdict.passed) {
       await this.setHeld(reportId, true);
       await conn
@@ -332,11 +336,12 @@ export class CoachDeliveryService {
       };
     }
 
-    const coldRecall = report.first_lesson
-      ? coldRecallInFeedback(
-          ((report.body ?? {}) as { feedback?: unknown }).feedback,
-        )
-      : [];
+    const coldRecall =
+      report.first_lesson && !alreadyEmailed
+        ? coldRecallInFeedback(
+            ((report.body ?? {}) as { feedback?: unknown }).feedback,
+          )
+        : [];
     if (coldRecall.length > 0) {
       await this.setHeld(reportId, true);
       await conn

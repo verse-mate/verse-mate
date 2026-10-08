@@ -42,6 +42,7 @@ const byReport: Record<string, unknown> = {
   "r-unknown": { applied: false, refusal: "unknown-report" },
   "r-mr": { applied: false, refusal: "memory-reinforcement-required" },
   "r-delivering": { applied: false, refusal: "in-flight" },
+  "r-partial": { applied: false, refusal: "partially-delivered" },
 };
 
 beforeAll(async () => {
@@ -61,6 +62,10 @@ beforeAll(async () => {
     },
     setFirstLesson: async (input: { reportId: string }) =>
       byReport[input.reportId],
+    correctDimension: async () => ({
+      ok: false,
+      refusal: "partially-delivered",
+    }),
     listRevisions: async () => [
       {
         revision: 1,
@@ -196,6 +201,19 @@ describe("the revision routes", () => {
     ];
     for (const [method, path, _label, body, status] of cases) {
       expect((await call(method, path, body)).status).toBe(status);
+    }
+  });
+
+  it("a report already emailed to some recipients is refused a correction and the flag with a 409 saying so", async () => {
+    for (const res of [
+      await call("PUT", "r-partial/first-lesson", { firstLesson: true }),
+      await call("POST", "r-partial/dimensions/1", {
+        score: 2,
+        rationale: "x",
+      }),
+    ]) {
+      expect(res.status).toBe(409);
+      expect(await res.text()).toContain("already emailed");
     }
   });
 

@@ -15,6 +15,7 @@ export type CorrectionRefusal =
   | "unknown-report"
   | "unknown-dimension"
   | "already-delivered"
+  | "partially-delivered"
   | "in-flight"
   | "score-out-of-range"
   | "memory-reinforcement-required";
@@ -214,15 +215,22 @@ const CORRECTABLE_STATES = ["scored", "delivery_pending", "delivery_failed"];
 async function lockForCorrection(
   trx: CoachReportsWriter,
   reportId: string,
-): Promise<"unknown-report" | "already-delivered" | "in-flight" | null> {
+): Promise<
+  | "unknown-report"
+  | "already-delivered"
+  | "partially-delivered"
+  | "in-flight"
+  | null
+> {
   const session = await trx
     .selectFrom("coach_intake_sessions")
-    .select("state")
+    .select(["state", "delivered_to"])
     .where("report_id", "=", reportId)
     .forUpdate()
     .executeTakeFirst();
   if (!session) return "unknown-report";
   if (session.state === "delivered") return "already-delivered";
+  if (session.delivered_to.length > 0) return "partially-delivered";
   return CORRECTABLE_STATES.includes(session.state) ? null : "in-flight";
 }
 
