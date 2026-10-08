@@ -148,10 +148,8 @@ export class EmailNotificationConsumer {
     }
 
     console.debug(
-      `[${EmailNotificationConsumer.name}]: sendMail: ${JSON.stringify(data)}`,
+      `[${EmailNotificationConsumer.name}]: not sent in ${this.environment}: to @${data.to.email.split("@").pop()}, subject of ${data.subject.length} characters`,
     );
-    // Not a failure: the environment is not configured to send. Saying
-    // `delivered: true` here would let a dev run "confirm three sends".
     return { delivered: false, suppressed: true };
   }
 }

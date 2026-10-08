@@ -175,3 +175,38 @@ describe("the sender never passes Mailgun more than one recipient", () => {
     spy.mockRestore();
   });
 });
+
+describe("a non-sending environment logs only what identifies no one", () => {
+  it("logs the recipient's domain and the subject's length, never the address, the subject or the body", async () => {
+    consumer();
+    process.env.ENVIRONMENT = "development";
+    const dev = new EmailNotificationConsumer();
+    const lines: string[] = [];
+    const spies = (["log", "debug", "info", "warn", "error"] as const).map(
+      (level) =>
+        spyOn(console, level).mockImplementation((...args: unknown[]) => {
+          lines.push(args.map(String).join(" "));
+        }),
+    );
+    try {
+      const result = await dev.sendEmail({
+        subject: "Your report for the Tuesday group",
+        to: { name: "Ines Varga", email: "ines.varga@example.org" },
+        text: "Private feedback body",
+        html: "<p>Private feedback body</p>",
+      });
+      expect(result).toEqual({ delivered: false, suppressed: true });
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+    const logged = lines.join("\n");
+    expect(logged).toContain("example.org");
+    expect(logged).toContain(
+      String("Your report for the Tuesday group".length),
+    );
+    expect(logged).not.toContain("ines.varga");
+    expect(logged).not.toContain("Ines Varga");
+    expect(logged).not.toContain("Tuesday");
+    expect(logged).not.toContain("Private feedback");
+  });
+});
