@@ -11,6 +11,7 @@ export interface ReportSummaryRow {
   coachId: string;
   date: string;
   summary: Record<string, unknown>;
+  held?: boolean;
 }
 
 /** A report's full detail: summary + metrics + body, joined at read time. */
@@ -117,7 +118,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "summary"])
+      .select(["id", "coach_id", "summary", "held"])
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
       .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
@@ -130,6 +131,7 @@ export class CoachReportsRepository {
       coachId: r.coach_id,
       date: isoDate(r.session_date),
       summary: (r.summary ?? {}) as Record<string, unknown>,
+      held: r.held,
     }));
   }
 
@@ -319,7 +321,7 @@ export class CoachReportsRepository {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "summary", "metrics", "body"])
+      .select(["id", "coach_id", "summary", "metrics", "body", "held"])
       .select(DATE_COL)
       .where("coach_id", "=", coachId)
       .$if(!opts.includeHeld, (q) => q.where("held", "=", false))
@@ -329,6 +331,7 @@ export class CoachReportsRepository {
       id: r.id,
       coachId: r.coach_id,
       date: isoDate(r.session_date),
+      held: r.held,
       summary: (r.summary ?? {}) as Record<string, unknown>,
       metrics: (r.metrics ?? {}) as Record<string, unknown>,
       body: (r.body ?? {}) as Record<string, unknown>,

@@ -92,14 +92,14 @@ describe("the admin reads one leader's history a page at a time", () => {
     expect(report?.hasRetainedRecording).toBe(false);
   });
 
-  it("the streak and the quarter count come from the whole history, not the page", async () => {
+  it("the streak and the quarter count come from the whole history, not the page, and leave held reports out", async () => {
     const page = await new CoachService(Database).getReportSummaries(
       COACH,
       { limit: 1 },
       "admin",
     );
-    expect(page.streakWeeks).toBe(3);
-    expect(page.quarterSessions).toBe(4);
+    expect(page.streakWeeks).toBe(2);
+    expect(page.quarterSessions).toBe(3);
   });
 
   it("a leader's streak does not count a session held from them", async () => {

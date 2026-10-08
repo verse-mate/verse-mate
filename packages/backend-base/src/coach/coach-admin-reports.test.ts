@@ -83,3 +83,94 @@ describe("an admin drilling into a leader sees which sessions VerseMate holds a 
     expect(JSON.stringify(reports)).not.toContain("recording.mp4");
   });
 });
+
+describe("an admin's drill-in marks held duplicates and leaves them out of the stats", () => {
+  const STORE_ONLY = "admin-list-store-leader";
+
+  async function held(id: string, coachId: string, date: string) {
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id,
+        coach_id: coachId,
+        session_date: date,
+        source_session_id: `ff-${id}`,
+        legacy_ids: [],
+        summary: { session: "S", score: 70 },
+        metrics: {},
+        body: {},
+        held: true,
+      })
+      .execute();
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", STORE_ONLY)
+      .execute();
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("slug", "=", STORE_ONLY)
+      .execute();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", STORE_ONLY)
+      .execute();
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("slug", "=", STORE_ONLY)
+      .execute();
+  });
+
+  it("a leader whose reports all live in the store", async () => {
+    await conn
+      .insertInto("coach_leaders")
+      .values({
+        slug: STORE_ONLY,
+        email: "admin-list-store@example.test",
+        name: "Store Only",
+      })
+      .execute();
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: "admin-list-live",
+        coach_id: STORE_ONLY,
+        session_date: "2026-10-06",
+        source_session_id: "ff-admin-list-live",
+        legacy_ids: [],
+        summary: { session: "S", score: 70 },
+        metrics: {},
+        body: {},
+      })
+      .execute();
+    await held("admin-list-dup", STORE_ONLY, "2026-10-06");
+
+    const page = await service.getReportSummaries(STORE_ONLY, {}, "admin");
+    const flags = Object.fromEntries(page.items.map((i) => [i.id, i.held]));
+    expect(flags).toEqual({ "admin-list-live": false, "admin-list-dup": true });
+    expect(page.quarterSessions).toBe(1);
+    expect(page.streakWeeks).toBe(
+      (await service.getReportSummaries(STORE_ONLY)).streakWeeks,
+    );
+  });
+
+  it("a bundled leader whose list merges the bundle with the store", async () => {
+    const before = await service.getReportSummaries(COACH, {}, "admin");
+    await held("admin-list-dup", COACH, "2026-10-06");
+    const after = await service.getReportSummaries(
+      COACH,
+      { limit: 100 },
+      "admin",
+    );
+    expect(after.items.find((i) => i.id === "admin-list-dup")?.held).toBe(true);
+    expect(after.items.every((i) => typeof i.held === "boolean")).toBe(true);
+    expect(after.quarterSessions).toBe(before.quarterSessions);
+    expect(after.streakWeeks).toBe(before.streakWeeks);
+  });
+});

@@ -1350,7 +1350,9 @@ export class CoachService {
       bundled.length === 0 ||
       (record !== null && (await this.isBackfilled(record)));
     const dates = CoachService.withBundle(
-      await this.reportsRepository.listSessionDates(coachId, { includeHeld }),
+      await this.reportsRepository.listSessionDates(coachId, {
+        includeHeld: false,
+      }),
       bundled.map((r) => ({ id: r.id, date: r.date })),
       backfilled,
     ).map((r) => r.date);
@@ -1382,9 +1384,10 @@ export class CoachService {
       includeHeld,
     });
     return {
-      items: rows.map((r) =>
-        rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
-      ),
+      items: rows.map((r) => ({
+        ...rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
+        ...(includeHeld ? { held: r.held === true } : {}),
+      })),
       total,
     };
   }
@@ -1397,9 +1400,10 @@ export class CoachService {
   ): Promise<{ items: Record<string, unknown>[]; total: number }> {
     const stored = (
       await this.reportsRepository.listFullReports(coachId, { includeHeld })
-    ).map((r) =>
-      rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
-    );
+    ).map((r) => ({
+      ...rowToSummary({ id: r.id, session_date: r.date, summary: r.summary }),
+      ...(includeHeld ? { held: r.held === true } : {}),
+    }));
     const all = CoachService.withBundle(
       stored,
       bundled.map((r) => ({
@@ -1412,6 +1416,7 @@ export class CoachService {
         status: r.status,
         statusEmoji: r.statusEmoji,
         pdfUrl: r.pdfUrl,
+        ...(includeHeld ? { held: false } : {}),
       })) as Record<string, unknown>[],
       false,
     );
