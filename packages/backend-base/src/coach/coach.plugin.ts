@@ -107,6 +107,10 @@ const REVISION_REFUSALS: Record<string, () => Error> = {
       "The edit changes nothing: give at least one improvement, different from the current ones",
     ),
   "in-flight": () => new ConflictError(IN_FLIGHT_CORRECTION),
+  "revision-sending": () =>
+    new ConflictError(
+      "Refused: a revised copy of this report is being sent right now. Amend it again once that send finishes.",
+    ),
   "partially-delivered": () => new ConflictError(PARTIALLY_DELIVERED),
   "already-delivered": () =>
     new ConflictError(

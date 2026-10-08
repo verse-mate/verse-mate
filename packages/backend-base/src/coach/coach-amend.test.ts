@@ -1335,6 +1335,30 @@ describe("a revision is claimed before it is sent", () => {
     expect(sent).toMatchObject({ attemptedTo: [] });
   });
 
+  it("an amendment while a revision's send is live is refused, so no two revised copies go out", async () => {
+    const sending = new GatedMailer();
+    const send = new CoachDeliveryService(Database, sending).sendRevision(
+      REPORT,
+    );
+    await sending.reached;
+    const mailer = new FakeMailer();
+    const refused = await new CoachAmendService(Database, mailer).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "revised while sending" } },
+      byUserId: null,
+    });
+    expect(refused).toEqual({ applied: false, refusal: "revision-sending" });
+    expect(ours(mailer)).toEqual([]);
+    sending.release();
+    expect((await send).sent).toBe(true);
+    const after = await new CoachAmendService(Database, mailer).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "revised after the send" } },
+      byUserId: null,
+    });
+    expect(after).toMatchObject({ applied: true, revision: 2 });
+  });
+
   it("only the latest unsent revision lists its never-confirmed recipients", async () => {
     const dying = new GatedMailer();
     void new CoachDeliveryService(Database, dying).sendRevision(REPORT);
