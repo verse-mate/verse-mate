@@ -445,16 +445,65 @@ describe("leaders get a reminder before each class", () => {
       ]).toHaveLength(1);
   });
 
-  it("a send that throws leaves the leader for the next run on the same date", async () => {
+  async function ageClaim(coachId: string) {
+    await conn
+      .updateTable("coach_reminder_sends")
+      .set({ claimed_at: sql`NOW() - interval '20 minutes'` })
+      .where("coach_id", "=", coachId)
+      .execute();
+  }
+
+  it("a send that throws, perhaps after the provider accepted it, is not retried until its claim is stale", async () => {
     await report(LEADERS.thursday, "2026-09-24");
-    const failing = new FakeMailer();
-    failing.sendEmail = async () => {
-      throw new Error("mail service down");
+    const accepted = new FakeMailer();
+    const send = accepted.sendEmail.bind(accepted);
+    accepted.sendEmail = async (data) => {
+      await send(data);
+      throw new Error("timed out reading the response");
     };
-    await run(failing, WEDNESDAY_6PM);
+    const first = await run(accepted, WEDNESDAY_6PM);
+    expect(first.failed.map((f) => f.coachId)).toEqual([LEADERS.thursday]);
+
+    const soon = new FakeMailer();
+    const soonRun = await run(soon, WEDNESDAY_6PM);
+    expect(soon.to(emailOf(LEADERS.thursday))).toEqual([]);
+    expect(soonRun.notReminded.map((n) => n.coachId)).toEqual([
+      LEADERS.thursday,
+    ]);
+    expect(soonRun.notReminded[0].reason).toContain("unconfirmed");
+
+    await ageClaim(LEADERS.thursday);
+    const later = new FakeMailer();
+    await run(later, WEDNESDAY_6PM);
+    expect(later.to(emailOf(LEADERS.thursday))).toHaveLength(1);
+  });
+
+  it("a claim left by a crash before the send is retaken once it is stale", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await conn
+      .insertInto("coach_reminder_sends")
+      .values({
+        coach_id: LEADERS.thursday,
+        reminder_date: "2026-09-30",
+        report_id: `${LEADERS.thursday}-2026-09-24`,
+        email: emailOf(LEADERS.thursday),
+        sent_at: null,
+        claimed_at: sql`NOW() - interval '20 minutes'`,
+      })
+      .execute();
+    const mailer = new FakeMailer();
+    const result = await run(mailer, WEDNESDAY_6PM);
+    expect(mailer.to(emailOf(LEADERS.thursday))).toHaveLength(1);
+    expect(result.sent.map((s) => s.coachId)).toEqual([LEADERS.thursday]);
+  });
+
+  it("a confirmed reminder is never retaken, however old its claim", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await run(new FakeMailer(), WEDNESDAY_6PM);
+    await ageClaim(LEADERS.thursday);
     const again = new FakeMailer();
     await run(again, WEDNESDAY_6PM);
-    expect(again.to(emailOf(LEADERS.thursday))).toHaveLength(1);
+    expect(again.to(emailOf(LEADERS.thursday))).toEqual([]);
   });
 
   it("a re-run whose only news is the same placeholder failure sends the admin no second summary", async () => {
