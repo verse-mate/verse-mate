@@ -51,3 +51,19 @@ describe("the sender's guard lets one address through and nothing that adds a se
     expect(isSingleRecipient(address)).toBe(false);
   });
 });
+
+describe("an address is at most 254 characters", () => {
+  const local = "a".repeat(64);
+  const at = (length: number) =>
+    `${local}@${"x".repeat(length - local.length - 1 - ".org".length)}.org`;
+
+  it("accepts one of exactly 254", () => {
+    expect(at(254)).toHaveLength(254);
+    expect(isEmailAddress(at(254))).toBe(true);
+  });
+
+  it("refuses one of 255", () => {
+    expect(at(255)).toHaveLength(255);
+    expect(isEmailAddress(at(255))).toBe(false);
+  });
+});
