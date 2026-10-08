@@ -650,6 +650,52 @@ const plugin = new Elysia()
           response: { 200: CoverageReportSchema, ...StandardErrorResponses },
         },
       )
+      .post(
+        "/admin/leaders/:id/not-teaching",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (
+            !(await coachService.setNotTeaching(params.id, true, currentUserId))
+          )
+            throw new NotFoundError("Leader not found");
+          return { attested: true };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({ attested: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .delete(
+        "/admin/leaders/:id/not-teaching",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (
+            !(await coachService.setNotTeaching(
+              params.id,
+              false,
+              currentUserId,
+            ))
+          )
+            throw new NotFoundError("Leader not found");
+          return { attested: false };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({ attested: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/admin/reshares",
         async ({ store: { coachService }, currentUserId }) => {

@@ -1,3 +1,5 @@
+import { sql } from "kysely";
+
 import type { db } from "../shared/shared.plugin";
 
 /**
@@ -52,6 +54,8 @@ export interface LeaderCoverage {
    * alert asks an admin to check the bot's calendar configuration.
    */
   classAlert: boolean;
+  attestedAt: string | null;
+  attestedBy: string | null;
 }
 
 export interface CoverageReport {
@@ -65,16 +69,48 @@ export interface CoverageReport {
 export class CoachCoverageService {
   constructor(private readonly db: db) {}
 
+  async attestNotTeaching(slug: string, adminUserId: string): Promise<boolean> {
+    return this.setAttestation(slug, adminUserId);
+  }
+
+  async clearNotTeaching(slug: string): Promise<boolean> {
+    return this.setAttestation(slug, null);
+  }
+
+  private async setAttestation(
+    slug: string,
+    attestedBy: string | null,
+  ): Promise<boolean> {
+    const updated = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_leaders")
+      .set({
+        not_teaching_attested_at: attestedBy ? sql<Date>`NOW()` : null,
+        not_teaching_attested_by: attestedBy,
+      })
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+    return Number(updated.numUpdatedRows ?? 0) > 0;
+  }
+
   async assess(opts: { windowDays: number }): Promise<CoverageReport> {
     const conn = this.db.getOrCreateConnection();
     const since = new Date(Date.now() - opts.windowDays * 86_400_000);
 
     const leaders = await conn
       .selectFrom("coach_leaders")
-      .select(["id", "slug", "name", "email", "not_teaching_attested_at"])
-      .where("is_coach", "=", true)
-      .orderBy("slug")
-      .orderBy("email")
+      .leftJoin("user", "user.id", "coach_leaders.not_teaching_attested_by")
+      .select([
+        "coach_leaders.id as id",
+        "coach_leaders.slug as slug",
+        "coach_leaders.name as name",
+        "coach_leaders.email as email",
+        "coach_leaders.not_teaching_attested_at as not_teaching_attested_at",
+        "user.email as attested_by",
+      ])
+      .where("coach_leaders.is_coach", "=", true)
+      .orderBy("coach_leaders.slug")
+      .orderBy("coach_leaders.email")
       .execute();
 
     const observations = await conn
@@ -139,6 +175,10 @@ export class CoachCoverageService {
         accountStatus: withAccount.has(email) ? "has-account" : "no-account",
         linkedClassName,
         classAlert: linkedClassName !== null && observed === 0 && !attested,
+        attestedAt: l.not_teaching_attested_at
+          ? new Date(l.not_teaching_attested_at).toISOString()
+          : null,
+        attestedBy: attested ? l.attested_by ?? null : null,
       };
     });
 

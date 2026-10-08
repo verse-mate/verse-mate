@@ -602,6 +602,18 @@ export class CoachService {
     return new CoachCoverageService(this.db).assess({ windowDays });
   }
 
+  async setNotTeaching(
+    slug: string,
+    attested: boolean,
+    adminUserId: string,
+  ): Promise<boolean> {
+    const { CoachCoverageService } = await import("./coach-coverage.service");
+    const coverage = new CoachCoverageService(this.db);
+    return attested
+      ? coverage.attestNotTeaching(slug, adminUserId)
+      : coverage.clearNotTeaching(slug);
+  }
+
   /** Send the re-share request for one pending session (6.3b). */
   async sendReshareRequest(sourceSessionId: string) {
     const { CoachReshareService } = await import("./coach-reshare.service");

@@ -255,3 +255,73 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
     expect(row?.coachId).toBeTruthy();
   });
 });
+
+describe("Leader not covered by the bot: an admin attests a leader is not teaching", () => {
+  const ADMIN = "cov-attesting-admin@example.test";
+  let adminId = "";
+  beforeEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", ADMIN).execute();
+    adminId = (
+      await conn
+        .insertInto("user")
+        .values({ email: ADMIN, firstName: "A", lastName: "D" })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+    await leader("cov-silent", "cov-silent@example.test");
+  });
+  afterEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", ADMIN).execute();
+  });
+
+  const silentRow = async () =>
+    (
+      await new CoachCoverageService(Database).assess({ windowDays: 30 })
+    ).leaders.find((l) => l.coachId === "cov-silent");
+
+  it("the attestation is recorded with who and when, and the leader is covered as attested, not observed", async () => {
+    const service = new CoachCoverageService(Database);
+    expect(await service.attestNotTeaching("cov-silent", adminId)).toBe(true);
+
+    const report = await service.assess({ windowDays: 30 });
+    const row = report.leaders.find((l) => l.coachId === "cov-silent");
+    expect(row).toMatchObject({
+      covered: true,
+      basis: "attested-not-teaching",
+      attestedBy: ADMIN,
+    });
+    expect(Date.now() - Date.parse(row?.attestedAt as string)).toBeLessThan(
+      60_000,
+    );
+    expect(report.uncovered.map((l) => l.coachId)).not.toContain("cov-silent");
+  });
+
+  it("clearing the attestation makes the silent leader uncovered again", async () => {
+    const service = new CoachCoverageService(Database);
+    await service.attestNotTeaching("cov-silent", adminId);
+    expect(await service.clearNotTeaching("cov-silent")).toBe(true);
+
+    expect(await silentRow()).toMatchObject({
+      covered: false,
+      basis: "no-observation",
+      attestedAt: null,
+      attestedBy: null,
+    });
+  });
+
+  it("a leader never attested reports no attestation", async () => {
+    expect(await silentRow()).toMatchObject({
+      basis: "no-observation",
+      attestedAt: null,
+      attestedBy: null,
+    });
+  });
+
+  it("an unknown leader is refused", async () => {
+    const service = new CoachCoverageService(Database);
+    expect(await service.attestNotTeaching("cov-nobody", adminId)).toBe(false);
+    expect(await service.clearNotTeaching("cov-nobody")).toBe(false);
+  });
+});
