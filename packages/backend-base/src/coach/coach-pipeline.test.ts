@@ -1459,6 +1459,98 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
     }
   });
 
+  it("a session re-assigned away and back to its leader while it is scored is held for release, listed, and delivered once released", async () => {
+    const OTHER = "pipe-other";
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: OTHER, email: "pipe-other@example.test", name: "Other" })
+      .execute();
+    try {
+      const scoring = new CoachScoringService(Database, new FakeAi());
+      const score = scoring.scoreSession.bind(scoring);
+      scoring.scoreSession = async (input) => {
+        const scored = await score(input);
+        await reattributeSession(Database, "ff-pipe-1", OTHER, COACH);
+        await reattributeSession(Database, "ff-pipe-1", COACH, OTHER);
+        return scored;
+      };
+      const mailer = new FakeMailer();
+      const [result] = await new CoachPipelineService(
+        Database,
+        new FakeClient(),
+        mailer as any,
+        { scoring, frames: noFrames as any },
+      ).run();
+
+      expect(result.outcome).toBe("scored-awaiting-review");
+      expect(result.detail).toContain("re-attributed");
+      expect(mailer.sent).toEqual([]);
+      const row = await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["state", "hold_reason", "release_required"])
+        .where("source_session_id", "=", "ff-pipe-1")
+        .executeTakeFirstOrThrow();
+      expect(row.state).toBe("scored");
+      expect(row.hold_reason).toContain("re-attributed");
+      expect(row.release_required).toBe(true);
+
+      const service = new CoachService(Database, mailer as any);
+      expect(
+        (await service.listPipelineFailures()).sessions.find(
+          (f) => f.sourceSessionId === "ff-pipe-1",
+        ),
+      ).toMatchObject({ state: "scored", action: "release" });
+      const released = await service.releaseHeldReport(
+        result.reportId as string,
+      );
+      expect(released.delivered).toBe(true);
+      expect(mailer.sent.length).toBeGreaterThan(0);
+    } finally {
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", OTHER)
+        .execute();
+    }
+  });
+
+  it("a scored session awaiting release with no hold reason is still listed for release", async () => {
+    const [published] = await pipeline(null).run();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "scored", hold_reason: null, release_required: true })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    const listed = (
+      await new CoachService(Database).listPipelineFailures()
+    ).sessions.find((f) => f.reportId === published.reportId);
+    expect(listed).toMatchObject({ state: "scored", action: "release" });
+    expect(listed?.reason).toContain("re-attributed");
+  });
+
+  it.each(["delivery_pending", "delivery_failed"])(
+    "a %s session awaiting release is listed for release, and the release delivers it",
+    async (state) => {
+      const [published] = await pipeline(null).run();
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state, release_required: true, retry_count: 5 })
+        .where("source_session_id", "=", "ff-pipe-1")
+        .execute();
+      const mailer = new FakeMailer();
+      const service = new CoachService(Database, mailer as any);
+      expect(
+        (await service.listPipelineFailures()).sessions.find(
+          (f) => f.reportId === published.reportId,
+        ),
+      ).toMatchObject({ state, action: "release" });
+      const released = await service.releaseHeldReport(
+        published.reportId as string,
+      );
+      expect(released.delivered).toBe(true);
+      expect(mailer.sent.length).toBeGreaterThan(0);
+    },
+  );
+
   it("a throw during delivery leaves the published session queued for redelivery", async () => {
     const throwing = {
       deliver: async () => {

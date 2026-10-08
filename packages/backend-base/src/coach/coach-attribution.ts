@@ -144,6 +144,9 @@ export function attributeSession(
   return { coachId: null, matchedBy: "unresolved" };
 }
 
+export const REATTRIBUTED_HOLD =
+  "re-attributed: held until an admin releases it";
+
 export const UNRESOLVED_SWEEP_DAYS = 90;
 export const UNRESOLVED_SWEEP_LIMIT = 500;
 
@@ -293,7 +296,8 @@ export async function reattributeSession(
         | "unknown-leader"
         | "unknown-session"
         | "in-flight"
-        | "attribution-changed";
+        | "attribution-changed"
+        | "already-assigned";
     }
 > {
   return database
@@ -316,6 +320,8 @@ export async function reattributeSession(
       if (!session) return { ok: false, refusal: "unknown-session" } as const;
       if (session.coach_id !== expectedCoachId)
         return { ok: false, refusal: "attribution-changed" } as const;
+      if (session.coach_id === coachId)
+        return { ok: false, refusal: "already-assigned" } as const;
       if (session.state === "delivering")
         return { ok: false, refusal: "in-flight" } as const;
 
