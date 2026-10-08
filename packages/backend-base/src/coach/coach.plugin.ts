@@ -1375,6 +1375,10 @@ const plugin = new Elysia()
             text,
           );
           if (note === null) throw new NotFoundError("Session not found");
+          if (note === "held")
+            throw new ConflictError(
+              "This report is held from its leader, so a note would email them about a report they cannot open. Release it first.",
+            );
           return { note };
         },
         {

@@ -198,6 +198,8 @@ beforeAll(async () => {
           }
         : { ok: false, refusal: "unknown-leader" };
     },
+    addNote: async (_coachId: string, reportId: string) =>
+      reportId === "held-r" ? "held" : null,
     reattributeSession: async (...args: unknown[]) => {
       reattributions.push(args);
       if (args[0] === "ff-flight") return { ok: false, refusal: "in-flight" };
@@ -517,6 +519,26 @@ describe("the admin reads one leader's reports a page and a report at a time", (
     expect(summaryCalls).toEqual([
       ["leader-a", { limit: undefined, offset: undefined }],
     ]);
+  });
+});
+
+describe("a note on a held report", () => {
+  it("is a conflict that says to release the report first", async () => {
+    const res = await app.handle(
+      new Request(
+        "http://localhost/coach/admin/coaches/leader-a/reports/held-r/notes",
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ body: "about a held report" }),
+        },
+      ),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.text()).toContain("Release it first");
   });
 });
 
