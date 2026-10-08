@@ -947,6 +947,95 @@ describe("a slow send cannot turn into a second copy", () => {
     });
   });
 
+  it("a stalled worker's failed send cannot clear the attempt the worker now holding the claim recorded", async () => {
+    await seedReport("r-clear-fenced");
+    let takenOver: string | null = null;
+    class TakenDuringFailedSend extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        const taken = await conn
+          .updateTable("coach_intake_sessions")
+          .set({
+            updated_at: sql`clock_timestamp() + interval '1 second'`,
+            attempted_to: sql`ARRAY[${EMAILS[0]}]::text[]`,
+          })
+          .where("report_id", "=", "r-clear-fenced")
+          .returning(sql<string>`updated_at::text`.as("token"))
+          .executeTakeFirstOrThrow();
+        takenOver = taken.token;
+        return result;
+      }
+    }
+    const result = await new CoachDeliveryService(
+      Database,
+      new TakenDuringFailedSend((to) => to === EMAILS[0]),
+    ).deliver({ reportId: "r-clear-fenced", evidence: evidence() });
+    expect(result.refusal).toBe("in-flight");
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select([
+        "state",
+        "attempted_to",
+        sql<string>`updated_at::text`.as("token"),
+      ])
+      .where("report_id", "=", "r-clear-fenced")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      state: "delivering",
+      attempted_to: [EMAILS[0]],
+      token: takenOver as unknown as string,
+    });
+  });
+
+  it("a worker whose claim was taken after its last send was recorded does not mark the report delivered", async () => {
+    await seedReport("r-final-fenced");
+    const service = new CoachDeliveryService(Database, new FakeMailer());
+    const internals = service as unknown as {
+      recipients: (...args: unknown[]) => Promise<{ recipients: unknown[] }>;
+      recordRecipient: (...args: unknown[]) => Promise<boolean>;
+    };
+    const recipients = internals.recipients.bind(service);
+    let total = 0;
+    internals.recipients = async (...args: unknown[]) => {
+      const found = await recipients(...args);
+      total = found.recipients.length;
+      return found;
+    };
+    const recordRecipient = internals.recordRecipient.bind(service);
+    let recorded = 0;
+    let takenOver: string | null = null;
+    internals.recordRecipient = async (...args: unknown[]) => {
+      const ok = await recordRecipient(...args);
+      recorded += 1;
+      if (recorded === total) {
+        const taken = await conn
+          .updateTable("coach_intake_sessions")
+          .set({ updated_at: sql`clock_timestamp() + interval '1 second'` })
+          .where("report_id", "=", "r-final-fenced")
+          .returning(sql<string>`updated_at::text`.as("token"))
+          .executeTakeFirstOrThrow();
+        takenOver = taken.token;
+      }
+      return ok;
+    };
+    const result = await service.deliver({
+      reportId: "r-final-fenced",
+      evidence: evidence(),
+    });
+    expect(takenOver).not.toBeNull();
+    expect(result.delivered).toBe(false);
+    expect(result.refusal).toBe("in-flight");
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", sql<string>`updated_at::text`.as("token")])
+      .where("report_id", "=", "r-final-fenced")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      state: "delivering",
+      token: takenOver as unknown as string,
+    });
+  });
+
   it("a send confirmed after the claim was taken over and the session re-assigned records no recipient", async () => {
     await seedReport("r-reassigned");
     class HangingMailer extends FakeMailer {
