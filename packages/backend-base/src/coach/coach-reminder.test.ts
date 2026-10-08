@@ -308,6 +308,16 @@ describe("leaders get a reminder before each class", () => {
     expect(result.notReminded.map((n) => n.coachId)).toContain(LEADERS.empty);
   });
 
+  it("in standard time 18:00 Central is the next UTC day, and the class reminded is still Central tomorrow's", async () => {
+    await report(LEADERS.thursday, "2026-11-25");
+    const mailer = new FakeMailer();
+    const result = await run(mailer, new Date("2026-12-02T00:00:00Z"));
+    expect(result.date).toBe("2026-12-01");
+    expect(mailer.to(emailOf(LEADERS.thursday)).map((m) => m.subject)).toEqual([
+      "Coaching reminder for Wednesday's class",
+    ]);
+  });
+
   it("before cutover nothing is sent", async () => {
     await report(LEADERS.thursday, "2026-09-24");
     delete process.env[COACH_PIPELINE_LIVE];
