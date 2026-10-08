@@ -480,3 +480,56 @@ describe("an admin re-attributes a session to a leader", () => {
     expect(await intake(SESSIONS[1])).toMatchObject({ coach_id: WRONG });
   });
 });
+
+describe("a sweep never takes a session an admin assigned while it ran", () => {
+  async function sweepWaiting() {
+    for (let i = 0; i < 200; i += 1) {
+      const waiting = await sql<{ n: string }>`
+        SELECT count(*) AS n FROM pg_stat_activity
+        WHERE wait_event_type = 'Lock'
+          AND query ILIKE 'update "coach_intake_sessions"%'`.execute(conn);
+      if (Number(waiting.rows[0].n) > 0) return;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error("the sweep never reached its update");
+  }
+
+  it("the sweep's update skips a session an admin assigned after the sweep read it", async () => {
+    await session(SESSIONS[0]);
+    await conn
+      .updateTable("coach_leaders")
+      .set({ title_match: sql`ARRAY['zephaniah circle']::text[]` })
+      .where("slug", "=", RIGHT)
+      .execute();
+    let swept: Promise<number> | null = null;
+    await conn.transaction().execute(async (trx) => {
+      await trx
+        .updateTable("coach_intake_sessions")
+        .set({ coach_id: WRONG, matched_by: "admin", release_required: true })
+        .where("source_session_id", "=", SESSIONS[0])
+        .execute();
+      swept = reattributeUnresolved(Database);
+      await sweepWaiting();
+    });
+    expect(await (swept as unknown as Promise<number>)).toBe(0);
+    expect(await intake(SESSIONS[0])).toMatchObject({
+      coach_id: WRONG,
+      matched_by: "admin",
+    });
+  });
+});
+
+describe("a session is assigned only to a coaching leader", () => {
+  it("a roster row that is not a coach is refused as an unknown leader", async () => {
+    await session(SESSIONS[0]);
+    await conn
+      .updateTable("coach_leaders")
+      .set({ is_coach: false })
+      .where("slug", "=", RIGHT)
+      .execute();
+    expect(
+      await reattributeSession(Database, SESSIONS[0], RIGHT, null),
+    ).toEqual({ ok: false, refusal: "unknown-leader" });
+    expect(await intake(SESSIONS[0])).toMatchObject({ coach_id: null });
+  });
+});
