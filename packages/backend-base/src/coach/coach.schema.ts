@@ -342,6 +342,8 @@ export const CoverageReportSchema = t.Object({
       accountStatus: t.String(),
       linkedClassName: t.Union([t.String(), t.Null()]),
       classAlert: t.Boolean(),
+      attestedAt: t.Union([t.String(), t.Null()]),
+      attestedBy: t.Union([t.String(), t.Null()]),
     }),
   ),
 });

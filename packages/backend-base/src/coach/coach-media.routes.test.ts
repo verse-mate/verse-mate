@@ -32,6 +32,7 @@ const realService = store.coachService;
 
 const attributionWrites: unknown[][] = [];
 const emailUpdates: unknown[][] = [];
+const attestations: unknown[][] = [];
 const reattributions: unknown[][] = [];
 const minted: Array<Record<string, unknown>> = [];
 const requeued: string[] = [];
@@ -53,6 +54,30 @@ beforeAll(async () => {
   await redisClient.set(cacheConstants.accessToken(USER), [token], "5m");
   store.coachService = {
     isAdmin: async () => admin,
+    setNotTeaching: async (...args: unknown[]) => {
+      attestations.push(args);
+      return args[0] === "leader-a";
+    },
+    assessCoverage: async () => ({
+      windowDays: 30,
+      allCovered: true,
+      uncovered: [],
+      leaders: [
+        {
+          coachId: "leader-a",
+          name: "A",
+          email: "a@example.test",
+          covered: true,
+          basis: "attested-not-teaching",
+          observedSessions: 0,
+          accountStatus: "has-account",
+          linkedClassName: null,
+          classAlert: false,
+          attestedAt: "2026-10-08T12:00:00.000Z",
+          attestedBy: "admin@example.test",
+        },
+      ],
+    }),
     updateLeaderEmail: async (slug: string, email: string) => {
       emailUpdates.push([slug, email]);
       if (slug !== "leader-a") return { ok: false, refusal: "unknown-leader" };
@@ -647,6 +672,58 @@ describe("an admin corrects a leader's address", () => {
     expect(await res.json()).toEqual({
       delivered: true,
       skipped: ["wyatt@needs-real-email.invalid"],
+    });
+  });
+});
+
+describe("an admin attests that a leader is not teaching", () => {
+  async function call(method: string, path: string) {
+    return app.handle(
+      new Request(`http://localhost${path}`, {
+        method,
+        headers: { authorization: `Bearer ${token}` },
+      }),
+    );
+  }
+
+  it("attesting records the admin as the one who attested", async () => {
+    admin = true;
+    attestations.length = 0;
+    const res = await call(
+      "POST",
+      "/coach/admin/leaders/leader-a/not-teaching",
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ attested: true });
+    expect(attestations).toEqual([["leader-a", true, USER]]);
+  });
+
+  it("clearing the attestation is its own call", async () => {
+    attestations.length = 0;
+    const res = await call(
+      "DELETE",
+      "/coach/admin/leaders/leader-a/not-teaching",
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ attested: false });
+    expect(attestations).toEqual([["leader-a", false, USER]]);
+  });
+
+  it("an unknown leader is not found", async () => {
+    const res = await call("POST", "/coach/admin/leaders/nobody/not-teaching");
+    expect(res.status).toBe(404);
+  });
+
+  it("the coverage report carries who attested and when", async () => {
+    const res = await call("GET", "/coach/admin/coverage");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      leaders: Array<Record<string, unknown>>;
+    };
+    expect(body.leaders[0]).toMatchObject({
+      basis: "attested-not-teaching",
+      attestedAt: "2026-10-08T12:00:00.000Z",
+      attestedBy: "admin@example.test",
     });
   });
 });
