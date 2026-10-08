@@ -678,6 +678,31 @@ describe("a slow send cannot turn into a second copy", () => {
     expect(report.held).toBe(true);
   });
 
+  it("a report corrected just before the claim is mailed as corrected", async () => {
+    await seedReport("r-corrected");
+    const mailer = new FakeMailer();
+    const service = new CoachDeliveryService(Database, mailer);
+    const internals = service as unknown as {
+      claim: (reportId: string) => Promise<unknown>;
+    };
+    const claim = internals.claim.bind(service);
+    internals.claim = async (reportId: string) => {
+      await conn
+        .updateTable("coach_reports")
+        .set({ summary: { session: "Obadiah", score: 41, status: "Weak" } })
+        .where("id", "=", reportId)
+        .execute();
+      return claim(reportId);
+    };
+    const result = await service.deliver({
+      reportId: "r-corrected",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(mailer.sent[0].html).toContain("41");
+    expect(mailer.sent[0].html).not.toContain("78");
+  });
+
   it("a retry after one recipient failed mails only the recipients still owed", async () => {
     await seedReport("r-partial");
     const flaky = new FakeMailer((to) => to === EMAILS[2]);

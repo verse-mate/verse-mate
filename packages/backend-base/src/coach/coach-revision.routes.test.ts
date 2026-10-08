@@ -41,6 +41,7 @@ const byReport: Record<string, unknown> = {
   "r-undelivered": { applied: false, refusal: "not-delivered" },
   "r-unknown": { applied: false, refusal: "unknown-report" },
   "r-mr": { applied: false, refusal: "memory-reinforcement-required" },
+  "r-delivering": { applied: false, refusal: "in-flight" },
 };
 
 beforeAll(async () => {
@@ -164,6 +165,13 @@ describe("the revision routes", () => {
       ["POST", "r-unknown/amend", "unknown", { body: { headline: "x" } }, 404],
       ["PUT", "r-legacy/first-lesson", "legacy", { firstLesson: true }, 409],
       ["PUT", "r-mr/first-lesson", "memory", { firstLesson: false }, 400],
+      [
+        "PUT",
+        "r-delivering/first-lesson",
+        "in flight",
+        { firstLesson: true },
+        409,
+      ],
     ];
     for (const [method, path, _label, body, status] of cases) {
       expect((await call(method, path, body)).status).toBe(status);

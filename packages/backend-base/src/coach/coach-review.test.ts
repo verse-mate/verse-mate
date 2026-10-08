@@ -217,6 +217,74 @@ describe("an admin can correct a dimension before delivery", () => {
     expect(state?.dimensions.find((d) => d.n === 1)?.score).toBe(4);
   });
 
+  for (const state of ["delivering", "retained"]) {
+    it(`a correction while the session is ${state} is refused and changes nothing`, async () => {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state })
+        .where("report_id", "=", REPORT)
+        .execute();
+      const corrected = await svc.correct({
+        reportId: REPORT,
+        dimensionN: 1,
+        score: 2,
+        rationale: "mid-delivery",
+        correctedByUserId: null,
+      });
+      expect(corrected).toEqual({ ok: false, refusal: "in-flight" });
+      const flagged = await svc.setFirstLesson({
+        reportId: REPORT,
+        firstLesson: true,
+        byUserId: null,
+      });
+      expect(flagged).toEqual({ ok: false, refusal: "in-flight" });
+      const after = await svc.review(REPORT);
+      expect(after?.dimensions.find((d) => d.n === 1)?.score).toBe(4);
+      expect(after?.dimensions.find((d) => d.n === 9)?.score).toBe(4);
+      expect(after?.firstLesson).toBe(false);
+    });
+  }
+
+  it("a correction waits for a delivery claim taken at the same moment, then refuses", async () => {
+    let pending: Promise<unknown> | undefined;
+    await conn.transaction().execute(async (trx) => {
+      await trx
+        .updateTable("coach_intake_sessions")
+        .set({ state: "delivering" })
+        .where("report_id", "=", REPORT)
+        .execute();
+      pending = svc.correct({
+        reportId: REPORT,
+        dimensionN: 1,
+        score: 2,
+        rationale: "raced the claim",
+        correctedByUserId: null,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    expect(await pending).toEqual({ ok: false, refusal: "in-flight" });
+    const after = await svc.review(REPORT);
+    expect(after?.dimensions.find((d) => d.n === 1)?.score).toBe(4);
+  });
+
+  for (const state of ["delivery_pending", "delivery_failed"]) {
+    it(`a report whose delivery is ${state} can still be corrected`, async () => {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state })
+        .where("report_id", "=", REPORT)
+        .execute();
+      const corrected = await svc.correct({
+        reportId: REPORT,
+        dimensionN: 1,
+        score: 2,
+        rationale: "before the retry",
+        correctedByUserId: null,
+      });
+      expect(corrected.ok).toBe(true);
+    });
+  }
+
   it("an unknown dimension is refused", async () => {
     const result = await svc.correct({
       reportId: REPORT,

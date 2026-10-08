@@ -68,6 +68,9 @@ const isBlankOrHttpUrl = (v: string): boolean =>
 /** Minimal email shape check for the add-leader form. */
 const isEmail = (v: string): boolean => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 
+const IN_FLIGHT_CORRECTION =
+  "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery.";
+
 const REVISION_REFUSALS: Record<string, () => Error> = {
   "legacy-report": () =>
     new ConflictError(
@@ -86,6 +89,7 @@ const REVISION_REFUSALS: Record<string, () => Error> = {
       "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale",
     ),
   "empty-amendment": () => new ValidationError("The amendment changes nothing"),
+  "in-flight": () => new ConflictError(IN_FLIGHT_CORRECTION),
 };
 
 function revisionResponse<
@@ -643,6 +647,8 @@ const plugin = new Elysia()
             throw new ConflictError(
               "Correction refused: this is a legacy report, which is read-only. Change it at its source and it arrives through the backfill.",
             );
+          if (result.refusal === "in-flight")
+            throw new ConflictError(IN_FLIGHT_CORRECTION);
           if (!result.ok)
             throw new ValidationError(
               `Correction refused: ${result.refusal ?? "unknown"}`,
