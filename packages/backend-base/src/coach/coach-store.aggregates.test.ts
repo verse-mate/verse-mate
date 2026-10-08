@@ -69,6 +69,10 @@ describe("trends / roster / monthly read the store", () => {
     const trends = await service.getTrendsById(COACH);
     expect(trends?.scoreSeries.length).toBe(bundled.reports.length + 2);
     expect(trends?.scoreSeries.slice(-2).map((p) => p.score)).toEqual([60, 80]);
+    expect(trends?.scoreSeries.slice(-2).map((p) => p.reportId)).toEqual([
+      "agg-1",
+      "agg-2",
+    ]);
     expect(trends?.delta?.to).toBe(80);
     expect(trends?.delta?.from).toBe(60);
   });

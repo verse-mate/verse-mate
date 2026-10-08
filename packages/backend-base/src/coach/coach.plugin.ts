@@ -212,6 +212,7 @@ const TrendsSchema = t.Object({
       session: t.String(),
       score: t.Number(),
       status: t.String(),
+      reportId: t.String(),
     }),
   ),
   clusterSeries: t.Array(TrendRowSchema),
