@@ -254,14 +254,19 @@ export class CoachDeliveryService {
   private async recordRecipient(
     reportId: string,
     email: string,
-  ): Promise<void> {
-    await this.db
+    token: string,
+  ): Promise<boolean> {
+    const recorded = await this.db
       .getOrCreateConnection()
       .updateTable("coach_intake_sessions")
-      .set({ delivered_to: sql`array_append(delivered_to, ${email})` })
+      .set({
+        delivered_to: sql`CASE WHEN ${email} = ANY(delivered_to) THEN delivered_to ELSE array_append(delivered_to, ${email}) END`,
+      })
       .where("report_id", "=", reportId)
-      .where(sql<boolean>`NOT (${email} = ANY(delivered_to))`)
-      .execute();
+      .where("state", "=", "delivering")
+      .where(CLAIM_TOKEN, "=", token)
+      .executeTakeFirst();
+    return Number(recorded.numUpdatedRows ?? 0) > 0;
   }
 
   private async deliverClaimed(
@@ -409,7 +414,14 @@ export class CoachDeliveryService {
         error: result?.error,
       });
       if (result?.delivered === true) {
-        await this.recordRecipient(reportId, to.email);
+        if (!(await this.recordRecipient(reportId, to.email, token)))
+          return {
+            delivered: false,
+            refusal: "in-flight",
+            sends,
+            skipped,
+            subject,
+          };
         confirmed.add(to.email);
       }
     }

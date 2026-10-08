@@ -10,6 +10,7 @@ import {
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import { reattributeSession } from "./coach-attribution";
 import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import {
@@ -656,6 +657,51 @@ describe("a slow send cannot turn into a second copy", () => {
     for (const email of EMAILS) expect(received.has(email)).toBe(true);
     for (const [to, n] of received) expect(n).toBe(to === inFlight ? 2 : 1);
     expect(await sessionState("r-stall")).toBe("delivered");
+  });
+
+  it("a send confirmed after the claim was taken over and the session re-assigned records no recipient", async () => {
+    await seedReport("r-reassigned");
+    class HangingMailer extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        if (this.sent.length === 1) {
+          await conn
+            .updateTable("coach_intake_sessions")
+            .set({ updated_at: sql`NOW() - interval '20 minutes'` })
+            .where("report_id", "=", "r-reassigned")
+            .execute();
+          const takeover = await new CoachDeliveryService(
+            Database,
+            new FakeMailer(() => true),
+          ).deliver({ reportId: "r-reassigned", evidence: evidence() });
+          expect(takeover.refusal).toBe("send-failed");
+          const moved = await reattributeSession(
+            Database,
+            "ff-r-reassigned",
+            BENCH,
+            LEADER,
+          );
+          expect(moved.ok).toBe(true);
+        }
+        return result;
+      }
+    }
+    const first = await new CoachDeliveryService(
+      Database,
+      new HangingMailer(),
+    ).deliver({ reportId: "r-reassigned", evidence: evidence() });
+    expect(first.delivered).toBe(false);
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .innerJoin(
+        "coach_reports",
+        "coach_reports.id",
+        "coach_intake_sessions.report_id",
+      )
+      .select(["state", "delivered_to", "held"])
+      .where("report_id", "=", "r-reassigned")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ state: "retained", delivered_to: [], held: true });
   });
 
   it("a worker whose claim was taken before it sent neither mails nor opens the report", async () => {
