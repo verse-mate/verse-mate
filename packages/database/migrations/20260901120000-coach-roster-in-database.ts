@@ -1,5 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
+import { refuseToDrop } from "./20260825120000-create-coach-reports-store";
 
 /**
  * Migration 2 of 9 (change: port-coach-pipeline, design D13).
@@ -78,6 +79,11 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await refuseToDrop(
+    db,
+    "coach_leaders",
+    "slug IS NOT NULL OR NOT is_coach OR zoom_link <> '' OR is_benchmark OR title_match <> '{}' OR alt_emails <> '{}' OR not_teaching_attested_at IS NOT NULL OR not_teaching_attested_by IS NOT NULL",
+  );
   console.log("Reverting the leader roster merge ...");
   await sql`DROP INDEX IF EXISTS coach_leaders_single_benchmark_uidx`.execute(
     db,

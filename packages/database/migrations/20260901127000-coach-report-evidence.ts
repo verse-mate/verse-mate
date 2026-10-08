@@ -1,5 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
+import { refuseToDrop } from "./20260825120000-create-coach-reports-store";
 
 /**
  * Migration 9 of 9 (change: port-coach-pipeline, design D13, task 6.2).
@@ -37,6 +38,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await refuseToDrop(db, "coach_reports", "evidence IS NOT NULL");
   await sql`DROP INDEX IF EXISTS coach_reports_evidence_idx`.execute(db);
   await db.schema.alterTable("coach_reports").dropColumn("evidence").execute();
 }

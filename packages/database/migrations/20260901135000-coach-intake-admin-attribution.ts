@@ -18,8 +18,14 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
-  await sql`UPDATE coach_intake_sessions SET matched_by = 'unresolved' WHERE matched_by = 'admin'`.execute(
+  const { rows } = await sql<{
+    row: string;
+  }>`SELECT source_session_id || ' (leader ' || coalesce(coach_id, 'none') || ')' AS row FROM coach_intake_sessions WHERE matched_by = 'admin' ORDER BY 1`.execute(
     db,
   );
+  if (rows.length > 0)
+    throw new Error(
+      `coach_intake_sessions has ${rows.length} session(s) an admin assigned to a leader: ${rows.map((r) => r.row).join(", ")}. The older code has no admin attribution, and rewriting them would lose who assigned them. Record those assignments, set matched_by on each to the value the older code should see, then rerun the down.`,
+    );
   await allowMatchedBy(db, BEFORE);
 }

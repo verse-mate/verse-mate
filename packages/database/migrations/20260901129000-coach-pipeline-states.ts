@@ -40,11 +40,14 @@ export async function down(db: Kysely<Database>): Promise<void> {
   await sql`DROP INDEX IF EXISTS coach_intake_sessions_one_delivery_per_leader_uidx`.execute(
     db,
   );
-  await sql`UPDATE coach_intake_sessions SET state = 'retained' WHERE state = 'scoring_failed'`.execute(
+  const { rows } = await sql<{
+    row: string;
+  }>`SELECT source_session_id || ' (' || state || ')' AS row FROM coach_intake_sessions WHERE state IN ('scoring_failed', 'delivery_pending', 'delivering', 'delivery_failed') ORDER BY 1`.execute(
     db,
   );
-  await sql`UPDATE coach_intake_sessions SET state = 'scored' WHERE state IN ('delivery_pending', 'delivering', 'delivery_failed')`.execute(
-    db,
-  );
+  if (rows.length > 0)
+    throw new Error(
+      `coach_intake_sessions has ${rows.length} session(s) in a state the older code cannot hold: ${rows.map((r) => r.row).join(", ")}. Turning them back into scored or retained would make an in-flight or failed delivery claimable again and could mail its recipients twice. Let each delivery finish on the current code, and settle each failed one by hand (record whether its recipients got the report, then move it to delivered or delete it), then rerun the down.`,
+    );
   await allowStates(db, BEFORE);
 }
