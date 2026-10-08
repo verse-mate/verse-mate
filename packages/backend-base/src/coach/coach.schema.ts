@@ -319,6 +319,7 @@ export const ReviewStateSchema = t.Object({
   firstLesson: t.Boolean(),
   firstLessonSource: t.Union([t.String(), t.Null()]),
   passageBook: t.Union([t.String(), t.Null()]),
+  parallelRun: t.Boolean(),
   dimensions: t.Array(
     t.Object({
       n: t.Number(),

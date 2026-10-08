@@ -15,8 +15,10 @@ import { CoachAmendService } from "./coach-amend.service";
 import type { RetainResult } from "./coach-archive.service";
 import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import { CoachDeliveryService } from "./coach-delivery.service";
 import { CoachIntakeService } from "./coach-intake.service";
 import { CoachPipelineService } from "./coach-pipeline.service";
+import { CoachReshareService } from "./coach-reshare.service";
 import { CoachRetrievalService } from "./coach-retrieval.service";
 import { CoachScoringService } from "./coach-scoring.service";
 import { CoachService } from "./coach.service";
@@ -249,5 +251,143 @@ describe("a session walks the whole lifecycle", () => {
     );
     expect(after?.dimensions.find((d) => d.n === 2)?.score).toBe(2);
     expect(after?.score).toBeLessThan(seen?.score ?? 0);
+  });
+});
+
+function pipelineWith(mailer: Mailer) {
+  return new CoachPipelineService(Database, new Provider(), mailer as never, {
+    scoring: new CoachScoringService(Database, new Ai()),
+    frames: { extract: async () => [] } as never,
+  });
+}
+
+async function observedDuringTheParallelRun() {
+  delete process.env[COACH_PIPELINE_LIVE];
+  await new CoachIntakeService(Database, new Provider()).poll();
+  await new CoachRetrievalService(Database, new Archive()).sweep();
+  process.env[COACH_PIPELINE_LIVE] = "true";
+}
+
+describe("The Parallel Run Is Silent, after cutover too", () => {
+  afterEach(() => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+  });
+
+  it("a session observed while the switch was off is marked a parallel-run session for good", async () => {
+    await observedDuringTheParallelRun();
+    expect((await session()).parallel_run).toBe(true);
+  });
+
+  it("a session observed while the switch is on is not a parallel-run session", async () => {
+    await new CoachIntakeService(Database, new Provider()).poll();
+    expect((await session()).parallel_run).toBe(false);
+  });
+
+  it("a parallel-run session still unscored at cutover is scored, held and never delivered, released or redelivered", async () => {
+    await observedDuringTheParallelRun();
+    const mailer = new Mailer();
+    const result = (await pipelineWith(mailer).run()).find(
+      (r) => r.sourceSessionId === SESSION,
+    );
+    expect(result?.outcome).toBe("scored-awaiting-review");
+    expect(result?.detail).toContain("parallel run");
+    const reportId = result?.reportId as string;
+
+    expect(
+      await new CoachDeliveryService(Database, mailer as never).deliver({
+        reportId,
+        evidence: { quotes: [], timestamps: [] },
+      }),
+    ).toMatchObject({ delivered: false, refusal: "parallel-run-session" });
+    const service = new CoachService(Database, mailer as never);
+    expect(await service.releaseHeldReport(reportId)).toMatchObject({
+      delivered: false,
+      refusal: "parallel-run-session",
+    });
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_pending" })
+      .where("source_session_id", "=", SESSION)
+      .execute();
+    expect(
+      (await pipelineWith(mailer).run()).find(
+        (r) => r.sourceSessionId === SESSION,
+      ),
+    ).toBeUndefined();
+    expect(mailer.subjects).toEqual([]);
+    expect(await service.getReportDetail(COACH, reportId)).toBeNull();
+    expect((await service.reviewReport(reportId))?.parallelRun).toBe(true);
+  });
+
+  it("a held parallel-run session is labelled on the failures list and offers no release", async () => {
+    await observedDuringTheParallelRun();
+    await pipelineWith(new Mailer()).run();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({
+        hold_reason:
+          "held for review: 9 of 11 scored dimensions came back at the maximum",
+      })
+      .where("source_session_id", "=", SESSION)
+      .execute();
+    const listed = (
+      await new CoachService(Database).listPipelineFailures({ limit: 200 })
+    ).sessions.find((s) => s.sourceSessionId === SESSION);
+    expect(listed).toMatchObject({ parallelRun: true, action: null });
+  });
+
+  it("a parallel-run session whose delivery failed is not requeued for delivery or released", async () => {
+    await observedDuringTheParallelRun();
+    await pipelineWith(new Mailer()).run();
+    const reportId = (await session()).report_id as string;
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({
+        state: "delivery_failed",
+        hold_reason: "send failed",
+        release_required: true,
+        retry_count: 5,
+      })
+      .where("source_session_id", "=", SESSION)
+      .execute();
+    const service = new CoachService(Database, new Mailer() as never);
+    expect(await service.requeuePipelineFailure(SESSION)).toBe(
+      "parallel-run-session",
+    );
+    expect(await service.releaseHeldReport(reportId)).toMatchObject({
+      refusal: "parallel-run-session",
+    });
+    expect(await session()).toMatchObject({
+      state: "delivery_failed",
+      release_required: true,
+      retry_count: 5,
+    });
+    const listed = (
+      await service.listPipelineFailures({ limit: 200 })
+    ).sessions.find((s) => s.sourceSessionId === SESSION);
+    expect(listed).toMatchObject({ parallelRun: true, action: null });
+  });
+
+  it("a parallel-run session whose recording was never retrieved is not re-share sent after cutover", async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await new CoachIntakeService(Database, new Provider()).poll();
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "retrieval_failed", reshare_requested_at: sql`NOW()` })
+      .where("source_session_id", "=", SESSION)
+      .execute();
+    const mailer = new Mailer();
+    expect(
+      await new CoachReshareService(Database, mailer as never).send(SESSION),
+    ).toMatchObject({ sent: false, refusal: "parallel-run-session" });
+    expect(mailer.subjects).toEqual([]);
+    const pending = await new CoachRetrievalService(
+      Database,
+      new Archive(),
+    ).pendingReshares();
+    expect(pending.find((p) => p.sourceSessionId === SESSION)).toMatchObject({
+      parallelRun: true,
+    });
   });
 });

@@ -115,12 +115,15 @@ beforeAll(async () => {
           delivered: true,
           skipped: ["wyatt@needs-real-email.invalid"],
         };
+      if (id === "r-parallel")
+        return { delivered: false, refusal: "parallel-run-session" };
       return id === "r-held"
         ? { delivered: true }
         : { delivered: false, refusal: "not-held" };
     },
     requeuePipelineFailure: async (id: string) => {
       requeued.push(id);
+      if (id === "ff-parallel") return "parallel-run-session";
       return id === "ff-parked";
     },
     getProfileById: async () => bundledProfile,
@@ -140,6 +143,7 @@ beforeAll(async () => {
             reportId: "r-held",
             reason: "held for calibration: no calibration is recorded for v3",
             action: null,
+            parallelRun: false,
             updatedAt: new Date("2026-09-01T00:00:00Z"),
           },
         ],
@@ -344,6 +348,15 @@ describe("re-queueing a parked session is an admin action", () => {
     expect(requeued).toEqual(["ff-parked"]);
   });
 
+  it("a parallel-run session is refused with a conflict that says so", async () => {
+    admin = true;
+    const res = await post(
+      "/coach/admin/pipeline-failures/ff-parallel/requeue",
+    );
+    expect(res.status).toBe(409);
+    expect(JSON.stringify(await res.json())).toContain("parallel run");
+  });
+
   it("a session that is not parked is not found", async () => {
     admin = true;
     const res = await post("/coach/admin/pipeline-failures/ff-live/requeue");
@@ -387,6 +400,13 @@ describe("releasing a held report is an admin action", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ delivered: true });
     expect(released).toEqual(["r-held"]);
+  });
+
+  it("a parallel-run report is refused with a conflict that says so", async () => {
+    admin = true;
+    const res = await release("r-parallel");
+    expect(res.status).toBe(409);
+    expect(JSON.stringify(await res.json())).toContain("parallel run");
   });
 
   it("a report that is not held is not found", async () => {

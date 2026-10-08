@@ -74,6 +74,9 @@ const isBlankOrHttpUrl = (v: string): boolean =>
 export const EMAIL_RULE =
   "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot";
 
+const PARALLEL_RUN_SESSION =
+  "This session was observed during the parallel run: it is kept for admin comparison and never sent";
+
 const IN_FLIGHT_CORRECTION =
   "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery.";
 
@@ -929,6 +932,7 @@ const plugin = new Elysia()
                   requestedAt: t.Date(),
                   attempts: t.Number(),
                   asked: t.Boolean(),
+                  parallelRun: t.Boolean(),
                 }),
               ),
             }),
@@ -979,6 +983,7 @@ const plugin = new Elysia()
                     t.Literal("attribute"),
                     t.Null(),
                   ]),
+                  parallelRun: t.Boolean(),
                   updatedAt: t.Date(),
                 }),
               ),
@@ -997,6 +1002,8 @@ const plugin = new Elysia()
           const result = await coachService.releaseHeldReport(params.reportId);
           if (result.refusal === "not-held")
             throw new NotFoundError("No report held for review");
+          if (result.refusal === "parallel-run-session")
+            throw new ConflictError(PARALLEL_RUN_SESSION);
           if (result.refusal === "no-mailer")
             throw new ConflictError("No mailer is configured");
           if (result.refusal === "parallel-run")
@@ -1029,6 +1036,8 @@ const plugin = new Elysia()
           const requeued = await coachService.requeuePipelineFailure(
             params.sourceSessionId,
           );
+          if (requeued === "parallel-run-session")
+            throw new ConflictError(PARALLEL_RUN_SESSION);
           if (!requeued) throw new NotFoundError("No parked session");
           return { requeued: true };
         },

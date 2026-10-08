@@ -6,6 +6,7 @@ import {
   loadAttributionRoster,
   reattributeUnresolved,
 } from "./coach-attribution";
+import { coachPipelineLive } from "./coach-cutover";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
 
 /**
@@ -131,6 +132,7 @@ export class CoachIntakeService {
     }
 
     const roster = await loadAttributionRoster(this.db);
+    const parallelRun = !coachPipelineLive();
     let unresolved = 0;
     // Counted from what was actually INSERTED, not from what the provider
     // returned: reporting a skipped session as observed would have the log
@@ -162,10 +164,10 @@ export class CoachIntakeService {
       await sql`
         INSERT INTO coach_intake_sessions
           (source_session_id, coach_id, matched_by, title, host_email,
-           session_date, duration_minutes)
+           session_date, duration_minutes, parallel_run)
         VALUES (
           ${t.id}, ${match.coachId}, ${match.matchedBy}, ${title},
-          NULL, ${date}::date, ${t.duration}
+          NULL, ${date}::date, ${t.duration}, ${parallelRun}
         )
         -- Belt and braces against two workers polling the same window: the
         -- pre-read above is not a lock.

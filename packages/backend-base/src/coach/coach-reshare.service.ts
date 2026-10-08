@@ -17,6 +17,7 @@ import type { CoachMailer, CoachSendResult } from "./coach.service";
 
 export type ReshareRefusal =
   | "parallel-run"
+  | "parallel-run-session"
   | "unknown-session"
   | "not-pending"
   | "already-asked"
@@ -59,11 +60,14 @@ export class CoachReshareService {
         "reshare_requested_at",
         "reshare_resolved_at",
         "reshare_sent_at",
+        "parallel_run",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("source_session_id", "=", sourceSessionId)
       .executeTakeFirst();
     if (!session) return { sent: false, refusal: "unknown-session" };
+    if (session.parallel_run)
+      return { sent: false, refusal: "parallel-run-session" };
 
     // Only a session that actually ran out of retries. Sending on any other
     // state would ask a leader to re-share a recording the system either
