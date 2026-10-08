@@ -5,6 +5,7 @@ import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
+import type { Amendment } from "./coach-amend.service";
 import {
   leaderSlug,
   reattributeSession,
@@ -604,7 +605,88 @@ export class CoachService {
     byUserId: string | null;
   }) {
     const { CoachReviewService } = await import("./coach-review.service");
-    return new CoachReviewService(this.db).setFirstLesson(input);
+    const result = await new CoachReviewService(this.db).setFirstLesson(input);
+    if (result.refusal !== "already-delivered") {
+      return {
+        applied: result.ok,
+        ...(result.refusal ? { refusal: result.refusal } : {}),
+        ...(result.ok
+          ? {
+              firstLesson: result.firstLesson,
+              base: result.base,
+              score: result.score,
+              status: result.status,
+            }
+          : {}),
+      };
+    }
+    return this.amendReport({
+      reportId: input.reportId,
+      amendment: {
+        firstLesson: input.firstLesson,
+        ...(input.firstLesson
+          ? {}
+          : {
+              dimensions: [
+                {
+                  n: 9,
+                  score: input.score ?? null,
+                  rationale: input.rationale ?? "",
+                },
+              ],
+            }),
+      },
+      byUserId: input.byUserId,
+    });
+  }
+
+  async amendReport(input: {
+    reportId: string;
+    amendment: Amendment;
+    byUserId: string | null;
+  }) {
+    const { CoachAmendService } = await import("./coach-amend.service");
+    return new CoachAmendService(this.db, this.notification ?? null).amend(
+      input,
+    );
+  }
+
+  async sendRevision(reportId: string) {
+    if (!this.notification)
+      return { sent: false, refusal: "no-mailer" as const };
+    const { CoachDeliveryService } = await import("./coach-delivery.service");
+    return new CoachDeliveryService(this.db, this.notification).sendRevision(
+      reportId,
+    );
+  }
+
+  async listRevisions(reportId: string) {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_report_amendments")
+      .select([
+        "revision",
+        "previous",
+        "changes",
+        "amended_by",
+        "amended_at",
+        "sent_to",
+        "skipped_recipients",
+        "sent_at",
+      ])
+      .where("report_id", "=", reportId)
+      .orderBy("revision", "desc")
+      .execute();
+    return rows.map((r) => ({
+      revision: r.revision,
+      previous: r.previous as Record<string, unknown>,
+      changes: r.changes as Record<string, unknown>,
+      amendedBy: r.amended_by,
+      amendedAt: new Date(r.amended_at as unknown as string),
+      sentTo: r.sent_to,
+      skipped: r.skipped_recipients,
+      sentAt: r.sent_at ? new Date(r.sent_at as unknown as string) : null,
+    }));
   }
 
   /** Recording-bot coverage across the roster, the 9.1 gate (4.7). */

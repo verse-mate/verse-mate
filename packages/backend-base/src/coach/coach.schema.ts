@@ -330,6 +330,84 @@ export const ReviewStateSchema = t.Object({
   ),
 });
 
+const SendsSchema = t.Array(
+  t.Object({
+    email: t.String(),
+    delivered: t.Boolean(),
+    error: t.Optional(t.String()),
+  }),
+);
+
+export const RevisionResultSchema = t.Object({
+  applied: t.Boolean(),
+  refusal: t.Optional(t.String()),
+  violations: t.Optional(t.Array(t.String())),
+  coldRecall: t.Optional(t.Array(t.String())),
+  revision: t.Optional(t.Number()),
+  firstLesson: t.Optional(t.Boolean()),
+  base: t.Optional(t.Number()),
+  score: t.Optional(t.Number()),
+  status: t.Optional(t.String()),
+  sent: t.Optional(t.Boolean()),
+  pending: t.Optional(t.String()),
+  sends: t.Optional(SendsSchema),
+  skipped: t.Optional(t.Array(t.String())),
+});
+
+export const AmendmentBodySchema = t.Object({
+  dimensions: t.Optional(
+    t.Array(
+      t.Object({
+        n: t.Integer({ minimum: 1, maximum: 12 }),
+        score: t.Union([t.Integer({ minimum: 1, maximum: 5 }), t.Null()]),
+        rationale: t.String({ maxLength: 4000 }),
+      }),
+      { maxItems: 12 },
+    ),
+  ),
+  firstLesson: t.Optional(t.Boolean()),
+  body: t.Optional(
+    t.Object({
+      headline: t.Optional(t.String({ maxLength: 500 })),
+      overview: t.Optional(
+        t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
+      ),
+      strengths: t.Optional(
+        t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
+      ),
+      improvements: t.Optional(
+        t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
+      ),
+      recommendations: t.Optional(
+        t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
+      ),
+    }),
+  ),
+});
+
+export const RevisionSendSchema = t.Object({
+  sent: t.Boolean(),
+  refusal: t.Optional(t.String()),
+  revision: t.Optional(t.Number()),
+  sends: t.Optional(SendsSchema),
+  skipped: t.Optional(t.Array(t.String())),
+});
+
+export const RevisionsSchema = t.Object({
+  revisions: t.Array(
+    t.Object({
+      revision: t.Number(),
+      previous: t.Record(t.String(), t.Unknown()),
+      changes: t.Record(t.String(), t.Unknown()),
+      amendedBy: t.Union([t.String(), t.Null()]),
+      amendedAt: t.Date(),
+      sentTo: t.Array(t.String()),
+      skipped: t.Array(t.String()),
+      sentAt: t.Union([t.Date(), t.Null()]),
+    }),
+  ),
+});
+
 /** Recording-bot coverage across the roster (task 4.7; the 9.1 gate). */
 export const CoverageReportSchema = t.Object({
   windowDays: t.Number(),

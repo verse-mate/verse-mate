@@ -87,6 +87,17 @@ export function reportSubject(input: {
   return `Coaching report — ${parts.join(" — ")}`;
 }
 
+export const REVISED_SUFFIX = " (revised)";
+
+export interface RevisionSendResult {
+  sent: boolean;
+  refusal?: "parallel-run" | "no-revision" | "already-sent" | "send-failed";
+  revision?: number;
+  sends?: Array<{ email: string; delivered: boolean; error?: string }>;
+  skipped?: string[];
+  subject?: string;
+}
+
 export class CoachDeliveryService {
   private readonly governance: CoachGovernanceService;
   /**
@@ -320,20 +331,7 @@ export class CoachDeliveryService {
       coachId,
       leader?.email ?? null,
     );
-    const score = Number(summary.score ?? 0);
-    const html = await render(
-      CoachReport({
-        name: leader?.name,
-        sessionLabel: `${String(summary.session ?? "Session")} — ${report.date}`,
-        score,
-        status: String(summary.status ?? statusForScore(score).label),
-        headline: String(
-          ((report.body ?? {}) as { feedback?: { headline?: string } }).feedback
-            ?.headline ?? "",
-        ),
-        portalUrl: portalUrlFor(reportId),
-      }),
-    );
+    const html = await reportEmailHtml(reportId, leader?.name, summary, report);
 
     const sends: NonNullable<DeliveryResult["sends"]> = [];
     const confirmed = new Set(claim.deliveredTo);
@@ -415,6 +413,99 @@ export class CoachDeliveryService {
     return { delivered: true, sends, skipped, subject };
   }
 
+  async sendRevision(reportId: string): Promise<RevisionSendResult> {
+    if (!coachPipelineLive()) return { sent: false, refusal: "parallel-run" };
+    const conn = this.db.getOrCreateConnection();
+    const amendment = await conn
+      .selectFrom("coach_report_amendments")
+      .select(["revision", "sent_to", "sent_at"])
+      .where("report_id", "=", reportId)
+      .orderBy("revision", "desc")
+      .executeTakeFirst();
+    if (!amendment) return { sent: false, refusal: "no-revision" };
+    if (amendment.sent_at)
+      return {
+        sent: false,
+        refusal: "already-sent",
+        revision: amendment.revision,
+      };
+
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select(["coach_id", "summary", "body"])
+      .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
+      .where("id", "=", reportId)
+      .executeTakeFirstOrThrow();
+    const leader = await conn
+      .selectFrom("coach_leaders")
+      .select(["name", "email"])
+      .where("slug", "=", report.coach_id)
+      .executeTakeFirst();
+    const summary = (report.summary ?? {}) as Record<string, unknown>;
+    const subject = `${reportSubject({
+      sessionDate: report.date,
+      leaderName: leader?.name ?? report.coach_id,
+      sessionTitle: String(summary.session ?? ""),
+    })}${REVISED_SUFFIX}`;
+    const { recipients, skipped } = await this.recipients(
+      report.coach_id,
+      leader?.email ?? null,
+    );
+    const html = await reportEmailHtml(reportId, leader?.name, summary, report);
+
+    const confirmed = new Set(amendment.sent_to);
+    const sends: NonNullable<RevisionSendResult["sends"]> = [];
+    for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
+      const result = await this.send({
+        subject,
+        to,
+        replyTo: { name: COACH_REPLY_TO_NAME, email: COACH_REPLY_TO_EMAIL },
+        text: `${subject}\n\n${portalUrlFor(reportId)}`,
+        html,
+      });
+      sends.push({
+        email: to.email,
+        delivered: result?.delivered === true,
+        error: result?.error,
+      });
+      if (result?.delivered !== true) continue;
+      confirmed.add(to.email);
+      await conn
+        .updateTable("coach_report_amendments")
+        .set({ sent_to: sql`array_append(sent_to, ${to.email})` })
+        .where("report_id", "=", reportId)
+        .where("revision", "=", amendment.revision)
+        .where(sql<boolean>`NOT (${to.email} = ANY(sent_to))`)
+        .execute();
+    }
+
+    const allSent =
+      recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
+    if (allSent) {
+      await conn
+        .updateTable("coach_report_amendments")
+        .set({
+          sent_at: sql`NOW()`,
+          skipped_recipients: sql`${sql.val(skipped)}::text[]`,
+        })
+        .where("report_id", "=", reportId)
+        .where("revision", "=", amendment.revision)
+        .execute();
+    }
+    if (skipped.length > 0)
+      console.error(
+        `[COACH-DELIVERY] revision ${amendment.revision} of ${reportId} not emailed to placeholder address(es): ${skipped.join(", ")}`,
+      );
+    return {
+      sent: allSent,
+      ...(allSent ? {} : { refusal: "send-failed" as const }),
+      revision: amendment.revision,
+      sends,
+      skipped,
+      subject,
+    };
+  }
+
   private async setHeld(reportId: string, held: boolean): Promise<void> {
     await this.db
       .getOrCreateConnection()
@@ -494,6 +585,28 @@ export class CoachDeliveryService {
     for (const admin of admins) add("Program admin", admin.email);
     return { recipients: out, skipped };
   }
+}
+
+async function reportEmailHtml(
+  reportId: string,
+  name: string | undefined,
+  summary: Record<string, unknown>,
+  report: { body: unknown; date: string },
+): Promise<string> {
+  const score = Number(summary.score ?? 0);
+  return render(
+    CoachReport({
+      name,
+      sessionLabel: `${String(summary.session ?? "Session")} — ${report.date}`,
+      score,
+      status: String(summary.status ?? statusForScore(score).label),
+      headline: String(
+        ((report.body ?? {}) as { feedback?: { headline?: string } }).feedback
+          ?.headline ?? "",
+      ),
+      portalUrl: portalUrlFor(reportId),
+    }),
+  );
 }
 
 function portalUrlFor(reportId: string): string {
