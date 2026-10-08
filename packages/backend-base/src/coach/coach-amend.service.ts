@@ -174,16 +174,19 @@ export class CoachAmendService {
         }
 
         const body = (report.body ?? {}) as Record<string, unknown>;
+        const storedFeedback = (body.feedback ?? {}) as Record<string, unknown>;
         const feedback: Record<string, unknown> = {
-          ...((body.feedback ?? {}) as Record<string, unknown>),
+          ...storedFeedback,
           ...Object.fromEntries(bodyChanges),
         };
-        for (const [list, prose] of Object.entries(PROSE_OF))
-          if (
-            amendment.body?.[list as BodyTextField] !== undefined &&
-            amendment.body?.[prose] === undefined
+        const clearedProse = Object.entries(PROSE_OF)
+          .filter(
+            ([list, prose]) =>
+              amendment.body?.[list as BodyTextField] !== undefined &&
+              amendment.body?.[prose] === undefined,
           )
-            delete feedback[prose];
+          .map(([, prose]) => prose);
+        for (const prose of clearedProse) delete feedback[prose];
         const nextBody = { ...body, feedback };
 
         if (firstLesson) {
@@ -238,15 +241,18 @@ export class CoachAmendService {
                 },
               }
             : {}),
-          body: Object.fromEntries(
-            bodyChanges.map(([field, value]) => [
+          body: Object.fromEntries([
+            ...bodyChanges.map(([field, value]) => [
               field,
-              {
-                from: ((body.feedback ?? {}) as Record<string, unknown>)[field],
-                to: value,
-              },
+              { from: storedFeedback[field], to: value },
             ]),
-          ),
+            ...clearedProse
+              .filter((prose) => storedFeedback[prose] !== undefined)
+              .map((prose) => [
+                prose,
+                { from: storedFeedback[prose], to: null },
+              ]),
+          ]),
         };
 
         const last = await trx
