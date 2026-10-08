@@ -1,6 +1,7 @@
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import { leaderSlug } from "./coach-attribution";
 import { assertBeforeCutover } from "./coach-cutover";
 import leaderMapJson from "./coach-leader-map.json";
 import { assertBundleKeepsStore } from "./coach-store.backfill";
@@ -61,9 +62,29 @@ const BENCHMARK_LEADER_SLUG = "bryan-bailey";
 
 export interface RosterBackfillResult {
   leaders: number;
+  leadersWithoutKeywords: string[];
   admins: number;
   narrativeMonths: number;
   leaderSummaries: number;
+}
+
+function attributionFor(
+  coach: BundleCoach,
+  map: LeaderMap,
+): { title_match: string[]; alt_emails: string[] } {
+  const email = coach.email.toLowerCase();
+  const addresses = (c: LeaderMap["coaches"][number]) =>
+    [c.email, ...(c.alt_emails ?? [])]
+      .filter((e): e is string => Boolean(e))
+      .map((e) => e.toLowerCase());
+  const entry =
+    map.coaches.find((c) => addresses(c).includes(email)) ??
+    map.coaches.find((c) => leaderSlug(c.leader) === coach.id);
+  if (!entry) return { title_match: [], alt_emails: [] };
+  return {
+    title_match: entry.title_match ?? [],
+    alt_emails: addresses(entry).filter((e) => e !== email),
+  };
 }
 
 export async function backfillCoachRoster(
@@ -76,23 +97,11 @@ export async function backfillCoachRoster(
   const bundle = dataset as Bundle;
   const map = leaderMap as LeaderMap;
 
-  // The leader map keys on a folder name ("Bryan_Bailey"); the roster keys on
-  // email, which both sides carry. Matching on the folder name would depend on
-  // a slug convention neither file guarantees.
-  const attributionByEmail = new Map(
-    map.coaches
-      .filter((c) => Boolean(c.email))
-      .map((c) => [
-        (c.email as string).toLowerCase(),
-        { title_match: c.title_match ?? [], alt_emails: c.alt_emails ?? [] },
-      ]),
-  );
-
+  const leadersWithoutKeywords: string[] = [];
   for (const coach of bundle.coaches) {
-    const attribution = attributionByEmail.get(coach.email.toLowerCase()) ?? {
-      title_match: [],
-      alt_emails: [],
-    };
+    const attribution = attributionFor(coach, map);
+    if (attribution.title_match.length === 0)
+      leadersWithoutKeywords.push(coach.name);
     await sql`
       INSERT INTO coach_leaders
         (slug, email, name, group_name, coach_name, is_coach, zoom_link,
@@ -165,6 +174,7 @@ export async function backfillCoachRoster(
 
   return {
     leaders: bundle.coaches.length,
+    leadersWithoutKeywords: leadersWithoutKeywords.sort(),
     admins: (bundle.admins ?? []).length,
     narrativeMonths: narratives.length,
     leaderSummaries,
@@ -180,6 +190,10 @@ if (import.meta.main) {
           `${r.narrativeMonths} monthly narrative(s), ` +
           `${r.leaderSummaries} leader-month summaries.`,
       );
+      if (r.leadersWithoutKeywords.length > 0)
+        console.log(
+          `No attribution keywords for: ${r.leadersWithoutKeywords.join(", ")}`,
+        );
       process.exit(0);
     })
     .catch((err) => {
