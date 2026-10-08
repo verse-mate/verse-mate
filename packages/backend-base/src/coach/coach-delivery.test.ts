@@ -42,6 +42,7 @@ const PLACEHOLDER = "deliv-leader@needs-real-email.invalid";
 
 interface Sent {
   to: string;
+  toName: string;
   subject: string;
   replyTo?: string;
   text: string;
@@ -62,6 +63,7 @@ class FakeMailer {
   }) {
     this.sent.push({
       to: data.to.email,
+      toName: data.to.name,
       subject: data.subject,
       replyTo: data.replyTo?.email,
       text: data.text ?? "",
@@ -440,6 +442,18 @@ describe("delivery", () => {
     expect(blocked.refusal).toBe("governance-blocked");
     expect(blocked.violations?.[0].rule).toBe("reused-quote");
     expect(blocked.violations?.[0].detail).toContain(first);
+  });
+
+  it("the leader is addressed by name, not by slug", async () => {
+    await seedReport("r-named");
+    const mailer = new FakeMailer();
+    await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-named",
+      evidence: evidence(),
+    });
+    expect(mailer.sent.find((s) => s.to === EMAILS[0])?.toName).toBe(
+      "Milo Kerr",
+    );
   });
 
   it("the leader is read from the report after the claim, so a report moved just before its claim goes to its new leader", async () => {
