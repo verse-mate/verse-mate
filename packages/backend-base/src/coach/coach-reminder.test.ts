@@ -468,6 +468,24 @@ describe("leaders get a reminder before each class", () => {
     expect(result.summarySent).toBe(false);
   });
 
+  it("a first run with sends and failures, then a re-run whose only news is the same failure: one summary", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await report(LEADERS.placeholder, "2026-09-24");
+    const first = new FakeMailer();
+    const firstRun = await run(first, WEDNESDAY_6PM);
+    expect(firstRun.sent.map((s) => s.coachId)).toEqual([LEADERS.thursday]);
+    expect(firstRun.failed.map((f) => f.coachId)).toEqual([
+      LEADERS.placeholder,
+    ]);
+    expect(first.to(ADMIN)).toHaveLength(1);
+
+    const again = new FakeMailer();
+    const result = await run(again, WEDNESDAY_6PM);
+    expect(result.failed.map((f) => f.coachId)).toEqual([LEADERS.placeholder]);
+    expect(again.to(ADMIN)).toEqual([]);
+    expect(result.summarySent).toBe(false);
+  });
+
   it("a re-run that sends a reminder the first run could not tells the admin about it", async () => {
     await report(LEADERS.thursday, "2026-09-24");
     await run(
