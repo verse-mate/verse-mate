@@ -1,4 +1,5 @@
 export { default as VerifyEmail } from "./src/VerifyEmail";
+export { default as CoachAddressChanged } from "./src/CoachAddressChanged";
 export { default as CoachInvite } from "./src/CoachInvite";
 export { default as CoachNote } from "./src/CoachNote";
 export { default as CoachReminder } from "./src/CoachReminder";

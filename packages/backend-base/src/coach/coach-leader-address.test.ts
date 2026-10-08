@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
@@ -78,6 +79,7 @@ describe("A leader signs up after their reports exist", () => {
     ).toEqual({
       ok: true,
       email: REAL,
+      noticeSent: false,
     });
 
     const me = await service.getMe(userId);
@@ -102,6 +104,7 @@ describe("A leader signs up after their reports exist", () => {
     expect(await service.updateLeaderEmail(WYATT, WYATT_REAL)).toEqual({
       ok: true,
       email: WYATT_REAL,
+      noticeSent: false,
     });
 
     const me = await service.getMe(userId);
@@ -141,5 +144,125 @@ describe("A leader signs up after their reports exist", () => {
       ok: false,
       refusal: "unknown-leader",
     });
+  });
+});
+
+describe("a leader's address change is audited and announced to the old address", () => {
+  const OLD = "addr-old@example.test";
+  const NEW = "addr-new@example.test";
+  const BENCH = "addr-bench";
+  const BENCH_OLD = "addr-bench@example.test";
+  let sent: Array<{ to: string; subject: string; text: string }> = [];
+  const mailer = {
+    sendEmail: async (data: {
+      to: { email: string };
+      subject: string;
+      text: string;
+    }) => {
+      sent.push({ to: data.to.email, subject: data.subject, text: data.text });
+      return { delivered: true };
+    },
+  };
+  const live = new CoachService(Database, mailer);
+
+  async function changes(slug: string) {
+    return conn
+      .selectFrom("coach_leader_email_changes")
+      .select(["previous_email", "new_email", "changed_by"])
+      .where("slug", "=", slug)
+      .orderBy("changed_at")
+      .execute();
+  }
+
+  beforeEach(async () => {
+    sent = [];
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await conn
+      .deleteFrom("coach_leader_email_changes")
+      .where("slug", "in", [SLUG, BENCH])
+      .execute();
+    await conn.deleteFrom("coach_leaders").where("slug", "=", BENCH).execute();
+    await conn
+      .insertInto("coach_leaders")
+      .values({
+        slug: BENCH,
+        email: BENCH_OLD,
+        name: "Addr Bench",
+        is_benchmark: true,
+      })
+      .execute();
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: OLD })
+      .where("slug", "=", SLUG)
+      .execute();
+  });
+  afterEach(async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await conn
+      .deleteFrom("coach_leader_email_changes")
+      .where("slug", "in", [SLUG, BENCH])
+      .execute();
+    await conn.deleteFrom("coach_leaders").where("slug", "=", BENCH).execute();
+  });
+
+  it("records who changed it, from what, to what", async () => {
+    const adminId = await account(REAL);
+    expect(
+      await live.updateLeaderEmail(SLUG, NEW, { byUserId: adminId }),
+    ).toEqual({ ok: true, email: NEW, noticeSent: true });
+    expect(await changes(SLUG)).toEqual([
+      { previous_email: OLD, new_email: NEW, changed_by: adminId },
+    ]);
+  });
+
+  it("the old address is told, the new one is not", async () => {
+    await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
+    expect(sent.map((s) => s.to)).toEqual([OLD]);
+    expect(sent[0].text).toContain("changed");
+  });
+
+  it("a placeholder old address gets no notice, and the change is still audited", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: PLACEHOLDER })
+      .where("slug", "=", SLUG)
+      .execute();
+    expect(await live.updateLeaderEmail(SLUG, NEW, { byUserId: null })).toEqual(
+      { ok: true, email: NEW, noticeSent: false },
+    );
+    expect(sent).toEqual([]);
+    expect(await changes(SLUG)).toHaveLength(1);
+  });
+
+  it("during the parallel run no notice is sent", async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    expect(await live.updateLeaderEmail(SLUG, NEW, { byUserId: null })).toEqual(
+      { ok: true, email: NEW, noticeSent: false },
+    );
+    expect(sent).toEqual([]);
+  });
+
+  it("the benchmark leader's address changes only with confirm, and is audited then", async () => {
+    expect(
+      await live.updateLeaderEmail(BENCH, NEW, { byUserId: null }),
+    ).toEqual({ ok: false, refusal: "confirm-required" });
+    expect(await changes(BENCH)).toEqual([]);
+    expect(sent).toEqual([]);
+    expect(
+      await live.updateLeaderEmail(BENCH, NEW, {
+        byUserId: null,
+        confirm: true,
+      }),
+    ).toEqual({ ok: true, email: NEW, noticeSent: true });
+    expect(await changes(BENCH)).toHaveLength(1);
+  });
+
+  it("setting the address it already has writes nothing and sends nothing", async () => {
+    expect(await live.updateLeaderEmail(SLUG, OLD, { byUserId: null })).toEqual(
+      { ok: true, email: OLD, noticeSent: false },
+    );
+    expect(await changes(SLUG)).toEqual([]);
+    expect(sent).toEqual([]);
   });
 });

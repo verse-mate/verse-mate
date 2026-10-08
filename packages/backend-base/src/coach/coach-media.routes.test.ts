@@ -93,12 +93,19 @@ beforeAll(async () => {
         },
       ],
     }),
-    updateLeaderEmail: async (slug: string, email: string) => {
-      emailUpdates.push([slug, email]);
-      if (slug !== "leader-a") return { ok: false, refusal: "unknown-leader" };
+    updateLeaderEmail: async (
+      slug: string,
+      email: string,
+      options?: { byUserId?: string | null; confirm?: boolean },
+    ) => {
+      emailUpdates.push([slug, email, options]);
+      if (slug === "leader-bench" && options?.confirm !== true)
+        return { ok: false, refusal: "confirm-required" };
+      if (slug !== "leader-a" && slug !== "leader-bench")
+        return { ok: false, refusal: "unknown-leader" };
       if (email === "taken@example.test")
         return { ok: false, refusal: "taken" };
-      return { ok: true, email };
+      return { ok: true, email, noticeSent: true };
     },
     releaseHeldReport: async (id: string) => {
       released.push(id);
@@ -749,8 +756,26 @@ describe("an admin corrects a leader's address", () => {
       email: " Wyatt@Example.TEST ",
     });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ email: "wyatt@example.test" });
-    expect(emailUpdates).toEqual([["leader-a", "wyatt@example.test"]]);
+    expect(await res.json()).toEqual({
+      email: "wyatt@example.test",
+      noticeSent: true,
+    });
+    expect(emailUpdates).toEqual([
+      ["leader-a", "wyatt@example.test", { byUserId: USER, confirm: false }],
+    ]);
+  });
+
+  it("the benchmark leader's address needs confirm: true", async () => {
+    const refused = await put("/coach/admin/leaders/leader-bench/email", {
+      email: "bench@example.test",
+    });
+    expect(refused.status).toBe(409);
+    expect(await refused.text()).toContain("confirm");
+    const confirmed = await put("/coach/admin/leaders/leader-bench/email", {
+      email: "bench@example.test",
+      confirm: true,
+    });
+    expect(confirmed.status).toBe(200);
   });
 
   it("an address that is not an email is refused before anything is written", async () => {

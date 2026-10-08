@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { sql } from "kysely";
 
-import { CoachInvite, CoachNote, render } from "../../../emails";
+import {
+  CoachAddressChanged,
+  CoachInvite,
+  CoachNote,
+  render,
+} from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
@@ -12,7 +17,12 @@ import {
   reattributeSession,
   setLeaderAttribution,
 } from "./coach-attribution";
-import { isPlaceholderAddress } from "./coach-delivery.service";
+import { coachPipelineLive } from "./coach-cutover";
+import {
+  COACH_REPLY_TO_EMAIL,
+  COACH_REPLY_TO_NAME,
+  isPlaceholderAddress,
+} from "./coach-delivery.service";
 import {
   type RetainedKind,
   RetainedMediaService,
@@ -1015,22 +1025,77 @@ export class CoachService {
   async updateLeaderEmail(
     slug: string,
     address: string,
+    options: { byUserId?: string | null; confirm?: boolean } = {},
   ): Promise<
-    | { ok: true; email: string }
-    | { ok: false; refusal: "unknown-leader" | "taken" }
+    | { ok: true; email: string; noticeSent: boolean }
+    | { ok: false; refusal: "unknown-leader" | "taken" | "confirm-required" }
   > {
     const email = address.trim().toLowerCase();
     const holder = await this.resolveByEmail(email);
     if (holder && holder.id !== slug) return { ok: false, refusal: "taken" };
-    const updated = await this.db
+    const change = await this.db
       .getOrCreateConnection()
-      .updateTable("coach_leaders")
-      .set({ email })
-      .where("slug", "=", slug)
-      .executeTakeFirst();
-    if (Number(updated.numUpdatedRows ?? 0) === 0)
-      return { ok: false, refusal: "unknown-leader" };
-    return { ok: true, email };
+      .transaction()
+      .execute(async (trx) => {
+        const leader = await trx
+          .selectFrom("coach_leaders")
+          .select(["email", "name", "is_benchmark"])
+          .where("slug", "=", slug)
+          .forUpdate()
+          .executeTakeFirst();
+        if (!leader) return { refusal: "unknown-leader" as const };
+        if (leader.is_benchmark && options.confirm !== true)
+          return { refusal: "confirm-required" as const };
+        if (leader.email === email)
+          return { refusal: null, previous: null, name: leader.name };
+        await trx
+          .updateTable("coach_leaders")
+          .set({ email })
+          .where("slug", "=", slug)
+          .execute();
+        await trx
+          .insertInto("coach_leader_email_changes")
+          .values({
+            slug,
+            previous_email: leader.email,
+            new_email: email,
+            changed_by: options.byUserId ?? null,
+          })
+          .execute();
+        return { refusal: null, previous: leader.email, name: leader.name };
+      });
+    if (change.refusal) return { ok: false, refusal: change.refusal };
+    const noticeSent = change.previous
+      ? await this.sendAddressChangedNotice(change.previous, change.name)
+      : false;
+    return { ok: true, email, noticeSent };
+  }
+
+  private async sendAddressChangedNotice(
+    previous: string,
+    name: string,
+  ): Promise<boolean> {
+    if (
+      !this.notification ||
+      !coachPipelineLive() ||
+      isPlaceholderAddress(previous)
+    )
+      return false;
+    try {
+      const sent = (await this.notification.sendEmail({
+        to: { email: previous, name },
+        replyTo: { name: COACH_REPLY_TO_NAME, email: COACH_REPLY_TO_EMAIL },
+        subject: "Your VerseMate coaching address was changed",
+        text: `A program admin changed the email address your VerseMate coaching reports go to. Reports and notes are no longer sent to this address. If you did not expect this, reply to this email or write to ${COACH_REPLY_TO_EMAIL}.`,
+        html: render(
+          CoachAddressChanged({ name, replyTo: COACH_REPLY_TO_EMAIL }),
+        ),
+      })) as CoachSendResult | undefined;
+      return sent?.delivered === true;
+    } catch (err) {
+      console.log("[CoachService] address change notice failed:", err);
+      return false;
+    }
   }
 
   /** Overlay admin-editable state (recording link + notes) onto a coach's
