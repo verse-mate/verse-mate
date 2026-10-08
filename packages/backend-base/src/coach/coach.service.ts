@@ -19,6 +19,7 @@ import {
   leaderSlug,
   reattributeSession,
   setLeaderAttribution,
+  withLeaderKeywordLock,
 } from "./coach-attribution";
 import { coachPipelineLive } from "./coach-cutover";
 import {
@@ -1672,19 +1673,23 @@ export class CoachService {
       (await this.coachRepository.findLeaderBySlug(slug))
     )
       return { ok: false, reason: "slug-taken", slug };
-    const conflicts = await keywordsInName(this.db, name);
-    if (conflicts.length > 0)
-      return { ok: false, reason: "keyword-conflict", conflicts };
     let row: AddedLeaderRow;
     try {
-      row = await this.coachRepository.addLeader({
-        slug,
-        email,
-        name,
-        group: input.group?.trim() ?? "",
-        coachName: input.coachName?.trim() ?? "",
-        invitedBy: adminUserId,
+      const added = await withLeaderKeywordLock(this.db, async (scoped) => {
+        const conflicts = await keywordsInName(scoped, name);
+        if (conflicts.length > 0) return conflicts;
+        return new CoachRepository(scoped).addLeader({
+          slug,
+          email,
+          name,
+          group: input.group?.trim() ?? "",
+          coachName: input.coachName?.trim() ?? "",
+          invitedBy: adminUserId,
+        });
       });
+      if (Array.isArray(added))
+        return { ok: false, reason: "keyword-conflict", conflicts: added };
+      row = added;
     } catch (error) {
       if ((error as { code?: string }).code !== "23505") throw error;
       return (await this.coachRepository.findAddedLeaderByEmail(email))
