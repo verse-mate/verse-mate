@@ -169,6 +169,14 @@ async function runChain() {
   return { storage, reportId: published.reportId };
 }
 
+async function delivered(reportId: string) {
+  await conn
+    .updateTable("coach_reports")
+    .set({ held: false })
+    .where("id", "=", reportId)
+    .execute();
+}
+
 describe("retain → publish → mint, with nothing pre-seeded", () => {
   beforeEach(clear);
   afterEach(clear);
@@ -195,8 +203,9 @@ describe("retain → publish → mint, with nothing pre-seeded", () => {
     expect(state.preferred).toBe("retained");
   });
 
-  it("and the leader can mint an address for it", async () => {
+  it("and once the report is delivered, the leader can mint an address for it", async () => {
     const { storage, reportId } = await runChain();
+    await delivered(reportId);
     const media = new RetainedMediaService(Database, storage as any);
     const url = await media.mint({
       reportId,
@@ -211,6 +220,7 @@ describe("retain → publish → mint, with nothing pre-seeded", () => {
     // the id up directly, so a re-titled report's old link 404'd on the
     // recording while the report itself still resolved.
     const { storage, reportId } = await runChain();
+    await delivered(reportId);
     await conn
       .updateTable("coach_reports")
       .set({ legacy_ids: ["older-delivered-id"] })

@@ -110,7 +110,9 @@ export class RetainedMediaService {
     // fetched and the check is forgotten, the shape of the COACH-1 IDOR.
     if (!input.isAdmin) {
       if (!input.requesterCoachId) return null;
-      q = q.where("coach_reports.coach_id", "=", input.requesterCoachId);
+      q = q
+        .where("coach_reports.coach_id", "=", input.requesterCoachId)
+        .where("coach_reports.held", "=", false);
     }
 
     const asset = await q.executeTakeFirst();
