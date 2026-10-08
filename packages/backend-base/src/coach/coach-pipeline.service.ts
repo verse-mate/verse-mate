@@ -9,7 +9,7 @@ import {
 } from "./coach-delivery.service";
 import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
-import { type ReportEvidence, evidenceFrom } from "./coach-governance.service";
+import { evidenceFrom, storedEvidence } from "./coach-governance.service";
 import {
   AttributionChangedError,
   CoachPublishService,
@@ -434,17 +434,4 @@ function deliveryOutcome(
       result.coldRecall?.join("; ") ??
       result.refusal,
   };
-}
-
-export async function storedEvidence(
-  database: db,
-  reportId: string,
-): Promise<ReportEvidence> {
-  const cited = await database
-    .getOrCreateConnection()
-    .selectFrom("coach_report_dimension_scores")
-    .select("rationale")
-    .where("report_id", "=", reportId)
-    .execute();
-  return evidenceFrom(cited.map((c) => ({ note: c.rationale })));
 }

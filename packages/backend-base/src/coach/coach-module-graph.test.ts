@@ -41,6 +41,20 @@ describe("the coach modules load without a cycle", () => {
     expect(cycles).toEqual([]);
   });
 
+  it("the admin service reaches delivery directly and never loads the scoring pipeline", () => {
+    const source = readFileSync(join(DIR, "coach.service.ts"), "utf8");
+    expect(source).not.toContain('import("./coach-delivery.service")');
+    expect(source).not.toContain('import("./coach-pipeline.service")');
+    expect(runtimeImports("coach.service.ts")).toContain(
+      "coach-delivery.service.ts",
+    );
+  });
+
+  it("the stored-evidence reader lives beside the evidence it reads", async () => {
+    const governance = await import("./coach-governance.service");
+    expect(typeof governance.storedEvidence).toBe("function");
+  });
+
   it("amending a report does not load the scoring pipeline", () => {
     expect(runtimeImports("coach-amend.service.ts")).not.toContain(
       "coach-pipeline.service.ts",
