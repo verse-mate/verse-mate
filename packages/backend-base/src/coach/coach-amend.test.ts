@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
-import { sql } from "kysely";
+import { getCleanConnectionString } from "database/src/utils/ssl-config";
+import { Kysely, PostgresDialect, sql } from "kysely";
+import { Pool } from "pg";
 
 import {
   CoachAmendService,
@@ -288,6 +290,75 @@ describe("a delivered report can be revised", () => {
     ).feedback;
     expect(feedback.headline).toBe("first concurrent headline");
     expect(feedback.strengths).toEqual(["second concurrent strength"]);
+  });
+
+  const POOL_PROBE = "coach-amend-pool-probe";
+
+  async function withPoolOf<T>(
+    max: number,
+    run: (pool: typeof Database) => Promise<T>,
+  ): Promise<T> {
+    const kysely = new Kysely<never>({
+      dialect: new PostgresDialect({
+        pool: new Pool({
+          connectionString: getCleanConnectionString(),
+          max,
+          application_name: POOL_PROBE,
+        }),
+      }),
+    });
+    const pool = {
+      getOrCreateConnection: () => kysely,
+      closeConnection: () => undefined,
+    } as unknown as typeof Database;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        run(pool),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(async () => {
+            await sql`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = ${POOL_PROBE}`.execute(
+              conn,
+            );
+            reject(new Error(`pool of ${max} deadlocked`));
+          }, 3000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+      void kysely.destroy();
+    }
+  }
+
+  it("an amendment completes on a pool of one connection", async () => {
+    await seed();
+    delete process.env[COACH_PIPELINE_LIVE];
+    const result = await withPoolOf(1, (pool) =>
+      new CoachAmendService(pool, null).amend({
+        reportId: REPORT,
+        amendment: { body: { headline: "amended on one connection" } },
+        byUserId: null,
+      }),
+    );
+    expect(result.applied).toBe(true);
+  });
+
+  it("as many concurrent amendments as the pool has connections all complete", async () => {
+    await seed();
+    delete process.env[COACH_PIPELINE_LIVE];
+    const results = await withPoolOf(2, (pool) => {
+      const amend = new CoachAmendService(pool, null);
+      return Promise.all(
+        ["first", "second"].map((word) =>
+          amend.amend({
+            reportId: REPORT,
+            amendment: { body: { headline: `${word} on a pool of two` } },
+            byUserId: null,
+          }),
+        ),
+      );
+    });
+    expect(results.map((r) => r.revision).sort()).toEqual([1, 2]);
   });
 
   it("An amendment breaks a governance rule: nothing is sent and the delivered version stays live", async () => {
