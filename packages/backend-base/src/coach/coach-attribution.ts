@@ -212,6 +212,21 @@ export interface KeywordConflict {
   inside: "keyword" | "name";
 }
 
+export function withLeaderKeywordLock<T>(
+  database: db,
+  work: (scoped: db) => Promise<T>,
+): Promise<T> {
+  return database
+    .getOrCreateConnection()
+    .transaction()
+    .execute(async (trx) => {
+      await sql`SELECT pg_advisory_xact_lock(hashtext('coach_leader_keywords'))`.execute(
+        trx,
+      );
+      return work({ getOrCreateConnection: () => trx } as unknown as db);
+    });
+}
+
 export async function keywordsInName(
   database: db,
   name: string,
@@ -250,43 +265,50 @@ export async function setLeaderAttribution(
   ];
   const titleMatch = normalized(input.titleMatch);
   const altEmails = normalized(input.altEmails);
-  const others = await database
-    .getOrCreateConnection()
-    .selectFrom("coach_leaders")
-    .select(["slug", "name", "title_match"])
-    .where("slug", "is not", null)
-    .where("slug", "!=", slug)
-    .where("is_coach", "=", true)
-    .orderBy("slug")
-    .execute();
-  const conflicts: KeywordConflict[] = [];
-  for (const keyword of titleMatch) {
-    const words = titleWords(keyword);
-    for (const other of others) {
-      const leader = other.slug as string;
-      if (
-        (other.title_match ?? []).some((k) =>
-          containsWords(titleWords(k), words),
+  const saved = await withLeaderKeywordLock(database, async (scoped) => {
+    const conn = scoped.getOrCreateConnection();
+    const others = await conn
+      .selectFrom("coach_leaders")
+      .select(["slug", "name", "title_match"])
+      .where("slug", "is not", null)
+      .where("slug", "!=", slug)
+      .where("is_coach", "=", true)
+      .orderBy("slug")
+      .execute();
+    const conflicts: KeywordConflict[] = [];
+    for (const keyword of titleMatch) {
+      const words = titleWords(keyword);
+      for (const other of others) {
+        const leader = other.slug as string;
+        if (
+          (other.title_match ?? []).some((k) =>
+            containsWords(titleWords(k), words),
+          )
         )
-      )
-        conflicts.push({ keyword, leader, inside: "keyword" });
-      else if (containsWords(titleWords(other.name), words))
-        conflicts.push({ keyword, leader, inside: "name" });
+          conflicts.push({ keyword, leader, inside: "keyword" });
+        else if (containsWords(titleWords(other.name), words))
+          conflicts.push({ keyword, leader, inside: "name" });
+      }
     }
-  }
-  if (conflicts.length > 0)
-    return { ok: false, refusal: "keyword-conflict", conflicts };
-  const updated = await database
-    .getOrCreateConnection()
-    .updateTable("coach_leaders")
-    .set({
-      title_match: sql`${sql.val(titleMatch)}::text[]`,
-      alt_emails: sql`${sql.val(altEmails)}::text[]`,
-    })
-    .where("slug", "=", slug)
-    .executeTakeFirst();
-  if (Number(updated.numUpdatedRows ?? 0) === 0)
-    return { ok: false, refusal: "unknown-leader" };
+    if (conflicts.length > 0)
+      return {
+        ok: false as const,
+        refusal: "keyword-conflict" as const,
+        conflicts,
+      };
+    const updated = await conn
+      .updateTable("coach_leaders")
+      .set({
+        title_match: sql`${sql.val(titleMatch)}::text[]`,
+        alt_emails: sql`${sql.val(altEmails)}::text[]`,
+      })
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+    if (Number(updated.numUpdatedRows ?? 0) === 0)
+      return { ok: false as const, refusal: "unknown-leader" as const };
+    return null;
+  });
+  if (saved) return saved;
   return {
     ok: true,
     titleMatch,

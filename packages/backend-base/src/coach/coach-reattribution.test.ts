@@ -326,6 +326,92 @@ describe("a keyword cannot claim another leader's sessions", () => {
   });
 });
 
+describe("keyword saves are serialized, so two admins cannot both pass the conflict check", () => {
+  const ADDED = "reattr-added@example.test";
+  const INVITER = "reattr-inviter@example.test";
+  afterEach(async () => {
+    await conn.deleteFrom("coach_leaders").where("email", "=", ADDED).execute();
+    await conn.deleteFrom("user").where("email", "=", INVITER).execute();
+  });
+
+  async function whileAnotherSaveHoldsTheLock<T>(
+    start: () => Promise<T>,
+    commitOther: (trx: typeof conn) => Promise<unknown>,
+  ): Promise<T> {
+    let pending: Promise<T> | null = null;
+    await conn.transaction().execute(async (trx) => {
+      await sql`SELECT pg_advisory_xact_lock(hashtext('coach_leader_keywords'))`.execute(
+        trx,
+      );
+      pending = start();
+      const finished = pending.then(() => true);
+      for (let i = 0; i < 100; i += 1) {
+        if (await Promise.race([finished, Promise.resolve(false)])) break;
+        const waiting = await sql<{ n: string }>`
+          SELECT count(*) AS n FROM pg_stat_activity
+          WHERE wait_event_type = 'Lock' AND query ILIKE '%pg_advisory_xact_lock%'`.execute(
+          conn,
+        );
+        if (Number(waiting.rows[0].n) > 0) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      await commitOther(trx as unknown as typeof conn);
+    });
+    return pending as unknown as Promise<T>;
+  }
+
+  it("a keyword saved while another admin's overlapping save commits is refused", async () => {
+    const result = await whileAnotherSaveHoldsTheLock(
+      () =>
+        setLeaderAttribution(Database, RIGHT, {
+          titleMatch: ["zephaniah"],
+          altEmails: [],
+        }),
+      (trx) =>
+        trx
+          .updateTable("coach_leaders")
+          .set({ title_match: sql`ARRAY['zephaniah circle']::text[]` })
+          .where("slug", "=", WRONG)
+          .execute(),
+    );
+    expect(result).toEqual({
+      ok: false,
+      refusal: "keyword-conflict",
+      conflicts: [{ keyword: "zephaniah", leader: WRONG, inside: "keyword" }],
+    });
+    expect(await getLeaderAttribution(Database, RIGHT)).toEqual({
+      titleMatch: [],
+      altEmails: [],
+    });
+  });
+
+  it("a leader added while another admin's keyword save commits is refused", async () => {
+    const inviter = await conn
+      .insertInto("user")
+      .values({ email: INVITER, firstName: "I", lastName: "N" })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    const result = await whileAnotherSaveHoldsTheLock(
+      () =>
+        new CoachService(Database).addLeader(inviter.id, {
+          email: ADDED,
+          name: "Grace Kim",
+        }),
+      (trx) =>
+        trx
+          .updateTable("coach_leaders")
+          .set({ title_match: sql`ARRAY['grace']::text[]` })
+          .where("slug", "=", WRONG)
+          .execute(),
+    );
+    expect(result).toEqual({
+      ok: false,
+      reason: "keyword-conflict",
+      conflicts: [{ keyword: "grace", leader: WRONG }],
+    });
+  });
+});
+
 describe("a session a keyword sweep attributes waits for an admin to release it", () => {
   it("the swept session is marked for release", async () => {
     await session(SESSIONS[0]);
