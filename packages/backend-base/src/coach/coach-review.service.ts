@@ -2,6 +2,7 @@ import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import { coldRecallInFeedback } from "./coach-governance.service";
+import { correctable, shownToAnyone } from "./coach-session-state";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import {
   FIRST_LESSON_RATIONALE,
@@ -312,8 +313,6 @@ export class CoachReviewService {
   }
 }
 
-const CORRECTABLE_STATES = ["scored", "delivery_pending", "delivery_failed"];
-
 async function lockForCorrection(
   trx: CoachReportsWriter,
   reportId: string,
@@ -333,12 +332,14 @@ async function lockForCorrection(
   if (!session) return "unknown-report";
   if (session.state === "delivered") return "already-delivered";
   if (
-    session.published ||
-    session.delivered_to.length > 0 ||
-    session.attempted_to.length > 0
+    shownToAnyone({
+      published: session.published,
+      deliveredTo: session.delivered_to,
+      attemptedTo: session.attempted_to,
+    })
   )
     return "partially-delivered";
-  return CORRECTABLE_STATES.includes(session.state) ? null : "in-flight";
+  return correctable(session.state) ? null : "in-flight";
 }
 
 export async function isLegacyReport(

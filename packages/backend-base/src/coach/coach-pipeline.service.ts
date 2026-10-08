@@ -6,7 +6,6 @@ import { coachPipelineLive } from "./coach-cutover";
 import {
   CoachDeliveryService,
   type DeliveryResult,
-  STALE_DELIVERY_CLAIM,
 } from "./coach-delivery.service";
 import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
@@ -21,6 +20,11 @@ import {
   CoachScoringService,
   authenticityBaseline,
 } from "./coach-scoring.service";
+import {
+  redeliverable,
+  scorable,
+  unsentAfterPublish,
+} from "./coach-session-state";
 import type { CoachMailer } from "./coach.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
@@ -105,8 +109,7 @@ export class CoachPipelineService {
         "parallel_run",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
-      .where("state", "=", "retained")
-      .where("coach_id", "is not", null)
+      .where(scorable)
       .orderBy("retry_count")
       .orderBy("observed_at")
       // Bounded: each session is a model call plus a frame extraction, so an
@@ -149,17 +152,7 @@ export class CoachPipelineService {
     const pending = await conn
       .selectFrom("coach_intake_sessions")
       .select(["source_session_id", "report_id"])
-      .where((eb) =>
-        eb.or([
-          eb("state", "=", "delivery_pending"),
-          eb.and([
-            eb("state", "=", "delivering"),
-            eb("updated_at", "<", STALE_DELIVERY_CLAIM),
-          ]),
-        ]),
-      )
-      .where("report_id", "is not", null)
-      .where("parallel_run", "=", false)
+      .where(redeliverable)
       .orderBy(sql`COALESCE(hold_reason LIKE 'held%', false)`)
       .orderBy("retry_count")
       .orderBy("updated_at")
@@ -221,13 +214,7 @@ export class CoachPipelineService {
       .updateTable("coach_intake_sessions")
       .set({ state: "delivery_pending", updated_at: sql`NOW()` })
       .where("source_session_id", "=", sourceSessionId)
-      .where("report_id", "is not", null)
-      .where((eb) =>
-        eb.or([
-          eb("state", "=", "delivering"),
-          eb.and([eb("state", "=", "scored"), eb("hold_reason", "is", null)]),
-        ]),
-      )
+      .where(unsentAfterPublish)
       .execute();
   }
 

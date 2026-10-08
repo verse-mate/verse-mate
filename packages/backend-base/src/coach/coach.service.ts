@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
-import type Database from "database/src/models/Database";
-import { type ExpressionBuilder, sql } from "kysely";
+import { sql } from "kysely";
 
 import {
   CoachAddressChanged,
@@ -25,13 +24,19 @@ import { coachPipelineLive } from "./coach-cutover";
 import {
   COACH_REPLY_TO_EMAIL,
   COACH_REPLY_TO_NAME,
-  STALE_DELIVERY_CLAIM,
   isPlaceholderAddress,
 } from "./coach-delivery.service";
 import {
   type RetainedKind,
   RetainedMediaService,
 } from "./coach-retained-media.service";
+import {
+  SKIPPED_LEADER_ADDRESS,
+  STALE_DELIVERY_CLAIM,
+  releasable,
+  requeuable,
+  stuck,
+} from "./coach-session-state";
 import { rowToReport, rowToSummary } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
@@ -393,12 +398,6 @@ export interface CoachMonthly {
   narrative: CoachMonthlyNarrative | null;
 }
 
-const SKIPPED_LEADER_ADDRESS = sql<string | null>`(
-  SELECT l.email FROM coach_leaders l
-  WHERE l.slug = coach_intake_sessions.coach_id
-    AND l.email = ANY(coach_intake_sessions.skipped_recipients)
-)`;
-
 export class CoachService {
   private readonly userService: UserService;
   private readonly coachRepository: CoachRepository;
@@ -494,27 +493,7 @@ export class CoachService {
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .select(SKIPPED_LEADER_ADDRESS.as("skipped_leader"))
       .select(sql<string>`count(*) OVER ()`.as("total"))
-      .where((eb) =>
-        eb.or([
-          eb("state", "in", [
-            "scoring_failed",
-            "delivery_pending",
-            "delivery_failed",
-          ]),
-          eb.and([
-            eb("state", "=", "scored"),
-            eb.or([
-              eb("hold_reason", "is not", null),
-              eb("release_required", "=", true),
-            ]),
-          ]),
-          eb("coach_id", "is", null),
-          eb.and([
-            eb("state", "=", "delivered"),
-            eb(SKIPPED_LEADER_ADDRESS, "is not", null),
-          ]),
-        ]),
-      )
+      .where(stuck)
       .orderBy("updated_at", "desc")
       .orderBy("source_session_id")
       .limit(limit)
@@ -569,23 +548,11 @@ export class CoachService {
     coldRecall?: string[];
     skipped?: string[];
   }> {
-    const releasable = (
-      eb: ExpressionBuilder<Database, "coach_intake_sessions">,
-    ) =>
-      eb.and([
-        eb("report_id", "=", reportId),
-        eb.or([
-          eb("state", "=", "scored"),
-          eb.and([
-            eb("release_required", "=", true),
-            eb("state", "in", ["delivery_pending", "delivery_failed"]),
-          ]),
-        ]),
-      ]);
     const held = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
       .select("parallel_run")
+      .where("report_id", "=", reportId)
       .where(releasable)
       .executeTakeFirst();
     if (!held) return { delivered: false, refusal: "not-held" };
@@ -600,6 +567,7 @@ export class CoachService {
         retry_count: sql`CASE WHEN state = 'delivery_failed' THEN 0 ELSE retry_count END`,
         state: sql`CASE WHEN state = 'delivery_failed' THEN 'delivery_pending' ELSE state END`,
       })
+      .where("report_id", "=", reportId)
       .where(releasable)
       .execute();
     const { CoachDeliveryService } = await import("./coach-delivery.service");
@@ -641,15 +609,7 @@ export class CoachService {
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", sourceSessionId)
-      .where((eb) =>
-        eb.or([
-          eb("state", "=", "scoring_failed"),
-          eb.and([
-            eb("state", "=", "delivery_failed"),
-            eb("parallel_run", "=", false),
-          ]),
-        ]),
-      )
+      .where(requeuable)
       .executeTakeFirst();
     return Number(requeued.numUpdatedRows ?? 0) > 0;
   }
