@@ -78,6 +78,8 @@ export default interface CoachIntakeSessionsTable {
   release_required: ColumnType<boolean, boolean | undefined, boolean>;
 
   published: ColumnType<boolean, boolean | undefined, boolean>;
+
+  attempted_to: ColumnType<string[], string[] | undefined, string[]>;
 }
 
 export type CoachIntakeSessions = Selectable<CoachIntakeSessionsTable>;

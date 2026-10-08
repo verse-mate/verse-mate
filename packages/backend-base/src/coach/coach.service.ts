@@ -614,6 +614,7 @@ export class CoachService {
       .set({
         state: sql`CASE WHEN state = 'scoring_failed' THEN 'retained' ELSE 'delivery_pending' END`,
         retry_count: 0,
+        attempted_to: sql`ARRAY[]::text[]`,
         hold_reason: null,
         updated_at: sql`NOW()`,
       })

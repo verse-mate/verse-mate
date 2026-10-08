@@ -45,6 +45,7 @@ type Claim =
       status: "claimed";
       token: string;
       deliveredTo: string[];
+      attemptedTo: string[];
       published: boolean;
     }
   | {
@@ -209,13 +210,19 @@ export class CoachDeliveryService {
             ]),
           ]),
         )
-        .returning(["delivered_to", "published", CLAIM_TOKEN.as("token")])
+        .returning([
+          "delivered_to",
+          "attempted_to",
+          "published",
+          CLAIM_TOKEN.as("token"),
+        ])
         .executeTakeFirst();
       if (claimed) {
         return {
           status: "claimed",
           token: claimed.token,
           deliveredTo: claimed.delivered_to,
+          attemptedTo: claimed.attempted_to,
           published: claimed.published,
         };
       }
@@ -244,11 +251,15 @@ export class CoachDeliveryService {
   private async renewClaim(
     reportId: string,
     token: string,
+    attempting: string,
   ): Promise<string | null> {
     const renewed = await this.db
       .getOrCreateConnection()
       .updateTable("coach_intake_sessions")
-      .set({ updated_at: sql`clock_timestamp()` })
+      .set({
+        updated_at: sql`clock_timestamp()`,
+        attempted_to: sql`CASE WHEN ${attempting} = ANY(attempted_to) THEN attempted_to ELSE array_append(attempted_to, ${attempting}) END`,
+      })
       .where("report_id", "=", reportId)
       .where("state", "=", "delivering")
       .where(CLAIM_TOKEN, "=", token)
@@ -257,22 +268,28 @@ export class CoachDeliveryService {
     return renewed?.token ?? null;
   }
 
-  private async recordRecipient(
+  private recordRecipient(
     reportId: string,
     email: string,
     token: string,
   ): Promise<boolean> {
-    const recorded = await this.db
+    return this.publishWithinClaim(reportId, token, email);
+  }
+
+  private async clearAttempt(
+    reportId: string,
+    email: string,
+    token: string,
+  ): Promise<boolean> {
+    const cleared = await this.db
       .getOrCreateConnection()
       .updateTable("coach_intake_sessions")
-      .set({
-        delivered_to: sql`CASE WHEN ${email} = ANY(delivered_to) THEN delivered_to ELSE array_append(delivered_to, ${email}) END`,
-      })
+      .set({ attempted_to: sql`array_remove(attempted_to, ${email})` })
       .where("report_id", "=", reportId)
       .where("state", "=", "delivering")
       .where(CLAIM_TOKEN, "=", token)
       .executeTakeFirst();
-    return Number(recorded.numUpdatedRows ?? 0) > 0;
+    return Number(cleared.numUpdatedRows ?? 0) > 0;
   }
 
   private async deliverClaimed(
@@ -285,7 +302,12 @@ export class CoachDeliveryService {
       first_lesson: boolean;
       date: string;
     },
-    claim: { token: string; deliveredTo: string[]; published: boolean },
+    claim: {
+      token: string;
+      deliveredTo: string[];
+      attemptedTo: string[];
+      published: boolean;
+    },
   ): Promise<DeliveryResult> {
     const conn = this.db.getOrCreateConnection();
     const leader = await conn
@@ -296,7 +318,10 @@ export class CoachDeliveryService {
 
     const summary = (report.summary ?? {}) as Record<string, unknown>;
 
-    const shown = claim.published || claim.deliveredTo.length > 0;
+    const shown =
+      claim.published ||
+      claim.deliveredTo.length > 0 ||
+      claim.attemptedTo.length > 0;
     const shortfalls = shown
       ? []
       : await calibrationShortfalls(this.db, reportId);
@@ -393,16 +418,17 @@ export class CoachDeliveryService {
       subject,
     });
     const confirmed = new Set(claim.deliveredTo);
+    const unconfirmed = new Set(claim.attemptedTo);
     let token = claim.token;
-    let published = false;
-    const publish = async () => {
-      published ||= await this.publishWithinClaim(reportId, token);
-      return published;
-    };
-    if ((shown || recipients.length === 0) && !(await publish()))
+    if (
+      (shown || recipients.length === 0) &&
+      !(await this.publishWithinClaim(reportId, token))
+    )
       return fenced();
-    for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
-      const renewed = await this.renewClaim(reportId, token);
+    for (const to of recipients.filter(
+      (r) => !confirmed.has(r.email) && !unconfirmed.has(r.email),
+    )) {
+      const renewed = await this.renewClaim(reportId, token, to.email);
       if (renewed === null) return fenced();
       token = renewed;
       const result = await this.send({
@@ -417,18 +443,24 @@ export class CoachDeliveryService {
         delivered: result?.delivered === true,
         error: result?.error,
       });
-      if (result?.delivered === true) {
-        if (!(await this.recordRecipient(reportId, to.email, token)))
-          return fenced();
-        confirmed.add(to.email);
-        if (!(await publish())) return fenced();
-      }
+      const accepted = result?.delivered === true;
+      const settled = accepted
+        ? await this.recordRecipient(reportId, to.email, token)
+        : await this.clearAttempt(reportId, to.email, token);
+      if (!settled) return fenced();
+      if (accepted) confirmed.add(to.email);
     }
 
     const allSent =
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
     if (!allSent) {
-      await this.countSendFailure(reportId, token, sends, [...confirmed]);
+      await this.countSendFailure(reportId, token, sends, {
+        emailed: [...confirmed],
+        unconfirmed: recipients
+          .map((r) => r.email)
+          .filter((email) => unconfirmed.has(email)),
+        nobody: recipients.length === 0,
+      });
       return {
         delivered: false,
         refusal: "send-failed",
@@ -644,16 +676,35 @@ export class CoachDeliveryService {
   private async publishWithinClaim(
     reportId: string,
     token: string,
+    sentTo?: string,
   ): Promise<boolean> {
     const published = await this.db
       .getOrCreateConnection()
       .with("session", (qb) =>
         qb
           .updateTable("coach_intake_sessions")
-          .set({ published: true })
+          .set(
+            sentTo === undefined
+              ? { published: true }
+              : {
+                  published: true,
+                  delivered_to: sql`CASE WHEN ${sentTo} = ANY(delivered_to) THEN delivered_to ELSE array_append(delivered_to, ${sentTo}) END`,
+                  attempted_to: sql`array_remove(attempted_to, ${sentTo})`,
+                },
+          )
           .where("report_id", "=", reportId)
-          .where("state", "=", "delivering")
-          .where(CLAIM_TOKEN, "=", token)
+          .where((eb) => {
+            const withinClaim = eb.and([
+              eb("state", "=", "delivering"),
+              eb(CLAIM_TOKEN, "=", token),
+            ]);
+            return sentTo === undefined
+              ? withinClaim
+              : eb.or([
+                  withinClaim,
+                  sql<boolean>`${sentTo} = ANY(attempted_to)`,
+                ]);
+          })
           .returning("report_id"),
       )
       .updateTable("coach_reports")
@@ -689,15 +740,20 @@ export class CoachDeliveryService {
     reportId: string,
     token: string,
     sends: NonNullable<DeliveryResult["sends"]>,
-    emailed: string[],
+    outcome: { emailed: string[]; unconfirmed: string[]; nobody: boolean },
   ): Promise<void> {
     const failed = sends
       .filter((s) => !s.delivered)
       .map((s) => `${s.email}${s.error ? ` (${s.error})` : ""}`);
+    const { emailed, unconfirmed, nobody } = outcome;
     const what = [
-      failed.length > 0
-        ? `send failed to ${failed.join(", ")}`
-        : "no recipient has a deliverable address",
+      ...(failed.length > 0 ? [`send failed to ${failed.join(", ")}`] : []),
+      ...(nobody ? ["no recipient has a deliverable address"] : []),
+      ...(unconfirmed.length > 0
+        ? [
+            `a send to ${unconfirmed.join(", ")} was started but never confirmed, so it is not sent again until the report is requeued`,
+          ]
+        : []),
       ...(emailed.length > 0
         ? [`already emailed to ${emailed.join(", ")}`]
         : []),
