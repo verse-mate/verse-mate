@@ -350,6 +350,46 @@ describe("an admin can correct a dimension before delivery", () => {
     });
   }
 
+  it("a requeue that re-allows a never-confirmed recipient's send keeps the report refused a correction, an edit and the flag", async () => {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_failed", attempted_to: ["leader@example.test"] })
+      .where("report_id", "=", REPORT)
+      .execute();
+    expect(
+      await new CoachService(Database).requeuePipelineFailure("ff-review"),
+    ).toBe(true);
+    const requeued = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", "attempted_to"])
+      .where("report_id", "=", REPORT)
+      .executeTakeFirstOrThrow();
+    expect(requeued).toEqual({ state: "delivery_pending", attempted_to: [] });
+    expect(
+      await svc.correct({
+        reportId: REPORT,
+        dimensionN: 1,
+        score: 1,
+        rationale: "between a requeue and the next attempt",
+        correctedByUserId: null,
+      }),
+    ).toEqual({ ok: false, refusal: "partially-delivered" });
+    expect(
+      await svc.editImprovements({
+        reportId: REPORT,
+        improvements: ["Ask one open question per passage"],
+        byUserId: null,
+      }),
+    ).toEqual({ ok: false, refusal: "partially-delivered" });
+    expect(
+      await svc.setFirstLesson({
+        reportId: REPORT,
+        firstLesson: true,
+        byUserId: null,
+      }),
+    ).toEqual({ ok: false, refusal: "partially-delivered" });
+  });
+
   it("an unknown dimension is refused", async () => {
     const result = await svc.correct({
       reportId: REPORT,

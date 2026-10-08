@@ -83,6 +83,8 @@ export default interface CoachIntakeSessionsTable {
 
   parallel_run: ColumnType<boolean, boolean | undefined, boolean>;
 
+  send_unconfirmed: ColumnType<boolean, boolean | undefined, boolean>;
+
   session_started_at: ColumnType<
     Date | null,
     Date | string | null | undefined,
