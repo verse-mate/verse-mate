@@ -62,7 +62,7 @@ describe("the Claude CLI calibration tells the operator where transcripts go", (
   });
 });
 
-describe("the claude child sees only PATH and HOME", () => {
+describe("the claude child sees only PATH, HOME and what locates the local login", () => {
   const childBin = join(scratch, "child-bin");
   const envDump = join(scratch, "child-env");
   mkdirSync(childBin, { recursive: true });
@@ -77,7 +77,10 @@ describe("the claude child sees only PATH and HOME", () => {
     const saved = { ...process.env };
     process.env.PATH = `${childBin}:${saved.PATH}`;
     process.env.ANTHROPIC_API_KEY = "sk-test-not-a-key";
+    process.env.ANTHROPIC_AUTH_TOKEN = "bearer-test-not-a-token";
     process.env.DATABASE_URL = "postgres://secret@db.example.test/x";
+    process.env.CLAUDE_CONFIG_DIR = join(scratch, "claude-config");
+    process.env.CLAUDE_CODE_OAUTH_TOKEN = "oauth-test-not-a-token";
     try {
       await claudeCli("claude-test-model").chatComplete({
         model: "claude-test-model",
@@ -88,16 +91,30 @@ describe("the claude child sees only PATH and HOME", () => {
         if (!(key in saved)) Reflect.deleteProperty(process.env, key);
       Object.assign(process.env, saved);
     }
-    const names = readFileSync(envDump, "utf8")
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => line.split("=")[0]);
+    const lines = readFileSync(envDump, "utf8").split("\n").filter(Boolean);
+    const names = lines.map((line) => line.split("=")[0]);
     expect(names).toContain("PATH");
     expect(names).toContain("HOME");
+    expect(lines).toContain(
+      `CLAUDE_CONFIG_DIR=${join(scratch, "claude-config")}`,
+    );
+    expect(lines).toContain("CLAUDE_CODE_OAUTH_TOKEN=oauth-test-not-a-token");
     expect(names).not.toContain("ANTHROPIC_API_KEY");
+    expect(names).not.toContain("ANTHROPIC_AUTH_TOKEN");
     expect(names).not.toContain("DATABASE_URL");
     expect(
-      names.filter((n) => !["PATH", "HOME", "PWD", "SHLVL", "_"].includes(n)),
+      names.filter(
+        (n) =>
+          ![
+            "PATH",
+            "HOME",
+            "CLAUDE_CONFIG_DIR",
+            "CLAUDE_CODE_OAUTH_TOKEN",
+            "PWD",
+            "SHLVL",
+            "_",
+          ].includes(n),
+      ),
     ).toEqual([]);
   });
 
