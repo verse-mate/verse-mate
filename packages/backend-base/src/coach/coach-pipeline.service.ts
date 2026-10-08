@@ -152,7 +152,7 @@ export class CoachPipelineService {
         ]),
       )
       .where("report_id", "is not", null)
-      .orderBy(sql`hold_reason IS NOT NULL`)
+      .orderBy(sql`COALESCE(hold_reason LIKE 'held%', false)`)
       .orderBy("retry_count")
       .orderBy("updated_at")
       .limit(PIPELINE_BATCH_LIMIT)

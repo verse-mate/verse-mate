@@ -228,7 +228,11 @@ describe("the revision routes", () => {
       }),
     ]) {
       expect(res.status).toBe(409);
-      expect(await res.text()).toContain("already emailed");
+      const text = await res.text();
+      expect(text).toContain("already emailed");
+      expect(text).toContain("fix that recipient's address");
+      expect(text).toContain("requeue");
+      expect(text).not.toContain("once delivery completes");
     }
   });
 
