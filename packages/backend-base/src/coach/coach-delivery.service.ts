@@ -163,27 +163,17 @@ export class CoachDeliveryService {
     coachId: string,
     evidence: ReportEvidence,
   ): Promise<DeliveryResult> {
-    const conn = this.db.getOrCreateConnection();
-
-    // ONE read, and it is also the liveness check the spec asks for ("confirm
-    // the report is live before sending", scenario "Report is not yet live").
-    // Publishing commits before delivery is called, so a readable row IS a
-    // report the portal serves. There used to be a second `isLive` query three
-    // statements below this one, asking the same question of the same row: a
-    // refusal that could never fire, which read as a check and was decoration.
-    // Missing means the row went away mid-delivery, which is refused rather
-    // than thrown.
-    const report = await conn
+    const claim = await this.claim(reportId);
+    if (claim.status !== "claimed")
+      return { delivered: false, refusal: claim.status };
+    const report = await this.db
+      .getOrCreateConnection()
       .selectFrom("coach_reports")
       .select(["id", "coach_id", "summary", "body"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("id", "=", reportId)
       .executeTakeFirst();
     if (!report) return { delivered: false, refusal: "unknown-report" };
-
-    const claim = await this.claim(reportId);
-    if (claim.status !== "claimed")
-      return { delivered: false, refusal: claim.status };
     return this.deliverClaimed(reportId, coachId, evidence, report, claim);
   }
 

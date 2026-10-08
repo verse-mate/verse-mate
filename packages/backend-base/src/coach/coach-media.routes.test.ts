@@ -162,7 +162,9 @@ beforeAll(async () => {
     correctDimension: async (input: { reportId: string }) =>
       input.reportId === "legacy-r"
         ? { ok: false, refusal: "legacy-report" }
-        : { ok: true, base: 70, status: { label: "On Target", emoji: "" } },
+        : input.reportId === "delivering-r"
+          ? { ok: false, refusal: "in-flight" }
+          : { ok: true, base: 70, status: { label: "On Target", emoji: "" } },
     getTrends: async () => trendsFixture,
     getTrendsById: async () => trendsFixture,
     getLeaderAttribution: async (slug: string) =>
@@ -517,6 +519,24 @@ describe("An admin tries to amend a legacy report", () => {
     );
     expect(res.status).toBe(409);
     expect(await res.text()).toContain("legacy report");
+  });
+
+  it("a correction while the report is being delivered is a conflict", async () => {
+    const res = await app.handle(
+      new Request(
+        "http://localhost/coach/admin/reports/delivering-r/dimensions/3",
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ score: 2, rationale: "too generous" }),
+        },
+      ),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.text()).toContain("being delivered");
   });
 });
 

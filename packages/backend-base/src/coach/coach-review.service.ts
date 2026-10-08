@@ -13,6 +13,7 @@ export type CorrectionRefusal =
   | "unknown-report"
   | "unknown-dimension"
   | "already-delivered"
+  | "in-flight"
   | "score-out-of-range"
   | "memory-reinforcement-required";
 
@@ -117,14 +118,13 @@ export class CoachReviewService {
     if (await isLegacyReport(this.db, input.reportId)) {
       return { ok: false, refusal: "legacy-report" };
     }
-    if (await this.isDelivered(input.reportId)) {
-      return { ok: false, refusal: "already-delivered" };
-    }
 
     return this.db
       .getOrCreateConnection()
       .transaction()
-      .execute(async (trx) => {
+      .execute(async (trx): Promise<FirstLessonResult> => {
+        const locked = await lockForCorrection(trx, input.reportId);
+        if (locked) return { ok: false, refusal: locked };
         const updated = await trx
           .updateTable("coach_report_dimension_scores")
           .set({
@@ -173,37 +173,55 @@ export class CoachReviewService {
     if (await isLegacyReport(this.db, input.reportId)) {
       return { ok: false, refusal: "legacy-report" };
     }
-    if (await this.isDelivered(input.reportId)) {
-      return { ok: false, refusal: "already-delivered" };
-    }
 
-    return conn.transaction().execute(async (trx) => {
-      const existing = await trx
-        .selectFrom("coach_report_dimension_scores")
-        .select("dimension_n")
-        .where("report_id", "=", input.reportId)
-        .executeTakeFirst();
-      if (!existing) return { ok: false, refusal: "unknown-report" as const };
+    return conn
+      .transaction()
+      .execute(async (trx): Promise<CorrectionResult> => {
+        const locked = await lockForCorrection(trx, input.reportId);
+        if (locked) return { ok: false, refusal: locked };
+        const existing = await trx
+          .selectFrom("coach_report_dimension_scores")
+          .select("dimension_n")
+          .where("report_id", "=", input.reportId)
+          .executeTakeFirst();
+        if (!existing) return { ok: false, refusal: "unknown-report" as const };
 
-      const updated = await trx
-        .updateTable("coach_report_dimension_scores")
-        .set({
-          score: input.score,
-          rationale: input.rationale,
-          provenance: "human",
-          corrected_by: input.correctedByUserId,
-          updated_at: sql`NOW()`,
-        })
-        .where("report_id", "=", input.reportId)
-        .where("dimension_n", "=", input.dimensionN)
-        .executeTakeFirst();
-      if (Number(updated.numUpdatedRows ?? 0) === 0) {
-        return { ok: false, refusal: "unknown-dimension" as const };
-      }
+        const updated = await trx
+          .updateTable("coach_report_dimension_scores")
+          .set({
+            score: input.score,
+            rationale: input.rationale,
+            provenance: "human",
+            corrected_by: input.correctedByUserId,
+            updated_at: sql`NOW()`,
+          })
+          .where("report_id", "=", input.reportId)
+          .where("dimension_n", "=", input.dimensionN)
+          .executeTakeFirst();
+        if (Number(updated.numUpdatedRows ?? 0) === 0) {
+          return { ok: false, refusal: "unknown-dimension" as const };
+        }
 
-      return { ok: true, ...(await rescoreReport(trx, input.reportId)) };
-    });
+        return { ok: true, ...(await rescoreReport(trx, input.reportId)) };
+      });
   }
+}
+
+const CORRECTABLE_STATES = ["scored", "delivery_pending", "delivery_failed"];
+
+async function lockForCorrection(
+  trx: CoachReportsWriter,
+  reportId: string,
+): Promise<"unknown-report" | "already-delivered" | "in-flight" | null> {
+  const session = await trx
+    .selectFrom("coach_intake_sessions")
+    .select("state")
+    .where("report_id", "=", reportId)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!session) return "unknown-report";
+  if (session.state === "delivered") return "already-delivered";
+  return CORRECTABLE_STATES.includes(session.state) ? null : "in-flight";
 }
 
 export async function isLegacyReport(
