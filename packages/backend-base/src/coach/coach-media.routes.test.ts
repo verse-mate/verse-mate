@@ -148,6 +148,10 @@ beforeAll(async () => {
       input.reportId === "legacy-r"
         ? { ok: false, refusal: "legacy-report" }
         : { ok: true, base: 70, status: { label: "On Target", emoji: "" } },
+    getLeaderAttribution: async (slug: string) =>
+      slug === "leader-a"
+        ? { titleMatch: ["zephaniah"], altEmails: ["a@example.test"] }
+        : null,
     setLeaderAttribution: async (...args: unknown[]) => {
       attributionWrites.push(args);
       return args[0] === "leader-a"
@@ -552,6 +556,24 @@ describe("an admin recovers an unattributable session", () => {
     });
     expect(res.status).toBe(400);
     expect(attributionWrites).toEqual([]);
+  });
+
+  it("an admin reads a leader's keywords and alternate addresses", async () => {
+    admin = true;
+    const read = (slug: string) =>
+      app.handle(
+        new Request(
+          `http://localhost/coach/admin/leaders/${slug}/attribution`,
+          { headers: { authorization: `Bearer ${token}` } },
+        ),
+      );
+    const res = await read("leader-a");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      titleMatch: ["zephaniah"],
+      altEmails: ["a@example.test"],
+    });
+    expect((await read("nobody")).status).toBe(404);
   });
 
   it("an unknown leader's keywords are not found", async () => {
