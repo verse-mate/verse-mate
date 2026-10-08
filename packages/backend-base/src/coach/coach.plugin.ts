@@ -743,6 +743,10 @@ const plugin = new Elysia()
             throw new NotFoundError("That report has no revision");
           if (result.refusal === "already-sent")
             throw new ConflictError("The latest revision was already sent");
+          if (result.refusal === "in-flight")
+            throw new ConflictError(
+              "The revision is being sent by another request",
+            );
           if (result.refusal === "no-mailer")
             throw new ConflictError("No mailer is configured");
           if (result.refusal === "parallel-run")

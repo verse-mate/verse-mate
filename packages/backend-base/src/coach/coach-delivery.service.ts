@@ -36,6 +36,7 @@ export function isPlaceholderAddress(email: string): boolean {
 export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
 
 const CLAIM_TOKEN = sql<string>`updated_at::text`;
+const REVISION_CLAIM_TOKEN = sql<string>`sending_at::text`;
 
 type Claim =
   | { status: "claimed"; token: string; deliveredTo: string[] }
@@ -91,7 +92,12 @@ export const REVISED_SUFFIX = " (revised)";
 
 export interface RevisionSendResult {
   sent: boolean;
-  refusal?: "parallel-run" | "no-revision" | "already-sent" | "send-failed";
+  refusal?:
+    | "parallel-run"
+    | "no-revision"
+    | "already-sent"
+    | "in-flight"
+    | "send-failed";
   revision?: number;
   sends?: Array<{ email: string; delivered: boolean; error?: string }>;
   skipped?: string[];
@@ -418,7 +424,7 @@ export class CoachDeliveryService {
     const conn = this.db.getOrCreateConnection();
     const amendment = await conn
       .selectFrom("coach_report_amendments")
-      .select(["revision", "sent_to", "sent_at"])
+      .select(["revision", "sent_at"])
       .where("report_id", "=", reportId)
       .orderBy("revision", "desc")
       .executeTakeFirst();
@@ -427,6 +433,14 @@ export class CoachDeliveryService {
       return {
         sent: false,
         refusal: "already-sent",
+        revision: amendment.revision,
+      };
+
+    const claim = await this.claimRevision(reportId, amendment.revision);
+    if (claim.status !== "claimed")
+      return {
+        sent: false,
+        refusal: claim.status,
         revision: amendment.revision,
       };
 
@@ -453,9 +467,25 @@ export class CoachDeliveryService {
     );
     const html = await reportEmailHtml(reportId, leader?.name, summary, report);
 
-    const confirmed = new Set(amendment.sent_to);
+    const confirmed = new Set(claim.sentTo);
     const sends: NonNullable<RevisionSendResult["sends"]> = [];
+    let token = claim.token;
+    const fenced = () => ({
+      sent: false,
+      refusal: "in-flight" as const,
+      revision: amendment.revision,
+      sends,
+      skipped,
+      subject,
+    });
     for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
+      const renewed = await this.renewRevisionClaim(
+        reportId,
+        amendment.revision,
+        token,
+      );
+      if (renewed === null) return fenced();
+      token = renewed;
       const result = await this.send({
         subject,
         to,
@@ -481,17 +511,22 @@ export class CoachDeliveryService {
 
     const allSent =
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
-    if (allSent) {
-      await conn
-        .updateTable("coach_report_amendments")
-        .set({
-          sent_at: sql`NOW()`,
-          skipped_recipients: sql`${sql.val(skipped)}::text[]`,
-        })
-        .where("report_id", "=", reportId)
-        .where("revision", "=", amendment.revision)
-        .execute();
-    }
+    const released = await conn
+      .updateTable("coach_report_amendments")
+      .set({
+        sending_at: null,
+        ...(allSent
+          ? {
+              sent_at: sql`NOW()`,
+              skipped_recipients: sql`${sql.val(skipped)}::text[]`,
+            }
+          : {}),
+      })
+      .where("report_id", "=", reportId)
+      .where("revision", "=", amendment.revision)
+      .where(REVISION_CLAIM_TOKEN, "=", token)
+      .executeTakeFirst();
+    if (Number(released.numUpdatedRows ?? 0) === 0) return fenced();
     if (skipped.length > 0)
       console.error(
         `[COACH-DELIVERY] revision ${amendment.revision} of ${reportId} not emailed to placeholder address(es): ${skipped.join(", ")}`,
@@ -504,6 +539,61 @@ export class CoachDeliveryService {
       skipped,
       subject,
     };
+  }
+
+  private async claimRevision(
+    reportId: string,
+    revision: number,
+  ): Promise<
+    | { status: "claimed"; token: string; sentTo: string[] }
+    | { status: "already-sent" | "in-flight" }
+  > {
+    const conn = this.db.getOrCreateConnection();
+    const claimed = await conn
+      .updateTable("coach_report_amendments")
+      .set({ sending_at: sql`clock_timestamp()` })
+      .where("report_id", "=", reportId)
+      .where("revision", "=", revision)
+      .where("sent_at", "is", null)
+      .where((eb) =>
+        eb.or([
+          eb("sending_at", "is", null),
+          eb("sending_at", "<", STALE_DELIVERY_CLAIM),
+        ]),
+      )
+      .returning(["sent_to", REVISION_CLAIM_TOKEN.as("token")])
+      .executeTakeFirst();
+    if (claimed)
+      return {
+        status: "claimed",
+        token: claimed.token,
+        sentTo: claimed.sent_to,
+      };
+    const row = await conn
+      .selectFrom("coach_report_amendments")
+      .select("sent_at")
+      .where("report_id", "=", reportId)
+      .where("revision", "=", revision)
+      .executeTakeFirst();
+    return { status: row?.sent_at ? "already-sent" : "in-flight" };
+  }
+
+  private async renewRevisionClaim(
+    reportId: string,
+    revision: number,
+    token: string,
+  ): Promise<string | null> {
+    const renewed = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_report_amendments")
+      .set({ sending_at: sql`clock_timestamp()` })
+      .where("report_id", "=", reportId)
+      .where("revision", "=", revision)
+      .where("sent_at", "is", null)
+      .where(REVISION_CLAIM_TOKEN, "=", token)
+      .returning(REVISION_CLAIM_TOKEN.as("token"))
+      .executeTakeFirst();
+    return renewed?.token ?? null;
   }
 
   private async setHeld(reportId: string, held: boolean): Promise<void> {

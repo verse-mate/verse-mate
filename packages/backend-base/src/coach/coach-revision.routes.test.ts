@@ -77,7 +77,12 @@ beforeAll(async () => {
         ? { sent: true, revision: 1, sends: [], skipped: [] }
         : {
             sent: false,
-            refusal: id === "r-none" ? "no-revision" : "parallel-run",
+            refusal:
+              id === "r-none"
+                ? "no-revision"
+                : id === "r-busy"
+                  ? "in-flight"
+                  : "parallel-run",
           },
   };
   await redisClient.delete(`rate-limit:coach:${USER}`);
@@ -183,5 +188,8 @@ describe("the revision routes", () => {
     expect((await call("POST", "r-ok/revision/send")).status).toBe(200);
     expect((await call("POST", "r-none/revision/send")).status).toBe(404);
     expect((await call("POST", "r-live/revision/send")).status).toBe(409);
+    const busy = await call("POST", "r-busy/revision/send");
+    expect(busy.status).toBe(409);
+    expect(await busy.text()).toContain("being sent");
   });
 });

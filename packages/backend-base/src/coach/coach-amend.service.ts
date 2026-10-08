@@ -57,7 +57,7 @@ export interface AmendResult {
   score?: number;
   status?: { label: string; emoji: string };
   sent?: boolean;
-  pending?: "parallel-run" | "no-mailer" | "send-failed";
+  pending?: "parallel-run" | "no-mailer" | "send-failed" | "in-flight";
   sends?: RevisionSendResult["sends"];
   skipped?: string[];
 }
@@ -328,7 +328,14 @@ export class CoachAmendService {
     return {
       ...result,
       sent: send.sent,
-      ...(send.sent ? {} : { pending: "send-failed" as const }),
+      ...(send.sent
+        ? {}
+        : {
+            pending:
+              send.refusal === "in-flight"
+                ? ("in-flight" as const)
+                : ("send-failed" as const),
+          }),
       sends: send.sends,
       skipped: send.skipped,
     };
