@@ -8,6 +8,7 @@ import {
   type DeliveryResult,
   STALE_DELIVERY_CLAIM,
 } from "./coach-delivery.service";
+import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
 import type { ReportEvidence } from "./coach-governance.service";
 import { CoachPublishService } from "./coach-publish.service";
@@ -324,6 +325,11 @@ export class CoachPipelineService {
           report.reportId,
           dimensions,
           trx as CoachReportsWriter,
+        );
+        await applyFirstLessonDetection(
+          trx as CoachReportsWriter,
+          report.reportId,
+          scored.passageBook,
         );
         return report;
       });

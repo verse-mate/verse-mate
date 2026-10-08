@@ -171,6 +171,7 @@ export interface ScoringResult {
     note: string;
   }>;
   reviewReason?: string;
+  passageBook?: string;
 }
 
 export class CoachScoringService {

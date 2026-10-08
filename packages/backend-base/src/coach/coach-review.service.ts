@@ -1,6 +1,10 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import {
+  FIRST_LESSON_RATIONALE,
+  MEMORY_REINFORCEMENT,
+} from "./coach-first-lesson";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import { composeBaseScore, composeComposite, statusForScore } from "./rubric";
 
@@ -9,7 +13,8 @@ export type CorrectionRefusal =
   | "unknown-report"
   | "unknown-dimension"
   | "already-delivered"
-  | "score-out-of-range";
+  | "score-out-of-range"
+  | "memory-reinforcement-required";
 
 export interface CorrectionResult {
   ok: boolean;
@@ -32,6 +37,13 @@ export interface ReviewState {
   base: number;
   /** True when any dimension was corrected by a human. */
   humanCorrected: boolean;
+  firstLesson: boolean;
+  firstLessonSource: string | null;
+  passageBook: string | null;
+}
+
+export interface FirstLessonResult extends CorrectionResult {
+  firstLesson?: boolean;
 }
 
 export class CoachReviewService {
@@ -65,6 +77,11 @@ export class CoachReviewService {
     if (rows.length === 0) return null;
 
     const scores = new Map(rows.map((r) => [r.dimension_n, r.score]));
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select(["first_lesson", "first_lesson_source", "passage_book"])
+      .where("id", "=", reportId)
+      .executeTakeFirst();
     return {
       reportId,
       delivered: await this.isDelivered(reportId),
@@ -77,7 +94,68 @@ export class CoachReviewService {
       })),
       base: composeBaseScore(scores).base,
       humanCorrected: rows.some((r) => r.provenance === "human"),
+      firstLesson: report?.first_lesson ?? false,
+      firstLessonSource: report?.first_lesson_source ?? null,
+      passageBook: report?.passage_book ?? null,
     };
+  }
+
+  async setFirstLesson(input: {
+    reportId: string;
+    firstLesson: boolean;
+    score?: number | null;
+    rationale?: string;
+    byUserId: string | null;
+  }): Promise<FirstLessonResult> {
+    const rationale = input.rationale?.trim() ?? "";
+    if (!input.firstLesson && (input.score == null || rationale.length === 0)) {
+      return { ok: false, refusal: "memory-reinforcement-required" };
+    }
+    if (input.score != null && (input.score < 1 || input.score > 5)) {
+      return { ok: false, refusal: "score-out-of-range" };
+    }
+    if (await isLegacyReport(this.db, input.reportId)) {
+      return { ok: false, refusal: "legacy-report" };
+    }
+    if (await this.isDelivered(input.reportId)) {
+      return { ok: false, refusal: "already-delivered" };
+    }
+
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        const updated = await trx
+          .updateTable("coach_report_dimension_scores")
+          .set({
+            score: input.firstLesson ? null : input.score ?? null,
+            rationale: input.firstLesson
+              ? rationale || FIRST_LESSON_RATIONALE
+              : rationale,
+            provenance: "human",
+            corrected_by: input.byUserId,
+            updated_at: sql`NOW()`,
+          })
+          .where("report_id", "=", input.reportId)
+          .where("dimension_n", "=", MEMORY_REINFORCEMENT)
+          .executeTakeFirst();
+        if (Number(updated.numUpdatedRows ?? 0) === 0) {
+          return { ok: false, refusal: "unknown-report" as const };
+        }
+        await trx
+          .updateTable("coach_reports")
+          .set({
+            first_lesson: input.firstLesson,
+            first_lesson_source: "admin",
+          })
+          .where("id", "=", input.reportId)
+          .execute();
+        return {
+          ok: true,
+          firstLesson: input.firstLesson,
+          ...(await rescoreReport(trx, input.reportId)),
+        };
+      });
   }
 
   async correct(input: {
@@ -141,7 +219,7 @@ export async function isLegacyReport(
   return row?.source_session_id.startsWith("legacy:") ?? false;
 }
 
-async function rescoreReport(
+export async function rescoreReport(
   trx: CoachReportsWriter,
   reportId: string,
 ): Promise<{

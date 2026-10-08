@@ -596,6 +596,17 @@ export class CoachService {
     return new CoachReviewService(this.db).correct(input);
   }
 
+  async setFirstLesson(input: {
+    reportId: string;
+    firstLesson: boolean;
+    score?: number | null;
+    rationale?: string;
+    byUserId: string | null;
+  }) {
+    const { CoachReviewService } = await import("./coach-review.service");
+    return new CoachReviewService(this.db).setFirstLesson(input);
+  }
+
   /** Recording-bot coverage across the roster, the 9.1 gate (4.7). */
   async assessCoverage(windowDays = 30) {
     const { CoachCoverageService } = await import("./coach-coverage.service");

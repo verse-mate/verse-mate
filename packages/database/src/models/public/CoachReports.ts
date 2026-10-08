@@ -31,6 +31,20 @@ export default interface CoachReportsTable {
 
   held: ColumnType<boolean, boolean | undefined, boolean>;
 
+  passage_book: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  first_lesson: ColumnType<boolean, boolean | undefined, boolean>;
+
+  first_lesson_source: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 
   updated_at: ColumnType<Date, Date | string | undefined, Date | string>;
