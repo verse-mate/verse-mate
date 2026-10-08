@@ -318,6 +318,66 @@ describe("leaders get a reminder before each class", () => {
     ]);
   });
 
+  it("a class day counts only from reports in the last 28 days", async () => {
+    await report(LEADERS.thursday, "2026-08-27");
+    await report(LEADERS.thursday, "2026-09-26");
+    await report(LEADERS.twoClasses, "2026-09-03");
+    await report(LEADERS.twoClasses, "2026-09-26");
+    const mailer = new FakeMailer();
+    await run(mailer, WEDNESDAY_6PM);
+    expect(mailer.to(emailOf(LEADERS.thursday))).toEqual([]);
+    expect(
+      mailer.to(emailOf(LEADERS.twoClasses)).map((m) => m.subject),
+    ).toEqual(["Coaching reminder for Thursday's class"]);
+  });
+
+  it("a latest report exactly 14 days old still reminds, one 15 days old does not", async () => {
+    await report(LEADERS.thursday, "2026-09-10");
+    await report(LEADERS.thursday, "2026-09-16");
+    await report(LEADERS.quiet, "2026-09-10");
+    await report(LEADERS.quiet, "2026-09-15");
+    const mailer = new FakeMailer();
+    const result = await run(mailer, WEDNESDAY_6PM);
+    expect(mailer.to(emailOf(LEADERS.thursday))[0].html).toContain(
+      "2026-09-16 strength 1",
+    );
+    expect(mailer.to(emailOf(LEADERS.quiet))).toEqual([]);
+    expect(result.notReminded).toContainEqual({
+      coachId: LEADERS.quiet,
+      reason: "latest report 2026-09-15 is over 14 days old",
+    });
+  });
+
+  it("a day on which every leader was skipped sends the admin no summary", async () => {
+    await report(LEADERS.quiet, "2026-09-10");
+    const mailer = new FakeMailer();
+    const result = await run(mailer, WEDNESDAY_6PM);
+    expect(result.notReminded.map((n) => n.coachId)).toEqual([LEADERS.quiet]);
+    expect(mailer.sent).toEqual([]);
+    expect(result.summarySent).toBe(false);
+  });
+
+  it("the summary skips an admin on a placeholder address and still reaches the others", async () => {
+    const placeholderAdmin = "remind-admin@needs-real-email.invalid";
+    await conn
+      .insertInto("coach_admins")
+      .values({ email: placeholderAdmin })
+      .execute();
+    try {
+      await report(LEADERS.thursday, "2026-09-24");
+      const mailer = new FakeMailer();
+      const result = await run(mailer, WEDNESDAY_6PM);
+      expect(mailer.to(placeholderAdmin)).toEqual([]);
+      expect(mailer.to(ADMIN)).toHaveLength(1);
+      expect(result.summarySent).toBe(true);
+    } finally {
+      await conn
+        .deleteFrom("coach_admins")
+        .where("email", "=", placeholderAdmin)
+        .execute();
+    }
+  });
+
   it("before cutover nothing is sent", async () => {
     await report(LEADERS.thursday, "2026-09-24");
     delete process.env[COACH_PIPELINE_LIVE];
