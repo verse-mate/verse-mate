@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import {
   CoachAmendService,
@@ -542,6 +543,107 @@ describe("a delivered report can be revised", () => {
       REPORT,
     );
     expect(sent.sent).toBe(true);
+    expect(ours(mailer).length).toBe(3);
+  });
+});
+
+describe("a revision is claimed before it is sent", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedPeople();
+    await seed();
+    await new CoachAmendService(Database, new FakeMailer()).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "revised before cutover" } },
+      byUserId: null,
+    });
+    process.env[COACH_PIPELINE_LIVE] = "true";
+  });
+  afterEach(async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await clear();
+  });
+
+  class SlowMailer extends FakeMailer {
+    override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return super.sendEmail(data);
+    }
+  }
+
+  it("two simultaneous sends mail each recipient once and the second is refused", async () => {
+    const mailer = new SlowMailer();
+    const [a, b] = await Promise.all([
+      new CoachDeliveryService(Database, mailer).sendRevision(REPORT),
+      new CoachDeliveryService(Database, mailer).sendRevision(REPORT),
+    ]);
+    expect([a, b].filter((r) => r.sent).length).toBe(1);
+    expect([a, b].find((r) => !r.sent)?.refusal).toBe("in-flight");
+    expect(
+      ours(mailer)
+        .map((s) => s.to)
+        .sort(),
+    ).toEqual([...EMAILS].sort());
+  });
+
+  it("a send that stalls past the claim window is fenced off, and only the send in flight can repeat", async () => {
+    const rescuer = new FakeMailer();
+    let rescued: Promise<unknown> | null = null;
+    class StallingMailer extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        if (rescued === null) {
+          await conn
+            .updateTable("coach_report_amendments")
+            .set({ sending_at: sql`NOW() - interval '20 minutes'` })
+            .where("report_id", "=", REPORT)
+            .execute();
+          rescued = new CoachDeliveryService(Database, rescuer).sendRevision(
+            REPORT,
+          );
+          await rescued;
+        }
+        return result;
+      }
+    }
+    const stalled = new StallingMailer();
+    const first = await new CoachDeliveryService(
+      Database,
+      stalled,
+    ).sendRevision(REPORT);
+
+    expect(first.sent).toBe(false);
+    expect(first.refusal).toBe("in-flight");
+    const inFlight = ours(stalled)[0].to;
+    const received = new Map<string, number>();
+    for (const s of [...ours(stalled), ...ours(rescuer)])
+      received.set(s.to, (received.get(s.to) ?? 0) + 1);
+    expect([...received.keys()].sort()).toEqual([...EMAILS].sort());
+    for (const [to, n] of received) expect(n).toBe(to === inFlight ? 2 : 1);
+  });
+
+  it("a send that crashed holds the revision only until its claim is stale", async () => {
+    const claimedAt = async (age: string) =>
+      conn
+        .updateTable("coach_report_amendments")
+        .set({ sending_at: sql`NOW() - ${sql.raw(`interval '${age}'`)}` })
+        .where("report_id", "=", REPORT)
+        .execute();
+    const mailer = new FakeMailer();
+
+    await claimedAt("1 minute");
+    const busy = await new CoachDeliveryService(Database, mailer).sendRevision(
+      REPORT,
+    );
+    expect(busy.refusal).toBe("in-flight");
+    expect(ours(mailer)).toEqual([]);
+
+    await claimedAt("1 day");
+    const retried = await new CoachDeliveryService(
+      Database,
+      mailer,
+    ).sendRevision(REPORT);
+    expect(retried.sent).toBe(true);
     expect(ours(mailer).length).toBe(3);
   });
 });
