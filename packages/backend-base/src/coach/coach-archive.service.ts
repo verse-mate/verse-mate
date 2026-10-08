@@ -53,9 +53,9 @@ for (const [net, prefix] of [
   NON_PUBLIC.addSubnet(net, prefix, "ipv4");
 }
 for (const [net, prefix] of [
-  ["::", 128],
-  ["::1", 128],
+  ["::", 96],
   ["64:ff9b::", 96],
+  ["2002::", 16],
   ["fc00::", 7],
   ["fe80::", 10],
   ["ff00::", 8],
@@ -110,11 +110,29 @@ export function isAllowedVideoUrl(raw: string): boolean {
   } catch {
     return false;
   }
-  if (url.protocol !== "https:") return false;
+  if (url.protocol !== "https:" || url.port !== "") return false;
   const host = url.hostname.toLowerCase();
   return allowedVideoHosts().some(
     (allowed) => host === allowed || host.endsWith(`.${allowed}`),
   );
+}
+
+type Fetch = (url: string | URL, init?: RequestInit) => Promise<Response>;
+
+export function pinnedFetch(
+  url: string,
+  init: RequestInit,
+  address: string,
+  delegate: Fetch = fetch,
+): Promise<Response> {
+  const target = new URL(url);
+  const name = target.hostname;
+  target.hostname = isIP(address) === 6 ? `[${address}]` : address;
+  return delegate(target.toString(), {
+    ...init,
+    headers: { host: name },
+    tls: { serverName: name },
+  } as RequestInit);
 }
 
 export interface RetainResult {
@@ -129,7 +147,11 @@ export interface ArchiveDeps {
     ObjectStorageService,
     "putGlobalObjectStream" | "putGlobalObject" | "deleteObject"
   >;
-  fetch?: (url: string, init?: RequestInit) => Promise<Response>;
+  fetch?: (
+    url: string,
+    init: RequestInit,
+    address: string,
+  ) => Promise<Response>;
   resolve?: (hostname: string) => Promise<string[]>;
   maxRecordingBytes?: number;
 }
@@ -146,8 +168,7 @@ export class CoachArchiveService {
     deps: ArchiveDeps = {},
   ) {
     this.storage = deps.storage ?? new ObjectStorageService();
-    this.fetchImpl =
-      deps.fetch ?? ((url: string, init?: RequestInit) => fetch(url, init));
+    this.fetchImpl = deps.fetch ?? pinnedFetch;
     this.resolve = deps.resolve ?? systemResolve;
     this.maxRecordingBytes = deps.maxRecordingBytes ?? MAX_RECORDING_BYTES;
   }
@@ -301,12 +322,13 @@ export class CoachArchiveService {
     const signal = AbortSignal.timeout(RETRIEVAL_TIMEOUT_MS);
     let url = first;
     for (let hop = 0; hop <= MAX_VIDEO_REDIRECTS; hop += 1) {
-      const reachable = await this.resolvesPublicly(url);
-      if (reachable !== true) return reachable;
-      const response = await this.fetchImpl(url, {
-        signal,
-        redirect: "manual",
-      });
+      const address = await this.publicAddress(url);
+      if (!isIP(address)) return address as RetainFailure;
+      const response = await this.fetchImpl(
+        url,
+        { signal, redirect: "manual" },
+        address,
+      );
       const location = response.headers.get("location");
       if (response.status < 300 || response.status >= 400 || !location) {
         return response;
@@ -321,7 +343,7 @@ export class CoachArchiveService {
     return "retrieval-failed";
   }
 
-  private async resolvesPublicly(url: string): Promise<true | RetainFailure> {
+  private async publicAddress(url: string): Promise<string | RetainFailure> {
     const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
     let addresses: string[];
     try {
@@ -335,7 +357,7 @@ export class CoachArchiveService {
       );
       return "untrusted-video-host";
     }
-    return true;
+    return addresses[0];
   }
 
   /**
