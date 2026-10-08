@@ -245,6 +245,43 @@ describe("The Backfill Never Shrinks The Store", () => {
     expect(await snapshot()).toEqual(before);
   });
 
+  it("a bundle missing exactly one report per leader is refused for every leader", async () => {
+    await backfillCoachStore(FULL);
+    const before = await snapshot();
+    const short: Bundle = structuredClone(FULL) as unknown as Bundle;
+    for (const coach of short.coaches) coach.reports.pop();
+
+    const refusal = await backfillCoachStore(short).then(
+      () => "",
+      (error: Error) => error.message,
+    );
+    for (const coach of (FULL as unknown as Bundle).coaches)
+      expect(refusal).toContain(
+        `${coach.id}: ${coach.reports.length - 1} reports in the bundle, ${coach.reports.length} in the store`,
+      );
+    expect(await snapshot()).toEqual(before);
+  });
+
+  it("a bundle missing exactly one leader-month summary is refused", async () => {
+    await backfillCoachStore(FULL);
+    await conn
+      .insertInto("coach_monthly_leader_summaries")
+      .values(
+        ["2026-05", "2026-06"].map((month) => ({
+          coach_id: "desmond-ortiz",
+          month,
+          summary: JSON.stringify({ month }),
+        })),
+      )
+      .execute();
+    const short: { monthlyLeaderSummaries: Record<string, unknown> } =
+      structuredClone(FULL);
+    short.monthlyLeaderSummaries["desmond-ortiz"] = { "2026-05": {} };
+    await expect(backfillCoachStore(short)).rejects.toThrow(
+      "desmond-ortiz: 1 leader-month summaries in the bundle, 2 in the store",
+    );
+  });
+
   it("A report rewritten upstream under the same id: 65d63a2b after e30ac351 moves the 2026-10-01 report from 78.85 to 82.48 in place, the null dimension included", async () => {
     await backfillCoachStore(history.before_e30ac351);
     expect((await report(REWRITTEN)).summary).toMatchObject({ score: 78.85 });
