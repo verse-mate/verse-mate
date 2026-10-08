@@ -731,6 +731,151 @@ describe("a delivered report can be revised", () => {
     }
   });
 
+  it("an amendment that changes nothing is refused and stores no revision", async () => {
+    await seed();
+    const amend = new CoachAmendService(Database, new FakeMailer());
+    for (const amendment of [{}, { body: {} }, { dimensions: [] }])
+      expect(
+        (await amend.amend({ reportId: REPORT, amendment, byUserId: null }))
+          .refusal,
+      ).toBe("empty-amendment");
+    expect(await new CoachService(Database).listRevisions(REPORT)).toEqual([]);
+  });
+
+  it("a report already flagged a first lesson refuses an amendment that adds a cold-recall improvement", async () => {
+    await seed({ firstLesson: true });
+    const mailer = new FakeMailer();
+    const result = await new CoachAmendService(Database, mailer).amend({
+      reportId: REPORT,
+      amendment: {
+        body: { improvements: ["Open with a recap of last week's big ideas"] },
+      },
+      byUserId: null,
+    });
+    expect(result.refusal).toBe("cold-recall-improvement");
+    expect(ours(mailer)).toEqual([]);
+  });
+
+  it.each([
+    ["no score", { n: 9, score: null, rationale: "opened with a recap" }],
+    ["a blank rationale", { n: 9, score: 3, rationale: "   " }],
+  ])(
+    "clearing the flag through an amendment with %s is refused",
+    async (_, dimension) => {
+      await seed({ firstLesson: true });
+      const result = await new CoachAmendService(
+        Database,
+        new FakeMailer(),
+      ).amend({
+        reportId: REPORT,
+        amendment: { firstLesson: false, dimensions: [dimension] },
+        byUserId: null,
+      });
+      expect(result.refusal).toBe("memory-reinforcement-required");
+      expect((await row()).first_lesson).toBe(true);
+    },
+  );
+
+  it("setting the flag makes dimension 9 not applicable even when the amendment scores it", async () => {
+    await seed();
+    const result = await new CoachAmendService(
+      Database,
+      new FakeMailer(),
+    ).amend({
+      reportId: REPORT,
+      amendment: {
+        firstLesson: true,
+        dimensions: [{ n: 9, score: 4, rationale: "a new study: Amos" }],
+      },
+      byUserId: null,
+    });
+    expect(result.applied).toBe(true);
+    expect(await dimension(9)).toEqual({
+      score: null,
+      rationale: "a new study: Amos",
+      provenance: "human",
+    });
+  });
+
+  it("with no mailer the revision is stored and reported pending, not sent", async () => {
+    await seed();
+    const result = await new CoachAmendService(Database, null).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "revised" } },
+      byUserId: null,
+    });
+    expect(result).toMatchObject({
+      applied: true,
+      sent: false,
+      pending: "no-mailer",
+    });
+    const [revision] = await new CoachService(Database).listRevisions(REPORT);
+    expect(revision.sentAt).toBeNull();
+  });
+
+  it.each(["in-flight", "not-live"] as const)(
+    "a send refused as %s is reported as that pending reason",
+    async (refusal) => {
+      await seed();
+      const refused = spyOn(
+        CoachDeliveryService.prototype,
+        "sendRevision",
+      ).mockResolvedValueOnce({ sent: false, refusal, revision: 1 });
+      try {
+        const result = await new CoachAmendService(
+          Database,
+          new FakeMailer(),
+        ).amend({
+          reportId: REPORT,
+          amendment: { body: { headline: "revised" } },
+          byUserId: null,
+        });
+        expect(result).toMatchObject({
+          applied: true,
+          sent: false,
+          pending: refusal,
+        });
+      } finally {
+        refused.mockRestore();
+      }
+    },
+  );
+
+  it("the revisions list names the admin who amended by email, and no one when unknown", async () => {
+    await seed();
+    const adminEmail = "amend-who@example.test";
+    const adminId = (
+      await conn
+        .insertInto("user")
+        .values({
+          email: adminEmail,
+          firstName: "A",
+          lastName: "W",
+          emailVerified: true,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+    try {
+      const service = new CoachService(Database, new FakeMailer());
+      await service.amendReport({
+        reportId: REPORT,
+        amendment: { body: { headline: "first" } },
+        byUserId: adminId,
+      });
+      await service.amendReport({
+        reportId: REPORT,
+        amendment: { body: { headline: "second" } },
+        byUserId: null,
+      });
+      const [unknown, known] = await service.listRevisions(REPORT);
+      expect(known.amendedBy).toBe(adminEmail);
+      expect(unknown.amendedBy).toBeNull();
+    } finally {
+      await conn.deleteFrom("user").where("id", "=", adminId).execute();
+    }
+  });
+
   it("before cutover the amendment is stored and nothing is sent until an admin sends it after cutover", async () => {
     await seed();
     delete process.env[COACH_PIPELINE_LIVE];
