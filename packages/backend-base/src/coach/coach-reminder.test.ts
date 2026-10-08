@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import {
@@ -134,6 +135,11 @@ async function clear() {
     .execute();
   await conn.deleteFrom("coach_leaders").where("slug", "in", slugs).execute();
   await conn.deleteFrom("coach_admins").where("email", "=", ADMIN).execute();
+  await conn
+    .deleteFrom("coach_reminder_summaries")
+    .where("reminder_date", ">=", sql<Date>`'2026-09-01'::date`)
+    .where("reminder_date", "<=", sql<Date>`'2026-10-31'::date`)
+    .execute();
 }
 
 async function seedRoster() {
@@ -415,6 +421,62 @@ describe("leaders get a reminder before each class", () => {
     const quiet = await run(third, WEDNESDAY_6PM);
     expect(third.sent).toEqual([]);
     expect(quiet.summarySent).toBe(false);
+  });
+
+  it("two overlapping runs on the same Central date mail each leader once", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await report(LEADERS.twoClasses, "2026-09-24");
+    const second = new FakeMailer();
+    let overlapped: Promise<unknown> | null = null;
+    const first = new FakeMailer();
+    const send = first.sendEmail.bind(first);
+    first.sendEmail = async (data) => {
+      if (!overlapped) {
+        overlapped = run(second, WEDNESDAY_6PM);
+        await overlapped;
+      }
+      return send(data);
+    };
+    await run(first, WEDNESDAY_6PM);
+    for (const leader of [LEADERS.thursday, LEADERS.twoClasses])
+      expect([
+        ...first.to(emailOf(leader)),
+        ...second.to(emailOf(leader)),
+      ]).toHaveLength(1);
+  });
+
+  it("a send that throws leaves the leader for the next run on the same date", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    const failing = new FakeMailer();
+    failing.sendEmail = async () => {
+      throw new Error("mail service down");
+    };
+    await run(failing, WEDNESDAY_6PM);
+    const again = new FakeMailer();
+    await run(again, WEDNESDAY_6PM);
+    expect(again.to(emailOf(LEADERS.thursday))).toHaveLength(1);
+  });
+
+  it("a re-run whose only news is the same placeholder failure sends the admin no second summary", async () => {
+    await report(LEADERS.placeholder, "2026-09-24");
+    const first = new FakeMailer();
+    expect((await run(first, WEDNESDAY_6PM)).summarySent).toBe(true);
+    const again = new FakeMailer();
+    const result = await run(again, WEDNESDAY_6PM);
+    expect(result.failed.map((f) => f.coachId)).toContain(LEADERS.placeholder);
+    expect(again.to(ADMIN)).toEqual([]);
+    expect(result.summarySent).toBe(false);
+  });
+
+  it("a re-run that sends a reminder the first run could not tells the admin about it", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await run(
+      new FakeMailer((to) => to === emailOf(LEADERS.thursday)),
+      WEDNESDAY_6PM,
+    );
+    const again = new FakeMailer();
+    await run(again, WEDNESDAY_6PM);
+    expect(again.to(ADMIN)[0]?.text).toContain(`Sent: ${LEADERS.thursday}`);
   });
 
   it("before cutover nothing is sent", async () => {

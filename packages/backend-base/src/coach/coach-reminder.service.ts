@@ -206,8 +206,12 @@ export class CoachReminderService {
       }
     }
 
-    if (result.sent.length > 0 || result.failed.length > 0)
+    if (result.sent.length > 0)
       result.summarySent = await this.summarize(result);
+    else if (result.failed.length > 0 && (await this.claimSummary(today))) {
+      result.summarySent = await this.summarize(result);
+      if (!result.summarySent) await this.releaseSummary(today);
+    }
     return result;
   }
 
@@ -255,31 +259,65 @@ export class CoachReminderService {
       "Work on:",
       ...items.recommendations.map((r, i) => `${i + 1}. ${r.title}`),
     ].join("\n");
-    const sent = (await this.mailer.sendEmail({
-      subject,
-      to: { name: leader?.name ?? coachId, email },
-      text,
-      html,
-    })) as CoachSendResult | undefined;
+    const conn = this.db.getOrCreateConnection();
+    const claimed = await conn
+      .insertInto("coach_reminder_sends")
+      .values({
+        coach_id: coachId,
+        reminder_date: result.date,
+        report_id: reportId,
+        email,
+      })
+      .onConflict((oc) => oc.doNothing())
+      .returning("coach_id")
+      .executeTakeFirst();
+    if (!claimed) return;
+    const release = () =>
+      conn
+        .deleteFrom("coach_reminder_sends")
+        .where("coach_id", "=", coachId)
+        .where("reminder_date", "=", sql<Date>`${result.date}::date`)
+        .execute();
+    let sent: CoachSendResult | undefined;
+    try {
+      sent = (await this.mailer.sendEmail({
+        subject,
+        to: { name: leader?.name ?? coachId, email },
+        text,
+        html,
+      })) as CoachSendResult | undefined;
+    } catch (error) {
+      await release();
+      throw error;
+    }
     if (sent?.delivered === true) {
       result.sent.push({ coachId, email, reportId });
-      await this.db
-        .getOrCreateConnection()
-        .insertInto("coach_reminder_sends")
-        .values({
-          coach_id: coachId,
-          reminder_date: result.date,
-          report_id: reportId,
-          email,
-        })
-        .onConflict((oc) => oc.doNothing())
-        .execute();
       return;
     }
+    await release();
     result.failed.push({
       coachId,
       reason: `rejected by the mail service${sent?.error ? `: ${sent.error}` : ""}`,
     });
+  }
+
+  private async claimSummary(date: string): Promise<boolean> {
+    const claimed = await this.db
+      .getOrCreateConnection()
+      .insertInto("coach_reminder_summaries")
+      .values({ reminder_date: date })
+      .onConflict((oc) => oc.doNothing())
+      .returning("reminder_date")
+      .executeTakeFirst();
+    return claimed !== undefined;
+  }
+
+  private async releaseSummary(date: string): Promise<void> {
+    await this.db
+      .getOrCreateConnection()
+      .deleteFrom("coach_reminder_summaries")
+      .where("reminder_date", "=", sql<Date>`${date}::date`)
+      .execute();
   }
 
   private async summarize(result: ReminderRunResult): Promise<boolean> {
