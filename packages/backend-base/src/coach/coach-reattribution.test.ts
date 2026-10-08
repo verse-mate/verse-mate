@@ -143,11 +143,36 @@ describe("the failures list is paged", () => {
     expect(second.total).toBe(first.total);
   });
 
-  it("an unbounded request is capped", async () => {
-    const page = await new CoachService(Database).listPipelineFailures({
-      limit: 100_000,
-    });
-    expect(page.sessions.length).toBeLessThanOrEqual(PIPELINE_FAILURES_MAX);
+  it("an unbounded request is capped at the page maximum, with more failures than that stored", async () => {
+    const many = Array.from(
+      { length: PIPELINE_FAILURES_MAX + 1 },
+      (_, i) => `ff-reattr-cap-${i}`,
+    );
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values(
+        many.map((id) => ({
+          source_session_id: id,
+          coach_id: null,
+          matched_by: "unresolved",
+          title: "Unmatched evening group",
+          session_date: "2026-09-29",
+          state: "observed",
+        })),
+      )
+      .execute();
+    try {
+      const page = await new CoachService(Database).listPipelineFailures({
+        limit: 100_000,
+      });
+      expect(page.total).toBeGreaterThan(PIPELINE_FAILURES_MAX);
+      expect(page.sessions.length).toBe(PIPELINE_FAILURES_MAX);
+    } finally {
+      await conn
+        .deleteFrom("coach_intake_sessions")
+        .where("source_session_id", "in", many)
+        .execute();
+    }
   });
 });
 
