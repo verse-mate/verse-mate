@@ -2,6 +2,7 @@ import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import { CoachArchiveService } from "./coach-archive.service";
+import { coachPipelineLive } from "./coach-cutover";
 import {
   CoachDeliveryService,
   type DeliveryResult,
@@ -55,6 +56,9 @@ export interface PipelineResult {
 export const PIPELINE_BATCH_LIMIT = 5;
 
 export const PIPELINE_ATTEMPT_LIMIT = 5;
+
+const PARALLEL_RUN_HOLD =
+  "parallel run: kept for admin comparison, nothing is sent until cutover";
 
 const NO_MAILER_HOLD = "held until delivered: no mailer is configured";
 
@@ -330,6 +334,15 @@ export class CoachPipelineService {
         outcome: "scored-awaiting-review",
         reportId: published.reportId,
         detail: scored.reviewReason,
+      };
+    }
+
+    if (!coachPipelineLive()) {
+      return {
+        sourceSessionId: session.source_session_id,
+        outcome: "scored-awaiting-review",
+        reportId: published.reportId,
+        detail: PARALLEL_RUN_HOLD,
       };
     }
 

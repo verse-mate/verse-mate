@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { Value } from "@sinclair/typebox/value";
 import { db as Database } from "database";
 import { sql } from "kysely";
@@ -9,6 +17,7 @@ import { CoachService } from "./coach.service";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { recordCalibration } from "./coach-calibration";
+import { COACH_PIPELINE_LIVE, coachPipelineLive } from "./coach-cutover";
 import {
   CoachPipelineService,
   PIPELINE_ATTEMPT_LIMIT,
@@ -30,6 +39,13 @@ import {
 } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
+
+beforeAll(() => {
+  process.env[COACH_PIPELINE_LIVE] = "true";
+});
+afterAll(() => {
+  delete process.env[COACH_PIPELINE_LIVE];
+});
 const COACH = "pipe-coach";
 const EMAIL = "pipe-leader@example.test";
 
@@ -1171,6 +1187,109 @@ describe("an admin's correction reaches the leader's report and the email", () =
       expect(html).toContain(band);
       expect(html).not.toContain("Strong");
     }
+  });
+});
+
+describe("The Parallel Run Is Silent", () => {
+  const LEGACY = "pipe-coach-2026-08-22-host-report";
+  let leaderUser = "";
+
+  beforeEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
+      .execute();
+    leaderUser = (
+      await conn
+        .insertInto("user")
+        .values({
+          email: EMAIL,
+          firstName: "Pipe",
+          lastName: "Leader",
+          emailVerified: true,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: LEGACY,
+        coach_id: COACH,
+        session_date: "2026-08-22",
+        source_session_id: `legacy:${COACH}:2026-08-22`,
+        legacy_ids: [],
+        summary: { session: "Obadiah, Lesson 4", score: 81.2 },
+        metrics: {},
+        body: {},
+      })
+      .execute();
+    await seedRetained();
+    await calibrate();
+  });
+  afterEach(async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
+    await uncalibrate();
+  });
+
+  it("the switch is off unless it is set to true", () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    expect(coachPipelineLive()).toBe(false);
+    process.env[COACH_PIPELINE_LIVE] = "false";
+    expect(coachPipelineLive()).toBe(false);
+    process.env[COACH_PIPELINE_LIVE] = " TRUE ";
+    expect(coachPipelineLive()).toBe(true);
+  });
+
+  it("Both systems report one session: the leader sees the host's report once, the pipeline's is admin-only, and nothing is sent", async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    const mailer = new FakeMailer();
+    const [result] = await pipeline(mailer).run();
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(result.detail).toContain("parallel run");
+    const reportId = result.reportId as string;
+    expect(reportId).toBeTruthy();
+    expect(reportId).not.toBe(LEGACY);
+
+    const service = new CoachService(Database, mailer as any);
+    const summaries = await service.getReportSummaries(COACH);
+    expect(summaries.items.map((r) => r.id)).toEqual([LEGACY]);
+    expect(
+      ((await service.getReports(leaderUser)) ?? []).map((r) => r.id),
+    ).toEqual([LEGACY]);
+    expect(await service.getReportDetail(COACH, reportId)).toBeNull();
+    expect(
+      await service.getReportDetail(COACH, reportId, "admin"),
+    ).not.toBeNull();
+    expect(
+      ((await service.getReportsById(COACH)) ?? []).map((r) => r.id).sort(),
+    ).toEqual([LEGACY, reportId].sort());
+
+    expect(await service.releaseHeldReport(reportId)).toMatchObject({
+      delivered: false,
+      refusal: "parallel-run",
+    });
+    await pipeline(mailer).run();
+    expect(mailer.sent).toEqual([]);
+    expect(await service.getReportDetail(COACH, reportId)).toBeNull();
+  });
+
+  it("Cutover switches the pipeline on: its reports are delivered and become visible", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    const mailer = new FakeMailer();
+    const [result] = await pipeline(mailer).run();
+    expect(result.outcome).toBe("scored-and-delivered");
+    expect(mailer.sent.length).toBeGreaterThan(0);
+    expect(
+      await new CoachService(Database).getReportDetail(
+        COACH,
+        result.reportId as string,
+      ),
+    ).not.toBeNull();
   });
 });
 

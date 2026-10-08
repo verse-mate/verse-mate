@@ -2,6 +2,7 @@ import { sql } from "kysely";
 
 import { CoachReshareRequest, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
+import { coachPipelineLive } from "./coach-cutover";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
 /**
@@ -14,6 +15,7 @@ import type { CoachMailer, CoachSendResult } from "./coach.service";
  */
 
 export type ReshareRefusal =
+  | "parallel-run"
   | "unknown-session"
   | "not-pending"
   | "already-asked"
@@ -41,6 +43,7 @@ export class CoachReshareService {
    * mail in VerseMate's name.
    */
   async send(sourceSessionId: string): Promise<ReshareSendResult> {
+    if (!coachPipelineLive()) return { sent: false, refusal: "parallel-run" };
     const conn = this.db.getOrCreateConnection();
 
     const session = await conn

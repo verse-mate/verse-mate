@@ -1,6 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { db as Database } from "database";
 
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachReshareService } from "./coach-reshare.service";
 import { RETRIEVAL_ATTEMPT_LIMIT } from "./coach-retrieval.service";
 
@@ -25,7 +34,7 @@ class FakeMailer {
 async function seed(state: string, over: Record<string, unknown> = {}) {
   await conn
     .insertInto("coach_leaders")
-    .values({ slug: COACH, email: EMAIL, name: "Jeff Ward" })
+    .values({ slug: COACH, email: EMAIL, name: "Milo Kerr" })
     .execute();
   await conn
     .insertInto("coach_intake_sessions")
@@ -50,8 +59,29 @@ async function clear() {
 }
 
 describe("asking a leader to re-share a recording", () => {
+  beforeAll(() => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+  });
+  afterAll(() => {
+    delete process.env[COACH_PIPELINE_LIVE];
+  });
   beforeEach(clear);
   afterEach(clear);
+
+  it("Both systems report one session: during the parallel run no re-share request is sent", async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    try {
+      await seed("retrieval_failed", { reshare_requested_at: new Date() });
+      const mailer = new FakeMailer();
+      const result = await new CoachReshareService(Database, mailer).send(
+        "ff-reshare",
+      );
+      expect(result).toMatchObject({ sent: false, refusal: "parallel-run" });
+      expect(mailer.sent).toEqual([]);
+    } finally {
+      process.env[COACH_PIPELINE_LIVE] = "true";
+    }
+  });
 
   it("sends to the leader and names the session and the attempts", async () => {
     await seed("retrieval_failed", { reshare_requested_at: new Date() });

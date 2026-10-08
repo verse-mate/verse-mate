@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import leaderMapJson from "./coach-leader-map.json";
 import { backfillCoachRoster } from "./coach-roster.backfill";
 import coachDataJson from "./coach.data.json";
@@ -73,7 +74,7 @@ describe("roster and monthly backfill (DB)", () => {
       .where("is_benchmark", "=", true)
       .execute();
     expect(rows.length).toBe(1);
-    expect(rows[0].slug).toBe("bryan-bailey");
+    expect(rows[0].slug).toBe("avery-hollis");
   });
 
   it("carries the intake attribution keywords across from the leader map", async () => {
@@ -127,5 +128,21 @@ describe("roster and monthly backfill (DB)", () => {
     expect(rows.length).toBe(1);
     // The database is authoritative after the seed (open question 6).
     expect(rows[0].title_match).toEqual(["admin edited this"]);
+  });
+
+  it("Cutover switches the pipeline on: the roster backfill is not run again", async () => {
+    await clear();
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    try {
+      await expect(backfillCoachRoster()).rejects.toThrow(/cutover/);
+    } finally {
+      delete process.env[COACH_PIPELINE_LIVE];
+    }
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select("slug")
+      .where("email", "in", BUNDLE_EMAILS)
+      .execute();
+    expect(rows).toEqual([]);
   });
 });
