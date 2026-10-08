@@ -226,9 +226,17 @@ export async function reattributeSession(
   database: db,
   sourceSessionId: string,
   coachId: string,
+  expectedCoachId: string | null,
 ): Promise<
   | { ok: true; state: string }
-  | { ok: false; refusal: "unknown-leader" | "unknown-session" | "in-flight" }
+  | {
+      ok: false;
+      refusal:
+        | "unknown-leader"
+        | "unknown-session"
+        | "in-flight"
+        | "attribution-changed";
+    }
 > {
   return database
     .getOrCreateConnection()
@@ -243,11 +251,13 @@ export async function reattributeSession(
       if (!leader) return { ok: false, refusal: "unknown-leader" } as const;
       const session = await trx
         .selectFrom("coach_intake_sessions")
-        .select(["state", "report_id"])
+        .select(["state", "report_id", "coach_id"])
         .where("source_session_id", "=", sourceSessionId)
         .forUpdate()
         .executeTakeFirst();
       if (!session) return { ok: false, refusal: "unknown-session" } as const;
+      if (session.coach_id !== expectedCoachId)
+        return { ok: false, refusal: "attribution-changed" } as const;
       if (session.state === "delivering")
         return { ok: false, refusal: "in-flight" } as const;
 

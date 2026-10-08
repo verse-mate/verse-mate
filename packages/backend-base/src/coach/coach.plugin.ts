@@ -1276,19 +1276,27 @@ const plugin = new Elysia()
           const result = await coachService.reattributeSession(
             params.sourceSessionId,
             body.coachId,
+            body.expectedCoachId,
           );
           if (result.ok) return { coachId: body.coachId, state: result.state };
           if (result.refusal === "unknown-leader")
             throw new NotFoundError("Leader not found");
           if (result.refusal === "unknown-session")
             throw new NotFoundError("Session not found");
+          if (result.refusal === "attribution-changed")
+            throw new ConflictError(
+              "The session's leader changed since this list was loaded; reload it and assign again",
+            );
           throw new ConflictError(
             "The session's report is being delivered right now; try again shortly",
           );
         },
         {
           params: t.Object({ sourceSessionId: t.String() }),
-          body: t.Object({ coachId: t.String({ minLength: 1 }) }),
+          body: t.Object({
+            coachId: t.String({ minLength: 1 }),
+            expectedCoachId: t.Union([t.String({ minLength: 1 }), t.Null()]),
+          }),
           response: {
             200: t.Object({ coachId: t.String(), state: t.String() }),
             ...StandardErrorResponses,

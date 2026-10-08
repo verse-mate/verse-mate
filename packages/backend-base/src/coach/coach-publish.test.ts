@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
-import { CoachPublishService } from "./coach-publish.service";
+import {
+  AttributionChangedError,
+  CoachPublishService,
+} from "./coach-publish.service";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
@@ -53,7 +56,7 @@ async function seedSession(id = "ff-pub-1") {
 async function clear() {
   await conn
     .deleteFrom("coach_intake_sessions")
-    .where("coach_id", "=", COACH)
+    .where("coach_id", "in", [COACH, `${COACH}-2`])
     .execute();
   await conn
     .deleteFrom("coach_reports")
@@ -169,6 +172,14 @@ describe("publishing a scored session", () => {
     // leader and insert a second under the right one: two reports, two emails,
     // and one session counted twice across two leaders' trends.
     const first = await svc.publish(input());
+    await expect(
+      svc.publish(input({ coachId: "publish-coach-2" })),
+    ).rejects.toBeInstanceOf(AttributionChangedError);
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ coach_id: "publish-coach-2" })
+      .where("source_session_id", "=", "ff-pub-1")
+      .execute();
     const moved = await svc.publish(input({ coachId: "publish-coach-2" }));
 
     const rows = await conn

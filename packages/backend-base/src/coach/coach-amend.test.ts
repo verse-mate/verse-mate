@@ -706,7 +706,7 @@ describe("a revision is sent only while its report is live for the leader it was
 
   it("amended in the parallel run, re-attributed, then sent after cutover: refused", async () => {
     expect(
-      await reattributeSession(Database, `ff-${REPORT}`, OTHER),
+      await reattributeSession(Database, `ff-${REPORT}`, OTHER, LEADER),
     ).toMatchObject({ ok: true });
     process.env[COACH_PIPELINE_LIVE] = "true";
     const mailer = new FakeMailer();
@@ -715,7 +715,7 @@ describe("a revision is sent only while its report is live for the leader it was
   });
 
   it("still refused once the re-attributed report is delivered to its new leader", async () => {
-    await reattributeSession(Database, `ff-${REPORT}`, OTHER);
+    await reattributeSession(Database, `ff-${REPORT}`, OTHER, LEADER);
     await conn
       .updateTable("coach_intake_sessions")
       .set({ state: "delivered" })
@@ -764,7 +764,7 @@ describe("a revision is sent only while its report is live for the leader it was
         const result = await super.sendEmail(data);
         if (!moved) {
           moved = true;
-          await reattributeSession(Database, `ff-${REPORT}`, OTHER);
+          await reattributeSession(Database, `ff-${REPORT}`, OTHER, LEADER);
         }
         return result;
       }

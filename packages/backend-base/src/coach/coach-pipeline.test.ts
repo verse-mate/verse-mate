@@ -16,6 +16,7 @@ import { ReportSchema } from "./coach.schema";
 import { CoachService } from "./coach.service";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
+import { reattributeSession } from "./coach-attribution";
 import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE, coachPipelineLive } from "./coach-cutover";
 import {
@@ -1335,6 +1336,48 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
       state: "retained",
       retry_count: 1,
     });
+  });
+
+  it("a session re-attributed while it is being scored is not published under the old leader", async () => {
+    const OTHER = "pipe-other";
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: OTHER, email: "pipe-other@example.test", name: "Other" })
+      .execute();
+    try {
+      const scoring = new CoachScoringService(Database, new FakeAi());
+      const score = scoring.scoreSession.bind(scoring);
+      scoring.scoreSession = async (input) => {
+        const scored = await score(input);
+        await reattributeSession(Database, "ff-pipe-1", OTHER, COACH);
+        return scored;
+      };
+      const mailer = new FakeMailer();
+      const svc = new CoachPipelineService(
+        Database,
+        new FakeClient(),
+        mailer as any,
+        { scoring, frames: noFrames as any },
+      );
+      const [result] = await svc.run();
+
+      expect(result.outcome).toBe("attribution-changed");
+      expect(await reportsForSession()).toEqual([]);
+      expect(mailer.sent).toEqual([]);
+      expect(await intakeRow("ff-pipe-1")).toEqual({
+        state: "retained",
+        retry_count: 0,
+      });
+    } finally {
+      await conn
+        .deleteFrom("coach_reports")
+        .where("coach_id", "=", OTHER)
+        .execute();
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", OTHER)
+        .execute();
+    }
   });
 
   it("a throw during delivery leaves the published session queued for redelivery", async () => {

@@ -581,8 +581,17 @@ export class CoachService {
     return setLeaderAttribution(this.db, slug, input);
   }
 
-  async reattributeSession(sourceSessionId: string, coachId: string) {
-    return reattributeSession(this.db, sourceSessionId, coachId);
+  async reattributeSession(
+    sourceSessionId: string,
+    coachId: string,
+    expectedCoachId: string | null,
+  ) {
+    return reattributeSession(
+      this.db,
+      sourceSessionId,
+      coachId,
+      expectedCoachId,
+    );
   }
 
   /** What an admin sees when reviewing a report's dimension scores (5.7). */

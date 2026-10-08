@@ -42,6 +42,14 @@ export interface PublishResult {
   unchanged: boolean;
 }
 
+export class AttributionChangedError extends Error {
+  constructor(sourceSessionId: string) {
+    super(
+      `${sourceSessionId} was re-attributed while it was being scored; it is scored again for its new leader`,
+    );
+  }
+}
+
 export class CoachPublishService {
   private readonly reports: CoachReportsRepository;
 
@@ -57,6 +65,14 @@ export class CoachPublishService {
       return this.reports.transaction((trx) => this.publish(input, trx));
     }
     const conn = writer;
+    const session = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("coach_id")
+      .where("source_session_id", "=", input.sourceSessionId)
+      .forUpdate()
+      .executeTakeFirst();
+    if (session && session.coach_id !== input.coachId)
+      throw new AttributionChangedError(input.sourceSessionId);
     // Computed here when the caller did not, from the head counts it passed.
     // Nothing used to compute them at all, so every report scored base-only.
     const derived = composeBonuses({
