@@ -57,7 +57,12 @@ export interface AmendResult {
   score?: number;
   status?: { label: string; emoji: string };
   sent?: boolean;
-  pending?: "parallel-run" | "no-mailer" | "send-failed" | "in-flight";
+  pending?:
+    | "parallel-run"
+    | "no-mailer"
+    | "send-failed"
+    | "in-flight"
+    | "not-live";
   sends?: RevisionSendResult["sends"];
   skipped?: string[];
 }
@@ -261,6 +266,7 @@ export class CoachAmendService {
           .values({
             report_id: reportId,
             revision,
+            coach_id: report.coach_id,
             previous: JSON.stringify({
               summary: report.summary,
               metrics: report.metrics,
@@ -331,8 +337,8 @@ export class CoachAmendService {
         ? {}
         : {
             pending:
-              send.refusal === "in-flight"
-                ? ("in-flight" as const)
+              send.refusal === "in-flight" || send.refusal === "not-live"
+                ? send.refusal
                 : ("send-failed" as const),
           }),
       sends: send.sends,

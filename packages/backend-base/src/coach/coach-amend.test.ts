@@ -8,6 +8,7 @@ import {
   CoachAmendService,
   coldRecallImprovements,
 } from "./coach-amend.service";
+import { reattributeSession } from "./coach-attribution";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachDeliveryService, reportSubject } from "./coach-delivery.service";
 import { CoachReviewService } from "./coach-review.service";
@@ -681,6 +682,97 @@ describe("a delivered report can be revised", () => {
     );
     expect(sent.sent).toBe(true);
     expect(ours(mailer).length).toBe(3);
+  });
+});
+
+describe("a revision is sent only while its report is live for the leader it was made for", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedPeople();
+    await seed();
+    await new CoachAmendService(Database, new FakeMailer()).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "revised in the parallel run" } },
+      byUserId: null,
+    });
+  });
+  afterEach(async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await clear();
+  });
+
+  const send = (mailer: FakeMailer) =>
+    new CoachDeliveryService(Database, mailer).sendRevision(REPORT);
+
+  it("amended in the parallel run, re-attributed, then sent after cutover: refused", async () => {
+    expect(
+      await reattributeSession(Database, `ff-${REPORT}`, OTHER),
+    ).toMatchObject({ ok: true });
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    const mailer = new FakeMailer();
+    expect((await send(mailer)).refusal).toBe("not-live");
+    expect(ours(mailer)).toEqual([]);
+  });
+
+  it("still refused once the re-attributed report is delivered to its new leader", async () => {
+    await reattributeSession(Database, `ff-${REPORT}`, OTHER);
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivered" })
+      .where("report_id", "=", REPORT)
+      .execute();
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: false })
+      .where("id", "=", REPORT)
+      .execute();
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    const mailer = new FakeMailer();
+    expect((await send(mailer)).refusal).toBe("not-live");
+    expect(ours(mailer)).toEqual([]);
+  });
+
+  it("refused while the report is held from its leader", async () => {
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: true })
+      .where("id", "=", REPORT)
+      .execute();
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    const mailer = new FakeMailer();
+    expect((await send(mailer)).refusal).toBe("not-live");
+    expect(ours(mailer)).toEqual([]);
+  });
+
+  it("refused while the session is not delivered", async () => {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_pending" })
+      .where("report_id", "=", REPORT)
+      .execute();
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    const mailer = new FakeMailer();
+    expect((await send(mailer)).refusal).toBe("not-live");
+    expect(ours(mailer)).toEqual([]);
+  });
+
+  it("a report re-attributed while its revision is being sent stops the send", async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    let moved = false;
+    class MovingMailer extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        if (!moved) {
+          moved = true;
+          await reattributeSession(Database, `ff-${REPORT}`, OTHER);
+        }
+        return result;
+      }
+    }
+    const mailer = new MovingMailer();
+    const result = await send(mailer);
+    expect(result.sent).toBe(false);
+    expect(ours(mailer).length).toBe(1);
   });
 });
 

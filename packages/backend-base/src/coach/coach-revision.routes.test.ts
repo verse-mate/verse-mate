@@ -82,7 +82,9 @@ beforeAll(async () => {
                 ? "no-revision"
                 : id === "r-busy"
                   ? "in-flight"
-                  : "parallel-run",
+                  : id === "r-moved"
+                    ? "not-live"
+                    : "parallel-run",
           },
   };
   await redisClient.delete(`rate-limit:coach:${USER}`);
@@ -191,5 +193,8 @@ describe("the revision routes", () => {
     const busy = await call("POST", "r-busy/revision/send");
     expect(busy.status).toBe(409);
     expect(await busy.text()).toContain("being sent");
+    const moved = await call("POST", "r-moved/revision/send");
+    expect(moved.status).toBe(409);
+    expect(await moved.text()).toContain("not live");
   });
 });
