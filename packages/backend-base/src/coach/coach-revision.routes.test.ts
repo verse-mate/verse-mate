@@ -130,6 +130,27 @@ describe("the revision routes", () => {
     });
   });
 
+  it("an amendment's prose reaches the service", async () => {
+    amendCalls.length = 0;
+    const prose = [{ title: "Newcomers", paragraphs: ["Ask them first."] }];
+    const res = await call("POST", "r-ok/amend", {
+      body: { improvements: ["Ask newcomers first"], improvementsProse: prose },
+    });
+    expect(res.status).toBe(200);
+    expect(amendCalls).toEqual([
+      {
+        reportId: "r-ok",
+        amendment: {
+          body: {
+            improvements: ["Ask newcomers first"],
+            improvementsProse: prose,
+          },
+        },
+        byUserId: USER,
+      },
+    ]);
+  });
+
   it("a governance block or a cold-recall hold is an answer, not an error, carrying the details", async () => {
     const blocked = await call("POST", "r-governance/amend", {
       body: { headline: "x" },

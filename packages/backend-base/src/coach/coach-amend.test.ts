@@ -4,13 +4,11 @@ import { getCleanConnectionString } from "database/src/utils/ssl-config";
 import { Kysely, PostgresDialect, sql } from "kysely";
 import { Pool } from "pg";
 
-import {
-  CoachAmendService,
-  coldRecallImprovements,
-} from "./coach-amend.service";
+import { CoachAmendService } from "./coach-amend.service";
 import { reattributeSession } from "./coach-attribution";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachDeliveryService, reportSubject } from "./coach-delivery.service";
+import { coldRecallImprovements } from "./coach-governance.service";
 import { CoachReviewService } from "./coach-review.service";
 import { CoachService } from "./coach.service";
 import { DIMENSIONS } from "./rubric";
@@ -51,6 +49,7 @@ async function seed(
     coachId?: string;
     state?: string;
     improvements?: string[];
+    improvementsProse?: Array<{ title: string; paragraphs: string[] }>;
     legacy?: boolean;
     firstLesson?: boolean;
   } = {},
@@ -88,6 +87,15 @@ async function seed(
           strengths: ["Scripture first"],
           improvements: options.improvements ?? ["Call on quiet members"],
           recommendations: ["Ask one DOK 4 question"],
+          strengthsProse: [
+            {
+              title: "Scripture first",
+              paragraphs: ["Read before discussing."],
+            },
+          ],
+          ...(options.improvementsProse
+            ? { improvementsProse: options.improvementsProse }
+            : {}),
         },
       }),
       evidence: JSON.stringify({ quotes: [QUOTE], timestamps: ["14:05"] }),
@@ -506,6 +514,71 @@ describe("a delivered report can be revised", () => {
     expect(after.first_lesson_source).toBe("admin");
     expect((await dimension(9)).score).toBeNull();
     expect((await dimension(9)).provenance).toBe("human");
+  });
+
+  it("an amended list replaces its prose too, so the portal and the reminder show what the admin wrote", async () => {
+    await seed({
+      improvementsProse: [
+        { title: "Quiet members", paragraphs: ["Call on them by name."] },
+      ],
+    });
+    const amend = new CoachAmendService(Database, new FakeMailer());
+    const cleared = await amend.amend({
+      reportId: REPORT,
+      amendment: {
+        body: { improvements: ["Give newcomers a first question"] },
+      },
+      byUserId: null,
+    });
+    expect(cleared.applied).toBe(true);
+    let feedback = ((await row()).body as { feedback: Record<string, unknown> })
+      .feedback;
+    expect(feedback.improvements).toEqual(["Give newcomers a first question"]);
+    expect(feedback.improvementsProse).toBeUndefined();
+    expect(feedback.strengthsProse).toEqual([
+      { title: "Scripture first", paragraphs: ["Read before discussing."] },
+    ]);
+
+    const prose = [
+      {
+        title: "Newcomers",
+        paragraphs: ["Give each newcomer a first question."],
+      },
+    ];
+    const edited = await amend.amend({
+      reportId: REPORT,
+      amendment: {
+        body: {
+          improvements: ["Give newcomers a first question"],
+          improvementsProse: prose,
+        },
+      },
+      byUserId: null,
+    });
+    expect(edited.applied).toBe(true);
+    feedback = ((await row()).body as { feedback: Record<string, unknown> })
+      .feedback;
+    expect(feedback.improvementsProse).toEqual(prose);
+  });
+
+  it("a cold-recall item in the improvement prose holds a first lesson's amendment", async () => {
+    await seed({
+      firstLesson: true,
+      improvementsProse: [
+        {
+          title: "No recap",
+          paragraphs: ["Reserve a 60-second cold-recall drill at the open."],
+        },
+      ],
+    });
+    const mailer = new FakeMailer();
+    const result = await new CoachAmendService(Database, mailer).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "A new study" } },
+      byUserId: null,
+    });
+    expect(result.refusal).toBe("cold-recall-improvement");
+    expect(ours(mailer)).toEqual([]);
   });
 
   it("clearing the flag on a delivered report needs the dimension 9 score and goes out as a revision", async () => {

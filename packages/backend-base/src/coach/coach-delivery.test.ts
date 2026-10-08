@@ -990,3 +990,85 @@ describe("A report is delivered for a leader on a placeholder address", () => {
     expect(result.skipped).toEqual([]);
   });
 });
+
+describe("A first lesson is never mailed with a cold-recall improvement", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(clear);
+
+  async function firstLesson(id: string, feedback: Record<string, unknown>) {
+    await seedReport(id, LEADER, {
+      feedback: { headline: "new study", ...feedback },
+    });
+    await conn
+      .updateTable("coach_reports")
+      .set({ first_lesson: true, held: true })
+      .where("id", "=", id)
+      .execute();
+  }
+
+  it.each([
+    [
+      "the bullets",
+      { improvements: ["Open with a cold recall of last week's big ideas"] },
+    ],
+    [
+      "the prose the portal shows",
+      {
+        improvements: ["Call on quiet members"],
+        improvementsProse: [
+          {
+            title: "No recap at the open",
+            paragraphs: ["Reserve a 60-second cold-recall drill at the open."],
+          },
+        ],
+      },
+    ],
+  ])(
+    "one in %s holds the report from its leader and sends nothing",
+    async (_, feedback) => {
+      await firstLesson("r-first", feedback);
+      const mailer = new FakeMailer();
+      const result = await new CoachDeliveryService(Database, mailer).deliver({
+        reportId: "r-first",
+        evidence: evidence(),
+      });
+      expect(result.delivered).toBe(false);
+      expect(result.refusal).toBe("cold-recall-improvement");
+      expect(mailer.sent).toEqual([]);
+      expect(
+        await new CoachService(Database).getReportDetail(
+          LEADER,
+          "r-first",
+          "leader",
+        ),
+      ).toBeNull();
+      const session = await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["state", "hold_reason"])
+        .where("report_id", "=", "r-first")
+        .executeTakeFirstOrThrow();
+      expect(session.state).toBe("scored");
+      expect(session.hold_reason).toContain("cold-recall");
+    },
+  );
+
+  it("the same improvement on a report that is not a first lesson goes out", async () => {
+    await seedReport("r-cont", LEADER, {
+      feedback: {
+        headline: "continuing",
+        improvements: ["Open with a cold recall of last week's big ideas"],
+      },
+    });
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({
+      reportId: "r-cont",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+  });
+});

@@ -354,6 +354,14 @@ export const RevisionResultSchema = t.Object({
   skipped: t.Optional(t.Array(t.String())),
 });
 
+const AmendedProseSchema = t.Array(
+  t.Object({
+    title: t.String({ maxLength: 500 }),
+    paragraphs: t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
+  }),
+  { maxItems: 10 },
+);
+
 export const AmendmentBodySchema = t.Object({
   dimensions: t.Optional(
     t.Array(
@@ -381,6 +389,9 @@ export const AmendmentBodySchema = t.Object({
       recommendations: t.Optional(
         t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
       ),
+      strengthsProse: t.Optional(AmendedProseSchema),
+      improvementsProse: t.Optional(AmendedProseSchema),
+      recommendationsProse: t.Optional(AmendedProseSchema),
     }),
   ),
 });

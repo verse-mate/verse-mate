@@ -13,6 +13,7 @@ import {
 import {
   CoachGovernanceService,
   type GovernanceViolation,
+  coldRecallInFeedback,
 } from "./coach-governance.service";
 import { evidenceFrom } from "./coach-pipeline.service";
 import { isLegacyReport, rescoreReport } from "./coach-review.service";
@@ -29,10 +30,19 @@ export const BODY_TEXT_FIELDS = [
 
 export type BodyTextField = (typeof BODY_TEXT_FIELDS)[number];
 
+const PROSE_OF = {
+  strengths: "strengthsProse",
+  improvements: "improvementsProse",
+  recommendations: "recommendationsProse",
+} as const;
+
+type ProseField = (typeof PROSE_OF)[keyof typeof PROSE_OF];
+
 export interface Amendment {
   dimensions?: Array<{ n: number; score: number | null; rationale: string }>;
   firstLesson?: boolean;
-  body?: Partial<Record<BodyTextField, string | string[]>>;
+  body?: Partial<Record<BodyTextField, string | string[]>> &
+    Partial<Record<ProseField, Array<{ title: string; paragraphs: string[] }>>>;
 }
 
 export type AmendRefusal =
@@ -67,27 +77,6 @@ export interface AmendResult {
   skipped?: string[];
 }
 
-const RECALL = /\b(recall|review|recap|recite|recitation)\b/i;
-const PRIOR =
-  /\b(big ideas?|prior|previous|last (week|session|lesson)'?s?|earlier lessons?)\b/i;
-
-function itemText(item: unknown): string {
-  if (typeof item === "string") return item;
-  if (item && typeof item === "object")
-    return Object.values(item as Record<string, unknown>)
-      .map(itemText)
-      .join(" ");
-  return "";
-}
-
-export function coldRecallImprovements(improvements: unknown): string[] {
-  if (!Array.isArray(improvements)) return [];
-  return improvements.map(itemText).filter((text) => {
-    if (/\bcold[- ]recall\b/i.test(text)) return true;
-    return RECALL.test(text) && PRIOR.test(text);
-  });
-}
-
 type DimensionRow = {
   dimension_n: number;
   score: number | null;
@@ -108,11 +97,13 @@ export class CoachAmendService {
   }): Promise<AmendResult> {
     const { reportId, amendment } = input;
     const dims = amendment.dimensions ?? [];
+    const proseFields = Object.values(PROSE_OF) as string[];
     const bodyChanges = Object.entries(amendment.body ?? {}).filter(
       ([field, value]) =>
-        BODY_TEXT_FIELDS.includes(field as BodyTextField) &&
+        (BODY_TEXT_FIELDS.includes(field as BodyTextField) ||
+          proseFields.includes(field)) &&
         value !== undefined,
-    ) as Array<[BodyTextField, string | string[]]>;
+    ) as Array<[string, unknown]>;
     if (
       dims.length === 0 &&
       amendment.firstLesson === undefined &&
@@ -186,14 +177,20 @@ export class CoachAmendService {
         }
 
         const body = (report.body ?? {}) as Record<string, unknown>;
-        const feedback = {
+        const feedback: Record<string, unknown> = {
           ...((body.feedback ?? {}) as Record<string, unknown>),
           ...Object.fromEntries(bodyChanges),
         };
+        for (const [list, prose] of Object.entries(PROSE_OF))
+          if (
+            amendment.body?.[list as BodyTextField] !== undefined &&
+            amendment.body?.[prose] === undefined
+          )
+            delete feedback[prose];
         const nextBody = { ...body, feedback };
 
         if (firstLesson) {
-          const coldRecall = coldRecallImprovements(feedback.improvements);
+          const coldRecall = coldRecallInFeedback(feedback);
           if (coldRecall.length > 0)
             return {
               applied: false,
