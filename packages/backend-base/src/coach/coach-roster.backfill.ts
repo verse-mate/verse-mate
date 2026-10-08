@@ -103,6 +103,10 @@ export async function backfillCoachRoster(
     if (attribution.title_match.length === 0)
       leadersWithoutKeywords.push(coach.name);
     await sql`
+      UPDATE coach_leaders SET slug = ${coach.id}
+      WHERE email = ${coach.email} AND slug IS NULL
+    `.execute(conn);
+    await sql`
       INSERT INTO coach_leaders
         (slug, email, name, group_name, coach_name, is_coach, zoom_link,
          is_benchmark, title_match, alt_emails)
@@ -114,8 +118,7 @@ export async function backfillCoachRoster(
         ${sql.val(attribution.title_match)}::text[],
         ${sql.val(attribution.alt_emails)}::text[]
       )
-      ON CONFLICT (email) DO UPDATE SET
-        slug         = EXCLUDED.slug,
+      ON CONFLICT (slug) DO UPDATE SET
         name         = EXCLUDED.name,
         group_name   = EXCLUDED.group_name,
         coach_name   = EXCLUDED.coach_name,
