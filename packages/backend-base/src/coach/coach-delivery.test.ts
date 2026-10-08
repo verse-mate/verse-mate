@@ -848,7 +848,9 @@ describe("a model-produced report waits for its model version to be calibrated",
       reportId: "r-cal",
       evidence: evidence(),
     });
-    const failures = await new CoachService(Database).listPipelineFailures();
+    const { sessions: failures } = await new CoachService(
+      Database,
+    ).listPipelineFailures();
     const held = failures.find((f) => f.reportId === "r-cal");
     expect(held?.state).toBe("delivery_pending");
     expect(held?.reason).toContain("calibration");
@@ -950,7 +952,7 @@ describe("A report is delivered for a leader on a placeholder address", () => {
       evidence: evidence(),
     });
     const service = new CoachService(Database);
-    const listed = (await service.listPipelineFailures()).find(
+    const listed = (await service.listPipelineFailures()).sessions.find(
       (s) => s.reportId === "r1",
     );
     expect(listed).toMatchObject({
@@ -965,7 +967,9 @@ describe("A report is delivered for a leader on a placeholder address", () => {
       .where("slug", "=", LEADER)
       .execute();
     expect(
-      (await service.listPipelineFailures()).some((s) => s.reportId === "r1"),
+      (await service.listPipelineFailures()).sessions.some(
+        (s) => s.reportId === "r1",
+      ),
     ).toBe(false);
   });
 

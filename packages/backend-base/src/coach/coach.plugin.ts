@@ -29,7 +29,11 @@ import {
   RevisionsSchema,
   RubricContractSchema,
 } from "./coach.schema";
-import { CoachService } from "./coach.service";
+import {
+  CoachService,
+  PIPELINE_FAILURES_MAX,
+  PIPELINE_FAILURES_PAGE,
+} from "./coach.service";
 import {
   AddLeaderDto,
   AddNoteDto,
@@ -875,16 +879,31 @@ const plugin = new Elysia()
       )
       .get(
         "/admin/pipeline-failures",
-        async ({ store: { coachService }, currentUserId }) => {
+        async ({ store: { coachService }, currentUserId, query }) => {
           if (!currentUserId)
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
-          return { sessions: await coachService.listPipelineFailures() };
+          const limit = query.limit ?? PIPELINE_FAILURES_PAGE;
+          const offset = query.offset ?? 0;
+          const page = await coachService.listPipelineFailures({
+            limit,
+            offset,
+          });
+          return { ...page, limit, offset };
         },
         {
+          query: t.Object({
+            limit: t.Optional(
+              t.Numeric({ minimum: 1, maximum: PIPELINE_FAILURES_MAX }),
+            ),
+            offset: t.Optional(t.Numeric({ minimum: 0 })),
+          }),
           response: {
             200: t.Object({
+              total: t.Number(),
+              limit: t.Number(),
+              offset: t.Number(),
               sessions: t.Array(
                 t.Object({
                   sourceSessionId: t.String(),

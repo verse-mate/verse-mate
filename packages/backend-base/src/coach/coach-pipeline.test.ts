@@ -435,7 +435,7 @@ describe("a retained session reaches a delivered report", () => {
     expect(held.outcome).toBe("scored-awaiting-review");
     expect(mailer.sent).toEqual([]);
     const service = new CoachService(Database, mailer as any);
-    const listed = (await service.listPipelineFailures()).find(
+    const listed = (await service.listPipelineFailures()).sessions.find(
       (f) => f.sourceSessionId === "ff-pipe-1",
     );
     expect(listed).toMatchObject({ state: "scored", action: "release" });
@@ -690,7 +690,9 @@ describe("a retained session reaches a delivered report", () => {
     expect(await pipeline(mailer).run()).toEqual([]);
     expect(mailer.sent).toEqual([]);
 
-    const failures = await new CoachService(Database).listPipelineFailures();
+    const { sessions: failures } = await new CoachService(
+      Database,
+    ).listPipelineFailures();
     expect(
       failures.find((f) => f.sourceSessionId === "ff-pipe-1"),
     ).toMatchObject({
@@ -820,7 +822,9 @@ describe("a session that fails scoring is counted, capped and taken out of the q
   it("a session capped out of scoring is listed for an admin", async () => {
     await seedPoison(1, PIPELINE_ATTEMPT_LIMIT - 1);
     await poisonPipeline(new FakeMailer()).run();
-    const failures = await new CoachService(Database).listPipelineFailures();
+    const { sessions: failures } = await new CoachService(
+      Database,
+    ).listPipelineFailures();
     expect(
       failures.find((f) => f.sourceSessionId === "ff-extra-poison-0"),
     ).toMatchObject({
@@ -1040,7 +1044,7 @@ describe("a held report is not on the leader's portal until it is released", () 
   it("a tripwire hold is listed with the report id and why, and that id releases it", async () => {
     const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
     const service = new CoachService(Database, new FakeMailer() as any);
-    const row = (await service.listPipelineFailures()).find(
+    const row = (await service.listPipelineFailures()).sessions.find(
       (f) => f.sourceSessionId === "ff-pipe-1",
     );
     expect(row).toMatchObject({
@@ -1054,7 +1058,7 @@ describe("a held report is not on the leader's portal until it is released", () 
       (await service.releaseHeldReport(row?.reportId as string)).delivered,
     ).toBe(true);
     expect(
-      (await service.listPipelineFailures()).some(
+      (await service.listPipelineFailures()).sessions.some(
         (f) => f.sourceSessionId === "ff-pipe-1",
       ),
     ).toBe(false);
@@ -1075,9 +1079,9 @@ describe("a held report is not on the leader's portal until it is released", () 
       .execute();
     const [blocked] = await pipeline(new FakeMailer()).run();
 
-    const row = (await new CoachService(Database).listPipelineFailures()).find(
-      (f) => f.sourceSessionId === "ff-pipe-2",
-    );
+    const row = (
+      await new CoachService(Database).listPipelineFailures()
+    ).sessions.find((f) => f.sourceSessionId === "ff-pipe-2");
     expect(row).toMatchObject({
       state: "scored",
       reportId: blocked.reportId,
@@ -1089,7 +1093,7 @@ describe("a held report is not on the leader's portal until it is released", () 
   it("a delivered report is not listed", async () => {
     await pipeline(new FakeMailer()).run();
     expect(
-      (await new CoachService(Database).listPipelineFailures()).some(
+      (await new CoachService(Database).listPipelineFailures()).sessions.some(
         (f) => f.sourceSessionId === "ff-pipe-1",
       ),
     ).toBe(false);
@@ -1101,9 +1105,9 @@ describe("a held report is not on the leader's portal until it is released", () 
 
     expect(await leaderSees(reportId)).toEqual(hidden);
     expect(await adminSees(reportId)).toBe(true);
-    const row = (await new CoachService(Database).listPipelineFailures()).find(
-      (f) => f.sourceSessionId === "ff-pipe-1",
-    );
+    const row = (
+      await new CoachService(Database).listPipelineFailures()
+    ).sessions.find((f) => f.sourceSessionId === "ff-pipe-1");
     expect(row).toMatchObject({ reportId, state: "delivery_pending" });
     expect(row?.reason).toContain("no mailer");
   });
@@ -1150,7 +1154,7 @@ describe("a held report is not on the leader's portal until it is released", () 
     ).id;
     expect(await leaderSees(reportId)).toEqual(hidden);
     expect(
-      (await new CoachService(Database).listPipelineFailures()).some(
+      (await new CoachService(Database).listPipelineFailures()).sessions.some(
         (f) => f.reportId === reportId,
       ),
     ).toBe(true);

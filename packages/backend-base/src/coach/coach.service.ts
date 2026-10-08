@@ -54,6 +54,9 @@ export interface AdminCoachClass extends CoachClassRow {
 
 /** A minimal mailer contract, satisfied by EmailNotificationConsumer. Kept
  *  local + optional so unit tests can construct CoachService without one. */
+export const PIPELINE_FAILURES_PAGE = 50;
+export const PIPELINE_FAILURES_MAX = 200;
+
 export interface CoachMailer {
   sendEmail(data: {
     subject: string;
@@ -443,8 +446,11 @@ export class CoachService {
     ).pendingReshares();
   }
 
-  async listPipelineFailures(): Promise<
-    Array<{
+  async listPipelineFailures(
+    page: { limit?: number; offset?: number } = {},
+  ): Promise<{
+    total: number;
+    sessions: Array<{
       sourceSessionId: string;
       coachId: string | null;
       title: string;
@@ -455,8 +461,13 @@ export class CoachService {
       reason: string | null;
       action: "release" | "requeue" | "attribute" | null;
       updatedAt: Date;
-    }>
-  > {
+    }>;
+  }> {
+    const limit = Math.min(
+      Math.max(1, page.limit ?? PIPELINE_FAILURES_PAGE),
+      PIPELINE_FAILURES_MAX,
+    );
+    const offset = Math.max(0, page.offset ?? 0);
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
@@ -472,6 +483,7 @@ export class CoachService {
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .select(SKIPPED_LEADER_ADDRESS.as("skipped_leader"))
+      .select(sql<string>`count(*) OVER ()`.as("total"))
       .where((eb) =>
         eb.or([
           eb("state", "in", [
@@ -491,8 +503,17 @@ export class CoachService {
         ]),
       )
       .orderBy("updated_at", "desc")
+      .orderBy("source_session_id")
+      .limit(limit)
+      .offset(offset)
       .execute();
-    return rows.map((r) => ({
+    const total =
+      rows.length > 0
+        ? Number(rows[0].total)
+        : offset === 0
+          ? 0
+          : (await this.listPipelineFailures({ limit: 1 })).total;
+    const sessions = rows.map((r) => ({
       sourceSessionId: r.source_session_id,
       coachId: r.coach_id,
       title: r.title,
@@ -518,6 +539,7 @@ export class CoachService {
                 : ("requeue" as const),
       updatedAt: new Date(r.updated_at as unknown as string),
     }));
+    return { total, sessions };
   }
 
   async releaseHeldReport(reportId: string): Promise<{
