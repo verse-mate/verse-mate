@@ -39,6 +39,7 @@ export default interface CoachReportAmendmentsTable {
     Date | string | null | undefined,
     Date | string | null
   >;
+  coach_id: ColumnType<string, string, string>;
 }
 
 export type CoachReportAmendments = Selectable<CoachReportAmendmentsTable>;

@@ -754,6 +754,10 @@ const plugin = new Elysia()
             throw new ConflictError(
               "The pipeline is in its parallel run: nothing is sent until cutover",
             );
+          if (result.refusal === "not-live")
+            throw new ConflictError(
+              "The report is not live for the leader this revision was made for: it is held, not delivered, or re-attributed",
+            );
           return result;
         },
         {

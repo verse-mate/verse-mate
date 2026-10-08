@@ -1,4 +1,5 @@
-import { sql } from "kysely";
+import type Database from "database/src/models/Database";
+import { type ExpressionBuilder, sql } from "kysely";
 
 import { CoachReport, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
@@ -97,6 +98,7 @@ export interface RevisionSendResult {
     | "no-revision"
     | "already-sent"
     | "in-flight"
+    | "not-live"
     | "send-failed";
   revision?: number;
   sends?: Array<{ email: string; delivered: boolean; error?: string }>;
@@ -553,7 +555,7 @@ export class CoachDeliveryService {
     revision: number,
   ): Promise<
     | { status: "claimed"; token: string; sentTo: string[] }
-    | { status: "already-sent" | "in-flight" }
+    | { status: "already-sent" | "in-flight" | "not-live" }
   > {
     const conn = this.db.getOrCreateConnection();
     const claimed = await conn
@@ -568,6 +570,7 @@ export class CoachDeliveryService {
           eb("sending_at", "<", STALE_DELIVERY_CLAIM),
         ]),
       )
+      .where(revisionLive)
       .returning(["sent_to", REVISION_CLAIM_TOKEN.as("token")])
       .executeTakeFirst();
     if (claimed)
@@ -579,10 +582,12 @@ export class CoachDeliveryService {
     const row = await conn
       .selectFrom("coach_report_amendments")
       .select("sent_at")
+      .select((eb) => revisionLive(eb).as("live"))
       .where("report_id", "=", reportId)
       .where("revision", "=", revision)
       .executeTakeFirst();
-    return { status: row?.sent_at ? "already-sent" : "in-flight" };
+    if (row?.sent_at) return { status: "already-sent" };
+    return { status: row?.live ? "in-flight" : "not-live" };
   }
 
   private async renewRevisionClaim(
@@ -598,6 +603,7 @@ export class CoachDeliveryService {
       .where("revision", "=", revision)
       .where("sent_at", "is", null)
       .where(REVISION_CLAIM_TOKEN, "=", token)
+      .where(revisionLive)
       .returning(REVISION_CLAIM_TOKEN.as("token"))
       .executeTakeFirst();
     return renewed?.token ?? null;
@@ -704,6 +710,29 @@ export class CoachDeliveryService {
     for (const admin of admins) add("Program admin", admin.email);
     return { recipients: out, skipped };
   }
+}
+
+function revisionLive(
+  eb: ExpressionBuilder<Database, "coach_report_amendments">,
+) {
+  return eb.exists(
+    eb
+      .selectFrom("coach_reports")
+      .innerJoin(
+        "coach_intake_sessions",
+        "coach_intake_sessions.report_id",
+        "coach_reports.id",
+      )
+      .select("coach_reports.id")
+      .whereRef("coach_reports.id", "=", "coach_report_amendments.report_id")
+      .whereRef(
+        "coach_reports.coach_id",
+        "=",
+        "coach_report_amendments.coach_id",
+      )
+      .where("coach_reports.held", "=", false)
+      .where("coach_intake_sessions.state", "=", "delivered"),
+  );
 }
 
 async function reportEmailHtml(
