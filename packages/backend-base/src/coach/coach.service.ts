@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { sql } from "kysely";
+import type Database from "database/src/models/Database";
+import { type ExpressionBuilder, sql } from "kysely";
 
 import {
   CoachAddressChanged,
@@ -12,6 +13,7 @@ import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
 import type { Amendment } from "./coach-amend.service";
 import {
+  REATTRIBUTED_HOLD,
   getLeaderAttribution,
   leaderSlug,
   reattributeSession,
@@ -479,6 +481,7 @@ export class CoachService {
         "retry_count",
         "report_id",
         "hold_reason",
+        "release_required",
         "updated_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
@@ -493,7 +496,10 @@ export class CoachService {
           ]),
           eb.and([
             eb("state", "=", "scored"),
-            eb("hold_reason", "is not", null),
+            eb.or([
+              eb("hold_reason", "is not", null),
+              eb("release_required", "=", true),
+            ]),
           ]),
           eb("coach_id", "is", null),
           eb.and([
@@ -526,13 +532,13 @@ export class CoachService {
           ? "unattributed: no leader matched the session title"
           : r.state === "delivered" && r.skipped_leader
             ? `delivered, but not emailed to ${r.skipped_leader}: placeholder address`
-            : r.hold_reason,
+            : r.hold_reason ?? (r.release_required ? REATTRIBUTED_HOLD : null),
       action:
         r.coach_id === null
           ? ("attribute" as const)
           : r.state === "delivered"
             ? null
-            : r.state === "scored"
+            : r.state === "scored" || r.release_required
               ? ("release" as const)
               : r.state === "delivery_pending"
                 ? null
@@ -550,21 +556,36 @@ export class CoachService {
     coldRecall?: string[];
     skipped?: string[];
   }> {
+    const releasable = (
+      eb: ExpressionBuilder<Database, "coach_intake_sessions">,
+    ) =>
+      eb.and([
+        eb("report_id", "=", reportId),
+        eb.or([
+          eb("state", "=", "scored"),
+          eb.and([
+            eb("release_required", "=", true),
+            eb("state", "in", ["delivery_pending", "delivery_failed"]),
+          ]),
+        ]),
+      ]);
     const held = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
       .select("source_session_id")
-      .where("report_id", "=", reportId)
-      .where("state", "=", "scored")
+      .where(releasable)
       .executeTakeFirst();
     if (!held) return { delivered: false, refusal: "not-held" };
     if (!this.notification) return { delivered: false, refusal: "no-mailer" };
     await this.db
       .getOrCreateConnection()
       .updateTable("coach_intake_sessions")
-      .set({ release_required: false })
-      .where("report_id", "=", reportId)
-      .where("state", "=", "scored")
+      .set({
+        release_required: false,
+        retry_count: sql`CASE WHEN state = 'delivery_failed' THEN 0 ELSE retry_count END`,
+        state: sql`CASE WHEN state = 'delivery_failed' THEN 'delivery_pending' ELSE state END`,
+      })
+      .where(releasable)
       .execute();
     const { CoachDeliveryService } = await import("./coach-delivery.service");
     const { storedEvidence } = await import("./coach-pipeline.service");

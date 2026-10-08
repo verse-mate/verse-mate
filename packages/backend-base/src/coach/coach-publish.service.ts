@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { REATTRIBUTED_HOLD } from "./coach-attribution";
 import {
   CoachReportsRepository,
   type CoachReportsWriter,
@@ -40,6 +41,7 @@ export interface PublishResult {
   created: boolean;
   /** True when nothing changed, a re-publish of identical content. */
   unchanged: boolean;
+  holdReason: string | null;
 }
 
 export class AttributionChangedError extends Error {
@@ -67,12 +69,15 @@ export class CoachPublishService {
     const conn = writer;
     const session = await conn
       .selectFrom("coach_intake_sessions")
-      .select("coach_id")
+      .select(["coach_id", "release_required"])
       .where("source_session_id", "=", input.sourceSessionId)
       .forUpdate()
       .executeTakeFirst();
     if (session && session.coach_id !== input.coachId)
       throw new AttributionChangedError(input.sourceSessionId);
+    const holdReason =
+      input.holdReason ??
+      (session?.release_required ? REATTRIBUTED_HOLD : null);
     // Computed here when the caller did not, from the head counts it passed.
     // Nothing used to compute them at all, so every report scored base-only.
     const derived = composeBonuses({
@@ -145,7 +150,7 @@ export class CoachPublishService {
         report_id: upserted.id,
         state: "scored",
         retry_count: 0,
-        hold_reason: input.holdReason,
+        hold_reason: holdReason,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", input.sourceSessionId)
@@ -173,7 +178,12 @@ export class CoachPublishService {
       canonical(before.metrics) === canonical(metrics) &&
       canonical(before.body) === canonical(body);
 
-    return { reportId: upserted.id, created: upserted.created, unchanged };
+    return {
+      reportId: upserted.id,
+      created: upserted.created,
+      unchanged,
+      holdReason,
+    };
   }
 }
 

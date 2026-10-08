@@ -481,6 +481,20 @@ describe("an admin re-attributes a session to a leader", () => {
   });
 });
 
+describe("a session is not re-assigned to the leader it already has", () => {
+  it("the assignment is refused as already assigned, and nothing changes", async () => {
+    await session(SESSIONS[0], { coach_id: RIGHT, state: "scored" });
+    expect(
+      await reattributeSession(Database, SESSIONS[0], RIGHT, RIGHT),
+    ).toEqual({ ok: false, refusal: "already-assigned" });
+    expect(await intake(SESSIONS[0])).toMatchObject({
+      coach_id: RIGHT,
+      state: "scored",
+      release_required: false,
+    });
+  });
+});
+
 describe("a sweep never takes a session an admin assigned while it ran", () => {
   async function sweepWaiting() {
     for (let i = 0; i < 200; i += 1) {

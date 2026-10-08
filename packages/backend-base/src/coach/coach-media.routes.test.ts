@@ -212,6 +212,8 @@ beforeAll(async () => {
         return { ok: false, refusal: "attribution-changed" };
       if (args[0] === "ff-none")
         return { ok: false, refusal: "unknown-session" };
+      if (args[0] === "ff-same")
+        return { ok: false, refusal: "already-assigned" };
       if (args[1] !== "leader-a")
         return { ok: false, refusal: "unknown-leader" };
       return { ok: true, state: "observed" };
@@ -780,6 +782,15 @@ describe("an admin recovers an unattributable session", () => {
     );
     expect(stale.status).toBe(409);
     expect(await stale.text()).toContain("leader changed");
+  });
+
+  it("assigning a session to the leader it already has is a conflict that says so", async () => {
+    const same = await send("POST", "/coach/admin/sessions/ff-same/attribute", {
+      coachId: "leader-a",
+      expectedCoachId: "leader-a",
+    });
+    expect(same.status).toBe(409);
+    expect(await same.text()).toContain("already assigned to that leader");
   });
 });
 

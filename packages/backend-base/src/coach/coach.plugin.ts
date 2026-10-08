@@ -1339,6 +1339,10 @@ const plugin = new Elysia()
             throw new ConflictError(
               "The session's leader changed since this list was loaded; reload it and assign again",
             );
+          if (result.refusal === "already-assigned")
+            throw new ConflictError(
+              "The session is already assigned to that leader",
+            );
           throw new ConflictError(
             "The session's report is being delivered right now; try again shortly",
           );
