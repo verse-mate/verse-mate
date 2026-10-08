@@ -173,6 +173,11 @@ import {
   coachIntakeWorker,
   registerCoachIntakeCron,
 } from "../coach/coach-intake.worker";
+import { coachReminderQueue } from "../coach/coach-reminder.queue";
+import {
+  coachReminderWorker,
+  registerCoachReminderCron,
+} from "../coach/coach-reminder.worker";
 import { verseNotificationQueue } from "../notifications/verse-notification.queue";
 import {
   registerVerseNotificationCron,
@@ -215,6 +220,12 @@ export const QUEUE_WORKERS: QueueWorkerEntry[] = [
     side: "media",
     worker: coachIntakeWorker,
     registerCron: registerCoachIntakeCron,
+  },
+  {
+    name: "Coach reminder",
+    side: "api",
+    worker: coachReminderWorker,
+    registerCron: registerCoachReminderCron,
   },
 ];
 
@@ -315,6 +326,8 @@ setup.onStop(async () => {
   verseNotificationWorker.close();
   coachIntakeQueue.close();
   coachIntakeWorker.close();
+  coachReminderQueue.close();
+  coachReminderWorker.close();
 });
 
 export default setup;
