@@ -584,6 +584,42 @@ describe("leaders get a reminder before each class", () => {
     expect(result.summarySent).toBe(false);
   });
 
+  it("the day's summary is claimed before it is mailed, so an overlapping run cannot mail a second one", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    const claimedWhileMailing: boolean[] = [];
+    class Watching extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        if (data.to.email === ADMIN) {
+          const claim = await conn
+            .selectFrom("coach_reminder_summaries")
+            .select("reminder_date")
+            .where("reminder_date", "=", sql<Date>`${"2026-09-30"}::date`)
+            .executeTakeFirst();
+          claimedWhileMailing.push(claim !== undefined);
+        }
+        return super.sendEmail(data);
+      }
+    }
+    const result = await run(new Watching(), WEDNESDAY_6PM);
+    expect(result.summarySent).toBe(true);
+    expect(claimedWhileMailing).toEqual([true]);
+  });
+
+  it("a summary that reaches no admin on the sent path leaves the day unclaimed for the next run", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    const result = await run(
+      new FakeMailer((to) => to !== emailOf(LEADERS.thursday)),
+      WEDNESDAY_6PM,
+    );
+    expect(result.summarySent).toBe(false);
+    const claim = await conn
+      .selectFrom("coach_reminder_summaries")
+      .select("reminder_date")
+      .where("reminder_date", "=", sql<Date>`${"2026-09-30"}::date`)
+      .executeTakeFirst();
+    expect(claim).toBeUndefined();
+  });
+
   it("a re-run that sends a reminder the first run could not tells the admin about it", async () => {
     await report(LEADERS.thursday, "2026-09-24");
     await run(
