@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import {
+  attributeSession,
+  leaderSlug,
+  loadAttributionRoster,
+} from "./coach-attribution";
+import coachDataJson from "./coach.data.json";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
@@ -112,5 +118,97 @@ describe("a roster leader resolves to their reports", () => {
     const me = await service.getMe(user.id);
     expect(me?.isCoach).toBe(true);
     expect(me?.profile?.id).toBeTruthy();
+  });
+});
+
+describe("a leader added through the admin route can be attributed a session", () => {
+  const ADDED = "added-slug@example.test";
+  const SECOND = "added-slug-2@example.test";
+  const INVITER = "added-slug-inviter@example.test";
+  let inviter = "";
+
+  async function clearAdded() {
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("email", "in", [ADDED, SECOND])
+      .execute();
+    await conn.deleteFrom("user").where("email", "=", INVITER).execute();
+  }
+  beforeEach(async () => {
+    await clearAdded();
+    inviter = (
+      await conn
+        .insertInto("user")
+        .values({ email: INVITER, firstName: "I", lastName: "N" })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+  });
+  afterEach(clearAdded);
+
+  it("the added leader gets a slug derived the way the roster's slugs are", async () => {
+    const added = await service.addLeader(inviter, {
+      email: ADDED,
+      name: "Pat O'Neil & Sam",
+    });
+    expect(added.ok).toBe(true);
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("slug")
+      .where("email", "=", ADDED)
+      .executeTakeFirstOrThrow();
+    expect(row.slug).toBe("pat-o-neil-sam");
+    expect(added.ok && added.coach.id).toBe("pat-o-neil-sam");
+  });
+
+  it("the attribution roster reaches the added leader", async () => {
+    await service.addLeader(inviter, { email: ADDED, name: "Quill Added" });
+    const roster = await loadAttributionRoster(Database);
+    const match = attributeSession(
+      { title: "Study with Quill Added", host_email: "", organizer_email: "" },
+      roster,
+    );
+    expect(match).toEqual({ coachId: "quill-added", matchedBy: "name" });
+  });
+
+  it("every roster slug in the bundle is the name run through the same rule", () => {
+    const coaches = (
+      coachDataJson as unknown as {
+        coaches: Array<{ id: string; name: string }>;
+      }
+    ).coaches;
+    expect(coaches.length).toBeGreaterThan(0);
+    for (const c of coaches) expect(leaderSlug(c.name)).toBe(c.id);
+  });
+
+  it("a name whose slug a roster leader already holds is refused", async () => {
+    const result = await service.addLeader(inviter, {
+      email: ADDED,
+      name: "Avery Hollis",
+    });
+    expect(result).toEqual({
+      ok: false,
+      reason: "slug-taken",
+      slug: "avery-hollis",
+    });
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("email")
+      .where("email", "=", ADDED)
+      .executeTakeFirst();
+    expect(row).toBeUndefined();
+  });
+
+  it("a name whose slug an added leader already holds is refused", async () => {
+    await service.addLeader(inviter, { email: ADDED, name: "Twin Name" });
+    const result = await service.addLeader(inviter, {
+      email: SECOND,
+      name: "twin  name",
+    });
+    expect(result).toEqual({
+      ok: false,
+      reason: "slug-taken",
+      slug: "twin-name",
+    });
   });
 });

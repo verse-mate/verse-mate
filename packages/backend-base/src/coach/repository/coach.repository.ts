@@ -299,8 +299,18 @@ export class CoachRepository {
     return row ?? null;
   }
 
-  /** Insert a new leader. Assumes the caller already checked for duplicates. */
+  async findLeaderBySlug(slug: string): Promise<AddedLeaderRow | null> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_leaders")
+      .where("slug", "=", slug)
+      .select(["id", "slug", "email", "name", "group_name", "coach_name"])
+      .executeTakeFirst();
+    return row ?? null;
+  }
+
   async addLeader(input: {
+    slug: string;
     email: string;
     name: string;
     group: string;
@@ -311,6 +321,7 @@ export class CoachRepository {
       .getOrCreateConnection()
       .insertInto("coach_leaders")
       .values({
+        slug: input.slug,
         email: input.email.trim().toLowerCase(),
         name: input.name,
         group_name: input.group,

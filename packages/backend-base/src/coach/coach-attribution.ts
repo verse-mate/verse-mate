@@ -24,6 +24,15 @@ export interface AttributionLeader {
   altEmails: string[];
 }
 
+export function leaderSlug(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export type MatchedBy = "title_match" | "name" | "alt_email" | "unresolved";
 
 export interface Attribution {

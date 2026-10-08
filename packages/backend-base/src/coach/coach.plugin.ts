@@ -981,9 +981,16 @@ const plugin = new Elysia()
             group: body.group,
             coachName: body.coachName,
           });
-          if (!result.ok)
-            throw new ConflictError("That email is already a leader");
-          return { coach: result.coach };
+          if (result.ok) return { coach: result.coach };
+          if (result.reason === "slug-taken")
+            throw new ConflictError(
+              `Another leader already uses the id "${result.slug}". Enter a different name.`,
+            );
+          if (result.reason === "no-slug")
+            throw new ValidationError(
+              "Enter a name with at least one letter or digit",
+            );
+          throw new ConflictError("That email is already a leader");
         },
         {
           body: AddLeaderDto,
