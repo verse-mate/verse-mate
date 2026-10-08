@@ -323,7 +323,6 @@ export async function calibrationShortfalls(
     .select("model_version")
     .distinct()
     .where("report_id", "=", reportId)
-    .where("provenance", "=", "machine")
     .execute();
 
   const shortfalls: string[] = [];

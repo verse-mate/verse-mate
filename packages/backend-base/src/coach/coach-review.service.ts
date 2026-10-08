@@ -1,25 +1,8 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
-import { composeBaseScore, statusForScore } from "./rubric";
-
-/**
- * The admin review path (change: port-coach-pipeline, task 5.7).
- *
- * A machine score is a starting point, not a verdict. An admin can correct one
- * dimension of an UNDELIVERED report; the composite is recomputed from the
- * corrected set, and that dimension is marked human-corrected so the change is
- * visible rather than folded invisibly into a number.
- *
- * Correction is refused once a report has been delivered. A leader has already
- * read the score by then, and quietly changing it afterwards means two people
- * discussing different reports with the same id. Re-scoring after delivery is a
- * different act and needs its own decision.
- *
- * A report nobody corrects is delivered as machine-scored. Review is not a
- * required step, making it one would put a human back in the loop the port
- * exists to remove.
- */
+import type { CoachReportsWriter } from "./repository/coach-reports.repository";
+import { composeBaseScore, composeComposite, statusForScore } from "./rubric";
 
 export type CorrectionRefusal =
   | "unknown-report"
@@ -30,8 +13,8 @@ export type CorrectionRefusal =
 export interface CorrectionResult {
   ok: boolean;
   refusal?: CorrectionRefusal;
-  /** Recomputed from the corrected set, not patched. */
   base?: number;
+  score?: number;
   status?: { label: string; emoji: string };
 }
 
@@ -112,35 +95,91 @@ export class CoachReviewService {
       return { ok: false, refusal: "already-delivered" };
     }
 
-    const existing = await conn
-      .selectFrom("coach_report_dimension_scores")
-      .select("dimension_n")
-      .where("report_id", "=", input.reportId)
-      .executeTakeFirst();
-    if (!existing) return { ok: false, refusal: "unknown-report" };
+    return conn.transaction().execute(async (trx) => {
+      const existing = await trx
+        .selectFrom("coach_report_dimension_scores")
+        .select("dimension_n")
+        .where("report_id", "=", input.reportId)
+        .executeTakeFirst();
+      if (!existing) return { ok: false, refusal: "unknown-report" as const };
 
-    const updated = await conn
-      .updateTable("coach_report_dimension_scores")
-      .set({
-        score: input.score,
-        rationale: input.rationale,
-        // Marked here, and this is what makes a later re-score leave it alone
-        // (task 5.6's WHERE provenance = 'machine').
-        provenance: "human",
-        corrected_by: input.correctedByUserId,
-        updated_at: sql`NOW()`,
-      })
-      .where("report_id", "=", input.reportId)
-      .where("dimension_n", "=", input.dimensionN)
-      .executeTakeFirst();
-    if (Number(updated.numUpdatedRows ?? 0) === 0) {
-      return { ok: false, refusal: "unknown-dimension" };
-    }
+      const updated = await trx
+        .updateTable("coach_report_dimension_scores")
+        .set({
+          score: input.score,
+          rationale: input.rationale,
+          provenance: "human",
+          corrected_by: input.correctedByUserId,
+          updated_at: sql`NOW()`,
+        })
+        .where("report_id", "=", input.reportId)
+        .where("dimension_n", "=", input.dimensionN)
+        .executeTakeFirst();
+      if (Number(updated.numUpdatedRows ?? 0) === 0) {
+        return { ok: false, refusal: "unknown-dimension" as const };
+      }
 
-    // Recomputed from the corrected set rather than adjusted by a delta, so
-    // the composite always equals what its dimensions say.
-    const after = await this.review(input.reportId);
-    const base = after?.base ?? 0;
-    return { ok: true, base, status: statusForScore(base) };
+      return { ok: true, ...(await rescoreReport(trx, input.reportId)) };
+    });
   }
+}
+
+async function rescoreReport(
+  trx: CoachReportsWriter,
+  reportId: string,
+): Promise<{
+  base: number;
+  score: number;
+  status: { label: string; emoji: string };
+}> {
+  const dimensions = await trx
+    .selectFrom("coach_report_dimension_scores")
+    .select(["dimension_n", "score", "rationale"])
+    .where("report_id", "=", reportId)
+    .execute();
+  const report = await trx
+    .selectFrom("coach_reports")
+    .select(["summary", "metrics"])
+    .where("id", "=", reportId)
+    .executeTakeFirstOrThrow();
+  const summary = (report.summary ?? {}) as Record<string, unknown>;
+  const metrics = (report.metrics ?? {}) as Record<string, unknown>;
+
+  const byN = new Map(dimensions.map((d) => [d.dimension_n, d]));
+  const { base, clusters } = composeBaseScore(
+    new Map(dimensions.map((d) => [d.dimension_n, d.score])),
+  );
+  const score = composeComposite(base, {
+    newcomerBonus: Number(metrics.newcomerBonus ?? 0),
+    sizeBonus: Number(metrics.sizeBonus ?? 0),
+  });
+  const status = statusForScore(score);
+  const stored = Array.isArray(metrics.dimensions)
+    ? (metrics.dimensions as Array<Record<string, unknown>>)
+    : [];
+
+  await trx
+    .updateTable("coach_reports")
+    .set({
+      metrics: JSON.stringify({
+        ...metrics,
+        base,
+        clusters,
+        dimensions: stored.map((d) => {
+          const row = byN.get(Number(d.n));
+          return row ? { ...d, score: row.score, note: row.rationale } : d;
+        }),
+      }),
+      summary: JSON.stringify({
+        ...summary,
+        score,
+        status: status.label,
+        statusEmoji: status.emoji,
+      }),
+      updated_at: sql`NOW()`,
+    })
+    .where("id", "=", reportId)
+    .execute();
+
+  return { base, score, status: { label: status.label, emoji: status.emoji } };
 }
