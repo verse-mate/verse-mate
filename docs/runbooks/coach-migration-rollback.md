@@ -98,8 +98,8 @@ The column's values are lost; the rows stay.
 ### Downs that drop data without a check
 
 - `20260901123000-coach-admin-role` drops `coach_admins`. Its rows are configuration
-  that its own up seeds and the roster backfill fills, and the list is short enough to
-  re-enter.
+  that its own up seeds from `COACH_SEED_ADMIN_EMAIL` (nothing when it is unset) and the
+  roster backfill fills, and the list is short enough to re-enter.
 - `20260901146000-coach-reminder-claims` drops `coach_reminder_sends.claimed_at` once no
   unconfirmed claim is left. Its up sets it from `sent_at` again.
 

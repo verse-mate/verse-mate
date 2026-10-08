@@ -16,7 +16,7 @@ import type Database from "../src/models/Database";
  * exactly as the bundle array did, with no change in trust model.
  *
  * `email` is normalized to lower case by a trigger rather than by convention:
- * the bundle lookup lower-cased both sides, and a stored `Andy@…` that no
+ * the bundle lookup lower-cased both sides, and a stored `Admin@…` that no
  * lookup matches is an admin silently losing their capabilities.
  */
 export async function up(db: Kysely<Database>): Promise<void> {
@@ -47,14 +47,13 @@ export async function up(db: Kysely<Database>): Promise<void> {
     FOR EACH ROW EXECUTE FUNCTION coach_admins_normalize_email();
   `.execute(db);
 
-  // The program admin, carried over from the bundle's `admins` array so the
-  // role survives the bundle's deletion. Idempotent: re-running grants nothing
-  // twice, and an operator who has already revoked it is not overridden by a
-  // later re-run, because the migration only ever runs once.
-  await sql`
-    INSERT INTO coach_admins (email) VALUES ('andytryba@gmail.com')
-    ON CONFLICT (email) DO NOTHING
-  `.execute(db);
+  const seedAdmin = seedAdminEmail();
+  if (seedAdmin) {
+    await sql`
+      INSERT INTO coach_admins (email) VALUES (${seedAdmin})
+      ON CONFLICT (email) DO NOTHING
+    `.execute(db);
+  }
 
   console.log("coach_admins created successfully");
 }
@@ -65,4 +64,11 @@ export async function down(db: Kysely<Database>): Promise<void> {
   );
   await sql`DROP FUNCTION IF EXISTS coach_admins_normalize_email()`.execute(db);
   await db.schema.dropTable("coach_admins").ifExists().execute();
+}
+
+export function seedAdminEmail(
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const email = env.COACH_SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  return email ? email : null;
 }

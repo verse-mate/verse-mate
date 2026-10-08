@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { db as Database } from "database";
-import { sql } from "kysely";
+
+import { seedAdminEmail } from "../../../database/migrations/20260901123000-coach-admin-role";
 
 const conn = Database.getOrCreateConnection();
 
@@ -67,13 +68,11 @@ describe("the program-admin role is data, not a deploy", () => {
     await cleanup();
   });
 
-  it("the program admin, who is not a roster leader, is granted the role explicitly", async () => {
-    // coach.service.ts resolved admin authority from the bundle's `admins`
-    // array; deleting the bundle (7.1) removes the ONLY source of admin
-    // authority, so the row has to exist independently of the roster.
-    const row = await sql<{ email: string }>`
-      SELECT email FROM coach_admins WHERE email = 'andytryba@gmail.com'
-    `.execute(conn);
-    expect(row.rows.length).toBe(1);
+  it("the first program admin comes from COACH_SEED_ADMIN_EMAIL, and none is seeded without it", () => {
+    expect(seedAdminEmail({})).toBeNull();
+    expect(seedAdminEmail({ COACH_SEED_ADMIN_EMAIL: "  " })).toBeNull();
+    expect(
+      seedAdminEmail({ COACH_SEED_ADMIN_EMAIL: " First.Admin@Example.TEST " }),
+    ).toBe("first.admin@example.test");
   });
 });
