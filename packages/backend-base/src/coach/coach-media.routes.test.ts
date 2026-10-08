@@ -173,6 +173,15 @@ beforeAll(async () => {
         : null,
     setLeaderAttribution: async (...args: unknown[]) => {
       attributionWrites.push(args);
+      if (args[0] === "leader-clash")
+        return {
+          ok: false,
+          refusal: "keyword-conflict",
+          conflicts: [
+            { keyword: "tim", leader: "tim-keller", inside: "name" },
+            { keyword: "evening", leader: "leader-b", inside: "keyword" },
+          ],
+        };
       return args[0] === "leader-a"
         ? {
             ok: true,
@@ -638,6 +647,19 @@ describe("an admin recovers an unattributable session", () => {
       altEmails: [],
     });
     expect(res.status).toBe(404);
+  });
+
+  it("a keyword inside another leader's name or keywords is a conflict naming each one", async () => {
+    const res = await send(
+      "PUT",
+      "/coach/admin/leaders/leader-clash/attribution",
+      { titleMatch: ["tim", "evening"], altEmails: [] },
+    );
+    expect(res.status).toBe(409);
+    const { message } = (await res.json()) as { message: string };
+    expect(message).toBe(
+      'Keywords refused: "tim" is inside the name of tim-keller; "evening" is inside a keyword of leader-b',
+    );
   });
 
   it("an admin assigns a session to a leader", async () => {

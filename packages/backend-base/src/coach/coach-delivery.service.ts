@@ -41,12 +41,19 @@ const REVISION_CLAIM_TOKEN = sql<string>`sending_at::text`;
 
 type Claim =
   | { status: "claimed"; token: string; deliveredTo: string[] }
-  | { status: "already-delivered" | "in-flight" | "unknown-report" };
+  | {
+      status:
+        | "already-delivered"
+        | "in-flight"
+        | "unknown-report"
+        | "awaiting-release";
+    };
 
 export type DeliveryRefusal =
   | "unknown-report"
   | "already-delivered"
   | "in-flight"
+  | "awaiting-release"
   | "parallel-run"
   | "calibration-blocked"
   | "governance-blocked"
@@ -184,6 +191,7 @@ export class CoachDeliveryService {
         .updateTable("coach_intake_sessions")
         .set({ state: "delivering", updated_at: sql`clock_timestamp()` })
         .where("report_id", "=", reportId)
+        .where("release_required", "=", false)
         .where((eb) =>
           eb.or([
             eb("state", "in", ["scored", "delivery_pending"]),
@@ -214,12 +222,13 @@ export class CoachDeliveryService {
     }
     const session = await conn
       .selectFrom("coach_intake_sessions")
-      .select("state")
+      .select(["state", "release_required"])
       .where("report_id", "=", reportId)
       .executeTakeFirst();
     if (!session) return { status: "unknown-report" };
+    if (session.state === "delivered") return { status: "already-delivered" };
     return {
-      status: session.state === "delivered" ? "already-delivered" : "in-flight",
+      status: session.release_required ? "awaiting-release" : "in-flight",
     };
   }
 
