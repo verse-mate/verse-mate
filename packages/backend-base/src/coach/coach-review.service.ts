@@ -59,6 +59,7 @@ export interface ImprovementsEditResult {
     | "already-delivered"
     | "partially-delivered"
     | "in-flight"
+    | "empty-edit"
     | "cold-recall-improvement";
   coldRecall?: string[];
 }
@@ -180,6 +181,8 @@ export class CoachReviewService {
     improvementsProse?: Array<{ title: string; paragraphs: string[] }>;
     byUserId: string | null;
   }): Promise<ImprovementsEditResult> {
+    if (input.improvements.length === 0)
+      return { ok: false, refusal: "empty-edit" };
     if (await isLegacyReport(this.db, input.reportId)) {
       return { ok: false, refusal: "legacy-report" };
     }
@@ -197,6 +200,15 @@ export class CoachReviewService {
         if (!report) return { ok: false, refusal: "unknown-report" };
         const body = (report.body ?? {}) as Record<string, unknown>;
         const previous = (body.feedback ?? {}) as Record<string, unknown>;
+        const listOrNull = (v: unknown) =>
+          JSON.stringify(Array.isArray(v) && v.length > 0 ? v : null);
+        if (
+          listOrNull(previous.improvements) ===
+            listOrNull(input.improvements) &&
+          listOrNull(previous.improvementsProse) ===
+            listOrNull(input.improvementsProse)
+        )
+          return { ok: false, refusal: "empty-edit" };
         const { improvementsProse: _cleared, ...kept } = previous;
         const feedback: Record<string, unknown> = {
           ...kept,

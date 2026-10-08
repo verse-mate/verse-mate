@@ -411,16 +411,26 @@ export const RevisionSendSchema = t.Object({
 
 export const RevisionsSchema = t.Object({
   revisions: t.Array(
-    t.Object({
-      revision: t.Number(),
-      previous: t.Record(t.String(), t.Unknown()),
-      changes: t.Record(t.String(), t.Unknown()),
-      amendedBy: t.Union([t.String(), t.Null()]),
-      amendedAt: t.Date(),
-      sentTo: t.Array(t.String()),
-      skipped: t.Array(t.String()),
-      sentAt: t.Union([t.Date(), t.Null()]),
-    }),
+    t.Union([
+      t.Object({
+        kind: t.Literal("revision"),
+        revision: t.Number(),
+        previous: t.Record(t.String(), t.Unknown()),
+        changes: t.Record(t.String(), t.Unknown()),
+        amendedBy: t.Union([t.String(), t.Null()]),
+        amendedAt: t.Date(),
+        sentTo: t.Array(t.String()),
+        skipped: t.Array(t.String()),
+        sentAt: t.Union([t.Date(), t.Null()]),
+      }),
+      t.Object({
+        kind: t.Literal("edit"),
+        edit: t.Number(),
+        changes: t.Record(t.String(), t.Unknown()),
+        editedBy: t.Union([t.String(), t.Null()]),
+        editedAt: t.Date(),
+      }),
+    ]),
   ),
 });
 

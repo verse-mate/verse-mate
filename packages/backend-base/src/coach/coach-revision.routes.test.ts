@@ -46,6 +46,7 @@ const byReport: Record<string, unknown> = {
   "r-partial": { applied: false, refusal: "partially-delivered" },
   "r-delivered": { applied: false, refusal: "already-delivered" },
   "r-edited": { applied: true },
+  "r-same": { applied: false, refusal: "empty-edit" },
 };
 
 beforeAll(async () => {
@@ -75,6 +76,7 @@ beforeAll(async () => {
     }),
     listRevisions: async () => [
       {
+        kind: "revision",
         revision: 1,
         previous: { firstLesson: false },
         changes: {
@@ -91,6 +93,16 @@ beforeAll(async () => {
         sentTo: ["a@example.test"],
         skipped: [],
         sentAt: null,
+      },
+      {
+        kind: "edit",
+        edit: 7,
+        changes: {
+          improvements: { from: ["cold recall"], to: ["quiet members"] },
+          improvementsProse: { from: null, to: null },
+        },
+        editedBy: "admin@example.test",
+        editedAt: new Date("2026-10-07T12:00:00Z"),
       },
     ],
     sendRevision: async (id: string) =>
@@ -276,6 +288,14 @@ describe("the revision routes", () => {
     expect(partial.status).toBe(409);
   });
 
+  it("an improvements edit that changes nothing is refused with a 400, as an empty amendment is", async () => {
+    const res = await call("PUT", "r-same/improvements", {
+      improvements: ["x"],
+    });
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("changes nothing");
+  });
+
   it("an improvements edit without the bullets never reaches the service", async () => {
     editCalls.length = 0;
     const res = await call("PUT", "r-edited/improvements", {
@@ -298,7 +318,7 @@ describe("the revision routes", () => {
     const list = await call("GET", "r-ok/revisions");
     expect(list.status).toBe(200);
     const body = (await list.json()) as {
-      revisions: Array<{ revision: number; changes: unknown }>;
+      revisions: Array<Record<string, unknown>>;
     };
     expect(body.revisions[0].revision).toBe(1);
     expect(body.revisions[0].changes).toEqual({
@@ -310,6 +330,18 @@ describe("the revision routes", () => {
         },
       },
     });
+
+    expect(body.revisions[1]).toEqual({
+      kind: "edit",
+      edit: 7,
+      changes: {
+        improvements: { from: ["cold recall"], to: ["quiet members"] },
+        improvementsProse: { from: null, to: null },
+      },
+      editedBy: "admin@example.test",
+      editedAt: "2026-10-07T12:00:00.000Z",
+    });
+    expect(body.revisions[0]).toMatchObject({ kind: "revision" });
 
     expect((await call("POST", "r-ok/revision/send")).status).toBe(200);
     expect((await call("POST", "r-none/revision/send")).status).toBe(404);

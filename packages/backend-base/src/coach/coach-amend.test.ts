@@ -246,7 +246,9 @@ describe("a delivered report can be revised", () => {
       expect(s.text).toContain(`/coach?s=${REPORT}`);
     }
 
-    const [revision] = await service.listRevisions(REPORT);
+    const [revision] = (await service.listRevisions(REPORT)).filter(
+      (r) => r.kind === "revision",
+    );
     expect(revision.revision).toBe(1);
     expect(revision.sentAt).not.toBeNull();
     const previous = revision.previous as {
@@ -285,7 +287,9 @@ describe("a delivered report can be revised", () => {
     ]);
     expect(results.map((r) => r.revision).sort()).toEqual([1, 2]);
 
-    const revisions = await new CoachService(Database).listRevisions(REPORT);
+    const revisions = (
+      await new CoachService(Database).listRevisions(REPORT)
+    ).filter((r) => r.kind === "revision");
     const byRevision = new Map(revisions.map((r) => [r.revision, r]));
     const first = byRevision.get(1);
     const second = byRevision.get(2);
@@ -853,7 +857,7 @@ describe("a delivered report can be revised", () => {
       pending: "no-mailer",
     });
     const [revision] = await new CoachService(Database).listRevisions(REPORT);
-    expect(revision.sentAt).toBeNull();
+    expect(revision).toMatchObject({ kind: "revision", sentAt: null });
   });
 
   it.each(["in-flight", "not-live"] as const)(
@@ -912,8 +916,8 @@ describe("a delivered report can be revised", () => {
         byUserId: null,
       });
       const [unknown, known] = await service.listRevisions(REPORT);
-      expect(known.amendedBy).toBe(adminEmail);
-      expect(unknown.amendedBy).toBeNull();
+      expect(known).toMatchObject({ kind: "revision", amendedBy: adminEmail });
+      expect(unknown).toMatchObject({ kind: "revision", amendedBy: null });
     } finally {
       await conn.deleteFrom("user").where("id", "=", adminId).execute();
     }
