@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { sql } from "kysely";
 import type { RetainResult } from "./coach-archive.service";
+
 import {
+  UNRESOLVED_SWEEP_DAYS,
   getLeaderAttribution,
   reattributeSession,
   reattributeUnresolved,
@@ -10,7 +13,7 @@ import {
 } from "./coach-attribution";
 import { CoachIntakeService } from "./coach-intake.service";
 import { CoachRetrievalService } from "./coach-retrieval.service";
-import { CoachService } from "./coach.service";
+import { CoachService, PIPELINE_FAILURES_MAX } from "./coach.service";
 import type { FirefliesClient } from "./fireflies.client";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
 
@@ -113,13 +116,68 @@ describe("unresolved sessions appear on the admin failures list", () => {
     await session(SESSIONS[0]);
     const listed = (
       await new CoachService(Database).listPipelineFailures()
-    ).find((s) => s.sourceSessionId === SESSIONS[0]);
+    ).sessions.find((s) => s.sourceSessionId === SESSIONS[0]);
     expect(listed).toMatchObject({
       coachId: null,
       state: "observed",
       action: "attribute",
       reason: "unattributed: no leader matched the session title",
     });
+  });
+});
+
+describe("the failures list is paged", () => {
+  it("a page holds at most the limit, newest first, with the total of every failure", async () => {
+    await session(SESSIONS[0], { updated_at: new Date("2099-01-02") });
+    await session(SESSIONS[1], { updated_at: new Date("2099-01-01") });
+    const service = new CoachService(Database);
+    const all = await service.listPipelineFailures({ limit: 200 });
+    const first = await service.listPipelineFailures({ limit: 1 });
+    const second = await service.listPipelineFailures({ limit: 1, offset: 1 });
+    expect(first.sessions.map((s) => s.sourceSessionId)).toEqual([SESSIONS[0]]);
+    expect(second.sessions.map((s) => s.sourceSessionId)).toEqual([
+      SESSIONS[1],
+    ]);
+    expect(all.total).toBeGreaterThanOrEqual(2);
+    expect(first.total).toBe(all.total);
+    expect(second.total).toBe(first.total);
+  });
+
+  it("an unbounded request is capped", async () => {
+    const page = await new CoachService(Database).listPipelineFailures({
+      limit: 100_000,
+    });
+    expect(page.sessions.length).toBeLessThanOrEqual(PIPELINE_FAILURES_MAX);
+  });
+});
+
+describe("the unresolved sweep is bounded", () => {
+  it("a session observed before the sweep window is left for an admin to assign", async () => {
+    await session(SESSIONS[0], {
+      observed_at: sql`NOW() - ${sql.raw(`interval '${UNRESOLVED_SWEEP_DAYS + 1} days'`)}`,
+    });
+    await session(SESSIONS[1]);
+    await conn
+      .updateTable("coach_leaders")
+      .set({ title_match: ["zephaniah circle"] })
+      .where("slug", "=", RIGHT)
+      .execute();
+    expect(await reattributeUnresolved(Database)).toBe(1);
+    expect((await intake(SESSIONS[0])).coach_id).toBeNull();
+    expect((await intake(SESSIONS[1])).coach_id).toBe(RIGHT);
+  });
+
+  it("one sweep resolves at most its limit, newest first", async () => {
+    await session(SESSIONS[0], { observed_at: sql`NOW() - interval '2 days'` });
+    await session(SESSIONS[1], { observed_at: sql`NOW() - interval '1 day'` });
+    await conn
+      .updateTable("coach_leaders")
+      .set({ title_match: ["zephaniah circle"] })
+      .where("slug", "=", RIGHT)
+      .execute();
+    expect(await reattributeUnresolved(Database, { limit: 1 })).toBe(1);
+    expect((await intake(SESSIONS[1])).coach_id).toBe(RIGHT);
+    expect((await intake(SESSIONS[0])).coach_id).toBeNull();
   });
 });
 

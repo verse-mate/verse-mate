@@ -144,12 +144,25 @@ export function attributeSession(
   return { coachId: null, matchedBy: "unresolved" };
 }
 
-export async function reattributeUnresolved(database: db): Promise<number> {
+export const UNRESOLVED_SWEEP_DAYS = 90;
+export const UNRESOLVED_SWEEP_LIMIT = 500;
+
+export async function reattributeUnresolved(
+  database: db,
+  bounds: { limit?: number } = {},
+): Promise<number> {
   const conn = database.getOrCreateConnection();
   const unresolved = await conn
     .selectFrom("coach_intake_sessions")
     .select(["source_session_id", "title"])
     .where("coach_id", "is", null)
+    .where(
+      "observed_at",
+      ">=",
+      sql<Date>`NOW() - make_interval(days => ${UNRESOLVED_SWEEP_DAYS})`,
+    )
+    .orderBy("observed_at", "desc")
+    .limit(bounds.limit ?? UNRESOLVED_SWEEP_LIMIT)
     .execute();
   if (unresolved.length === 0) return 0;
   const roster = await loadAttributionRoster(database);

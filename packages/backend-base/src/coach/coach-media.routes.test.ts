@@ -38,6 +38,7 @@ const minted: Array<Record<string, unknown>> = [];
 const requeued: string[] = [];
 const released: string[] = [];
 let failuresListed = 0;
+const failurePages: unknown[] = [];
 const summaryCalls: unknown[][] = [];
 const detailCalls: unknown[][] = [];
 let admin = true;
@@ -123,22 +124,26 @@ beforeAll(async () => {
       return id === "ff-parked";
     },
     getProfileById: async () => bundledProfile,
-    listPipelineFailures: async () => {
+    listPipelineFailures: async (page: unknown) => {
       failuresListed += 1;
-      return [
-        {
-          sourceSessionId: "ff-held",
-          coachId: "leader-a",
-          title: "t",
-          sessionDate: "2026-09-01",
-          state: "delivery_pending",
-          attempts: 0,
-          reportId: "r-held",
-          reason: "held for calibration: no calibration is recorded for v3",
-          action: null,
-          updatedAt: new Date("2026-09-01T00:00:00Z"),
-        },
-      ];
+      failurePages.push(page);
+      return {
+        total: 7,
+        sessions: [
+          {
+            sourceSessionId: "ff-held",
+            coachId: "leader-a",
+            title: "t",
+            sessionDate: "2026-09-01",
+            state: "delivery_pending",
+            attempts: 0,
+            reportId: "r-held",
+            reason: "held for calibration: no calibration is recorded for v3",
+            action: null,
+            updatedAt: new Date("2026-09-01T00:00:00Z"),
+          },
+        ],
+      };
     },
     getReportSummaries: async (...args: unknown[]) => {
       summaryCalls.push(args);
@@ -285,6 +290,24 @@ describe("the pipeline-failures surface carries why a session is held", () => {
     admin = true;
     expect(res.status).toBe(403);
     expect(failuresListed).toBe(0);
+  });
+
+  it("the list is paged: limit and offset reach the service, and the total comes back", async () => {
+    failurePages.length = 0;
+    const res = await get("/coach/admin/pipeline-failures?limit=20&offset=40");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      total: number;
+      limit: number;
+      offset: number;
+    };
+    expect(body).toMatchObject({ total: 7, limit: 20, offset: 40 });
+    expect(failurePages).toEqual([{ limit: 20, offset: 40 }]);
+    const unpaged = await get("/coach/admin/pipeline-failures");
+    expect(await unpaged.json()).toMatchObject({ limit: 50, offset: 0 });
+    expect((await get("/coach/admin/pipeline-failures?limit=500")).status).toBe(
+      422,
+    );
   });
 
   it("the action an admin can take reaches the admin client", async () => {
