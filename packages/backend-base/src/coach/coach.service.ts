@@ -24,9 +24,13 @@ import { coachPipelineLive } from "./coach-cutover";
 import {
   COACH_REPLY_TO_EMAIL,
   COACH_REPLY_TO_NAME,
+  CoachDeliveryService,
   isPlaceholderAddress,
 } from "./coach-delivery.service";
-import { coldRecallInFeedback } from "./coach-governance.service";
+import {
+  coldRecallInFeedback,
+  storedEvidence,
+} from "./coach-governance.service";
 import {
   type RetainedKind,
   RetainedMediaService,
@@ -582,8 +586,6 @@ export class CoachService {
       .where("report_id", "=", reportId)
       .where(releasable)
       .execute();
-    const { CoachDeliveryService } = await import("./coach-delivery.service");
-    const { storedEvidence } = await import("./coach-pipeline.service");
     const result = await new CoachDeliveryService(
       this.db,
       this.notification,
@@ -754,7 +756,6 @@ export class CoachService {
   async sendRevision(reportId: string) {
     if (!this.notification)
       return { sent: false, refusal: "no-mailer" as const };
-    const { CoachDeliveryService } = await import("./coach-delivery.service");
     return new CoachDeliveryService(this.db, this.notification).sendRevision(
       reportId,
     );

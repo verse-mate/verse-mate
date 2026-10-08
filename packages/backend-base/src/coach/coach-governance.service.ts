@@ -233,3 +233,16 @@ function normalizeEvidence(raw: unknown): ReportEvidence {
     timestamps: Array.isArray(value.timestamps) ? value.timestamps : [],
   };
 }
+
+export async function storedEvidence(
+  database: Pick<db, "getOrCreateConnection">,
+  reportId: string,
+): Promise<ReportEvidence> {
+  const cited = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_report_dimension_scores")
+    .select("rationale")
+    .where("report_id", "=", reportId)
+    .execute();
+  return evidenceFrom(cited.map((c) => ({ note: c.rationale })));
+}
