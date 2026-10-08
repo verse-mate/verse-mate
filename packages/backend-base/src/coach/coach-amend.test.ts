@@ -419,10 +419,27 @@ describe("a delivered report can be revised", () => {
     const amend = new CoachAmendService(Database, new FakeMailer());
     const first = await amend.amend({
       reportId: REPORT,
-      amendment: { dimensions: [{ n: 6, score: 3, rationale: "half spoke" }] },
+      amendment: {
+        dimensions: [
+          {
+            n: 6,
+            score: 3,
+            rationale: 'half spoke, "a line from the amended week" at 21:15',
+          },
+        ],
+      },
       byUserId: null,
     });
     expect(first.applied).toBe(true);
+    const stored = (
+      await conn
+        .selectFrom("coach_reports")
+        .select("evidence")
+        .where("id", "=", REPORT)
+        .executeTakeFirstOrThrow()
+    ).evidence as { quotes: string[]; timestamps: string[] };
+    expect(stored.quotes).toContain("a line from the amended week");
+    expect(stored.timestamps).toContain("21:15");
     const second = await amend.amend({
       reportId: REPORT,
       amendment: { body: { headline: "A steady session, revised" } },
@@ -459,6 +476,9 @@ describe("a delivered report can be revised", () => {
     });
     expect(result.refusal).toBe("governance-blocked");
     expect(result.violations?.map((v) => v.rule)).toContain("reused-quote");
+    expect(
+      result.violations?.find((v) => v.rule === "reused-quote")?.detail,
+    ).toContain("amend-earlier");
   });
 
   it("The link a leader already has opens the revised report", async () => {
