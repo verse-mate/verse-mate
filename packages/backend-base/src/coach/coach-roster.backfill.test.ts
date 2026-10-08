@@ -33,7 +33,9 @@ const BUNDLE_SLUGS = bundle.coaches.map((c) => c.id);
 async function clear() {
   await conn
     .deleteFrom("coach_leaders")
-    .where("email", "in", BUNDLE_EMAILS)
+    .where((eb) =>
+      eb.or([eb("email", "in", BUNDLE_EMAILS), eb("slug", "in", BUNDLE_SLUGS)]),
+    )
     .execute();
   await conn
     .deleteFrom("coach_monthly_leader_summaries")
@@ -209,6 +211,45 @@ describe("roster and monthly backfill (DB)", () => {
     expect(rows.length).toBe(1);
     // The database is authoritative after the seed (open question 6).
     expect(rows[0].title_match).toEqual(["admin edited this"]);
+  });
+
+  it("a re-run after an admin corrected a leader's address keeps the corrected address", async () => {
+    await backfillCoachRoster();
+    const target = bundle.coaches[1];
+    const corrected = "roster-corrected@example.test";
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: corrected, name: "stale name" })
+      .where("slug", "=", target.id)
+      .execute();
+
+    const again = await backfillCoachRoster();
+    expect(again.leaders).toBe(EXPECTED_LEADERS);
+
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["email", "name"])
+      .where("slug", "=", target.id)
+      .execute();
+    expect(rows).toEqual([{ email: corrected, name: target.name }]);
+  });
+
+  it("a row added before leaders had slugs is adopted by its address, not duplicated", async () => {
+    await clear();
+    const target = bundle.coaches[2];
+    await conn
+      .insertInto("coach_leaders")
+      .values({ email: target.email, name: "added before slugs" })
+      .execute();
+
+    await backfillCoachRoster();
+
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["slug", "name"])
+      .where("email", "=", target.email)
+      .execute();
+    expect(rows).toEqual([{ slug: target.id, name: target.name }]);
   });
 
   it("Cutover switches the pipeline on: the roster backfill is not run again", async () => {
