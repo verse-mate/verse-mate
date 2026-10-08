@@ -90,8 +90,6 @@ export function attributeSession(
 ): Attribution {
   const title = titleWords(transcript.title ?? "");
 
-  // 1. Title keywords, LONGEST first: "saturday morning" must beat "saturday"
-  //    when both are configured, or the more specific keyword never wins.
   const keyworded = roster
     .flatMap((leader) =>
       leader.titleMatch.map((keyword) => ({
@@ -99,50 +97,37 @@ export function attributeSession(
         keyword: titleWords(keyword),
       })),
     )
-    .filter(({ keyword }) => containsWords(title, keyword))
-    .sort((a, b) => b.keyword.length - a.keyword.length);
-  if (keyworded.length > 0) {
-    // AMBIGUITY IS UNRESOLVED, not a coin toss. Two leaders can both list
-    // "saturday", nothing at the schema or app level prevents it, and
-    // picking one by roster order attributes a leader's private session to
-    // someone else with nothing flagged. `unresolved` is the safe,
-    // admin-fixable state the design already provides for exactly this.
-    const best = keyworded[0].keyword.length;
-    const tied = new Set(
-      keyworded
-        .filter((k) => k.keyword.length === best)
-        .map((k) => k.leader.slug),
-    );
-    if (tied.size > 1) return { coachId: null, matchedBy: "unresolved" };
-    return { coachId: keyworded[0].leader.slug, matchedBy: "title_match" };
-  }
+    .filter(({ keyword }) => containsWords(title, keyword));
+  const best = Math.max(0, ...keyworded.map((k) => k.keyword.length));
+  const byKeyword = keyworded
+    .filter((k) => k.keyword.length === best)
+    .map((k) => k.leader.slug);
 
-  // 2. The leader's own name, matched automatically, the host does this too,
-  //    so a keyword is only needed when the title does not carry the name.
-  const named = roster.filter((l) => containsWords(title, titleWords(l.name)));
-  // Same rule for names: "Study with Jeff Ward and Jeff Warden" names two
-  // leaders, and guessing is worse than asking.
-  if (named.length > 1) return { coachId: null, matchedBy: "unresolved" };
-  if (named.length === 1) {
-    return { coachId: named[0].slug, matchedBy: "name" };
-  }
+  const byName = roster
+    .filter((l) => containsWords(title, titleWords(l.name)))
+    .map((l) => l.slug);
 
-  // 3. An alternate sender address, for a leader who appears under more than
-  //    one. The shared bot host address matches nobody, by construction.
   const senders = [transcript.host_email, transcript.organizer_email]
     .filter((e): e is string => Boolean(e))
     .map((e) => e.toLowerCase());
-  const byAddress = roster.find((l) =>
-    [l.email, ...l.altEmails]
-      .map((e) => e.toLowerCase())
-      .some((e) => senders.includes(e)),
-  );
-  if (byAddress) return { coachId: byAddress.slug, matchedBy: "alt_email" };
+  const byAddress = roster
+    .filter((l) =>
+      [l.email, ...l.altEmails]
+        .map((e) => e.toLowerCase())
+        .some((e) => senders.includes(e)),
+    )
+    .map((l) => l.slug);
 
-  // Unattributable sessions still INGEST and are flagged, never dropped: an
-  // admin adds a keyword and the session resolves, which a dropped session
-  // could never do.
-  return { coachId: null, matchedBy: "unresolved" };
+  const candidates = new Set([...byKeyword, ...byName, ...byAddress]);
+  if (candidates.size !== 1) return { coachId: null, matchedBy: "unresolved" };
+  const [coachId] = candidates;
+  const matchedBy: MatchedBy =
+    byKeyword.length > 0
+      ? "title_match"
+      : byName.length > 0
+        ? "name"
+        : "alt_email";
+  return { coachId, matchedBy };
 }
 
 export const REATTRIBUTED_HOLD =
