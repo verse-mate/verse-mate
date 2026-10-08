@@ -1260,17 +1260,32 @@ const plugin = new Elysia()
           const email = body.email.trim().toLowerCase();
           if (!isEmail(email))
             throw new ValidationError("Enter a valid email address");
-          const result = await coachService.updateLeaderEmail(params.id, email);
-          if (result.ok) return { email: result.email };
+          const result = await coachService.updateLeaderEmail(
+            params.id,
+            email,
+            {
+              byUserId: currentUserId,
+              confirm: body.confirm === true,
+            },
+          );
+          if (result.ok)
+            return { email: result.email, noticeSent: result.noticeSent };
           if (result.refusal === "taken")
             throw new ConflictError("Another leader already uses that address");
+          if (result.refusal === "confirm-required")
+            throw new ConflictError(
+              "This is the benchmark leader, whose address receives every leader's reports: send confirm: true to change it",
+            );
           throw new NotFoundError("Leader not found");
         },
         {
           params: t.Object({ id: t.String() }),
-          body: t.Object({ email: t.String({ maxLength: 254 }) }),
+          body: t.Object({
+            email: t.String({ maxLength: 254 }),
+            confirm: t.Optional(t.Boolean()),
+          }),
           response: {
-            200: t.Object({ email: t.String() }),
+            200: t.Object({ email: t.String(), noticeSent: t.Boolean() }),
             ...StandardErrorResponses,
           },
         },
