@@ -604,6 +604,10 @@ const plugin = new Elysia()
             rationale: body.rationale,
             correctedByUserId: currentUserId,
           });
+          if (result.refusal === "legacy-report")
+            throw new ConflictError(
+              "Correction refused: this is a legacy report, which is read-only. Change it at its source and it arrives through the backfill.",
+            );
           if (!result.ok)
             throw new ValidationError(
               `Correction refused: ${result.refusal ?? "unknown"}`,

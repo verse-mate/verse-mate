@@ -5,6 +5,7 @@ import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import { composeBaseScore, composeComposite, statusForScore } from "./rubric";
 
 export type CorrectionRefusal =
+  | "legacy-report"
   | "unknown-report"
   | "unknown-dimension"
   | "already-delivered"
@@ -91,6 +92,9 @@ export class CoachReviewService {
     if (input.score !== null && (input.score < 1 || input.score > 5)) {
       return { ok: false, refusal: "score-out-of-range" };
     }
+    if (await isLegacyReport(this.db, input.reportId)) {
+      return { ok: false, refusal: "legacy-report" };
+    }
     if (await this.isDelivered(input.reportId)) {
       return { ok: false, refusal: "already-delivered" };
     }
@@ -122,6 +126,19 @@ export class CoachReviewService {
       return { ok: true, ...(await rescoreReport(trx, input.reportId)) };
     });
   }
+}
+
+export async function isLegacyReport(
+  database: db,
+  reportId: string,
+): Promise<boolean> {
+  const row = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_reports")
+    .select("source_session_id")
+    .where("id", "=", reportId)
+    .executeTakeFirst();
+  return row?.source_session_id.startsWith("legacy:") ?? false;
 }
 
 async function rescoreReport(
