@@ -450,6 +450,35 @@ describe("a retained session reaches a delivered report", () => {
     expect(mailer.sent.length).toBeGreaterThan(0);
   });
 
+  it("a delivered session an admin re-attributes is scored again and held, not mailed", async () => {
+    const OTHER = "pipe-reassigned";
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: OTHER, email: "pipe-reassigned@example.test", name: "R" })
+      .execute();
+    try {
+      const [first] = await pipeline(new FakeMailer()).run();
+      expect(first.outcome).toBe("scored-and-delivered");
+      expect(
+        await reattributeSession(Database, "ff-pipe-1", OTHER, COACH),
+      ).toMatchObject({ ok: true, state: "retained" });
+      const mailer = new FakeMailer();
+      const [again] = await pipeline(mailer).run();
+      expect(again.outcome).toBe("scored-awaiting-review");
+      expect(again.detail).toContain("re-attributed");
+      expect(mailer.sent).toEqual([]);
+    } finally {
+      await conn
+        .deleteFrom("coach_reports")
+        .where("coach_id", "=", OTHER)
+        .execute();
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", OTHER)
+        .execute();
+    }
+  });
+
   it("delivery refuses a session that awaits release, whoever asks", async () => {
     const [published] = await pipeline(null).run();
     await conn

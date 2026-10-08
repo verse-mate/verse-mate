@@ -295,6 +295,7 @@ describe("an admin re-attributes a session to a leader", () => {
       coach_id: RIGHT,
       matched_by: "admin",
       state: "observed",
+      release_required: true,
     });
     const archive = new RecordingArchive();
     await new CoachRetrievalService(Database, archive).sweep();
@@ -365,6 +366,7 @@ describe("an admin re-attributes a session to a leader", () => {
       retry_count: 0,
       delivered_to: [],
       report_id: "reattr-report-1",
+      release_required: true,
     });
     const asset = await conn
       .selectFrom("coach_session_assets")

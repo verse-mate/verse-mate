@@ -313,6 +313,7 @@ export async function reattributeSession(
         .set({
           coach_id: coachId,
           matched_by: "admin",
+          release_required: true,
           state,
           ...(rescore
             ? {
