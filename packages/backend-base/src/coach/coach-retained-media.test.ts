@@ -322,3 +322,49 @@ describe("the retained transcript is reachable the same way as the recording", (
     ).toBeNull();
   });
 });
+
+describe("Source Material Access Follows Report Access: a held report's material is not minted for its leader", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  async function hold(id: string) {
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: true })
+      .where("id", "=", id)
+      .execute();
+  }
+
+  it("the leader gets no recording address, and nothing is signed", async () => {
+    await seedReport(OWNER, "r-own", "ff-own");
+    await seedAsset(OWNER, "ff-own", "r-own");
+    await hold("r-own");
+    const { svc, storage } = service();
+
+    expect(
+      await svc.mint({
+        reportId: "r-own",
+        requesterCoachId: OWNER,
+        isAdmin: false,
+        kind: "recording",
+      }),
+    ).toBeNull();
+    expect(storage.presigns).toEqual([]);
+  });
+
+  it("the program admin still reaches the held session's recording", async () => {
+    await seedReport(OWNER, "r-own", "ff-own");
+    await seedAsset(OWNER, "ff-own", "r-own");
+    await hold("r-own");
+    const { svc } = service();
+
+    expect(
+      await svc.mint({
+        reportId: "r-own",
+        requesterCoachId: null,
+        isAdmin: true,
+        kind: "recording",
+      }),
+    ).toBeTruthy();
+  });
+});
