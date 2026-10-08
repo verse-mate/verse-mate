@@ -7,11 +7,14 @@ import { sql } from "kysely";
 import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import { isolateTable } from "./coach-test-tables";
 import coachPlugin from "./coach.plugin";
+import { COACH_REFUSALS } from "./coach.schema";
 import { CoachService } from "./coach.service";
 import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_admins");
 const ADMIN_EMAIL = "real-routes-admin@example.test";
 const LEADER = "real-routes-leader";
 const OTHER = "real-routes-other";
@@ -23,12 +26,14 @@ const HELD = "real-routes-held";
 const FAILED = "ff-real-routes-failed";
 const RESHARE = "ff-real-routes-reshare";
 const UNRESOLVED = "ff-real-routes-unresolved";
+const PARALLEL = "ff-real-routes-parallel";
 const REPORTS = [SCORED, DELIVERED, HELD];
 const SESSIONS = [
   ...REPORTS.map((id) => `ff-${id}`),
   FAILED,
   RESHARE,
   UNRESOLVED,
+  PARALLEL,
 ];
 
 class FakeMailer {
@@ -186,6 +191,16 @@ beforeAll(async () => {
         session_date: "2026-09-28",
         state: "retrieval_failed",
         reshare_requested_at: sql`NOW()`,
+      },
+      {
+        source_session_id: PARALLEL,
+        coach_id: LEADER,
+        matched_by: "title_match",
+        title: "Nahum, observed in the parallel run",
+        session_date: "2026-09-25",
+        state: "retrieval_failed",
+        reshare_requested_at: sql`NOW()`,
+        parallel_run: true,
       },
       {
         source_session_id: UNRESOLVED,
@@ -375,5 +390,115 @@ describe("every admin route answers through the real service within its response
         expectedCoachId: null,
       }),
     ).toEqual({ status: 200, body: { coachId: OTHER, state: "observed" } });
+  });
+});
+
+describe("every admin refusal carries a structured code with the status and words the contract lists", () => {
+  async function refused(
+    route: keyof typeof COACH_REFUSALS,
+    path: string,
+    code: string,
+    body?: unknown,
+  ) {
+    const [method] = route.split(" ");
+    const res = await call(method, path, body);
+    const listed = (
+      COACH_REFUSALS[route] as Record<
+        string,
+        { status: number; message: string }
+      >
+    )[code];
+    expect(listed).toBeDefined();
+    expect(res).toMatchObject({
+      status: listed.status,
+      body: { message: listed.message, details: { refusal: code } },
+    });
+  }
+
+  it("a parallel-run session's re-share send is a 409 coded parallel-run-session", async () => {
+    await refused(
+      "POST /coach/admin/reshares/:sourceSessionId/send",
+      `reshares/${PARALLEL}/send`,
+      "parallel-run-session",
+    );
+  });
+
+  it("the other state refusals of the admin routes are coded", async () => {
+    await refused(
+      "POST /coach/admin/reshares/:sourceSessionId/send",
+      "reshares/ff-real-routes-nobody/send",
+      "unknown-session",
+    );
+    await refused(
+      "POST /coach/admin/reports/:reportId/release",
+      `reports/${DELIVERED}/release`,
+      "not-held",
+    );
+    await refused(
+      "POST /coach/admin/pipeline-failures/:sourceSessionId/requeue",
+      "pipeline-failures/ff-real-routes-nobody/requeue",
+      "not-parked",
+    );
+    await refused(
+      "POST /coach/admin/reports/:reportId/revision/send",
+      `reports/${SCORED}/revision/send`,
+      "no-revision",
+    );
+    await refused(
+      "POST /coach/admin/reports/:reportId/revision/requeue",
+      `reports/${SCORED}/revision/requeue`,
+      "nothing-to-requeue",
+    );
+    await refused(
+      "POST /coach/admin/reports/:reportId/dimensions/:dimensionN",
+      `reports/${DELIVERED}/dimensions/2`,
+      "already-delivered",
+      { score: 2, rationale: "x" },
+    );
+    await refused(
+      "PUT /coach/admin/reports/:reportId/improvements",
+      `reports/${DELIVERED}/improvements`,
+      "already-delivered",
+      { improvements: ["Ask one open question"] },
+    );
+    await refused(
+      "POST /coach/admin/reports/:reportId/amend",
+      `reports/${SCORED}/amend`,
+      "not-delivered",
+      { body: { headline: "x" } },
+    );
+    await refused(
+      "GET /coach/admin/reports/:reportId/review",
+      "reports/real-routes-nobody/review",
+      "unknown-report",
+    );
+    await refused(
+      "PUT /coach/admin/leaders/:id/email",
+      `leaders/${LEADER}/email`,
+      "taken",
+      { email: "real-routes-other.new@example.test" },
+    );
+    await refused(
+      "PUT /coach/admin/leaders/:id/email",
+      `leaders/${LEADER}/email`,
+      "invalid-address",
+      { email: "not an address" },
+    );
+    await refused(
+      "GET /coach/admin/leaders/:id/attribution",
+      "leaders/real-routes-nobody/attribution",
+      "unknown-leader",
+    );
+    await refused(
+      "POST /coach/admin/sessions/:sourceSessionId/attribute",
+      `sessions/${UNRESOLVED}/attribute`,
+      "already-assigned",
+      { coachId: OTHER, expectedCoachId: OTHER },
+    );
+    await refused(
+      "POST /coach/admin/leaders/:id/not-teaching",
+      "leaders/real-routes-nobody/not-teaching",
+      "unknown-leader",
+    );
   });
 });

@@ -457,3 +457,264 @@ export const CoverageReportSchema = t.Object({
     }),
   ),
 });
+
+export const EMAIL_RULE =
+  "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot";
+
+const PARALLEL_RUN_SESSION =
+  "This session was observed during the parallel run: it is kept for admin comparison and never sent";
+
+const PARALLEL_RUN =
+  "The pipeline is in its parallel run: nothing is sent until cutover";
+
+const NO_MAILER = "No mailer is configured";
+
+export interface CoachRefusal {
+  status: 400 | 404 | 409;
+  message: string;
+  template?: true;
+}
+
+const refusal = (status: CoachRefusal["status"], message: string) => ({
+  status,
+  message,
+});
+
+const template = (status: CoachRefusal["status"], message: string) => ({
+  status,
+  message,
+  template: true as const,
+});
+
+const REPORT_EDIT = {
+  "legacy-report": refusal(
+    409,
+    "Refused: this is a legacy report, which is read-only. Change it at its source and it arrives through the backfill.",
+  ),
+  "unknown-report": refusal(404, "No scores for that report"),
+  "not-delivered": refusal(
+    409,
+    "Refused: the report is not delivered yet. Correct it through the review instead.",
+  ),
+  "unknown-dimension": refusal(400, "Unknown dimension"),
+  "score-out-of-range": refusal(400, "A dimension score is 1 to 5, or null"),
+  "memory-reinforcement-required": refusal(
+    400,
+    "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale",
+  ),
+  "empty-amendment": refusal(400, "The amendment changes nothing"),
+  "empty-edit": refusal(
+    400,
+    "The edit changes nothing: give at least one improvement, different from the current ones",
+  ),
+  "in-flight": refusal(
+    409,
+    "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery.",
+  ),
+  "revision-sending": refusal(
+    409,
+    "Refused: a revised copy of this report is being sent right now. Amend it again once that send finishes.",
+  ),
+  "partially-delivered": refusal(
+    409,
+    "Refused: the report is already open to its leader, or already emailed to some of its recipients, so it can no longer be corrected or edited. Its remaining sends are retried automatically. If one keeps failing, or a recipient has only a placeholder address, fix that recipient's address and requeue the report from the pipeline failures list. Once every recipient has it, amend it.",
+  ),
+  "already-delivered": refusal(
+    409,
+    "Refused: the report was already delivered. Amend it instead, which sends the leader a revised copy.",
+  ),
+};
+
+const pick = <K extends keyof typeof REPORT_EDIT>(...codes: K[]) =>
+  Object.fromEntries(codes.map((c) => [c, REPORT_EDIT[c]])) as Pick<
+    typeof REPORT_EDIT,
+    K
+  >;
+
+const UNKNOWN_LEADER = { "unknown-leader": refusal(404, "Leader not found") };
+const INVALID_MONTH = {
+  "invalid-month": refusal(400, "month must be YYYY-MM"),
+};
+
+export const COACH_REFUSALS = {
+  "GET /coach/admin/reports/:reportId/review": pick("unknown-report"),
+  "POST /coach/admin/reports/:reportId/dimensions/:dimensionN": {
+    "invalid-dimension": refusal(400, "A dimension is a whole number, 1 to 12"),
+    ...pick(
+      "legacy-report",
+      "unknown-report",
+      "unknown-dimension",
+      "score-out-of-range",
+      "memory-reinforcement-required",
+      "in-flight",
+      "partially-delivered",
+      "already-delivered",
+    ),
+  },
+  "PUT /coach/admin/reports/:reportId/first-lesson": pick(
+    "legacy-report",
+    "unknown-report",
+    "score-out-of-range",
+    "memory-reinforcement-required",
+    "in-flight",
+    "partially-delivered",
+    "already-delivered",
+  ),
+  "PUT /coach/admin/reports/:reportId/improvements": pick(
+    "legacy-report",
+    "unknown-report",
+    "empty-edit",
+    "in-flight",
+    "partially-delivered",
+    "already-delivered",
+  ),
+  "POST /coach/admin/reports/:reportId/amend": pick(
+    "legacy-report",
+    "unknown-report",
+    "not-delivered",
+    "empty-amendment",
+    "unknown-dimension",
+    "score-out-of-range",
+    "memory-reinforcement-required",
+    "revision-sending",
+  ),
+  "POST /coach/admin/reports/:reportId/revision/send": {
+    "no-revision": refusal(404, "That report has no revision"),
+    "already-sent": refusal(409, "The latest revision was already sent"),
+    "in-flight": refusal(409, "The revision is being sent by another request"),
+    "no-mailer": refusal(409, NO_MAILER),
+    "parallel-run": refusal(409, PARALLEL_RUN),
+    "not-live": refusal(
+      409,
+      "The report is not live for the leader this revision was made for: it is held, not delivered, or re-attributed",
+    ),
+  },
+  "POST /coach/admin/reports/:reportId/revision/requeue": {
+    "nothing-to-requeue": refusal(
+      404,
+      "That report has no unsent revision with a send left unconfirmed, or its send is still in flight",
+    ),
+  },
+  "POST /coach/admin/leaders/:id/not-teaching": UNKNOWN_LEADER,
+  "DELETE /coach/admin/leaders/:id/not-teaching": UNKNOWN_LEADER,
+  "POST /coach/admin/reports/:reportId/release": {
+    "not-held": refusal(404, "No report held for review"),
+    "parallel-run-session": refusal(409, PARALLEL_RUN_SESSION),
+    "no-mailer": refusal(409, NO_MAILER),
+    "parallel-run": refusal(409, PARALLEL_RUN),
+  },
+  "POST /coach/admin/pipeline-failures/:sourceSessionId/requeue": {
+    "parallel-run-session": refusal(409, PARALLEL_RUN_SESSION),
+    "not-parked": refusal(404, "No parked session"),
+  },
+  "POST /coach/admin/reshares/:sourceSessionId/send": {
+    "parallel-run": refusal(409, PARALLEL_RUN),
+    "parallel-run-session": refusal(409, PARALLEL_RUN_SESSION),
+    "unknown-session": refusal(404, "Session not found"),
+    "not-pending": refusal(
+      409,
+      "This session has no pending re-share request: its recording was retrieved, or retrieval has not run out of attempts",
+    ),
+    "already-asked": refusal(
+      409,
+      "The leader was already asked to re-share this recording",
+    ),
+    "no-leader-address": refusal(
+      409,
+      "The session's leader has no address on the roster",
+    ),
+    "placeholder-address": refusal(
+      409,
+      "The session's leader has only a placeholder address: set their real address first",
+    ),
+    "send-failed": refusal(
+      400,
+      "The mail service did not accept the request: try again",
+    ),
+  },
+  "POST /coach/admin/reshares/:sourceSessionId/resolve": {
+    "not-pending": refusal(404, "No pending re-share request"),
+  },
+  "GET /coach/admin/coaches/:id/reports/summary": {
+    "unknown-leader": refusal(404, "Coach not found"),
+  },
+  "GET /coach/admin/coaches/:id/reports/:reportId": {
+    "unknown-report": refusal(404, "Session not found"),
+  },
+  "GET /coach/admin/coaches/:id/trends": {
+    "unknown-leader": refusal(404, "Coach not found"),
+  },
+  "GET /coach/admin/coaches/:id/monthly-summary": {
+    ...INVALID_MONTH,
+    "unknown-leader": refusal(404, "Coach not found"),
+  },
+  "POST /coach/admin/leaders": {
+    "invalid-address": refusal(400, EMAIL_RULE),
+    "slug-taken": template(
+      409,
+      'Another leader already uses the id "<slug>". Enter a different name.',
+    ),
+    "no-slug": refusal(400, "Enter a name with at least one letter or digit"),
+    "keyword-conflict": template(
+      409,
+      'Name refused: it contains "<keyword>", a keyword of <leader>. Their sessions would be routed to that leader. Enter a different name or change that leader\'s keywords first.',
+    ),
+    "email-taken": refusal(409, "That email is already a leader"),
+  },
+  "GET /coach/admin/leaders/:id/attribution": UNKNOWN_LEADER,
+  "PUT /coach/admin/leaders/:id/attribution": {
+    "keyword-too-short": refusal(
+      400,
+      "Each title keyword needs at least three characters",
+    ),
+    "invalid-alternate-address": template(
+      400,
+      `Alternate address "<address>": ${EMAIL_RULE}`,
+    ),
+    "keyword-conflict": template(
+      409,
+      'Keywords refused: "<keyword>" is inside the name of <leader>; "<keyword>" is inside a keyword of <leader>',
+    ),
+    ...UNKNOWN_LEADER,
+  },
+  "PUT /coach/admin/leaders/:id/email": {
+    "invalid-address": refusal(400, EMAIL_RULE),
+    taken: refusal(409, "Another leader already uses that address"),
+    "confirm-required": refusal(
+      409,
+      "This is the benchmark leader, whose address receives every leader's reports: send confirm: true to change it",
+    ),
+    ...UNKNOWN_LEADER,
+  },
+  "POST /coach/admin/sessions/:sourceSessionId/attribute": {
+    ...UNKNOWN_LEADER,
+    "unknown-session": refusal(404, "Session not found"),
+    "attribution-changed": refusal(
+      409,
+      "The session's leader changed since this list was loaded; reload it and assign again",
+    ),
+    "already-assigned": refusal(
+      409,
+      "The session is already assigned to that leader",
+    ),
+    "in-flight": refusal(
+      409,
+      "The session's report is being delivered right now; try again shortly",
+    ),
+  },
+  "PUT /coach/admin/coaches/:id/reports/:reportId/recording": {
+    "invalid-link": refusal(400, "Enter a valid http(s) link"),
+    "unknown-report": refusal(404, "Session not found"),
+  },
+  "POST /coach/admin/coaches/:id/reports/:reportId/notes": {
+    "empty-note": refusal(400, "Note cannot be empty"),
+    "unknown-report": refusal(404, "Session not found"),
+    held: refusal(
+      409,
+      "This report is held from its leader, so a note would email them about a report they cannot open. Release it first.",
+    ),
+  },
+  "GET /coach/admin/monthly": INVALID_MONTH,
+} satisfies Record<string, Record<string, CoachRefusal>>;
+
+export type CoachRefusalRoute = keyof typeof COACH_REFUSALS;
