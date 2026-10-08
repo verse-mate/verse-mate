@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { leaderSlug } from "./coach-attribution";
 import history from "./coach-bundle-history.fixture.json";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import leaderMapJson from "./coach-leader-map.json";
@@ -10,7 +11,12 @@ import coachDataJson from "./coach.data.json";
 const conn = Database.getOrCreateConnection();
 
 type Bundle = {
-  coaches: Array<{ id: string; email: string; name: string }>;
+  coaches: Array<{
+    id: string;
+    email: string;
+    name: string;
+    coachName: string;
+  }>;
   admins?: string[];
   monthlyNarratives?: Record<string, unknown>;
   monthlyLeaderSummaries?: Record<string, Record<string, unknown>>;
@@ -29,17 +35,53 @@ const EXPECTED_LEADER_SUMMARIES = Object.values(
 ).reduce((n, byMonth) => n + Object.keys(byMonth).length, 0);
 const BUNDLE_EMAILS = bundle.coaches.map((c) => c.email);
 const BUNDLE_SLUGS = bundle.coaches.map((c) => c.id);
+const HISTORY_COACHES = Object.values(history).flatMap((h) => h.coaches);
+const TOUCHED_EMAILS = [
+  ...new Set([...BUNDLE_EMAILS, ...HISTORY_COACHES.map((c) => c.email)]),
+];
+const TOUCHED_SLUGS = [
+  ...new Set([...BUNDLE_SLUGS, ...HISTORY_COACHES.map((c) => c.id)]),
+];
+
+type MapEntry = {
+  leader: string;
+  email: string;
+  alt_emails?: string[];
+  title_match?: string[];
+};
+const MAP_ENTRIES = (leaderMapJson as { coaches: MapEntry[] }).coaches;
+const addressesOf = (m: MapEntry) =>
+  [m.email, ...(m.alt_emails ?? [])]
+    .filter(Boolean)
+    .map((e) => e.toLowerCase());
+const BENCHMARK = bundle.coaches.find((c) =>
+  bundle.coaches.some((other) => other.coachName === c.name),
+);
+const NO_EMAIL_ENTRIES = MAP_ENTRIES.filter((m) => !m.email);
+const ALT_ADDRESS_ENTRY = MAP_ENTRIES.find((m) =>
+  (m.alt_emails ?? []).some((e) => BUNDLE_EMAILS.includes(e)),
+);
+const ALT_ADDRESS_LEADER = bundle.coaches.find((c) =>
+  ALT_ADDRESS_ENTRY?.alt_emails?.includes(c.email),
+);
+const TWO_NAME_LEADER = bundle.coaches.find((c) => c.name.includes("&"));
+const TWO_NAME_ENTRY = MAP_ENTRIES.find(
+  (m) => leaderSlug(m.leader) === TWO_NAME_LEADER?.id,
+);
 
 async function clear() {
   await conn
     .deleteFrom("coach_leaders")
     .where((eb) =>
-      eb.or([eb("email", "in", BUNDLE_EMAILS), eb("slug", "in", BUNDLE_SLUGS)]),
+      eb.or([
+        eb("email", "in", TOUCHED_EMAILS),
+        eb("slug", "in", TOUCHED_SLUGS),
+      ]),
     )
     .execute();
   await conn
     .deleteFrom("coach_monthly_leader_summaries")
-    .where("coach_id", "in", BUNDLE_SLUGS)
+    .where("coach_id", "in", TOUCHED_SLUGS)
     .execute();
   await conn
     .deleteFrom("coach_monthly_narratives")
@@ -76,8 +118,9 @@ describe("roster and monthly backfill (DB)", () => {
       .select("slug")
       .where("is_benchmark", "=", true)
       .execute();
+    expect(BENCHMARK).toBeDefined();
     expect(rows.length).toBe(1);
-    expect(rows[0].slug).toBe("avery-hollis");
+    expect(rows[0].slug).toBe(BENCHMARK?.id ?? "");
   });
 
   it("carries the intake attribution keywords across from the leader map", async () => {
@@ -109,44 +152,59 @@ describe("roster and monthly backfill (DB)", () => {
       .map((r) => r.name)
       .sort();
     expect(result.leadersWithoutKeywords).toEqual(bare);
-    expect(bare).toEqual(["Wyatt Wellington", "Desmond Vane"]);
+    const mapped = new Set(MAP_ENTRIES.flatMap(addressesOf));
+    const mappedSlugs = new Set(MAP_ENTRIES.map((m) => leaderSlug(m.leader)));
+    const unmapped = bundle.coaches
+      .filter(
+        (c) => !mapped.has(c.email.toLowerCase()) && !mappedSlugs.has(c.id),
+      )
+      .map((c) => c.name)
+      .sort();
+    expect(unmapped.length).toBeGreaterThan(0);
+    expect(bare).toEqual(unmapped);
   });
 
   it("a map entry with no email reaches its leader through the map's leader name", async () => {
+    const expected = NO_EMAIL_ENTRIES.map((m) => ({
+      slug: leaderSlug(m.leader),
+      title_match: m.title_match ?? [],
+    })).sort((a, b) => a.slug.localeCompare(b.slug));
+    expect(expected.length).toBeGreaterThan(0);
     const rows = await conn
       .selectFrom("coach_leaders")
       .select(["slug", "title_match"])
-      .where("slug", "in", ["quentin-faber", "remy-lundgren", "elias-sorensen"])
-      .orderBy("slug")
+      .where(
+        "slug",
+        "in",
+        expected.map((e) => e.slug),
+      )
       .execute();
-    expect(rows).toEqual([
-      { slug: "quentin-faber", title_match: ["quentin", "faber"] },
-      { slug: "elias-sorensen", title_match: ["elias", "sorensen"] },
-      { slug: "remy-lundgren", title_match: ["remy", "lundgren"] },
-    ]);
+    expect(
+      rows.sort((a, b) => (a.slug ?? "").localeCompare(b.slug ?? "")),
+    ).toEqual(expected);
   });
 
   it("a map entry whose alternate address is the roster address reaches its leader, and its own address becomes an alternate", async () => {
+    expect(ALT_ADDRESS_LEADER).toBeDefined();
     const row = await conn
       .selectFrom("coach_leaders")
       .select(["title_match", "alt_emails"])
-      .where("slug", "=", "reid-thorne")
+      .where("slug", "=", ALT_ADDRESS_LEADER?.id ?? "")
       .executeTakeFirstOrThrow();
     expect(row).toEqual({
-      title_match: ["reid", "thorne"],
-      alt_emails: ["reid.thorne2@example.org"],
+      title_match: ALT_ADDRESS_ENTRY?.title_match ?? [],
+      alt_emails: [ALT_ADDRESS_ENTRY?.email.toLowerCase() ?? ""],
     });
   });
 
   it("a map entry is joined on its alternate address even when its leader name is not the roster's", async () => {
     await clear();
-    const reid = bundle.coaches.find((c) => c.id === "reid-thorne");
     await backfillCoachRoster(coachDataJson, {
       coaches: [
         {
           leader: "Folder_Renamed",
           email: "elsewhere@example.test",
-          alt_emails: [reid?.email],
+          alt_emails: [ALT_ADDRESS_LEADER?.email],
           title_match: ["renamed"],
         },
       ],
@@ -154,7 +212,7 @@ describe("roster and monthly backfill (DB)", () => {
     const row = await conn
       .selectFrom("coach_leaders")
       .select(["title_match", "alt_emails"])
-      .where("slug", "=", "reid-thorne")
+      .where("slug", "=", ALT_ADDRESS_LEADER?.id ?? "")
       .executeTakeFirstOrThrow();
     expect(row).toEqual({
       title_match: ["renamed"],
@@ -164,17 +222,14 @@ describe("roster and monthly backfill (DB)", () => {
     await backfillCoachRoster();
   });
 
-  it("Lachlan's seed is the leader map's, unchanged", async () => {
+  it("a two-name leader's seed is the leader map's, unchanged", async () => {
+    expect(TWO_NAME_ENTRY).toBeDefined();
     const row = await conn
       .selectFrom("coach_leaders")
       .select("title_match")
-      .where("slug", "=", "lachlan-genevieve")
+      .where("slug", "=", TWO_NAME_LEADER?.id ?? "")
       .executeTakeFirstOrThrow();
-    expect(row.title_match).toEqual([
-      "lachlan",
-      "genevieve",
-      "couples precept",
-    ]);
+    expect(row.title_match).toEqual(TWO_NAME_ENTRY?.title_match ?? []);
   });
 
   it("loads every monthly narrative and every leader-month summary, counted from the bundle", async () => {
@@ -275,14 +330,14 @@ describe("roster and monthly backfill (DB)", () => {
       conn
         .selectFrom("coach_monthly_leader_summaries")
         .selectAll()
-        .where("coach_id", "in", BUNDLE_SLUGS)
+        .where("coach_id", "in", TOUCHED_SLUGS)
         .orderBy(["coach_id", "month"])
         .execute();
     const leaders = async () =>
       conn
         .selectFrom("coach_leaders")
         .selectAll()
-        .where("email", "in", BUNDLE_EMAILS)
+        .where("email", "in", TOUCHED_EMAILS)
         .orderBy("slug")
         .execute();
     const before = { summaries: await summaries(), leaders: await leaders() };

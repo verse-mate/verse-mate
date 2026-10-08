@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Value } from "@sinclair/typebox/value";
+import coachDataJson from "./coach.data.json";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
@@ -206,6 +207,13 @@ describe("ReportSchema sections field", () => {
   });
 });
 
+const BUNDLED_LEADER =
+  coachDataJson.coaches.find((c) => c.reports.length > 1)?.id ?? "";
+const MONTHLY_LEADER =
+  Object.entries(coachDataJson.monthlyLeaderSummaries).find(
+    ([, byMonth]) => "2026-06" in byMonth,
+  )?.[0] ?? "";
+
 describe("CoachService admin oversight", () => {
   // listCoaches / getReportsById now merge admin-added leaders and overlay
   // recording links + notes from the DB. A fully-chainable query-builder stub
@@ -232,17 +240,17 @@ describe("CoachService admin oversight", () => {
   it("lists every coach with a newest-first latest summary", async () => {
     const coaches = await adminSvc.listCoaches();
     expect(coaches.length).toBeGreaterThan(0);
-    const milo = coaches.find((c) => c.id === "milo-kerr");
-    expect(milo).toBeDefined();
-    expect(milo?.sessionCount).toBeGreaterThanOrEqual(1);
+    const leader = coaches.find((c) => c.id === BUNDLED_LEADER);
+    expect(leader).toBeDefined();
+    expect(leader?.sessionCount).toBeGreaterThanOrEqual(1);
     // latest.date must be >= every other report date for that coach.
-    const reports = (await adminSvc.getReportsById("milo-kerr")) ?? [];
+    const reports = (await adminSvc.getReportsById(BUNDLED_LEADER)) ?? [];
     const maxDate = reports.reduce((m, r) => (r.date > m ? r.date : m), "");
-    expect(milo?.latest?.date).toBe(maxDate);
+    expect(leader?.latest?.date).toBe(maxDate);
   });
 
   it("returns reports for a known coach id and null for an unknown one", async () => {
-    expect(await adminSvc.getReportsById("milo-kerr")).not.toBeNull();
+    expect(await adminSvc.getReportsById(BUNDLED_LEADER)).not.toBeNull();
     expect(await adminSvc.getReportsById("nope")).toBeNull();
     expect(await adminSvc.getTrendsById("nope")).toBeNull();
     expect(await adminSvc.getProfileById("nope")).toBeNull();
@@ -268,9 +276,9 @@ describe("CoachService admin oversight", () => {
   });
 
   it("returns a leader's monthly summary (admin drill-in) with picker months", async () => {
-    const res = await adminSvc.getMonthlySummaryById("avery-hollis", "2026-06");
+    const res = await adminSvc.getMonthlySummaryById(MONTHLY_LEADER, "2026-06");
     expect(res).not.toBeNull();
-    expect(res?.profile.id).toBe("avery-hollis");
+    expect(res?.profile.id).toBe(MONTHLY_LEADER);
     expect(res?.summary).not.toBeNull();
     expect(res?.summary?.month).toBe("2026-06");
     expect(res?.summary?.clusters.length).toBe(4);
@@ -281,7 +289,7 @@ describe("CoachService admin oversight", () => {
     expect([...months].sort((a, b) => (a < b ? 1 : -1))).toEqual(months);
     // A month the leader has no summary for → summary null, months still listed.
     const empty = await adminSvc.getMonthlySummaryById(
-      "avery-hollis",
+      MONTHLY_LEADER,
       "2030-01",
     );
     expect(empty?.summary).toBeNull();
@@ -353,7 +361,7 @@ describe("CoachService recording-link auto-attach", () => {
   it("auto-attaches the leader's saved meeting link when no explicit link is set", async () => {
     const zoom = "https://zoom.us/j/555000111";
     const svc = new CoachService(stubDbFor({ zoomLink: zoom }));
-    const reports = (await svc.getReportsById("milo-kerr")) ?? [];
+    const reports = (await svc.getReportsById(BUNDLED_LEADER)) ?? [];
     expect(reports.length).toBeGreaterThan(0);
     for (const r of reports) expect(r.recordingUrl).toBe(zoom);
   });
@@ -363,12 +371,13 @@ describe("CoachService recording-link auto-attach", () => {
     const explicit = "https://drive.google.com/file/session-1";
     // Grab a real report id first, then seed an explicit link for it.
     const ids =
-      (await new CoachService(stubDbFor({})).getReportsById("milo-kerr")) ?? [];
+      (await new CoachService(stubDbFor({})).getReportsById(BUNDLED_LEADER)) ??
+      [];
     const targetId = ids[0]?.id ?? "";
     const svc = new CoachService(
       stubDbFor({ zoomLink: zoom, recordingLinks: { [targetId]: explicit } }),
     );
-    const reports = (await svc.getReportsById("milo-kerr")) ?? [];
+    const reports = (await svc.getReportsById(BUNDLED_LEADER)) ?? [];
     expect(reports.find((r) => r.id === targetId)?.recordingUrl).toBe(explicit);
     // Every other session still gets the auto-attached meeting link.
     for (const r of reports.filter((r) => r.id !== targetId)) {
@@ -378,7 +387,7 @@ describe("CoachService recording-link auto-attach", () => {
 
   it("leaves the recording link empty when the leader has saved no meeting link", async () => {
     const svc = new CoachService(stubDbFor({}));
-    const reports = (await svc.getReportsById("milo-kerr")) ?? [];
+    const reports = (await svc.getReportsById(BUNDLED_LEADER)) ?? [];
     for (const r of reports) expect(r.recordingUrl).toBe("");
   });
 });
