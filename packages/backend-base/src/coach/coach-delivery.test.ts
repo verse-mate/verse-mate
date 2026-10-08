@@ -35,6 +35,7 @@ const EMAILS = [
   "deliv-bench@example.test",
   "deliv-admin@example.test",
 ];
+const PLACEHOLDER = "deliv-leader@needs-real-email.invalid";
 
 interface Sent {
   to: string;
@@ -794,5 +795,81 @@ describe("a model-produced report waits for its model version to be calibrated",
       new FakeMailer(),
     ).deliver({ reportId: "r-cal", evidence: evidence() });
     expect(result.refusal).toBe("calibration-blocked");
+  });
+});
+
+describe("A report is delivered for a leader on a placeholder address", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: PLACEHOLDER })
+      .where("slug", "=", LEADER)
+      .execute();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("email", "=", PLACEHOLDER)
+      .execute();
+  });
+
+  it("no email goes to the placeholder, the other recipients still receive it, and the delivery completes", async () => {
+    await seedReport("r1");
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r1",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(mailer.sent.map((s) => s.to)).not.toContain(PLACEHOLDER);
+    expect(mailer.sent.map((s) => s.to)).toContain(EMAILS[1]);
+    expect(mailer.sent.map((s) => s.to)).toContain(EMAILS[2]);
+    expect(result.skipped).toEqual([PLACEHOLDER]);
+  });
+
+  it("the admin is told on the pipeline surface who was skipped, until the address is corrected", async () => {
+    await seedReport("r1");
+    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
+      reportId: "r1",
+      evidence: evidence(),
+    });
+    const service = new CoachService(Database);
+    const listed = (await service.listPipelineFailures()).find(
+      (s) => s.reportId === "r1",
+    );
+    expect(listed).toMatchObject({
+      state: "delivered",
+      action: null,
+      reason: `delivered, but not emailed to ${PLACEHOLDER}: placeholder address`,
+    });
+
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: EMAILS[0] })
+      .where("slug", "=", LEADER)
+      .execute();
+    expect(
+      (await service.listPipelineFailures()).some((s) => s.reportId === "r1"),
+    ).toBe(false);
+  });
+
+  it("once the address is corrected, the next delivery goes to it", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: EMAILS[0] })
+      .where("slug", "=", LEADER)
+      .execute();
+    await seedReport("r1");
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r1",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(mailer.sent.map((s) => s.to)).toContain(EMAILS[0]);
+    expect(result.skipped).toEqual([]);
   });
 });

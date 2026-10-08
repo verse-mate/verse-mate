@@ -739,6 +739,7 @@ const plugin = new Elysia()
               refusal: t.Optional(t.String()),
               violations: t.Optional(t.Array(t.String())),
               shortfalls: t.Optional(t.Array(t.String())),
+              skipped: t.Optional(t.Array(t.String())),
             }),
             ...StandardErrorResponses,
           },
@@ -1041,6 +1042,31 @@ const plugin = new Elysia()
               altEmails: t.Array(t.String()),
               resolved: t.Number(),
             }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/admin/leaders/:id/email",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const email = body.email.trim().toLowerCase();
+          if (!isEmail(email))
+            throw new ValidationError("Enter a valid email address");
+          const result = await coachService.updateLeaderEmail(params.id, email);
+          if (result.ok) return { email: result.email };
+          if (result.refusal === "taken")
+            throw new ConflictError("Another leader already uses that address");
+          throw new NotFoundError("Leader not found");
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object({ email: t.String({ maxLength: 254 }) }),
+          response: {
+            200: t.Object({ email: t.String() }),
             ...StandardErrorResponses,
           },
         },
