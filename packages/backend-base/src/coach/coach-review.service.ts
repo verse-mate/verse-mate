@@ -166,6 +166,7 @@ export class CoachReviewService {
           .set({
             first_lesson: input.firstLesson,
             first_lesson_source: "admin",
+            evidence: null,
           })
           .where("id", "=", input.reportId)
           .execute();
@@ -300,6 +301,11 @@ export class CoachReviewService {
         if (Number(updated.numUpdatedRows ?? 0) === 0) {
           return { ok: false, refusal: "unknown-dimension" as const };
         }
+        await trx
+          .updateTable("coach_reports")
+          .set({ evidence: null })
+          .where("id", "=", input.reportId)
+          .execute();
 
         return { ok: true, ...(await rescoreReport(trx, input.reportId)) };
       });

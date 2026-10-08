@@ -451,6 +451,101 @@ describe("delivery", () => {
     expect((row.evidence as ReportEvidence).quotes).toEqual(["recorded line"]);
   });
 
+  async function storedEvidenceOf(reportId: string) {
+    return (
+      await conn
+        .selectFrom("coach_reports")
+        .select("evidence")
+        .where("id", "=", reportId)
+        .executeTakeFirstOrThrow()
+    ).evidence as ReportEvidence | null;
+  }
+
+  it("a report delivered to only some recipients still blocks a later report reusing its quote, naming it", async () => {
+    await seedReport("r-partial");
+    await seedReport("r-later");
+    const partial = await new CoachDeliveryService(
+      Database,
+      new FakeMailer((to) => to === EMAILS[2]),
+    ).deliver({
+      reportId: "r-partial",
+      evidence: evidence(["a line the leader said once"], ["12:34"]),
+    });
+    expect(partial.refusal).toBe("send-failed");
+    expect(await storedEvidenceOf("r-partial")).toEqual(
+      evidence(["a line the leader said once"], ["12:34"]),
+    );
+
+    const mailer = new FakeMailer();
+    const later = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-later",
+      evidence: evidence(["a line the leader said once"], ["12:34"]),
+    });
+    expect(later.refusal).toBe("governance-blocked");
+    expect(later.violations?.map((v) => v.rule)).toEqual([
+      "reused-quote",
+      "reused-timestamp",
+    ]);
+    for (const v of later.violations ?? [])
+      expect(v.detail).toContain("r-partial");
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("an attempt that reaches nobody leaves no evidence behind to block a later report", async () => {
+    await seedReport("r-nobody");
+    await seedReport("r-next");
+    const failed = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(() => true),
+    ).deliver({
+      reportId: "r-nobody",
+      evidence: evidence(["a line nobody ever received"]),
+    });
+    expect(failed.refusal).toBe("send-failed");
+    expect(await storedEvidenceOf("r-nobody")).toBeNull();
+
+    const next = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({
+      reportId: "r-next",
+      evidence: evidence(["a line nobody ever received"]),
+    });
+    expect(next.delivered).toBe(true);
+  });
+
+  it("a correction clears evidence left by an attempt that sent nothing", async () => {
+    await seedReport("r-corrected");
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: "r-corrected",
+        dimension_n: 1,
+        score: 4,
+        rationale: 'said "a line from before the correction" at 10:10',
+        provenance: "machine",
+      })
+      .execute();
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        evidence: JSON.stringify(
+          evidence(["a line from before the correction"], ["10:10"]),
+        ),
+      })
+      .where("id", "=", "r-corrected")
+      .execute();
+    const corrected = await new CoachReviewService(Database).correct({
+      reportId: "r-corrected",
+      dimensionN: 1,
+      score: 3,
+      rationale: "admin: reworded",
+      correctedByUserId: null,
+    });
+    expect(corrected.ok).toBe(true);
+    expect(await storedEvidenceOf("r-corrected")).toBeNull();
+  });
+
   it("the email CARRIES the portal link, in both the html and the text part", async () => {
     // The requirement is "delivery carries a prominent link to the report on
     // the live portal". The mailer double used to discard text and html, so

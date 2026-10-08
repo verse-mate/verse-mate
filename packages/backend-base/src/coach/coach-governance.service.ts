@@ -74,24 +74,29 @@ export function checkBenchmarkName(input: {
   ];
 }
 
-/** Rule 2, as a pure check against a leader's already-delivered evidence. */
 export function checkEvidenceReuse(
   candidate: ReportEvidence,
-  earlier: ReportEvidence[],
+  earlier: Array<ReportEvidence & { reportId?: string }>,
 ): GovernanceViolation[] {
-  const seenQuotes = new Set(
-    earlier.flatMap((e) => e.quotes.map(normalizeQuote)),
-  );
-  // Timestamps compare as EXACT stored values, not overlapping ranges. Range
-  // overlap would flag two genuinely different moments in the same minute.
-  const seenTimestamps = new Set(earlier.flatMap((e) => e.timestamps));
+  const seenQuotes = new Map<string, string | undefined>();
+  const seenTimestamps = new Map<string, string | undefined>();
+  for (const e of earlier) {
+    for (const q of e.quotes)
+      if (!seenQuotes.has(normalizeQuote(q)))
+        seenQuotes.set(normalizeQuote(q), e.reportId);
+    for (const t of e.timestamps)
+      if (!seenTimestamps.has(t)) seenTimestamps.set(t, e.reportId);
+  }
+  const named = (reportId: string | undefined) =>
+    reportId ? `earlier report ${reportId}` : "an earlier report";
 
   const violations: GovernanceViolation[] = [];
   for (const quote of candidate.quotes) {
-    if (seenQuotes.has(normalizeQuote(quote))) {
+    const key = normalizeQuote(quote);
+    if (seenQuotes.has(key)) {
       violations.push({
         rule: "reused-quote",
-        detail: `a quote already used in an earlier report: "${quote.slice(0, 60)}"`,
+        detail: `a quote already used in ${named(seenQuotes.get(key))}: "${quote.slice(0, 60)}"`,
       });
     }
   }
@@ -99,7 +104,7 @@ export function checkEvidenceReuse(
     if (seenTimestamps.has(stamp)) {
       violations.push({
         rule: "reused-timestamp",
-        detail: `timestamp ${stamp} already cited in an earlier report`,
+        detail: `timestamp ${stamp} already cited in ${named(seenTimestamps.get(stamp))}`,
       });
     }
   }
@@ -190,18 +195,19 @@ export class CoachGovernanceService {
       body: input.body,
     });
 
-    // Only this leader's reports, and only those carrying structured evidence.
-    // A NULL evidence column means the report predates the field, every
-    // backfilled report, and the comparison set starts empty at cutover
-    // rather than being seeded unevenly from whatever happens to exist.
     const earlierRows = await conn
       .selectFrom("coach_reports")
-      .select("evidence")
+      .select(["id", "evidence"])
       .where("coach_id", "=", input.coachId)
       .where("id", "!=", input.reportId)
       .where("evidence", "is not", null)
+      .orderBy("session_date")
+      .orderBy("id")
       .execute();
-    const earlier = earlierRows.map((r) => normalizeEvidence(r.evidence));
+    const earlier = earlierRows.map((r) => ({
+      ...normalizeEvidence(r.evidence),
+      reportId: r.id,
+    }));
 
     violations.push(...checkEvidenceReuse(input.evidence, earlier));
     return { passed: violations.length === 0, violations };

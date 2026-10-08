@@ -412,6 +412,12 @@ export class CoachDeliveryService {
       };
     }
 
+    if (
+      !shown &&
+      !(await this.evidenceWithinClaim(reportId, claim.token, evidence))
+    )
+      return { delivered: false, refusal: "in-flight" };
+
     const subject = reportSubject({
       sessionDate: report.date,
       leaderName: leader?.name ?? coachId,
@@ -469,6 +475,8 @@ export class CoachDeliveryService {
     const allSent =
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
     if (!allSent) {
+      if (!shown && confirmed.size === 0 && recipients.length > 0)
+        await this.evidenceWithinClaim(reportId, token, null);
       await this.countSendFailure(reportId, token, sends, {
         emailed: [...confirmed],
         unconfirmed: recipients
@@ -498,7 +506,6 @@ export class CoachDeliveryService {
       .where(CLAIM_TOKEN, "=", token)
       .executeTakeFirst();
     if (Number(finished.numUpdatedRows ?? 0) === 0) return fenced();
-    await this.governance.recordEvidence(reportId, evidence);
     if (skipped.length > 0)
       console.error(
         `[COACH-DELIVERY] ${reportId} not emailed to placeholder address(es): ${skipped.join(", ")}`,
@@ -797,6 +804,32 @@ export class CoachDeliveryService {
       .where("id", "in", (eb) => eb.selectFrom("session").select("report_id"))
       .executeTakeFirst();
     return Number(published.numUpdatedRows ?? 0) > 0;
+  }
+
+  private async evidenceWithinClaim(
+    reportId: string,
+    token: string,
+    evidence: ReportEvidence | null,
+  ): Promise<boolean> {
+    const written = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_reports")
+      .set({
+        evidence: evidence === null ? null : JSON.stringify(evidence),
+        updated_at: sql`NOW()`,
+      })
+      .where("id", "=", reportId)
+      .where(({ exists, selectFrom }) =>
+        exists(
+          selectFrom("coach_intake_sessions")
+            .select("report_id")
+            .where("report_id", "=", reportId)
+            .where("state", "=", "delivering")
+            .where(CLAIM_TOKEN, "=", token),
+        ),
+      )
+      .executeTakeFirst();
+    return Number(written.numUpdatedRows ?? 0) > 0;
   }
 
   private async setHeld(reportId: string, held: boolean): Promise<void> {
