@@ -132,6 +132,7 @@ export class CoachReminderService {
         sql<Date>`${addDays(today, -CLASS_DAY_LOOKBACK_DAYS)}::date`,
       )
       .where("session_date", "<=", sql<Date>`${today}::date`)
+      .where("held", "=", false)
       .where((eb) =>
         eb.or([
           eb("source_session_id", "like", "legacy:%"),
@@ -152,12 +153,23 @@ export class CoachReminderService {
       .orderBy("updated_at", "desc")
       .execute();
 
+    const alreadySent = new Set(
+      (
+        await conn
+          .selectFrom("coach_reminder_sends")
+          .select("coach_id")
+          .where("reminder_date", "=", sql<Date>`${today}::date`)
+          .execute()
+      ).map((r) => r.coach_id),
+    );
+
     const byLeader = new Map<string, typeof reports>();
     for (const r of reports)
       byLeader.set(r.coach_id, [...(byLeader.get(r.coach_id) ?? []), r]);
 
     for (const [coachId, rows] of byLeader) {
       if (!rows.some((r) => classDay(r.date) === classDayTomorrow)) continue;
+      if (alreadySent.has(coachId)) continue;
       const latest = rows[0];
       if (daysBetween(latest.date, today) > REMINDER_FRESHNESS_DAYS) {
         result.notReminded.push({
@@ -251,6 +263,17 @@ export class CoachReminderService {
     })) as CoachSendResult | undefined;
     if (sent?.delivered === true) {
       result.sent.push({ coachId, email, reportId });
+      await this.db
+        .getOrCreateConnection()
+        .insertInto("coach_reminder_sends")
+        .values({
+          coach_id: coachId,
+          reminder_date: result.date,
+          report_id: reportId,
+          email,
+        })
+        .onConflict((oc) => oc.doNothing())
+        .execute();
       return;
     }
     result.failed.push({

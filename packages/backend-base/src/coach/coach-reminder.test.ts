@@ -86,7 +86,7 @@ class FakeMailer {
 async function report(
   coachId: string,
   date: string,
-  options: { body?: unknown; pipelineState?: string } = {},
+  options: { body?: unknown; pipelineState?: string; held?: boolean } = {},
 ) {
   const id = `${coachId}-${date}`;
   const pipeline = options.pipelineState !== undefined;
@@ -101,6 +101,7 @@ async function report(
       summary: {},
       metrics: {},
       body: JSON.stringify(options.body ?? legacyBody(date)),
+      held: options.held ?? false,
     })
     .execute();
   if (!pipeline) return;
@@ -119,6 +120,10 @@ async function report(
 
 async function clear() {
   const slugs = Object.values(LEADERS);
+  await conn
+    .deleteFrom("coach_reminder_sends")
+    .where("coach_id", "in", slugs)
+    .execute();
   await conn
     .deleteFrom("coach_intake_sessions")
     .where("coach_id", "in", slugs)
@@ -376,6 +381,40 @@ describe("leaders get a reminder before each class", () => {
         .where("email", "=", placeholderAdmin)
         .execute();
     }
+  });
+
+  it("a delivered report held from its leader is never the one reminded", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await report(LEADERS.thursday, "2026-09-27", {
+      pipelineState: "delivered",
+      body: legacyBody("held"),
+      held: true,
+    });
+    const mailer = new FakeMailer();
+    await run(mailer, WEDNESDAY_6PM);
+    const [mail] = mailer.to(emailOf(LEADERS.thursday));
+    expect(mail.html).toContain("2026-09-24 strength 1");
+    expect(mail.html).not.toContain("held strength");
+  });
+
+  it("a re-run on the same Central date sends only what the first run did not", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await report(LEADERS.twoClasses, "2026-09-24");
+    const first = new FakeMailer((to) => to === emailOf(LEADERS.thursday));
+    await run(first, WEDNESDAY_6PM);
+    expect(first.to(emailOf(LEADERS.twoClasses))).toHaveLength(1);
+
+    const again = new FakeMailer();
+    const result = await run(again, new Date("2026-10-01T01:00:00Z"));
+    expect(result.date).toBe("2026-09-30");
+    expect(again.to(emailOf(LEADERS.twoClasses))).toEqual([]);
+    expect(again.to(emailOf(LEADERS.thursday))).toHaveLength(1);
+    expect(result.sent.map((s) => s.coachId)).toEqual([LEADERS.thursday]);
+
+    const third = new FakeMailer();
+    const quiet = await run(third, WEDNESDAY_6PM);
+    expect(third.sent).toEqual([]);
+    expect(quiet.summarySent).toBe(false);
   });
 
   it("before cutover nothing is sent", async () => {
