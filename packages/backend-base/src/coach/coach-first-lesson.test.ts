@@ -458,6 +458,7 @@ describe("the pipeline applies detection when scoring returns a book", () => {
         matched_by: "title_match",
         title: "Thursday 7pm",
         session_date: "2026-10-01",
+        session_started_at: "2026-10-02T00:00:00.000Z",
         state: "retained",
       })
       .execute();
@@ -468,7 +469,7 @@ describe("the pipeline applies detection when scoring returns a book", () => {
         title: "Thursday 7pm",
         host_email: "",
         organizer_email: "",
-        dateString: "2026-10-01T23:00:00.000Z",
+        dateString: "2026-10-02T00:00:00.000Z",
         duration: 60,
         audio_url: null,
         video_url: null,
