@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -58,5 +59,69 @@ describe("the Claude CLI calibration tells the operator where transcripts go", (
     expect(stderr).not.toContain("rerun with");
     const scoring = stderr.indexOf("hand-scored reports with a transcript");
     expect(scoring).toBeGreaterThan(notice);
+  });
+});
+
+describe("the claude child sees only PATH and HOME", () => {
+  const childBin = join(scratch, "child-bin");
+  const envDump = join(scratch, "child-env");
+  mkdirSync(childBin, { recursive: true });
+  writeFileSync(
+    join(childBin, "claude"),
+    `#!/bin/sh\nenv > "${envDump}"\ncat > /dev/null\nprintf '%s' '{"result":"{}","modelUsage":{"claude-test-model":{}}}'\n`,
+  );
+  chmodSync(join(childBin, "claude"), 0o755);
+
+  it("a secret in the calibration's own environment never reaches the child", async () => {
+    const { claudeCli } = await import("./coach-calibration.claude-cli");
+    const saved = { ...process.env };
+    process.env.PATH = `${childBin}:${saved.PATH}`;
+    process.env.ANTHROPIC_API_KEY = "sk-test-not-a-key";
+    process.env.DATABASE_URL = "postgres://secret@db.example.test/x";
+    try {
+      await claudeCli("claude-test-model").chatComplete({
+        model: "claude-test-model",
+        messages: [{ role: "user", content: "score this" }],
+      });
+    } finally {
+      for (const key of Object.keys(process.env))
+        if (!(key in saved)) Reflect.deleteProperty(process.env, key);
+      Object.assign(process.env, saved);
+    }
+    const names = readFileSync(envDump, "utf8")
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => line.split("=")[0]);
+    expect(names).toContain("PATH");
+    expect(names).toContain("HOME");
+    expect(names).not.toContain("ANTHROPIC_API_KEY");
+    expect(names).not.toContain("DATABASE_URL");
+    expect(
+      names.filter((n) => !["PATH", "HOME", "PWD", "SHLVL", "_"].includes(n)),
+    ).toEqual([]);
+  });
+
+  it("an ANTHROPIC_API_KEY in the environment is named before anything is scored", () => {
+    const proc = Bun.spawnSync(
+      [
+        "bun",
+        CLI,
+        "--transcripts",
+        transcripts,
+        "--model",
+        "claude-test-model",
+      ],
+      {
+        cwd: join(import.meta.dir, "../.."),
+        env: {
+          ...process.env,
+          PATH: `${bin}:${process.env.PATH}`,
+          ANTHROPIC_API_KEY: "sk-test-not-a-key",
+        },
+      },
+    );
+    const stderr = proc.stderr.toString();
+    expect(stderr).toContain("ANTHROPIC_API_KEY is set");
+    expect(stderr).not.toContain("sk-test-not-a-key");
   });
 });
