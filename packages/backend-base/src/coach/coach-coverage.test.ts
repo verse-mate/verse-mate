@@ -90,6 +90,32 @@ async function observed(coachId: string, daysAgo: number) {
     .execute();
 }
 
+async function assessOnly(slugs: string[]) {
+  const rolledBack = new Error("rolled back");
+  let report: Awaited<ReturnType<CoachCoverageService["assess"]>> | undefined;
+  await conn
+    .transaction()
+    .execute(async (trx) => {
+      await trx
+        .updateTable("coach_leaders")
+        .set({ is_coach: false })
+        .where((eb) =>
+          eb.or([eb("slug", "is", null), eb("slug", "not in", slugs)]),
+        )
+        .execute();
+      const scoped = { getOrCreateConnection: () => trx } as unknown as db;
+      report = await new CoachCoverageService(scoped).assess({
+        windowDays: 30,
+      });
+      throw rolledBack;
+    })
+    .catch((e) => {
+      if (e !== rolledBack) throw e;
+    });
+  if (!report) throw new Error("no coverage report");
+  return report;
+}
+
 describe("bot coverage is OBSERVED, never inferred from configuration", () => {
   beforeEach(clear);
   afterEach(clear);
@@ -210,11 +236,18 @@ describe("bot coverage is OBSERVED, never inferred from configuration", () => {
       not_teaching_attested_at: new Date(),
     });
 
-    const report = await new CoachCoverageService(Database).assess({
-      windowDays: 30,
-    });
-    expect(report.allCovered).toBe(true);
-    expect(report.uncovered.length).toBe(0);
+    const covered = await assessOnly(SLUGS);
+    expect(covered.leaders.map((l) => [l.coachId, l.basis])).toEqual([
+      ["cov-attested", "attested-not-teaching"],
+      ["cov-observed", "observed"],
+    ]);
+    expect(covered.allCovered).toBe(true);
+    expect(covered.uncovered).toEqual([]);
+
+    await leader("cov-silent", "cov-silent@example.test");
+    const gap = await assessOnly(SLUGS);
+    expect(gap.uncovered.map((l) => l.coachId)).toEqual(["cov-silent"]);
+    expect(gap.allCovered).toBe(false);
   });
 
   it("an empty roster answers, and does not read as every leader covered", async () => {
