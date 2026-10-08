@@ -77,7 +77,15 @@ beforeAll(async () => {
       {
         revision: 1,
         previous: { firstLesson: false },
-        changes: { body: { headline: { from: "a", to: "b" } } },
+        changes: {
+          body: {
+            headline: { from: "a", to: "b" },
+            improvementsProse: {
+              from: [{ title: "Quiet", paragraphs: ["Ask them."] }],
+              to: null,
+            },
+          },
+        },
         amendedBy: null,
         amendedAt: new Date("2026-10-08T12:00:00Z"),
         sentTo: ["a@example.test"],
@@ -286,9 +294,18 @@ describe("the revision routes", () => {
     const list = await call("GET", "r-ok/revisions");
     expect(list.status).toBe(200);
     const body = (await list.json()) as {
-      revisions: Array<{ revision: number }>;
+      revisions: Array<{ revision: number; changes: unknown }>;
     };
     expect(body.revisions[0].revision).toBe(1);
+    expect(body.revisions[0].changes).toEqual({
+      body: {
+        headline: { from: "a", to: "b" },
+        improvementsProse: {
+          from: [{ title: "Quiet", paragraphs: ["Ask them."] }],
+          to: null,
+        },
+      },
+    });
 
     expect((await call("POST", "r-ok/revision/send")).status).toBe(200);
     expect((await call("POST", "r-none/revision/send")).status).toBe(404);

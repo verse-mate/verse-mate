@@ -296,7 +296,7 @@ describe("a delivered report can be revised", () => {
       second?.previous as { body: { feedback: Record<string, unknown> } }
     ).body.feedback;
     for (const [field, change] of Object.entries(firstChanges))
-      expect(keptBySecond[field]).toEqual(change.to);
+      expect(keptBySecond[field] ?? null).toEqual(change.to as object | null);
 
     const feedback = (
       (await row()).body as { feedback: Record<string, unknown> }
@@ -563,6 +563,45 @@ describe("a delivered report can be revised", () => {
     feedback = ((await row()).body as { feedback: Record<string, unknown> })
       .feedback;
     expect(feedback.improvementsProse).toEqual(prose);
+  });
+
+  it("a list amended without its prose records the cleared prose in the revision, and the kept versions show it", async () => {
+    const stored = [
+      { title: "Quiet members", paragraphs: ["Call on them by name."] },
+    ];
+    await seed({ improvementsProse: stored });
+    const amended = await new CoachAmendService(
+      Database,
+      new FakeMailer(),
+    ).amend({
+      reportId: REPORT,
+      amendment: {
+        body: {
+          improvements: ["Give newcomers a first question"],
+          strengths: ["Scripture first", "Warm welcome"],
+        },
+      },
+      byUserId: null,
+    });
+    expect(amended.applied).toBe(true);
+    const [revision] = await new CoachService(Database).listRevisions(REPORT);
+    expect(revision.changes.body).toEqual({
+      improvements: {
+        from: ["Call on quiet members"],
+        to: ["Give newcomers a first question"],
+      },
+      strengths: {
+        from: ["Scripture first"],
+        to: ["Scripture first", "Warm welcome"],
+      },
+      improvementsProse: { from: stored, to: null },
+      strengthsProse: {
+        from: [
+          { title: "Scripture first", paragraphs: ["Read before discussing."] },
+        ],
+        to: null,
+      },
+    });
   });
 
   it("a cold-recall item in the improvement prose holds a first lesson's amendment", async () => {
