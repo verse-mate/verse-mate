@@ -757,8 +757,8 @@ export class CoachService {
   }
 
   async listRevisions(reportId: string) {
-    const rows = await this.db
-      .getOrCreateConnection()
+    const conn = this.db.getOrCreateConnection();
+    const rows = await conn
       .selectFrom("coach_report_amendments")
       .leftJoin("user", "user.id", "coach_report_amendments.amended_by")
       .select([
@@ -774,16 +774,38 @@ export class CoachService {
       .where("coach_report_amendments.report_id", "=", reportId)
       .orderBy("coach_report_amendments.revision", "desc")
       .execute();
-    return rows.map((r) => ({
-      revision: r.revision,
-      previous: r.previous as Record<string, unknown>,
-      changes: r.changes as Record<string, unknown>,
-      amendedBy: r.amended_by_email ?? null,
-      amendedAt: new Date(r.amended_at as unknown as string),
-      sentTo: r.sent_to,
-      skipped: r.skipped_recipients,
-      sentAt: r.sent_at ? new Date(r.sent_at as unknown as string) : null,
-    }));
+    const edits = await conn
+      .selectFrom("coach_report_edits")
+      .leftJoin("user", "user.id", "coach_report_edits.edited_by")
+      .select([
+        "coach_report_edits.id",
+        "coach_report_edits.changes",
+        "user.email as edited_by_email",
+        "coach_report_edits.edited_at",
+      ])
+      .where("coach_report_edits.report_id", "=", reportId)
+      .orderBy("coach_report_edits.id", "desc")
+      .execute();
+    return [
+      ...rows.map((r) => ({
+        kind: "revision" as const,
+        revision: r.revision,
+        previous: r.previous as Record<string, unknown>,
+        changes: r.changes as Record<string, unknown>,
+        amendedBy: r.amended_by_email ?? null,
+        amendedAt: new Date(r.amended_at as unknown as string),
+        sentTo: r.sent_to,
+        skipped: r.skipped_recipients,
+        sentAt: r.sent_at ? new Date(r.sent_at as unknown as string) : null,
+      })),
+      ...edits.map((e) => ({
+        kind: "edit" as const,
+        edit: e.id,
+        changes: e.changes as Record<string, unknown>,
+        editedBy: e.edited_by_email ?? null,
+        editedAt: new Date(e.edited_at as unknown as string),
+      })),
+    ];
   }
 
   /** Recording-bot coverage across the roster, the 9.1 gate (4.7). */

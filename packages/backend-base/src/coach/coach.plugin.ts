@@ -98,6 +98,10 @@ const REVISION_REFUSALS: Record<string, () => Error> = {
       "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale",
     ),
   "empty-amendment": () => new ValidationError("The amendment changes nothing"),
+  "empty-edit": () =>
+    new ValidationError(
+      "The edit changes nothing: give at least one improvement, different from the current ones",
+    ),
   "in-flight": () => new ConflictError(IN_FLIGHT_CORRECTION),
   "partially-delivered": () => new ConflictError(PARTIALLY_DELIVERED),
   "already-delivered": () =>

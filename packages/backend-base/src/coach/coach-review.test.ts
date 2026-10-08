@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
 import { CoachReviewService, isLegacyReport } from "./coach-review.service";
+import { CoachService } from "./coach.service";
 import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
@@ -540,6 +541,80 @@ describe("an admin edits an undelivered report's improvements", () => {
       expect((await feedback()).improvements).toEqual([COLD]);
     },
   );
+
+  async function editCount() {
+    return (
+      await conn
+        .selectFrom("coach_report_edits")
+        .select("id")
+        .where("report_id", "=", REPORT)
+        .execute()
+    ).length;
+  }
+
+  it.each([
+    [
+      "the same bullets and prose",
+      {
+        improvements: [COLD],
+        improvementsProse: [
+          { title: "No recap", paragraphs: ["Reserve a cold-recall drill."] },
+        ],
+      },
+    ],
+    ["no improvements at all", { improvements: [] }],
+  ])(
+    "an edit with %s is refused as empty and records nothing",
+    async (_, edit) => {
+      expect(
+        await svc.editImprovements({
+          reportId: REPORT,
+          ...edit,
+          byUserId: admin,
+        }),
+      ).toEqual({ ok: false, refusal: "empty-edit" });
+      expect(await editCount()).toBe(0);
+    },
+  );
+
+  it("the revisions list carries each pre-delivery edit with who, when and what changed, and never a send", async () => {
+    await svc.editImprovements({
+      reportId: REPORT,
+      improvements: ["Call on quiet members"],
+      byUserId: admin,
+    });
+    await conn
+      .insertInto("coach_report_amendments")
+      .values({
+        report_id: REPORT,
+        coach_id: COACH,
+        revision: 1,
+        previous: JSON.stringify({ firstLesson: true }),
+        changes: JSON.stringify({ body: { headline: { from: "a", to: "b" } } }),
+        amended_by: null,
+        amended_at: new Date(Date.now() + 60_000),
+      })
+      .execute();
+    const [revision, edit] = await new CoachService(Database).listRevisions(
+      REPORT,
+    );
+    expect(revision).toMatchObject({ kind: "revision", revision: 1 });
+    expect(edit).toEqual({
+      kind: "edit",
+      edit: expect.any(Number),
+      changes: {
+        improvements: { from: [COLD], to: ["Call on quiet members"] },
+        improvementsProse: {
+          from: [
+            { title: "No recap", paragraphs: ["Reserve a cold-recall drill."] },
+          ],
+          to: null,
+        },
+      },
+      editedBy: ADMIN_EMAIL,
+      editedAt: expect.any(Date),
+    });
+  });
 
   it("a legacy report is refused", async () => {
     await conn
