@@ -555,6 +555,20 @@ describe("leaders get a reminder before each class", () => {
     expect(again.to(emailOf(LEADERS.thursday))).toEqual([]);
   });
 
+  it("a reminder already confirmed today is neither re-sent nor reported as unconfirmed by a re-run", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    await run(new FakeMailer(), WEDNESDAY_6PM);
+    const again = new FakeMailer();
+    const result = await run(again, WEDNESDAY_6PM);
+    expect(again.sent).toEqual([]);
+    expect(result).toMatchObject({
+      sent: [],
+      failed: [],
+      notReminded: [],
+      summarySent: false,
+    });
+  });
+
   it("a re-run whose only news is the same placeholder failure sends the admin no second summary", async () => {
     await report(LEADERS.placeholder, "2026-09-24");
     const first = new FakeMailer();
