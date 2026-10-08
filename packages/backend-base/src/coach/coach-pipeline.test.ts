@@ -21,7 +21,13 @@ import type {
   FirefliesTranscript,
   FirefliesTranscriptDetail,
 } from "./fireflies.client";
-import { DIMENSIONS, RUBRIC_MODEL_VERSION } from "./rubric";
+import {
+  DIMENSIONS,
+  RUBRIC_MODEL_VERSION,
+  composeBaseScore,
+  composeComposite,
+  statusForScore,
+} from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "pipe-coach";
@@ -1056,6 +1062,115 @@ describe("a held report is not on the leader's portal until it is released", () 
         (f) => f.reportId === reportId,
       ),
     ).toBe(true);
+  });
+});
+
+describe("an admin's correction reaches the leader's report and the email", () => {
+  let leaderUser = "";
+
+  class HtmlMailer extends FakeMailer {
+    html: string[] = [];
+    override async sendEmail(data: { to: { email: string }; html?: string }) {
+      this.html.push(data.html ?? "");
+      return super.sendEmail(data);
+    }
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
+      .execute();
+    leaderUser = (
+      await conn
+        .insertInto("user")
+        .values({
+          email: EMAIL,
+          firstName: "Pipe",
+          lastName: "Leader",
+          emailVerified: true,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+    await seedRetained();
+    await calibrate();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
+    await uncalibrate();
+  });
+
+  it("Admin corrects a dimension: the leader's report and the email carry the corrected dimension, composite and band", async () => {
+    const [scored] = await pipeline(null).run();
+    const reportId = scored.reportId as string;
+    const service = new CoachService(Database);
+    const before = await service.getReportDetail(COACH, reportId, "admin");
+    expect(before?.status).toBe("Strong");
+
+    for (const n of [1, 3, 5]) {
+      const result = await service.correctDimension({
+        reportId,
+        dimensionN: n,
+        score: 1,
+        rationale: `admin: dimension ${n} missed`,
+        correctedByUserId: null,
+      });
+      expect(result.ok).toBe(true);
+    }
+
+    const corrected = await conn
+      .selectFrom("coach_report_dimension_scores")
+      .select(["dimension_n", "score"])
+      .where("report_id", "=", reportId)
+      .execute();
+    const { base } = composeBaseScore(
+      new Map(corrected.map((d) => [d.dimension_n, d.score])),
+    );
+    const metrics = (
+      await conn
+        .selectFrom("coach_reports")
+        .select("metrics")
+        .where("id", "=", reportId)
+        .executeTakeFirstOrThrow()
+    ).metrics as { newcomerBonus: number; sizeBonus: number };
+    const composite = composeComposite(base, metrics);
+    const band = statusForScore(composite).label;
+    expect(band).not.toBe("Strong");
+
+    const mailer = new HtmlMailer();
+    const [delivered] = await pipeline(mailer).run();
+    expect(delivered.outcome).toBe("scored-and-delivered");
+
+    const seen = (await service.getReportDetail(
+      COACH,
+      reportId,
+    )) as unknown as {
+      score: number;
+      status: string;
+      base: number;
+      dimensions: Array<{ n: number; score: number | null; note: string }>;
+    };
+    expect(seen.score).toBeCloseTo(composite, 6);
+    expect(seen.status).toBe(band);
+    expect(seen.base).toBeCloseTo(base, 6);
+    expect(seen.dimensions.find((d) => d.n === 3)).toMatchObject({
+      score: 1,
+      note: "admin: dimension 3 missed",
+    });
+    const listed = (await service.getReports(leaderUser)) ?? [];
+    expect(listed.find((r) => r.id === reportId)?.score).toBeCloseTo(
+      composite,
+      6,
+    );
+    expect(mailer.html.length).toBeGreaterThan(0);
+    for (const html of mailer.html) {
+      expect(html).toContain(band);
+      expect(html).not.toContain("Strong");
+    }
   });
 });
 

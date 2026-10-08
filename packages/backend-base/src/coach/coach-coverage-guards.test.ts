@@ -169,7 +169,7 @@ describe("a fully backfilled leader's session list is paginated in the database"
   });
 });
 
-describe("calibration gates machine scores only", () => {
+describe("calibration gates every model-produced report", () => {
   const REPORT = "guard-calibration-report";
   afterEach(async () => {
     await conn.deleteFrom("coach_reports").where("id", "=", REPORT).execute();
@@ -192,9 +192,11 @@ describe("calibration gates machine scores only", () => {
     }
   }
 
-  it("a report an admin corrected on every dimension is not held for calibration", async () => {
+  it("a model-produced report an admin corrected on every dimension is still held for calibration", async () => {
     await scoredBy(() => "human");
-    expect(await calibrationShortfalls(Database, REPORT)).toEqual([]);
+    expect(await calibrationShortfalls(Database, REPORT)).toEqual([
+      "no calibration is recorded for guard-uncalibrated-version",
+    ]);
   });
 
   it("one machine dimension left is enough to need calibration", async () => {
