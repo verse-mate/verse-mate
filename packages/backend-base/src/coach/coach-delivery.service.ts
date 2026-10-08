@@ -133,7 +133,12 @@ export interface RevisionSendResult {
     | "not-live"
     | "send-failed";
   revision?: number;
-  sends?: Array<{ email: string; delivered: boolean; error?: string }>;
+  sends?: Array<{
+    email: string;
+    delivered: boolean;
+    error?: string;
+    neverConfirmed?: true;
+  }>;
   skipped?: string[];
   subject?: string;
 }
@@ -621,6 +626,7 @@ export class CoachDeliveryService {
           email,
           delivered: false,
           error: `a send ${neverConfirmed("revision")}`,
+          neverConfirmed: true,
         });
     const allSent =
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));

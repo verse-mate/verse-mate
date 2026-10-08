@@ -336,6 +336,7 @@ const SendsSchema = t.Array(
     email: t.String(),
     delivered: t.Boolean(),
     error: t.Optional(t.String()),
+    neverConfirmed: t.Optional(t.Literal(true)),
   }),
 );
 
@@ -423,6 +424,7 @@ export const RevisionsSchema = t.Object({
         sentTo: t.Array(t.String()),
         skipped: t.Array(t.String()),
         sentAt: t.Union([t.Date(), t.Null()]),
+        attemptedTo: t.Array(t.String()),
       }),
       t.Object({
         kind: t.Literal("edit"),

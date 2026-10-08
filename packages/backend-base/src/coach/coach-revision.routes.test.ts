@@ -93,6 +93,7 @@ beforeAll(async () => {
         sentTo: ["a@example.test"],
         skipped: [],
         sentAt: null,
+        attemptedTo: ["b@example.test"],
       },
       {
         kind: "edit",
@@ -322,6 +323,7 @@ describe("the revision routes", () => {
       revisions: Array<Record<string, unknown>>;
     };
     expect(body.revisions[0].revision).toBe(1);
+    expect(body.revisions[0].attemptedTo).toEqual(["b@example.test"]);
     expect(body.revisions[0].changes).toEqual({
       body: {
         headline: { from: "a", to: "b" },
