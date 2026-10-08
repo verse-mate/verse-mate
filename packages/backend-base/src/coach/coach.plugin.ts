@@ -662,9 +662,16 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
+          const dimensionN = Number(params.dimensionN);
+          if (
+            !/^\d+$/.test(params.dimensionN) ||
+            dimensionN < 1 ||
+            dimensionN > 12
+          )
+            throw new ValidationError("A dimension is a whole number, 1 to 12");
           const result = await coachService.correctDimension({
             reportId: params.reportId,
-            dimensionN: Number(params.dimensionN),
+            dimensionN,
             score: body.score ?? null,
             rationale: body.rationale,
             correctedByUserId: currentUserId,
@@ -685,8 +692,8 @@ const plugin = new Elysia()
         },
         {
           body: t.Object({
-            score: t.Union([t.Number(), t.Null()]),
-            rationale: t.String(),
+            score: t.Union([t.Null(), t.Integer({ minimum: 1, maximum: 5 })]),
+            rationale: t.String({ maxLength: 4000 }),
           }),
           response: {
             200: t.Object({ base: t.Number(), status: t.String() }),
