@@ -7,7 +7,11 @@ import { Pool } from "pg";
 import { CoachAmendService } from "./coach-amend.service";
 import { reattributeSession } from "./coach-attribution";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
-import { CoachDeliveryService, reportSubject } from "./coach-delivery.service";
+import {
+  CoachDeliveryService,
+  isPlaceholderAddress,
+  reportSubject,
+} from "./coach-delivery.service";
 import { coldRecallImprovements } from "./coach-governance.service";
 import { CoachReviewService } from "./coach-review.service";
 import { CoachService } from "./coach.service";
@@ -1011,26 +1015,144 @@ describe("a revision is claimed before it is sent", () => {
     await clear();
   });
 
-  class SlowMailer extends FakeMailer {
+  class GatedMailer extends FakeMailer {
+    reached: Promise<void>;
+    private arrive = () => {};
+    private open = () => {};
+    private readonly gate: Promise<void>;
+    constructor(private readonly atSend = 1) {
+      super();
+      this.reached = new Promise((resolve) => {
+        this.arrive = resolve;
+      });
+      this.gate = new Promise((resolve) => {
+        this.open = resolve;
+      });
+    }
+    release() {
+      this.open();
+    }
     override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      return super.sendEmail(data);
+      const result = await super.sendEmail(data);
+      if (this.sent.length === this.atSend) {
+        this.arrive();
+        await this.gate;
+      }
+      return result;
     }
   }
 
-  it("two simultaneous sends mail each recipient once and the second is refused", async () => {
-    const mailer = new SlowMailer();
-    const [a, b] = await Promise.all([
-      new CoachDeliveryService(Database, mailer).sendRevision(REPORT),
-      new CoachDeliveryService(Database, mailer).sendRevision(REPORT),
-    ]);
-    expect([a, b].filter((r) => r.sent).length).toBe(1);
-    expect([a, b].find((r) => !r.sent)?.refusal).toBe("in-flight");
+  const staleClaim = () =>
+    conn
+      .updateTable("coach_report_amendments")
+      .set({ sending_at: sql`NOW() - interval '20 minutes'` })
+      .where("report_id", "=", REPORT)
+      .execute();
+
+  const copies = (...mailers: FakeMailer[]) => {
+    const received = new Map<string, number>();
+    for (const m of mailers)
+      for (const s of ours(m))
+        received.set(s.to, (received.get(s.to) ?? 0) + 1);
+    return received;
+  };
+
+  it("a send while another holds a live claim is refused and mails nobody", async () => {
+    const holder = new GatedMailer();
+    const first = new CoachDeliveryService(Database, holder).sendRevision(
+      REPORT,
+    );
+    await holder.reached;
+    const second = new FakeMailer();
+    const refused = await new CoachDeliveryService(
+      Database,
+      second,
+    ).sendRevision(REPORT);
+    expect(refused).toMatchObject({ sent: false, refusal: "in-flight" });
+    expect(second.sent).toEqual([]);
+    holder.release();
+    expect((await first).sent).toBe(true);
+    expect([...copies(holder).values()]).toEqual([1, 1, 1]);
+  });
+
+  it("a stalled sender that resumes while the rescuer is sending cannot renew the rescuer's claim", async () => {
+    const rescuer = new GatedMailer();
+    let rescued: Promise<{ sent: boolean }> | null = null;
+    class StallsOnce extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        if (rescued === null) {
+          await staleClaim();
+          rescued = new CoachDeliveryService(Database, rescuer).sendRevision(
+            REPORT,
+          );
+          await rescuer.reached;
+        }
+        return result;
+      }
+    }
+    const stalled = new StallsOnce();
+    const first = await new CoachDeliveryService(
+      Database,
+      stalled,
+    ).sendRevision(REPORT);
+    expect(first).toMatchObject({ sent: false, refusal: "in-flight" });
+    expect(ours(stalled)).toHaveLength(1);
+    rescuer.release();
     expect(
-      ours(mailer)
-        .map((s) => s.to)
-        .sort(),
-    ).toEqual([...EMAILS].sort());
+      (await (rescued as unknown as Promise<{ sent: boolean }>)).sent,
+    ).toBe(true);
+    const received = copies(stalled, rescuer);
+    expect([...received.keys()].sort()).toEqual([...EMAILS].sort());
+    for (const [to, n] of received)
+      expect(n).toBe(to === ours(stalled)[0].to ? 2 : 1);
+  });
+
+  it("a stalled sender that resumes after its last send cannot release the rescuer's claim or mark the revision sent", async () => {
+    const admins = await conn
+      .selectFrom("coach_admins")
+      .select("email")
+      .execute();
+    const recipients = new Set(
+      [
+        LEADER_EMAIL,
+        BENCH_EMAIL,
+        ...admins.map((a) => a.email.trim().toLowerCase()),
+      ].filter((email) => !isPlaceholderAddress(email)),
+    ).size;
+    const rescuer = new GatedMailer();
+    let rescued: Promise<{ sent: boolean }> | null = null;
+    class StallsOnLast extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        if (this.sent.length === recipients) {
+          await staleClaim();
+          rescued = new CoachDeliveryService(Database, rescuer).sendRevision(
+            REPORT,
+          );
+          await rescuer.reached;
+        }
+        return result;
+      }
+    }
+    const stalled = new StallsOnLast();
+    const first = await new CoachDeliveryService(
+      Database,
+      stalled,
+    ).sendRevision(REPORT);
+    expect(first).toMatchObject({ sent: false, refusal: "in-flight" });
+    const pending = await conn
+      .selectFrom("coach_report_amendments")
+      .select(["sent_at", "sending_at"])
+      .where("report_id", "=", REPORT)
+      .executeTakeFirstOrThrow();
+    expect(pending.sent_at).toBeNull();
+    expect(pending.sending_at).not.toBeNull();
+    rescuer.release();
+    expect(
+      (await (rescued as unknown as Promise<{ sent: boolean }>)).sent,
+    ).toBe(true);
+    expect(rescuer.sent).toHaveLength(1);
   });
 
   it("a send that stalls past the claim window is fenced off, and only the send in flight can repeat", async () => {
