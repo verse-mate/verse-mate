@@ -97,7 +97,13 @@ export class CoachPipelineService {
     const due = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
-      .select(["source_session_id", "coach_id", "title", "retry_count"])
+      .select([
+        "source_session_id",
+        "coach_id",
+        "title",
+        "retry_count",
+        "parallel_run",
+      ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("state", "=", "retained")
       .where("coach_id", "is not", null)
@@ -153,6 +159,7 @@ export class CoachPipelineService {
         ]),
       )
       .where("report_id", "is not", null)
+      .where("parallel_run", "=", false)
       .orderBy(sql`COALESCE(hold_reason LIKE 'held%', false)`)
       .orderBy("retry_count")
       .orderBy("updated_at")
@@ -248,6 +255,7 @@ export class CoachPipelineService {
     coach_id: string | null;
     title: string;
     date: string;
+    parallel_run: boolean;
   }): Promise<PipelineResult> {
     const conn = this.db.getOrCreateConnection();
     const coachId = session.coach_id as string;
@@ -361,7 +369,7 @@ export class CoachPipelineService {
       };
     }
 
-    if (!coachPipelineLive()) {
+    if (session.parallel_run || !coachPipelineLive()) {
       return {
         sourceSessionId: session.source_session_id,
         outcome: "scored-awaiting-review",

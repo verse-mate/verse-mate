@@ -64,7 +64,8 @@ type Claim =
         | "already-delivered"
         | "in-flight"
         | "unknown-report"
-        | "awaiting-release";
+        | "awaiting-release"
+        | "parallel-run-session";
     };
 
 export type DeliveryRefusal =
@@ -73,6 +74,7 @@ export type DeliveryRefusal =
   | "in-flight"
   | "awaiting-release"
   | "parallel-run"
+  | "parallel-run-session"
   | "calibration-blocked"
   | "governance-blocked"
   | "cold-recall-improvement"
@@ -212,6 +214,7 @@ export class CoachDeliveryService {
         .set({ state: "delivering", updated_at: sql`clock_timestamp()` })
         .where("report_id", "=", reportId)
         .where("release_required", "=", false)
+        .where("parallel_run", "=", false)
         .where((eb) =>
           eb.or([
             eb("state", "in", ["scored", "delivery_pending"]),
@@ -249,10 +252,11 @@ export class CoachDeliveryService {
     }
     const session = await conn
       .selectFrom("coach_intake_sessions")
-      .select(["state", "release_required"])
+      .select(["state", "release_required", "parallel_run"])
       .where("report_id", "=", reportId)
       .executeTakeFirst();
     if (!session) return { status: "unknown-report" };
+    if (session.parallel_run) return { status: "parallel-run-session" };
     if (session.state === "delivered") return { status: "already-delivered" };
     return {
       status: session.release_required ? "awaiting-release" : "in-flight",

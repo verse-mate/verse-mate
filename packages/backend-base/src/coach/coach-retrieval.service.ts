@@ -45,8 +45,8 @@ export interface PendingReshare {
   sessionDate: string;
   requestedAt: Date;
   attempts: number;
-  /** True once the leader has actually been emailed about it. */
   asked: boolean;
+  parallelRun: boolean;
 }
 
 export interface SweepResult {
@@ -151,6 +151,7 @@ export class CoachRetrievalService {
         "retry_count",
         "reshare_requested_at",
         "reshare_sent_at",
+        "parallel_run",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("state", "=", "retrieval_failed")
@@ -166,6 +167,7 @@ export class CoachRetrievalService {
       requestedAt: new Date(r.reshare_requested_at as unknown as string),
       attempts: r.retry_count,
       asked: r.reshare_sent_at !== null,
+      parallelRun: r.parallel_run,
     }));
   }
 

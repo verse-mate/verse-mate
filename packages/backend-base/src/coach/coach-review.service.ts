@@ -45,6 +45,7 @@ export interface ReviewState {
   firstLesson: boolean;
   firstLessonSource: string | null;
   passageBook: string | null;
+  parallelRun: boolean;
 }
 
 export interface FirstLessonResult extends CorrectionResult {
@@ -67,14 +68,13 @@ export interface ImprovementsEditResult {
 export class CoachReviewService {
   constructor(private readonly db: db) {}
 
-  private async isDelivered(reportId: string): Promise<boolean> {
-    const row = await this.db
+  private async session(reportId: string) {
+    return this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
-      .select("state")
+      .select(["state", "parallel_run"])
       .where("report_id", "=", reportId)
       .executeTakeFirst();
-    return row?.state === "delivered";
   }
 
   /** What an admin sees: every dimension with where its number came from. */
@@ -100,9 +100,10 @@ export class CoachReviewService {
       .select(["first_lesson", "first_lesson_source", "passage_book"])
       .where("id", "=", reportId)
       .executeTakeFirst();
+    const session = await this.session(reportId);
     return {
       reportId,
-      delivered: await this.isDelivered(reportId),
+      delivered: session?.state === "delivered",
       dimensions: rows.map((r) => ({
         n: r.dimension_n,
         score: r.score,
@@ -115,6 +116,7 @@ export class CoachReviewService {
       firstLesson: report?.first_lesson ?? false,
       firstLessonSource: report?.first_lesson_source ?? null,
       passageBook: report?.passage_book ?? null,
+      parallelRun: session?.parallel_run ?? false,
     };
   }
 

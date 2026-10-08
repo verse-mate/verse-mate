@@ -465,6 +465,7 @@ export class CoachService {
       reportId: string | null;
       reason: string | null;
       action: "release" | "requeue" | "attribute" | null;
+      parallelRun: boolean;
       updatedAt: Date;
     }>;
   }> {
@@ -485,6 +486,7 @@ export class CoachService {
         "report_id",
         "hold_reason",
         "release_required",
+        "parallel_run",
         "updated_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
@@ -539,13 +541,18 @@ export class CoachService {
       action:
         r.coach_id === null
           ? ("attribute" as const)
-          : r.state === "delivered"
-            ? null
-            : r.state === "scored" || r.release_required
-              ? ("release" as const)
-              : r.state === "delivery_pending"
-                ? null
-                : ("requeue" as const),
+          : r.parallel_run
+            ? r.state === "scoring_failed"
+              ? ("requeue" as const)
+              : null
+            : r.state === "delivered"
+              ? null
+              : r.state === "scored" || r.release_required
+                ? ("release" as const)
+                : r.state === "delivery_pending"
+                  ? null
+                  : ("requeue" as const),
+      parallelRun: r.parallel_run,
       updatedAt: new Date(r.updated_at as unknown as string),
     }));
     return { total, sessions };
@@ -575,10 +582,12 @@ export class CoachService {
     const held = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
-      .select("source_session_id")
+      .select("parallel_run")
       .where(releasable)
       .executeTakeFirst();
     if (!held) return { delivered: false, refusal: "not-held" };
+    if (held.parallel_run)
+      return { delivered: false, refusal: "parallel-run-session" };
     if (!this.notification) return { delivered: false, refusal: "no-mailer" };
     await this.db
       .getOrCreateConnection()
@@ -608,9 +617,18 @@ export class CoachService {
     };
   }
 
-  async requeuePipelineFailure(sourceSessionId: string): Promise<boolean> {
-    const requeued = await this.db
-      .getOrCreateConnection()
+  async requeuePipelineFailure(
+    sourceSessionId: string,
+  ): Promise<boolean | "parallel-run-session"> {
+    const conn = this.db.getOrCreateConnection();
+    const parked = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("parallel_run")
+      .where("source_session_id", "=", sourceSessionId)
+      .where("state", "=", "delivery_failed")
+      .executeTakeFirst();
+    if (parked?.parallel_run) return "parallel-run-session";
+    const requeued = await conn
       .updateTable("coach_intake_sessions")
       .set({
         state: sql`CASE WHEN state = 'scoring_failed' THEN 'retained' ELSE 'delivery_pending' END`,
@@ -620,7 +638,15 @@ export class CoachService {
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", sourceSessionId)
-      .where("state", "in", ["scoring_failed", "delivery_failed"])
+      .where((eb) =>
+        eb.or([
+          eb("state", "=", "scoring_failed"),
+          eb.and([
+            eb("state", "=", "delivery_failed"),
+            eb("parallel_run", "=", false),
+          ]),
+        ]),
+      )
       .executeTakeFirst();
     return Number(requeued.numUpdatedRows ?? 0) > 0;
   }
