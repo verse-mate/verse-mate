@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import {
   AttributionChangedError,
@@ -192,6 +193,60 @@ describe("publishing a scored session", () => {
     // And the identity survives the move, so a link already emailed still
     // resolves.
     expect(moved.reportId).toBe(first.reportId);
+  });
+
+  it("a publish waits on the session row an open re-attribution holds, then sees the new leader and refuses", async () => {
+    let commit!: () => void;
+    const committing = new Promise<void>((resolve) => {
+      commit = resolve;
+    });
+    let locked!: () => void;
+    const holding = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const reattribution = conn.transaction().execute(async (trx) => {
+      await trx
+        .selectFrom("coach_intake_sessions")
+        .select("coach_id")
+        .where("source_session_id", "=", "ff-pub-1")
+        .forUpdate()
+        .execute();
+      await trx
+        .updateTable("coach_intake_sessions")
+        .set({ coach_id: `${COACH}-2` })
+        .where("source_session_id", "=", "ff-pub-1")
+        .execute();
+      locked();
+      await committing;
+    });
+    await holding;
+    const publishing = svc.publish(input()).then(
+      () => "published",
+      (error) => error,
+    );
+    let blocked = false;
+    try {
+      for (let i = 0; i < 100 && !blocked; i += 1) {
+        const waiting = await sql<{ n: number }>`
+          SELECT count(*)::int AS n FROM pg_stat_activity
+          WHERE datname = current_database()
+            AND wait_event_type = 'Lock'
+            AND query ILIKE '%coach_intake_sessions%'`.execute(conn);
+        blocked = waiting.rows[0].n > 0;
+        if (!blocked) await new Promise((r) => setTimeout(r, 20));
+      }
+    } finally {
+      commit();
+      await reattribution;
+    }
+    expect(blocked).toBe(true);
+    expect(await publishing).toBeInstanceOf(AttributionChangedError);
+    const reports = await conn
+      .selectFrom("coach_reports")
+      .select("id")
+      .where("source_session_id", "=", "ff-pub-1")
+      .execute();
+    expect(reports).toEqual([]);
   });
 
   it("publishing advances the provenance version, so a stale view is detectable", async () => {
