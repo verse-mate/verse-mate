@@ -225,8 +225,9 @@ export class CoachReminderService {
     }
 
     if (result.sent.length > 0) {
+      const claimedNow = await this.claimSummary(today);
       result.summarySent = await this.summarize(result);
-      if (result.summarySent) await this.claimSummary(today);
+      if (!result.summarySent && claimedNow) await this.releaseSummary(today);
     } else if (result.failed.length > 0 && (await this.claimSummary(today))) {
       result.summarySent = await this.summarize(result);
       if (!result.summarySent) await this.releaseSummary(today);
