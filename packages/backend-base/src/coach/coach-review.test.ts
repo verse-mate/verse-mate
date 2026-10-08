@@ -285,6 +285,34 @@ describe("an admin can correct a dimension before delivery", () => {
     });
   }
 
+  for (const state of ["delivery_pending", "delivery_failed"]) {
+    it(`a report already emailed to its leader while ${state} is refused a correction and the first-lesson flag, and changes nothing`, async () => {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ state, delivered_to: ["leader@example.test"] })
+        .where("report_id", "=", REPORT)
+        .execute();
+      const corrected = await svc.correct({
+        reportId: REPORT,
+        dimensionN: 1,
+        score: 1,
+        rationale: "after the leader read it",
+        correctedByUserId: null,
+      });
+      expect(corrected).toEqual({ ok: false, refusal: "partially-delivered" });
+      const flagged = await svc.setFirstLesson({
+        reportId: REPORT,
+        firstLesson: true,
+        byUserId: null,
+      });
+      expect(flagged).toEqual({ ok: false, refusal: "partially-delivered" });
+      const after = await svc.review(REPORT);
+      expect(after?.dimensions.find((d) => d.n === 1)?.score).toBe(4);
+      expect(after?.dimensions.find((d) => d.n === 9)?.score).toBe(4);
+      expect(after?.firstLesson).toBe(false);
+    });
+  }
+
   it("an unknown dimension is refused", async () => {
     const result = await svc.correct({
       reportId: REPORT,

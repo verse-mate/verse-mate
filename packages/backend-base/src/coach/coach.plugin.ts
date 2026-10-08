@@ -76,6 +76,9 @@ export const EMAIL_RULE =
 const IN_FLIGHT_CORRECTION =
   "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery.";
 
+const PARTIALLY_DELIVERED =
+  "Refused: the report was already emailed to some of its recipients and its delivery is still finishing. Amend it once delivery completes.";
+
 const REVISION_REFUSALS: Record<string, () => Error> = {
   "legacy-report": () =>
     new ConflictError(
@@ -95,6 +98,7 @@ const REVISION_REFUSALS: Record<string, () => Error> = {
     ),
   "empty-amendment": () => new ValidationError("The amendment changes nothing"),
   "in-flight": () => new ConflictError(IN_FLIGHT_CORRECTION),
+  "partially-delivered": () => new ConflictError(PARTIALLY_DELIVERED),
 };
 
 function revisionResponse<
@@ -654,6 +658,8 @@ const plugin = new Elysia()
             );
           if (result.refusal === "in-flight")
             throw new ConflictError(IN_FLIGHT_CORRECTION);
+          if (result.refusal === "partially-delivered")
+            throw new ConflictError(PARTIALLY_DELIVERED);
           if (!result.ok)
             throw new ValidationError(
               `Correction refused: ${result.refusal ?? "unknown"}`,

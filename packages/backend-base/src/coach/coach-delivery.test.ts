@@ -1072,3 +1072,121 @@ describe("A first lesson is never mailed with a cold-recall improvement", () => 
     expect(result.delivered).toBe(true);
   });
 });
+
+describe("a report its leader was already emailed is never hidden again", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(clear);
+
+  async function partiallyDelivered(id: string) {
+    await seedReport(id, LEADER, {
+      feedback: {
+        headline: "new study",
+        improvements: ["Open with a cold recall of last week's big ideas"],
+      },
+    });
+    const first = await new CoachDeliveryService(
+      Database,
+      new FakeMailer((to) => to === EMAILS[2]),
+    ).deliver({ reportId: id, evidence: evidence() });
+    expect(first.refusal).toBe("send-failed");
+  }
+
+  it.each([
+    [
+      "a first-lesson flag with a cold-recall improvement",
+      async (id: string) => {
+        await conn
+          .updateTable("coach_reports")
+          .set({ first_lesson: true })
+          .where("id", "=", id)
+          .execute();
+      },
+    ],
+    [
+      "a governance violation",
+      async (id: string) => {
+        await conn
+          .updateTable("coach_reports")
+          .set({
+            body: { feedback: { headline: "Not yet at Avery Hollis's level" } },
+          })
+          .where("id", "=", id)
+          .execute();
+      },
+    ],
+    [
+      "a calibration shortfall",
+      async (id: string) => {
+        await conn
+          .insertInto("coach_report_dimension_scores")
+          .values({
+            report_id: id,
+            dimension_n: 1,
+            score: 4,
+            rationale: "a reason",
+            provenance: "machine",
+            model_version: "v-never-calibrated",
+          })
+          .execute();
+      },
+    ],
+  ])(
+    "%s arising before the retry does not re-hide it: the retry mails only the recipients still owed",
+    async (_, arise) => {
+      await partiallyDelivered("r-owed");
+      await arise("r-owed");
+      const retry = new FakeMailer();
+      const result = await new CoachDeliveryService(Database, retry).deliver({
+        reportId: "r-owed",
+        evidence: evidence(),
+      });
+      expect(result.delivered).toBe(true);
+      expect(retry.sent.map((s) => s.to)).toEqual([EMAILS[2]]);
+      const report = await conn
+        .selectFrom("coach_reports")
+        .select("held")
+        .where("id", "=", "r-owed")
+        .executeTakeFirstOrThrow();
+      expect(report.held).toBe(false);
+      expect(
+        await new CoachService(Database).getReportDetail(
+          LEADER,
+          "r-owed",
+          "leader",
+        ),
+      ).not.toBeNull();
+    },
+  );
+
+  it("a retry that fails again counts the attempt and still leaves the report open to its leader", async () => {
+    await partiallyDelivered("r-owed");
+    await conn
+      .updateTable("coach_reports")
+      .set({ first_lesson: true })
+      .where("id", "=", "r-owed")
+      .execute();
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer((to) => to === EMAILS[2]),
+    ).deliver({ reportId: "r-owed", evidence: evidence() });
+    expect(result.refusal).toBe("send-failed");
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .innerJoin(
+        "coach_reports",
+        "coach_reports.id",
+        "coach_intake_sessions.report_id",
+      )
+      .select(["state", "retry_count", "held"])
+      .where("report_id", "=", "r-owed")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      state: "delivery_pending",
+      retry_count: 2,
+      held: false,
+    });
+  });
+});
