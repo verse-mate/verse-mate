@@ -111,6 +111,10 @@ beforeAll(async () => {
             attachedRecordingUrl: "https://drive.example.test/r.mp4",
           };
     },
+    correctDimension: async (input: { reportId: string }) =>
+      input.reportId === "legacy-r"
+        ? { ok: false, refusal: "legacy-report" }
+        : { ok: true, base: 70, status: { label: "On Target", emoji: "" } },
     getMe: async () => ({ isAdmin: false, profile: { id: "leader-a" } }),
     mintRetainedUrl: async (input: Record<string, unknown>) => {
       minted.push(input);
@@ -432,5 +436,25 @@ describe("the admin reads one leader's reports a page and a report at a time", (
     expect(summaryCalls).toEqual([
       ["leader-a", { limit: undefined, offset: undefined }],
     ]);
+  });
+});
+
+describe("An admin tries to amend a legacy report", () => {
+  it("the correction is refused, saying the report is a legacy report", async () => {
+    const res = await app.handle(
+      new Request(
+        "http://localhost/coach/admin/reports/legacy-r/dimensions/3",
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ score: 2, rationale: "too generous" }),
+        },
+      ),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.text()).toContain("legacy report");
   });
 });

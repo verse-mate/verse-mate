@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
-import { CoachReviewService } from "./coach-review.service";
+import { CoachReviewService, isLegacyReport } from "./coach-review.service";
 import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
@@ -240,5 +240,76 @@ describe("an admin can correct a dimension before delivery", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.refusal).toBe("unknown-report");
+  });
+});
+
+describe("Legacy Reports Are Read-Only", () => {
+  const LEGACY = "review-legacy-report";
+  const metrics = {
+    base: 80,
+    newcomerBonus: 0,
+    sizeBonus: 0,
+    dimensions: [{ n: 3, score: 4, note: "hand scored" }],
+  };
+
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: LEGACY,
+        coach_id: COACH,
+        session_date: "2026-08-15",
+        source_session_id: `legacy:${COACH}:2026-08-15`,
+        legacy_ids: [],
+        summary: { score: 80, status: "Strong" },
+        metrics: JSON.stringify(metrics),
+        body: {},
+      })
+      .execute();
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: LEGACY,
+        dimension_n: 3,
+        score: 4,
+        rationale: "hand scored",
+        provenance: "machine",
+        model_version: "v3-weighted-100",
+      })
+      .execute();
+  });
+  afterEach(clear);
+
+  it("An admin tries to amend a legacy report: the correction is refused as a legacy report and nothing changes", async () => {
+    const result = await svc.correct({
+      reportId: LEGACY,
+      dimensionN: 3,
+      score: 2,
+      rationale: "too generous",
+      correctedByUserId: null,
+    });
+    expect(result).toEqual({ ok: false, refusal: "legacy-report" });
+
+    const dimension = await conn
+      .selectFrom("coach_report_dimension_scores")
+      .select(["score", "provenance"])
+      .where("report_id", "=", LEGACY)
+      .executeTakeFirstOrThrow();
+    expect(dimension).toEqual({ score: 4, provenance: "machine" });
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select(["summary", "metrics"])
+      .where("id", "=", LEGACY)
+      .executeTakeFirstOrThrow();
+    expect(report.summary).toEqual({ score: 80, status: "Strong" });
+    expect(report.metrics).toEqual(metrics);
+  });
+
+  it("the guard the flag and amendment paths call names legacy reports only", async () => {
+    await seed();
+    expect(await isLegacyReport(Database, LEGACY)).toBe(true);
+    expect(await isLegacyReport(Database, REPORT)).toBe(false);
+    expect(await isLegacyReport(Database, "no-such-report")).toBe(false);
   });
 });
