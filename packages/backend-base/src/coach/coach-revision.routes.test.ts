@@ -13,6 +13,7 @@ const realService = store.coachService;
 let token = "";
 const amendCalls: unknown[] = [];
 const editCalls: unknown[] = [];
+const correctCalls: unknown[] = [];
 
 const applied = {
   applied: true,
@@ -71,10 +72,10 @@ beforeAll(async () => {
       editCalls.push(input);
       return byReport[input.reportId];
     },
-    correctDimension: async () => ({
-      ok: false,
-      refusal: "partially-delivered",
-    }),
+    correctDimension: async (input: unknown) => {
+      correctCalls.push(input);
+      return { ok: false, refusal: "partially-delivered" };
+    },
     listRevisions: async () => [
       {
         kind: "revision",
@@ -307,6 +308,35 @@ describe("the revision routes", () => {
     });
     expect(res.status).toBe(422);
     expect(editCalls).toEqual([]);
+  });
+
+  it.each([
+    ["a fractional score", "1", { score: 2.5, rationale: "x" }],
+    ["a score above 5", "1", { score: 6, rationale: "x" }],
+    ["a score below 1", "1", { score: 0, rationale: "x" }],
+    [
+      "a rationale over 4000 characters",
+      "1",
+      { score: 2, rationale: "x".repeat(4001) },
+    ],
+    ["dimension 0", "0", { score: 2, rationale: "x" }],
+    ["dimension 13", "13", { score: 2, rationale: "x" }],
+    ["a dimension that is not a number", "abc", { score: 2, rationale: "x" }],
+    ["a fractional dimension", "1.5", { score: 2, rationale: "x" }],
+  ])("a correction with %s never reaches the service", async (_, n, body) => {
+    correctCalls.length = 0;
+    const res = await call("POST", `r-ok/dimensions/${n}`, body);
+    expect([400, 422]).toContain(res.status);
+    expect(correctCalls).toEqual([]);
+  });
+
+  it("a well-formed correction reaches the service with an integer dimension", async () => {
+    correctCalls.length = 0;
+    await call("POST", "r-ok/dimensions/12", {
+      score: null,
+      rationale: "x".repeat(4000),
+    });
+    expect(correctCalls).toMatchObject([{ dimensionN: 12, score: null }]);
   });
 
   it("a score outside 1 to 5 never reaches the service", async () => {
