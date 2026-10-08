@@ -1196,13 +1196,42 @@ describe("A first lesson is never mailed with a cold-recall improvement", () => 
       ).toBeNull();
       const session = await conn
         .selectFrom("coach_intake_sessions")
-        .select(["state", "hold_reason"])
+        .select(["state", "hold_reason", "hold_kind"])
         .where("report_id", "=", "r-first")
         .executeTakeFirstOrThrow();
       expect(session.state).toBe("scored");
       expect(session.hold_reason).toContain("cold-recall");
+      expect(session.hold_kind).toBe("cold-recall");
+      const listed = (
+        await new CoachService(Database).listPipelineFailures({ limit: 200 })
+      ).sessions.find((s) => s.reportId === "r-first");
+      expect(listed).toMatchObject({
+        holdKind: "cold-recall",
+        coldRecall: result.coldRecall,
+      });
+      expect(listed?.coldRecall?.length).toBeGreaterThan(0);
     },
   );
+
+  it("a send started but never confirmed is listed as a failed send, so the address can be fixed", async () => {
+    await seedReport("r-unconfirmed");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_pending", attempted_to: [EMAILS[0]] })
+      .where("report_id", "=", "r-unconfirmed")
+      .execute();
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({ reportId: "r-unconfirmed", evidence: evidence() });
+    expect(result.refusal).toBe("send-failed");
+    const listed = (
+      await new CoachService(Database).listPipelineFailures({ limit: 200 })
+    ).sessions.find((s) => s.reportId === "r-unconfirmed");
+    expect(listed?.reason).toContain("never confirmed");
+    expect(listed?.holdKind).toBe("send-failed");
+    expect(listed?.coldRecall).toBeUndefined();
+  });
 
   it("the admin replaces the cold-recall improvement on the held report, releases it, and it goes out", async () => {
     await firstLesson("r-first", {

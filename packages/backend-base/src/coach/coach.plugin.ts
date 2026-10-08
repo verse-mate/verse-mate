@@ -14,6 +14,7 @@ import { createRateLimit } from "../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
+import { HOLD_KINDS } from "./coach-session-state";
 import {
   AdminCoachClassSchema,
   AmendmentBodySchema,
@@ -979,6 +980,8 @@ const plugin = new Elysia()
                   attempts: t.Number(),
                   reportId: t.Union([t.String(), t.Null()]),
                   reason: t.Union([t.String(), t.Null()]),
+                  holdKind: t.Union([t.UnionEnum(HOLD_KINDS), t.Null()]),
+                  coldRecall: t.Optional(t.Array(t.String())),
                   action: t.Union([
                     t.Literal("release"),
                     t.Literal("requeue"),

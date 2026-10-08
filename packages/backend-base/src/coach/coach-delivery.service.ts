@@ -337,6 +337,7 @@ export class CoachDeliveryService {
         .set({
           state: "delivery_pending",
           hold_reason: `held for calibration: ${shortfalls.join("; ")}`,
+          hold_kind: "calibration",
           updated_at: sql`NOW()`,
         })
         .where("report_id", "=", reportId)
@@ -365,6 +366,7 @@ export class CoachDeliveryService {
           hold_reason: `held by governance: ${verdict.violations
             .map((v) => v.rule)
             .join(", ")}`,
+          hold_kind: "governance",
           updated_at: sql`NOW()`,
         })
         .where("report_id", "=", reportId)
@@ -390,6 +392,7 @@ export class CoachDeliveryService {
         .set({
           state: "scored",
           hold_reason: `held: a first lesson with a cold-recall improvement: ${coldRecall.join("; ")}`,
+          hold_kind: "cold-recall",
           updated_at: sql`NOW()`,
         })
         .where("report_id", "=", reportId)
@@ -488,6 +491,7 @@ export class CoachDeliveryService {
       .set({
         state: "delivered",
         hold_reason: null,
+        hold_kind: null,
         skipped_recipients: sql`${sql.val(skipped)}::text[]`,
         updated_at: sql`NOW()`,
       })
@@ -870,6 +874,7 @@ export class CoachDeliveryService {
       .set({
         retry_count: sql`retry_count + 1`,
         state: sql`CASE WHEN retry_count + 1 >= ${DELIVERY_ATTEMPT_LIMIT} THEN 'delivery_failed' ELSE 'delivery_pending' END`,
+        hold_kind: "send-failed",
         hold_reason: sql`${what}::text || CASE WHEN retry_count + 1 >= ${DELIVERY_ATTEMPT_LIMIT} THEN ${"; retries exhausted: fix the failing address, then requeue it"}::text ELSE ${"; retried automatically (attempt "}::text || (retry_count + 1)::text || ${` of ${DELIVERY_ATTEMPT_LIMIT}), fix the failing address if it is wrong`}::text END`,
         updated_at: sql`NOW()`,
       })

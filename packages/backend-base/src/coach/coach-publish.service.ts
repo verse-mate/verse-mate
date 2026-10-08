@@ -151,6 +151,11 @@ export class CoachPublishService {
         state: "scored",
         retry_count: 0,
         hold_reason: holdReason,
+        hold_kind: input.holdReason
+          ? "review"
+          : session?.release_required
+            ? "reattributed"
+            : null,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", input.sourceSessionId)

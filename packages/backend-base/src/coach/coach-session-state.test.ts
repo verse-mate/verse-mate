@@ -9,6 +9,7 @@ import {
 } from "kysely";
 
 import {
+  HOLD_KINDS,
   SESSION_STATES,
   claimable,
   correctable,
@@ -35,13 +36,20 @@ type Seed = {
   stale?: boolean;
   report?: boolean;
   hold?: string;
+  kind?: string;
 };
 
 const SEEDS: Seed[] = [
   { n: 1, state: "observed", coach: null },
   { n: 2, state: "retained" },
   { n: 3, state: "scored", report: true },
-  { n: 4, state: "scored", report: true, hold: "held for review: x" },
+  {
+    n: 4,
+    state: "scored",
+    report: true,
+    hold: "held for review: x",
+    kind: "review",
+  },
   { n: 5, state: "scored", report: true, release: true },
   { n: 6, state: "delivery_pending", report: true },
   { n: 7, state: "delivery_pending", report: true, release: true },
@@ -101,6 +109,7 @@ beforeAll(async () => {
         release_required: s.release ?? false,
         parallel_run: s.parallel ?? false,
         hold_reason: s.hold ?? null,
+        hold_kind: s.kind ?? null,
         updated_at: s.stale ? sql`NOW() - interval '1 hour'` : sql`NOW()`,
       })
       .execute();
@@ -134,6 +143,17 @@ describe("the session state machine", () => {
       (m) => m[1],
     );
     expect([...SESSION_STATES].sort() as string[]).toEqual(allowed.sort());
+  });
+
+  it("the hold kinds are exactly what the database allows", async () => {
+    const { rows } = await sql<{ d: string }>`
+      SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint
+      WHERE conname = 'coach_intake_sessions_hold_kind_check'
+    `.execute(conn);
+    const allowed = [...rows[0].d.matchAll(/'([a-z-]+)'::text/g)].map(
+      (m) => m[1],
+    );
+    expect([...HOLD_KINDS].sort() as string[]).toEqual(allowed.sort());
   });
 
   it.each([

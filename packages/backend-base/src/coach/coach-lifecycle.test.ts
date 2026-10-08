@@ -327,6 +327,7 @@ describe("The Parallel Run Is Silent, after cutover too", () => {
       .set({
         hold_reason:
           "held for review: 9 of 11 scored dimensions came back at the maximum",
+        hold_kind: "review",
       })
       .where("source_session_id", "=", SESSION)
       .execute();

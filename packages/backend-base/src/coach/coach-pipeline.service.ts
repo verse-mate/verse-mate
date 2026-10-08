@@ -24,6 +24,7 @@ import {
   redeliverable,
   scorable,
   unsentAfterPublish,
+  waitingOnAPersonLast,
 } from "./coach-session-state";
 import type { CoachMailer } from "./coach.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
@@ -153,7 +154,7 @@ export class CoachPipelineService {
       .selectFrom("coach_intake_sessions")
       .select(["source_session_id", "report_id"])
       .where(redeliverable)
-      .orderBy(sql`COALESCE(hold_reason LIKE 'held%', false)`)
+      .orderBy(waitingOnAPersonLast)
       .orderBy("retry_count")
       .orderBy("updated_at")
       .limit(PIPELINE_BATCH_LIMIT)
@@ -371,6 +372,7 @@ export class CoachPipelineService {
         .set({
           state: "delivery_pending",
           hold_reason: NO_MAILER_HOLD,
+          hold_kind: "no-mailer",
           updated_at: sql`NOW()`,
         })
         .where("source_session_id", "=", session.source_session_id)

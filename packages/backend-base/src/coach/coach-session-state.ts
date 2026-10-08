@@ -16,6 +16,30 @@ export const SESSION_STATES = [
 
 export type SessionState = (typeof SESSION_STATES)[number];
 
+export const HOLD_KINDS = [
+  "review",
+  "reattributed",
+  "calibration",
+  "governance",
+  "cold-recall",
+  "no-mailer",
+  "send-failed",
+] as const;
+
+export type HoldKind = (typeof HOLD_KINDS)[number];
+
+const WAITING_ON_A_PERSON: readonly HoldKind[] = [
+  "review",
+  "calibration",
+  "governance",
+  "cold-recall",
+  "no-mailer",
+];
+
+export const waitingOnAPersonLast = sql<boolean>`COALESCE(hold_kind IN (${sql.join(
+  WAITING_ON_A_PERSON.map((k) => sql.lit(k)),
+)}), false)`;
+
 export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
 
 type Sessions = ExpressionBuilder<Database, "coach_intake_sessions">;
@@ -85,7 +109,7 @@ export const unsentAfterPublish = (eb: Sessions) =>
     eb("report_id", "is not", null),
     eb.or([
       eb("state", "=", "delivering"),
-      eb.and([eb("state", "=", "scored"), eb("hold_reason", "is", null)]),
+      eb.and([eb("state", "=", "scored"), eb("hold_kind", "is", null)]),
     ]),
   ]);
 
@@ -113,6 +137,12 @@ export const SKIPPED_LEADER_ADDRESS = sql<string | null>`(
     AND l.email = ANY(coach_intake_sessions.skipped_recipients)
 )`;
 
+export const COLD_RECALL_FEEDBACK = sql<unknown>`(
+  SELECT r.body->'feedback' FROM coach_reports r
+  WHERE r.id = coach_intake_sessions.report_id
+    AND coach_intake_sessions.hold_kind = 'cold-recall'
+)`;
+
 export const stuck = (eb: Sessions) =>
   eb.or([
     eb("state", "in", [
@@ -123,7 +153,7 @@ export const stuck = (eb: Sessions) =>
     eb.and([
       eb("state", "=", "scored"),
       eb.or([
-        eb("hold_reason", "is not", null),
+        eb("hold_kind", "is not", null),
         eb("release_required", "=", true),
       ]),
     ]),
