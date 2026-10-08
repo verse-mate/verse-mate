@@ -1,7 +1,11 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
-import { attributeSession, loadAttributionRoster } from "./coach-attribution";
+import {
+  attributeSession,
+  loadAttributionRoster,
+  reattributeUnresolved,
+} from "./coach-attribution";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
 
 /**
@@ -74,6 +78,7 @@ export class CoachIntakeService {
   }
 
   async poll(): Promise<PollResult> {
+    await reattributeUnresolved(this.db);
     const since = await this.watermark();
 
     // PAGE until a short page comes back. One 50-row request was all the poll

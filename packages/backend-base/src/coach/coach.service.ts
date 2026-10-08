@@ -5,7 +5,11 @@ import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
-import { leaderSlug } from "./coach-attribution";
+import {
+  leaderSlug,
+  reattributeSession,
+  setLeaderAttribution,
+} from "./coach-attribution";
 import {
   type RetainedKind,
   RetainedMediaService,
@@ -429,7 +433,7 @@ export class CoachService {
       attempts: number;
       reportId: string | null;
       reason: string | null;
-      action: "release" | "requeue" | null;
+      action: "release" | "requeue" | "attribute" | null;
       updatedAt: Date;
     }>
   > {
@@ -458,6 +462,7 @@ export class CoachService {
             eb("state", "=", "scored"),
             eb("hold_reason", "is not", null),
           ]),
+          eb("coach_id", "is", null),
         ]),
       )
       .orderBy("updated_at", "desc")
@@ -470,13 +475,18 @@ export class CoachService {
       state: r.state,
       attempts: r.retry_count,
       reportId: r.report_id,
-      reason: r.hold_reason,
+      reason:
+        r.coach_id === null
+          ? "unattributed: no leader matched the session title"
+          : r.hold_reason,
       action:
-        r.state === "scored"
-          ? ("release" as const)
-          : r.state === "delivery_pending"
-            ? null
-            : ("requeue" as const),
+        r.coach_id === null
+          ? ("attribute" as const)
+          : r.state === "scored"
+            ? ("release" as const)
+            : r.state === "delivery_pending"
+              ? null
+              : ("requeue" as const),
       updatedAt: new Date(r.updated_at as unknown as string),
     }));
   }
@@ -537,6 +547,17 @@ export class CoachService {
       this.db,
       new CoachArchiveService(this.db, new HttpFirefliesClient()),
     ).resolveReshare(sourceSessionId);
+  }
+
+  async setLeaderAttribution(
+    slug: string,
+    input: { titleMatch: string[]; altEmails: string[] },
+  ) {
+    return setLeaderAttribution(this.db, slug, input);
+  }
+
+  async reattributeSession(sourceSessionId: string, coachId: string) {
+    return reattributeSession(this.db, sourceSessionId, coachId);
   }
 
   /** What an admin sees when reviewing a report's dimension scores (5.7). */

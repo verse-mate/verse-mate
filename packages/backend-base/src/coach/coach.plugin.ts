@@ -703,6 +703,7 @@ const plugin = new Elysia()
                   action: t.Union([
                     t.Literal("release"),
                     t.Literal("requeue"),
+                    t.Literal("attribute"),
                     t.Null(),
                   ]),
                   updatedAt: t.Date(),
@@ -996,6 +997,79 @@ const plugin = new Elysia()
           body: AddLeaderDto,
           response: {
             200: t.Object({ coach: CoachSummarySchema }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/admin/leaders/:id/attribution",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (body.titleMatch.some((k) => k.trim().length < 3))
+            throw new ValidationError(
+              "Each title keyword needs at least three characters",
+            );
+          if (body.altEmails.some((e) => !isEmail(e.trim().toLowerCase())))
+            throw new ValidationError(
+              "Each alternate address must be a valid email address",
+            );
+          const result = await coachService.setLeaderAttribution(params.id, {
+            titleMatch: body.titleMatch,
+            altEmails: body.altEmails,
+          });
+          if (!result.ok) throw new NotFoundError("Leader not found");
+          return {
+            titleMatch: result.titleMatch,
+            altEmails: result.altEmails,
+            resolved: result.resolved,
+          };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object({
+            titleMatch: t.Array(t.String({ maxLength: 100 }), {
+              maxItems: 50,
+            }),
+            altEmails: t.Array(t.String({ maxLength: 254 }), { maxItems: 20 }),
+          }),
+          response: {
+            200: t.Object({
+              titleMatch: t.Array(t.String()),
+              altEmails: t.Array(t.String()),
+              resolved: t.Number(),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/sessions/:sourceSessionId/attribute",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.reattributeSession(
+            params.sourceSessionId,
+            body.coachId,
+          );
+          if (result.ok) return { coachId: body.coachId, state: result.state };
+          if (result.refusal === "unknown-leader")
+            throw new NotFoundError("Leader not found");
+          if (result.refusal === "unknown-session")
+            throw new NotFoundError("Session not found");
+          throw new ConflictError(
+            "The session's report is being delivered right now; try again shortly",
+          );
+        },
+        {
+          params: t.Object({ sourceSessionId: t.String() }),
+          body: t.Object({ coachId: t.String({ minLength: 1 }) }),
+          response: {
+            200: t.Object({ coachId: t.String(), state: t.String() }),
             ...StandardErrorResponses,
           },
         },
