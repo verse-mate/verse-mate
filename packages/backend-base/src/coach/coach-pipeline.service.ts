@@ -11,7 +11,10 @@ import {
 import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
 import type { ReportEvidence } from "./coach-governance.service";
-import { CoachPublishService } from "./coach-publish.service";
+import {
+  AttributionChangedError,
+  CoachPublishService,
+} from "./coach-publish.service";
 import {
   AUTHENTICITY_DIMENSION,
   CoachScoringService,
@@ -44,7 +47,8 @@ export type PipelineOutcome =
   | "scored-awaiting-review"
   | "scoring-failed"
   | "delivery-blocked"
-  | "delivery-failed";
+  | "delivery-failed"
+  | "attribution-changed";
 
 export interface PipelineResult {
   sourceSessionId: string;
@@ -332,7 +336,18 @@ export class CoachPipelineService {
           scored.passageBook,
         );
         return report;
+      })
+      .catch((error: unknown) => {
+        if (error instanceof AttributionChangedError) return error;
+        throw error;
       });
+    if (published instanceof AttributionChangedError) {
+      return {
+        sourceSessionId: session.source_session_id,
+        outcome: "attribution-changed",
+        detail: published.message,
+      };
+    }
 
     if (scored.reviewReason) {
       return {

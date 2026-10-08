@@ -218,7 +218,9 @@ describe("an admin edits a leader's attribution keywords", () => {
 describe("an admin re-attributes a session to a leader", () => {
   it("an unresolved session is assigned, and the sweep then retrieves it", async () => {
     await session(SESSIONS[0]);
-    expect(await reattributeSession(Database, SESSIONS[0], RIGHT)).toEqual({
+    expect(
+      await reattributeSession(Database, SESSIONS[0], RIGHT, null),
+    ).toEqual({
       ok: true,
       state: "observed",
     });
@@ -274,7 +276,9 @@ describe("an admin re-attributes a session to a leader", () => {
       })
       .execute();
 
-    expect(await reattributeSession(Database, SESSIONS[0], RIGHT)).toEqual({
+    expect(
+      await reattributeSession(Database, SESSIONS[0], RIGHT, WRONG),
+    ).toEqual({
       ok: true,
       state: "retained",
     });
@@ -315,16 +319,34 @@ describe("an admin re-attributes a session to a leader", () => {
     ).toEqual([]);
   });
 
+  it("an assignment made against a leader the session no longer has is refused and changes nothing", async () => {
+    await session(SESSIONS[0], { coach_id: WRONG, state: "retained" });
+    expect(
+      await reattributeSession(Database, SESSIONS[0], RIGHT, null),
+    ).toEqual({ ok: false, refusal: "attribution-changed" });
+    expect(await intake(SESSIONS[0])).toMatchObject({
+      coach_id: WRONG,
+      state: "retained",
+    });
+    await session(SESSIONS[1]);
+    expect(
+      await reattributeSession(Database, SESSIONS[1], RIGHT, WRONG),
+    ).toEqual({ ok: false, refusal: "attribution-changed" });
+    expect(await intake(SESSIONS[1])).toMatchObject({ coach_id: null });
+  });
+
   it("an unknown leader, an unknown session and an in-flight delivery are refused", async () => {
     await session(SESSIONS[0]);
     await session(SESSIONS[1], { coach_id: WRONG, state: "delivering" });
     expect(
-      await reattributeSession(Database, SESSIONS[0], "reattr-nobody"),
+      await reattributeSession(Database, SESSIONS[0], "reattr-nobody", null),
     ).toEqual({ ok: false, refusal: "unknown-leader" });
-    expect(await reattributeSession(Database, "ff-reattr-none", RIGHT)).toEqual(
-      { ok: false, refusal: "unknown-session" },
-    );
-    expect(await reattributeSession(Database, SESSIONS[1], RIGHT)).toEqual({
+    expect(
+      await reattributeSession(Database, "ff-reattr-none", RIGHT, null),
+    ).toEqual({ ok: false, refusal: "unknown-session" });
+    expect(
+      await reattributeSession(Database, SESSIONS[1], RIGHT, WRONG),
+    ).toEqual({
       ok: false,
       refusal: "in-flight",
     });

@@ -185,6 +185,8 @@ beforeAll(async () => {
     reattributeSession: async (...args: unknown[]) => {
       reattributions.push(args);
       if (args[0] === "ff-flight") return { ok: false, refusal: "in-flight" };
+      if (args[0] === "ff-moved")
+        return { ok: false, refusal: "attribution-changed" };
       if (args[0] === "ff-none")
         return { ok: false, refusal: "unknown-session" };
       if (args[1] !== "leader-a")
@@ -642,13 +644,22 @@ describe("an admin recovers an unattributable session", () => {
     reattributions.length = 0;
     const res = await send("POST", "/coach/admin/sessions/ff-1/attribute", {
       coachId: "leader-a",
+      expectedCoachId: null,
     });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       coachId: "leader-a",
       state: "observed",
     });
-    expect(reattributions).toEqual([["ff-1", "leader-a"]]);
+    const moved = await send("POST", "/coach/admin/sessions/ff-2/attribute", {
+      coachId: "leader-a",
+      expectedCoachId: "leader-b",
+    });
+    expect(moved.status).toBe(200);
+    expect(reattributions).toEqual([
+      ["ff-1", "leader-a", null],
+      ["ff-2", "leader-a", "leader-b"],
+    ]);
   });
 
   it("an unknown session or leader is not found, and a delivery in flight is a conflict", async () => {
@@ -656,20 +667,42 @@ describe("an admin recovers an unattributable session", () => {
       (
         await send("POST", "/coach/admin/sessions/ff-none/attribute", {
           coachId: "leader-a",
+          expectedCoachId: null,
         })
       ).status,
       (
         await send("POST", "/coach/admin/sessions/ff-1/attribute", {
           coachId: "nobody",
+          expectedCoachId: null,
         })
       ).status,
       (
         await send("POST", "/coach/admin/sessions/ff-flight/attribute", {
           coachId: "leader-a",
+          expectedCoachId: null,
         })
       ).status,
     ];
     expect(statuses).toEqual([404, 404, 409]);
+  });
+
+  it("an assignment must say which leader it expects the session to have, and a stale one is a conflict", async () => {
+    reattributions.length = 0;
+    const missing = await send("POST", "/coach/admin/sessions/ff-1/attribute", {
+      coachId: "leader-a",
+    });
+    expect(missing.status).toBe(422);
+    expect(reattributions).toEqual([]);
+    const stale = await send(
+      "POST",
+      "/coach/admin/sessions/ff-moved/attribute",
+      {
+        coachId: "leader-a",
+        expectedCoachId: null,
+      },
+    );
+    expect(stale.status).toBe(409);
+    expect(await stale.text()).toContain("leader changed");
   });
 });
 
