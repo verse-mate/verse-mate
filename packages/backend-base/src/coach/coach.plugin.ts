@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
 import { clientIp } from "../common/client-ip";
+import { isEmailAddress } from "../common/email-address";
 import { createErrorHandler } from "../common/error-handler";
 import {
   ConflictError,
@@ -65,8 +66,8 @@ const mintRateLimit = createRateLimit({
 const isBlankOrHttpUrl = (v: string): boolean =>
   v === "" || /^https?:\/\/\S+$/i.test(v);
 
-/** Minimal email shape check for the add-leader form. */
-const isEmail = (v: string): boolean => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+export const EMAIL_RULE =
+  "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot";
 
 const IN_FLIGHT_CORRECTION =
   "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery.";
@@ -1145,8 +1146,7 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const email = body.email.trim().toLowerCase();
-          if (!isEmail(email))
-            throw new ValidationError("Enter a valid email address");
+          if (!isEmailAddress(email)) throw new ValidationError(EMAIL_RULE);
           const result = await coachService.addLeader(currentUserId, {
             email,
             name: body.name,
@@ -1208,9 +1208,12 @@ const plugin = new Elysia()
             throw new ValidationError(
               "Each title keyword needs at least three characters",
             );
-          if (body.altEmails.some((e) => !isEmail(e.trim().toLowerCase())))
+          const badAlt = body.altEmails.find(
+            (e) => !isEmailAddress(e.trim().toLowerCase()),
+          );
+          if (badAlt !== undefined)
             throw new ValidationError(
-              "Each alternate address must be a valid email address",
+              `Alternate address "${badAlt}": ${EMAIL_RULE}`,
             );
           const result = await coachService.setLeaderAttribution(params.id, {
             titleMatch: body.titleMatch,
@@ -1258,8 +1261,7 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const email = body.email.trim().toLowerCase();
-          if (!isEmail(email))
-            throw new ValidationError("Enter a valid email address");
+          if (!isEmailAddress(email)) throw new ValidationError(EMAIL_RULE);
           const result = await coachService.updateLeaderEmail(
             params.id,
             email,

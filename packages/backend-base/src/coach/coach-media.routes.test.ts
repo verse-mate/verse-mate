@@ -5,7 +5,7 @@ import { Elysia } from "elysia";
 import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
 import coachDataJson from "./coach.data.json";
-import coachPlugin from "./coach.plugin";
+import coachPlugin, { EMAIL_RULE } from "./coach.plugin";
 
 const USER = "media-routes-user";
 const bundledCoach = (
@@ -624,9 +624,12 @@ describe("an admin recovers an unattributable session", () => {
     attributionWrites.length = 0;
     const res = await send("PUT", "/coach/admin/leaders/leader-a/attribution", {
       titleMatch: ["zephaniah"],
-      altEmails: ["not-an-address"],
+      altEmails: ["a@example.test", "b@example.test;c@example.test"],
     });
     expect(res.status).toBe(400);
+    expect(((await res.json()) as { message: string }).message).toBe(
+      `Alternate address "b@example.test;c@example.test": ${EMAIL_RULE}`,
+    );
     expect(attributionWrites).toEqual([]);
   });
 
@@ -784,6 +787,20 @@ describe("an admin corrects a leader's address", () => {
       email: "wyatt",
     });
     expect(res.status).toBe(400);
+    expect(emailUpdates).toEqual([]);
+  });
+
+  it.each([
+    "a@example.test,b@example.test",
+    "Wyatt <wyatt@example.test>",
+    "wyatt@example.test.",
+  ])("%p is refused as more than one plain address", async (email) => {
+    emailUpdates.length = 0;
+    const res = await put("/coach/admin/leaders/leader-a/email", { email });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { message: string }).message).toBe(
+      EMAIL_RULE,
+    );
     expect(emailUpdates).toEqual([]);
   });
 

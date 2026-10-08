@@ -1,3 +1,4 @@
+import { isSingleRecipient } from "../../common/email-address";
 import { safePromise } from "../../shared/utils/safe-promise";
 
 export interface MailData {
@@ -78,6 +79,11 @@ export class EmailNotificationConsumer {
   }
 
   async sendEmail(data: MailData): Promise<SendResult> {
+    if (!isSingleRecipient(data.to.email))
+      return {
+        delivered: false,
+        error: "refused: the recipient is not one plain email address",
+      };
     if (["production", "staging"].includes(this.environment)) {
       const body = new URLSearchParams();
       body.append(

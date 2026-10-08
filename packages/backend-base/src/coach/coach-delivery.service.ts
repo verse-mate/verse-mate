@@ -31,7 +31,7 @@ export const COACH_REPLY_TO_NAME = "VerseMate Coaching";
 export const DELIVERY_ATTEMPT_LIMIT = 5;
 
 export function isPlaceholderAddress(email: string): boolean {
-  return /\.invalid$/i.test(email.trim());
+  return email.trim().toLowerCase().replace(/\.+$/, "").endsWith(".invalid");
 }
 
 export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
