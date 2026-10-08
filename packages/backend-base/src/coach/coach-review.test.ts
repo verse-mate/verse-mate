@@ -542,6 +542,45 @@ describe("an admin edits an undelivered report's improvements", () => {
     },
   );
 
+  it.each([
+    [{ state: "delivered" }, "already-delivered"],
+    [
+      { state: "delivery_pending", delivered_to: ["leader@example.test"] },
+      "partially-delivered",
+    ],
+    [{ state: "delivering" }, "in-flight"],
+  ])(
+    "an empty edit on a session %p is refused as %s, not as empty",
+    async (set, refusal) => {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set(set)
+        .where("report_id", "=", REPORT)
+        .execute();
+      const result: unknown = await svc.editImprovements({
+        reportId: REPORT,
+        improvements: [],
+        byUserId: admin,
+      });
+      expect(result).toEqual({ ok: false, refusal });
+    },
+  );
+
+  it("an empty edit on a legacy report is refused as legacy, not as empty", async () => {
+    await conn
+      .updateTable("coach_reports")
+      .set({ source_session_id: "legacy:review-coach:2026-08-22" })
+      .where("id", "=", REPORT)
+      .execute();
+    expect(
+      await svc.editImprovements({
+        reportId: REPORT,
+        improvements: [],
+        byUserId: admin,
+      }),
+    ).toEqual({ ok: false, refusal: "legacy-report" });
+  });
+
   async function editCount() {
     return (
       await conn

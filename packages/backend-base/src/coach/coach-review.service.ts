@@ -181,8 +181,6 @@ export class CoachReviewService {
     improvementsProse?: Array<{ title: string; paragraphs: string[] }>;
     byUserId: string | null;
   }): Promise<ImprovementsEditResult> {
-    if (input.improvements.length === 0)
-      return { ok: false, refusal: "empty-edit" };
     if (await isLegacyReport(this.db, input.reportId)) {
       return { ok: false, refusal: "legacy-report" };
     }
@@ -192,6 +190,8 @@ export class CoachReviewService {
       .execute(async (trx): Promise<ImprovementsEditResult> => {
         const locked = await lockForCorrection(trx, input.reportId);
         if (locked) return { ok: false, refusal: locked };
+        if (input.improvements.length === 0)
+          return { ok: false, refusal: "empty-edit" };
         const report = await trx
           .selectFrom("coach_reports")
           .select(["body", "first_lesson"])
