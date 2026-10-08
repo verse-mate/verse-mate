@@ -789,6 +789,29 @@ describe("delivery is claimed in the database, so separate workers cannot both s
     expect(row.state).toBe("scored");
   });
 
+  it("a report whose live claim another worker holds is refused as in flight, nothing is mailed and the claim is untouched", async () => {
+    await seedReport("r-live-claim");
+    const held = await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivering", updated_at: sql`clock_timestamp()` })
+      .where("report_id", "=", "r-live-claim")
+      .returning(sql<string>`updated_at::text`.as("token"))
+      .executeTakeFirstOrThrow();
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-live-claim",
+      evidence: evidence(),
+    });
+    expect(result).toEqual({ delivered: false, refusal: "in-flight" });
+    expect(mailer.sent).toEqual([]);
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", sql<string>`updated_at::text`.as("token")])
+      .where("report_id", "=", "r-live-claim")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({ state: "delivering", token: held.token });
+  });
+
   it("a claim abandoned by a crashed worker is taken over once it is stale", async () => {
     await seedReport("r-stale");
     await conn
