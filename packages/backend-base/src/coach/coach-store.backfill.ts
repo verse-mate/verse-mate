@@ -1,19 +1,76 @@
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import { assertBeforeCutover } from "./coach-cutover";
 import { datasetMeta, datasetToRows } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 
-/**
- * One-time backfill of `coach_reports` + `coach_dataset_meta` from the DEPLOYED
- * `coach.data.json` (change: coach-reports-store). Idempotent: upserts on the id
- * (which equals the deployed slug at backfill), so re-running loads the same
- * corpus with no duplicates. Sets the meta report_count from the file's own
- * count, never a hardcoded number.
- *
- * Returns the number of reports loaded so the caller can assert it against the
- * deployed file.
- */
+type Executor = ReturnType<typeof Database.getOrCreateConnection>;
+
+export async function assertBundleKeepsStore(
+  conn: Executor,
+  dataset: unknown,
+): Promise<void> {
+  const bundle = dataset as {
+    coaches?: Array<{ id: string }>;
+    monthlyLeaderSummaries?: Record<string, Record<string, unknown>>;
+  };
+  const roster = (bundle.coaches ?? []).map((c) => c.id);
+  if (roster.length === 0) return;
+
+  const bundleReports = new Map<string, number>();
+  for (const row of datasetToRows(dataset)) {
+    bundleReports.set(row.coach_id, (bundleReports.get(row.coach_id) ?? 0) + 1);
+  }
+  const storeReports = new Map(
+    (
+      await conn
+        .selectFrom("coach_reports")
+        .select(sql<string>`split_part(source_session_id, ':', 2)`.as("leader"))
+        .select((eb) => eb.fn.countAll<string>().as("n"))
+        .where("source_session_id", "like", "legacy:%")
+        .groupBy(sql`split_part(source_session_id, ':', 2)`)
+        .execute()
+    ).map((r) => [r.leader, Number(r.n)]),
+  );
+  const storeSummaries = new Map(
+    (
+      await conn
+        .selectFrom("coach_monthly_leader_summaries")
+        .select("coach_id")
+        .select((eb) => eb.fn.countAll<string>().as("n"))
+        .where("coach_id", "in", roster)
+        .groupBy("coach_id")
+        .execute()
+    ).map((r) => [r.coach_id, Number(r.n)]),
+  );
+
+  const shortfalls: string[] = [];
+  for (const leader of roster) {
+    const reports = bundleReports.get(leader) ?? 0;
+    const storedReports = storeReports.get(leader) ?? 0;
+    if (reports < storedReports) {
+      shortfalls.push(
+        `${leader}: ${reports} reports in the bundle, ${storedReports} in the store`,
+      );
+    }
+    const summaries = Object.keys(
+      bundle.monthlyLeaderSummaries?.[leader] ?? {},
+    ).length;
+    const storedSummaries = storeSummaries.get(leader) ?? 0;
+    if (summaries < storedSummaries) {
+      shortfalls.push(
+        `${leader}: ${summaries} leader-month summaries in the bundle, ${storedSummaries} in the store`,
+      );
+    }
+  }
+  if (shortfalls.length > 0) {
+    throw new Error(
+      `Backfill refused, nothing was written: this bundle would leave leaders with less than the store holds. ${shortfalls.join("; ")}.`,
+    );
+  }
+}
+
 export async function backfillCoachStore(
   dataset: unknown = coachDataJson,
 ): Promise<{ loaded: number }> {
@@ -23,6 +80,8 @@ export async function backfillCoachStore(
   const meta = datasetMeta(dataset);
 
   await conn.transaction().execute(async (trx) => {
+    await assertBundleKeepsStore(trx as Executor, dataset);
+
     for (const row of rows) {
       await trx
         .insertInto("coach_reports")
@@ -58,7 +117,8 @@ export async function backfillCoachStore(
       })
       .onConflict((oc) =>
         oc.column("id").doUpdateSet({
-          report_count: meta.report_count,
+          version: sql`coach_dataset_meta.version + 1`,
+          report_count: sql`GREATEST(coach_dataset_meta.report_count, ${meta.report_count})`,
           generated_at: meta.generated_at,
           schema_version: meta.schema_version,
           updated_at: new Date(),
@@ -70,7 +130,6 @@ export async function backfillCoachStore(
   return { loaded: rows.length };
 }
 
-// Runnable: `bun src/coach/coach-store.backfill.ts`
 if (import.meta.main) {
   backfillCoachStore()
     .then(({ loaded }) => {

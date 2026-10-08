@@ -1,0 +1,906 @@
+{
+  "full_171d626d": {
+    "coaches": [
+      {
+        "id": "avery-hollis",
+        "name": "Avery Hollis",
+        "email": "avery.hollis@example.org",
+        "group": "Saturday Morning Study — Cedar Hollow",
+        "coachName": "",
+        "isCoach": true,
+        "zoomLink": "",
+        "reports": [
+          {
+            "id": "avery-hollis-2026-09-26-riverbend-sunday-group-cedar-hol",
+            "date": "2026-09-26",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Jonah, Lesson 2 of 2",
+            "score": 90.16,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-09-24-lakeside-midweek-group-zoom-jona",
+            "date": "2026-09-24",
+            "session": "Lakeside Midweek Group (Zoom) — Jonah, Lesson 2 of 2",
+            "score": 84.81,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-09-19-riverbend-sunday-group-cedar-hol",
+            "date": "2026-09-19",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Jonah, Lesson 1 of 2",
+            "score": 88.49,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-09-17-lakeside-midweek-group-zoom-jona",
+            "date": "2026-09-17",
+            "session": "Lakeside Midweek Group (Zoom) — Jonah, Lesson 1 of 2",
+            "score": 78.04,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-09-12-riverbend-sunday-group-cedar-hol",
+            "date": "2026-09-12",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Joel, Final Lesson",
+            "score": 83.41,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-09-10-lakeside-midweek-group-zoom-joel",
+            "date": "2026-09-10",
+            "session": "Lakeside Midweek Group (Zoom) — Joel, Final Lesson",
+            "score": 64.46,
+            "status": "On Target"
+          },
+          {
+            "id": "avery-hollis-2026-09-05-riverbend-sunday-group-cedar-hol",
+            "date": "2026-09-05",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Joel Chapter 2, In Depth",
+            "score": 92.49,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-09-03-lakeside-midweek-group-zoom-joel",
+            "date": "2026-09-03",
+            "session": "Lakeside Midweek Group (Zoom) — Joel 2 Deep Dive",
+            "score": 63.55,
+            "status": "On Target"
+          },
+          {
+            "id": "avery-hollis-2026-08-29-riverbend-sunday-group-cedar-hol",
+            "date": "2026-08-29",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Joel Chapter 1, In Depth",
+            "score": 84.04,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-08-27-lakeside-midweek-group-zoom-joel",
+            "date": "2026-08-27",
+            "session": "Lakeside Midweek Group (Zoom) — Joel 1 Deep Dive",
+            "score": 82.69,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-08-22-riverbend-sunday-group-cedar-hol",
+            "date": "2026-08-22",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Joel 1–3 in Full",
+            "score": 54.26,
+            "status": "Developing"
+          },
+          {
+            "id": "avery-hollis-2026-08-20-lakeside-midweek-group-zoom-joel",
+            "date": "2026-08-20",
+            "session": "Lakeside Midweek Group (Zoom) — Joel, Overview",
+            "score": 77.95,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-08-15-riverbend-sunday-group-cedar-hol",
+            "date": "2026-08-15",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Obadiah, Continued",
+            "score": 85.16,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-08-13-lakeside-midweek-group-zoom-obad",
+            "date": "2026-08-13",
+            "session": "Lakeside Midweek Group (Zoom) — Obadiah, Continued",
+            "score": 71.36,
+            "status": "On Target"
+          },
+          {
+            "id": "avery-hollis-2026-08-08-week-zero-launching-obadiah-joel",
+            "date": "2026-08-08",
+            "session": "Week Zero — launching Obadiah & Joel (Cedar Hollow, weekend)",
+            "score": 95.04,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-08-01-james-wrap-up-weekend-combined-g",
+            "date": "2026-08-01",
+            "session": "James Wrap-Up — weekend combined groups (Cedar Hollow)",
+            "score": 95.76,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-07-30-james-wrap-up-lakeside-midweek-g",
+            "date": "2026-07-30",
+            "session": "James Wrap-Up — Lakeside Midweek Group (Zoom)",
+            "score": 84,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-07-18-james-lesson-9-riverbend-sunday-",
+            "date": "2026-07-18",
+            "session": "James, Lesson 9 — Riverbend Sunday Group (Cedar Hollow)",
+            "score": 84.61,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-07-16-james-lesson-9-lakeside-midweek-",
+            "date": "2026-07-16",
+            "session": "James, Lesson 9 — Lakeside Midweek Group (Zoom)",
+            "score": 78.8,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-07-09-james-lesson-8-lakeside-midweek-",
+            "date": "2026-07-09",
+            "session": "James, Lesson 8 — Lakeside Midweek Group (Zoom)",
+            "score": 91.42,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-06-27-james-lesson-7-riverbend-sunday-",
+            "date": "2026-06-27",
+            "session": "James, Lesson 7 — Riverbend Sunday Group",
+            "score": 92.51,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-06-26-james-lesson-7-lakeside-midweek-",
+            "date": "2026-06-26",
+            "session": "James, Lesson 7 — Lakeside Midweek Group",
+            "score": 91.51,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-06-13-james-lesson-5-riverbend-sunday-",
+            "date": "2026-06-13",
+            "session": "James, Lesson 5 — Riverbend Sunday Group",
+            "score": 86.25,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-06-12-james-lesson-5-lakeside-midweek-",
+            "date": "2026-06-12",
+            "session": "James, Lesson 5 — Lakeside Midweek Group",
+            "score": 75.98,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-06-06-james-lesson-4-riverbend-sunday-",
+            "date": "2026-06-06",
+            "session": "James, Lesson 4 — Riverbend Sunday Group",
+            "score": 74.27,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-06-04-james-lesson-4-midweek-group",
+            "date": "2026-06-04",
+            "session": "James, Lesson 4 — Midweek Group",
+            "score": 76.36,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-30-james-lesson-3-riverbend-sunday-",
+            "date": "2026-05-30",
+            "session": "James, Lesson 3 — Riverbend Sunday Group",
+            "score": 84.31,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-28-james-lesson-3-temptation-doers-",
+            "date": "2026-05-28",
+            "session": "James, Lesson 3 — Temptation, Doers of the Word, True Religion (Jas 1:12–27)",
+            "score": 75.28,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-23-james-lesson-2-testing-of-faith-",
+            "date": "2026-05-23",
+            "session": "James, Lesson 2 — Testing of Faith, Wisdom, Double-Mindedness, Rich & Poor (Jas 1:1–11)",
+            "score": 77.05,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-22-james-lesson-2-trials-wisdom-ric",
+            "date": "2026-05-22",
+            "session": "James, Lesson 2 — Trials, Wisdom, Rich & Poor, Crown of Life (Jas 1:1–12)",
+            "score": 81.75,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-16-james-lesson-1-full-book-overvie",
+            "date": "2026-05-16",
+            "session": "James, Lesson 1 — Full-book overview, bumper sticker survey (all 5 chapters)",
+            "score": 82.51,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-04-18-2-kings-21-25-lesson-6-final-les",
+            "date": "2026-04-18",
+            "session": "2 Kings 21–25, Lesson 6 (final lesson in 6-lesson arc)",
+            "score": 76.92,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-04-11-2-kings-21-25-lesson-5",
+            "date": "2026-04-11",
+            "session": "2 Kings 21-25, Lesson 5",
+            "score": 87.58,
+            "status": "Exceptional"
+          }
+        ]
+      },
+      {
+        "id": "desmond-ortiz",
+        "name": "Desmond Ortiz",
+        "email": "desmond.ortiz@example.org",
+        "group": "Men’s Study",
+        "coachName": "Avery Hollis",
+        "isCoach": true,
+        "zoomLink": "",
+        "reports": [
+          {
+            "id": "desmond-ortiz-2026-09-24-jonah-3-1-4-4-second-session-of-",
+            "date": "2026-09-24",
+            "session": "Jonah 3:1-4:4 (second session of Jonah)",
+            "score": 79.7,
+            "status": "Strong"
+          },
+          {
+            "id": "desmond-ortiz-2026-09-17-jonah-1-1-9-first-session-of-jon",
+            "date": "2026-09-17",
+            "session": "Jonah 1:1-9 (first session of Jonah)",
+            "score": 74.28,
+            "status": "Strong"
+          },
+          {
+            "id": "desmond-ortiz-2026-09-10-joel-2-28-3-21-pentecost-the-day",
+            "date": "2026-09-10",
+            "session": "Joel 2:28–3:21 — Pentecost, the Day of the Lord & the Valley of Decision",
+            "score": 72.48,
+            "status": "Strong"
+          },
+          {
+            "id": "desmond-ortiz-2026-08-13-obadiah-edom-s-pride-judgment-th",
+            "date": "2026-08-13",
+            "session": "Obadiah — Edom's Pride, Judgment & the Day of the Lord",
+            "score": 71.54,
+            "status": "On Target"
+          },
+          {
+            "id": "desmond-ortiz-2026-07-09-james-lesson-8-james-4-humility-",
+            "date": "2026-07-09",
+            "session": "James — Lesson 8: James 4 (Humility, Judging & Boasting)",
+            "score": 78.56,
+            "status": "Strong"
+          },
+          {
+            "id": "desmond-ortiz-2026-06-18-book-of-james-week-4-taming-the-",
+            "date": "2026-06-18",
+            "session": "Book of James — Week 4: Taming the Tongue and Wisdom from Above (James 3)",
+            "score": 68.24,
+            "status": "On Target"
+          },
+          {
+            "id": "desmond-ortiz-2026-06-11-book-of-james-week-3-faith-and-w",
+            "date": "2026-06-11",
+            "session": "Book of James — Week 3: Faith and Works (James 2:14–26)",
+            "score": 63.53,
+            "status": "On Target"
+          },
+          {
+            "id": "desmond-ortiz-2026-05-21-book-of-james-week-2-first-conte",
+            "date": "2026-05-21",
+            "session": "Book of James · Week 2 — First Content Lesson (James 1:1–12)",
+            "score": 73.3,
+            "status": "Strong"
+          }
+        ]
+      }
+    ],
+    "monthlyLeaderSummaries": {
+      "avery-hollis": {
+        "2026-09": {
+          "month": "2026-09",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 8,
+          "composite": 80.7
+        },
+        "2026-08": {
+          "month": "2026-08",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 8,
+          "composite": 80.8
+        },
+        "2026-07": {
+          "month": "2026-07",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 4,
+          "composite": 84.7
+        },
+        "2026-06": {
+          "month": "2026-06",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 6,
+          "composite": 82.8
+        },
+        "2026-05": {
+          "month": "2026-05",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 5,
+          "composite": 80.2
+        },
+        "2026-04": {
+          "month": "2026-04",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 2,
+          "composite": 82.3
+        }
+      },
+      "desmond-ortiz": {
+        "2026-09": {
+          "month": "2026-09",
+          "leaderId": "desmond-ortiz",
+          "sessionsCount": 3,
+          "composite": 75.5
+        },
+        "2026-08": {
+          "month": "2026-08",
+          "leaderId": "desmond-ortiz",
+          "sessionsCount": 1,
+          "composite": 71.5
+        },
+        "2026-07": {
+          "month": "2026-07",
+          "leaderId": "desmond-ortiz",
+          "sessionsCount": 1,
+          "composite": 78.6
+        },
+        "2026-06": {
+          "month": "2026-06",
+          "leaderId": "desmond-ortiz",
+          "sessionsCount": 2,
+          "composite": 65.9
+        },
+        "2026-05": {
+          "month": "2026-05",
+          "leaderId": "desmond-ortiz",
+          "sessionsCount": 1,
+          "composite": 73.3
+        }
+      }
+    }
+  },
+  "stale_dd28af72": {
+    "coaches": [
+      {
+        "id": "avery-hollis",
+        "name": "Avery Hollis",
+        "email": "avery.hollis@example.org",
+        "group": "Saturday Morning Study — Cedar Hollow",
+        "coachName": "",
+        "isCoach": true,
+        "zoomLink": "",
+        "reports": [
+          {
+            "id": "avery-hollis-2026-09-26-riverbend-sunday-group-cedar-hol",
+            "date": "2026-09-26",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Jonah, Lesson 2 of 2",
+            "score": 90.16,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-09-19-riverbend-sunday-group-cedar-hol",
+            "date": "2026-09-19",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Jonah, Lesson 1 of 2",
+            "score": 88.49,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-09-17-lakeside-midweek-group-zoom-jona",
+            "date": "2026-09-17",
+            "session": "Lakeside Midweek Group (Zoom) — Jonah, Lesson 1 of 2",
+            "score": 78.04,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-09-10-lakeside-midweek-group-zoom-joel",
+            "date": "2026-09-10",
+            "session": "Lakeside Midweek Group (Zoom) — Joel, Final Lesson",
+            "score": 64.46,
+            "status": "On Target"
+          },
+          {
+            "id": "avery-hollis-2026-09-05-riverbend-sunday-group-cedar-hol",
+            "date": "2026-09-05",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Joel Chapter 2, In Depth",
+            "score": 92.49,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-09-03-lakeside-midweek-group-zoom-joel",
+            "date": "2026-09-03",
+            "session": "Lakeside Midweek Group (Zoom) — Joel 2 Deep Dive",
+            "score": 63.55,
+            "status": "On Target"
+          },
+          {
+            "id": "avery-hollis-2026-08-29-riverbend-sunday-group-cedar-hol",
+            "date": "2026-08-29",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Joel Chapter 1, In Depth",
+            "score": 84.04,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-08-27-lakeside-midweek-group-zoom-joel",
+            "date": "2026-08-27",
+            "session": "Lakeside Midweek Group (Zoom) — Joel 1 Deep Dive",
+            "score": 82.69,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-08-20-lakeside-midweek-group-zoom-joel",
+            "date": "2026-08-20",
+            "session": "Lakeside Midweek Group (Zoom) — Joel, Overview",
+            "score": 77.95,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-08-15-riverbend-sunday-group-cedar-hol",
+            "date": "2026-08-15",
+            "session": "Riverbend Sunday Group (Cedar Hollow) — Obadiah, Continued",
+            "score": 85.16,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-08-08-week-zero-launching-obadiah-joel",
+            "date": "2026-08-08",
+            "session": "Week Zero — launching Obadiah & Joel (Cedar Hollow, weekend)",
+            "score": 95.04,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-07-18-james-lesson-9-riverbend-sunday-",
+            "date": "2026-07-18",
+            "session": "James, Lesson 9 — Riverbend Sunday Group (Cedar Hollow)",
+            "score": 91.69,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-07-16-james-lesson-9-lakeside-midweek-",
+            "date": "2026-07-16",
+            "session": "James, Lesson 9 — Lakeside Midweek Group (Zoom)",
+            "score": 78.8,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-06-13-james-lesson-5-riverbend-sunday-",
+            "date": "2026-06-13",
+            "session": "James, Lesson 5 — Riverbend Sunday Group",
+            "score": 86.25,
+            "status": "Exceptional"
+          },
+          {
+            "id": "avery-hollis-2026-06-06-james-lesson-4-riverbend-sunday-",
+            "date": "2026-06-06",
+            "session": "James, Lesson 4 — Riverbend Sunday Group",
+            "score": 74.27,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-06-04-james-lesson-4-midweek-group",
+            "date": "2026-06-04",
+            "session": "James, Lesson 4 — Midweek Group",
+            "score": 76.36,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-30-james-lesson-3-riverbend-sunday-",
+            "date": "2026-05-30",
+            "session": "James, Lesson 3 — Riverbend Sunday Group",
+            "score": 84.31,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-28-james-lesson-3-temptation-doers-",
+            "date": "2026-05-28",
+            "session": "James, Lesson 3 — Temptation, Doers of the Word, True Religion (Jas 1:12–27)",
+            "score": 75.28,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-23-james-lesson-2-testing-of-faith-",
+            "date": "2026-05-23",
+            "session": "James, Lesson 2 — Testing of Faith, Wisdom, Double-Mindedness, Rich & Poor (Jas 1:1–11)",
+            "score": 77.05,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-22-james-lesson-2-trials-wisdom-ric",
+            "date": "2026-05-22",
+            "session": "James, Lesson 2 — Trials, Wisdom, Rich & Poor, Crown of Life (Jas 1:1–12)",
+            "score": 81.75,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-05-16-james-lesson-1-full-book-overvie",
+            "date": "2026-05-16",
+            "session": "James, Lesson 1 — Full-book overview, bumper sticker survey (all 5 chapters)",
+            "score": 82.51,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-04-18-2-kings-21-25-lesson-6-final-les",
+            "date": "2026-04-18",
+            "session": "2 Kings 21–25, Lesson 6 (final lesson in 6-lesson arc)",
+            "score": 76.92,
+            "status": "Strong"
+          },
+          {
+            "id": "avery-hollis-2026-04-11-2-kings-21-25-lesson-5",
+            "date": "2026-04-11",
+            "session": "2 Kings 21-25, Lesson 5",
+            "score": 87.58,
+            "status": "Exceptional"
+          }
+        ]
+      },
+      {
+        "id": "desmond-ortiz",
+        "name": "Desmond Ortiz",
+        "email": "desmond.ortiz@example.org",
+        "group": "Men’s Study",
+        "coachName": "Avery Hollis",
+        "isCoach": true,
+        "zoomLink": "",
+        "reports": [
+          {
+            "id": "desmond-ortiz-2026-09-24-jonah-3-1-4-4-second-session-of-",
+            "date": "2026-09-24",
+            "session": "Jonah 3:1-4:4 (second session of Jonah)",
+            "score": 79.7,
+            "status": "Strong"
+          },
+          {
+            "id": "desmond-ortiz-2026-05-21-book-of-james-week-2-first-conte",
+            "date": "2026-05-21",
+            "session": "Book of James · Week 2 — First Content Lesson (James 1:1–12)",
+            "score": 73.3,
+            "status": "Strong"
+          }
+        ]
+      }
+    ],
+    "monthlyLeaderSummaries": {
+      "avery-hollis": {
+        "2026-09": {
+          "month": "2026-09",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 6,
+          "composite": 79.5
+        },
+        "2026-08": {
+          "month": "2026-08",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 5,
+          "composite": 85
+        },
+        "2026-07": {
+          "month": "2026-07",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 2,
+          "composite": 85.2
+        },
+        "2026-06": {
+          "month": "2026-06",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 3,
+          "composite": 79
+        },
+        "2026-05": {
+          "month": "2026-05",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 5,
+          "composite": 80.2
+        },
+        "2026-04": {
+          "month": "2026-04",
+          "leaderId": "avery-hollis",
+          "sessionsCount": 2,
+          "composite": 82.3
+        }
+      },
+      "desmond-ortiz": {
+        "2026-09": {
+          "month": "2026-09",
+          "leaderId": "desmond-ortiz",
+          "sessionsCount": 1,
+          "composite": 79.7
+        },
+        "2026-05": {
+          "month": "2026-05",
+          "leaderId": "desmond-ortiz",
+          "sessionsCount": 1,
+          "composite": 73.3
+        }
+      }
+    }
+  },
+  "before_e30ac351": {
+    "coaches": [
+      {
+        "id": "avery-hollis",
+        "name": "Avery Hollis",
+        "email": "avery.hollis@example.org",
+        "group": "Saturday Morning Study — Cedar Hollow",
+        "coachName": "",
+        "isCoach": true,
+        "zoomLink": "",
+        "reports": [
+          {
+            "id": "avery-hollis-2026-10-01-lakeside-midweek-group-zoom-amos",
+            "date": "2026-10-01",
+            "dateLabel": "October 1, 2026",
+            "session": "Lakeside Midweek Group (Zoom) — Amos, Lesson 1",
+            "topic": "Amos 1–2 — Eight oracles against the nations; opening of Israel's oracle",
+            "duration": "~2h 16m",
+            "attendees": 21,
+            "newcomers": 1,
+            "score": 78.85,
+            "base": 74.85,
+            "newcomerBonus": 1,
+            "sizeBonus": 3,
+            "status": "Strong",
+            "statusEmoji": "🟢",
+            "clusters": [
+              {
+                "name": "Teaching Craft",
+                "weight": 33,
+                "scorePct": 84,
+                "contribution": 27.72
+              },
+              {
+                "name": "Building Ministry",
+                "weight": 31,
+                "scorePct": 53.3,
+                "contribution": 16.53
+              },
+              {
+                "name": "Engaging People",
+                "weight": 18,
+                "scorePct": 70,
+                "contribution": 12.6
+              },
+              {
+                "name": "Being Real",
+                "weight": 18,
+                "scorePct": 100,
+                "contribution": 18
+              }
+            ],
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "score": 4,
+                "note": "Full teaching/application/prayer-delegation blueprint present, but no memory-reinforcement cold-recall open — first week this arc missing it"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "score": 1,
+                "note": "1 genuine guest (Luis Mora) acknowledged for under 30 seconds — no floor time, no testimony, not on camera — thinnest welcome of the arc"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "score": 5,
+                "note": "20+ cross-references opened across all eight oracles — an arc-high, more than double 9/24's count and well above the 6+ benchmark"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "score": 3,
+                "note": "Discussion-only leader talk ~46% — roughly flat with 9/24, still above the 30–35% target, driven by eight-nation content density"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "score": 5,
+                "note": "9 logged drivers, majority DOK 3–4, Confession/Personal-Response Rate (5+) and Follow-up Probe Frequency (6+) both above target"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "score": 4,
+                "note": "~45% raw substantive of an arc-high ~21-person room — size-normalized, though the absolute contributor count stayed flat despite the bigger room"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "score": 5,
+                "note": "THREE on-screen tools this week (map, AI fulfillment chart, brain MRI comparison) — the arc's best Visual Aids session"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "score": 5,
+                "note": "Corin's near-death testimony plus four other member disclosures — top of the established ±1 swing band"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "score": 2,
+                "note": "No cumulative Big-Ideas review at the open — regression from 9/24's implemented cold-recall; only an in-lesson bumper-sticker fill-in present"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "score": 4,
+                "note": "Explicit next-week framing (three 'Hear this word' sermons announced), though no restated 'Guarantee' phrase this week"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "score": 5,
+                "note": "Opening prayer delegated to Silvan; closing prayer delegated to a different member (Ilario); extensive prayer-chain ministry-infrastructure investment this session"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "score": 3,
+                "note": "Bram's delegated, public facilitation window on prayer-chain mechanics — first positive movement across seven consecutive Thursday-group sessions"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "monthlyLeaderSummaries": {}
+  },
+  "after_65d63a2b": {
+    "coaches": [
+      {
+        "id": "avery-hollis",
+        "name": "Avery Hollis",
+        "email": "avery.hollis@example.org",
+        "group": "Saturday Morning Study — Cedar Hollow",
+        "coachName": "",
+        "isCoach": true,
+        "zoomLink": "",
+        "reports": [
+          {
+            "id": "avery-hollis-2026-10-01-lakeside-midweek-group-zoom-amos",
+            "date": "2026-10-01",
+            "dateLabel": "October 1, 2026",
+            "session": "Lakeside Midweek Group (Zoom) — Amos, Lesson 1",
+            "topic": "Amos 1–2 — Eight oracles against the nations; opening of Israel's oracle",
+            "duration": "~2h 16m",
+            "attendees": 21,
+            "newcomers": 1,
+            "score": 82.48,
+            "base": 78.48,
+            "newcomerBonus": 1,
+            "sizeBonus": 3,
+            "status": "Strong",
+            "statusEmoji": "🟢",
+            "clusters": [
+              {
+                "name": "Teaching Craft",
+                "weight": 33,
+                "scorePct": 95,
+                "contribution": 31.35
+              },
+              {
+                "name": "Building Ministry",
+                "weight": 31,
+                "scorePct": 53.3,
+                "contribution": 16.53
+              },
+              {
+                "name": "Engaging People",
+                "weight": 18,
+                "scorePct": 70,
+                "contribution": 12.6
+              },
+              {
+                "name": "Being Real",
+                "weight": 18,
+                "scorePct": 100,
+                "contribution": 18
+              }
+            ],
+            "dimensions": [
+              {
+                "n": 1,
+                "name": "Session Structure & Flow",
+                "score": 4,
+                "note": "Full teaching/application/prayer-delegation blueprint present, but no memory-reinforcement cold-recall open — first week this arc missing it"
+              },
+              {
+                "n": 2,
+                "name": "Newcomer Welcome",
+                "score": 1,
+                "note": "1 genuine guest (Luis Mora) acknowledged for under 30 seconds — no floor time, no testimony, not on camera — thinnest welcome of the arc"
+              },
+              {
+                "n": 3,
+                "name": "Scripture Engagement",
+                "score": 5,
+                "note": "20+ cross-references opened across all eight oracles — an arc-high, more than double 9/24's count and well above the 6+ benchmark"
+              },
+              {
+                "n": 4,
+                "name": "Facilitation vs. Lecture",
+                "score": 3,
+                "note": "Discussion-only leader talk ~46% — roughly flat with 9/24, still above the 30–35% target, driven by eight-nation content density"
+              },
+              {
+                "n": 5,
+                "name": "Application Questions",
+                "score": 5,
+                "note": "9 logged drivers, majority DOK 3–4, Confession/Personal-Response Rate (5+) and Follow-up Probe Frequency (6+) both above target"
+              },
+              {
+                "n": 6,
+                "name": "Participant Engagement",
+                "score": 4,
+                "note": "~45% raw substantive of an arc-high ~21-person room — size-normalized, though the absolute contributor count stayed flat despite the bigger room"
+              },
+              {
+                "n": 7,
+                "name": "Visual Aids",
+                "score": 5,
+                "note": "THREE on-screen tools this week (map, AI fulfillment chart, brain MRI comparison) — the arc's best Visual Aids session"
+              },
+              {
+                "n": 8,
+                "name": "Vulnerability / Authenticity",
+                "score": 5,
+                "note": "Corin's near-death testimony plus four other member disclosures — top of the established ±1 swing band"
+              },
+              {
+                "n": 9,
+                "name": "Memory Reinforcement",
+                "score": null,
+                "note": "Lesson 1 of the Amos arc — no prior Big Ideas exist yet to review; the metric does not apply (Teaching Craft max reduced 25→20)"
+              },
+              {
+                "n": 10,
+                "name": "Homework References",
+                "score": 4,
+                "note": "Explicit next-week framing (three 'Hear this word' sermons announced), though no restated 'Guarantee' phrase this week"
+              },
+              {
+                "n": 11,
+                "name": "Prayer",
+                "score": 5,
+                "note": "Opening prayer delegated to Silvan; closing prayer delegated to a different member (Ilario); extensive prayer-chain ministry-infrastructure investment this session"
+              },
+              {
+                "n": 12,
+                "name": "Leader Development",
+                "score": 3,
+                "note": "Bram's delegated, public facilitation window on prayer-chain mechanics — first positive movement across seven consecutive Thursday-group sessions"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "monthlyLeaderSummaries": {}
+  }
+}
