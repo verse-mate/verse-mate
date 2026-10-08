@@ -317,6 +317,7 @@ export class CoachReminderService {
         .set({ sent_at: sql`NOW()` })
         .where("coach_id", "=", coachId)
         .where("reminder_date", "=", sql<Date>`${result.date}::date`)
+        .where(sql<string>`claimed_at::text`, "=", claimed.token)
         .execute();
       result.sent.push({ coachId, email, reportId });
       return;
