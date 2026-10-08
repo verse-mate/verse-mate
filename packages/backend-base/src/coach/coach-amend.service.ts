@@ -321,10 +321,11 @@ export class CoachAmendService {
       this.db,
       this.mailer,
     ).sendRevision(reportId);
+    const sent = send.sent || send.refusal === "already-sent";
     return {
       ...result,
-      sent: send.sent,
-      ...(send.sent
+      sent,
+      ...(sent
         ? {}
         : {
             pending:
