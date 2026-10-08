@@ -95,6 +95,86 @@ describe("roster and monthly backfill (DB)", () => {
     );
   });
 
+  it("every roster leader gets keywords, or is listed by name as having none", async () => {
+    const result = await backfillCoachRoster();
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["name", "title_match"])
+      .where("email", "in", BUNDLE_EMAILS)
+      .execute();
+    const bare = rows
+      .filter((r) => r.title_match.length === 0)
+      .map((r) => r.name)
+      .sort();
+    expect(result.leadersWithoutKeywords).toEqual(bare);
+    expect(bare).toEqual(["Wyatt Wellington", "Desmond Vane"]);
+  });
+
+  it("a map entry with no email reaches its leader through the map's leader name", async () => {
+    const rows = await conn
+      .selectFrom("coach_leaders")
+      .select(["slug", "title_match"])
+      .where("slug", "in", ["quentin-faber", "remy-lundgren", "elias-sorensen"])
+      .orderBy("slug")
+      .execute();
+    expect(rows).toEqual([
+      { slug: "quentin-faber", title_match: ["quentin", "faber"] },
+      { slug: "elias-sorensen", title_match: ["elias", "sorensen"] },
+      { slug: "remy-lundgren", title_match: ["remy", "lundgren"] },
+    ]);
+  });
+
+  it("a map entry whose alternate address is the roster address reaches its leader, and its own address becomes an alternate", async () => {
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select(["title_match", "alt_emails"])
+      .where("slug", "=", "reid-thorne")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      title_match: ["reid", "thorne"],
+      alt_emails: ["reid.thorne2@example.org"],
+    });
+  });
+
+  it("a map entry is joined on its alternate address even when its leader name is not the roster's", async () => {
+    await clear();
+    const reid = bundle.coaches.find((c) => c.id === "reid-thorne");
+    await backfillCoachRoster(coachDataJson, {
+      coaches: [
+        {
+          leader: "Folder_Renamed",
+          email: "elsewhere@example.test",
+          alt_emails: [reid?.email],
+          title_match: ["renamed"],
+        },
+      ],
+    });
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select(["title_match", "alt_emails"])
+      .where("slug", "=", "reid-thorne")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      title_match: ["renamed"],
+      alt_emails: ["elsewhere@example.test"],
+    });
+    await clear();
+    await backfillCoachRoster();
+  });
+
+  it("Lachlan's seed is the leader map's, unchanged", async () => {
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("title_match")
+      .where("slug", "=", "lachlan-genevieve")
+      .executeTakeFirstOrThrow();
+    expect(row.title_match).toEqual([
+      "lachlan",
+      "genevieve",
+      "couples precept",
+    ]);
+  });
+
   it("loads every monthly narrative and every leader-month summary, counted from the bundle", async () => {
     const narratives = await conn
       .selectFrom("coach_monthly_narratives")
