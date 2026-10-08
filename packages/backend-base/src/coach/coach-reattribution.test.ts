@@ -563,7 +563,11 @@ describe("an admin re-attributes a session to a leader", () => {
       .select("coach_id")
       .where("report_id", "=", "reattr-report-1")
       .executeTakeFirstOrThrow();
-    expect(note.coach_id).toBe(RIGHT);
+    expect(note.coach_id).toBe(WRONG);
+    const reader = new CoachService(Database);
+    expect(
+      (await reader.getReportDetail(RIGHT, "reattr-report-1", "admin"))?.notes,
+    ).toEqual([]);
     const reports = new CoachReportsRepository(Database);
     expect(
       (await reports.listFullReports(WRONG, { includeHeld: true })).map(

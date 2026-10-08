@@ -391,12 +391,11 @@ export async function reattributeSession(
           .where("id", "=", session.report_id)
           .where("first_lesson_source", "=", "admin")
           .execute();
-        for (const table of ["coach_notes", "coach_recording_links"] as const)
-          await trx
-            .updateTable(table)
-            .set({ coach_id: coachId })
-            .where("report_id", "=", session.report_id)
-            .execute();
+        await trx
+          .updateTable("coach_recording_links")
+          .set({ coach_id: coachId })
+          .where("report_id", "=", session.report_id)
+          .execute();
       }
       return { ok: true, state } as const;
     });
