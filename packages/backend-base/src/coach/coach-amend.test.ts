@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
@@ -556,6 +556,34 @@ describe("a delivered report can be revised", () => {
       (await new CoachDeliveryService(Database, mailer).sendRevision(REPORT))
         .refusal,
     ).toBe("already-sent");
+  });
+
+  it("an amendment whose revision another request's send already mailed reports it sent", async () => {
+    await seed();
+    const mailer = new FakeMailer();
+    const send = CoachDeliveryService.prototype.sendRevision;
+    const raced = spyOn(
+      CoachDeliveryService.prototype,
+      "sendRevision",
+    ).mockImplementationOnce(async function (
+      this: CoachDeliveryService,
+      reportId: string,
+    ) {
+      await send.call(this, reportId);
+      return send.call(this, reportId);
+    });
+    try {
+      const result = await new CoachAmendService(Database, mailer).amend({
+        reportId: REPORT,
+        amendment: { body: { headline: "revised" } },
+        byUserId: null,
+      });
+      expect(result).toMatchObject({ applied: true, revision: 1, sent: true });
+      expect(result.pending).toBeUndefined();
+      expect(ours(mailer).length).toBe(3);
+    } finally {
+      raced.mockRestore();
+    }
   });
 
   it("before cutover the amendment is stored and nothing is sent until an admin sends it after cutover", async () => {
