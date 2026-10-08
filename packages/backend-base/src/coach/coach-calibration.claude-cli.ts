@@ -18,10 +18,22 @@ function stripFences(text: string): string {
   return fenced ? fenced[1] : trimmed;
 }
 
+const CHILD_ENV = [
+  "PATH",
+  "HOME",
+  "CLAUDE_CONFIG_DIR",
+  "CLAUDE_CODE_OAUTH_TOKEN",
+];
+
 function claudeChildEnv(
   parent: Record<string, string | undefined>,
 ): Record<string, string> {
-  return { PATH: parent.PATH ?? "", HOME: parent.HOME ?? "" };
+  const env: Record<string, string> = {};
+  for (const name of CHILD_ENV) {
+    const value = parent[name];
+    if (value !== undefined) env[name] = value;
+  }
+  return env;
 }
 
 export function claudeCli(model: string): AiProvider {
