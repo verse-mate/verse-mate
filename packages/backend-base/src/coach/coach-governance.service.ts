@@ -107,7 +107,7 @@ export function checkEvidenceReuse(
 }
 
 export class CoachGovernanceService {
-  constructor(private readonly db: db) {}
+  constructor(private readonly db: Pick<db, "getOrCreateConnection">) {}
 
   /**
    * Check a report at DELIVERY time, against what is already persisted.

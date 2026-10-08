@@ -201,7 +201,9 @@ export class CoachAmendService {
         const evidence = evidenceFrom(
           nextDims.map((d) => ({ note: d.rationale })),
         );
-        const verdict = await new CoachGovernanceService(this.db).check({
+        const verdict = await new CoachGovernanceService({
+          getOrCreateConnection: () => trx,
+        }).check({
           reportId,
           coachId: report.coach_id,
           body: JSON.stringify({
