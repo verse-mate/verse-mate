@@ -340,6 +340,14 @@ export class CoachDeliveryService {
     const html = await reportEmailHtml(reportId, leader?.name, summary, report);
 
     const sends: NonNullable<DeliveryResult["sends"]> = [];
+    if (!(await this.publishWithinClaim(reportId, claim.token)))
+      return {
+        delivered: false,
+        refusal: "in-flight",
+        sends,
+        skipped,
+        subject,
+      };
     const confirmed = new Set(claim.deliveredTo);
     let token = claim.token;
     for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
@@ -410,7 +418,6 @@ export class CoachDeliveryService {
       };
     }
     await this.governance.recordEvidence(reportId, evidence);
-    await this.setHeld(reportId, false);
     if (skipped.length > 0)
       console.error(
         `[COACH-DELIVERY] ${reportId} not emailed to placeholder address(es): ${skipped.join(", ")}`,
@@ -594,6 +601,28 @@ export class CoachDeliveryService {
       .returning(REVISION_CLAIM_TOKEN.as("token"))
       .executeTakeFirst();
     return renewed?.token ?? null;
+  }
+
+  private async publishWithinClaim(
+    reportId: string,
+    token: string,
+  ): Promise<boolean> {
+    const published = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_reports")
+      .set({ held: false })
+      .where("id", "=", reportId)
+      .where(({ exists, selectFrom }) =>
+        exists(
+          selectFrom("coach_intake_sessions")
+            .select("report_id")
+            .where("report_id", "=", reportId)
+            .where("state", "=", "delivering")
+            .where(CLAIM_TOKEN, "=", token),
+        ),
+      )
+      .executeTakeFirst();
+    return Number(published.numUpdatedRows ?? 0) > 0;
   }
 
   private async setHeld(reportId: string, held: boolean): Promise<void> {

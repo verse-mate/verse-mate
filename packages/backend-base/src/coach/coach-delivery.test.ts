@@ -243,6 +243,44 @@ describe("delivery", () => {
     );
   });
 
+  it("a report emailed to some recipients is open to its leader even when another send failed", async () => {
+    await seedReport("r1");
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: true })
+      .where("id", "=", "r1")
+      .execute();
+    const mailer = new FakeMailer((to) => to === EMAILS[2]);
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r1",
+      evidence: evidence(),
+    });
+    expect(result.refusal).toBe("send-failed");
+    expect(mailer.sent.some((s) => s.to === EMAILS[0])).toBe(true);
+    expect(
+      await new CoachService(Database).getReportDetail(LEADER, "r1", "leader"),
+    ).not.toBeNull();
+  });
+
+  it("a report blocked by governance stays hidden from its leader", async () => {
+    await seedReport("r1", LEADER, {
+      feedback: { headline: "Not yet at Avery Hollis's level" },
+    });
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: true })
+      .where("id", "=", "r1")
+      .execute();
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(),
+    ).deliver({ reportId: "r1", evidence: evidence() });
+    expect(result.refusal).toBe("governance-blocked");
+    expect(
+      await new CoachService(Database).getReportDetail(LEADER, "r1", "leader"),
+    ).toBeNull();
+  });
+
   it("a failed delivery leaves the session retryable, with the attempt counted", async () => {
     await seedReport("r1");
     const mailer = new FakeMailer(() => true);
@@ -603,6 +641,41 @@ describe("a slow send cannot turn into a second copy", () => {
     for (const email of EMAILS) expect(received.has(email)).toBe(true);
     for (const [to, n] of received) expect(n).toBe(to === inFlight ? 2 : 1);
     expect(await sessionState("r-stall")).toBe("delivered");
+  });
+
+  it("a worker whose claim was taken before it sent neither mails nor opens the report", async () => {
+    await seedReport("r-taken");
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: true })
+      .where("id", "=", "r-taken")
+      .execute();
+    const mailer = new FakeMailer();
+    const service = new CoachDeliveryService(Database, mailer);
+    const internals = service as unknown as {
+      recipients: (...args: unknown[]) => Promise<unknown>;
+    };
+    const recipients = internals.recipients.bind(service);
+    internals.recipients = async (...args: unknown[]) => {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ updated_at: sql`clock_timestamp() + interval '1 second'` })
+        .where("report_id", "=", "r-taken")
+        .execute();
+      return recipients(...args);
+    };
+    const result = await service.deliver({
+      reportId: "r-taken",
+      evidence: evidence(),
+    });
+    expect(result.refusal).toBe("in-flight");
+    expect(mailer.sent).toEqual([]);
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select("held")
+      .where("id", "=", "r-taken")
+      .executeTakeFirstOrThrow();
+    expect(report.held).toBe(true);
   });
 
   it("a retry after one recipient failed mails only the recipients still owed", async () => {
