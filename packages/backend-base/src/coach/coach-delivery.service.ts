@@ -422,7 +422,7 @@ export class CoachDeliveryService {
     const allSent =
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
     if (!allSent) {
-      await this.countSendFailure(reportId, token);
+      await this.countSendFailure(reportId, token, sends, [...confirmed]);
       return {
         delivered: false,
         refusal: "send-failed",
@@ -682,13 +682,27 @@ export class CoachDeliveryService {
   private async countSendFailure(
     reportId: string,
     token: string,
+    sends: NonNullable<DeliveryResult["sends"]>,
+    emailed: string[],
   ): Promise<void> {
+    const failed = sends
+      .filter((s) => !s.delivered)
+      .map((s) => `${s.email}${s.error ? ` (${s.error})` : ""}`);
+    const what = [
+      failed.length > 0
+        ? `send failed to ${failed.join(", ")}`
+        : "no recipient has a deliverable address",
+      ...(emailed.length > 0
+        ? [`already emailed to ${emailed.join(", ")}`]
+        : []),
+    ].join("; ");
     await this.db
       .getOrCreateConnection()
       .updateTable("coach_intake_sessions")
       .set({
         retry_count: sql`retry_count + 1`,
         state: sql`CASE WHEN retry_count + 1 >= ${DELIVERY_ATTEMPT_LIMIT} THEN 'delivery_failed' ELSE 'delivery_pending' END`,
+        hold_reason: sql`${what}::text || CASE WHEN retry_count + 1 >= ${DELIVERY_ATTEMPT_LIMIT} THEN ${"; retries exhausted: fix the failing address, then requeue it"}::text ELSE ${"; retried automatically (attempt "}::text || (retry_count + 1)::text || ${` of ${DELIVERY_ATTEMPT_LIMIT}), fix the failing address if it is wrong`}::text END`,
         updated_at: sql`NOW()`,
       })
       .where("report_id", "=", reportId)

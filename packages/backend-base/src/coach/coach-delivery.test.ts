@@ -1230,6 +1230,53 @@ describe("a report its leader was already emailed is never hidden again", () => 
     },
   );
 
+  it("a partially delivered report whose remaining send keeps failing is listed with the ways out: fix the address, then requeue", async () => {
+    await partiallyDelivered("r-bouncing");
+    const bouncing = new FakeMailer((to) => to === EMAILS[2]);
+    for (let attempt = 2; attempt <= DELIVERY_ATTEMPT_LIMIT; attempt += 1)
+      await new CoachDeliveryService(Database, bouncing).deliver({
+        reportId: "r-bouncing",
+        evidence: evidence(),
+      });
+    const service = new CoachService(Database);
+    const listed = (await service.listPipelineFailures()).sessions.find(
+      (s) => s.reportId === "r-bouncing",
+    );
+    expect(listed?.state).toBe("delivery_failed");
+    expect(listed?.action).toBe("requeue");
+    expect(listed?.reason).toContain(`already emailed to ${EMAILS[0]}`);
+    expect(listed?.reason).toContain(`send failed to ${EMAILS[2]} (rejected)`);
+    expect(listed?.reason).toContain("fix the failing address");
+    expect(listed?.reason).toContain("requeue");
+
+    expect(await service.requeuePipelineFailure("ff-r-bouncing")).toBe(true);
+    const fixed = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, fixed).deliver({
+      reportId: "r-bouncing",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(fixed.sent.map((s) => s.to)).toEqual([EMAILS[2]]);
+    expect(
+      (await service.listPipelineFailures()).sessions.some(
+        (s) => s.reportId === "r-bouncing",
+      ),
+    ).toBe(false);
+  });
+
+  it("while its retries last, a partially delivered report is listed as retrying, naming who still waits", async () => {
+    await partiallyDelivered("r-retrying");
+    const listed = (
+      await new CoachService(Database).listPipelineFailures()
+    ).sessions.find((s) => s.reportId === "r-retrying");
+    expect(listed?.state).toBe("delivery_pending");
+    expect(listed?.action).toBeNull();
+    expect(listed?.reason).toContain(`send failed to ${EMAILS[2]} (rejected)`);
+    expect(listed?.reason).toContain(
+      `retried automatically (attempt 1 of ${DELIVERY_ATTEMPT_LIMIT})`,
+    );
+  });
+
   it("a retry that fails again counts the attempt and still leaves the report open to its leader", async () => {
     await partiallyDelivered("r-owed");
     await conn
