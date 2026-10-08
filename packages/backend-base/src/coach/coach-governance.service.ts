@@ -135,6 +135,28 @@ export function coldRecallInFeedback(feedback: unknown): string[] {
   ];
 }
 
+export function evidenceFrom(
+  dimensions: Array<{ note: string }>,
+): ReportEvidence {
+  const quotes: string[] = [];
+  const timestamps: string[] = [];
+  for (const d of dimensions) {
+    for (const quoted of d.note.matchAll(
+      /[""]([^""]{12,})[""]|"([^"]{12,})"/g,
+    )) {
+      const text = quoted[1] ?? quoted[2];
+      if (text) quotes.push(text.trim());
+    }
+    for (const stamp of d.note.matchAll(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g)) {
+      timestamps.push(stamp[0]);
+    }
+  }
+  return {
+    quotes: [...new Set(quotes)],
+    timestamps: [...new Set(timestamps)],
+  };
+}
+
 export class CoachGovernanceService {
   constructor(private readonly db: Pick<db, "getOrCreateConnection">) {}
 

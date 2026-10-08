@@ -7,18 +7,15 @@ import {
   type RevisionSendResult,
 } from "./coach-delivery.service";
 import {
-  FIRST_LESSON_RATIONALE,
-  MEMORY_REINFORCEMENT,
-} from "./coach-first-lesson";
-import {
   CoachGovernanceService,
   type GovernanceViolation,
   coldRecallInFeedback,
+  evidenceFrom,
 } from "./coach-governance.service";
-import { evidenceFrom } from "./coach-pipeline.service";
 import { isLegacyReport, rescoreReport } from "./coach-review.service";
 import type { CoachMailer } from "./coach.service";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
+import { FIRST_LESSON_RATIONALE, MEMORY_REINFORCEMENT } from "./rubric";
 
 export const BODY_TEXT_FIELDS = [
   "headline",

@@ -10,7 +10,7 @@ import {
 } from "./coach-delivery.service";
 import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
-import type { ReportEvidence } from "./coach-governance.service";
+import { type ReportEvidence, evidenceFrom } from "./coach-governance.service";
 import {
   AttributionChangedError,
   CoachPublishService,
@@ -447,32 +447,4 @@ export async function storedEvidence(
     .where("report_id", "=", reportId)
     .execute();
   return evidenceFrom(cited.map((c) => ({ note: c.rationale })));
-}
-
-/**
- * The structured evidence governance rule 2 compares (task 6.2).
- *
- * Built from the rationales the model actually cited, so "this quote was used
- * before" is a claim about what the report says rather than about its prose.
- */
-export function evidenceFrom(
-  dimensions: Array<{ note: string }>,
-): ReportEvidence {
-  const quotes: string[] = [];
-  const timestamps: string[] = [];
-  for (const d of dimensions) {
-    for (const quoted of d.note.matchAll(
-      /[""]([^""]{12,})[""]|"([^"]{12,})"/g,
-    )) {
-      const text = quoted[1] ?? quoted[2];
-      if (text) quotes.push(text.trim());
-    }
-    for (const stamp of d.note.matchAll(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g)) {
-      timestamps.push(stamp[0]);
-    }
-  }
-  return {
-    quotes: [...new Set(quotes)],
-    timestamps: [...new Set(timestamps)],
-  };
 }
