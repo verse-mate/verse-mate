@@ -444,6 +444,41 @@ describe("delivery", () => {
     expect(blocked.violations?.[0].detail).toContain(first);
   });
 
+  it("a recipient holding two roles under differently cased addresses is mailed once", async () => {
+    const shouted = EMAILS[0].toUpperCase();
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: shouted })
+      .where("slug", "=", LEADER)
+      .execute();
+    await conn
+      .insertInto("coach_admins")
+      .values({ email: EMAILS[0] })
+      .execute();
+    try {
+      await seedReport("r-cased");
+      const mailer = new FakeMailer();
+      const result = await new CoachDeliveryService(Database, mailer).deliver({
+        reportId: "r-cased",
+        evidence: evidence(),
+      });
+      expect(result.delivered).toBe(true);
+      expect(
+        mailer.sent.filter((s) => s.to.toLowerCase() === EMAILS[0]),
+      ).toHaveLength(1);
+    } finally {
+      await conn
+        .deleteFrom("coach_admins")
+        .where("email", "=", EMAILS[0])
+        .execute();
+      await conn
+        .updateTable("coach_leaders")
+        .set({ email: EMAILS[0] })
+        .where("slug", "=", LEADER)
+        .execute();
+    }
+  });
+
   it("the leader is addressed by name, not by slug", async () => {
     await seedReport("r-named");
     const mailer = new FakeMailer();
