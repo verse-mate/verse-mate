@@ -212,6 +212,26 @@ export interface KeywordConflict {
   inside: "keyword" | "name";
 }
 
+export async function keywordsInName(
+  database: db,
+  name: string,
+): Promise<Array<{ keyword: string; leader: string }>> {
+  const words = titleWords(name);
+  const leaders = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_leaders")
+    .select(["slug", "title_match"])
+    .where("slug", "is not", null)
+    .where("is_coach", "=", true)
+    .orderBy("slug")
+    .execute();
+  return leaders.flatMap((leader) =>
+    (leader.title_match ?? [])
+      .filter((keyword) => containsWords(words, titleWords(keyword)))
+      .map((keyword) => ({ keyword, leader: leader.slug as string })),
+  );
+}
+
 export async function setLeaderAttribution(
   database: db,
   slug: string,

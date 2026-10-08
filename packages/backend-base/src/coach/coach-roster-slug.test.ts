@@ -125,12 +125,13 @@ describe("a leader added through the admin route can be attributed a session", (
   const ADDED = "added-slug@example.test";
   const SECOND = "added-slug-2@example.test";
   const INVITER = "added-slug-inviter@example.test";
+  const KEYWORD_HOLDER = "added-slug-keyword@example.test";
   let inviter = "";
 
   async function clearAdded() {
     await conn
       .deleteFrom("coach_leaders")
-      .where("email", "in", [ADDED, SECOND])
+      .where("email", "in", [ADDED, SECOND, KEYWORD_HOLDER])
       .execute();
     await conn.deleteFrom("user").where("email", "=", INVITER).execute();
   }
@@ -180,6 +181,34 @@ describe("a leader added through the admin route can be attributed a session", (
     expect(coaches.length).toBeGreaterThan(0);
     for (const c of coaches) expect(leaderSlug(c.name)).toBe(c.id);
   });
+
+  it.each(["Grace", "Grace Kim"])(
+    "a name %p carrying another leader's keyword is refused, naming the keyword and the leader, and nothing is stored",
+    async (name) => {
+      await conn
+        .insertInto("coach_leaders")
+        .values({
+          slug: "added-slug-keyword",
+          email: KEYWORD_HOLDER,
+          name: "Keyword Holder",
+          title_match: ["grace"],
+        })
+        .execute();
+      const result = await service.addLeader(inviter, { email: ADDED, name });
+      expect(result).toEqual({
+        ok: false,
+        reason: "keyword-conflict",
+        conflicts: [{ keyword: "grace", leader: "added-slug-keyword" }],
+      });
+      expect(
+        await conn
+          .selectFrom("coach_leaders")
+          .select("slug")
+          .where("email", "=", ADDED)
+          .executeTakeFirst(),
+      ).toBeUndefined();
+    },
+  );
 
   it("a name whose slug a roster leader already holds is refused", async () => {
     const result = await service.addLeader(inviter, {

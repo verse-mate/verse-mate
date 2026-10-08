@@ -1188,6 +1188,16 @@ const plugin = new Elysia()
             throw new ValidationError(
               "Enter a name with at least one letter or digit",
             );
+          if (result.reason === "keyword-conflict")
+            throw new ConflictError(
+              `Name refused: ${result.conflicts
+                .map(
+                  (c) => `it contains "${c.keyword}", a keyword of ${c.leader}`,
+                )
+                .join(
+                  "; ",
+                )}. Their sessions would be routed to that leader. Enter a different name or change that leader's keywords first.`,
+            );
           throw new ConflictError("That email is already a leader");
         },
         {
