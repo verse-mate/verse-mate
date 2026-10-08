@@ -388,10 +388,7 @@ export class CoachDeliveryService {
       sessionTitle: String(summary.session ?? ""),
     });
 
-    const { recipients, skipped } = await this.recipients(
-      coachId,
-      leader?.email ?? null,
-    );
+    const { recipients, skipped } = await this.recipients(coachId, leader);
     const html = await reportEmailHtml(reportId, leader?.name, summary, report);
 
     const sends: NonNullable<DeliveryResult["sends"]> = [];
@@ -523,7 +520,7 @@ export class CoachDeliveryService {
     })}${REVISED_SUFFIX}`;
     const { recipients, skipped } = await this.recipients(
       report.coach_id,
-      leader?.email ?? null,
+      leader,
     );
     const html = await reportEmailHtml(reportId, leader?.name, summary, report);
 
@@ -864,7 +861,7 @@ export class CoachDeliveryService {
    */
   private async recipients(
     coachId: string,
-    leaderEmail: string | null,
+    leader: { name: string; email: string } | undefined,
   ): Promise<{
     recipients: Array<{ name: string; email: string }>;
     skipped: string[];
@@ -890,7 +887,7 @@ export class CoachDeliveryService {
       else out.push({ name, email: key });
     };
 
-    add(coachId, leaderEmail);
+    add(leader?.name ?? coachId, leader?.email);
     add(benchmark?.name ?? "Benchmark leader", benchmark?.email);
     for (const admin of admins) add("Program admin", admin.email);
     return { recipients: out, skipped };
