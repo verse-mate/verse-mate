@@ -12,21 +12,6 @@ import {
   statusForScore,
 } from "./rubric";
 
-/**
- * Making a scored session LIVE (change: port-coach-pipeline, task 6.8).
- *
- * Going live is a CONSEQUENCE of being scored, not a separate step. On the
- * retired host, publishing meant rebuilding a JSON file, pushing it to
- * `verse-mate`'s default branch and waiting for a deploy, so content cadence
- * was chained to deploy cadence, and a session could sit scored-but-invisible
- * for as long as nobody deployed. Here the write that records the score is the
- * write that makes it readable.
- *
- * Idempotent by construction: it upserts on the reports natural key, so
- * re-scoring the same source session updates the live report in place and
- * never produces a second one.
- */
-
 export interface PublishInput {
   sourceSessionId: string;
   coachId: string;
@@ -126,7 +111,7 @@ export class CoachPublishService {
         summary,
         metrics,
         body,
-        held: input.holdReason !== null,
+        held: true,
       },
       writer,
     );

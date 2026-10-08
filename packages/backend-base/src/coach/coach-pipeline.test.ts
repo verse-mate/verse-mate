@@ -407,7 +407,7 @@ describe("a retained session reaches a delivered report", () => {
       .set({
         body: JSON.stringify({
           bigIdeas: [],
-          feedback: { headline: "Not yet at Bryan Bailey's level" },
+          feedback: { headline: "Not yet at Avery Hollis's level" },
         }),
       })
       .where("id", "=", held.reportId as string)
@@ -417,7 +417,7 @@ describe("a retained session reaches a delivered report", () => {
       .values({
         slug: "pipe-bench",
         email: "pipe-bench@example.test",
-        name: "Bryan Bailey",
+        name: "Avery Hollis",
         is_benchmark: true,
       })
       .onConflict((oc) => oc.column("slug").doNothing())
@@ -988,8 +988,8 @@ describe("a held report is not on the leader's portal until it is released", () 
     expect(row?.reason).toContain("governance");
   });
 
-  it("a scored report that is not held is not listed", async () => {
-    await pipeline(null).run();
+  it("a delivered report is not listed", async () => {
+    await pipeline(new FakeMailer()).run();
     expect(
       (await new CoachService(Database).listPipelineFailures()).some(
         (f) => f.sourceSessionId === "ff-pipe-1",
@@ -997,9 +997,65 @@ describe("a held report is not on the leader's portal until it is released", () 
     ).toBe(false);
   });
 
-  it("a clean report with no mailer configured is still live", async () => {
+  it("with no mailer configured a clean report stays held from the leader and is listed for an admin", async () => {
     const [result] = await pipeline(null).run();
+    const reportId = result.reportId as string;
+
+    expect(await leaderSees(reportId)).toEqual(hidden);
+    expect(await adminSees(reportId)).toBe(true);
+    const row = (await new CoachService(Database).listPipelineFailures()).find(
+      (f) => f.sourceSessionId === "ff-pipe-1",
+    );
+    expect(row).toMatchObject({ reportId, state: "delivery_pending" });
+    expect(row?.reason).toContain("no mailer");
+  });
+
+  it("with no mailer and no calibration the report never reaches the leader", async () => {
+    await uncalibrate();
+    const [result] = await pipeline(null).run();
+    expect(await leaderSees(result.reportId as string)).toEqual(hidden);
+  });
+
+  it("once a mailer is configured the held report is delivered through the gates and reaches the leader", async () => {
+    const [result] = await pipeline(null).run();
+    const mailer = new FakeMailer();
+    const retried = await pipeline(mailer).run();
+    expect(retried.map((r) => [r.sourceSessionId, r.outcome])).toEqual([
+      ["ff-pipe-1", "scored-and-delivered"],
+    ]);
+    expect(mailer.sent.length).toBeGreaterThan(0);
     expect((await leaderSees(result.reportId as string)).detail).toBe(true);
+  });
+
+  it("a throw between publish and delivery leaves the report held and listed", async () => {
+    const svc = new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      new FakeMailer() as any,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: noFrames as any,
+        delivery: {
+          deliver: async () => {
+            throw new Error("the governance read timed out");
+          },
+        } as any,
+      },
+    );
+    await svc.run();
+    const reportId = (
+      await conn
+        .selectFrom("coach_reports")
+        .select("id")
+        .where("source_session_id", "=", "ff-pipe-1")
+        .executeTakeFirstOrThrow()
+    ).id;
+    expect(await leaderSees(reportId)).toEqual(hidden);
+    expect(
+      (await new CoachService(Database).listPipelineFailures()).some(
+        (f) => f.reportId === reportId,
+      ),
+    ).toBe(true);
   });
 });
 
