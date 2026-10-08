@@ -409,3 +409,150 @@ describe("Legacy Reports Are Read-Only", () => {
     expect(await isLegacyReport(Database, "no-such-report")).toBe(false);
   });
 });
+
+describe("an admin edits an undelivered report's improvements", () => {
+  const ADMIN_EMAIL = "review-edit-admin@test.local";
+  let admin = "";
+  const COLD = "Open with a cold recall of last week's big ideas";
+
+  beforeEach(async () => {
+    await clear();
+    await seed();
+    await conn.deleteFrom("user").where("email", "=", ADMIN_EMAIL).execute();
+    admin = (
+      await conn
+        .insertInto("user")
+        .values({ email: ADMIN_EMAIL, firstName: "E", lastName: "A" })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        first_lesson: true,
+        body: JSON.stringify({
+          feedback: {
+            headline: "new study",
+            improvements: [COLD],
+            improvementsProse: [
+              {
+                title: "No recap",
+                paragraphs: ["Reserve a cold-recall drill."],
+              },
+            ],
+          },
+        }),
+      })
+      .where("id", "=", REPORT)
+      .execute();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", ADMIN_EMAIL).execute();
+  });
+
+  async function feedback() {
+    const row = await conn
+      .selectFrom("coach_reports")
+      .select("body")
+      .where("id", "=", REPORT)
+      .executeTakeFirstOrThrow();
+    return (row.body as { feedback: Record<string, unknown> }).feedback;
+  }
+
+  it("the admin replaces a first lesson's cold-recall improvement, bullets and prose together, and the edit is recorded with who and when", async () => {
+    const prose = [
+      { title: "Quiet members", paragraphs: ["Ask the quiet ones first."] },
+    ];
+    expect(
+      await svc.editImprovements({
+        reportId: REPORT,
+        improvements: ["Call on quiet members"],
+        improvementsProse: prose,
+        byUserId: admin,
+      }),
+    ).toEqual({ ok: true });
+    expect(await feedback()).toEqual({
+      headline: "new study",
+      improvements: ["Call on quiet members"],
+      improvementsProse: prose,
+    });
+    const edits = await conn
+      .selectFrom("coach_report_edits")
+      .select(["edited_by", "edited_at", "changes"])
+      .where("report_id", "=", REPORT)
+      .execute();
+    expect(edits).toHaveLength(1);
+    expect(edits[0].edited_by).toBe(admin);
+    expect(edits[0].edited_at).toBeInstanceOf(Date);
+    expect(edits[0].changes).toMatchObject({
+      improvements: { from: [COLD], to: ["Call on quiet members"] },
+    });
+  });
+
+  it("bullets edited without prose clear the old prose, so it cannot keep the cold recall", async () => {
+    expect(
+      await svc.editImprovements({
+        reportId: REPORT,
+        improvements: ["Call on quiet members"],
+        byUserId: admin,
+      }),
+    ).toEqual({ ok: true });
+    expect(await feedback()).toEqual({
+      headline: "new study",
+      improvements: ["Call on quiet members"],
+    });
+  });
+
+  it("a replacement that still asks a first lesson for a cold recall is refused and changes nothing", async () => {
+    const result = await svc.editImprovements({
+      reportId: REPORT,
+      improvements: ["Start with a cold recall drill"],
+      byUserId: admin,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.refusal).toBe("cold-recall-improvement");
+    expect(result.coldRecall?.length).toBeGreaterThan(0);
+    expect((await feedback()).improvements).toEqual([COLD]);
+  });
+
+  it.each([
+    [{ state: "delivered" }, "already-delivered"],
+    [
+      { state: "delivery_pending", delivered_to: ["leader@example.test"] },
+      "partially-delivered",
+    ],
+    [{ state: "delivering" }, "in-flight"],
+  ])(
+    "a session %p is refused as %s and nothing changes",
+    async (set, refusal) => {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set(set)
+        .where("report_id", "=", REPORT)
+        .execute();
+      const result: unknown = await svc.editImprovements({
+        reportId: REPORT,
+        improvements: ["Call on quiet members"],
+        byUserId: admin,
+      });
+      expect(result).toEqual({ ok: false, refusal });
+      expect((await feedback()).improvements).toEqual([COLD]);
+    },
+  );
+
+  it("a legacy report is refused", async () => {
+    await conn
+      .updateTable("coach_reports")
+      .set({ source_session_id: "legacy:review-coach:2026-08-22" })
+      .where("id", "=", REPORT)
+      .execute();
+    expect(
+      await svc.editImprovements({
+        reportId: REPORT,
+        improvements: ["Call on quiet members"],
+        byUserId: admin,
+      }),
+    ).toEqual({ ok: false, refusal: "legacy-report" });
+  });
+});

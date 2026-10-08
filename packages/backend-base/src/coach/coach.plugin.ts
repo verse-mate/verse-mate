@@ -19,6 +19,7 @@ import {
   AmendmentBodySchema,
   CoachClassSchema,
   CoverageReportSchema,
+  ImprovementsEditBodySchema,
   LeaderMonthlyResponseSchema,
   MonthlySchema,
   NoteSchema,
@@ -99,6 +100,10 @@ const REVISION_REFUSALS: Record<string, () => Error> = {
   "empty-amendment": () => new ValidationError("The amendment changes nothing"),
   "in-flight": () => new ConflictError(IN_FLIGHT_CORRECTION),
   "partially-delivered": () => new ConflictError(PARTIALLY_DELIVERED),
+  "already-delivered": () =>
+    new ConflictError(
+      "Refused: the report was already delivered. Amend it instead, which sends the leader a revised copy.",
+    ),
 };
 
 function revisionResponse<
@@ -702,6 +707,30 @@ const plugin = new Elysia()
             ),
             rationale: t.Optional(t.String({ maxLength: 4000 })),
           }),
+          response: {
+            200: RevisionResultSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/admin/reports/:reportId/improvements",
+        async ({ store: { coachService }, currentUserId, params, body }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return revisionResponse(
+            await coachService.editImprovements({
+              reportId: params.reportId,
+              improvements: body.improvements,
+              improvementsProse: body.improvementsProse,
+              byUserId: currentUserId,
+            }),
+          );
+        },
+        {
+          body: ImprovementsEditBodySchema,
           response: {
             200: RevisionResultSchema,
             ...StandardErrorResponses,

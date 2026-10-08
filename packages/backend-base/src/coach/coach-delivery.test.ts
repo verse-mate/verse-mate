@@ -1055,6 +1055,28 @@ describe("A first lesson is never mailed with a cold-recall improvement", () => 
     },
   );
 
+  it("the admin replaces the cold-recall improvement on the held report, releases it, and it goes out", async () => {
+    await firstLesson("r-first", {
+      improvements: ["Open with a cold recall of last week's big ideas"],
+    });
+    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
+      reportId: "r-first",
+      evidence: evidence(),
+    });
+    const mailer = new FakeMailer();
+    const service = new CoachService(Database, mailer);
+    expect(
+      await service.editImprovements({
+        reportId: "r-first",
+        improvements: ["Call on the quiet members by name"],
+        byUserId: null,
+      }),
+    ).toEqual({ applied: true });
+    const released = await service.releaseHeldReport("r-first");
+    expect(released.delivered).toBe(true);
+    expect(mailer.sent.map((s) => s.to)).toContain(EMAILS[0]);
+  });
+
   it("the same improvement on a report that is not a first lesson goes out", async () => {
     await seedReport("r-cont", LEADER, {
       feedback: {

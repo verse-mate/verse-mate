@@ -362,6 +362,11 @@ const AmendedProseSchema = t.Array(
   { maxItems: 10 },
 );
 
+export const ImprovementsEditBodySchema = t.Object({
+  improvements: t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 }),
+  improvementsProse: t.Optional(AmendedProseSchema),
+});
+
 export const AmendmentBodySchema = t.Object({
   dimensions: t.Optional(
     t.Array(
