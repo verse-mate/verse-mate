@@ -15,6 +15,7 @@ import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import {
   CoachDeliveryService,
   DELIVERY_ATTEMPT_LIMIT,
+  isPlaceholderAddress,
   reportSubject,
 } from "./coach-delivery.service";
 import type { ReportEvidence } from "./coach-governance.service";
@@ -157,6 +158,20 @@ describe("the subject is derived, not invented", () => {
         sessionTitle: "Obadiah\n\tLesson   4  ",
       }),
     ).toBe("Coaching report — 2026-08-22 — Milo Kerr — Obadiah Lesson 4");
+  });
+});
+
+describe("a placeholder address is recognised however it is written", () => {
+  it.each([
+    "x@needs-real-email.invalid",
+    " X@NEEDS-REAL-EMAIL.INVALID ",
+    "x@needs-real-email.invalid.",
+  ])("%p is a placeholder", (address) => {
+    expect(isPlaceholderAddress(address)).toBe(true);
+  });
+
+  it("a real address is not", () => {
+    expect(isPlaceholderAddress("x@invalid.example.org")).toBe(false);
   });
 });
 

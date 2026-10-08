@@ -147,3 +147,31 @@ describe("a send cannot hang the caller", () => {
     expect(result.error).toContain("timed out");
   });
 });
+
+describe("the sender never passes Mailgun more than one recipient", () => {
+  it("an address carrying a second recipient is refused before any request", async () => {
+    const { spy, sent } = mockFetch(200);
+    const result = await consumer().sendEmail({
+      ...MAIL,
+      to: {
+        name: "Leader",
+        email: "leader@example.test,attacker@example.test",
+      },
+    });
+    expect(result.delivered).toBe(false);
+    expect(result.error).toContain("recipient");
+    expect(sent).toEqual([]);
+    spy.mockRestore();
+  });
+
+  it("an unusual but single address still goes out", async () => {
+    const { spy, sent } = mockFetch(200);
+    const result = await consumer().sendEmail({
+      ...MAIL,
+      to: { name: "Leader", email: "o'brien@example.test" },
+    });
+    expect(result.delivered).toBe(true);
+    expect(sent).toHaveLength(1);
+    spy.mockRestore();
+  });
+});
