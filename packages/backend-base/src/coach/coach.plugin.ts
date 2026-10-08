@@ -1380,6 +1380,7 @@ const plugin = new Elysia()
           if (result.refusal === "confirm-required")
             throw new ConflictError(
               "This is the benchmark leader, whose address receives every leader's reports: send confirm: true to change it",
+              { refusal: "confirm-required" },
             );
           throw new NotFoundError("Leader not found");
         },

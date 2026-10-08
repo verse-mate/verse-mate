@@ -866,7 +866,10 @@ describe("an admin corrects a leader's address", () => {
       email: "bench@example.test",
     });
     expect(refused.status).toBe(409);
-    expect(await refused.text()).toContain("confirm");
+    expect(await refused.json()).toMatchObject({
+      error: "CONFLICT",
+      details: { refusal: "confirm-required" },
+    });
     const confirmed = await put("/coach/admin/leaders/leader-bench/email", {
       email: "bench@example.test",
       confirm: true,
