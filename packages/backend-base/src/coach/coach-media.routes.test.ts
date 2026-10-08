@@ -143,6 +143,7 @@ beforeAll(async () => {
             attempts: 0,
             reportId: "r-held",
             reason: "held for calibration: no calibration is recorded for v3",
+            holdKind: "calibration",
             action: null,
             parallelRun: false,
             updatedAt: new Date("2026-09-01T00:00:00Z"),

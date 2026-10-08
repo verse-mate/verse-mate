@@ -26,11 +26,14 @@ import {
   COACH_REPLY_TO_NAME,
   isPlaceholderAddress,
 } from "./coach-delivery.service";
+import { coldRecallInFeedback } from "./coach-governance.service";
 import {
   type RetainedKind,
   RetainedMediaService,
 } from "./coach-retained-media.service";
 import {
+  COLD_RECALL_FEEDBACK,
+  type HoldKind,
   SKIPPED_LEADER_ADDRESS,
   STALE_DELIVERY_CLAIM,
   releasable,
@@ -464,6 +467,8 @@ export class CoachService {
       attempts: number;
       reportId: string | null;
       reason: string | null;
+      holdKind: HoldKind | null;
+      coldRecall?: string[];
       action: "release" | "requeue" | "attribute" | null;
       parallelRun: boolean;
       updatedAt: Date;
@@ -485,6 +490,7 @@ export class CoachService {
         "retry_count",
         "report_id",
         "hold_reason",
+        "hold_kind",
         "release_required",
         "parallel_run",
         "session_started_at",
@@ -492,6 +498,7 @@ export class CoachService {
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .select(SKIPPED_LEADER_ADDRESS.as("skipped_leader"))
+      .select(COLD_RECALL_FEEDBACK.as("cold_recall_feedback"))
       .select(sql<string>`count(*) OVER ()`.as("total"))
       .where(stuck)
       .orderBy("updated_at", "desc")
@@ -520,6 +527,11 @@ export class CoachService {
           : r.state === "delivered" && r.skipped_leader
             ? `delivered, but not emailed to ${r.skipped_leader}: placeholder address`
             : r.hold_reason ?? (r.release_required ? REATTRIBUTED_HOLD : null),
+      holdKind: (r.hold_kind ??
+        (r.release_required ? "reattributed" : null)) as HoldKind | null,
+      ...(r.hold_kind === "cold-recall"
+        ? { coldRecall: coldRecallInFeedback(r.cold_recall_feedback) }
+        : {}),
       action:
         r.coach_id === null
           ? ("attribute" as const)
@@ -606,6 +618,7 @@ export class CoachService {
         retry_count: 0,
         attempted_to: sql`ARRAY[]::text[]`,
         hold_reason: null,
+        hold_kind: null,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", sourceSessionId)

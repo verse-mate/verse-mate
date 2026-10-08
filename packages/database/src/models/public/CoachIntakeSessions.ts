@@ -88,6 +88,12 @@ export default interface CoachIntakeSessionsTable {
     Date | string | null | undefined,
     Date | string | null
   >;
+
+  hold_kind: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
 }
 
 export type CoachIntakeSessions = Selectable<CoachIntakeSessionsTable>;

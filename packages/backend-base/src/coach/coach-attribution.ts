@@ -373,6 +373,7 @@ export async function reattributeSession(
             ? {
                 retry_count: 0,
                 hold_reason: null,
+                hold_kind: null,
                 delivered_to: sql`ARRAY[]::text[]`,
                 published: false,
                 attempted_to: sql`ARRAY[]::text[]`,

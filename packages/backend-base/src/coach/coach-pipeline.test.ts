@@ -1615,6 +1615,7 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
           state: "delivery_pending",
           report_id: id,
           hold_reason: "held for calibration: no calibration is recorded",
+          hold_kind: "calibration",
           retry_count: 0,
         })
         .execute();
@@ -1651,6 +1652,87 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
     await pipeline(new FakeMailer()).run();
     expect(await storedAuthenticity()).toMatchObject({ score: 4 });
     expect((await storedAuthenticity()).rationale).not.toContain("held at");
+  });
+});
+
+describe("every hold carries a structured kind beside its prose", () => {
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
+      .execute();
+    await seedRetained();
+    await calibrate();
+  });
+  afterEach(async () => {
+    await clear();
+    await uncalibrate();
+  });
+
+  async function kind() {
+    return (
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["hold_kind", "hold_reason"])
+        .where("source_session_id", "=", "ff-pipe-1")
+        .executeTakeFirstOrThrow()
+    ).hold_kind;
+  }
+
+  async function listedKind() {
+    return (
+      await new CoachService(Database).listPipelineFailures({ limit: 200 })
+    ).sessions.find((s) => s.sourceSessionId === "ff-pipe-1")?.holdKind;
+  }
+
+  it("a review hold from the scores is review", async () => {
+    await pipeline(new FakeMailer(), new FakeAi(5)).run();
+    expect(await kind()).toBe("review");
+    expect(await listedKind()).toBe("review");
+  });
+
+  it("a calibration hold is calibration", async () => {
+    await uncalibrate();
+    await pipeline(new FakeMailer()).run();
+    expect(await kind()).toBe("calibration");
+    expect(await listedKind()).toBe("calibration");
+  });
+
+  it("no mailer is no-mailer", async () => {
+    await pipeline(null).run();
+    expect(await kind()).toBe("no-mailer");
+  });
+
+  it("a session awaiting release is reattributed", async () => {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ release_required: true })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    await pipeline(new FakeMailer()).run();
+    expect(await kind()).toBe("reattributed");
+    expect(await listedKind()).toBe("reattributed");
+  });
+
+  it("a governance block is governance", async () => {
+    await priorReport("pipe-coach-prior-evidence", "2026-08-15", 4);
+    await conn
+      .updateTable("coach_reports")
+      .set({ evidence: JSON.stringify({ quotes: [], timestamps: ["12:01"] }) })
+      .where("id", "=", "pipe-coach-prior-evidence")
+      .execute();
+    await pipeline(new FakeMailer()).run();
+    expect(await kind()).toBe("governance");
+    expect(await listedKind()).toBe("governance");
+  });
+
+  it("a failed send is send-failed, and delivery clears it", async () => {
+    await pipeline(new FakeMailer(false)).run();
+    expect(await kind()).toBe("send-failed");
+    expect(await listedKind()).toBe("send-failed");
+    await pipeline(new FakeMailer()).run();
+    expect(await kind()).toBeNull();
   });
 });
 
