@@ -1301,6 +1301,16 @@ describe("a revision is claimed before it is sent", () => {
     const unconfirmed = result.sends?.find((s) => s.email === accepted);
     expect(unconfirmed?.delivered).toBe(false);
     expect(unconfirmed?.error).toContain("requeue");
+    expect(unconfirmed?.neverConfirmed).toBe(true);
+    expect(
+      result.sends
+        ?.filter((s) => s.email !== accepted)
+        .map((s) => s.neverConfirmed),
+    ).toEqual([undefined, undefined]);
+    const [latest] = (
+      await new CoachService(Database).listRevisions(REPORT)
+    ).filter((r) => r.kind === "revision");
+    expect(latest).toMatchObject({ attemptedTo: [accepted], sentAt: null });
 
     const idle = new FakeMailer();
     expect(
@@ -1319,6 +1329,30 @@ describe("a revision is claimed before it is sent", () => {
     expect(done.sent).toBe(true);
     expect(ours(requeued).map((s) => s.to)).toEqual([accepted]);
     expect(await service.requeueRevision(REPORT)).toBe(false);
+    const [sent] = (await service.listRevisions(REPORT)).filter(
+      (r) => r.kind === "revision",
+    );
+    expect(sent).toMatchObject({ attemptedTo: [] });
+  });
+
+  it("only the latest unsent revision lists its never-confirmed recipients", async () => {
+    const dying = new GatedMailer();
+    void new CoachDeliveryService(Database, dying).sendRevision(REPORT);
+    await dying.reached;
+    await staleClaim();
+    const newer = await new CoachAmendService(Database, null).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "revised again" } },
+      byUserId: null,
+    });
+    expect(newer).toMatchObject({ applied: true, revision: 2 });
+    const listed = (await new CoachService(Database).listRevisions(REPORT))
+      .filter((r) => r.kind === "revision")
+      .map((r) => (r.kind === "revision" ? [r.revision, r.attemptedTo] : []));
+    expect(listed).toEqual([
+      [2, []],
+      [1, []],
+    ]);
   });
 
   it("a requeue never clears the marker of a send whose claim is still live", async () => {

@@ -792,6 +792,7 @@ export class CoachService {
         "coach_report_amendments.sent_to",
         "coach_report_amendments.skipped_recipients",
         "coach_report_amendments.sent_at",
+        "coach_report_amendments.attempted_to",
       ])
       .where("coach_report_amendments.report_id", "=", reportId)
       .orderBy("coach_report_amendments.revision", "desc")
@@ -819,6 +820,7 @@ export class CoachService {
         sentTo: r.sent_to,
         skipped: r.skipped_recipients,
         sentAt: r.sent_at ? new Date(r.sent_at as unknown as string) : null,
+        attemptedTo: r === rows[0] && !r.sent_at ? r.attempted_to : [],
       })),
       ...edits.map((e) => ({
         kind: "edit" as const,
