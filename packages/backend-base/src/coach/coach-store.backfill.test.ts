@@ -1,6 +1,14 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { db as Database } from "database";
 
+import history from "./coach-bundle-history.fixture.json";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { backfillCoachStore } from "./coach-store.backfill";
 import coachDataJson from "./coach.data.json";
@@ -136,5 +144,167 @@ describe("coach-store backfill (DB)", () => {
       delete process.env[COACH_PIPELINE_LIVE];
     }
     expect((await countsByCoach()).size).toBe(0);
+  });
+});
+
+describe("The Backfill Never Shrinks The Store", () => {
+  const FULL = history.full_171d626d;
+  const STALE = history.stale_dd28af72;
+  const REWRITTEN = "avery-hollis-2026-10-01-lakeside-midweek-group-zoom-amos";
+  const STALE_SCORED =
+    "avery-hollis-2026-07-18-james-lesson-9-riverbend-sunday-";
+  const MACHINE = ["ff-backfill-machine-1", "ff-backfill-machine-2"];
+
+  async function report(id: string) {
+    return conn
+      .selectFrom("coach_reports")
+      .select(["id", "summary", "metrics", "held", "updated_at"])
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+  }
+
+  async function snapshot() {
+    return {
+      reports: await conn
+        .selectFrom("coach_reports")
+        .selectAll()
+        .where("coach_id", "in", BUNDLE_COACH_IDS)
+        .orderBy("id")
+        .execute(),
+      summaries: await conn
+        .selectFrom("coach_monthly_leader_summaries")
+        .selectAll()
+        .where("coach_id", "in", BUNDLE_COACH_IDS)
+        .orderBy(["coach_id", "month"])
+        .execute(),
+      meta: await conn.selectFrom("coach_dataset_meta").selectAll().execute(),
+    };
+  }
+
+  async function clearAll() {
+    await clear();
+    await conn
+      .deleteFrom("coach_monthly_leader_summaries")
+      .where("coach_id", "in", BUNDLE_COACH_IDS)
+      .execute();
+  }
+
+  beforeEach(clearAll);
+  afterAll(clearAll);
+
+  it("A bundle missing reports is refused: the stale dd28af72 publish after the full one writes nothing and names each leader with both counts", async () => {
+    await backfillCoachStore(FULL);
+    await conn
+      .insertInto("coach_monthly_leader_summaries")
+      .values(
+        Object.entries(FULL.monthlyLeaderSummaries).flatMap(
+          ([coachId, byMonth]) =>
+            Object.entries(byMonth).map(([month, summary]) => ({
+              coach_id: coachId,
+              month,
+              summary: JSON.stringify(summary),
+            })),
+        ),
+      )
+      .execute();
+    const before = await snapshot();
+
+    const refusal = backfillCoachStore(STALE);
+    await expect(refusal).rejects.toThrow(
+      "avery-hollis: 23 reports in the bundle, 33 in the store",
+    );
+    await expect(backfillCoachStore(STALE)).rejects.toThrow(
+      "desmond-ortiz: 2 reports in the bundle, 8 in the store",
+    );
+    expect(await snapshot()).toEqual(before);
+    expect((await report(STALE_SCORED)).summary).toMatchObject({
+      score: 84.61,
+    });
+  });
+
+  it("a bundle missing leader-month summaries is refused even when its reports are complete", async () => {
+    await backfillCoachStore(FULL);
+    await conn
+      .insertInto("coach_monthly_leader_summaries")
+      .values(
+        ["2026-05", "2026-06", "2026-07"].map((month) => ({
+          coach_id: "desmond-ortiz",
+          month,
+          summary: JSON.stringify({ month }),
+        })),
+      )
+      .execute();
+    const before = await snapshot();
+    const thinned: { monthlyLeaderSummaries: Record<string, unknown> } =
+      structuredClone(FULL);
+    thinned.monthlyLeaderSummaries["desmond-ortiz"] = {};
+
+    await expect(backfillCoachStore(thinned)).rejects.toThrow(
+      "desmond-ortiz: 0 leader-month summaries in the bundle, 3 in the store",
+    );
+    expect(await snapshot()).toEqual(before);
+  });
+
+  it("A report rewritten upstream under the same id: 65d63a2b after e30ac351 moves the 2026-10-01 report from 78.85 to 82.48 in place, the null dimension included", async () => {
+    await backfillCoachStore(history.before_e30ac351);
+    expect((await report(REWRITTEN)).summary).toMatchObject({ score: 78.85 });
+
+    await backfillCoachStore(history.after_65d63a2b);
+    const after = await report(REWRITTEN);
+    expect(after.summary).toMatchObject({ score: 82.48 });
+    const dimensions = (after.metrics as { dimensions: Array<{ n: number }> })
+      .dimensions;
+    expect(dimensions.find((d) => d.n === 9)).toMatchObject({ score: null });
+    const rows = await conn
+      .selectFrom("coach_reports")
+      .select("id")
+      .where("coach_id", "=", "avery-hollis")
+      .execute();
+    expect(rows).toEqual([{ id: REWRITTEN }]);
+  });
+
+  it("The store also holds machine-scored reports: they are neither counted against the bundle nor changed", async () => {
+    await backfillCoachStore(history.before_e30ac351);
+    for (const id of MACHINE) {
+      await conn
+        .insertInto("coach_reports")
+        .values({
+          id,
+          coach_id: "avery-hollis",
+          session_date: "2026-10-01",
+          source_session_id: id,
+          legacy_ids: [],
+          summary: JSON.stringify({ score: 61 }),
+          metrics: {},
+          body: {},
+          held: true,
+        })
+        .execute();
+    }
+    const machineBefore = await Promise.all(MACHINE.map(report));
+
+    await backfillCoachStore(history.after_65d63a2b);
+
+    expect(await Promise.all(MACHINE.map(report))).toEqual(machineBefore);
+    expect((await report(REWRITTEN)).summary).toMatchObject({ score: 82.48 });
+    const meta = await conn
+      .selectFrom("coach_dataset_meta")
+      .select("report_count")
+      .executeTakeFirstOrThrow();
+    expect(meta.report_count).toBe(1);
+  });
+
+  it("never lowers the stored report count, and advances the version on every write", async () => {
+    await conn
+      .insertInto("coach_dataset_meta")
+      .values({ id: true, version: "7", report_count: 500 })
+      .execute();
+    await backfillCoachStore(FULL);
+    const meta = await conn
+      .selectFrom("coach_dataset_meta")
+      .select(["report_count", "version"])
+      .executeTakeFirstOrThrow();
+    expect(meta.report_count).toBe(500);
+    expect(Number(meta.version)).toBe(8);
   });
 });

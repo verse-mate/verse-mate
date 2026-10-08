@@ -3,6 +3,7 @@ import { sql } from "kysely";
 
 import { assertBeforeCutover } from "./coach-cutover";
 import leaderMapJson from "./coach-leader-map.json";
+import { assertBundleKeepsStore } from "./coach-store.backfill";
 import coachDataJson from "./coach.data.json";
 
 /**
@@ -71,6 +72,7 @@ export async function backfillCoachRoster(
 ): Promise<RosterBackfillResult> {
   assertBeforeCutover();
   const conn = Database.getOrCreateConnection();
+  await assertBundleKeepsStore(conn, dataset);
   const bundle = dataset as Bundle;
   const map = leaderMap as LeaderMap;
 

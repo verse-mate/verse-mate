@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import history from "./coach-bundle-history.fixture.json";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import leaderMapJson from "./coach-leader-map.json";
 import { backfillCoachRoster } from "./coach-roster.backfill";
@@ -144,5 +145,34 @@ describe("roster and monthly backfill (DB)", () => {
       .where("email", "in", BUNDLE_EMAILS)
       .execute();
     expect(rows).toEqual([]);
+  });
+
+  it("A bundle missing reports is refused: the roster backfill of the stale dd28af72 publish writes nothing", async () => {
+    await clear();
+    await backfillCoachRoster(history.full_171d626d, { coaches: [] });
+    const summaries = async () =>
+      conn
+        .selectFrom("coach_monthly_leader_summaries")
+        .selectAll()
+        .where("coach_id", "in", BUNDLE_SLUGS)
+        .orderBy(["coach_id", "month"])
+        .execute();
+    const leaders = async () =>
+      conn
+        .selectFrom("coach_leaders")
+        .selectAll()
+        .where("email", "in", BUNDLE_EMAILS)
+        .orderBy("slug")
+        .execute();
+    const before = { summaries: await summaries(), leaders: await leaders() };
+
+    await expect(
+      backfillCoachRoster(history.stale_dd28af72, { coaches: [] }),
+    ).rejects.toThrow(
+      "desmond-ortiz: 2 leader-month summaries in the bundle, 5 in the store",
+    );
+    expect({ summaries: await summaries(), leaders: await leaders() }).toEqual(
+      before,
+    );
   });
 });
