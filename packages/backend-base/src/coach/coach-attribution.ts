@@ -400,6 +400,18 @@ export async function reattributeSession(
           .set({ coach_id: coachId, held: true, updated_at: sql`NOW()` })
           .where("id", "=", session.report_id)
           .execute();
+        await trx
+          .updateTable("coach_report_dimension_scores")
+          .set({ provenance: "machine", corrected_by: null })
+          .where("report_id", "=", session.report_id)
+          .where("provenance", "=", "human")
+          .execute();
+        await trx
+          .updateTable("coach_reports")
+          .set({ first_lesson: false, first_lesson_source: null })
+          .where("id", "=", session.report_id)
+          .where("first_lesson_source", "=", "admin")
+          .execute();
         for (const table of ["coach_notes", "coach_recording_links"] as const)
           await trx
             .updateTable(table)
