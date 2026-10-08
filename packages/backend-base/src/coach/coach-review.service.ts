@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { coldRecallInFeedback } from "./coach-governance.service";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import {
   FIRST_LESSON_RATIONALE,
@@ -48,6 +49,18 @@ export interface ReviewState {
 
 export interface FirstLessonResult extends CorrectionResult {
   firstLesson?: boolean;
+}
+
+export interface ImprovementsEditResult {
+  ok: boolean;
+  refusal?:
+    | "legacy-report"
+    | "unknown-report"
+    | "already-delivered"
+    | "partially-delivered"
+    | "in-flight"
+    | "cold-recall-improvement";
+  coldRecall?: string[];
 }
 
 export class CoachReviewService {
@@ -158,6 +171,75 @@ export class CoachReviewService {
           firstLesson: input.firstLesson,
           ...(await rescoreReport(trx, input.reportId)),
         };
+      });
+  }
+
+  async editImprovements(input: {
+    reportId: string;
+    improvements: string[];
+    improvementsProse?: Array<{ title: string; paragraphs: string[] }>;
+    byUserId: string | null;
+  }): Promise<ImprovementsEditResult> {
+    if (await isLegacyReport(this.db, input.reportId)) {
+      return { ok: false, refusal: "legacy-report" };
+    }
+    return this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx): Promise<ImprovementsEditResult> => {
+        const locked = await lockForCorrection(trx, input.reportId);
+        if (locked) return { ok: false, refusal: locked };
+        const report = await trx
+          .selectFrom("coach_reports")
+          .select(["body", "first_lesson"])
+          .where("id", "=", input.reportId)
+          .executeTakeFirst();
+        if (!report) return { ok: false, refusal: "unknown-report" };
+        const body = (report.body ?? {}) as Record<string, unknown>;
+        const previous = (body.feedback ?? {}) as Record<string, unknown>;
+        const { improvementsProse: _cleared, ...kept } = previous;
+        const feedback: Record<string, unknown> = {
+          ...kept,
+          improvements: input.improvements,
+          ...(input.improvementsProse
+            ? { improvementsProse: input.improvementsProse }
+            : {}),
+        };
+        if (report.first_lesson) {
+          const coldRecall = coldRecallInFeedback(feedback);
+          if (coldRecall.length > 0)
+            return {
+              ok: false,
+              refusal: "cold-recall-improvement",
+              coldRecall,
+            };
+        }
+        await trx
+          .insertInto("coach_report_edits")
+          .values({
+            report_id: input.reportId,
+            changes: JSON.stringify({
+              improvements: {
+                from: previous.improvements ?? null,
+                to: input.improvements,
+              },
+              improvementsProse: {
+                from: previous.improvementsProse ?? null,
+                to: input.improvementsProse ?? null,
+              },
+            }),
+            edited_by: input.byUserId,
+          })
+          .execute();
+        await trx
+          .updateTable("coach_reports")
+          .set({
+            body: JSON.stringify({ ...body, feedback }),
+            updated_at: sql`NOW()`,
+          })
+          .where("id", "=", input.reportId)
+          .execute();
+        return { ok: true };
       });
   }
 

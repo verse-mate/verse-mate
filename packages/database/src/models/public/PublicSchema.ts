@@ -23,6 +23,7 @@ import type { default as CoachReminderSendsTable } from "./CoachReminderSends";
 import type { default as CoachReminderSummariesTable } from "./CoachReminderSummaries";
 import type { default as CoachReportAmendmentsTable } from "./CoachReportAmendments";
 import type { default as CoachReportDimensionScoresTable } from "./CoachReportDimensionScores";
+import type { default as CoachReportEditsTable } from "./CoachReportEdits";
 import type { default as CoachReportsTable } from "./CoachReports";
 import type { default as CoachSessionAssetsTable } from "./CoachSessionAssets";
 import type { default as CoachZoomLinksTable } from "./CoachZoomLinks";
@@ -207,6 +208,8 @@ export default interface PublicSchema {
   coach_report_dimension_scores: CoachReportDimensionScoresTable;
 
   coach_report_amendments: CoachReportAmendmentsTable;
+
+  coach_report_edits: CoachReportEditsTable;
 
   coach_leader_email_changes: CoachLeaderEmailChangesTable;
 

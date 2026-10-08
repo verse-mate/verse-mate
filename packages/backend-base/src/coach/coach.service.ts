@@ -719,6 +719,23 @@ export class CoachService {
     });
   }
 
+  async editImprovements(input: {
+    reportId: string;
+    improvements: string[];
+    improvementsProse?: Array<{ title: string; paragraphs: string[] }>;
+    byUserId: string | null;
+  }) {
+    const { CoachReviewService } = await import("./coach-review.service");
+    const result = await new CoachReviewService(this.db).editImprovements(
+      input,
+    );
+    return {
+      applied: result.ok,
+      ...(result.refusal ? { refusal: result.refusal } : {}),
+      ...(result.coldRecall ? { coldRecall: result.coldRecall } : {}),
+    };
+  }
+
   async amendReport(input: {
     reportId: string;
     amendment: Amendment;

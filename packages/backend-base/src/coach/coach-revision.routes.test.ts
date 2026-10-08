@@ -12,6 +12,7 @@ const store = app.store as unknown as { coachService: unknown };
 const realService = store.coachService;
 let token = "";
 const amendCalls: unknown[] = [];
+const editCalls: unknown[] = [];
 
 const applied = {
   applied: true,
@@ -43,6 +44,8 @@ const byReport: Record<string, unknown> = {
   "r-mr": { applied: false, refusal: "memory-reinforcement-required" },
   "r-delivering": { applied: false, refusal: "in-flight" },
   "r-partial": { applied: false, refusal: "partially-delivered" },
+  "r-delivered": { applied: false, refusal: "already-delivered" },
+  "r-edited": { applied: true },
 };
 
 beforeAll(async () => {
@@ -62,6 +65,10 @@ beforeAll(async () => {
     },
     setFirstLesson: async (input: { reportId: string }) =>
       byReport[input.reportId],
+    editImprovements: async (input: { reportId: string }) => {
+      editCalls.push(input);
+      return byReport[input.reportId];
+    },
     correctDimension: async () => ({
       ok: false,
       refusal: "partially-delivered",
@@ -215,6 +222,55 @@ describe("the revision routes", () => {
       expect(res.status).toBe(409);
       expect(await res.text()).toContain("already emailed");
     }
+  });
+
+  it("an undelivered report's improvements are edited, bullets and prose, by the admin who asked", async () => {
+    editCalls.length = 0;
+    const prose = [{ title: "Quiet members", paragraphs: ["Ask them first."] }];
+    const res = await call("PUT", "r-edited/improvements", {
+      improvements: ["Call on quiet members"],
+      improvementsProse: prose,
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ applied: true });
+    expect(editCalls).toEqual([
+      {
+        reportId: "r-edited",
+        improvements: ["Call on quiet members"],
+        improvementsProse: prose,
+        byUserId: USER,
+      },
+    ]);
+  });
+
+  it("an improvements edit that keeps a cold recall is an answer naming it, and a delivered report is sent to amend", async () => {
+    const cold = await call("PUT", "r-cold/improvements", {
+      improvements: ["Open with a cold recall"],
+    });
+    expect(cold.status).toBe(200);
+    expect(await cold.json()).toEqual({
+      applied: false,
+      refusal: "cold-recall-improvement",
+      coldRecall: ["Open with a cold recall"],
+    });
+    const delivered = await call("PUT", "r-delivered/improvements", {
+      improvements: ["x"],
+    });
+    expect(delivered.status).toBe(409);
+    expect(await delivered.text()).toContain("Amend it instead");
+    const partial = await call("PUT", "r-partial/improvements", {
+      improvements: ["x"],
+    });
+    expect(partial.status).toBe(409);
+  });
+
+  it("an improvements edit without the bullets never reaches the service", async () => {
+    editCalls.length = 0;
+    const res = await call("PUT", "r-edited/improvements", {
+      improvementsProse: [],
+    });
+    expect(res.status).toBe(422);
+    expect(editCalls).toEqual([]);
   });
 
   it("a score outside 1 to 5 never reaches the service", async () => {
