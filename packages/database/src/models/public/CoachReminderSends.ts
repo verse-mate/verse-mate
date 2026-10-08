@@ -13,7 +13,13 @@ export default interface CoachReminderSendsTable {
 
   email: ColumnType<string, string, string>;
 
-  sent_at: ColumnType<Date, Date | string | undefined, Date | string>;
+  sent_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
+
+  claimed_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
 export type CoachReminderSends = Selectable<CoachReminderSendsTable>;

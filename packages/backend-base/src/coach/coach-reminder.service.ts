@@ -3,7 +3,10 @@ import { sql } from "kysely";
 import { CoachReminder, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
-import { isPlaceholderAddress } from "./coach-delivery.service";
+import {
+  STALE_DELIVERY_CLAIM,
+  isPlaceholderAddress,
+} from "./coach-delivery.service";
 import { classDay } from "./coach-first-lesson";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
@@ -153,14 +156,23 @@ export class CoachReminderService {
       .orderBy("updated_at", "desc")
       .execute();
 
-    const alreadySent = new Set(
+    const taken = new Map(
       (
         await conn
           .selectFrom("coach_reminder_sends")
-          .select("coach_id")
+          .select(["coach_id", "sent_at"])
+          .select(
+            sql<string>`to_char(claimed_at, 'HH24:MI')`.as("claimed_time"),
+          )
           .where("reminder_date", "=", sql<Date>`${today}::date`)
+          .where((eb) =>
+            eb.or([
+              eb("sent_at", "is not", null),
+              eb("claimed_at", ">=", STALE_DELIVERY_CLAIM),
+            ]),
+          )
           .execute()
-      ).map((r) => r.coach_id),
+      ).map((r) => [r.coach_id, r]),
     );
 
     const byLeader = new Map<string, typeof reports>();
@@ -169,7 +181,15 @@ export class CoachReminderService {
 
     for (const [coachId, rows] of byLeader) {
       if (!rows.some((r) => classDay(r.date) === classDayTomorrow)) continue;
-      if (alreadySent.has(coachId)) continue;
+      const claim = taken.get(coachId);
+      if (claim?.sent_at) continue;
+      if (claim) {
+        result.notReminded.push({
+          coachId,
+          reason: `reminder claimed at ${claim.claimed_time} is unconfirmed (still sending, or its send threw); retried once the claim is 15 minutes old`,
+        });
+        continue;
+      }
       const latest = rows[0];
       if (daysBetween(latest.date, today) > REMINDER_FRESHNESS_DAYS) {
         result.notReminded.push({
@@ -268,34 +288,46 @@ export class CoachReminderService {
         reminder_date: result.date,
         report_id: reportId,
         email,
+        sent_at: null,
+        claimed_at: sql`clock_timestamp()`,
       })
-      .onConflict((oc) => oc.doNothing())
-      .returning("coach_id")
+      .onConflict((oc) =>
+        oc
+          .columns(["coach_id", "reminder_date"])
+          .doUpdateSet((eb) => ({
+            report_id: eb.ref("excluded.report_id"),
+            email: eb.ref("excluded.email"),
+            claimed_at: sql`clock_timestamp()`,
+          }))
+          .where("coach_reminder_sends.sent_at", "is", null)
+          .where("coach_reminder_sends.claimed_at", "<", STALE_DELIVERY_CLAIM),
+      )
+      .returning(sql<string>`claimed_at::text`.as("token"))
       .executeTakeFirst();
     if (!claimed) return;
-    const release = () =>
-      conn
-        .deleteFrom("coach_reminder_sends")
+    const sent = (await this.mailer.sendEmail({
+      subject,
+      to: { name: leader?.name ?? coachId, email },
+      text,
+      html,
+    })) as CoachSendResult | undefined;
+    if (sent?.delivered === true) {
+      await conn
+        .updateTable("coach_reminder_sends")
+        .set({ sent_at: sql`NOW()` })
         .where("coach_id", "=", coachId)
         .where("reminder_date", "=", sql<Date>`${result.date}::date`)
         .execute();
-    let sent: CoachSendResult | undefined;
-    try {
-      sent = (await this.mailer.sendEmail({
-        subject,
-        to: { name: leader?.name ?? coachId, email },
-        text,
-        html,
-      })) as CoachSendResult | undefined;
-    } catch (error) {
-      await release();
-      throw error;
-    }
-    if (sent?.delivered === true) {
       result.sent.push({ coachId, email, reportId });
       return;
     }
-    await release();
+    await conn
+      .deleteFrom("coach_reminder_sends")
+      .where("coach_id", "=", coachId)
+      .where("reminder_date", "=", sql<Date>`${result.date}::date`)
+      .where("sent_at", "is", null)
+      .where(sql<string>`claimed_at::text`, "=", claimed.token)
+      .execute();
     result.failed.push({
       coachId,
       reason: `rejected by the mail service${sent?.error ? `: ${sent.error}` : ""}`,
