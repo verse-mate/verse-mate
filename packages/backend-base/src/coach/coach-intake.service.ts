@@ -7,6 +7,7 @@ import {
   reattributeUnresolved,
 } from "./coach-attribution";
 import { coachPipelineLive } from "./coach-cutover";
+import { calendarDate } from "./coach-reminder.service";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
 
 /**
@@ -140,12 +141,8 @@ export class CoachIntakeService {
     let observed = 0;
 
     for (const t of fresh) {
-      // A malformed provider date used to throw RangeError from inside this
-      // loop, aborting the batch: every session after it went uninserted, and
-      // the next tick hit the same record again. `dateString` is typed string
-      // but comes from an external GraphQL response.
-      const date = sessionDate(t);
-      if (!date) {
+      const started = new Date(t.dateString);
+      if (Number.isNaN(started.getTime())) {
         console.error(
           `[COACH-INTAKE] skipping ${t.id}: unparseable date ${JSON.stringify(t.dateString)}`,
         );
@@ -164,10 +161,11 @@ export class CoachIntakeService {
       await sql`
         INSERT INTO coach_intake_sessions
           (source_session_id, coach_id, matched_by, title, host_email,
-           session_date, duration_minutes, parallel_run)
+           session_date, session_started_at, duration_minutes, parallel_run)
         VALUES (
           ${t.id}, ${match.coachId}, ${match.matchedBy}, ${title},
-          NULL, ${date}::date, ${t.duration}, ${parallelRun}
+          NULL, ${calendarDate(started)}::date, ${started.toISOString()}::timestamptz,
+          ${t.duration}, ${parallelRun}
         )
         -- Belt and braces against two workers polling the same window: the
         -- pre-read above is not a lock.
@@ -182,22 +180,4 @@ export class CoachIntakeService {
       unresolved,
     };
   }
-}
-
-/**
- * The session's calendar date, formatted rather than passed as a Date.
- *
- * `session_date` is a DATE column; pg parses a Date at LOCAL midnight, so
- * handing it a Date returns the previous day on any UTC+ host, the same bug
- * the report store was fixed for. Taking the ISO day directly avoids the round
- * trip entirely.
- */
-function sessionDate(t: FirefliesTranscript): string | null {
-  const parsed = new Date(t.dateString);
-  // `dateString` is TYPED string but comes from an external GraphQL response.
-  // An unparseable one used to throw RangeError from inside the insert loop,
-  // aborting the batch: every session after it went uninserted and the next
-  // tick hit the same record again.
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString().slice(0, 10);
 }

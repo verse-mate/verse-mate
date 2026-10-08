@@ -138,6 +138,7 @@ beforeAll(async () => {
             coachId: "leader-a",
             title: "t",
             sessionDate: "2026-09-01",
+            sessionStartedAt: null,
             state: "delivery_pending",
             attempts: 0,
             reportId: "r-held",

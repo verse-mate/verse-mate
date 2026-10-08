@@ -333,7 +333,12 @@ describe("The Parallel Run Is Silent, after cutover too", () => {
     const listed = (
       await new CoachService(Database).listPipelineFailures({ limit: 200 })
     ).sessions.find((s) => s.sourceSessionId === SESSION);
-    expect(listed).toMatchObject({ parallelRun: true, action: null });
+    expect(listed).toMatchObject({
+      parallelRun: true,
+      action: null,
+      sessionDate: "2026-08-22",
+      sessionStartedAt: new Date(transcript.dateString),
+    });
   });
 
   it("a parallel-run session whose delivery failed is not requeued for delivery or released", async () => {

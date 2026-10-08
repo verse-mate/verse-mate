@@ -43,6 +43,7 @@ export interface PendingReshare {
   coachId: string | null;
   title: string;
   sessionDate: string;
+  sessionStartedAt: Date | null;
   requestedAt: Date;
   attempts: number;
   asked: boolean;
@@ -152,6 +153,7 @@ export class CoachRetrievalService {
         "reshare_requested_at",
         "reshare_sent_at",
         "parallel_run",
+        "session_started_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("state", "=", "retrieval_failed")
@@ -164,6 +166,7 @@ export class CoachRetrievalService {
       coachId: r.coach_id,
       title: r.title,
       sessionDate: r.date,
+      sessionStartedAt: r.session_started_at,
       requestedAt: new Date(r.reshare_requested_at as unknown as string),
       attempts: r.retry_count,
       asked: r.reshare_sent_at !== null,

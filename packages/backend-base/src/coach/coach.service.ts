@@ -460,6 +460,7 @@ export class CoachService {
       coachId: string | null;
       title: string;
       sessionDate: string;
+      sessionStartedAt: Date | null;
       state: string;
       attempts: number;
       reportId: string | null;
@@ -487,6 +488,7 @@ export class CoachService {
         "hold_reason",
         "release_required",
         "parallel_run",
+        "session_started_at",
         "updated_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
@@ -529,6 +531,7 @@ export class CoachService {
       coachId: r.coach_id,
       title: r.title,
       sessionDate: r.date,
+      sessionStartedAt: r.session_started_at,
       state: r.state,
       attempts: r.retry_count,
       reportId: r.report_id,

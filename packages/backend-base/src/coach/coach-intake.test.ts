@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import { CoachIntakeService } from "./coach-intake.service";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
@@ -15,7 +16,7 @@ function transcript(
 ): FirefliesTranscript {
   return {
     id,
-    title: "Bryan — Saturday Morning, Austin Ridge",
+    title: "Avery — Saturday Morning, Cedar Hollow",
     host_email: "fred@fireflies.ai",
     organizer_email: "fred@fireflies.ai",
     dateString: "2026-08-22T14:00:00.000Z",
@@ -56,8 +57,8 @@ async function seedLeader() {
     .values({
       slug: COACH_SLUG,
       email: COACH_EMAIL,
-      name: "Bryan Bailey",
-      title_match: ["austin ridge", "saturday morning"],
+      name: "Avery Hollis",
+      title_match: ["cedar hollow", "saturday morning"],
     })
     .execute();
 }
@@ -305,5 +306,44 @@ describe("the poll reads the whole history, not the first page", () => {
       .executeTakeFirstOrThrow();
     expect(row.title).not.toMatch(/[\r\n]/);
     expect(row.title).toContain("Obadiah");
+  });
+});
+
+describe("a session's date is the America/Chicago calendar date of its start", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeader();
+  });
+  afterEach(clear);
+
+  async function stored(id: string) {
+    return conn
+      .selectFrom("coach_intake_sessions")
+      .select([
+        sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"),
+        "session_started_at",
+      ])
+      .where("source_session_id", "=", id)
+      .executeTakeFirstOrThrow();
+  }
+
+  it("a Thursday 6:30pm class after daylight saving ends is stored as Thursday, with its start", async () => {
+    const client = new FakeFireflies([
+      [transcript("ff-cst", { dateString: "2026-11-06T00:30:00.000Z" })],
+    ]);
+    await new CoachIntakeService(Database, client).poll();
+    const row = await stored("ff-cst");
+    expect(row.date).toBe("2026-11-05");
+    expect(new Date(row.session_started_at as Date).toISOString()).toBe(
+      "2026-11-06T00:30:00.000Z",
+    );
+  });
+
+  it("a Thursday 7pm class in daylight time is stored as Thursday", async () => {
+    const client = new FakeFireflies([
+      [transcript("ff-cdt", { dateString: "2026-10-02T00:00:00.000Z" })],
+    ]);
+    await new CoachIntakeService(Database, client).poll();
+    expect((await stored("ff-cdt")).date).toBe("2026-10-01");
   });
 });

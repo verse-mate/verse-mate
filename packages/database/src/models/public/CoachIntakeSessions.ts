@@ -82,6 +82,12 @@ export default interface CoachIntakeSessionsTable {
   attempted_to: ColumnType<string[], string[] | undefined, string[]>;
 
   parallel_run: ColumnType<boolean, boolean | undefined, boolean>;
+
+  session_started_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
 }
 
 export type CoachIntakeSessions = Selectable<CoachIntakeSessionsTable>;
