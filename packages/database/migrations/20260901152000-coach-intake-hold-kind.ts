@@ -1,5 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
+import { refuseToDrop } from "./20260825120000-create-coach-reports-store";
 
 const KINDS = [
   "review",
@@ -34,6 +35,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await refuseToDrop(db, "coach_intake_sessions", "hold_kind IS NOT NULL");
   await db.schema
     .alterTable("coach_intake_sessions")
     .dropColumn("hold_kind")

@@ -20,6 +20,26 @@ import type Database from "../src/models/Database";
  * represents, so a stale or partial publish is detectable rather than able to
  * overwrite live data (the date-only `generated_at` could not provide this).
  */
+export const DISCARD_FLAG = "COACH_ROLLBACK_DISCARD_DATA";
+
+export async function refuseToDrop(
+  db: Kysely<Database>,
+  table: string,
+  holding = "true",
+): Promise<void> {
+  const { rows } = await sql<{
+    n: number;
+  }>`SELECT count(*)::int AS n FROM ${sql.table(table)} WHERE ${sql.raw(holding)}`.execute(
+    db,
+  );
+  const n = rows[0]?.n ?? 0;
+  if (n === 0 || process.env[DISCARD_FLAG] === "1") return;
+  const which = holding === "true" ? "" : ` where ${holding}`;
+  throw new Error(
+    `${table} has ${n} row(s)${which}, and this down drops that data for good. Dump ${table} first, then rerun the down with ${DISCARD_FLAG}=1 to discard it.`,
+  );
+}
+
 export async function up(db: Kysely<Database>): Promise<void> {
   console.log("Creating coach_reports + coach_dataset_meta ...");
 
@@ -120,6 +140,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await refuseToDrop(db, "coach_reports");
   console.log("Dropping coach_reports + coach_dataset_meta ...");
   await sql`DROP TRIGGER IF EXISTS coach_dataset_meta_version_guard ON coach_dataset_meta`.execute(
     db,

@@ -1,5 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
+import { refuseToDrop } from "./20260825120000-create-coach-reports-store";
 
 /**
  * Migration 3 of 9 (change: port-coach-pipeline, design D13).
@@ -32,5 +33,6 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await refuseToDrop(db, "coach_monthly_narratives");
   await db.schema.dropTable("coach_monthly_narratives").ifExists().execute();
 }

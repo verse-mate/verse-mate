@@ -16,7 +16,15 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
-  await sql`DELETE FROM coach_reminder_sends WHERE sent_at IS NULL`.execute(db);
+  const { rows } = await sql<{
+    row: string;
+  }>`SELECT coach_id || ' ' || reminder_date || ' to ' || email AS row FROM coach_reminder_sends WHERE sent_at IS NULL ORDER BY 1`.execute(
+    db,
+  );
+  if (rows.length > 0)
+    throw new Error(
+      `coach_reminder_sends has ${rows.length} reminder claim(s) with no confirmed send: ${rows.map((r) => r.row).join(", ")}. Deleting them would let the older code send those reminders again. Check with the mail provider whether each went out, set sent_at on the ones that did and delete the ones that did not, then rerun the down.`,
+    );
   await db.schema
     .alterTable("coach_reminder_sends")
     .alterColumn("sent_at", (col) => col.setNotNull())
