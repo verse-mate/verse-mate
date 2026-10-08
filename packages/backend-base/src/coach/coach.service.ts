@@ -322,6 +322,7 @@ export interface CoachTrends {
     session: string;
     score: number;
     status: string;
+    reportId: string;
   }[];
   clusterSeries: TrendRow[];
   dimensionSeries: TrendRow[];
@@ -2199,6 +2200,7 @@ export class CoachService {
       session: r.session,
       score: r.score,
       status: r.status,
+      reportId: r.id,
     }));
 
     const clusterSeries: TrendRow[] = chrono.map((r) => {

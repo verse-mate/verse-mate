@@ -42,6 +42,21 @@ const summaryCalls: unknown[][] = [];
 const detailCalls: unknown[][] = [];
 let admin = true;
 let token = "";
+const trendsFixture = {
+  scoreSeries: [
+    {
+      date: "2026-09-01",
+      dateLabel: "Sep 1",
+      session: "Zephaniah 1",
+      score: 72,
+      status: "On Target",
+      reportId: "r-1",
+    },
+  ],
+  clusterSeries: [],
+  dimensionSeries: [],
+  delta: null,
+};
 
 beforeAll(async () => {
   const signer = new Elysia().use(
@@ -148,6 +163,8 @@ beforeAll(async () => {
       input.reportId === "legacy-r"
         ? { ok: false, refusal: "legacy-report" }
         : { ok: true, base: 70, status: { label: "On Target", emoji: "" } },
+    getTrends: async () => trendsFixture,
+    getTrendsById: async () => trendsFixture,
     getLeaderAttribution: async (slug: string) =>
       slug === "leader-a"
         ? { titleMatch: ["zephaniah"], altEmails: ["a@example.test"] }
@@ -500,6 +517,23 @@ describe("An admin tries to amend a legacy report", () => {
     );
     expect(res.status).toBe(409);
     expect(await res.text()).toContain("legacy report");
+  });
+});
+
+describe("a trend point names the report it plots", () => {
+  it.each([
+    ["the admin's view of a leader", "/coach/admin/coaches/leader-a/trends"],
+    ["the leader's own view", "/coach/trends"],
+  ])("%s carries each point's report id", async (_name, path) => {
+    admin = true;
+    const res = await app.handle(
+      new Request(`http://localhost${path}`, {
+        headers: { authorization: `Bearer ${token}` },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as typeof trendsFixture;
+    expect(body.scoreSeries.map((p) => p.reportId)).toEqual(["r-1"]);
   });
 });
 

@@ -57,6 +57,7 @@ describe("CoachService.buildTrends", () => {
       "2026-03-01",
     ]);
     expect(trends.scoreSeries.map((p) => p.score)).toEqual([60, 80]);
+    expect(trends.scoreSeries.map((p) => p.reportId)).toEqual(["a", "b"]);
   });
 
   it("computes the latest-vs-previous delta", () => {
@@ -231,17 +232,17 @@ describe("CoachService admin oversight", () => {
   it("lists every coach with a newest-first latest summary", async () => {
     const coaches = await adminSvc.listCoaches();
     expect(coaches.length).toBeGreaterThan(0);
-    const jeff = coaches.find((c) => c.id === "jeff-ward");
-    expect(jeff).toBeDefined();
-    expect(jeff?.sessionCount).toBeGreaterThanOrEqual(1);
+    const milo = coaches.find((c) => c.id === "milo-kerr");
+    expect(milo).toBeDefined();
+    expect(milo?.sessionCount).toBeGreaterThanOrEqual(1);
     // latest.date must be >= every other report date for that coach.
-    const reports = (await adminSvc.getReportsById("jeff-ward")) ?? [];
+    const reports = (await adminSvc.getReportsById("milo-kerr")) ?? [];
     const maxDate = reports.reduce((m, r) => (r.date > m ? r.date : m), "");
-    expect(jeff?.latest?.date).toBe(maxDate);
+    expect(milo?.latest?.date).toBe(maxDate);
   });
 
   it("returns reports for a known coach id and null for an unknown one", async () => {
-    expect(await adminSvc.getReportsById("jeff-ward")).not.toBeNull();
+    expect(await adminSvc.getReportsById("milo-kerr")).not.toBeNull();
     expect(await adminSvc.getReportsById("nope")).toBeNull();
     expect(await adminSvc.getTrendsById("nope")).toBeNull();
     expect(await adminSvc.getProfileById("nope")).toBeNull();
@@ -267,9 +268,9 @@ describe("CoachService admin oversight", () => {
   });
 
   it("returns a leader's monthly summary (admin drill-in) with picker months", async () => {
-    const res = await adminSvc.getMonthlySummaryById("bryan-bailey", "2026-06");
+    const res = await adminSvc.getMonthlySummaryById("avery-hollis", "2026-06");
     expect(res).not.toBeNull();
-    expect(res?.profile.id).toBe("bryan-bailey");
+    expect(res?.profile.id).toBe("avery-hollis");
     expect(res?.summary).not.toBeNull();
     expect(res?.summary?.month).toBe("2026-06");
     expect(res?.summary?.clusters.length).toBe(4);
@@ -280,7 +281,7 @@ describe("CoachService admin oversight", () => {
     expect([...months].sort((a, b) => (a < b ? 1 : -1))).toEqual(months);
     // A month the leader has no summary for → summary null, months still listed.
     const empty = await adminSvc.getMonthlySummaryById(
-      "bryan-bailey",
+      "avery-hollis",
       "2030-01",
     );
     expect(empty?.summary).toBeNull();
@@ -352,7 +353,7 @@ describe("CoachService recording-link auto-attach", () => {
   it("auto-attaches the leader's saved meeting link when no explicit link is set", async () => {
     const zoom = "https://zoom.us/j/555000111";
     const svc = new CoachService(stubDbFor({ zoomLink: zoom }));
-    const reports = (await svc.getReportsById("jeff-ward")) ?? [];
+    const reports = (await svc.getReportsById("milo-kerr")) ?? [];
     expect(reports.length).toBeGreaterThan(0);
     for (const r of reports) expect(r.recordingUrl).toBe(zoom);
   });
@@ -362,12 +363,12 @@ describe("CoachService recording-link auto-attach", () => {
     const explicit = "https://drive.google.com/file/session-1";
     // Grab a real report id first, then seed an explicit link for it.
     const ids =
-      (await new CoachService(stubDbFor({})).getReportsById("jeff-ward")) ?? [];
+      (await new CoachService(stubDbFor({})).getReportsById("milo-kerr")) ?? [];
     const targetId = ids[0]?.id ?? "";
     const svc = new CoachService(
       stubDbFor({ zoomLink: zoom, recordingLinks: { [targetId]: explicit } }),
     );
-    const reports = (await svc.getReportsById("jeff-ward")) ?? [];
+    const reports = (await svc.getReportsById("milo-kerr")) ?? [];
     expect(reports.find((r) => r.id === targetId)?.recordingUrl).toBe(explicit);
     // Every other session still gets the auto-attached meeting link.
     for (const r of reports.filter((r) => r.id !== targetId)) {
@@ -377,7 +378,7 @@ describe("CoachService recording-link auto-attach", () => {
 
   it("leaves the recording link empty when the leader has saved no meeting link", async () => {
     const svc = new CoachService(stubDbFor({}));
-    const reports = (await svc.getReportsById("jeff-ward")) ?? [];
+    const reports = (await svc.getReportsById("milo-kerr")) ?? [];
     for (const r of reports) expect(r.recordingUrl).toBe("");
   });
 });
@@ -410,7 +411,7 @@ describe("Coach class schemas", () => {
   it("carries the resolved leader identity on the admin export row", () => {
     const adminRow = {
       ...validClass,
-      leader: { id: "jeff-ward", name: "Jeff Ward", email: "jeff@example.com" },
+      leader: { id: "milo-kerr", name: "Milo Kerr", email: "milo@example.com" },
     };
     expect(Value.Check(AdminCoachClassSchema, adminRow)).toBe(true);
     // A class whose owner isn't in the roster still validates (null id).
