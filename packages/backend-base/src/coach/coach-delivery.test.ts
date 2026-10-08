@@ -20,6 +20,7 @@ import {
   reportSubject,
 } from "./coach-delivery.service";
 import type { ReportEvidence } from "./coach-governance.service";
+import { CoachReviewService } from "./coach-review.service";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
@@ -1256,5 +1257,169 @@ describe("a report its leader was already emailed is never hidden again", () => 
       retry_count: 2,
       held: false,
     });
+  });
+});
+
+describe("a pipeline report is shown to its leader at its first confirmed send", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(clear);
+
+  async function seedHeld(id: string) {
+    await seedReport(id);
+    await conn
+      .updateTable("coach_reports")
+      .set({ held: true })
+      .where("id", "=", id)
+      .execute();
+  }
+
+  async function heldOf(id: string) {
+    return (
+      await conn
+        .selectFrom("coach_reports")
+        .select("held")
+        .where("id", "=", id)
+        .executeTakeFirstOrThrow()
+    ).held;
+  }
+
+  it("nothing is published before the first send is accepted, and the report is open before the next send", async () => {
+    await seedHeld("r-first-send");
+    const heldAtSend: boolean[] = [];
+    class Watching extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        heldAtSend.push(await heldOf("r-first-send"));
+        return super.sendEmail(data);
+      }
+    }
+    const result = await new CoachDeliveryService(
+      Database,
+      new Watching(),
+    ).deliver({ reportId: "r-first-send", evidence: evidence() });
+    expect(result.delivered).toBe(true);
+    expect(heldAtSend[0]).toBe(true);
+    expect(heldAtSend.slice(1).every((held) => held === false)).toBe(true);
+    expect(heldAtSend.length).toBeGreaterThan(1);
+  });
+
+  it("when every send fails nothing is published, and the report stays correctable and gated", async () => {
+    await seedHeld("r-all-failed");
+    const failed = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(() => true),
+    ).deliver({ reportId: "r-all-failed", evidence: evidence() });
+    expect(failed.refusal).toBe("send-failed");
+    expect(await heldOf("r-all-failed")).toBe(true);
+    expect(
+      await new CoachService(Database).getReportDetail(
+        LEADER,
+        "r-all-failed",
+        "leader",
+      ),
+    ).toBeNull();
+
+    const edited = await new CoachReviewService(Database).editImprovements({
+      reportId: "r-all-failed",
+      improvements: ["Not yet at Avery Hollis's level"],
+      byUserId: null,
+    });
+    expect(edited.ok).toBe(true);
+
+    const retry = new FakeMailer();
+    const blocked = await new CoachDeliveryService(Database, retry).deliver({
+      reportId: "r-all-failed",
+      evidence: evidence(),
+    });
+    expect(blocked.refusal).toBe("governance-blocked");
+    expect(retry.sent).toEqual([]);
+    expect(await heldOf("r-all-failed")).toBe(true);
+  });
+
+  it("a report recorded as emailed but still hidden (a crash between the two writes) is opened by the next run even when its sends fail", async () => {
+    await seedHeld("r-crashed");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({
+        state: "delivery_pending",
+        delivered_to: sql`ARRAY[${EMAILS[0]}]::text[]`,
+      })
+      .where("report_id", "=", "r-crashed")
+      .execute();
+    const result = await new CoachDeliveryService(
+      Database,
+      new FakeMailer(() => true),
+    ).deliver({ reportId: "r-crashed", evidence: evidence() });
+    expect(result.refusal).toBe("send-failed");
+    expect(await heldOf("r-crashed")).toBe(false);
+  });
+
+  it("a run whose claim is taken between recording its first recipient and publishing leaves the report hidden", async () => {
+    await seedHeld("r-taken-late");
+    const service = new CoachDeliveryService(Database, new FakeMailer());
+    const internals = service as unknown as {
+      recordRecipient: (...args: unknown[]) => Promise<boolean>;
+    };
+    const record = internals.recordRecipient.bind(service);
+    internals.recordRecipient = async (...args: unknown[]) => {
+      const recorded = await record(...args);
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ updated_at: sql`clock_timestamp() + interval '1 second'` })
+        .where("report_id", "=", "r-taken-late")
+        .execute();
+      return recorded;
+    };
+    const result = await service.deliver({
+      reportId: "r-taken-late",
+      evidence: evidence(),
+    });
+    expect(result.refusal).toBe("in-flight");
+    expect(await heldOf("r-taken-late")).toBe(true);
+  });
+
+  it("a report whose every recipient is a placeholder is published with nothing sent", async () => {
+    await seedHeld("r-nobody");
+    const rolledBack = new Error("rolled back");
+    let outcome = null as {
+      held: boolean;
+      sent: number;
+      refusal?: string;
+    } | null;
+    await conn
+      .transaction()
+      .execute(async (trx) => {
+        await trx.deleteFrom("coach_admins").execute();
+        await trx
+          .updateTable("coach_leaders")
+          .set({ email: sql`slug || '@needs-real-email.invalid'` })
+          .where("slug", "in", [LEADER, BENCH])
+          .execute();
+        const scoped = {
+          getOrCreateConnection: () => trx,
+        } as unknown as typeof Database;
+        const mailer = new FakeMailer();
+        const result = await new CoachDeliveryService(scoped, mailer).deliver({
+          reportId: "r-nobody",
+          evidence: evidence(),
+        });
+        const report = await trx
+          .selectFrom("coach_reports")
+          .select("held")
+          .where("id", "=", "r-nobody")
+          .executeTakeFirstOrThrow();
+        outcome = {
+          held: report.held,
+          sent: mailer.sent.length,
+          refusal: result.refusal,
+        };
+        throw rolledBack;
+      })
+      .catch((e) => {
+        if (e !== rolledBack) throw e;
+      });
+    expect(outcome).toEqual({ held: false, sent: 0, refusal: "send-failed" });
   });
 });

@@ -379,27 +379,25 @@ export class CoachDeliveryService {
     const html = await reportEmailHtml(reportId, leader?.name, summary, report);
 
     const sends: NonNullable<DeliveryResult["sends"]> = [];
-    if (!(await this.publishWithinClaim(reportId, claim.token)))
-      return {
-        delivered: false,
-        refusal: "in-flight",
-        sends,
-        skipped,
-        subject,
-      };
+    const fenced = (): DeliveryResult => ({
+      delivered: false,
+      refusal: "in-flight",
+      sends,
+      skipped,
+      subject,
+    });
     const confirmed = new Set(claim.deliveredTo);
     let token = claim.token;
+    let published = false;
+    const publish = async () => {
+      published ||= await this.publishWithinClaim(reportId, token);
+      return published;
+    };
+    if ((confirmed.size > 0 || recipients.length === 0) && !(await publish()))
+      return fenced();
     for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
       const renewed = await this.renewClaim(reportId, token);
-      if (renewed === null) {
-        return {
-          delivered: false,
-          refusal: "in-flight",
-          sends,
-          skipped,
-          subject,
-        };
-      }
+      if (renewed === null) return fenced();
       token = renewed;
       const result = await this.send({
         subject,
@@ -415,20 +413,12 @@ export class CoachDeliveryService {
       });
       if (result?.delivered === true) {
         if (!(await this.recordRecipient(reportId, to.email, token)))
-          return {
-            delivered: false,
-            refusal: "in-flight",
-            sends,
-            skipped,
-            subject,
-          };
+          return fenced();
         confirmed.add(to.email);
+        if (!(await publish())) return fenced();
       }
     }
 
-    // 6.5, delivery is complete only when EVERY recipient's send is confirmed.
-    // A partial delivery reported as success is how an admin stops seeing a
-    // leader's reports without anyone noticing.
     const allSent =
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
     if (!allSent) {
@@ -454,15 +444,7 @@ export class CoachDeliveryService {
       .where("state", "=", "delivering")
       .where(CLAIM_TOKEN, "=", token)
       .executeTakeFirst();
-    if (Number(finished.numUpdatedRows ?? 0) === 0) {
-      return {
-        delivered: false,
-        refusal: "in-flight",
-        sends,
-        skipped,
-        subject,
-      };
-    }
+    if (Number(finished.numUpdatedRows ?? 0) === 0) return fenced();
     await this.governance.recordEvidence(reportId, evidence);
     if (skipped.length > 0)
       console.error(
