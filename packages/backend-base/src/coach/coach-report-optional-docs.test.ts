@@ -2,10 +2,12 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Value } from "@sinclair/typebox/value";
 import { db as Database } from "database";
 
+import { isolateTable } from "./coach-test-tables";
 import { ReportSchema } from "./coach.schema";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 const service = new CoachService(Database);
 const COACH = "optional-docs-coach";
 

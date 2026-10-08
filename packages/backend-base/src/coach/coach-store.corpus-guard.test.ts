@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { isolateTable } from "./coach-test-tables";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 const service = new CoachService(Database);
 
 const A = "corpus-guard-a";
@@ -46,8 +48,21 @@ async function clear() {
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
 
+async function storedByOthers(): Promise<number> {
+  const row = await conn
+    .selectFrom("coach_reports")
+    .select((eb) => eb.fn.countAll<string>().as("n"))
+    .where("coach_id", "not in", [A, B])
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
+}
+
 describe("the corpus guard is evaluated per leader", () => {
-  beforeEach(clear);
+  let others = 0;
+  beforeEach(async () => {
+    await clear();
+    others = await storedByOthers();
+  });
   afterEach(clear);
 
   it("a write advances the version and the count reflects the stored corpus", async () => {
@@ -55,13 +70,13 @@ describe("the corpus guard is evaluated per leader", () => {
       reports: [report(A, "a-1", "2026-08-01")],
     });
     expect(first.version).toBe("1");
-    expect(first.reportCount).toBe(1);
+    expect(first.reportCount).toBe(others + 1);
 
     const second = await service.ingestReports({
       reports: [report(A, "a-2", "2026-08-08")],
     });
     expect(Number(second.version)).toBeGreaterThan(Number(first.version));
-    expect(second.reportCount).toBe(2);
+    expect(second.reportCount).toBe(others + 2);
   });
 
   it("a write claiming FEWER reports for a leader than are stored is refused", async () => {
@@ -105,7 +120,7 @@ describe("the corpus guard is evaluated per leader", () => {
       expectedCounts: { [B]: 1 },
     });
     expect(incremental.accepted.length).toBe(1);
-    expect(incremental.reportCount).toBe(4);
+    expect(incremental.reportCount).toBe(others + 4);
   });
 
   it("a leader NOT named in the batch is never judged by it", async () => {

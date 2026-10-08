@@ -5,9 +5,12 @@ import { backfillCoachRoster } from "./coach-roster.backfill";
 import { backfillCoachStore } from "./coach-store.backfill";
 import { snapshotDataset } from "./coach-store.snapshot";
 import { withoutMonologueDetails } from "./coach-store.transform";
+import { isolateTable } from "./coach-test-tables";
 import coachDataJson from "./coach.data.json";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
+isolateTable("coach_admins");
 
 type Bundle = Record<string, unknown> & {
   coaches: Array<{ id: string; email: string; reports: unknown[] }>;
@@ -34,7 +37,11 @@ function canonical(value: unknown): string {
   return JSON.stringify(walk(value));
 }
 
-/** The bundle with its coaches in a defined order, the database has none. */
+async function ourSnapshot(): Promise<Bundle> {
+  const snap = (await snapshotDataset()) as unknown as Bundle;
+  return { ...snap, coaches: snap.coaches.filter((c) => SLUGS.includes(c.id)) };
+}
+
 function normalized(dataset: Bundle): Bundle {
   return {
     ...dataset,
@@ -76,7 +83,7 @@ describe("store -> bundle snapshot is the rollback path", () => {
   });
 
   it("reproduces the deployed corpus at FULL size, not at two rows", async () => {
-    const snap = (await snapshotDataset()) as unknown as Bundle;
+    const snap = await ourSnapshot();
     const snapReports = snap.coaches.reduce((n, c) => n + c.reports.length, 0);
     const bundleReports = bundle.coaches.reduce(
       (n, c) => n + c.reports.length,
@@ -87,7 +94,7 @@ describe("store -> bundle snapshot is the rollback path", () => {
   });
 
   it("is byte-comparable with the deployed bundle under canonical ordering", async () => {
-    const snap = (await snapshotDataset()) as unknown as Bundle;
+    const snap = await ourSnapshot();
     const backfilled = {
       ...bundle,
       coaches: bundle.coaches.map((c) => ({
@@ -101,7 +108,7 @@ describe("store -> bundle snapshot is the rollback path", () => {
   });
 
   it("carries the rubric, the admins and both monthly maps", async () => {
-    const snap = (await snapshotDataset()) as unknown as Bundle & {
+    const snap = (await ourSnapshot()) as Bundle & {
       admins: string[];
       clusters: unknown[];
       statusBands: unknown[];
@@ -121,7 +128,7 @@ describe("store -> bundle snapshot is the rollback path", () => {
   });
 
   it("orders a coach's reports newest-first, matching the bundle contract", async () => {
-    const snap = (await snapshotDataset()) as unknown as Bundle;
+    const snap = await ourSnapshot();
     for (const coach of snap.coaches) {
       const dates = (coach.reports as Array<{ date: string }>).map(
         (r) => r.date,

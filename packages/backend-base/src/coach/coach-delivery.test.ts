@@ -21,9 +21,11 @@ import {
 } from "./coach-delivery.service";
 import type { ReportEvidence } from "./coach-governance.service";
 import { CoachReviewService } from "./coach-review.service";
+import { isolateTable } from "./coach-test-tables";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_admins");
 
 beforeAll(() => {
   process.env[COACH_PIPELINE_LIVE] = "true";
@@ -195,20 +197,7 @@ describe("delivery", () => {
     });
 
     expect(result.delivered).toBe(true);
-    // Derived, not hardcoded: the rule is the leader, the benchmark leader and
-    // EVERY program admin, and migration 5 seeds a real one, so a fixture-only
-    // expectation would have been wrong about the rule while looking right.
-    const admins = await conn
-      .selectFrom("coach_admins")
-      .select("email")
-      .execute();
-    const expected = new Set([
-      EMAILS[0],
-      EMAILS[1],
-      ...admins.map((a) => a.email),
-    ]);
-    expect(new Set(mailer.sent.map((s) => s.to))).toEqual(expected);
-    expect(mailer.sent.length).toBe(expected.size);
+    expect(mailer.sent.map((s) => s.to).sort()).toEqual([...EMAILS].sort());
   });
 
   it("the SAME subject goes to all three, so replies stay one thread", async () => {
@@ -897,15 +886,8 @@ describe("a slow send cannot turn into a second copy", () => {
 
   it("a stalled worker whose last sends failed after another worker took the claim leaves that live claim as it is", async () => {
     await seedReport("r-stall-fail");
-    const admins = new Set(
-      (await conn.selectFrom("coach_admins").select("email").execute()).map(
-        (a) => a.email.toLowerCase(),
-      ),
-    );
-    admins.delete(EMAILS[0]);
-    admins.delete(EMAILS[1]);
-    const total = 2 + admins.size;
-    const mailer = new FakeMailer((to) => admins.has(to));
+    const total = EMAILS.length;
+    const mailer = new FakeMailer((to) => to === EMAILS[2]);
     const service = new CoachDeliveryService(Database, mailer);
     const internals = service as unknown as {
       clearAttempt: (...args: unknown[]) => Promise<boolean>;
@@ -1163,15 +1145,7 @@ describe("a slow send cannot turn into a second copy", () => {
 
   it("a report re-published during the last send is not marked delivered by the stale worker", async () => {
     await seedReport("r-republished");
-    const admins = await conn
-      .selectFrom("coach_admins")
-      .select("email")
-      .execute();
-    const recipients = new Set([
-      EMAILS[0],
-      EMAILS[1],
-      ...admins.map((a) => a.email),
-    ]).size;
+    const recipients = EMAILS.length;
     class RepublishOnLastSend extends FakeMailer {
       override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
         const result = await super.sendEmail(data);

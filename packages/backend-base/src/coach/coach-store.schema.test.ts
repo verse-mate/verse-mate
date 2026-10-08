@@ -2,7 +2,10 @@ import { describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
+import { isolateTable } from "./coach-test-tables";
+
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 
 async function columns(table: string): Promise<Set<string>> {
   const rows = await sql<{

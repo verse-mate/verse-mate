@@ -8,11 +8,13 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
 import { datasetToRows } from "./coach-store.transform";
+import { isolateTable } from "./coach-test-tables";
 import coachDataJson from "./coach.data.json";
 import { CoachService } from "./coach.service";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 const repo = new CoachReportsRepository(Database);
 const service = new CoachService(Database);
 
