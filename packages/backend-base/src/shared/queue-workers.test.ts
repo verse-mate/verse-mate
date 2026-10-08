@@ -4,7 +4,12 @@ import { QUEUE_WORKERS, startQueueWorkers } from "./shared.plugin";
 import type { WorkerRole } from "./worker-role";
 
 const MEDIA = ["Audio generation", "Audio cleanup", "Coach intake"];
-const API = ["Monitoring", "Processing", "Verse notification"];
+const API = [
+  "Monitoring",
+  "Processing",
+  "Verse notification",
+  "Coach reminder",
+];
 
 async function startAs(role: WorkerRole) {
   const ran: string[] = [];
@@ -33,7 +38,7 @@ describe("the container starts only the workers its role owns", () => {
   it("the API container starts no media worker and schedules no media cron", async () => {
     const { ran, crons } = await startAs("api");
     expect(ran.sort()).toEqual([...API].sort());
-    expect(crons).toEqual(["Verse notification"]);
+    expect(crons).toEqual(["Verse notification", "Coach reminder"]);
   });
 
   it("the media container starts only the media workers and their crons", async () => {
@@ -46,7 +51,12 @@ describe("the container starts only the workers its role owns", () => {
     const { ran, crons } = await startAs("all");
     expect(ran.sort()).toEqual([...API, ...MEDIA].sort());
     expect(crons.sort()).toEqual(
-      ["Audio cleanup", "Coach intake", "Verse notification"].sort(),
+      [
+        "Audio cleanup",
+        "Coach intake",
+        "Verse notification",
+        "Coach reminder",
+      ].sort(),
     );
   });
 
