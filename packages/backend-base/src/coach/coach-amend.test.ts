@@ -1118,7 +1118,7 @@ describe("a revision is claimed before it is sent", () => {
     expect([...copies(holder).values()]).toEqual([1, 1, 1]);
   });
 
-  it("a stalled sender that resumes while the rescuer is sending cannot renew the rescuer's claim", async () => {
+  it("a stalled sender that resumes while the rescuer is sending cannot renew the rescuer's claim, and no send repeats", async () => {
     const rescuer = new GatedMailer();
     let rescued: Promise<{ sent: boolean }> | null = null;
     class StallsOnce extends FakeMailer {
@@ -1147,8 +1147,7 @@ describe("a revision is claimed before it is sent", () => {
     ).toBe(true);
     const received = copies(stalled, rescuer);
     expect([...received.keys()].sort()).toEqual([...EMAILS].sort());
-    for (const [to, n] of received)
-      expect(n).toBe(to === ours(stalled)[0].to ? 2 : 1);
+    for (const [, n] of received) expect(n).toBe(1);
   });
 
   it("a stalled sender that resumes after its last send cannot release the rescuer's claim or mark the revision sent", async () => {
@@ -1163,18 +1162,15 @@ describe("a revision is claimed before it is sent", () => {
         ...admins.map((a) => a.email.trim().toLowerCase()),
       ].filter((email) => !isPlaceholderAddress(email)),
     ).size;
-    const rescuer = new GatedMailer();
-    let rescued: Promise<{ sent: boolean }> | null = null;
     class StallsOnLast extends FakeMailer {
       override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
         const result = await super.sendEmail(data);
-        if (this.sent.length === recipients) {
-          await staleClaim();
-          rescued = new CoachDeliveryService(Database, rescuer).sendRevision(
-            REPORT,
-          );
-          await rescuer.reached;
-        }
+        if (this.sent.length === recipients)
+          await conn
+            .updateTable("coach_report_amendments")
+            .set({ sending_at: sql`clock_timestamp() + interval '1 second'` })
+            .where("report_id", "=", REPORT)
+            .execute();
         return result;
       }
     }
@@ -1186,19 +1182,23 @@ describe("a revision is claimed before it is sent", () => {
     expect(first).toMatchObject({ sent: false, refusal: "in-flight" });
     const pending = await conn
       .selectFrom("coach_report_amendments")
-      .select(["sent_at", "sending_at"])
+      .select(["sent_at", "sending_at", "sent_to"])
       .where("report_id", "=", REPORT)
       .executeTakeFirstOrThrow();
     expect(pending.sent_at).toBeNull();
     expect(pending.sending_at).not.toBeNull();
-    rescuer.release();
-    expect(
-      (await (rescued as unknown as Promise<{ sent: boolean }>)).sent,
-    ).toBe(true);
-    expect(rescuer.sent).toHaveLength(1);
+    for (const email of EMAILS) expect(pending.sent_to).toContain(email);
+
+    await staleClaim();
+    const last = new FakeMailer();
+    const settled = await new CoachDeliveryService(Database, last).sendRevision(
+      REPORT,
+    );
+    expect(settled.sent).toBe(true);
+    expect(last.sent).toEqual([]);
   });
 
-  it("a send that stalls past the claim window is fenced off, and only the send in flight can repeat", async () => {
+  it("a send that stalls past the claim window is fenced off, no send repeats, and its late confirmation still counts", async () => {
     const rescuer = new FakeMailer();
     let rescued: Promise<unknown> | null = null;
     class StallingMailer extends FakeMailer {
@@ -1226,12 +1226,16 @@ describe("a revision is claimed before it is sent", () => {
 
     expect(first.sent).toBe(false);
     expect(first.refusal).toBe("in-flight");
-    const inFlight = ours(stalled)[0].to;
-    const received = new Map<string, number>();
-    for (const s of [...ours(stalled), ...ours(rescuer)])
-      received.set(s.to, (received.get(s.to) ?? 0) + 1);
+    const received = copies(stalled, rescuer);
     expect([...received.keys()].sort()).toEqual([...EMAILS].sort());
-    for (const [to, n] of received) expect(n).toBe(to === inFlight ? 2 : 1);
+    for (const [, n] of received) expect(n).toBe(1);
+
+    const last = new FakeMailer();
+    const settled = await new CoachDeliveryService(Database, last).sendRevision(
+      REPORT,
+    );
+    expect(settled.sent).toBe(true);
+    expect(last.sent).toEqual([]);
   });
 
   it("a send that crashed holds the revision only until its claim is stale", async () => {
@@ -1257,6 +1261,82 @@ describe("a revision is claimed before it is sent", () => {
     ).sendRevision(REPORT);
     expect(retried.sent).toBe(true);
     expect(ours(mailer).length).toBe(3);
+  });
+
+  it("a crash after an accepted send and before it is recorded: that recipient is not mailed the revision again until it is requeued", async () => {
+    const dying = new GatedMailer();
+    void new CoachDeliveryService(Database, dying).sendRevision(REPORT);
+    await dying.reached;
+    const accepted = ours(dying)[0].to;
+    await staleClaim();
+
+    const next = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, next).sendRevision(
+      REPORT,
+    );
+    expect(result).toMatchObject({ sent: false, refusal: "send-failed" });
+    const resent = ours(next).map((s) => s.to);
+    expect(resent).not.toContain(accepted);
+    expect(resent.sort()).toEqual(EMAILS.filter((e) => e !== accepted).sort());
+    const unconfirmed = result.sends?.find((s) => s.email === accepted);
+    expect(unconfirmed?.delivered).toBe(false);
+    expect(unconfirmed?.error).toContain("requeue");
+
+    const idle = new FakeMailer();
+    expect(
+      (await new CoachDeliveryService(Database, idle).sendRevision(REPORT))
+        .sent,
+    ).toBe(false);
+    expect(ours(idle)).toEqual([]);
+
+    const service = new CoachService(Database);
+    expect(await service.requeueRevision(REPORT)).toBe(true);
+    const requeued = new FakeMailer();
+    const done = await new CoachDeliveryService(
+      Database,
+      requeued,
+    ).sendRevision(REPORT);
+    expect(done.sent).toBe(true);
+    expect(ours(requeued).map((s) => s.to)).toEqual([accepted]);
+    expect(await service.requeueRevision(REPORT)).toBe(false);
+  });
+
+  it("a requeue never clears the marker of a send whose claim is still live", async () => {
+    const dying = new GatedMailer();
+    void new CoachDeliveryService(Database, dying).sendRevision(REPORT);
+    await dying.reached;
+    expect(await new CoachService(Database).requeueRevision(REPORT)).toBe(
+      false,
+    );
+  });
+
+  it("a crash right after an accepted send is recorded: the next send mails only the recipients still owed", async () => {
+    const first = new FakeMailer();
+    const crashing = new CoachDeliveryService(Database, first);
+    const internals = crashing as unknown as {
+      recordRevisionRecipient: (...args: unknown[]) => Promise<boolean>;
+    };
+    const record = internals.recordRevisionRecipient.bind(crashing);
+    internals.recordRevisionRecipient = async (...args: unknown[]) => {
+      await record(...args);
+      throw new Error("connection lost");
+    };
+    await expect(crashing.sendRevision(REPORT)).rejects.toThrow(
+      "connection lost",
+    );
+    const recorded = ours(first)[0].to;
+    await staleClaim();
+
+    const next = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, next).sendRevision(
+      REPORT,
+    );
+    expect(result.sent).toBe(true);
+    expect(
+      ours(next)
+        .map((s) => s.to)
+        .sort(),
+    ).toEqual(EMAILS.filter((e) => e !== recorded).sort());
   });
 });
 
