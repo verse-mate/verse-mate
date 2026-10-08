@@ -720,24 +720,25 @@ export class CoachService {
     const rows = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_report_amendments")
+      .leftJoin("user", "user.id", "coach_report_amendments.amended_by")
       .select([
-        "revision",
-        "previous",
-        "changes",
-        "amended_by",
-        "amended_at",
-        "sent_to",
-        "skipped_recipients",
-        "sent_at",
+        "coach_report_amendments.revision",
+        "coach_report_amendments.previous",
+        "coach_report_amendments.changes",
+        "user.email as amended_by_email",
+        "coach_report_amendments.amended_at",
+        "coach_report_amendments.sent_to",
+        "coach_report_amendments.skipped_recipients",
+        "coach_report_amendments.sent_at",
       ])
-      .where("report_id", "=", reportId)
-      .orderBy("revision", "desc")
+      .where("coach_report_amendments.report_id", "=", reportId)
+      .orderBy("coach_report_amendments.revision", "desc")
       .execute();
     return rows.map((r) => ({
       revision: r.revision,
       previous: r.previous as Record<string, unknown>,
       changes: r.changes as Record<string, unknown>,
-      amendedBy: r.amended_by,
+      amendedBy: r.amended_by_email ?? null,
       amendedAt: new Date(r.amended_at as unknown as string),
       sentTo: r.sent_to,
       skipped: r.skipped_recipients,
