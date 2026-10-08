@@ -5,6 +5,7 @@ import { CoachInvite, CoachNote, render } from "../../../emails";
 import { ConflictError, ValidationError } from "../common/errors";
 import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
+import { leaderSlug } from "./coach-attribution";
 import {
   type RetainedKind,
   RetainedMediaService,
@@ -1331,14 +1332,14 @@ export class CoachService {
 
   // ─── Admin writes: add leader · recording link · notes ───────────────────
 
-  /** Add a leader by email (+ optional name/group), send an invite email, and
-   *  return the new roster summary. Returns `{ ok:false, reason:'duplicate' }`
-   *  when the email is already a coach. */
   async addLeader(
     adminUserId: string,
     input: { email: string; name?: string; group?: string; coachName?: string },
   ): Promise<
-    { ok: true; coach: CoachSummary } | { ok: false; reason: "duplicate" }
+    | { ok: true; coach: CoachSummary }
+    | { ok: false; reason: "duplicate" }
+    | { ok: false; reason: "no-slug" }
+    | { ok: false; reason: "slug-taken"; slug: string }
   > {
     const email = input.email.trim().toLowerCase();
     const existing =
@@ -1347,13 +1348,29 @@ export class CoachService {
     if (existing) return { ok: false, reason: "duplicate" };
 
     const name = input.name?.trim() || CoachService.nameFromEmail(email);
-    const row = await this.coachRepository.addLeader({
-      email,
-      name,
-      group: input.group?.trim() ?? "",
-      coachName: input.coachName?.trim() ?? "",
-      invitedBy: adminUserId,
-    });
+    const slug = leaderSlug(name);
+    if (!slug) return { ok: false, reason: "no-slug" };
+    if (
+      this.findById(slug) ||
+      (await this.coachRepository.findLeaderBySlug(slug))
+    )
+      return { ok: false, reason: "slug-taken", slug };
+    let row: AddedLeaderRow;
+    try {
+      row = await this.coachRepository.addLeader({
+        slug,
+        email,
+        name,
+        group: input.group?.trim() ?? "",
+        coachName: input.coachName?.trim() ?? "",
+        invitedBy: adminUserId,
+      });
+    } catch (error) {
+      if ((error as { code?: string }).code !== "23505") throw error;
+      return (await this.coachRepository.findAddedLeaderByEmail(email))
+        ? { ok: false, reason: "duplicate" }
+        : { ok: false, reason: "slug-taken", slug };
+    }
 
     // Best-effort invite email, never let a mail hiccup fail the add.
     try {
@@ -1372,7 +1389,7 @@ export class CoachService {
     return {
       ok: true,
       coach: {
-        id: row.id,
+        id: slug,
         name,
         group: row.group_name,
         coachName: row.coach_name,
