@@ -1258,6 +1258,40 @@ describe("a revision is claimed before it is sent", () => {
     expect(last.sent).toEqual([]);
   });
 
+  it("a stalled sender's failed send cannot clear the attempt the sender now holding the claim recorded", async () => {
+    let takenOver: string | null = null;
+    class TakenDuringFailedSend extends FakeMailer {
+      override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
+        const result = await super.sendEmail(data);
+        const taken = await conn
+          .updateTable("coach_report_amendments")
+          .set({
+            sending_at: sql`clock_timestamp() + interval '1 second'`,
+            attempted_to: sql`ARRAY[${LEADER_EMAIL}]::text[]`,
+          })
+          .where("report_id", "=", REPORT)
+          .returning(sql<string>`sending_at::text`.as("token"))
+          .executeTakeFirstOrThrow();
+        takenOver = taken.token;
+        return result;
+      }
+    }
+    const result = await new CoachDeliveryService(
+      Database,
+      new TakenDuringFailedSend((to) => to === LEADER_EMAIL),
+    ).sendRevision(REPORT);
+    expect(result).toMatchObject({ sent: false, refusal: "in-flight" });
+    const pending = await conn
+      .selectFrom("coach_report_amendments")
+      .select(["attempted_to", sql<string>`sending_at::text`.as("token")])
+      .where("report_id", "=", REPORT)
+      .executeTakeFirstOrThrow();
+    expect(pending).toEqual({
+      attempted_to: [LEADER_EMAIL],
+      token: takenOver as unknown as string,
+    });
+  });
+
   it("a send that crashed holds the revision only until its claim is stale", async () => {
     const claimedAt = async (age: string) =>
       conn
