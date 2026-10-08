@@ -17,16 +17,27 @@ const { values } = parseArgs({
     transcripts: { type: "string" },
     model: { type: "string", default: "claude-opus-5-5" },
     limit: { type: "string" },
+    "yes-transcripts-leave-this-machine": { type: "boolean", default: false },
   },
 });
 if (!values.transcripts) {
   console.error(
-    "usage: bun run coach:calibrate:claude --transcripts <dir> [--model <id>] [--limit <n>]",
+    "usage: bun run coach:calibrate:claude --transcripts <dir> --yes-transcripts-leave-this-machine [--model <id>] [--limit <n>]",
   );
   process.exit(2);
 }
 const transcriptsDir = values.transcripts;
 const model = values.model ?? "claude-opus-5-5";
+
+console.error(
+  `Scoring with ${model} through this machine's local \`claude\` login: every transcript scored is sent to that account, so the transcripts leave this machine.`,
+);
+if (!values["yes-transcripts-leave-this-machine"]) {
+  console.error(
+    "Refused: rerun with --yes-transcripts-leave-this-machine to send them.",
+  );
+  process.exit(2);
+}
 
 function stripFences(text: string): string {
   const trimmed = text.trim();
