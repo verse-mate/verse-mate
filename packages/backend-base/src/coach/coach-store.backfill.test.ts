@@ -11,9 +11,11 @@ import { db as Database } from "database";
 import history from "./coach-bundle-history.fixture.json";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { backfillCoachStore } from "./coach-store.backfill";
+import { isolateTable } from "./coach-test-tables";
 import coachDataJson from "./coach.data.json";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 
 type Bundle = {
   coaches: Array<{ id: string; reports: Array<{ id: string }> }>;

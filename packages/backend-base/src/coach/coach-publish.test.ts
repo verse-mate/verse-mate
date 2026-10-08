@@ -6,9 +6,11 @@ import {
   AttributionChangedError,
   CoachPublishService,
 } from "./coach-publish.service";
+import { isolateTable } from "./coach-test-tables";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 const COACH = "publish-coach";
 const svc = new CoachPublishService(Database);
 const reader = new CoachService(Database);

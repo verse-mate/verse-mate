@@ -12,6 +12,7 @@ import { db as Database } from "database";
 import { CoachArchiveService } from "./coach-archive.service";
 import { CoachPublishService } from "./coach-publish.service";
 import { RetainedMediaService } from "./coach-retained-media.service";
+import { isolateTable } from "./coach-test-tables";
 import type {
   FirefliesDetailClient,
   FirefliesTranscript,
@@ -36,6 +37,7 @@ afterAll(() => {
 });
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 const COACH = "a2m-coach";
 const SRC = "ff-a2m-1";
 

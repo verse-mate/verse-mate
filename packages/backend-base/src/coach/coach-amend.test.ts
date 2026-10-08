@@ -7,17 +7,15 @@ import { Pool } from "pg";
 import { CoachAmendService } from "./coach-amend.service";
 import { reattributeSession } from "./coach-attribution";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
-import {
-  CoachDeliveryService,
-  isPlaceholderAddress,
-  reportSubject,
-} from "./coach-delivery.service";
+import { CoachDeliveryService, reportSubject } from "./coach-delivery.service";
 import { coldRecallImprovements } from "./coach-governance.service";
 import { CoachReviewService } from "./coach-review.service";
+import { isolateTable } from "./coach-test-tables";
 import { CoachService } from "./coach.service";
 import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_admins");
 const LEADER = "amend-leader";
 const OTHER = "amend-other";
 const BENCH = "amend-bench";
@@ -185,8 +183,7 @@ async function dimension(n: number, id = REPORT) {
     .executeTakeFirstOrThrow();
 }
 
-const ours = (mailer: FakeMailer) =>
-  mailer.sent.filter((s) => EMAILS.includes(s.to) || s.to.endsWith(".invalid"));
+const ours = (mailer: FakeMailer) => mailer.sent;
 
 const originalSubject = reportSubject({
   sessionDate: "2026-09-26",
@@ -1171,17 +1168,7 @@ describe("a revision is claimed before it is sent", () => {
   });
 
   it("a stalled sender that resumes after its last send cannot release the rescuer's claim or mark the revision sent", async () => {
-    const admins = await conn
-      .selectFrom("coach_admins")
-      .select("email")
-      .execute();
-    const recipients = new Set(
-      [
-        LEADER_EMAIL,
-        BENCH_EMAIL,
-        ...admins.map((a) => a.email.trim().toLowerCase()),
-      ].filter((email) => !isPlaceholderAddress(email)),
-    ).size;
+    const recipients = EMAILS.length;
     class StallsOnLast extends FakeMailer {
       override async sendEmail(data: Parameters<FakeMailer["sendEmail"]>[0]) {
         const result = await super.sendEmail(data);

@@ -2,10 +2,12 @@ import { afterAll, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
 import { backfillCoachStore } from "./coach-store.backfill";
+import { isolateTable } from "./coach-test-tables";
 import coachDataJson from "./coach.data.json";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 const service = new CoachService(Database);
 
 const bundle = coachDataJson as unknown as {

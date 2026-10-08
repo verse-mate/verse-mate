@@ -27,6 +27,7 @@ import {
   PIPELINE_BATCH_LIMIT,
 } from "./coach-pipeline.service";
 import { CoachScoringService } from "./coach-scoring.service";
+import { isolateTable } from "./coach-test-tables";
 import type {
   FirefliesDetailClient,
   FirefliesTranscript,
@@ -41,6 +42,7 @@ import {
 } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_dataset_meta");
 
 beforeAll(() => {
   process.env[COACH_PIPELINE_LIVE] = "true";
