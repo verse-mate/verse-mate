@@ -15,6 +15,7 @@ import shared from "../shared/shared.plugin";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import {
   AdminCoachClassSchema,
+  AmendmentBodySchema,
   CoachClassSchema,
   CoverageReportSchema,
   LeaderMonthlyResponseSchema,
@@ -22,6 +23,9 @@ import {
   NoteSchema,
   ReportSchema,
   ReviewStateSchema,
+  RevisionResultSchema,
+  RevisionSendSchema,
+  RevisionsSchema,
   RubricContractSchema,
 } from "./coach.schema";
 import { CoachService } from "./coach.service";
@@ -63,6 +67,43 @@ const isBlankOrHttpUrl = (v: string): boolean =>
 
 /** Minimal email shape check for the add-leader form. */
 const isEmail = (v: string): boolean => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+
+const REVISION_REFUSALS: Record<string, () => Error> = {
+  "legacy-report": () =>
+    new ConflictError(
+      "Refused: this is a legacy report, which is read-only. Change it at its source and it arrives through the backfill.",
+    ),
+  "unknown-report": () => new NotFoundError("No scores for that report"),
+  "not-delivered": () =>
+    new ConflictError(
+      "Refused: the report is not delivered yet. Correct it through the review instead.",
+    ),
+  "unknown-dimension": () => new ValidationError("Unknown dimension"),
+  "score-out-of-range": () =>
+    new ValidationError("A dimension score is 1 to 5, or null"),
+  "memory-reinforcement-required": () =>
+    new ValidationError(
+      "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale",
+    ),
+  "empty-amendment": () => new ValidationError("The amendment changes nothing"),
+};
+
+function revisionResponse<
+  T extends {
+    applied: boolean;
+    refusal?: string;
+    violations?: Array<{ rule: string; detail: string }>;
+    status?: { label: string };
+  },
+>(result: T) {
+  const refuse = result.refusal ? REVISION_REFUSALS[result.refusal] : undefined;
+  if (refuse) throw refuse();
+  return {
+    ...result,
+    violations: result.violations?.map((v) => `${v.rule}: ${v.detail}`),
+    status: result.status?.label,
+  };
+}
 
 // ─── Response schemas ──────────────────────────────────────────────────────
 // ReportSchema (and its parts) live in coach.schema.ts, a side-effect-free
@@ -625,47 +666,94 @@ const plugin = new Elysia()
             throw new UnauthorizedError("Authentication required");
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
-          const result = await coachService.setFirstLesson({
-            reportId: params.reportId,
-            firstLesson: body.firstLesson,
-            score: body.score ?? null,
-            rationale: body.rationale,
-            byUserId: currentUserId,
-          });
-          if (result.refusal === "legacy-report")
-            throw new ConflictError(
-              "First-lesson change refused: this is a legacy report, which is read-only.",
-            );
-          if (result.refusal === "unknown-report")
-            throw new NotFoundError("No scores for that report");
-          if (result.refusal === "already-delivered")
-            throw new ConflictError(
-              "First-lesson change refused: the report is already delivered.",
-            );
-          if (!result.ok)
-            throw new ValidationError(
-              `First-lesson change refused: ${result.refusal ?? "unknown"}`,
-            );
-          return {
-            firstLesson: result.firstLesson ?? body.firstLesson,
-            base: result.base ?? 0,
-            score: result.score ?? 0,
-            status: result.status?.label ?? "",
-          };
+          return revisionResponse(
+            await coachService.setFirstLesson({
+              reportId: params.reportId,
+              firstLesson: body.firstLesson,
+              score: body.score ?? null,
+              rationale: body.rationale,
+              byUserId: currentUserId,
+            }),
+          );
         },
         {
           body: t.Object({
             firstLesson: t.Boolean(),
-            score: t.Optional(t.Union([t.Number(), t.Null()])),
-            rationale: t.Optional(t.String()),
+            score: t.Optional(
+              t.Union([t.Integer({ minimum: 1, maximum: 5 }), t.Null()]),
+            ),
+            rationale: t.Optional(t.String({ maxLength: 4000 })),
           }),
           response: {
-            200: t.Object({
-              firstLesson: t.Boolean(),
-              base: t.Number(),
-              score: t.Number(),
-              status: t.String(),
+            200: RevisionResultSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/reports/:reportId/amend",
+        async ({ store: { coachService }, currentUserId, params, body }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return revisionResponse(
+            await coachService.amendReport({
+              reportId: params.reportId,
+              amendment: body,
+              byUserId: currentUserId,
             }),
+          );
+        },
+        {
+          body: AmendmentBodySchema,
+          response: {
+            200: RevisionResultSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/reports/:reportId/revisions",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return {
+            revisions: await coachService.listRevisions(params.reportId),
+          };
+        },
+        {
+          response: {
+            200: RevisionsSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/reports/:reportId/revision/send",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.sendRevision(params.reportId);
+          if (result.refusal === "no-revision")
+            throw new NotFoundError("That report has no revision");
+          if (result.refusal === "already-sent")
+            throw new ConflictError("The latest revision was already sent");
+          if (result.refusal === "no-mailer")
+            throw new ConflictError("No mailer is configured");
+          if (result.refusal === "parallel-run")
+            throw new ConflictError(
+              "The pipeline is in its parallel run: nothing is sent until cutover",
+            );
+          return result;
+        },
+        {
+          response: {
+            200: RevisionSendSchema,
             ...StandardErrorResponses,
           },
         },
