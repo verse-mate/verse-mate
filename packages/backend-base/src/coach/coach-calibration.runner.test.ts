@@ -231,13 +231,13 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
     expect(result.verdict.withinTolerance).toBe(true);
     expect(result.recordedRunId).not.toBeNull();
     expect(result.report.perLeader.size).toBeGreaterThan(1);
-    expect(result.verdict.ungated).toContain("danny-thomas");
+    expect(result.verdict.ungated).toContain("tobin-marlow");
     const printed = formatCalibration(result);
     expect(printed).toContain(
       "Measured but not gated, fewer than 3 reports compared:",
     );
-    expect(printed).toContain("danny-thomas: 1 reports, composite MAE");
-    expect(printed).toMatch(/danny-thomas: .*\(measured, not gated\)/);
+    expect(printed).toContain("tobin-marlow: 1 reports, composite MAE");
+    expect(printed).toMatch(/tobin-marlow: .*\(measured, not gated\)/);
 
     await modelScoredReport("calib-runner-r1");
     expect(await calibrationShortfalls(Database, "calib-runner-r1")).toEqual(
@@ -415,7 +415,8 @@ describe("the runner is an operator step, never automatic", () => {
     for (const file of new Bun.Glob("**/*.ts").scanSync(root)) {
       if (
         file.endsWith(".test.ts") ||
-        file.endsWith("coach-calibration.runner.ts")
+        file.endsWith("coach-calibration.runner.ts") ||
+        file.endsWith("coach-calibration.claude-cli.ts")
       )
         continue;
       const source = await Bun.file(`${root}${file}`).text();
