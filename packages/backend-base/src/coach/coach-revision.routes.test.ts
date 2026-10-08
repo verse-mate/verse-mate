@@ -45,6 +45,7 @@ const byReport: Record<string, unknown> = {
   "r-delivering": { applied: false, refusal: "in-flight" },
   "r-partial": { applied: false, refusal: "partially-delivered" },
   "r-delivered": { applied: false, refusal: "already-delivered" },
+  "r-sending": { applied: false, refusal: "revision-sending" },
   "r-edited": { applied: true },
   "r-same": { applied: false, refusal: "empty-edit" },
 };
@@ -218,6 +219,7 @@ describe("the revision routes", () => {
         409,
       ],
       ["POST", "r-unknown/amend", "unknown", { body: { headline: "x" } }, 404],
+      ["POST", "r-sending/amend", "sending", { body: { headline: "x" } }, 409],
       ["PUT", "r-legacy/first-lesson", "legacy", { firstLesson: true }, 409],
       ["PUT", "r-mr/first-lesson", "memory", { firstLesson: false }, 400],
       [

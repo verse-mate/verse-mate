@@ -13,6 +13,7 @@ import {
   evidenceFrom,
 } from "./coach-governance.service";
 import { isLegacyReport, rescoreReport } from "./coach-review.service";
+import { STALE_DELIVERY_CLAIM } from "./coach-session-state";
 import type { CoachMailer } from "./coach.service";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import { FIRST_LESSON_RATIONALE, MEMORY_REINFORCEMENT } from "./rubric";
@@ -51,7 +52,8 @@ export type AmendRefusal =
   | "score-out-of-range"
   | "memory-reinforcement-required"
   | "cold-recall-improvement"
-  | "governance-blocked";
+  | "governance-blocked"
+  | "revision-sending";
 
 export interface AmendResult {
   applied: boolean;
@@ -138,6 +140,14 @@ export class CoachAmendService {
           .executeTakeFirst();
         if (session?.state !== "delivered")
           return { applied: false, refusal: "not-delivered" };
+        const sending = await trx
+          .selectFrom("coach_report_amendments")
+          .select("revision")
+          .where("report_id", "=", reportId)
+          .where("sent_at", "is", null)
+          .where("sending_at", ">=", STALE_DELIVERY_CLAIM)
+          .executeTakeFirst();
+        if (sending) return { applied: false, refusal: "revision-sending" };
 
         const current = await trx
           .selectFrom("coach_report_dimension_scores")
