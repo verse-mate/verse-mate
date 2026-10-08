@@ -11,6 +11,11 @@ import {
   type ReportEvidence,
   coldRecallInFeedback,
 } from "./coach-governance.service";
+import {
+  STALE_DELIVERY_CLAIM,
+  claimable,
+  shownToAnyone,
+} from "./coach-session-state";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 import { statusForScore } from "./rubric";
 
@@ -34,8 +39,6 @@ export const DELIVERY_ATTEMPT_LIMIT = 5;
 export function isPlaceholderAddress(email: string): boolean {
   return email.trim().toLowerCase().replace(/\.+$/, "").endsWith(".invalid");
 }
-
-export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
 
 const CLAIM_TOKEN = sql<string>`updated_at::text`;
 const REVISION_CLAIM_TOKEN = sql<string>`sending_at::text`;
@@ -213,17 +216,7 @@ export class CoachDeliveryService {
         .updateTable("coach_intake_sessions")
         .set({ state: "delivering", updated_at: sql`clock_timestamp()` })
         .where("report_id", "=", reportId)
-        .where("release_required", "=", false)
-        .where("parallel_run", "=", false)
-        .where((eb) =>
-          eb.or([
-            eb("state", "in", ["scored", "delivery_pending"]),
-            eb.and([
-              eb("state", "=", "delivering"),
-              eb("updated_at", "<", STALE_DELIVERY_CLAIM),
-            ]),
-          ]),
-        )
+        .where(claimable)
         .returning([
           "delivered_to",
           "attempted_to",
@@ -333,10 +326,7 @@ export class CoachDeliveryService {
 
     const summary = (report.summary ?? {}) as Record<string, unknown>;
 
-    const shown =
-      claim.published ||
-      claim.deliveredTo.length > 0 ||
-      claim.attemptedTo.length > 0;
+    const shown = shownToAnyone(claim);
     const shortfalls = shown
       ? []
       : await calibrationShortfalls(this.db, reportId);

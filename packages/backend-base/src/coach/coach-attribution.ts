@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { rescorable } from "./coach-session-state";
 import type { FirefliesTranscript } from "./fireflies.client";
 
 /**
@@ -317,14 +318,6 @@ export async function setLeaderAttribution(
   };
 }
 
-const RESCORED_STATES = [
-  "scored",
-  "scoring_failed",
-  "delivery_pending",
-  "delivery_failed",
-  "delivered",
-];
-
 export async function reattributeSession(
   database: db,
   sourceSessionId: string,
@@ -367,7 +360,7 @@ export async function reattributeSession(
       if (session.state === "delivering")
         return { ok: false, refusal: "in-flight" } as const;
 
-      const rescore = RESCORED_STATES.includes(session.state);
+      const rescore = rescorable(session.state);
       const state = rescore ? "retained" : session.state;
       await trx
         .updateTable("coach_intake_sessions")

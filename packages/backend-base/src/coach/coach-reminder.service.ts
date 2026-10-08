@@ -3,11 +3,9 @@ import { sql } from "kysely";
 import { CoachReminder, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
-import {
-  STALE_DELIVERY_CLAIM,
-  isPlaceholderAddress,
-} from "./coach-delivery.service";
+import { isPlaceholderAddress } from "./coach-delivery.service";
 import { classDay } from "./coach-first-lesson";
+import { STALE_DELIVERY_CLAIM } from "./coach-session-state";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
 export const REMINDER_TIME_ZONE = "America/Chicago";
