@@ -195,6 +195,13 @@ export async function applyFirstLessonDetection(
     .where("id", "=", reportId)
     .execute();
   if (report.first_lesson_source === "admin") return report.first_lesson;
+  const memory = await trx
+    .selectFrom("coach_report_dimension_scores")
+    .select("provenance")
+    .where("report_id", "=", reportId)
+    .where("dimension_n", "=", MEMORY_REINFORCEMENT)
+    .executeTakeFirst();
+  if (memory?.provenance === "human") return report.first_lesson;
 
   const first = isFirstLesson(
     book,
