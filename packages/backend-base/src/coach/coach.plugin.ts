@@ -140,13 +140,6 @@ const PageQuery = t.Object({
   offset: t.Optional(t.Numeric({ minimum: 0 })),
 });
 
-const ProfileHeaderSchema = t.Object({
-  id: t.String(),
-  name: t.String(),
-  group: t.String(),
-  coachName: t.String(),
-});
-
 const CoachSummarySchema = t.Object({
   id: t.String(),
   name: t.String(),
@@ -869,30 +862,6 @@ const plugin = new Elysia()
         {
           response: {
             200: t.Object({ coaches: t.Array(CoachSummarySchema) }),
-            ...StandardErrorResponses,
-          },
-        },
-      )
-      .get(
-        "/admin/coaches/:id/reports",
-        async ({ params, store: { coachService }, currentUserId }) => {
-          if (!currentUserId)
-            throw new UnauthorizedError("Authentication required");
-          if (!(await coachService.isAdmin(currentUserId)))
-            throw new ForbiddenError("Admin access required");
-          const profile = await coachService.getProfileById(params.id);
-          const reports = await coachService.getReportsById(params.id);
-          if (!profile || !reports) throw new NotFoundError("Coach not found");
-          return { profile, reports };
-        },
-        {
-          params: t.Object({ id: t.String() }),
-          response: {
-            200: t.Object({
-              profile: ProfileHeaderSchema,
-              reports: t.Array(ReportSchema),
-            }),
-            404: t.Object({ error: t.String(), message: t.String() }),
             ...StandardErrorResponses,
           },
         },

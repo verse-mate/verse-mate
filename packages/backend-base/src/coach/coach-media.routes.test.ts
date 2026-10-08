@@ -101,13 +101,6 @@ beforeAll(async () => {
       return id === "ff-parked";
     },
     getProfileById: async () => bundledProfile,
-    getReportsById: async () => [
-      {
-        ...bundledReport,
-        hasRetainedRecording: true,
-        attachedRecordingUrl: "https://drive.example.test/r.mp4",
-      },
-    ],
     listPipelineFailures: async () => {
       failuresListed += 1;
       return [
@@ -222,24 +215,11 @@ describe("each media route mints the kind it names, for the signed-in leader", (
   });
 });
 
-describe("the admin drill-in list carries the retained-recording flag through the response", () => {
-  it("hasRetainedRecording reaches the client on each report", async () => {
+describe("the admin reads a leader's reports only a page or a report at a time", () => {
+  it("the unpaginated drill-in that returned a leader's whole corpus is gone", async () => {
+    admin = true;
     const res = await get(`/coach/admin/coaches/${bundledCoach.id}/reports`);
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      reports: Array<{ hasRetainedRecording?: boolean }>;
-    };
-    expect(body.reports.map((r) => r.hasRetainedRecording)).toEqual([true]);
-  });
-
-  it("attachedRecordingUrl reaches the client on each report", async () => {
-    const res = await get(`/coach/admin/coaches/${bundledCoach.id}/reports`);
-    const body = (await res.json()) as {
-      reports: Array<{ attachedRecordingUrl?: string | null }>;
-    };
-    expect(body.reports.map((r) => r.attachedRecordingUrl)).toEqual([
-      "https://drive.example.test/r.mp4",
-    ]);
+    expect(res.status).toBe(404);
   });
 });
 
