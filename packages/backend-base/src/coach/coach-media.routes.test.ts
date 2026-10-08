@@ -179,6 +179,11 @@ beforeAll(async () => {
           : { ok: true, base: 70, status: { label: "On Target", emoji: "" } },
     getTrends: async () => trendsFixture,
     getTrendsById: async () => trendsFixture,
+    addLeader: async () => ({
+      ok: false,
+      reason: "keyword-conflict",
+      conflicts: [{ keyword: "grace", leader: "leader-b" }],
+    }),
     getLeaderAttribution: async (slug: string) =>
       slug === "leader-a"
         ? { titleMatch: ["zephaniah"], altEmails: ["a@example.test"] }
@@ -717,6 +722,16 @@ describe("an admin recovers an unattributable session", () => {
     expect(message).toBe(
       'Keywords refused: "tim" is inside the name of tim-keller; "evening" is inside a keyword of leader-b',
     );
+  });
+
+  it("a new leader whose name carries another leader's keyword is a conflict naming the keyword and the leader", async () => {
+    const res = await send("POST", "/coach/admin/leaders", {
+      email: "grace.kim@example.test",
+      name: "Grace Kim",
+    });
+    expect(res.status).toBe(409);
+    const { message } = (await res.json()) as { message: string };
+    expect(message).toContain('it contains "grace", a keyword of leader-b');
   });
 
   it("an admin assigns a session to a leader", async () => {

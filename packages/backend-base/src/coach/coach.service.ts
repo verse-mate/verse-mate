@@ -15,6 +15,7 @@ import type { Amendment } from "./coach-amend.service";
 import {
   REATTRIBUTED_HOLD,
   getLeaderAttribution,
+  keywordsInName,
   leaderSlug,
   reattributeSession,
   setLeaderAttribution,
@@ -1653,6 +1654,11 @@ export class CoachService {
     | { ok: false; reason: "duplicate" }
     | { ok: false; reason: "no-slug" }
     | { ok: false; reason: "slug-taken"; slug: string }
+    | {
+        ok: false;
+        reason: "keyword-conflict";
+        conflicts: Array<{ keyword: string; leader: string }>;
+      }
   > {
     const email = input.email.trim().toLowerCase();
     if (await this.resolveByEmail(email))
@@ -1666,6 +1672,9 @@ export class CoachService {
       (await this.coachRepository.findLeaderBySlug(slug))
     )
       return { ok: false, reason: "slug-taken", slug };
+    const conflicts = await keywordsInName(this.db, name);
+    if (conflicts.length > 0)
+      return { ok: false, reason: "keyword-conflict", conflicts };
     let row: AddedLeaderRow;
     try {
       row = await this.coachRepository.addLeader({
