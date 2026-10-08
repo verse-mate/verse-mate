@@ -895,6 +895,58 @@ describe("a slow send cannot turn into a second copy", () => {
     expect(await sessionState("r-stall")).toBe("delivered");
   });
 
+  it("a stalled worker whose last sends failed after another worker took the claim leaves that live claim as it is", async () => {
+    await seedReport("r-stall-fail");
+    const admins = new Set(
+      (await conn.selectFrom("coach_admins").select("email").execute()).map(
+        (a) => a.email.toLowerCase(),
+      ),
+    );
+    admins.delete(EMAILS[0]);
+    admins.delete(EMAILS[1]);
+    const total = 2 + admins.size;
+    const mailer = new FakeMailer((to) => admins.has(to));
+    const service = new CoachDeliveryService(Database, mailer);
+    const internals = service as unknown as {
+      clearAttempt: (...args: unknown[]) => Promise<boolean>;
+    };
+    const clearAttempt = internals.clearAttempt.bind(service);
+    let takenOver: string | null = null;
+    internals.clearAttempt = async (...args: unknown[]) => {
+      const cleared = await clearAttempt(...args);
+      if (mailer.sent.length === total) {
+        const taken = await conn
+          .updateTable("coach_intake_sessions")
+          .set({ updated_at: sql`clock_timestamp() + interval '1 second'` })
+          .where("report_id", "=", "r-stall-fail")
+          .returning(sql<string>`updated_at::text`.as("token"))
+          .executeTakeFirstOrThrow();
+        takenOver = taken.token;
+      }
+      return cleared;
+    };
+    await service.deliver({ reportId: "r-stall-fail", evidence: evidence() });
+    expect(takenOver).not.toBeNull();
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select([
+        "state",
+        "retry_count",
+        "hold_kind",
+        "hold_reason",
+        sql<string>`updated_at::text`.as("token"),
+      ])
+      .where("report_id", "=", "r-stall-fail")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      state: "delivering",
+      retry_count: 0,
+      hold_kind: null,
+      hold_reason: null,
+      token: takenOver as unknown as string,
+    });
+  });
+
   it("a send confirmed after the claim was taken over and the session re-assigned records no recipient", async () => {
     await seedReport("r-reassigned");
     class HangingMailer extends FakeMailer {
