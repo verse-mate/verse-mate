@@ -29,6 +29,10 @@ export const COACH_REPLY_TO_NAME = "VerseMate Coaching";
 
 export const DELIVERY_ATTEMPT_LIMIT = 5;
 
+export function isPlaceholderAddress(email: string): boolean {
+  return /\.invalid$/i.test(email.trim());
+}
+
 export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
 
 const CLAIM_TOKEN = sql<string>`updated_at::text`;
@@ -53,6 +57,7 @@ export interface DeliveryResult {
   shortfalls?: string[];
   /** Confirmed sends. Delivery is complete only at the full recipient set. */
   sends?: Array<{ email: string; delivered: boolean; error?: string }>;
+  skipped?: string[];
   subject?: string;
 }
 
@@ -311,7 +316,10 @@ export class CoachDeliveryService {
       sessionTitle: String(summary.session ?? ""),
     });
 
-    const recipients = await this.recipients(coachId, leader?.email ?? null);
+    const { recipients, skipped } = await this.recipients(
+      coachId,
+      leader?.email ?? null,
+    );
     const score = Number(summary.score ?? 0);
     const html = await render(
       CoachReport({
@@ -333,7 +341,13 @@ export class CoachDeliveryService {
     for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
       const renewed = await this.renewClaim(reportId, token);
       if (renewed === null) {
-        return { delivered: false, refusal: "in-flight", sends, subject };
+        return {
+          delivered: false,
+          refusal: "in-flight",
+          sends,
+          skipped,
+          subject,
+        };
       }
       token = renewed;
       const result = await this.send({
@@ -361,23 +375,44 @@ export class CoachDeliveryService {
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
     if (!allSent) {
       await this.countSendFailure(reportId, token);
-      return { delivered: false, refusal: "send-failed", sends, subject };
+      return {
+        delivered: false,
+        refusal: "send-failed",
+        sends,
+        skipped,
+        subject,
+      };
     }
 
     const finished = await conn
       .updateTable("coach_intake_sessions")
-      .set({ state: "delivered", hold_reason: null, updated_at: sql`NOW()` })
+      .set({
+        state: "delivered",
+        hold_reason: null,
+        skipped_recipients: sql`${sql.val(skipped)}::text[]`,
+        updated_at: sql`NOW()`,
+      })
       .where("report_id", "=", reportId)
       .where("state", "=", "delivering")
       .where(CLAIM_TOKEN, "=", token)
       .executeTakeFirst();
     if (Number(finished.numUpdatedRows ?? 0) === 0) {
-      return { delivered: false, refusal: "in-flight", sends, subject };
+      return {
+        delivered: false,
+        refusal: "in-flight",
+        sends,
+        skipped,
+        subject,
+      };
     }
     await this.governance.recordEvidence(reportId, evidence);
     await this.setHeld(reportId, false);
+    if (skipped.length > 0)
+      console.error(
+        `[COACH-DELIVERY] ${reportId} not emailed to placeholder address(es): ${skipped.join(", ")}`,
+      );
 
-    return { delivered: true, sends, subject };
+    return { delivered: true, sends, skipped, subject };
   }
 
   private async setHeld(reportId: string, held: boolean): Promise<void> {
@@ -429,7 +464,10 @@ export class CoachDeliveryService {
   private async recipients(
     coachId: string,
     leaderEmail: string | null,
-  ): Promise<Array<{ name: string; email: string }>> {
+  ): Promise<{
+    recipients: Array<{ name: string; email: string }>;
+    skipped: string[];
+  }> {
     const conn = this.db.getOrCreateConnection();
     const [benchmark, admins] = await Promise.all([
       conn
@@ -441,18 +479,20 @@ export class CoachDeliveryService {
     ]);
 
     const out: Array<{ name: string; email: string }> = [];
+    const skipped: string[] = [];
     const seen = new Set<string>();
     const add = (name: string, email: string | null | undefined) => {
       const key = (email ?? "").trim().toLowerCase();
       if (!key || seen.has(key)) return;
       seen.add(key);
-      out.push({ name, email: key });
+      if (isPlaceholderAddress(key)) skipped.push(key);
+      else out.push({ name, email: key });
     };
 
     add(coachId, leaderEmail);
     add(benchmark?.name ?? "Benchmark leader", benchmark?.email);
     for (const admin of admins) add("Program admin", admin.email);
-    return out;
+    return { recipients: out, skipped };
   }
 }
 

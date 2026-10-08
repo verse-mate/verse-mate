@@ -10,6 +10,7 @@ import {
   reattributeSession,
   setLeaderAttribution,
 } from "./coach-attribution";
+import { isPlaceholderAddress } from "./coach-delivery.service";
 import {
   type RetainedKind,
   RetainedMediaService,
@@ -371,6 +372,12 @@ export interface CoachMonthly {
   narrative: CoachMonthlyNarrative | null;
 }
 
+const SKIPPED_LEADER_ADDRESS = sql<string | null>`(
+  SELECT l.email FROM coach_leaders l
+  WHERE l.slug = coach_intake_sessions.coach_id
+    AND l.email = ANY(coach_intake_sessions.skipped_recipients)
+)`;
+
 export class CoachService {
   private readonly userService: UserService;
   private readonly coachRepository: CoachRepository;
@@ -451,6 +458,7 @@ export class CoachService {
         "updated_at",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
+      .select(SKIPPED_LEADER_ADDRESS.as("skipped_leader"))
       .where((eb) =>
         eb.or([
           eb("state", "in", [
@@ -463,6 +471,10 @@ export class CoachService {
             eb("hold_reason", "is not", null),
           ]),
           eb("coach_id", "is", null),
+          eb.and([
+            eb("state", "=", "delivered"),
+            eb(SKIPPED_LEADER_ADDRESS, "is not", null),
+          ]),
         ]),
       )
       .orderBy("updated_at", "desc")
@@ -478,15 +490,19 @@ export class CoachService {
       reason:
         r.coach_id === null
           ? "unattributed: no leader matched the session title"
-          : r.hold_reason,
+          : r.state === "delivered" && r.skipped_leader
+            ? `delivered, but not emailed to ${r.skipped_leader}: placeholder address`
+            : r.hold_reason,
       action:
         r.coach_id === null
           ? ("attribute" as const)
-          : r.state === "scored"
-            ? ("release" as const)
-            : r.state === "delivery_pending"
-              ? null
-              : ("requeue" as const),
+          : r.state === "delivered"
+            ? null
+            : r.state === "scored"
+              ? ("release" as const)
+              : r.state === "delivery_pending"
+                ? null
+                : ("requeue" as const),
       updatedAt: new Date(r.updated_at as unknown as string),
     }));
   }
@@ -496,6 +512,7 @@ export class CoachService {
     refusal?: string;
     violations?: string[];
     shortfalls?: string[];
+    skipped?: string[];
   }> {
     const held = await this.db
       .getOrCreateConnection()
@@ -519,6 +536,7 @@ export class CoachService {
         ? { violations: result.violations.map((v) => v.rule) }
         : {}),
       ...(result.shortfalls ? { shortfalls: result.shortfalls } : {}),
+      ...(result.skipped?.length ? { skipped: result.skipped } : {}),
     };
   }
 
@@ -828,33 +846,64 @@ export class CoachService {
     );
   }
 
-  /** Resolve a coaching record by email, bundled roster first, then an
-   *  admin-added leader. */
   private async resolveByEmail(email: string): Promise<CoachRecord | null> {
-    const bundled = this.findByEmail(email);
-    if (bundled) return bundled;
-    const added = await this.coachRepository.findAddedLeaderByEmail(email);
-    return added ? CoachService.syntheticRecord(added) : null;
+    const row = await this.coachRepository.findAddedLeaderByEmail(email);
+    const bundled = row?.slug
+      ? this.findById(row.slug)
+      : this.findByEmail(email);
+    if (bundled) {
+      if (row) return { ...bundled, email: row.email };
+      if (await this.coachRepository.findLeaderBySlug(bundled.id)) return null;
+      return bundled;
+    }
+    return row ? CoachService.syntheticRecord(row) : null;
   }
 
   private async resolveById(coachId: string): Promise<CoachRecord | null> {
     const bundled = this.findById(coachId);
-    if (bundled) return bundled;
+    if (bundled) {
+      const row = await this.coachRepository.findLeaderBySlug(coachId);
+      return row ? { ...bundled, email: row.email } : bundled;
+    }
     const added = (await this.coachRepository.listAddedLeaders()).find(
       (r) => (r.slug ?? r.id) === coachId,
     );
     return added ? CoachService.syntheticRecord(added) : null;
   }
 
-  /** All coaching records, bundled roster plus admin-added leaders, deduped
-   *  by email (a bundled record wins if the same email exists in both). */
   private async allRecords(): Promise<CoachRecord[]> {
     const added = await this.coachRepository.listAddedLeaders();
-    const bundledEmails = new Set(this.bundle.coaches.map((c) => c.email));
+    const bySlug = new Map(added.map((a) => [a.slug, a]));
+    const bundled = this.bundle.coaches.map((c) => {
+      const row = bySlug.get(c.id);
+      return row ? { ...c, email: row.email } : c;
+    });
+    const bundledEmails = new Set(bundled.map((c) => c.email));
     const synthetic = added
       .filter((a) => !bundledEmails.has(a.email))
       .map(CoachService.syntheticRecord);
-    return [...this.bundle.coaches, ...synthetic];
+    return [...bundled, ...synthetic];
+  }
+
+  async updateLeaderEmail(
+    slug: string,
+    address: string,
+  ): Promise<
+    | { ok: true; email: string }
+    | { ok: false; refusal: "unknown-leader" | "taken" }
+  > {
+    const email = address.trim().toLowerCase();
+    const holder = await this.resolveByEmail(email);
+    if (holder && holder.id !== slug) return { ok: false, refusal: "taken" };
+    const updated = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_leaders")
+      .set({ email })
+      .where("slug", "=", slug)
+      .executeTakeFirst();
+    if (Number(updated.numUpdatedRows ?? 0) === 0)
+      return { ok: false, refusal: "unknown-leader" };
+    return { ok: true, email };
   }
 
   /** Overlay admin-editable state (recording link + notes) onto a coach's
@@ -1393,11 +1442,11 @@ export class CoachService {
         : { ok: false, reason: "slug-taken", slug };
     }
 
-    // Best-effort invite email, never let a mail hiccup fail the add.
+    const mailer = isPlaceholderAddress(email) ? undefined : this.notification;
     try {
       const invitedBy = await this.displayNameFor(adminUserId);
       const portalUrl = `${process.env.APP_URL ?? ""}/coach`;
-      await this.notification?.sendEmail({
+      await mailer?.sendEmail({
         to: { email, name },
         subject: "You've been added to VerseMate Coaching",
         text: `You've been added to the VerseMate coaching portal. Sign in at ${portalUrl} with this email to see your dashboard.`,
@@ -1479,7 +1528,11 @@ export class CoachService {
     // note is never lost even if the mailer throws.
     let emailed = false;
     try {
-      if (this.notification && record.email) {
+      if (
+        this.notification &&
+        record.email &&
+        !isPlaceholderAddress(record.email)
+      ) {
         const portalUrl = `${process.env.APP_URL ?? ""}/coach`;
         // Read the result. Mailgun failures are RETURNED, not thrown (that is
         // the whole point of SendResult), so the surrounding catch never fires

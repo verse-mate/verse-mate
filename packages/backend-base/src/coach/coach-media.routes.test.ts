@@ -31,6 +31,7 @@ const store = app.store as unknown as { coachService: unknown };
 const realService = store.coachService;
 
 const attributionWrites: unknown[][] = [];
+const emailUpdates: unknown[][] = [];
 const reattributions: unknown[][] = [];
 const minted: Array<Record<string, unknown>> = [];
 const requeued: string[] = [];
@@ -52,8 +53,20 @@ beforeAll(async () => {
   await redisClient.set(cacheConstants.accessToken(USER), [token], "5m");
   store.coachService = {
     isAdmin: async () => admin,
+    updateLeaderEmail: async (slug: string, email: string) => {
+      emailUpdates.push([slug, email]);
+      if (slug !== "leader-a") return { ok: false, refusal: "unknown-leader" };
+      if (email === "taken@example.test")
+        return { ok: false, refusal: "taken" };
+      return { ok: true, email };
+    },
     releaseHeldReport: async (id: string) => {
       released.push(id);
+      if (id === "r-skip")
+        return {
+          delivered: true,
+          skipped: ["wyatt@needs-real-email.invalid"],
+        };
       return id === "r-held"
         ? { delivered: true }
         : { delivered: false, refusal: "not-held" };
@@ -576,5 +589,64 @@ describe("an admin recovers an unattributable session", () => {
       ).status,
     ];
     expect(statuses).toEqual([404, 404, 409]);
+  });
+});
+
+describe("an admin corrects a leader's address", () => {
+  async function put(path: string, body: unknown) {
+    return app.handle(
+      new Request(`http://localhost${path}`, {
+        method: "PUT",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }),
+    );
+  }
+
+  it("the new address is stored, normalized", async () => {
+    admin = true;
+    emailUpdates.length = 0;
+    const res = await put("/coach/admin/leaders/leader-a/email", {
+      email: " Wyatt@Example.TEST ",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ email: "wyatt@example.test" });
+    expect(emailUpdates).toEqual([["leader-a", "wyatt@example.test"]]);
+  });
+
+  it("an address that is not an email is refused before anything is written", async () => {
+    emailUpdates.length = 0;
+    const res = await put("/coach/admin/leaders/leader-a/email", {
+      email: "wyatt",
+    });
+    expect(res.status).toBe(400);
+    expect(emailUpdates).toEqual([]);
+  });
+
+  it("an address another leader holds is a conflict, and an unknown leader is not found", async () => {
+    const taken = await put("/coach/admin/leaders/leader-a/email", {
+      email: "taken@example.test",
+    });
+    const unknown = await put("/coach/admin/leaders/nobody/email", {
+      email: "x@example.test",
+    });
+    expect([taken.status, unknown.status]).toEqual([409, 404]);
+  });
+
+  it("releasing a report tells the admin which placeholder address was skipped", async () => {
+    const res = await app.handle(
+      new Request("http://localhost/coach/admin/reports/r-skip/release", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}` },
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      delivered: true,
+      skipped: ["wyatt@needs-real-email.invalid"],
+    });
   });
 });

@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import { CoachReshareRequest, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
+import { isPlaceholderAddress } from "./coach-delivery.service";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
 /**
@@ -20,6 +21,7 @@ export type ReshareRefusal =
   | "not-pending"
   | "already-asked"
   | "no-leader-address"
+  | "placeholder-address"
   | "send-failed";
 
 export interface ReshareSendResult {
@@ -90,6 +92,8 @@ export class CoachReshareService {
           .executeTakeFirst()
       : undefined;
     if (!leader?.email) return { sent: false, refusal: "no-leader-address" };
+    if (isPlaceholderAddress(leader.email))
+      return { sent: false, refusal: "placeholder-address", to: leader.email };
 
     const sessionLabel = `${session.title || "the session"} — ${session.date}`;
     const html = await render(

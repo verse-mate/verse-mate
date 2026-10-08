@@ -213,3 +213,34 @@ describe("asking a leader to re-share a recording", () => {
     expect(mailer.sent.length).toBe(2);
   });
 });
+
+describe("a leader on a placeholder address is not asked to re-share", () => {
+  beforeAll(() => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+  });
+  afterAll(() => {
+    delete process.env[COACH_PIPELINE_LIVE];
+  });
+  beforeEach(clear);
+  afterEach(clear);
+
+  it("nothing is sent and the refusal names the placeholder", async () => {
+    await seed("retrieval_failed", { reshare_requested_at: new Date() });
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: "reshare-leader@needs-real-email.invalid" })
+      .where("slug", "=", COACH)
+      .execute();
+    const mailer = new FakeMailer();
+    const result = await new CoachReshareService(Database, mailer).send(
+      "ff-reshare",
+    );
+    await conn.deleteFrom("coach_leaders").where("slug", "=", COACH).execute();
+    expect(result).toEqual({
+      sent: false,
+      refusal: "placeholder-address",
+      to: "reshare-leader@needs-real-email.invalid",
+    });
+    expect(mailer.sent).toEqual([]);
+  });
+});
