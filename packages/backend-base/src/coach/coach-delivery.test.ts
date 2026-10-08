@@ -415,10 +415,7 @@ describe("delivery", () => {
     expect(still?.id).toBe("r1");
   });
 
-  it("TWO SAME-CYCLE reports sharing a quote: the second is blocked", async () => {
-    // Delivery is serialized per leader, so "earlier" has a meaning even when
-    // both reports are produced in one poll cycle. Without it each would see
-    // the other as not yet existing and both would ship the same quote.
+  it("TWO SAME-CYCLE reports sharing a quote: the second is blocked, naming the first", async () => {
     await seedReport("r1");
     await seedReport("r2");
     const mailer = new FakeMailer();
@@ -429,11 +426,75 @@ describe("delivery", () => {
       svc.deliver({ reportId: "r2", evidence: evidence(["the shared line"]) }),
     ]);
 
-    const delivered = [a, b].filter((r) => r.delivered);
-    const blocked = [a, b].filter((r) => r.refusal === "governance-blocked");
-    expect(delivered.length).toBe(1);
-    expect(blocked.length).toBe(1);
-    expect(blocked[0].violations?.[0].rule).toBe("reused-quote");
+    expect([a, b].filter((r) => r.delivered).length).toBe(1);
+    const [first, later] = a.delivered ? ["r1", "r2"] : ["r2", "r1"];
+    const loser = a.delivered ? b : a;
+    expect(["in-flight", "governance-blocked"]).toContain(loser.refusal);
+    const blocked =
+      loser.refusal === "governance-blocked"
+        ? loser
+        : await svc.deliver({
+            reportId: later,
+            evidence: evidence(["the shared line"]),
+          });
+    expect(blocked.refusal).toBe("governance-blocked");
+    expect(blocked.violations?.[0].rule).toBe("reused-quote");
+    expect(blocked.violations?.[0].detail).toContain(first);
+  });
+
+  it("the leader is read from the report after the claim, so a report moved just before its claim goes to its new leader", async () => {
+    await conn
+      .insertInto("coach_leaders")
+      .values({
+        slug: "deliv-moved",
+        email: "deliv-moved@example.test",
+        name: "Moira Moved",
+      })
+      .execute();
+    try {
+      await seedReport("r-moved");
+      const mailer = new FakeMailer();
+      const svc = new CoachDeliveryService(Database, mailer);
+      const internals = svc as unknown as {
+        claim: (id: string) => Promise<unknown>;
+      };
+      const claim = internals.claim.bind(svc);
+      internals.claim = async (id: string) => {
+        await conn
+          .updateTable("coach_reports")
+          .set({ coach_id: "deliv-moved" })
+          .where("id", "=", id)
+          .execute();
+        await conn
+          .updateTable("coach_intake_sessions")
+          .set({ coach_id: "deliv-moved" })
+          .where("report_id", "=", id)
+          .execute();
+        return claim(id);
+      };
+      const result = await svc.deliver({
+        reportId: "r-moved",
+        evidence: evidence(),
+      });
+      expect(result.delivered).toBe(true);
+      const tos = mailer.sent.map((s) => s.to);
+      expect(tos).toContain("deliv-moved@example.test");
+      expect(tos).not.toContain(EMAILS[0]);
+      expect(result.subject).toContain("Moira Moved");
+    } finally {
+      await conn
+        .deleteFrom("coach_intake_sessions")
+        .where("report_id", "=", "r-moved")
+        .execute();
+      await conn
+        .deleteFrom("coach_reports")
+        .where("id", "=", "r-moved")
+        .execute();
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", "deliv-moved")
+        .execute();
+    }
   });
 
   it("a delivered report's evidence joins the comparison set", async () => {
