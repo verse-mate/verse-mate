@@ -684,11 +684,17 @@ const plugin = new Elysia()
             throw new ConflictError(IN_FLIGHT_CORRECTION);
           if (result.refusal === "partially-delivered")
             throw new ConflictError(PARTIALLY_DELIVERED);
+          if (result.refusal === "already-delivered")
+            throw REVISION_REFUSALS["already-delivered"]();
           if (!result.ok)
             throw new ValidationError(
               `Correction refused: ${result.refusal ?? "unknown"}`,
             );
-          return { base: result.base ?? 0, status: result.status?.label ?? "" };
+          return {
+            base: result.base ?? 0,
+            score: result.score ?? 0,
+            status: result.status?.label ?? "",
+          };
         },
         {
           body: t.Object({
@@ -696,7 +702,11 @@ const plugin = new Elysia()
             rationale: t.String({ maxLength: 4000 }),
           }),
           response: {
-            200: t.Object({ base: t.Number(), status: t.String() }),
+            200: t.Object({
+              base: t.Number(),
+              score: t.Number(),
+              status: t.String(),
+            }),
             ...StandardErrorResponses,
           },
         },
