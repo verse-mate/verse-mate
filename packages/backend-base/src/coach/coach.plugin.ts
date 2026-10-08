@@ -78,7 +78,7 @@ const IN_FLIGHT_CORRECTION =
   "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery.";
 
 const PARTIALLY_DELIVERED =
-  "Refused: the report was already emailed to some of its recipients, so it can no longer be corrected or edited. Its remaining sends are retried automatically. If one keeps failing, fix that recipient's address and requeue the report from the pipeline failures list. Once every recipient has it, amend it.";
+  "Refused: the report is already open to its leader, or already emailed to some of its recipients, so it can no longer be corrected or edited. Its remaining sends are retried automatically. If one keeps failing, or a recipient has only a placeholder address, fix that recipient's address and requeue the report from the pipeline failures list. Once every recipient has it, amend it.";
 
 const REVISION_REFUSALS: Record<string, () => Error> = {
   "legacy-report": () =>

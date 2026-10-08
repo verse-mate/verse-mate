@@ -76,6 +76,8 @@ export default interface CoachIntakeSessionsTable {
   skipped_recipients: ColumnType<string[], string[] | undefined, string[]>;
 
   release_required: ColumnType<boolean, boolean | undefined, boolean>;
+
+  published: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
 export type CoachIntakeSessions = Selectable<CoachIntakeSessionsTable>;

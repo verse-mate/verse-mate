@@ -41,7 +41,12 @@ const CLAIM_TOKEN = sql<string>`updated_at::text`;
 const REVISION_CLAIM_TOKEN = sql<string>`sending_at::text`;
 
 type Claim =
-  | { status: "claimed"; token: string; deliveredTo: string[] }
+  | {
+      status: "claimed";
+      token: string;
+      deliveredTo: string[];
+      published: boolean;
+    }
   | {
       status:
         | "already-delivered"
@@ -204,13 +209,14 @@ export class CoachDeliveryService {
             ]),
           ]),
         )
-        .returning(["delivered_to", CLAIM_TOKEN.as("token")])
+        .returning(["delivered_to", "published", CLAIM_TOKEN.as("token")])
         .executeTakeFirst();
       if (claimed) {
         return {
           status: "claimed",
           token: claimed.token,
           deliveredTo: claimed.delivered_to,
+          published: claimed.published,
         };
       }
     } catch (error) {
@@ -279,7 +285,7 @@ export class CoachDeliveryService {
       first_lesson: boolean;
       date: string;
     },
-    claim: { token: string; deliveredTo: string[] },
+    claim: { token: string; deliveredTo: string[]; published: boolean },
   ): Promise<DeliveryResult> {
     const conn = this.db.getOrCreateConnection();
     const leader = await conn
@@ -290,8 +296,8 @@ export class CoachDeliveryService {
 
     const summary = (report.summary ?? {}) as Record<string, unknown>;
 
-    const alreadyEmailed = claim.deliveredTo.length > 0;
-    const shortfalls = alreadyEmailed
+    const shown = claim.published || claim.deliveredTo.length > 0;
+    const shortfalls = shown
       ? []
       : await calibrationShortfalls(this.db, reportId);
     if (shortfalls.length > 0) {
@@ -312,7 +318,7 @@ export class CoachDeliveryService {
       return { delivered: false, refusal: "calibration-blocked", shortfalls };
     }
 
-    const verdict = alreadyEmailed
+    const verdict = shown
       ? { passed: true, violations: [] }
       : await this.governance.check({
           reportId,
@@ -342,7 +348,7 @@ export class CoachDeliveryService {
     }
 
     const coldRecall =
-      report.first_lesson && !alreadyEmailed
+      report.first_lesson && !shown
         ? coldRecallInFeedback(
             ((report.body ?? {}) as { feedback?: unknown }).feedback,
           )
@@ -393,7 +399,7 @@ export class CoachDeliveryService {
       published ||= await this.publishWithinClaim(reportId, token);
       return published;
     };
-    if ((confirmed.size > 0 || recipients.length === 0) && !(await publish()))
+    if ((shown || recipients.length === 0) && !(await publish()))
       return fenced();
     for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
       const renewed = await this.renewClaim(reportId, token);
@@ -641,18 +647,18 @@ export class CoachDeliveryService {
   ): Promise<boolean> {
     const published = await this.db
       .getOrCreateConnection()
+      .with("session", (qb) =>
+        qb
+          .updateTable("coach_intake_sessions")
+          .set({ published: true })
+          .where("report_id", "=", reportId)
+          .where("state", "=", "delivering")
+          .where(CLAIM_TOKEN, "=", token)
+          .returning("report_id"),
+      )
       .updateTable("coach_reports")
       .set({ held: false })
-      .where("id", "=", reportId)
-      .where(({ exists, selectFrom }) =>
-        exists(
-          selectFrom("coach_intake_sessions")
-            .select("report_id")
-            .where("report_id", "=", reportId)
-            .where("state", "=", "delivering")
-            .where(CLAIM_TOKEN, "=", token),
-        ),
-      )
+      .where("id", "in", (eb) => eb.selectFrom("session").select("report_id"))
       .executeTakeFirst();
     return Number(published.numUpdatedRows ?? 0) > 0;
   }

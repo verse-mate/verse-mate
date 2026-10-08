@@ -1469,4 +1469,90 @@ describe("a pipeline report is shown to its leader at its first confirmed send",
       });
     expect(outcome).toEqual({ held: false, sent: 0, refusal: "send-failed" });
   });
+
+  it("a report published with nobody to email is never hidden again by a retry, and refuses corrections", async () => {
+    await seedHeld("r-shown-nobody");
+    const rolledBack = new Error("rolled back");
+    let outcome = null as {
+      retry?: string;
+      held: boolean;
+      sent: number;
+      edit?: string;
+      firstLesson?: string;
+    } | null;
+    await conn
+      .transaction()
+      .execute(async (trx) => {
+        await trx.deleteFrom("coach_admins").execute();
+        await trx
+          .updateTable("coach_leaders")
+          .set({ email: sql`slug || '@needs-real-email.invalid'` })
+          .where("slug", "in", [LEADER, BENCH])
+          .execute();
+        const flat = new Proxy(trx, {
+          get(target, prop) {
+            if (prop === "transaction")
+              return () => ({
+                execute: (fn: (t: typeof trx) => unknown) => fn(target),
+              });
+            const value = Reflect.get(target, prop, target);
+            return typeof value === "function" ? value.bind(target) : value;
+          },
+        });
+        const scoped = {
+          getOrCreateConnection: () => flat,
+        } as unknown as typeof Database;
+        const mailer = new FakeMailer();
+        const first = await new CoachDeliveryService(scoped, mailer).deliver({
+          reportId: "r-shown-nobody",
+          evidence: evidence(),
+        });
+        expect(first.refusal).toBe("send-failed");
+        await trx
+          .updateTable("coach_reports")
+          .set({
+            body: { feedback: { headline: "Not yet at Avery Hollis's level" } },
+          })
+          .where("id", "=", "r-shown-nobody")
+          .execute();
+        const retry = await new CoachDeliveryService(scoped, mailer).deliver({
+          reportId: "r-shown-nobody",
+          evidence: evidence(),
+        });
+        const report = await trx
+          .selectFrom("coach_reports")
+          .select("held")
+          .where("id", "=", "r-shown-nobody")
+          .executeTakeFirstOrThrow();
+        const review = new CoachReviewService(scoped);
+        const edit = await review.editImprovements({
+          reportId: "r-shown-nobody",
+          improvements: ["Ask one open question per passage"],
+          byUserId: null,
+        });
+        const firstLesson = await review.setFirstLesson({
+          reportId: "r-shown-nobody",
+          firstLesson: true,
+          byUserId: null,
+        });
+        outcome = {
+          retry: retry.refusal,
+          held: report.held,
+          sent: mailer.sent.length,
+          edit: edit.refusal,
+          firstLesson: firstLesson.refusal,
+        };
+        throw rolledBack;
+      })
+      .catch((e) => {
+        if (e !== rolledBack) throw e;
+      });
+    expect(outcome).toEqual({
+      retry: "send-failed",
+      held: false,
+      sent: 0,
+      edit: "partially-delivered",
+      firstLesson: "partially-delivered",
+    });
+  });
 });
