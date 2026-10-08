@@ -4,6 +4,7 @@ import { clientIp } from "../common/client-ip";
 import { isEmailAddress } from "../common/email-address";
 import { createErrorHandler } from "../common/error-handler";
 import {
+  type ApiError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
@@ -18,8 +19,12 @@ import { HOLD_KINDS } from "./coach-session-state";
 import {
   AdminCoachClassSchema,
   AmendmentBodySchema,
+  COACH_REFUSALS,
   CoachClassSchema,
+  type CoachRefusal,
+  type CoachRefusalRoute,
   CoverageReportSchema,
+  EMAIL_RULE,
   ImprovementsEditBodySchema,
   LeaderMonthlyResponseSchema,
   MonthlySchema,
@@ -72,51 +77,27 @@ const mintRateLimit = createRateLimit({
 const isBlankOrHttpUrl = (v: string): boolean =>
   v === "" || /^https?:\/\/\S+$/i.test(v);
 
-export const EMAIL_RULE =
-  "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot";
+export { EMAIL_RULE };
 
-const PARALLEL_RUN_SESSION =
-  "This session was observed during the parallel run: it is kept for admin comparison and never sent";
+const REFUSAL_ERRORS = {
+  400: ValidationError,
+  404: NotFoundError,
+  409: ConflictError,
+} as const;
 
-const IN_FLIGHT_CORRECTION =
-  "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery.";
-
-const PARTIALLY_DELIVERED =
-  "Refused: the report is already open to its leader, or already emailed to some of its recipients, so it can no longer be corrected or edited. Its remaining sends are retried automatically. If one keeps failing, or a recipient has only a placeholder address, fix that recipient's address and requeue the report from the pipeline failures list. Once every recipient has it, amend it.";
-
-const REVISION_REFUSALS: Record<string, () => Error> = {
-  "legacy-report": () =>
-    new ConflictError(
-      "Refused: this is a legacy report, which is read-only. Change it at its source and it arrives through the backfill.",
-    ),
-  "unknown-report": () => new NotFoundError("No scores for that report"),
-  "not-delivered": () =>
-    new ConflictError(
-      "Refused: the report is not delivered yet. Correct it through the review instead.",
-    ),
-  "unknown-dimension": () => new ValidationError("Unknown dimension"),
-  "score-out-of-range": () =>
-    new ValidationError("A dimension score is 1 to 5, or null"),
-  "memory-reinforcement-required": () =>
-    new ValidationError(
-      "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale",
-    ),
-  "empty-amendment": () => new ValidationError("The amendment changes nothing"),
-  "empty-edit": () =>
-    new ValidationError(
-      "The edit changes nothing: give at least one improvement, different from the current ones",
-    ),
-  "in-flight": () => new ConflictError(IN_FLIGHT_CORRECTION),
-  "revision-sending": () =>
-    new ConflictError(
-      "Refused: a revised copy of this report is being sent right now. Amend it again once that send finishes.",
-    ),
-  "partially-delivered": () => new ConflictError(PARTIALLY_DELIVERED),
-  "already-delivered": () =>
-    new ConflictError(
-      "Refused: the report was already delivered. Amend it instead, which sends the leader a revised copy.",
-    ),
-};
+function refuse<R extends CoachRefusalRoute>(
+  route: R,
+  code: string,
+  extra: { message?: string; details?: Record<string, unknown> } = {},
+): ApiError {
+  const listed = (COACH_REFUSALS[route] as Record<string, CoachRefusal>)[code];
+  const details = { refusal: code, ...extra.details };
+  if (!listed) return new ValidationError(`Refused: ${code}`, details);
+  return new REFUSAL_ERRORS[listed.status](
+    extra.message ?? listed.message,
+    details,
+  );
+}
 
 function revisionResponse<
   T extends {
@@ -125,9 +106,9 @@ function revisionResponse<
     violations?: Array<{ rule: string; detail: string }>;
     status?: { label: string };
   },
->(result: T) {
-  const refuse = result.refusal ? REVISION_REFUSALS[result.refusal] : undefined;
-  if (refuse) throw refuse();
+>(route: CoachRefusalRoute, result: T) {
+  if (result.refusal && result.refusal in COACH_REFUSALS[route])
+    throw refuse(route, result.refusal);
   return {
     ...result,
     violations: result.violations?.map((v) => `${v.rule}: ${v.detail}`),
@@ -650,7 +631,11 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const state = await coachService.reviewReport(params.reportId);
-          if (!state) throw new NotFoundError("No scores for that report");
+          if (!state)
+            throw refuse(
+              "GET /coach/admin/reports/:reportId/review",
+              "unknown-report",
+            );
           return state;
         },
         { response: { 200: ReviewStateSchema, ...StandardErrorResponses } },
@@ -668,7 +653,10 @@ const plugin = new Elysia()
             dimensionN < 1 ||
             dimensionN > 12
           )
-            throw new ValidationError("A dimension is a whole number, 1 to 12");
+            throw refuse(
+              "POST /coach/admin/reports/:reportId/dimensions/:dimensionN",
+              "invalid-dimension",
+            );
           const result = await coachService.correctDimension({
             reportId: params.reportId,
             dimensionN,
@@ -676,19 +664,10 @@ const plugin = new Elysia()
             rationale: body.rationale,
             correctedByUserId: currentUserId,
           });
-          if (result.refusal === "legacy-report")
-            throw new ConflictError(
-              "Correction refused: this is a legacy report, which is read-only. Change it at its source and it arrives through the backfill.",
-            );
-          if (result.refusal === "in-flight")
-            throw new ConflictError(IN_FLIGHT_CORRECTION);
-          if (result.refusal === "partially-delivered")
-            throw new ConflictError(PARTIALLY_DELIVERED);
-          if (result.refusal === "already-delivered")
-            throw REVISION_REFUSALS["already-delivered"]();
           if (!result.ok)
-            throw new ValidationError(
-              `Correction refused: ${result.refusal ?? "unknown"}`,
+            throw refuse(
+              "POST /coach/admin/reports/:reportId/dimensions/:dimensionN",
+              result.refusal ?? "unknown",
             );
           return {
             base: result.base ?? 0,
@@ -719,6 +698,7 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           return revisionResponse(
+            "PUT /coach/admin/reports/:reportId/first-lesson",
             await coachService.setFirstLesson({
               reportId: params.reportId,
               firstLesson: body.firstLesson,
@@ -750,6 +730,7 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           return revisionResponse(
+            "PUT /coach/admin/reports/:reportId/improvements",
             await coachService.editImprovements({
               reportId: params.reportId,
               improvements: body.improvements,
@@ -774,6 +755,7 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           return revisionResponse(
+            "POST /coach/admin/reports/:reportId/amend",
             await coachService.amendReport({
               reportId: params.reportId,
               amendment: body,
@@ -815,23 +797,16 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const result = await coachService.sendRevision(params.reportId);
-          if (result.refusal === "no-revision")
-            throw new NotFoundError("That report has no revision");
-          if (result.refusal === "already-sent")
-            throw new ConflictError("The latest revision was already sent");
-          if (result.refusal === "in-flight")
-            throw new ConflictError(
-              "The revision is being sent by another request",
-            );
-          if (result.refusal === "no-mailer")
-            throw new ConflictError("No mailer is configured");
-          if (result.refusal === "parallel-run")
-            throw new ConflictError(
-              "The pipeline is in its parallel run: nothing is sent until cutover",
-            );
-          if (result.refusal === "not-live")
-            throw new ConflictError(
-              "The report is not live for the leader this revision was made for: it is held, not delivered, or re-attributed",
+          if (
+            result.refusal &&
+            result.refusal in
+              COACH_REFUSALS[
+                "POST /coach/admin/reports/:reportId/revision/send"
+              ]
+          )
+            throw refuse(
+              "POST /coach/admin/reports/:reportId/revision/send",
+              result.refusal,
             );
           return result;
         },
@@ -850,8 +825,9 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           if (!(await coachService.requeueRevision(params.reportId)))
-            throw new NotFoundError(
-              "That report has no unsent revision with a send left unconfirmed, or its send is still in flight",
+            throw refuse(
+              "POST /coach/admin/reports/:reportId/revision/requeue",
+              "nothing-to-requeue",
             );
           return { requeued: true };
         },
@@ -897,7 +873,10 @@ const plugin = new Elysia()
           if (
             !(await coachService.setNotTeaching(params.id, true, currentUserId))
           )
-            throw new NotFoundError("Leader not found");
+            throw refuse(
+              "POST /coach/admin/leaders/:id/not-teaching",
+              "unknown-leader",
+            );
           return { attested: true };
         },
         {
@@ -922,7 +901,10 @@ const plugin = new Elysia()
               currentUserId,
             ))
           )
-            throw new NotFoundError("Leader not found");
+            throw refuse(
+              "DELETE /coach/admin/leaders/:id/not-teaching",
+              "unknown-leader",
+            );
           return { attested: false };
         },
         {
@@ -1026,15 +1008,14 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const result = await coachService.releaseHeldReport(params.reportId);
-          if (result.refusal === "not-held")
-            throw new NotFoundError("No report held for review");
-          if (result.refusal === "parallel-run-session")
-            throw new ConflictError(PARALLEL_RUN_SESSION);
-          if (result.refusal === "no-mailer")
-            throw new ConflictError("No mailer is configured");
-          if (result.refusal === "parallel-run")
-            throw new ConflictError(
-              "The pipeline is in its parallel run: nothing is sent until cutover",
+          if (
+            result.refusal &&
+            result.refusal in
+              COACH_REFUSALS["POST /coach/admin/reports/:reportId/release"]
+          )
+            throw refuse(
+              "POST /coach/admin/reports/:reportId/release",
+              result.refusal,
             );
           return result;
         },
@@ -1062,9 +1043,13 @@ const plugin = new Elysia()
           const requeued = await coachService.requeuePipelineFailure(
             params.sourceSessionId,
           );
-          if (requeued === "parallel-run-session")
-            throw new ConflictError(PARALLEL_RUN_SESSION);
-          if (!requeued) throw new NotFoundError("No parked session");
+          if (requeued === "parallel-run-session" || !requeued)
+            throw refuse(
+              "POST /coach/admin/pipeline-failures/:sourceSessionId/requeue",
+              requeued === "parallel-run-session"
+                ? "parallel-run-session"
+                : "not-parked",
+            );
           return { requeued: true };
         },
         {
@@ -1084,11 +1069,11 @@ const plugin = new Elysia()
           const result = await coachService.sendReshareRequest(
             params.sourceSessionId,
           );
-          if (!result.sent) {
-            throw new ValidationError(
-              `Re-share not sent: ${result.refusal ?? "unknown"}`,
+          if (!result.sent)
+            throw refuse(
+              "POST /coach/admin/reshares/:sourceSessionId/send",
+              result.refusal ?? "send-failed",
             );
-          }
           return { sent: true };
         },
         {
@@ -1108,7 +1093,11 @@ const plugin = new Elysia()
           const cleared = await coachService.resolveReshare(
             params.sourceSessionId,
           );
-          if (!cleared) throw new NotFoundError("No pending re-share request");
+          if (!cleared)
+            throw refuse(
+              "POST /coach/admin/reshares/:sourceSessionId/resolve",
+              "not-pending",
+            );
           // The session re-enters retrieval; intake idempotence means the
           // report it eventually produces is not a duplicate.
           return { resolved: true };
@@ -1144,7 +1133,10 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           if (!(await coachService.getProfileById(params.id)))
-            throw new NotFoundError("Coach not found");
+            throw refuse(
+              "GET /coach/admin/coaches/:id/reports/summary",
+              "unknown-leader",
+            );
           return coachService.getReportSummaries(
             params.id,
             { limit: query.limit, offset: query.offset },
@@ -1173,7 +1165,11 @@ const plugin = new Elysia()
             params.reportId,
             "admin",
           );
-          if (!report) throw new NotFoundError("Session not found");
+          if (!report)
+            throw refuse(
+              "GET /coach/admin/coaches/:id/reports/:reportId",
+              "unknown-report",
+            );
           return { report };
         },
         {
@@ -1193,7 +1189,11 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const trends = await coachService.getTrendsById(params.id);
-          if (!trends) throw new NotFoundError("Coach not found");
+          if (!trends)
+            throw refuse(
+              "GET /coach/admin/coaches/:id/trends",
+              "unknown-leader",
+            );
           return trends;
         },
         {
@@ -1215,12 +1215,19 @@ const plugin = new Elysia()
             throw new ForbiddenError("Admin access required");
           const month = (query.month ?? "").trim();
           if (!/^\d{4}-\d{2}$/.test(month))
-            throw new ValidationError("month must be YYYY-MM");
+            throw refuse(
+              "GET /coach/admin/coaches/:id/monthly-summary",
+              "invalid-month",
+            );
           const data = await coachService.getMonthlySummaryById(
             params.id,
             month,
           );
-          if (!data) throw new NotFoundError("Coach not found");
+          if (!data)
+            throw refuse(
+              "GET /coach/admin/coaches/:id/monthly-summary",
+              "unknown-leader",
+            );
           return data;
         },
         {
@@ -1260,7 +1267,8 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const email = body.email.trim().toLowerCase();
-          if (!isEmailAddress(email)) throw new ValidationError(EMAIL_RULE);
+          if (!isEmailAddress(email))
+            throw refuse("POST /coach/admin/leaders", "invalid-address");
           const result = await coachService.addLeader(currentUserId, {
             email,
             name: body.name,
@@ -1269,24 +1277,24 @@ const plugin = new Elysia()
           });
           if (result.ok) return { coach: result.coach };
           if (result.reason === "slug-taken")
-            throw new ConflictError(
-              `Another leader already uses the id "${result.slug}". Enter a different name.`,
-            );
+            throw refuse("POST /coach/admin/leaders", "slug-taken", {
+              message: `Another leader already uses the id "${result.slug}". Enter a different name.`,
+              details: { slug: result.slug },
+            });
           if (result.reason === "no-slug")
-            throw new ValidationError(
-              "Enter a name with at least one letter or digit",
-            );
+            throw refuse("POST /coach/admin/leaders", "no-slug");
           if (result.reason === "keyword-conflict")
-            throw new ConflictError(
-              `Name refused: ${result.conflicts
+            throw refuse("POST /coach/admin/leaders", "keyword-conflict", {
+              details: { conflicts: result.conflicts },
+              message: `Name refused: ${result.conflicts
                 .map(
                   (c) => `it contains "${c.keyword}", a keyword of ${c.leader}`,
                 )
                 .join(
                   "; ",
                 )}. Their sessions would be routed to that leader. Enter a different name or change that leader's keywords first.`,
-            );
-          throw new ConflictError("That email is already a leader");
+            });
+          throw refuse("POST /coach/admin/leaders", "email-taken");
         },
         {
           body: AddLeaderDto,
@@ -1306,7 +1314,11 @@ const plugin = new Elysia()
           const attribution = await coachService.getLeaderAttribution(
             params.id,
           );
-          if (!attribution) throw new NotFoundError("Leader not found");
+          if (!attribution)
+            throw refuse(
+              "GET /coach/admin/leaders/:id/attribution",
+              "unknown-leader",
+            );
           return attribution;
         },
         {
@@ -1329,30 +1341,45 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           if (body.titleMatch.some((k) => k.trim().length < 3))
-            throw new ValidationError(
-              "Each title keyword needs at least three characters",
+            throw refuse(
+              "PUT /coach/admin/leaders/:id/attribution",
+              "keyword-too-short",
             );
           const badAlt = body.altEmails.find(
             (e) => !isEmailAddress(e.trim().toLowerCase()),
           );
           if (badAlt !== undefined)
-            throw new ValidationError(
-              `Alternate address "${badAlt}": ${EMAIL_RULE}`,
+            throw refuse(
+              "PUT /coach/admin/leaders/:id/attribution",
+              "invalid-alternate-address",
+              {
+                message: `Alternate address "${badAlt}": ${EMAIL_RULE}`,
+                details: { address: badAlt },
+              },
             );
           const result = await coachService.setLeaderAttribution(params.id, {
             titleMatch: body.titleMatch,
             altEmails: body.altEmails,
           });
           if (result.ok === false && result.refusal === "keyword-conflict")
-            throw new ConflictError(
-              `Keywords refused: ${result.conflicts
-                .map(
-                  (c) =>
-                    `"${c.keyword}" is inside ${c.inside === "name" ? "the name" : "a keyword"} of ${c.leader}`,
-                )
-                .join("; ")}`,
+            throw refuse(
+              "PUT /coach/admin/leaders/:id/attribution",
+              "keyword-conflict",
+              {
+                details: { conflicts: result.conflicts },
+                message: `Keywords refused: ${result.conflicts
+                  .map(
+                    (c) =>
+                      `"${c.keyword}" is inside ${c.inside === "name" ? "the name" : "a keyword"} of ${c.leader}`,
+                  )
+                  .join("; ")}`,
+              },
             );
-          if (!result.ok) throw new NotFoundError("Leader not found");
+          if (!result.ok)
+            throw refuse(
+              "PUT /coach/admin/leaders/:id/attribution",
+              "unknown-leader",
+            );
           return {
             titleMatch: result.titleMatch,
             altEmails: result.altEmails,
@@ -1385,7 +1412,11 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const email = body.email.trim().toLowerCase();
-          if (!isEmailAddress(email)) throw new ValidationError(EMAIL_RULE);
+          if (!isEmailAddress(email))
+            throw refuse(
+              "PUT /coach/admin/leaders/:id/email",
+              "invalid-address",
+            );
           const result = await coachService.updateLeaderEmail(
             params.id,
             email,
@@ -1396,14 +1427,7 @@ const plugin = new Elysia()
           );
           if (result.ok)
             return { email: result.email, noticeSent: result.noticeSent };
-          if (result.refusal === "taken")
-            throw new ConflictError("Another leader already uses that address");
-          if (result.refusal === "confirm-required")
-            throw new ConflictError(
-              "This is the benchmark leader, whose address receives every leader's reports: send confirm: true to change it",
-              { refusal: "confirm-required" },
-            );
-          throw new NotFoundError("Leader not found");
+          throw refuse("PUT /coach/admin/leaders/:id/email", result.refusal);
         },
         {
           params: t.Object({ id: t.String() }),
@@ -1430,20 +1454,9 @@ const plugin = new Elysia()
             body.expectedCoachId,
           );
           if (result.ok) return { coachId: body.coachId, state: result.state };
-          if (result.refusal === "unknown-leader")
-            throw new NotFoundError("Leader not found");
-          if (result.refusal === "unknown-session")
-            throw new NotFoundError("Session not found");
-          if (result.refusal === "attribution-changed")
-            throw new ConflictError(
-              "The session's leader changed since this list was loaded; reload it and assign again",
-            );
-          if (result.refusal === "already-assigned")
-            throw new ConflictError(
-              "The session is already assigned to that leader",
-            );
-          throw new ConflictError(
-            "The session's report is being delivered right now; try again shortly",
+          throw refuse(
+            "POST /coach/admin/sessions/:sourceSessionId/attribute",
+            result.refusal,
           );
         },
         {
@@ -1468,13 +1481,20 @@ const plugin = new Elysia()
             throw new ForbiddenError("Admin access required");
           const recordingUrl = body.recordingUrl.trim();
           if (!isBlankOrHttpUrl(recordingUrl))
-            throw new ValidationError("Enter a valid http(s) link");
+            throw refuse(
+              "PUT /coach/admin/coaches/:id/reports/:reportId/recording",
+              "invalid-link",
+            );
           const saved = await coachService.setRecordingLink(
             params.id,
             params.reportId,
             recordingUrl,
           );
-          if (saved === null) throw new NotFoundError("Session not found");
+          if (saved === null)
+            throw refuse(
+              "PUT /coach/admin/coaches/:id/reports/:reportId/recording",
+              "unknown-report",
+            );
           return { recordingUrl: saved };
         },
         {
@@ -1496,17 +1516,21 @@ const plugin = new Elysia()
           if (!(await coachService.isAdmin(currentUserId)))
             throw new ForbiddenError("Admin access required");
           const text = body.body.trim();
-          if (!text) throw new ValidationError("Note cannot be empty");
+          if (!text)
+            throw refuse(
+              "POST /coach/admin/coaches/:id/reports/:reportId/notes",
+              "empty-note",
+            );
           const note = await coachService.addNote(
             params.id,
             params.reportId,
             currentUserId,
             text,
           );
-          if (note === null) throw new NotFoundError("Session not found");
-          if (note === "held")
-            throw new ConflictError(
-              "This report is held from its leader, so a note would email them about a report they cannot open. Release it first.",
+          if (note === null || note === "held")
+            throw refuse(
+              "POST /coach/admin/coaches/:id/reports/:reportId/notes",
+              note === "held" ? "held" : "unknown-report",
             );
           return { note };
         },
@@ -1530,7 +1554,7 @@ const plugin = new Elysia()
             throw new ForbiddenError("Admin access required");
           const month = (query.month ?? "").trim();
           if (!/^\d{4}-\d{2}$/.test(month))
-            throw new ValidationError("month must be YYYY-MM");
+            throw refuse("GET /coach/admin/monthly", "invalid-month");
           return coachService.getMonthly(month);
         },
         {
