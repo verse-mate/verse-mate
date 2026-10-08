@@ -618,6 +618,58 @@ const plugin = new Elysia()
           },
         },
       )
+      .put(
+        "/admin/reports/:reportId/first-lesson",
+        async ({ store: { coachService }, currentUserId, params, body }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await coachService.setFirstLesson({
+            reportId: params.reportId,
+            firstLesson: body.firstLesson,
+            score: body.score ?? null,
+            rationale: body.rationale,
+            byUserId: currentUserId,
+          });
+          if (result.refusal === "legacy-report")
+            throw new ConflictError(
+              "First-lesson change refused: this is a legacy report, which is read-only.",
+            );
+          if (result.refusal === "unknown-report")
+            throw new NotFoundError("No scores for that report");
+          if (result.refusal === "already-delivered")
+            throw new ConflictError(
+              "First-lesson change refused: the report is already delivered.",
+            );
+          if (!result.ok)
+            throw new ValidationError(
+              `First-lesson change refused: ${result.refusal ?? "unknown"}`,
+            );
+          return {
+            firstLesson: result.firstLesson ?? body.firstLesson,
+            base: result.base ?? 0,
+            score: result.score ?? 0,
+            status: result.status?.label ?? "",
+          };
+        },
+        {
+          body: t.Object({
+            firstLesson: t.Boolean(),
+            score: t.Optional(t.Union([t.Number(), t.Null()])),
+            rationale: t.Optional(t.String()),
+          }),
+          response: {
+            200: t.Object({
+              firstLesson: t.Boolean(),
+              base: t.Number(),
+              score: t.Number(),
+              status: t.String(),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       // Recording-bot coverage, the gate task 9.1 reads before retiring the
       // old host (task 4.7).
       .get(
