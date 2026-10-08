@@ -787,7 +787,7 @@ export class CoachService {
       .where("coach_report_edits.report_id", "=", reportId)
       .orderBy("coach_report_edits.id", "desc")
       .execute();
-    return [
+    const timeline = [
       ...rows.map((r) => ({
         kind: "revision" as const,
         revision: r.revision,
@@ -807,6 +807,13 @@ export class CoachService {
         editedAt: new Date(e.edited_at as unknown as string),
       })),
     ];
+    const when = (entry: (typeof timeline)[number]) =>
+      entry.kind === "revision" ? entry.amendedAt : entry.editedAt;
+    const number = (entry: (typeof timeline)[number]) =>
+      entry.kind === "revision" ? entry.revision : entry.edit;
+    return timeline.sort(
+      (a, b) => when(b).getTime() - when(a).getTime() || number(b) - number(a),
+    );
   }
 
   /** Recording-bot coverage across the roster, the 9.1 gate (4.7). */
