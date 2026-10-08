@@ -163,11 +163,24 @@ export class CoachPipelineService {
     const out: PipelineResult[] = [];
     for (const session of pending) {
       const reportId = session.report_id as string;
-      const result = await delivery.deliver({
-        reportId,
-        evidence: await storedEvidence(this.db, reportId),
-      });
-      out.push(deliveryOutcome(session.source_session_id, reportId, result));
+      try {
+        const result = await delivery.deliver({
+          reportId,
+          evidence: await storedEvidence(this.db, reportId),
+        });
+        out.push(deliveryOutcome(session.source_session_id, reportId, result));
+      } catch (error) {
+        console.error(
+          `[COACH-PIPELINE] redelivery of ${session.source_session_id} threw:`,
+          error,
+        );
+        out.push({
+          sourceSessionId: session.source_session_id,
+          outcome: "delivery-failed",
+          reportId,
+          detail: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
     return out;
   }
