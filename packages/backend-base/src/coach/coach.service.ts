@@ -1111,6 +1111,10 @@ export class CoachService {
           })
           .execute();
         return { refusal: null, previous: leader.email, name: leader.name };
+      })
+      .catch((error: unknown) => {
+        if ((error as { code?: string }).code !== "23505") throw error;
+        return { refusal: "taken" as const };
       });
     if (change.refusal) return { ok: false, refusal: change.refusal };
     const noticeSent = change.previous

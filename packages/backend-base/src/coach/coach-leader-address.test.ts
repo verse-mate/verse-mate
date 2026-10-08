@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachService } from "./coach.service";
@@ -131,6 +132,33 @@ describe("A leader signs up after their reports exist", () => {
       ok: false,
       refusal: "taken",
     });
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("email")
+      .where("slug", "=", SLUG)
+      .executeTakeFirstOrThrow();
+    expect(row.email).toBe(PLACEHOLDER);
+  });
+
+  it("an address another admin gives a different leader at the same moment is refused as taken, not a server error", async () => {
+    let pending = null as Promise<unknown> | null;
+    await conn.transaction().execute(async (trx) => {
+      await trx
+        .updateTable("coach_leaders")
+        .set({ email: REAL })
+        .where("slug", "=", "addr-other")
+        .execute();
+      pending = service.updateLeaderEmail(SLUG, REAL).catch((e) => e);
+      for (let i = 0; i < 100; i += 1) {
+        const waiting = await sql<{ n: string }>`
+          SELECT count(*) AS n FROM pg_stat_activity
+          WHERE wait_event_type = 'Lock'
+            AND query ILIKE 'update "coach_leaders"%'`.execute(conn);
+        if (Number(waiting.rows[0].n) > 0) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    });
+    expect(await pending).toEqual({ ok: false, refusal: "taken" });
     const row = await conn
       .selectFrom("coach_leaders")
       .select("email")
