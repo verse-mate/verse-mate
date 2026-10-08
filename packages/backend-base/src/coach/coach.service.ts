@@ -1604,10 +1604,8 @@ export class CoachService {
     | { ok: false; reason: "slug-taken"; slug: string }
   > {
     const email = input.email.trim().toLowerCase();
-    const existing =
-      this.findByEmail(email) ??
-      (await this.coachRepository.findAddedLeaderByEmail(email));
-    if (existing) return { ok: false, reason: "duplicate" };
+    if (await this.resolveByEmail(email))
+      return { ok: false, reason: "duplicate" };
 
     const name = input.name?.trim() || CoachService.nameFromEmail(email);
     const slug = leaderSlug(name);
@@ -1765,7 +1763,7 @@ export class CoachService {
   private async displayNameFor(userId: string): Promise<string | undefined> {
     const email = await this.emailFor(userId);
     if (!email) return undefined;
-    const record = this.findByEmail(email);
+    const record = await this.resolveByEmail(email);
     return record?.name || CoachService.nameFromEmail(email);
   }
 
@@ -2253,7 +2251,7 @@ export class CoachService {
         emailCache.set(row.userId, await this.emailFor(row.userId));
       }
       const email = emailCache.get(row.userId) ?? null;
-      const record = email ? this.findByEmail(email) : null;
+      const record = email ? await this.resolveByEmail(email) : null;
       out.push({
         id: row.id,
         name: row.name,

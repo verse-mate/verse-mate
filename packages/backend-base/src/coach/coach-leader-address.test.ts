@@ -147,6 +147,65 @@ describe("A leader signs up after their reports exist", () => {
   });
 });
 
+describe("after an address change, every lookup by address follows the store", () => {
+  const ADDED = "addr-added-leader";
+  beforeEach(async () => {
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: MILO, email: MILO_OLD, name: "Milo Kerr" })
+      .execute();
+    await service.updateLeaderEmail(MILO, MILO_NEW);
+  });
+  afterEach(async () => {
+    await conn.deleteFrom("coach_leaders").where("slug", "=", ADDED).execute();
+    await conn.deleteFrom("user").where("email", "in", [MILO_NEW]).execute();
+  });
+
+  it("the previous address is free to add as a new leader", async () => {
+    const admin = await account(REAL);
+    const added = await service.addLeader(admin, {
+      email: MILO_OLD,
+      name: "Addr Added Leader",
+    });
+    expect(added).toMatchObject({ ok: true, coach: { id: ADDED } });
+  });
+
+  it("the current address is a duplicate", async () => {
+    const admin = await account(REAL);
+    expect(
+      await service.addLeader(admin, { email: MILO_NEW, name: "Someone" }),
+    ).toEqual({ ok: false, reason: "duplicate" });
+  });
+
+  it("an invite from the leader's current address is signed with their name", async () => {
+    const admin = await account(MILO_NEW);
+    const sent: string[] = [];
+    const mailer = {
+      sendEmail: async (data: { html?: string }) => {
+        sent.push(data.html ?? "");
+        return { delivered: true };
+      },
+    };
+    await new CoachService(Database, mailer).addLeader(admin, {
+      email: "addr-added-leader@example.test",
+      name: "Addr Added Leader",
+    });
+    expect(sent[0]).toContain("Milo Kerr");
+  });
+
+  it("a class its owner made is attributed to the leader at the current address", async () => {
+    const owner = await account(MILO_NEW);
+    await conn
+      .insertInto("coach_classes")
+      .values({ user_id: owner, name: "Addr class", class_date: "2026-10-01" })
+      .execute();
+    const mine = (await service.listAllClasses()).filter(
+      (c) => c.name === "Addr class",
+    );
+    expect(mine.map((c) => c.leader.id)).toEqual([MILO]);
+  });
+});
+
 describe("a leader's address change is audited and announced to the old address", () => {
   const OLD = "addr-old@example.test";
   const NEW = "addr-new@example.test";
