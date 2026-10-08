@@ -497,6 +497,55 @@ describe("leaders get a reminder before each class", () => {
     expect(result.sent.map((s) => s.coachId)).toEqual([LEADERS.thursday]);
   });
 
+  it("a send slower than the claim window that confirms during a retake does not mark the retaking run's reminder as sent", async () => {
+    await report(LEADERS.thursday, "2026-09-24");
+    const moved = "remind-thursday-moved@example.test";
+    let retaking: Promise<unknown> | null = null;
+    let retakeSending!: () => void;
+    const retakeStarted = new Promise<void>((resolve) => {
+      retakeSending = resolve;
+    });
+    let releaseRetake!: () => void;
+    const retakeGate = new Promise<void>((resolve) => {
+      releaseRetake = resolve;
+    });
+    const retake = new FakeMailer(() => true);
+    const sendRetake = retake.sendEmail.bind(retake);
+    retake.sendEmail = async (data) => {
+      retakeSending();
+      await retakeGate;
+      return sendRetake(data);
+    };
+    const slow = new FakeMailer();
+    const sendSlow = slow.sendEmail.bind(slow);
+    slow.sendEmail = async (data) => {
+      if (!retaking) {
+        await ageClaim(LEADERS.thursday);
+        await conn
+          .updateTable("coach_leaders")
+          .set({ email: moved })
+          .where("slug", "=", LEADERS.thursday)
+          .execute();
+        retaking = run(retake, WEDNESDAY_6PM);
+        await retakeStarted;
+      }
+      return sendSlow(data);
+    };
+    await run(slow, WEDNESDAY_6PM);
+    releaseRetake();
+    await retaking;
+
+    const row = await conn
+      .selectFrom("coach_reminder_sends")
+      .select("sent_at")
+      .where("coach_id", "=", LEADERS.thursday)
+      .executeTakeFirst();
+    expect(row?.sent_at ?? null).toBeNull();
+    const next = new FakeMailer();
+    await run(next, WEDNESDAY_6PM);
+    expect(next.to(moved)).toHaveLength(1);
+  });
+
   it("a confirmed reminder is never retaken, however old its claim", async () => {
     await report(LEADERS.thursday, "2026-09-24");
     await run(new FakeMailer(), WEDNESDAY_6PM);
