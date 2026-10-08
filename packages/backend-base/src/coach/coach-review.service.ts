@@ -326,13 +326,17 @@ async function lockForCorrection(
 > {
   const session = await trx
     .selectFrom("coach_intake_sessions")
-    .select(["state", "delivered_to", "published"])
+    .select(["state", "delivered_to", "attempted_to", "published"])
     .where("report_id", "=", reportId)
     .forUpdate()
     .executeTakeFirst();
   if (!session) return "unknown-report";
   if (session.state === "delivered") return "already-delivered";
-  if (session.published || session.delivered_to.length > 0)
+  if (
+    session.published ||
+    session.delivered_to.length > 0 ||
+    session.attempted_to.length > 0
+  )
     return "partially-delivered";
   return CORRECTABLE_STATES.includes(session.state) ? null : "in-flight";
 }
