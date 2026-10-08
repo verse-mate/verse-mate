@@ -72,8 +72,17 @@ beforeAll(async () => {
       editCalls.push(input);
       return byReport[input.reportId];
     },
-    correctDimension: async (input: unknown) => {
+    correctDimension: async (input: { reportId: string }) => {
       correctCalls.push(input);
+      if (input.reportId === "r-ok")
+        return {
+          ok: true,
+          base: 70,
+          score: 72.5,
+          status: { label: "Strong", emoji: "x" },
+        };
+      if (input.reportId === "r-delivered")
+        return { ok: false, refusal: "already-delivered" };
       return { ok: false, refusal: "partially-delivered" };
     },
     listRevisions: async () => [
@@ -337,6 +346,28 @@ describe("the revision routes", () => {
       rationale: "x".repeat(4000),
     });
     expect(correctCalls).toMatchObject([{ dimensionN: 12, score: null }]);
+  });
+
+  it("a correction answers the composite the leader will see, with the base and the band", async () => {
+    const res = await call("POST", "r-ok/dimensions/3", {
+      score: 2,
+      rationale: "x",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      base: 70,
+      score: 72.5,
+      status: "Strong",
+    });
+  });
+
+  it("a correction on a delivered report is a 409 pointing to amend", async () => {
+    const res = await call("POST", "r-delivered/dimensions/3", {
+      score: 2,
+      rationale: "x",
+    });
+    expect(res.status).toBe(409);
+    expect(await res.text()).toContain("Amend it instead");
   });
 
   it("a score outside 1 to 5 never reaches the service", async () => {
