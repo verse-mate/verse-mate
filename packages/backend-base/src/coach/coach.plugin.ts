@@ -721,6 +721,10 @@ const plugin = new Elysia()
             throw new NotFoundError("No report held for review");
           if (result.refusal === "no-mailer")
             throw new ConflictError("No mailer is configured");
+          if (result.refusal === "parallel-run")
+            throw new ConflictError(
+              "The pipeline is in its parallel run: nothing is sent until cutover",
+            );
           return result;
         },
         {

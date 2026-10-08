@@ -1,8 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { db as Database } from "database";
 import { sql } from "kysely";
 
 import { recordCalibration } from "./coach-calibration";
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import {
   CoachDeliveryService,
   DELIVERY_ATTEMPT_LIMIT,
@@ -12,6 +21,13 @@ import type { ReportEvidence } from "./coach-governance.service";
 import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
+
+beforeAll(() => {
+  process.env[COACH_PIPELINE_LIVE] = "true";
+});
+afterAll(() => {
+  delete process.env[COACH_PIPELINE_LIVE];
+});
 const LEADER = "deliv-leader";
 const BENCH = "deliv-bench";
 const EMAILS = [
@@ -64,11 +80,11 @@ async function seedLeaders() {
   await conn
     .insertInto("coach_leaders")
     .values([
-      { slug: LEADER, email: EMAILS[0], name: "Jeff Ward" },
+      { slug: LEADER, email: EMAILS[0], name: "Milo Kerr" },
       {
         slug: BENCH,
         email: EMAILS[1],
-        name: "Bryan Bailey",
+        name: "Avery Hollis",
         is_benchmark: true,
       },
     ])
@@ -126,20 +142,20 @@ describe("the subject is derived, not invented", () => {
     expect(
       reportSubject({
         sessionDate: "2026-08-22",
-        leaderName: "Jeff Ward",
+        leaderName: "Milo Kerr",
         sessionTitle: "Obadiah, Lesson 4",
       }),
-    ).toBe("Coaching report — 2026-08-22 — Jeff Ward — Obadiah, Lesson 4");
+    ).toBe("Coaching report — 2026-08-22 — Milo Kerr — Obadiah, Lesson 4");
   });
 
   it("sanitizes a title carrying newlines or runs of whitespace", () => {
     expect(
       reportSubject({
         sessionDate: "2026-08-22",
-        leaderName: "Jeff Ward",
+        leaderName: "Milo Kerr",
         sessionTitle: "Obadiah\n\tLesson   4  ",
       }),
-    ).toBe("Coaching report — 2026-08-22 — Jeff Ward — Obadiah Lesson 4");
+    ).toBe("Coaching report — 2026-08-22 — Milo Kerr — Obadiah Lesson 4");
   });
 });
 
@@ -323,7 +339,7 @@ describe("delivery", () => {
 
   it("a governance violation BLOCKS the send and is not discarded", async () => {
     await seedReport("r1", LEADER, {
-      feedback: { headline: "Not yet at Bryan Bailey's level" },
+      feedback: { headline: "Not yet at Avery Hollis's level" },
     });
     const mailer = new FakeMailer();
     const result = await new CoachDeliveryService(Database, mailer).deliver({
@@ -497,7 +513,7 @@ describe("delivery is claimed in the database, so separate workers cannot both s
 
   it("a governance block releases the claim back to the review path", async () => {
     await seedReport("r-blocked", LEADER, {
-      feedback: { headline: "Not yet at Bryan Bailey's level" },
+      feedback: { headline: "Not yet at Avery Hollis's level" },
     });
     const result = await new CoachDeliveryService(
       Database,

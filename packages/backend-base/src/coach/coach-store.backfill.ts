@@ -1,5 +1,6 @@
 import { db as Database } from "database";
 
+import { assertBeforeCutover } from "./coach-cutover";
 import { datasetMeta, datasetToRows } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 
@@ -16,6 +17,7 @@ import coachDataJson from "./coach.data.json";
 export async function backfillCoachStore(
   dataset: unknown = coachDataJson,
 ): Promise<{ loaded: number }> {
+  assertBeforeCutover();
   const conn = Database.getOrCreateConnection();
   const rows = datasetToRows(dataset);
   const meta = datasetMeta(dataset);

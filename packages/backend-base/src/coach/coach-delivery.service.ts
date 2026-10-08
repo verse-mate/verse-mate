@@ -3,6 +3,7 @@ import { sql } from "kysely";
 import { CoachReport, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
 import { calibrationShortfalls } from "./coach-calibration";
+import { coachPipelineLive } from "./coach-cutover";
 import {
   CoachGovernanceService,
   type GovernanceViolation,
@@ -40,6 +41,7 @@ export type DeliveryRefusal =
   | "unknown-report"
   | "already-delivered"
   | "in-flight"
+  | "parallel-run"
   | "calibration-blocked"
   | "governance-blocked"
   | "send-failed";
@@ -103,6 +105,8 @@ export class CoachDeliveryService {
     reportId: string;
     evidence: ReportEvidence;
   }): Promise<DeliveryResult> {
+    if (!coachPipelineLive())
+      return { delivered: false, refusal: "parallel-run" };
     const coachId = await this.coachFor(input.reportId);
     if (!coachId) return { delivered: false, refusal: "unknown-report" };
 

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { backfillCoachStore } from "./coach-store.backfill";
 import coachDataJson from "./coach.data.json";
 
@@ -124,5 +125,16 @@ describe("coach-store backfill (DB)", () => {
     expect(rows).toEqual([{ id: sample.id, coach_id: otherLeader }]);
     const counts = await countsByCoach();
     expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(deployedCount);
+  });
+
+  it("Cutover switches the pipeline on: the backfill is not run again", async () => {
+    await clear();
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    try {
+      await expect(backfillCoachStore()).rejects.toThrow(/cutover/);
+    } finally {
+      delete process.env[COACH_PIPELINE_LIVE];
+    }
+    expect((await countsByCoach()).size).toBe(0);
   });
 });
