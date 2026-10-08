@@ -109,6 +109,65 @@ describe("a session is attributed by its title, not its sender", () => {
   });
 });
 
+describe("a session two leaders could claim is unresolved", () => {
+  const ROW: AttributionLeader = {
+    slug: "rowan-ashby",
+    name: "Rowan Ashby",
+    email: "rowan@example.test",
+    titleMatch: ["bible study"],
+    altEmails: ["rowan.home@example.test"],
+  };
+  const MAE: AttributionLeader = {
+    slug: "mae-corrin",
+    name: "Mae Corrin",
+    email: "mae@example.test",
+    titleMatch: [],
+    altEmails: ["mae.home@example.test"],
+  };
+
+  it("one leader's keyword and another leader's name in the same title", () => {
+    expect(
+      attributeSession(session({ title: "Bible study with Mae Corrin" }), [
+        ROW,
+        MAE,
+      ]),
+    ).toEqual({ coachId: null, matchedBy: "unresolved" });
+  });
+
+  it("one leader's keyword and another leader's sender address", () => {
+    expect(
+      attributeSession(
+        session({ title: "Bible study", host_email: "mae.home@example.test" }),
+        [ROW, MAE],
+      ),
+    ).toEqual({ coachId: null, matchedBy: "unresolved" });
+  });
+
+  it("one leader's name and another leader's sender address", () => {
+    expect(
+      attributeSession(
+        session({
+          title: "Study with Rowan Ashby",
+          organizer_email: "mae.home@example.test",
+        }),
+        [ROW, MAE],
+      ),
+    ).toEqual({ coachId: null, matchedBy: "unresolved" });
+  });
+
+  it("every step pointing at the same leader still resolves by the first", () => {
+    expect(
+      attributeSession(
+        session({
+          title: "Bible study with Rowan Ashby",
+          host_email: "rowan.home@example.test",
+        }),
+        [ROW, MAE],
+      ),
+    ).toEqual({ coachId: "rowan-ashby", matchedBy: "title_match" });
+  });
+});
+
 describe("keywords and names match whole words of the title", () => {
   const TIM: AttributionLeader = {
     slug: "tim-keller",
