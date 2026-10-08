@@ -13,6 +13,8 @@ import {
   CoachArchiveService,
   MAX_RECORDING_BYTES,
   MAX_VIDEO_REDIRECTS,
+  isAllowedVideoUrl,
+  pinnedFetch,
 } from "./coach-archive.service";
 
 const publicAddress = async () => ["93.184.216.34"];
@@ -657,6 +659,10 @@ describe("an allowlisted name is resolved, and a private address behind it is re
     "::ffff:127.0.0.1",
     "::ffff:a9fe:a9fe",
     "64:ff9b::a9fe:a9fe",
+    "::7f00:1",
+    "::a9fe:a9fe",
+    "2002:7f00:1::1",
+    "2002:a9fe:a9fe::",
   ]) {
     it(`refuses provider.test resolving to ${address}, before connecting`, async () => {
       await seedSession("ff-1");
@@ -729,5 +735,102 @@ describe("an allowlisted name is resolved, and a private address behind it is re
       new FakeStorage(),
     ).retain("ff-1");
     expect(result.retained).toBe(true);
+  });
+});
+
+describe("the recording is fetched from the address that was checked, on port 443", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  it("a video URL on any port but 443 is off the allowlist", () => {
+    expect(isAllowedVideoUrl("https://provider.test:8443/x.mp4")).toBe(false);
+    expect(isAllowedVideoUrl("https://provider.test:80/x.mp4")).toBe(false);
+    expect(isAllowedVideoUrl("https://provider.test:443/x.mp4")).toBe(true);
+    expect(isAllowedVideoUrl("https://provider.test/x.mp4")).toBe(true);
+  });
+
+  it("a first hop on another port is never requested, nor is a redirect to one", async () => {
+    for (const [first, routes] of [
+      ["https://provider.test:8443/video.mp4", {}],
+      [
+        "https://provider.test/video.mp4",
+        {
+          "https://provider.test/video.mp4": () =>
+            new Response(null, {
+              status: 302,
+              headers: { location: "https://provider.test:8443/x.mp4" },
+            }),
+        },
+      ],
+    ] as const) {
+      await clear();
+      await seedSession("ff-1");
+      const requested: string[] = [];
+      const result = await new CoachArchiveService(
+        Database,
+        new FakeClient(detail({ video_url: first })),
+        {
+          storage: new FakeStorage() as any,
+          resolve: publicAddress,
+          fetch: async (url: string) => {
+            requested.push(url);
+            const route = (routes as Record<string, () => Response>)[url];
+            return route ? route() : new Response("VIDEO");
+          },
+        },
+      ).retain("ff-1");
+      expect(result).toEqual({
+        retained: false,
+        reason: "untrusted-video-host",
+      });
+      expect(requested).not.toContain("https://provider.test:8443/x.mp4");
+      expect(requested).not.toContain("https://provider.test:8443/video.mp4");
+    }
+  });
+
+  it("each hop connects to the address its name resolved to, never resolving again", async () => {
+    await seedSession("ff-1");
+    const answers = [["93.184.216.34"], ["127.0.0.1"]];
+    const connectedTo: string[] = [];
+    const result = await new CoachArchiveService(
+      Database,
+      new FakeClient(detail()),
+      {
+        storage: new FakeStorage() as any,
+        resolve: async () => answers.shift() ?? ["127.0.0.1"],
+        fetch: async (_url: string, _init: RequestInit, address: string) => {
+          connectedTo.push(address);
+          return new Response("VIDEO");
+        },
+      },
+    ).retain("ff-1");
+    expect(result.retained).toBe(true);
+    expect(connectedTo).toEqual(["93.184.216.34"]);
+  });
+
+  it("the pinned request goes to the address with the name as Host and TLS server name", async () => {
+    const seen: Array<{ url: string; init: Record<string, any> }> = [];
+    const delegate = async (url: string | URL, init?: RequestInit) => {
+      seen.push({ url: String(url), init: init as Record<string, any> });
+      return new Response("ok");
+    };
+    await pinnedFetch(
+      "https://cdn.provider.test/a/b.mp4?sig=1",
+      { redirect: "manual" },
+      "93.184.216.34",
+      delegate,
+    );
+    await pinnedFetch(
+      "https://cdn.provider.test/c.mp4",
+      { redirect: "manual" },
+      "2606:2800:220:1::1",
+      delegate,
+    );
+    expect(seen[0].url).toBe("https://93.184.216.34/a/b.mp4?sig=1");
+    expect(seen[0].init.headers).toEqual({ host: "cdn.provider.test" });
+    expect(seen[0].init.tls).toEqual({ serverName: "cdn.provider.test" });
+    expect(seen[0].init.redirect).toBe("manual");
+    expect(seen[1].url).toBe("https://[2606:2800:220:1::1]/c.mp4");
+    expect(seen[1].init.tls).toEqual({ serverName: "cdn.provider.test" });
   });
 });
