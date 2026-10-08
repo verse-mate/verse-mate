@@ -1663,6 +1663,63 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
     ).toBe("scored-and-delivered");
   });
 
+  it("a report held for want of a mailer does not starve a retryable one out of the batch", async () => {
+    const first = await pipeline(new FakeMailer(false)).run();
+    expect(first.find((o) => o.sourceSessionId === "ff-pipe-1")?.outcome).toBe(
+      "delivery-failed",
+    );
+    expect((await intakeRow("ff-pipe-1")).retry_count).toBe(1);
+    for (let i = 0; i < PIPELINE_BATCH_LIMIT; i += 1) {
+      const id = `ff-extra-nomail-${i}`;
+      await conn
+        .insertInto("coach_reports")
+        .values({
+          id,
+          coach_id: COACH,
+          session_date: "2026-08-01",
+          source_session_id: id,
+          legacy_ids: [],
+          summary: {},
+          metrics: {},
+          body: {},
+          held: true,
+        })
+        .execute();
+      await conn
+        .insertInto("coach_report_dimension_scores")
+        .values({
+          report_id: id,
+          dimension_n: 1,
+          score: 3,
+          rationale: "r",
+          provenance: "machine",
+          model_version: "an-uncalibrated-version",
+        })
+        .execute();
+      await conn
+        .insertInto("coach_intake_sessions")
+        .values({
+          source_session_id: id,
+          coach_id: COACH,
+          matched_by: "title_match",
+          title: "t",
+          session_date: "2026-08-01",
+          state: "delivery_pending",
+          report_id: id,
+          hold_reason: "held: no mailer was configured",
+          hold_kind: "no-mailer",
+          retry_count: 0,
+        })
+        .execute();
+    }
+
+    const mailer = new FakeMailer();
+    const outcomes = await pipeline(mailer).run();
+    expect(
+      outcomes.find((o) => o.sourceSessionId === "ff-pipe-1")?.outcome,
+    ).toBe("scored-and-delivered");
+  });
+
   it("a re-score's baseline leaves out the session being re-scored", async () => {
     await conn
       .insertInto("coach_reports")
