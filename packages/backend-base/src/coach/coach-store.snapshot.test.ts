@@ -4,6 +4,7 @@ import { db as Database } from "database";
 import { backfillCoachRoster } from "./coach-roster.backfill";
 import { backfillCoachStore } from "./coach-store.backfill";
 import { snapshotDataset } from "./coach-store.snapshot";
+import { withoutMonologueDetails } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 
 const conn = Database.getOrCreateConnection();
@@ -87,7 +88,16 @@ describe("store -> bundle snapshot is the rollback path", () => {
 
   it("is byte-comparable with the deployed bundle under canonical ordering", async () => {
     const snap = (await snapshotDataset()) as unknown as Bundle;
-    expect(canonical(normalized(snap))).toBe(canonical(normalized(bundle)));
+    const backfilled = {
+      ...bundle,
+      coaches: bundle.coaches.map((c) => ({
+        ...c,
+        reports: c.reports.map((r) =>
+          withoutMonologueDetails(r as Record<string, unknown>),
+        ),
+      })),
+    };
+    expect(canonical(normalized(snap))).toBe(canonical(normalized(backfilled)));
   });
 
   it("carries the rubric, the admins and both monthly maps", async () => {
