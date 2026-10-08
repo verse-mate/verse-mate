@@ -3,6 +3,7 @@ import { db as Database } from "database";
 
 import type { RetainResult } from "./coach-archive.service";
 import {
+  getLeaderAttribution,
   reattributeSession,
   reattributeUnresolved,
   setLeaderAttribution,
@@ -143,6 +144,22 @@ describe("an admin edits a leader's attribution keywords", () => {
       title_match: ["zephaniah circle", "tuesday night"],
       alt_emails: ["otto@example.test"],
     });
+  });
+
+  it("the stored keywords and alternate addresses read back as written", async () => {
+    await setLeaderAttribution(Database, RIGHT, {
+      titleMatch: ["Zephaniah Circle"],
+      altEmails: ["otto@example.test"],
+    });
+    expect(await getLeaderAttribution(Database, RIGHT)).toEqual({
+      titleMatch: ["zephaniah circle"],
+      altEmails: ["otto@example.test"],
+    });
+    expect(await getLeaderAttribution(Database, WRONG)).toEqual({
+      titleMatch: [],
+      altEmails: [],
+    });
+    expect(await getLeaderAttribution(Database, "reattr-nobody")).toBeNull();
   });
 
   it("an unknown leader is refused", async () => {

@@ -164,6 +164,20 @@ export async function reattributeUnresolved(database: db): Promise<number> {
   return resolved;
 }
 
+export async function getLeaderAttribution(
+  database: db,
+  slug: string,
+): Promise<{ titleMatch: string[]; altEmails: string[] } | null> {
+  const row = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_leaders")
+    .select(["title_match", "alt_emails"])
+    .where("slug", "=", slug)
+    .executeTakeFirst();
+  if (!row) return null;
+  return { titleMatch: row.title_match ?? [], altEmails: row.alt_emails ?? [] };
+}
+
 export async function setLeaderAttribution(
   database: db,
   slug: string,

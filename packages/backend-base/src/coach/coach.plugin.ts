@@ -1161,6 +1161,31 @@ const plugin = new Elysia()
           },
         },
       )
+      .get(
+        "/admin/leaders/:id/attribution",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const attribution = await coachService.getLeaderAttribution(
+            params.id,
+          );
+          if (!attribution) throw new NotFoundError("Leader not found");
+          return attribution;
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({
+              titleMatch: t.Array(t.String()),
+              altEmails: t.Array(t.String()),
+            }),
+            404: t.Object({ error: t.String(), message: t.String() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .put(
         "/admin/leaders/:id/attribution",
         async ({ params, body, store: { coachService }, currentUserId }) => {

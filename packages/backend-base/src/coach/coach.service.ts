@@ -7,6 +7,7 @@ import type { db } from "../shared/shared.plugin";
 import { UserService } from "../user/user.service";
 import type { Amendment } from "./coach-amend.service";
 import {
+  getLeaderAttribution,
   leaderSlug,
   reattributeSession,
   setLeaderAttribution,
@@ -566,6 +567,10 @@ export class CoachService {
       this.db,
       new CoachArchiveService(this.db, new HttpFirefliesClient()),
     ).resolveReshare(sourceSessionId);
+  }
+
+  async getLeaderAttribution(slug: string) {
+    return getLeaderAttribution(this.db, slug);
   }
 
   async setLeaderAttribution(
