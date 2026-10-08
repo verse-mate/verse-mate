@@ -3,7 +3,7 @@ import { db as Database } from "database";
 import { sql } from "kysely";
 
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
-import { CoachService } from "./coach.service";
+import { type CoachDataset, CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
 const SLUG = "addr-leader";
@@ -125,6 +125,34 @@ describe("A leader signs up after their reports exist", () => {
     await service.updateLeaderEmail(MILO, MILO_NEW);
 
     expect(await service.getMe(oldAccount)).toBeNull();
+  });
+
+  it("an address only the bundled roster holds is refused as taken, and nothing changes", async () => {
+    const bundleOnly = "addr-bundle-only@example.test";
+    const withBundleOnly = new CoachService(Database, undefined, {
+      coaches: [
+        {
+          id: "addr-bundle-only",
+          name: "Addr Bundle Only",
+          email: bundleOnly,
+          group: "g",
+          coachName: "c",
+          isCoach: true,
+          zoomLink: "",
+          reports: [],
+        },
+      ],
+    } as unknown as CoachDataset);
+    expect(await withBundleOnly.updateLeaderEmail(SLUG, bundleOnly)).toEqual({
+      ok: false,
+      refusal: "taken",
+    });
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("email")
+      .where("slug", "=", SLUG)
+      .executeTakeFirstOrThrow();
+    expect(row.email).toBe(PLACEHOLDER);
   });
 
   it("an address another leader holds is refused, and nothing changes", async () => {
