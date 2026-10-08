@@ -145,15 +145,6 @@ export interface RevisionSendResult {
 
 export class CoachDeliveryService {
   private readonly governance: CoachGovernanceService;
-  /**
-   * One in-flight delivery per leader.
-   *
-   * Rule 2 asks whether a quote was used in an EARLIER report, and two reports
-   * produced in one poll cycle would otherwise each see the other as not yet
-   * existing, both would ship with the same quote. Serializing per leader is
-   * what gives "earlier" a meaning.
-   */
-  private readonly inFlight = new Map<string, Promise<unknown>>();
 
   constructor(
     private readonly db: db,
@@ -168,38 +159,7 @@ export class CoachDeliveryService {
   }): Promise<DeliveryResult> {
     if (!coachPipelineLive())
       return { delivered: false, refusal: "parallel-run" };
-    const coachId = await this.coachFor(input.reportId);
-    if (!coachId) return { delivered: false, refusal: "unknown-report" };
-
-    const previous = this.inFlight.get(coachId) ?? Promise.resolve();
-    const run = previous
-      .catch(() => undefined)
-      .then(() =>
-        this.deliverSerially(input.reportId, coachId, input.evidence),
-      );
-    this.inFlight.set(coachId, run);
-    try {
-      return await run;
-    } finally {
-      if (this.inFlight.get(coachId) === run) this.inFlight.delete(coachId);
-    }
-  }
-
-  private async coachFor(reportId: string): Promise<string | null> {
-    const row = await this.db
-      .getOrCreateConnection()
-      .selectFrom("coach_reports")
-      .select("coach_id")
-      .where("id", "=", reportId)
-      .executeTakeFirst();
-    return row?.coach_id ?? null;
-  }
-
-  private async deliverSerially(
-    reportId: string,
-    coachId: string,
-    evidence: ReportEvidence,
-  ): Promise<DeliveryResult> {
+    const { reportId, evidence } = input;
     const claim = await this.claim(reportId);
     if (claim.status !== "claimed")
       return { delivered: false, refusal: claim.status };
@@ -211,7 +171,13 @@ export class CoachDeliveryService {
       .where("id", "=", reportId)
       .executeTakeFirst();
     if (!report) return { delivered: false, refusal: "unknown-report" };
-    return this.deliverClaimed(reportId, coachId, evidence, report, claim);
+    return this.deliverClaimed(
+      reportId,
+      report.coach_id,
+      evidence,
+      report,
+      claim,
+    );
   }
 
   private async claim(reportId: string): Promise<Claim> {
