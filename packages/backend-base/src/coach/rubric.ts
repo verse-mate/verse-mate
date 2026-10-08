@@ -217,19 +217,6 @@ export function composeBaseScore(scores: ReadonlyMap<number, number | null>): {
   };
 }
 
-/**
- * The two bonuses that sit on top of the weighted base (task 5.2).
- *
- * Derived from the 119 published reports in the bundled corpus, which fix the
- * rule exactly: `newcomerBonus` is the first-timer count capped at 5, and
- * `sizeBonus` starts at 16 attendees and adds half a point per head to a
- * maximum of 3. Every one of the 119 reproduces its published score from these
- * two numbers plus its base, so this is measured, not guessed.
- *
- * Publishing used to accept both as optional inputs and nothing ever computed
- * them, so every ported report scored base-only and a busy session with five
- * first-timers was rewarded exactly as much as an empty one.
- */
 export const NEWCOMER_BONUS_MAX = 5;
 export const SIZE_BONUS_MAX = 3;
 /** The head count above which size starts to earn anything. */
@@ -254,19 +241,6 @@ export function composeBonuses(input: {
   };
 }
 
-/**
- * The published composite: base plus bonuses, capped at 100.
- *
- * TWO decimals, which is what the 119 published reports carry (84.04, 95.76).
- * Publishing rounded to one, so a backfilled report and a new one computed from
- * the same numbers would have disagreed in the third digit, and a leader
- * comparing this month to last would have seen scores that do not line up.
- *
- * The cap matters because the base alone can reach 100 and the bonuses add up
- * to 8 more. Nothing in the corpus came close (95.76 is the highest), but every
- * surface renders the number as "x / 100", so a 103 would make the portal, the
- * email and the PDF all state something untrue.
- */
 export function composeComposite(base: number, bonuses: ScoreBonuses): number {
   const total = base + bonuses.newcomerBonus + bonuses.sizeBonus;
   return Math.round(Math.min(total, 100) * 100) / 100;
