@@ -70,9 +70,11 @@ export function shownToAnyone(session: {
   published: boolean;
   deliveredTo: string[];
   attemptedTo: string[];
+  sendUnconfirmed: boolean;
 }): boolean {
   return (
     session.published ||
+    session.sendUnconfirmed ||
     session.deliveredTo.length > 0 ||
     session.attemptedTo.length > 0
   );

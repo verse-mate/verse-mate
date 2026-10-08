@@ -189,11 +189,17 @@ describe("the session state machine", () => {
     ]);
   });
 
-  it("a report is shown once it is published, confirmed or attempted to anyone", () => {
-    const none = { published: false, deliveredTo: [], attemptedTo: [] };
+  it("a report is shown once it is published, confirmed, attempted to anyone, or requeued after a send never confirmed", () => {
+    const none = {
+      published: false,
+      deliveredTo: [],
+      attemptedTo: [],
+      sendUnconfirmed: false,
+    };
     expect(shownToAnyone(none)).toBe(false);
     expect(shownToAnyone({ ...none, published: true })).toBe(true);
     expect(shownToAnyone({ ...none, deliveredTo: ["a@x.test"] })).toBe(true);
     expect(shownToAnyone({ ...none, attemptedTo: ["a@x.test"] })).toBe(true);
+    expect(shownToAnyone({ ...none, sendUnconfirmed: true })).toBe(true);
   });
 });

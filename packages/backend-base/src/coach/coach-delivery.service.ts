@@ -61,6 +61,7 @@ type Claim =
       deliveredTo: string[];
       attemptedTo: string[];
       published: boolean;
+      sendUnconfirmed: boolean;
     }
   | {
       status:
@@ -192,6 +193,7 @@ export class CoachDeliveryService {
           "delivered_to",
           "attempted_to",
           "published",
+          "send_unconfirmed",
           CLAIM_TOKEN.as("token"),
         ])
         .executeTakeFirst();
@@ -202,6 +204,7 @@ export class CoachDeliveryService {
           deliveredTo: claimed.delivered_to,
           attemptedTo: claimed.attempted_to,
           published: claimed.published,
+          sendUnconfirmed: claimed.send_unconfirmed,
         };
       }
     } catch (error) {
@@ -286,6 +289,7 @@ export class CoachDeliveryService {
       deliveredTo: string[];
       attemptedTo: string[];
       published: boolean;
+      sendUnconfirmed: boolean;
     },
   ): Promise<DeliveryResult> {
     const conn = this.db.getOrCreateConnection();

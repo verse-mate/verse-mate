@@ -325,7 +325,13 @@ async function lockForCorrection(
 > {
   const session = await trx
     .selectFrom("coach_intake_sessions")
-    .select(["state", "delivered_to", "attempted_to", "published"])
+    .select([
+      "state",
+      "delivered_to",
+      "attempted_to",
+      "published",
+      "send_unconfirmed",
+    ])
     .where("report_id", "=", reportId)
     .forUpdate()
     .executeTakeFirst();
@@ -336,6 +342,7 @@ async function lockForCorrection(
       published: session.published,
       deliveredTo: session.delivered_to,
       attemptedTo: session.attempted_to,
+      sendUnconfirmed: session.send_unconfirmed,
     })
   )
     return "partially-delivered";

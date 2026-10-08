@@ -506,6 +506,7 @@ describe("an admin re-attributes a session to a leader", () => {
       report_id: "reattr-report-1",
       delivered_to: ["reattr-wrong@example.test"],
       published: true,
+      send_unconfirmed: true,
       retry_count: 2,
     });
     await conn
@@ -549,6 +550,7 @@ describe("an admin re-attributes a session to a leader", () => {
       retry_count: 0,
       delivered_to: [],
       published: false,
+      send_unconfirmed: false,
       report_id: "reattr-report-1",
       release_required: true,
     });

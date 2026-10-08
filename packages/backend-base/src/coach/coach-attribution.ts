@@ -362,6 +362,7 @@ export async function reattributeSession(
                 delivered_to: sql`ARRAY[]::text[]`,
                 published: false,
                 attempted_to: sql`ARRAY[]::text[]`,
+                send_unconfirmed: false,
               }
             : {}),
           updated_at: sql`NOW()`,
