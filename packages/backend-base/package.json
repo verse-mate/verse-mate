@@ -13,7 +13,8 @@
     "jesus:coverage": "bun ./src/jesus/scripts/jesus-coverage.ts",
     "jesus:review": "bun ./src/jesus/scripts/review-jesus-content.ts",
     "coach:calibrate": "bun ./src/coach/coach-calibration.runner.ts",
-    "coach:calibrate:claude": "bun ./src/coach/coach-calibration.claude-cli.ts"
+    "coach:calibrate:claude": "bun ./src/coach/coach-calibration.claude-cli.ts",
+    "coach:contract": "bun ./src/coach/coach-contract.ts"
   },
   "dependencies": {
     "@elysiajs/bearer": "1.2.0",
