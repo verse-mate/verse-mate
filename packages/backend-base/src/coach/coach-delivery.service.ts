@@ -40,6 +40,17 @@ export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
 const CLAIM_TOKEN = sql<string>`updated_at::text`;
 const REVISION_CLAIM_TOKEN = sql<string>`sending_at::text`;
 
+const appendOnce = (
+  column: "delivered_to" | "attempted_to" | "sent_to",
+  email: string,
+) =>
+  sql<
+    string[]
+  >`CASE WHEN ${email} = ANY(${sql.ref(column)}) THEN ${sql.ref(column)} ELSE array_append(${sql.ref(column)}, ${email}) END`;
+
+const neverConfirmed = (what: "report" | "revision") =>
+  `was started but never confirmed, so it is not sent again until the ${what} is requeued`;
+
 type Claim =
   | {
       status: "claimed";
@@ -258,7 +269,7 @@ export class CoachDeliveryService {
       .updateTable("coach_intake_sessions")
       .set({
         updated_at: sql`clock_timestamp()`,
-        attempted_to: sql`CASE WHEN ${attempting} = ANY(attempted_to) THEN attempted_to ELSE array_append(attempted_to, ${attempting}) END`,
+        attempted_to: appendOnce("attempted_to", attempting),
       })
       .where("report_id", "=", reportId)
       .where("state", "=", "delivering")
@@ -541,6 +552,7 @@ export class CoachDeliveryService {
     const html = await reportEmailHtml(reportId, leader?.name, summary, report);
 
     const confirmed = new Set(claim.sentTo);
+    const unconfirmed = new Set(claim.attemptedTo);
     const sends: NonNullable<RevisionSendResult["sends"]> = [];
     let token = claim.token;
     const fenced = () => ({
@@ -551,11 +563,14 @@ export class CoachDeliveryService {
       skipped,
       subject,
     });
-    for (const to of recipients.filter((r) => !confirmed.has(r.email))) {
+    for (const to of recipients.filter(
+      (r) => !confirmed.has(r.email) && !unconfirmed.has(r.email),
+    )) {
       const renewed = await this.renewRevisionClaim(
         reportId,
         amendment.revision,
         token,
+        to.email,
       );
       if (renewed === null) return fenced();
       token = renewed;
@@ -571,17 +586,37 @@ export class CoachDeliveryService {
         delivered: result?.delivered === true,
         error: result?.error,
       });
-      if (result?.delivered !== true) continue;
-      confirmed.add(to.email);
-      await conn
-        .updateTable("coach_report_amendments")
-        .set({ sent_to: sql`array_append(sent_to, ${to.email})` })
-        .where("report_id", "=", reportId)
-        .where("revision", "=", amendment.revision)
-        .where(sql<boolean>`NOT (${to.email} = ANY(sent_to))`)
-        .execute();
+      const accepted = result?.delivered === true;
+      const settled = accepted
+        ? await this.recordRevisionRecipient(
+            reportId,
+            amendment.revision,
+            to.email,
+          )
+        : await this.clearRevisionAttempt(
+            reportId,
+            amendment.revision,
+            to.email,
+            token,
+          );
+      if (!settled) return fenced();
+      if (accepted) confirmed.add(to.email);
     }
 
+    const stored = await conn
+      .selectFrom("coach_report_amendments")
+      .select("sent_to")
+      .where("report_id", "=", reportId)
+      .where("revision", "=", amendment.revision)
+      .executeTakeFirst();
+    for (const email of stored?.sent_to ?? []) confirmed.add(email);
+    for (const { email } of recipients)
+      if (unconfirmed.has(email) && !confirmed.has(email))
+        sends.push({
+          email,
+          delivered: false,
+          error: `a send ${neverConfirmed("revision")}`,
+        });
     const allSent =
       recipients.length > 0 && recipients.every((r) => confirmed.has(r.email));
     const released = await conn
@@ -618,7 +653,12 @@ export class CoachDeliveryService {
     reportId: string,
     revision: number,
   ): Promise<
-    | { status: "claimed"; token: string; sentTo: string[] }
+    | {
+        status: "claimed";
+        token: string;
+        sentTo: string[];
+        attemptedTo: string[];
+      }
     | { status: "already-sent" | "in-flight" | "not-live" }
   > {
     const conn = this.db.getOrCreateConnection();
@@ -635,13 +675,14 @@ export class CoachDeliveryService {
         ]),
       )
       .where(revisionLive)
-      .returning(["sent_to", REVISION_CLAIM_TOKEN.as("token")])
+      .returning(["sent_to", "attempted_to", REVISION_CLAIM_TOKEN.as("token")])
       .executeTakeFirst();
     if (claimed)
       return {
         status: "claimed",
         token: claimed.token,
         sentTo: claimed.sent_to,
+        attemptedTo: claimed.attempted_to,
       };
     const row = await conn
       .selectFrom("coach_report_amendments")
@@ -658,11 +699,15 @@ export class CoachDeliveryService {
     reportId: string,
     revision: number,
     token: string,
+    attempting: string,
   ): Promise<string | null> {
     const renewed = await this.db
       .getOrCreateConnection()
       .updateTable("coach_report_amendments")
-      .set({ sending_at: sql`clock_timestamp()` })
+      .set({
+        sending_at: sql`clock_timestamp()`,
+        attempted_to: appendOnce("attempted_to", attempting),
+      })
       .where("report_id", "=", reportId)
       .where("revision", "=", revision)
       .where("sent_at", "is", null)
@@ -671,6 +716,42 @@ export class CoachDeliveryService {
       .returning(REVISION_CLAIM_TOKEN.as("token"))
       .executeTakeFirst();
     return renewed?.token ?? null;
+  }
+
+  private async recordRevisionRecipient(
+    reportId: string,
+    revision: number,
+    email: string,
+  ): Promise<boolean> {
+    const recorded = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_report_amendments")
+      .set({
+        sent_to: appendOnce("sent_to", email),
+        attempted_to: sql`array_remove(attempted_to, ${email})`,
+      })
+      .where("report_id", "=", reportId)
+      .where("revision", "=", revision)
+      .executeTakeFirst();
+    return Number(recorded.numUpdatedRows ?? 0) > 0;
+  }
+
+  private async clearRevisionAttempt(
+    reportId: string,
+    revision: number,
+    email: string,
+    token: string,
+  ): Promise<boolean> {
+    const cleared = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_report_amendments")
+      .set({ attempted_to: sql`array_remove(attempted_to, ${email})` })
+      .where("report_id", "=", reportId)
+      .where("revision", "=", revision)
+      .where("sent_at", "is", null)
+      .where(REVISION_CLAIM_TOKEN, "=", token)
+      .executeTakeFirst();
+    return Number(cleared.numUpdatedRows ?? 0) > 0;
   }
 
   private async publishWithinClaim(
@@ -688,7 +769,7 @@ export class CoachDeliveryService {
               ? { published: true }
               : {
                   published: true,
-                  delivered_to: sql`CASE WHEN ${sentTo} = ANY(delivered_to) THEN delivered_to ELSE array_append(delivered_to, ${sentTo}) END`,
+                  delivered_to: appendOnce("delivered_to", sentTo),
                   attempted_to: sql`array_remove(attempted_to, ${sentTo})`,
                 },
           )
@@ -750,9 +831,7 @@ export class CoachDeliveryService {
       ...(failed.length > 0 ? [`send failed to ${failed.join(", ")}`] : []),
       ...(nobody ? ["no recipient has a deliverable address"] : []),
       ...(unconfirmed.length > 0
-        ? [
-            `a send to ${unconfirmed.join(", ")} was started but never confirmed, so it is not sent again until the report is requeued`,
-          ]
+        ? [`a send to ${unconfirmed.join(", ")} ${neverConfirmed("report")}`]
         : []),
       ...(emailed.length > 0
         ? [`already emailed to ${emailed.join(", ")}`]

@@ -25,6 +25,7 @@ import { coachPipelineLive } from "./coach-cutover";
 import {
   COACH_REPLY_TO_EMAIL,
   COACH_REPLY_TO_NAME,
+  STALE_DELIVERY_CLAIM,
   isPlaceholderAddress,
 } from "./coach-delivery.service";
 import {
@@ -755,6 +756,24 @@ export class CoachService {
     return new CoachDeliveryService(this.db, this.notification).sendRevision(
       reportId,
     );
+  }
+
+  async requeueRevision(reportId: string): Promise<boolean> {
+    const requeued = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_report_amendments")
+      .set({ attempted_to: sql`ARRAY[]::text[]` })
+      .where("report_id", "=", reportId)
+      .where("sent_at", "is", null)
+      .where(sql<boolean>`cardinality(attempted_to) > 0`)
+      .where((eb) =>
+        eb.or([
+          eb("sending_at", "is", null),
+          eb("sending_at", "<", STALE_DELIVERY_CLAIM),
+        ]),
+      )
+      .executeTakeFirst();
+    return Number(requeued.numUpdatedRows ?? 0) > 0;
   }
 
   async listRevisions(reportId: string) {

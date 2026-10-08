@@ -105,6 +105,7 @@ beforeAll(async () => {
         editedAt: new Date("2026-10-07T12:00:00Z"),
       },
     ],
+    requeueRevision: async (id: string) => id === "r-ok",
     sendRevision: async (id: string) =>
       id === "r-ok"
         ? { sent: true, revision: 1, sends: [], skipped: [] }
@@ -352,5 +353,12 @@ describe("the revision routes", () => {
     const moved = await call("POST", "r-moved/revision/send");
     expect(moved.status).toBe(409);
     expect(await moved.text()).toContain("not live");
+  });
+
+  it("requeues a revision whose send was left unconfirmed, and answers 404 when there is none to requeue", async () => {
+    const requeued = await call("POST", "r-ok/revision/requeue");
+    expect(requeued.status).toBe(200);
+    expect(await requeued.json()).toEqual({ requeued: true });
+    expect((await call("POST", "r-none/revision/requeue")).status).toBe(404);
   });
 });

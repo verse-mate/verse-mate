@@ -817,6 +817,26 @@ const plugin = new Elysia()
           },
         },
       )
+      .post(
+        "/admin/reports/:reportId/revision/requeue",
+        async ({ store: { coachService }, currentUserId, params }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (!(await coachService.requeueRevision(params.reportId)))
+            throw new NotFoundError(
+              "That report has no unsent revision with a send left unconfirmed, or its send is still in flight",
+            );
+          return { requeued: true };
+        },
+        {
+          response: {
+            200: t.Object({ requeued: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       // Recording-bot coverage, the gate task 9.1 reads before retiring the
       // old host (task 4.7).
       .get(
