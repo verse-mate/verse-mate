@@ -143,6 +143,19 @@ describe("the failures list is paged", () => {
     expect(second.total).toBe(first.total);
   });
 
+  it("a page past the end is empty and still carries the total of every failure", async () => {
+    await session(SESSIONS[0]);
+    await session(SESSIONS[1]);
+    const service = new CoachService(Database);
+    const all = await service.listPipelineFailures({ limit: 1 });
+    const past = await service.listPipelineFailures({
+      limit: 1,
+      offset: all.total + 5,
+    });
+    expect(all.total).toBeGreaterThanOrEqual(2);
+    expect(past).toEqual({ total: all.total, sessions: [] });
+  });
+
   it("an unbounded request is capped at the page maximum, with more failures than that stored", async () => {
     const many = Array.from(
       { length: PIPELINE_FAILURES_MAX + 1 },
