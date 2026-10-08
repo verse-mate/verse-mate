@@ -231,13 +231,20 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
     expect(result.verdict.withinTolerance).toBe(true);
     expect(result.recordedRunId).not.toBeNull();
     expect(result.report.perLeader.size).toBeGreaterThan(1);
-    expect(result.verdict.ungated).toContain("tobin-marlow");
+    const [singleReportLeader] =
+      [...result.report.perLeader].find(([, a]) => a.reports === 1) ?? [];
+    expect(singleReportLeader).toBeDefined();
+    expect(result.verdict.ungated).toContain(singleReportLeader);
     const printed = formatCalibration(result);
     expect(printed).toContain(
       "Measured but not gated, fewer than 3 reports compared:",
     );
-    expect(printed).toContain("tobin-marlow: 1 reports, composite MAE");
-    expect(printed).toMatch(/tobin-marlow: .*\(measured, not gated\)/);
+    expect(printed).toContain(
+      `${singleReportLeader}: 1 reports, composite MAE`,
+    );
+    expect(printed).toMatch(
+      new RegExp(`${singleReportLeader}: .*\\(measured, not gated\\)`),
+    );
 
     await modelScoredReport("calib-runner-r1");
     expect(await calibrationShortfalls(Database, "calib-runner-r1")).toEqual(

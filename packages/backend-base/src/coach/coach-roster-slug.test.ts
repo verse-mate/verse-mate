@@ -211,14 +211,15 @@ describe("a leader added through the admin route can be attributed a session", (
   );
 
   it("a name whose slug a roster leader already holds is refused", async () => {
+    const [rosterLeader] = coachDataJson.coaches;
     const result = await service.addLeader(inviter, {
       email: ADDED,
-      name: "Avery Hollis",
+      name: rosterLeader.name,
     });
     expect(result).toEqual({
       ok: false,
       reason: "slug-taken",
-      slug: "avery-hollis",
+      slug: rosterLeader.id,
     });
     const row = await conn
       .selectFrom("coach_leaders")

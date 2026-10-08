@@ -25,7 +25,12 @@ const bundle = coachDataJson as unknown as Bundle;
 // EVERY expected figure is derived from the bundle this run reads, never a
 // literal: the corpus grows weekly (16 leaders / 112 reports on 2026-08-26,
 // 17 / 119 by 2026-09-01), so a hardcoded count is stale on arrival.
-const BUNDLE_COACH_IDS = bundle.coaches.map((c) => c.id);
+const COACH_IDS = [
+  ...new Set([
+    ...bundle.coaches.map((c) => c.id),
+    ...Object.values(history).flatMap((h) => h.coaches.map((c) => c.id)),
+  ]),
+];
 const deployedCount = bundle.coaches.reduce((n, c) => n + c.reports.length, 0);
 const perLeader = new Map(
   bundle.coaches.map((c) => [c.id, c.reports.length] as const),
@@ -37,7 +42,7 @@ const perLeader = new Map(
 async function clear() {
   await conn
     .deleteFrom("coach_reports")
-    .where("coach_id", "in", BUNDLE_COACH_IDS)
+    .where("coach_id", "in", COACH_IDS)
     .execute();
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
@@ -47,7 +52,7 @@ async function countsByCoach(): Promise<Map<string, number>> {
     .selectFrom("coach_reports")
     .select(["coach_id"])
     .select((eb) => eb.fn.countAll<string>().as("n"))
-    .where("coach_id", "in", BUNDLE_COACH_IDS)
+    .where("coach_id", "in", COACH_IDS)
     .groupBy("coach_id")
     .execute();
   return new Map(rows.map((r) => [r.coach_id, Number(r.n)]));
@@ -170,13 +175,13 @@ describe("The Backfill Never Shrinks The Store", () => {
       reports: await conn
         .selectFrom("coach_reports")
         .selectAll()
-        .where("coach_id", "in", BUNDLE_COACH_IDS)
+        .where("coach_id", "in", COACH_IDS)
         .orderBy("id")
         .execute(),
       summaries: await conn
         .selectFrom("coach_monthly_leader_summaries")
         .selectAll()
-        .where("coach_id", "in", BUNDLE_COACH_IDS)
+        .where("coach_id", "in", COACH_IDS)
         .orderBy(["coach_id", "month"])
         .execute(),
       meta: await conn.selectFrom("coach_dataset_meta").selectAll().execute(),
@@ -187,7 +192,7 @@ describe("The Backfill Never Shrinks The Store", () => {
     await clear();
     await conn
       .deleteFrom("coach_monthly_leader_summaries")
-      .where("coach_id", "in", BUNDLE_COACH_IDS)
+      .where("coach_id", "in", COACH_IDS)
       .execute();
   }
 
