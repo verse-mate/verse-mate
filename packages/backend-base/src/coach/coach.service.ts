@@ -526,6 +526,13 @@ export class CoachService {
       .executeTakeFirst();
     if (!held) return { delivered: false, refusal: "not-held" };
     if (!this.notification) return { delivered: false, refusal: "no-mailer" };
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_intake_sessions")
+      .set({ release_required: false })
+      .where("report_id", "=", reportId)
+      .where("state", "=", "scored")
+      .execute();
     const { CoachDeliveryService } = await import("./coach-delivery.service");
     const { storedEvidence } = await import("./coach-pipeline.service");
     const result = await new CoachDeliveryService(

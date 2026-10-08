@@ -35,6 +35,19 @@ export function leaderSlug(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function titleWords(text: string): string {
+  return text
+    .normalize("NFKD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function containsWords(haystack: string, needle: string): boolean {
+  return needle.length > 0 && ` ${haystack} `.includes(` ${needle} `);
+}
+
 export type MatchedBy = "title_match" | "name" | "alt_email" | "unresolved";
 
 export interface Attribution {
@@ -74,7 +87,7 @@ export function attributeSession(
   >,
   roster: AttributionLeader[],
 ): Attribution {
-  const title = (transcript.title ?? "").toLowerCase();
+  const title = titleWords(transcript.title ?? "");
 
   // 1. Title keywords, LONGEST first: "saturday morning" must beat "saturday"
   //    when both are configured, or the more specific keyword never wins.
@@ -82,10 +95,10 @@ export function attributeSession(
     .flatMap((leader) =>
       leader.titleMatch.map((keyword) => ({
         leader,
-        keyword: keyword.toLowerCase(),
+        keyword: titleWords(keyword),
       })),
     )
-    .filter(({ keyword }) => keyword.length > 0 && title.includes(keyword))
+    .filter(({ keyword }) => containsWords(title, keyword))
     .sort((a, b) => b.keyword.length - a.keyword.length);
   if (keyworded.length > 0) {
     // AMBIGUITY IS UNRESOLVED, not a coin toss. Two leaders can both list
@@ -105,9 +118,7 @@ export function attributeSession(
 
   // 2. The leader's own name, matched automatically, the host does this too,
   //    so a keyword is only needed when the title does not carry the name.
-  const named = roster.filter(
-    (l) => l.name.length > 0 && title.includes(l.name.toLowerCase()),
-  );
+  const named = roster.filter((l) => containsWords(title, titleWords(l.name)));
   // Same rule for names: "Study with Jeff Ward and Jeff Warden" names two
   // leaders, and guessing is worse than asking.
   if (named.length > 1) return { coachId: null, matchedBy: "unresolved" };
@@ -154,6 +165,7 @@ export async function reattributeUnresolved(database: db): Promise<number> {
       .set({
         coach_id: match.coachId,
         matched_by: match.matchedBy,
+        release_required: true,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", session.source_session_id)
@@ -178,6 +190,12 @@ export async function getLeaderAttribution(
   return { titleMatch: row.title_match ?? [], altEmails: row.alt_emails ?? [] };
 }
 
+export interface KeywordConflict {
+  keyword: string;
+  leader: string;
+  inside: "keyword" | "name";
+}
+
 export async function setLeaderAttribution(
   database: db,
   slug: string,
@@ -185,6 +203,7 @@ export async function setLeaderAttribution(
 ): Promise<
   | { ok: true; titleMatch: string[]; altEmails: string[]; resolved: number }
   | { ok: false; refusal: "unknown-leader" }
+  | { ok: false; refusal: "keyword-conflict"; conflicts: KeywordConflict[] }
 > {
   const normalized = (values: string[]) => [
     ...new Set(
@@ -195,6 +214,32 @@ export async function setLeaderAttribution(
   ];
   const titleMatch = normalized(input.titleMatch);
   const altEmails = normalized(input.altEmails);
+  const others = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_leaders")
+    .select(["slug", "name", "title_match"])
+    .where("slug", "is not", null)
+    .where("slug", "!=", slug)
+    .where("is_coach", "=", true)
+    .orderBy("slug")
+    .execute();
+  const conflicts: KeywordConflict[] = [];
+  for (const keyword of titleMatch) {
+    const words = titleWords(keyword);
+    for (const other of others) {
+      const leader = other.slug as string;
+      if (
+        (other.title_match ?? []).some((k) =>
+          containsWords(titleWords(k), words),
+        )
+      )
+        conflicts.push({ keyword, leader, inside: "keyword" });
+      else if (containsWords(titleWords(other.name), words))
+        conflicts.push({ keyword, leader, inside: "name" });
+    }
+  }
+  if (conflicts.length > 0)
+    return { ok: false, refusal: "keyword-conflict", conflicts };
   const updated = await database
     .getOrCreateConnection()
     .updateTable("coach_leaders")

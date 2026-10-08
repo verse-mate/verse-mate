@@ -201,17 +201,84 @@ describe("an admin edits a leader's attribution keywords", () => {
       .set({ title_match: ["zephaniah circle"] })
       .where("slug", "=", WRONG)
       .execute();
+    await conn
+      .updateTable("coach_leaders")
+      .set({ title_match: ["zephaniah circle"] })
+      .where("slug", "=", RIGHT)
+      .execute();
     await session(SESSIONS[0]);
-    const result = await setLeaderAttribution(Database, RIGHT, {
-      titleMatch: ["zephaniah circle"],
-      altEmails: [],
-    });
-    expect(result).toMatchObject({ ok: true, resolved: 0 });
     expect(await intake(SESSIONS[0])).toMatchObject({
       coach_id: null,
       matched_by: "unresolved",
     });
     expect(await reattributeUnresolved(Database)).toBe(0);
+  });
+});
+
+describe("a keyword cannot claim another leader's sessions", () => {
+  it("a keyword equal to another leader's keyword is refused, and nothing is stored", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ title_match: ["zephaniah circle"] })
+      .where("slug", "=", WRONG)
+      .execute();
+    const result = await setLeaderAttribution(Database, RIGHT, {
+      titleMatch: ["Zephaniah Circle", "tuesday"],
+      altEmails: [],
+    });
+    expect(result).toEqual({
+      ok: false,
+      refusal: "keyword-conflict",
+      conflicts: [
+        { keyword: "zephaniah circle", leader: WRONG, inside: "keyword" },
+      ],
+    });
+    expect(await getLeaderAttribution(Database, RIGHT)).toEqual({
+      titleMatch: [],
+      altEmails: [],
+    });
+  });
+
+  it("a keyword inside another leader's keyword or name is refused", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ title_match: ["tuesday night circle"] })
+      .where("slug", "=", WRONG)
+      .execute();
+    const result = await setLeaderAttribution(Database, RIGHT, {
+      titleMatch: ["night circle", "wilfred"],
+      altEmails: [],
+    });
+    expect(result).toEqual({
+      ok: false,
+      refusal: "keyword-conflict",
+      conflicts: [
+        { keyword: "night circle", leader: WRONG, inside: "keyword" },
+        { keyword: "wilfred", leader: WRONG, inside: "name" },
+      ],
+    });
+  });
+
+  it("a keyword that only shares letters with another leader's words is accepted", async () => {
+    const result = await setLeaderAttribution(Database, RIGHT, {
+      titleMatch: ["wil"],
+      altEmails: [],
+    });
+    expect(result).toMatchObject({ ok: true, titleMatch: ["wil"] });
+  });
+});
+
+describe("a session a keyword sweep attributes waits for an admin to release it", () => {
+  it("the swept session is marked for release", async () => {
+    await session(SESSIONS[0]);
+    await setLeaderAttribution(Database, RIGHT, {
+      titleMatch: ["zephaniah circle"],
+      altEmails: [],
+    });
+    expect(await intake(SESSIONS[0])).toMatchObject({
+      coach_id: RIGHT,
+      release_required: true,
+    });
   });
 });
 

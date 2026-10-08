@@ -1216,6 +1216,15 @@ const plugin = new Elysia()
             titleMatch: body.titleMatch,
             altEmails: body.altEmails,
           });
+          if (result.ok === false && result.refusal === "keyword-conflict")
+            throw new ConflictError(
+              `Keywords refused: ${result.conflicts
+                .map(
+                  (c) =>
+                    `"${c.keyword}" is inside ${c.inside === "name" ? "the name" : "a keyword"} of ${c.leader}`,
+                )
+                .join("; ")}`,
+            );
           if (!result.ok) throw new NotFoundError("Leader not found");
           return {
             titleMatch: result.titleMatch,

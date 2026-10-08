@@ -67,6 +67,9 @@ const PARALLEL_RUN_HOLD =
 
 const NO_MAILER_HOLD = "held until delivered: no mailer is configured";
 
+export const REATTRIBUTED_HOLD =
+  "re-attributed: held until an admin releases it";
+
 export class CoachPipelineService {
   private readonly scoring: CoachScoringService;
   private readonly frames: CoachFrameService;
@@ -96,7 +99,13 @@ export class CoachPipelineService {
     const due = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
-      .select(["source_session_id", "coach_id", "title", "retry_count"])
+      .select([
+        "source_session_id",
+        "coach_id",
+        "title",
+        "retry_count",
+        "release_required",
+      ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("state", "=", "retained")
       .where("coach_id", "is not", null)
@@ -247,6 +256,7 @@ export class CoachPipelineService {
     coach_id: string | null;
     title: string;
     date: string;
+    release_required: boolean;
   }): Promise<PipelineResult> {
     const conn = this.db.getOrCreateConnection();
     const coachId = session.coach_id as string;
@@ -298,6 +308,9 @@ export class CoachPipelineService {
     }
 
     const dimensions = scored.dimensions;
+    const holdReason =
+      scored.reviewReason ??
+      (session.release_required ? REATTRIBUTED_HOLD : null);
     const published = await this.db
       .getOrCreateConnection()
       .transaction()
@@ -321,7 +334,7 @@ export class CoachPipelineService {
             attendees: detail.participantCount,
             newcomers: scored.newcomers ?? 0,
             duration: `${detail.duration ?? 0} min`,
-            holdReason: scored.reviewReason ?? null,
+            holdReason,
           },
           trx as CoachReportsWriter,
         );
@@ -349,12 +362,12 @@ export class CoachPipelineService {
       };
     }
 
-    if (scored.reviewReason) {
+    if (holdReason) {
       return {
         sourceSessionId: session.source_session_id,
         outcome: "scored-awaiting-review",
         reportId: published.reportId,
-        detail: scored.reviewReason,
+        detail: holdReason,
       };
     }
 

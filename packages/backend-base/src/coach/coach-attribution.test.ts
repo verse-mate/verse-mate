@@ -2,21 +2,21 @@ import { describe, expect, it } from "bun:test";
 
 import { type AttributionLeader, attributeSession } from "./coach-attribution";
 
-const BRYAN: AttributionLeader = {
-  slug: "bryan-bailey",
-  name: "Bryan Bailey",
-  email: "bryan@example.test",
-  titleMatch: ["austin ridge", "saturday morning"],
-  altEmails: ["bryan.alt@example.test"],
+const AVERY: AttributionLeader = {
+  slug: "avery-hollis",
+  name: "Avery Hollis",
+  email: "avery@example.test",
+  titleMatch: ["cedar hollow", "saturday morning"],
+  altEmails: ["avery.alt@example.test"],
 };
-const JOEL: AttributionLeader = {
-  slug: "joel-hurt",
-  name: "Joel Hurt",
+const EZRA: AttributionLeader = {
+  slug: "ezra-holt",
+  name: "Ezra Holt",
   email: "joel@example.test",
   titleMatch: ["thursday evening"],
   altEmails: [],
 };
-const ROSTER = [BRYAN, JOEL];
+const ROSTER = [AVERY, EZRA];
 
 function session(over: Partial<Parameters<typeof attributeSession>[0]> = {}) {
   return {
@@ -31,16 +31,16 @@ describe("a session is attributed by its title, not its sender", () => {
   it("a configured keyword wins", () => {
     expect(
       attributeSession(
-        session({ title: "Obadiah — Austin Ridge group" }),
+        session({ title: "Obadiah — Cedar Hollow group" }),
         ROSTER,
       ),
-    ).toEqual({ coachId: "bryan-bailey", matchedBy: "title_match" });
+    ).toEqual({ coachId: "avery-hollis", matchedBy: "title_match" });
   });
 
   it("the leader's own name resolves without any keyword configured", () => {
     expect(
-      attributeSession(session({ title: "Study with Joel Hurt" }), ROSTER),
-    ).toEqual({ coachId: "joel-hurt", matchedBy: "name" });
+      attributeSession(session({ title: "Study with Ezra Holt" }), ROSTER),
+    ).toEqual({ coachId: "ezra-holt", matchedBy: "name" });
   });
 
   it("the MORE SPECIFIC keyword wins when two match", () => {
@@ -56,9 +56,9 @@ describe("a session is attributed by its title, not its sender", () => {
     expect(
       attributeSession(session({ title: "Saturday Morning study" }), [
         ambiguous,
-        BRYAN,
+        AVERY,
       ]),
-    ).toEqual({ coachId: "bryan-bailey", matchedBy: "title_match" });
+    ).toEqual({ coachId: "avery-hollis", matchedBy: "title_match" });
   });
 
   it("an alternate sender address resolves a leader the title does not name", () => {
@@ -66,11 +66,11 @@ describe("a session is attributed by its title, not its sender", () => {
       attributeSession(
         session({
           title: "Weekly group",
-          host_email: "bryan.alt@example.test",
+          host_email: "avery.alt@example.test",
         }),
         ROSTER,
       ),
-    ).toEqual({ coachId: "bryan-bailey", matchedBy: "alt_email" });
+    ).toEqual({ coachId: "avery-hollis", matchedBy: "alt_email" });
   });
 
   it("the SHARED bot host address attributes to nobody", () => {
@@ -91,20 +91,48 @@ describe("a session is attributed by its title, not its sender", () => {
 
   it("matching is case-insensitive in both directions", () => {
     expect(
-      attributeSession(session({ title: "AUSTIN RIDGE" }), ROSTER).coachId,
-    ).toBe("bryan-bailey");
+      attributeSession(session({ title: "CEDAR HOLLOW" }), ROSTER).coachId,
+    ).toBe("avery-hollis");
     expect(
       attributeSession(
-        session({ title: "x", host_email: "BRYAN.ALT@EXAMPLE.TEST" }),
+        session({ title: "x", host_email: "AVERY.ALT@EXAMPLE.TEST" }),
         ROSTER,
       ).coachId,
-    ).toBe("bryan-bailey");
+    ).toBe("avery-hollis");
   });
 
   it("an empty keyword never matches everything", () => {
-    const sloppy: AttributionLeader = { ...JOEL, titleMatch: [""] };
+    const sloppy: AttributionLeader = { ...EZRA, titleMatch: [""] };
     expect(
       attributeSession(session({ title: "Board meeting" }), [sloppy]).coachId,
     ).toBeNull();
+  });
+});
+
+describe("keywords and names match whole words of the title", () => {
+  const TIM: AttributionLeader = {
+    slug: "tim-keller",
+    name: "Tim Keller",
+    email: "tim@example.test",
+    titleMatch: ["tim"],
+    altEmails: [],
+  };
+
+  it("a keyword does not match inside a longer word", () => {
+    expect(
+      attributeSession(session({ title: "Quiet time in Obadiah" }), [TIM]),
+    ).toEqual({ coachId: null, matchedBy: "unresolved" });
+  });
+
+  it("a keyword matches as a word, whatever punctuation surrounds it", () => {
+    expect(
+      attributeSession(session({ title: "Tim's group: Obadiah" }), [TIM]),
+    ).toEqual({ coachId: "tim-keller", matchedBy: "title_match" });
+  });
+
+  it("a name does not match a longer name it is the start of", () => {
+    expect(
+      attributeSession(session({ title: "Study with Ezra Holtman" }), ROSTER),
+    ).toEqual({ coachId: null, matchedBy: "unresolved" });
   });
 });

@@ -19,6 +19,7 @@ import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { reattributeSession } from "./coach-attribution";
 import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE, coachPipelineLive } from "./coach-cutover";
+import { CoachDeliveryService } from "./coach-delivery.service";
 import {
   CoachPipelineService,
   PIPELINE_ATTEMPT_LIMIT,
@@ -421,6 +422,51 @@ describe("a retained session reaches a delivered report", () => {
       .where("source_session_id", "=", "ff-pipe-1")
       .executeTakeFirstOrThrow();
     expect(row.state).toBe("delivered");
+  });
+
+  it("a session that awaits release is scored and held, listed for release, and delivered only once released", async () => {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ release_required: true })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    const mailer = new FakeMailer();
+    const [held] = await pipeline(mailer).run();
+    expect(held.outcome).toBe("scored-awaiting-review");
+    expect(mailer.sent).toEqual([]);
+    const service = new CoachService(Database, mailer as any);
+    const listed = (await service.listPipelineFailures()).find(
+      (f) => f.sourceSessionId === "ff-pipe-1",
+    );
+    expect(listed).toMatchObject({ state: "scored", action: "release" });
+    expect(listed?.reason).toContain("re-attributed");
+
+    const redelivered = await pipeline(mailer).run();
+    expect(redelivered).toEqual([]);
+    expect(mailer.sent).toEqual([]);
+
+    const released = await service.releaseHeldReport(held.reportId as string);
+    expect(released.delivered).toBe(true);
+    expect(mailer.sent.length).toBeGreaterThan(0);
+  });
+
+  it("delivery refuses a session that awaits release, whoever asks", async () => {
+    const [published] = await pipeline(null).run();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ release_required: true, state: "delivery_pending" })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(
+      Database,
+      mailer as any,
+    ).deliver({
+      reportId: published.reportId as string,
+      evidence: { quotes: [], timestamps: [] },
+    });
+    expect(result.refusal).toBe("awaiting-release");
+    expect(mailer.sent).toEqual([]);
   });
 
   it("a released report still meets governance, and a violation keeps it held", async () => {
