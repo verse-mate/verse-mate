@@ -56,6 +56,8 @@ export const PIPELINE_BATCH_LIMIT = 5;
 
 export const PIPELINE_ATTEMPT_LIMIT = 5;
 
+const NO_MAILER_HOLD = "held until delivered: no mailer is configured";
+
 export class CoachPipelineService {
   private readonly scoring: CoachScoringService;
   private readonly frames: CoachFrameService;
@@ -332,11 +334,21 @@ export class CoachPipelineService {
     }
 
     if (!this.delivery) {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({
+          state: "delivery_pending",
+          hold_reason: NO_MAILER_HOLD,
+          updated_at: sql`NOW()`,
+        })
+        .where("source_session_id", "=", session.source_session_id)
+        .where("state", "=", "scored")
+        .execute();
       return {
         sourceSessionId: session.source_session_id,
         outcome: "scored-awaiting-review",
         reportId: published.reportId,
-        detail: "no mailer is configured, so the report is live but unsent",
+        detail: NO_MAILER_HOLD,
       };
     }
 

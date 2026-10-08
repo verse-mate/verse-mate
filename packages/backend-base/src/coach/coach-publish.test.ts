@@ -62,23 +62,25 @@ async function clear() {
   await conn.deleteFrom("coach_dataset_meta").execute();
 }
 
-describe("scoring a session is what makes it live", () => {
+describe("publishing a scored session", () => {
   beforeEach(async () => {
     await clear();
     await seedSession();
   });
   afterEach(clear);
 
-  it("a reader can see the session immediately after it is published", async () => {
-    // No deploy, no separate human step. On the retired host, publishing meant
-    // pushing a JSON file and waiting for a deploy, so content cadence was
-    // chained to deploy cadence.
+  it("a published report is held: an admin reads it at once, a leader only after delivery", async () => {
     const result = await svc.publish(input());
     expect(result.created).toBe(true);
 
-    const detail = await reader.getReportDetail(COACH, result.reportId);
+    const detail = await reader.getReportDetail(
+      COACH,
+      result.reportId,
+      "admin",
+    );
     expect(detail?.id).toBe(result.reportId);
     expect(detail?.session).toBe("Obadiah, Lesson 4");
+    expect(await reader.getReportDetail(COACH, result.reportId)).toBeNull();
   });
 
   it("the session is linked to the report it produced", async () => {
@@ -89,8 +91,6 @@ describe("scoring a session is what makes it live", () => {
       .where("source_session_id", "=", "ff-pub-1")
       .executeTakeFirstOrThrow();
     expect(row.report_id).toBe(result.reportId);
-    // The report row existing IS the session being live, there is no second
-    // flag to forget to set.
     expect(row.state).toBe("scored");
   });
 
@@ -124,7 +124,11 @@ describe("scoring a session is what makes it live", () => {
     const result = await svc.publish(
       input({ base: 78.1, newcomerBonus: 5, sizeBonus: 2 }),
     );
-    const detail = await reader.getReportDetail(COACH, result.reportId);
+    const detail = await reader.getReportDetail(
+      COACH,
+      result.reportId,
+      "admin",
+    );
     expect(detail?.score).toBeCloseTo(85.1, 6);
     // 85.1 lands in the top band.
     expect(detail?.status).toBe("Exceptional");
@@ -137,7 +141,11 @@ describe("scoring a session is what makes it live", () => {
     const result = await svc.publish(
       input({ base: 76.04, attendees: 26, newcomers: 5 }),
     );
-    const detail = await reader.getReportDetail(COACH, result.reportId);
+    const detail = await reader.getReportDetail(
+      COACH,
+      result.reportId,
+      "admin",
+    );
     // 5 first-timers (capped at 5) + 11 heads over the threshold (capped at 3).
     expect(detail?.score).toBeCloseTo(84.04, 6);
   });
@@ -146,7 +154,11 @@ describe("scoring a session is what makes it live", () => {
     const result = await svc.publish(
       input({ base: 99, attendees: 30, newcomers: 9 }),
     );
-    const detail = await reader.getReportDetail(COACH, result.reportId);
+    const detail = await reader.getReportDetail(
+      COACH,
+      result.reportId,
+      "admin",
+    );
     // Every surface renders this as "x / 100".
     expect(detail?.score).toBe(100);
   });
