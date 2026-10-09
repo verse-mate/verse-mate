@@ -28,6 +28,10 @@ export interface PublishInput {
   }>;
   bigIdeas: string[];
   feedback: Record<string, unknown>;
+  sections?: unknown[];
+  keyMoments?: unknown[];
+  contextLine?: string;
+  topic?: string | null;
   attendees: number;
   newcomers: number;
   duration: string;
@@ -109,7 +113,7 @@ export class CoachPublishService {
     const summary = {
       dateLabel: input.sessionDate,
       session: input.sessionTitle,
-      topic: input.sessionTitle,
+      topic: input.topic || input.sessionTitle,
       duration: input.duration,
       attendees: input.attendees,
       newcomers: input.newcomers,
@@ -124,7 +128,13 @@ export class CoachPublishService {
       clusters: input.clusters,
       dimensions: input.dimensions,
     };
-    const body = { bigIdeas: input.bigIdeas, feedback: input.feedback };
+    const body = {
+      bigIdeas: input.bigIdeas,
+      feedback: input.feedback,
+      ...(input.sections ? { sections: input.sections } : {}),
+      ...(input.keyMoments ? { keyMoments: input.keyMoments } : {}),
+      ...(input.contextLine ? { contextLine: input.contextLine } : {}),
+    };
 
     const upserted = await this.reports.upsert(
       {

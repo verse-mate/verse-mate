@@ -5,6 +5,11 @@ import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { applyFirstLessonDetection, classDay } from "./coach-first-lesson";
 import { parallelRunComparison } from "./coach-parallel-run";
 import { CoachPipelineService } from "./coach-pipeline.service";
+import {
+  bodyAnswer,
+  bodySentences,
+  isBodyCall,
+} from "./coach-report-body.fixture";
 import { CoachReviewService } from "./coach-review.service";
 import { BIG_IDEAS_REVIEW_LABEL } from "./coach-scorecard";
 import { CoachScoringService } from "./coach-scoring.service";
@@ -168,6 +173,7 @@ class AnsweringAi implements AiProvider {
   ) {}
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
     this.sent.push(opts);
+    if (isBodyCall(opts)) return { content: bodyAnswer(), model: "fake" };
     if (opts.messages.some((m) => m.images?.length))
       return {
         content: JSON.stringify({ score: 4, rationale: "a chart on screen" }),
@@ -427,14 +433,17 @@ describe("the pipeline applies the scoring stage's first-lesson answer", () => {
         transcript_url: null,
         participantCount: 10,
         summary: {},
-        sentences: OPENING.map((l, index) => ({
-          index,
-          speakerId: l.speakerId,
-          isLeader: l.isLeader,
-          text: l.text,
-          start_time: l.startTime ?? null,
-          end_time: null,
-        })),
+        sentences: [
+          ...bodySentences(),
+          {
+            index: 99,
+            speakerId: OPENING[0].speakerId,
+            isLeader: true,
+            text: OPENING[0].text,
+            start_time: 2000,
+            end_time: null,
+          },
+        ],
       }),
     };
     await new CoachPipelineService(Database, client as never, null, {
@@ -461,6 +470,17 @@ describe("the pipeline applies the scoring stage's first-lesson answer", () => {
     expect(s.first_lesson_line).toBe("We're starting Amos this week");
     expect(s.dim9?.score).toBeNull();
     expect(s.score).toBeCloseTo(allFoursWithoutNine(), 6);
+    expect(s.rows.some((r) => /^Big Ideas review/i.test(r))).toBe(false);
+    expect(s.rows).toContain(
+      "Overall Class Time: 1h 30m  (Target: 1.5-2h)  → ON TARGET",
+    );
+  });
+
+  it("a no keeps the Big Ideas review row the body stage wrote", async () => {
+    const s = await runWith({ answer: false, line: "" });
+    expect(s.rows).toContain(
+      "Big Ideas review at open: 6 min (7%)  (Target: 5-10 min)  → ON TARGET",
+    );
   });
 
   it("a detected first lesson reaches the parallel-run comparison as not-applicable on Memory Reinforcement, left out of the share", async () => {

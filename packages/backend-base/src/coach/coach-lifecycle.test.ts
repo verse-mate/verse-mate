@@ -18,6 +18,11 @@ import { CoachDeliveryService } from "./coach-delivery.service";
 import { CoachIntakeService } from "./coach-intake.service";
 import { parallelRunComparison } from "./coach-parallel-run";
 import { CoachPipelineService } from "./coach-pipeline.service";
+import {
+  bodyAnswer,
+  bodySentences,
+  isBodyCall,
+} from "./coach-report-body.fixture";
 import { CoachReshareService } from "./coach-reshare.service";
 import { CoachRetrievalService } from "./coach-retrieval.service";
 import { CoachScoringService } from "./coach-scoring.service";
@@ -57,16 +62,7 @@ class Provider implements FirefliesDetailClient {
       transcript_url: null,
       participantCount: 9,
       summary: { overview: "ok" },
-      sentences: [
-        {
-          index: 0,
-          speakerId: "speaker-1",
-          isLeader: true,
-          text: "welcome",
-          start_time: 0,
-          end_time: 1,
-        },
-      ],
+      sentences: bodySentences(),
     };
   }
 }
@@ -85,6 +81,7 @@ class Archive {
 class Ai implements AiProvider {
   readonly name = "fake";
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+    if (isBodyCall(opts)) return { content: bodyAnswer(), model: "fake" };
     if (opts.messages.some((m) => m.images?.length))
       return {
         content: JSON.stringify({ score: 4, rationale: "a map" }),
