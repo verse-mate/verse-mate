@@ -77,10 +77,13 @@ export class CoachPublishService {
     if (session && session.coach_id !== input.coachId)
       throw new AttributionChangedError(input.sourceSessionId);
     const holdReason =
-      input.holdReason ??
-      (session?.release_required
-        ? REATTRIBUTED_HOLD
-        : input.newVersionHold ?? null);
+      [
+        input.holdReason,
+        session?.release_required ? REATTRIBUTED_HOLD : null,
+        input.newVersionHold,
+      ]
+        .filter(Boolean)
+        .join("; ") || null;
     // Computed here when the caller did not, from the head counts it passed.
     // Nothing used to compute them at all, so every report scored base-only.
     const derived = composeBonuses({

@@ -279,4 +279,26 @@ describe("publishing a scored session", () => {
       .execute();
     expect(rows.length).toBe(2);
   });
+
+  it("a session both re-attributed and under a new scoring version is held with a reason naming both", async () => {
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ release_required: true })
+      .where("source_session_id", "=", "ff-pub-1")
+      .execute();
+    const version =
+      "held for review: the first report to this leader under scoring version m / prompt p / settings null";
+    const result = await svc.publish(input({ newVersionHold: version }));
+    expect(result.holdReason).toContain("re-attributed");
+    expect(result.holdReason).toContain(version);
+    const row = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["hold_reason", "hold_kind"])
+      .where("source_session_id", "=", "ff-pub-1")
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      hold_reason: result.holdReason,
+      hold_kind: "reattributed",
+    });
+  });
 });
