@@ -4,6 +4,7 @@ import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 import { type AiProvider, getAiProvider } from "../shared/ai";
 import type { db } from "../shared/shared.plugin";
+import { type TimedLine, renderLine } from "./coach-transcript";
 import {
   CLUSTERS,
   DIMENSIONS,
@@ -55,8 +56,8 @@ export interface ScoringVersion {
 
 const FRAMING_SAMPLE = {
   transcript: [
-    { speakerId: "{speaker}", isLeader: false, text: "{text}" },
-    { speakerId: "{speaker}", isLeader: true, text: "{text}" },
+    { speakerId: "{speaker}", isLeader: false, text: "{text}", startTime: 0 },
+    { speakerId: "{speaker}", isLeader: true, text: "{text}", startTime: null },
   ],
   title: "{title}",
   frame: new Uint8Array(),
@@ -123,8 +124,7 @@ export function distributionHold(
 }
 
 export interface ScoringInput {
-  /** Pseudonymous transcript lines, speakers numbered, never named (4.3a). */
-  transcript: Array<{ speakerId: string; isLeader: boolean; text: string }>;
+  transcript: TimedLine[];
   sessionTitle: string;
   /**
    * Sampled frames for the Visual Aids dimension (task 5.4). Omitted or empty
@@ -293,11 +293,7 @@ export class CoachScoringService {
   static transcriptMessage(transcript: ScoringInput["transcript"]): string {
     return fenced(
       "SESSION_TRANSCRIPT",
-      boundedTranscript(
-        transcript
-          .map((l) => `${l.isLeader ? "LEADER" : l.speakerId}: ${l.text}`)
-          .join("\n"),
-      ),
+      boundedTranscript(transcript.map(renderLine).join("\n")),
     );
   }
 
