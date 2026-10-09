@@ -1207,6 +1207,17 @@ export class CoachService {
     return (await this.recordFor(userId))?.id ?? null;
   }
 
+  private async bindVerifiedAccount(slug: string, email: string) {
+    await sql`
+      UPDATE coach_leaders l SET user_id = u.id
+      FROM "user" u
+      WHERE l.slug = ${slug} AND l.user_id IS NULL
+        AND lower(u.email) = ${email.trim().toLowerCase()}
+        AND u."emailVerified" = true
+        AND NOT EXISTS (SELECT 1 FROM coach_leaders b WHERE b.user_id = u.id)
+    `.execute(this.db.getOrCreateConnection());
+  }
+
   listRotatingClasses() {
     return listRotatingClasses(this.db);
   }
@@ -2095,6 +2106,7 @@ export class CoachService {
         ? { ok: false, reason: "duplicate" }
         : { ok: false, reason: "slug-taken", slug };
     }
+    await this.bindVerifiedAccount(slug, email);
 
     const mailer = isPlaceholderAddress(email) ? undefined : this.notification;
     try {

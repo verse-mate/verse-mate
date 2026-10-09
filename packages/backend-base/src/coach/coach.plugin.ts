@@ -1305,6 +1305,78 @@ const plugin = new Elysia()
           },
         },
       )
+      .get(
+        "/admin/admins",
+        async ({ store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return {
+            admins: await new CoachIdentityService(store.db, null).listAdmins(),
+          };
+        },
+        {
+          response: {
+            200: t.Object({
+              admins: t.Array(
+                t.Object({
+                  email: t.String(),
+                  bound: t.Boolean(),
+                  grantedAt: t.String(),
+                }),
+              ),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/admins",
+        async ({ body, store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const granted = await new CoachIdentityService(
+            store.db,
+            null,
+          ).grantAdmin(body.email, currentUserId);
+          if (!granted.ok)
+            throw refuse("POST /coach/admin/admins", granted.refusal);
+          return { granted: true };
+        },
+        {
+          body: t.Object({ email: t.String({ maxLength: 254 }) }),
+          response: {
+            200: t.Object({ granted: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .delete(
+        "/admin/admins/:email",
+        async ({ params, store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const revoked = await new CoachIdentityService(
+            store.db,
+            null,
+          ).revokeAdmin(decodeURIComponent(params.email));
+          if (!revoked.ok)
+            throw refuse("DELETE /coach/admin/admins/:email", revoked.refusal);
+          return { revoked: true };
+        },
+        {
+          params: t.Object({ email: t.String() }),
+          response: {
+            200: t.Object({ revoked: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .post(
         "/admin/identity-nudges",
         async ({ store, currentUserId }) => {

@@ -7,6 +7,22 @@
     }
   },
   "refusals": {
+    "POST /coach/admin/admins": {
+      "no-verified-account": {
+        "status": 409,
+        "message": "No account with a confirmed email holds that address: the person signs up and confirms it first"
+      }
+    },
+    "DELETE /coach/admin/admins/:email": {
+      "unknown-admin": {
+        "status": 404,
+        "message": "That address is not an admin"
+      },
+      "last-admin": {
+        "status": 409,
+        "message": "The last admin cannot be removed"
+      }
+    },
     "POST /coach/admin/identity-nudges": {
       "no-mailer": {
         "status": 409,
@@ -692,6 +708,68 @@
   },
   "routes": [
     {
+      "route": "DELETE /coach/admin/admins/:email",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "revoked": {
+              "type": "boolean"
+            }
+          },
+          "required": ["revoked"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "DELETE /coach/admin/leaders/:id/not-teaching",
       "response": {
         "200": {
@@ -790,6 +868,83 @@
             "message": {
               "type": "string"
             }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/admin/admins",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "admins": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "bound": {
+                    "type": "boolean"
+                  },
+                  "grantedAt": {
+                    "type": "string"
+                  }
+                },
+                "required": ["email", "bound", "grantedAt"]
+              }
+            }
+          },
+          "required": ["admins"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
           },
           "required": ["error", "message"]
         },
@@ -7082,6 +7237,68 @@
             }
           },
           "required": ["classes"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/admins",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "granted": {
+              "type": "boolean"
+            }
+          },
+          "required": ["granted"]
         },
         "400": {
           "type": "object",

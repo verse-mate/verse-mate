@@ -2,8 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
 import { CoachIdentityService } from "./coach-identity.service";
+import { isolateTable } from "./coach-test-tables";
+import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
+isolateTable("coach_admins");
 const LEADERS = ["id-none", "id-unverified", "id-verified"];
 const ADMIN = "id-admin@example.test";
 const EMAIL = (slug: string) => `${slug}@example.test`;
@@ -46,24 +49,27 @@ describe("coaching identity preparation (tasks 10.1, 10.2)", () => {
       (e) => LEADERS.includes(e.id ?? "") || e.email === ADMIN,
     );
     expect(ours).toEqual([
-      { kind: "admin", id: null, email: ADMIN, account: "none" },
+      { kind: "admin", id: null, email: ADMIN, account: "none", bound: false },
       {
         kind: "leader",
         id: "id-none",
         email: EMAIL("id-none"),
         account: "none",
+        bound: false,
       },
       {
         kind: "leader",
         id: "id-unverified",
         email: EMAIL("id-unverified"),
         account: "unverified",
+        bound: false,
       },
       {
         kind: "leader",
         id: "id-verified",
         email: EMAIL("id-verified"),
         account: "verified",
+        bound: false,
       },
     ]);
     expect(audit.atRisk).toBeGreaterThanOrEqual(3);
@@ -136,5 +142,88 @@ describe("verification nudges (task 10.2)", () => {
       sent: [],
       refusal: "no-mailer",
     });
+  });
+});
+
+describe("binding coaching records and the admin role to accounts (task 10.4)", () => {
+  const ids = new CoachIdentityService(Database, null);
+
+  async function userId(email: string) {
+    return (
+      await conn
+        .selectFrom("user")
+        .select("id")
+        .where("email", "=", email)
+        .executeTakeFirstOrThrow()
+    ).id;
+  }
+
+  it("Admin role is granted and revoked without a deploy, bound to the verified account that holds the address", async () => {
+    const granted = await ids.grantAdmin(EMAIL("id-verified"), null);
+    expect(granted).toEqual({ ok: true });
+    const row = await conn
+      .selectFrom("coach_admins")
+      .select(["user_id"])
+      .where("email", "=", EMAIL("id-verified"))
+      .executeTakeFirstOrThrow();
+    expect(row.user_id).toBe(await userId(EMAIL("id-verified")));
+    expect((await ids.listAdmins()).map((a) => a.email)).toContain(
+      EMAIL("id-verified"),
+    );
+    expect(await ids.revokeAdmin(EMAIL("id-verified"))).toEqual({ ok: true });
+    expect((await ids.listAdmins()).map((a) => a.email)).not.toContain(
+      EMAIL("id-verified"),
+    );
+  });
+
+  it("a grant needs a verified account on the address", async () => {
+    expect(await ids.grantAdmin(EMAIL("id-unverified"), null)).toEqual({
+      ok: false,
+      refusal: "no-verified-account",
+    });
+    expect(await ids.grantAdmin(EMAIL("id-none"), null)).toEqual({
+      ok: false,
+      refusal: "no-verified-account",
+    });
+  });
+
+  it("the last admin cannot be revoked, and an unknown address is refused", async () => {
+    await conn.deleteFrom("coach_admins").where("email", "!=", ADMIN).execute();
+    expect(await ids.revokeAdmin(ADMIN)).toEqual({
+      ok: false,
+      refusal: "last-admin",
+    });
+    expect(await ids.revokeAdmin("nobody@example.test")).toEqual({
+      ok: false,
+      refusal: "unknown-admin",
+    });
+  });
+
+  it("a leader invited on an address a verified account holds is bound to it at invite time", async () => {
+    const inviter = await userId(EMAIL("id-verified"));
+    const email = "id-invited@example.test";
+    const invitee = await account(email, true);
+    try {
+      const added = await new CoachService(Database).addLeader(inviter, {
+        email,
+        name: "Invited Leader",
+      });
+      expect(added.ok).toBe(true);
+      const row = await conn
+        .selectFrom("coach_leaders")
+        .select("user_id")
+        .where("email", "=", email)
+        .executeTakeFirstOrThrow();
+      expect(row.user_id).toBe(invitee);
+      expect(
+        (await ids.audit()).entries.find((e) => e.email === email),
+      ).toMatchObject({ account: "verified", bound: true });
+    } finally {
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("email", "=", email)
+        .execute();
+      await conn.deleteFrom("user").where("email", "=", email).execute();
+    }
   });
 });

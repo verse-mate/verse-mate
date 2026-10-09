@@ -719,6 +719,16 @@ const MONTHLY_REPORT = {
 };
 
 export const COACH_REFUSALS = {
+  "POST /coach/admin/admins": {
+    "no-verified-account": refusal(
+      409,
+      "No account with a confirmed email holds that address: the person signs up and confirms it first",
+    ),
+  },
+  "DELETE /coach/admin/admins/:email": {
+    "unknown-admin": refusal(404, "That address is not an admin"),
+    "last-admin": refusal(409, "The last admin cannot be removed"),
+  },
   "POST /coach/admin/identity-nudges": {
     "no-mailer": refusal(409, NO_MAILER),
   },

@@ -32,6 +32,8 @@ export default interface CoachLeadersTable {
 
   rotating_only: ColumnType<boolean, boolean | undefined, boolean>;
 
+  user_id: ColumnType<UserId | null, UserId | null | undefined, UserId | null>;
+
   title_match: ColumnType<string[], string[] | undefined, string[]>;
 
   alt_emails: ColumnType<string[], string[] | undefined, string[]>;
