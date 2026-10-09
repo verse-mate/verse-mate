@@ -94,6 +94,7 @@ The column's values are lost; the rows stay.
 | `20260901151000-coach-intake-session-start` | `coach_intake_sessions`: `session_started_at` |
 | `20260901152000-coach-intake-hold-kind` | `coach_intake_sessions`: `hold_kind` |
 | `20260901153000-coach-intake-send-unconfirmed` | `coach_intake_sessions`: `send_unconfirmed` |
+| `20260901155000-coach-score-produced-by` | `coach_report_dimension_scores`: `language_model`, `prompt_version`, `generation_settings` |
 
 ### Downs that drop data without a check
 
