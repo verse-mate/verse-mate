@@ -541,6 +541,42 @@ describe("a delivered report can be revised", () => {
     expect((await dimension(9)).provenance).toBe("human");
   });
 
+  it("A first lesson drops the Big Ideas review row: setting the flag on a delivered report removes it in the revision", async () => {
+    await seed();
+    const body = (await row()).body as Record<string, unknown>;
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        body: JSON.stringify({
+          ...body,
+          sections: [
+            {
+              title: "Scorecard — Table 3",
+              bullets: [
+                "Overall Class Time: 1h 40m  (Target: 1.5-2h)  → ON TARGET",
+                "Big Ideas review at open: 6 min (6%)  (Target: 5-10 min)  → ON TARGET",
+              ],
+            },
+          ],
+        }),
+      })
+      .where("id", "=", REPORT)
+      .execute();
+    const mailer = new FakeMailer();
+    const set = await new CoachService(Database, mailer).setFirstLesson({
+      reportId: REPORT,
+      firstLesson: true,
+      byUserId: null,
+    });
+    expect(set.applied).toBe(true);
+    const sections = (
+      (await row()).body as { sections: Array<{ bullets: string[] }> }
+    ).sections;
+    expect(sections.flatMap((s) => s.bullets)).toEqual([
+      "Overall Class Time: 1h 40m  (Target: 1.5-2h)  → ON TARGET",
+    ]);
+  });
+
   it("an amended list replaces its prose too, so the portal and the reminder show what the admin wrote", async () => {
     await seed({
       improvementsProse: [
@@ -669,14 +705,32 @@ describe("a delivered report can be revised", () => {
     expect(direct.refusal).toBe("memory-reinforcement-required");
     expect((await row()).first_lesson).toBe(true);
 
-    const cleared = await service.setFirstLesson({
+    const withoutRow = await service.setFirstLesson({
       reportId: REPORT,
       firstLesson: false,
       score: 3,
       rationale: "opened with last week's big ideas",
       byUserId: null,
     });
+    expect(withoutRow.refusal).toBe("big-ideas-review-required");
+    expect((await row()).first_lesson).toBe(true);
+    expect(ours(mailer)).toEqual([]);
+
+    const cleared = await service.setFirstLesson({
+      reportId: REPORT,
+      firstLesson: false,
+      score: 3,
+      rationale: "opened with last week's big ideas",
+      bigIdeasReview: { value: "5 min (6%)", rating: "ON TARGET" },
+      byUserId: null,
+    });
     expect(cleared.applied).toBe(true);
+    const sections = (
+      (await row()).body as { sections: Array<{ bullets: string[] }> }
+    ).sections;
+    expect(sections.flatMap((s) => s.bullets)).toContain(
+      "Big Ideas review at open: 5 min (6%)  (Target: 5-10 min)  → ON TARGET",
+    );
     expect((cleared as { revision?: number }).revision).toBe(1);
     expect(await dimension(9)).toEqual({
       score: 3,

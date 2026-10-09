@@ -113,7 +113,7 @@ export const DIMENSIONS: readonly RubricDimension[] = [
     n: 9,
     name: "Memory Reinforcement",
     cluster: "Teaching Craft",
-    what: "Cumulative review of prior Big Ideas at the start of the session, so earlier lessons stick.",
+    what: "Cumulative review of prior Big Ideas at the start of the session, so earlier lessons stick. Not applicable on the first lesson of a new study or a new book, when the title or the session itself shows the group is beginning it; a chapter number alone is not a first lesson.",
     target: "Opening recall drill (Ebbinghaus)",
   },
   {

@@ -1,6 +1,12 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import {
+  type BigIdeasReviewRow,
+  validBigIdeasReviewRow,
+  withBigIdeasReviewRow,
+  withoutBigIdeasReviewRow,
+} from "./coach-first-lesson";
 import { coldRecallInFeedback } from "./coach-governance.service";
 import { correctable, shownToAnyone } from "./coach-session-state";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
@@ -20,7 +26,8 @@ export type CorrectionRefusal =
   | "partially-delivered"
   | "in-flight"
   | "score-out-of-range"
-  | "memory-reinforcement-required";
+  | "memory-reinforcement-required"
+  | "big-ideas-review-required";
 
 export interface CorrectionResult {
   ok: boolean;
@@ -51,7 +58,7 @@ export interface ReviewState {
   humanCorrected: boolean;
   firstLesson: boolean;
   firstLessonSource: string | null;
-  passageBook: string | null;
+  firstLessonLine: string | null;
   parallelRun: boolean;
 }
 
@@ -107,7 +114,7 @@ export class CoachReviewService {
     const scores = new Map(rows.map((r) => [r.dimension_n, r.score]));
     const report = await conn
       .selectFrom("coach_reports")
-      .select(["first_lesson", "first_lesson_source", "passage_book"])
+      .select(["first_lesson", "first_lesson_source", "first_lesson_line"])
       .where("id", "=", reportId)
       .executeTakeFirst();
     const session = await this.session(reportId);
@@ -129,7 +136,7 @@ export class CoachReviewService {
       humanCorrected: rows.some((r) => r.provenance === "human"),
       firstLesson: report?.first_lesson ?? false,
       firstLessonSource: report?.first_lesson_source ?? null,
-      passageBook: report?.passage_book ?? null,
+      firstLessonLine: report?.first_lesson_line ?? null,
       parallelRun: session?.parallel_run ?? false,
     };
   }
@@ -139,11 +146,16 @@ export class CoachReviewService {
     firstLesson: boolean;
     score?: number | null;
     rationale?: string;
+    bigIdeasReview?: BigIdeasReviewRow;
     byUserId: string | null;
   }): Promise<FirstLessonResult> {
     const rationale = input.rationale?.trim() ?? "";
     if (!input.firstLesson && (input.score == null || rationale.length === 0)) {
       return { ok: false, refusal: "memory-reinforcement-required" };
+    }
+    const reviewRow = validBigIdeasReviewRow(input.bigIdeasReview);
+    if (!input.firstLesson && !reviewRow) {
+      return { ok: false, refusal: "big-ideas-review-required" };
     }
     if (input.score != null && (input.score < 1 || input.score > 5)) {
       return { ok: false, refusal: "score-out-of-range" };
@@ -175,12 +187,22 @@ export class CoachReviewService {
         if (Number(updated.numUpdatedRows ?? 0) === 0) {
           return { ok: false, refusal: "unknown-report" as const };
         }
+        const stored = await trx
+          .selectFrom("coach_reports")
+          .select("body")
+          .where("id", "=", input.reportId)
+          .executeTakeFirstOrThrow();
         await trx
           .updateTable("coach_reports")
           .set({
             first_lesson: input.firstLesson,
             first_lesson_source: "admin",
             evidence: null,
+            body: JSON.stringify(
+              reviewRow
+                ? withBigIdeasReviewRow(stored.body, reviewRow)
+                : withoutBigIdeasReviewRow(stored.body),
+            ),
           })
           .where("id", "=", input.reportId)
           .execute();

@@ -7,6 +7,12 @@ import {
   type RevisionSendResult,
 } from "./coach-delivery.service";
 import {
+  type BigIdeasReviewRow,
+  validBigIdeasReviewRow,
+  withBigIdeasReviewRow,
+  withoutBigIdeasReviewRow,
+} from "./coach-first-lesson";
+import {
   CoachGovernanceService,
   type GovernanceViolation,
   coldRecallInFeedback,
@@ -39,6 +45,7 @@ type ProseField = (typeof PROSE_OF)[keyof typeof PROSE_OF];
 export interface Amendment {
   dimensions?: Array<{ n: number; score: number | null; rationale: string }>;
   firstLesson?: boolean;
+  bigIdeasReview?: BigIdeasReviewRow;
   body?: Partial<Record<BodyTextField, string | string[]>> &
     Partial<Record<ProseField, Array<{ title: string; paragraphs: string[] }>>>;
 }
@@ -51,6 +58,7 @@ export type AmendRefusal =
   | "unknown-dimension"
   | "score-out-of-range"
   | "memory-reinforcement-required"
+  | "big-ideas-review-required"
   | "cold-recall-improvement"
   | "governance-blocked"
   | "revision-sending";
@@ -182,6 +190,16 @@ export class CoachAmendService {
           if (!given || given.score === null || !given.rationale.trim())
             return { applied: false, refusal: "memory-reinforcement-required" };
         }
+        const reviewRow =
+          amendment.firstLesson === false && report.first_lesson
+            ? validBigIdeasReviewRow(amendment.bigIdeasReview)
+            : null;
+        if (
+          amendment.firstLesson === false &&
+          report.first_lesson &&
+          !reviewRow
+        )
+          return { applied: false, refusal: "big-ideas-review-required" };
 
         const body = (report.body ?? {}) as Record<string, unknown>;
         const storedFeedback = (body.feedback ?? {}) as Record<string, unknown>;
@@ -197,7 +215,12 @@ export class CoachAmendService {
           )
           .map(([, prose]) => prose);
         for (const prose of clearedProse) delete feedback[prose];
-        const nextBody = { ...body, feedback };
+        const withFeedback = { ...body, feedback };
+        const nextBody = reviewRow
+          ? withBigIdeasReviewRow(withFeedback, reviewRow)
+          : amendment.firstLesson === true
+            ? withoutBigIdeasReviewRow(withFeedback)
+            : withFeedback;
 
         if (firstLesson) {
           const coldRecall = coldRecallInFeedback(feedback);

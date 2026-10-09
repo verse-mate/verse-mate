@@ -20,6 +20,7 @@ import {
   AddressChangeDescriptionSchema,
   AdminCoachClassSchema,
   AmendmentBodySchema,
+  BigIdeasReviewRowSchema,
   COACH_REFUSALS,
   CoachClassSchema,
   type CoachRefusal,
@@ -761,6 +762,7 @@ const plugin = new Elysia()
               firstLesson: body.firstLesson,
               score: body.score ?? null,
               rationale: body.rationale,
+              bigIdeasReview: body.bigIdeasReview,
               byUserId: currentUserId,
             }),
           );
@@ -772,6 +774,7 @@ const plugin = new Elysia()
               t.Union([t.Integer({ minimum: 1, maximum: 5 }), t.Null()]),
             ),
             rationale: t.Optional(t.String({ maxLength: 4000 })),
+            bigIdeasReview: t.Optional(BigIdeasReviewRowSchema),
           }),
           response: {
             200: RevisionResultSchema,

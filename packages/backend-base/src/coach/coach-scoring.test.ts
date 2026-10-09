@@ -818,6 +818,7 @@ describe("a score names what produced it", () => {
     const vision = sent.find((o) => o.messages.some((m) => m.images?.length));
     expect(text?.messages.map((m) => m.content)).toEqual([
       CoachScoringService.buildInstructions(),
+      CoachScoringService.titleMessage(INPUT.sessionTitle),
       CoachScoringService.transcriptMessage(INPUT.transcript),
     ]);
     expect(vision?.messages.map((m) => m.content)).toEqual([
