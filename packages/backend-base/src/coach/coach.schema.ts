@@ -456,7 +456,12 @@ export const CoverageReportSchema = t.Object({
       name: t.String(),
       email: t.String(),
       covered: t.Boolean(),
-      basis: t.String(),
+      basis: t.Union([
+        t.Literal("observed"),
+        t.Literal("attested-not-teaching"),
+        t.Literal("attestation-lapsed"),
+        t.Literal("no-observation"),
+      ]),
       observedSessions: t.Number(),
       accountStatus: t.String(),
       linkedClassName: t.Union([t.String(), t.Null()]),

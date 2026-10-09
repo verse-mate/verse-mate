@@ -17,4 +17,24 @@ describe("the committed coach contract snapshot matches the routes", () => {
       ].status,
     ).toBe(409);
   });
+
+  it("the roster's address change state and coverage's basis are closed sets the portal can switch on", () => {
+    const route = (name: string) =>
+      coachContract().routes.find((r) => r.route === name)?.response[
+        "200"
+      ] as Record<string, any>;
+    const consts = (schema: { anyOf?: Array<{ const?: string }> }) =>
+      (schema.anyOf ?? []).map((s) => s.const);
+    const change = route("GET /coach/admin/coaches").properties.coaches.items
+      .properties.addressChange.anyOf[0].properties.state;
+    expect(consts(change)).toEqual(["pending", "expired", "refused"]);
+    const basis = route("GET /coach/admin/coverage").properties.leaders.items
+      .properties.basis;
+    expect(consts(basis)).toEqual([
+      "observed",
+      "attested-not-teaching",
+      "attestation-lapsed",
+      "no-observation",
+    ]);
+  });
 });

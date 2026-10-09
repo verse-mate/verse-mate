@@ -204,7 +204,11 @@ const CoachSummarySchema = t.Object({
     t.Union([
       t.Object({
         newEmail: t.String(),
-        state: t.String(),
+        state: t.Union([
+          t.Literal("pending"),
+          t.Literal("expired"),
+          t.Literal("refused"),
+        ]),
         reason: t.Union([t.String(), t.Null()]),
         requestedAt: t.String(),
         expiresAt: t.String(),
