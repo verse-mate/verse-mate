@@ -193,6 +193,24 @@ function clampNewcomers(value: unknown): number {
   return Math.trunc(n);
 }
 
+export function firstLessonShown(
+  answer: unknown,
+  title: string,
+  transcript: TimedLine[],
+): string | null {
+  const given = (answer ?? {}) as { answer?: unknown; line?: unknown };
+  if (given.answer !== true || typeof given.line !== "string") return null;
+  const line = given.line.trim();
+  if (!line) return null;
+  const said = (text: string) =>
+    text.replace(/[‘’ʼ]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
+  const wanted = said(line).replace(/^["']+|["'.,;:!?]+$/g, "");
+  const shown =
+    said(title).includes(wanted) ||
+    said(transcript.map((l) => l.text).join(" ")).includes(wanted);
+  return shown ? line : null;
+}
+
 export interface ScoringResult {
   ok: boolean;
   failure?: ScoringFailure;
@@ -215,7 +233,7 @@ export interface ScoringResult {
     note: string;
   }>;
   reviewReason?: string;
-  passageBook?: string;
+  firstLessonLine?: string | null;
   producedBy?: ScoringVersion;
 }
 
@@ -268,7 +286,16 @@ export class CoachScoringService {
       "  treats as new. If the session does not tell you, report 0 rather than",
       "  estimating.",
       "",
-      'Return JSON: {"newcomers":0,"dimensions":[{"n":1,"score":4,"rationale":"..."}, ...]}',
+      "- Also answer `firstLesson`: does the session title or the transcript show",
+      "  the group is beginning a new study or a new book? A title such as",
+      '  "Lesson 1" or "Week 1" counts, and so does someone saying it, directly',
+      '  ("we\'re starting Amos this week") or in passing ("this week we started',
+      '  looking at Amos"). A chapter number alone ("Jonah 1", "Amos 1-2") is not',
+      "  a first lesson. Answer from this session only. When the answer is yes,",
+      "  `line` is the exact words of the title or of the transcript line that",
+      "  shows it; when no, `line` is empty.",
+      "",
+      'Return JSON: {"newcomers":0,"firstLesson":{"answer":false,"line":""},"dimensions":[{"n":1,"score":4,"rationale":"..."}, ...]}',
     ].join("\n");
   }
 
@@ -315,6 +342,10 @@ export class CoachScoringService {
         { role: "system", content: CoachScoringService.buildInstructions() },
         {
           role: "user",
+          content: CoachScoringService.titleMessage(input.sessionTitle),
+        },
+        {
+          role: "user",
           content: CoachScoringService.transcriptMessage(input.transcript),
         },
       ],
@@ -325,13 +356,20 @@ export class CoachScoringService {
 
     let raw: RawDimensionScore[];
     let newcomers = 0;
+    let firstLessonLine: string | null = null;
     try {
       const parsed = JSON.parse(response.content) as {
         dimensions?: RawDimensionScore[];
         newcomers?: unknown;
+        firstLesson?: unknown;
       };
       raw = parsed.dimensions ?? [];
       newcomers = clampNewcomers(parsed.newcomers);
+      firstLessonLine = firstLessonShown(
+        parsed.firstLesson,
+        input.sessionTitle,
+        input.transcript,
+      );
     } catch (error) {
       return {
         ok: false,
@@ -393,6 +431,7 @@ export class CoachScoringService {
       newcomers,
       status: statusForScore(base),
       modelVersion: RUBRIC_MODEL_VERSION,
+      firstLessonLine,
       producedBy: {
         languageModel: response.model || this.model,
         promptVersion: promptVersion(),

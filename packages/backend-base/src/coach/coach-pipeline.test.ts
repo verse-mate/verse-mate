@@ -403,7 +403,9 @@ describe("a retained session reaches a delivered report", () => {
     }
     await pipeline(new FakeMailer(), new Capturing()).run();
     const text = sent.find((o) => !o.messages.some((m) => m.images?.length));
-    expect(text?.messages[1].content).toContain("[00:00:00] LEADER: welcome");
+    expect(text?.messages.map((m) => m.content).join("\n")).toContain(
+      "[00:00:00] LEADER: welcome",
+    );
   });
 
   it("scores it, publishes it, and emails it, in that order", async () => {

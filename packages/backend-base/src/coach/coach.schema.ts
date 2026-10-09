@@ -318,7 +318,7 @@ export const ReviewStateSchema = t.Object({
   humanCorrected: t.Boolean(),
   firstLesson: t.Boolean(),
   firstLessonSource: t.Union([t.String(), t.Null()]),
-  passageBook: t.Union([t.String(), t.Null()]),
+  firstLessonLine: t.Union([t.String(), t.Null()]),
   parallelRun: t.Boolean(),
   dimensions: t.Array(
     t.Object({
@@ -378,6 +378,16 @@ export const ImprovementsEditBodySchema = t.Object({
   improvementsProse: t.Optional(AmendedProseSchema),
 });
 
+export const BigIdeasReviewRowSchema = t.Object({
+  value: t.String({ maxLength: 200 }),
+  rating: t.Union([
+    t.Literal("STRONG"),
+    t.Literal("ON TARGET"),
+    t.Literal("NEEDS WORK"),
+    t.Literal("N/A"),
+  ]),
+});
+
 export const AmendmentBodySchema = t.Object({
   dimensions: t.Optional(
     t.Array(
@@ -390,6 +400,7 @@ export const AmendmentBodySchema = t.Object({
     ),
   ),
   firstLesson: t.Optional(t.Boolean()),
+  bigIdeasReview: t.Optional(BigIdeasReviewRowSchema),
   body: t.Optional(
     t.Object({
       headline: t.Optional(t.String({ maxLength: 500 })),
@@ -602,6 +613,10 @@ const REPORT_EDIT = {
     400,
     "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale",
   ),
+  "big-ideas-review-required": refusal(
+    400,
+    "Clearing the first-lesson flag needs the scorecard's Big Ideas review at open row: its value and a rating of STRONG, ON TARGET, NEEDS WORK or N/A",
+  ),
   "empty-amendment": refusal(400, "The amendment changes nothing"),
   "empty-edit": refusal(
     400,
@@ -656,6 +671,7 @@ export const COACH_REFUSALS = {
     "unknown-report",
     "score-out-of-range",
     "memory-reinforcement-required",
+    "big-ideas-review-required",
     "in-flight",
     "partially-delivered",
     "already-delivered",
@@ -676,6 +692,7 @@ export const COACH_REFUSALS = {
     "unknown-dimension",
     "score-out-of-range",
     "memory-reinforcement-required",
+    "big-ideas-review-required",
     "revision-sending",
   ),
   "POST /coach/admin/reports/:reportId/revision/send": {

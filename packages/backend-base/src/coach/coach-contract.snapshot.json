@@ -68,6 +68,10 @@
         "status": 400,
         "message": "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale"
       },
+      "big-ideas-review-required": {
+        "status": 400,
+        "message": "Clearing the first-lesson flag needs the scorecard's Big Ideas review at open row: its value and a rating of STRONG, ON TARGET, NEEDS WORK or N/A"
+      },
       "in-flight": {
         "status": 409,
         "message": "Refused: the report is being delivered or re-scored. Correct it once that finishes, or amend it after delivery."
@@ -135,6 +139,10 @@
       "memory-reinforcement-required": {
         "status": 400,
         "message": "Clearing the first-lesson flag needs a Memory Reinforcement score and rationale"
+      },
+      "big-ideas-review-required": {
+        "status": 400,
+        "message": "Clearing the first-lesson flag needs the scorecard's Big Ideas review at open row: its value and a rating of STRONG, ON TARGET, NEEDS WORK or N/A"
       },
       "revision-sending": {
         "status": 409,
@@ -3205,7 +3213,7 @@
                 }
               ]
             },
-            "passageBook": {
+            "firstLessonLine": {
               "anyOf": [
                 {
                   "type": "string"
@@ -3326,7 +3334,7 @@
             "humanCorrected",
             "firstLesson",
             "firstLessonSource",
-            "passageBook",
+            "firstLessonLine",
             "parallelRun",
             "dimensions"
           ]

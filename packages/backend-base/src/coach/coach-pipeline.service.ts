@@ -375,7 +375,7 @@ export class CoachPipelineService {
         await applyFirstLessonDetection(
           trx as CoachReportsWriter,
           report.reportId,
-          scored.passageBook,
+          scored.firstLessonLine ?? null,
         );
         await rescoreReport(trx as CoachReportsWriter, report.reportId);
         return report;

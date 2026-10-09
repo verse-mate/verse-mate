@@ -31,15 +31,15 @@ export default interface CoachReportsTable {
 
   held: ColumnType<boolean, boolean | undefined, boolean>;
 
-  passage_book: ColumnType<
+  first_lesson: ColumnType<boolean, boolean | undefined, boolean>;
+
+  first_lesson_source: ColumnType<
     string | null,
     string | null | undefined,
     string | null
   >;
 
-  first_lesson: ColumnType<boolean, boolean | undefined, boolean>;
-
-  first_lesson_source: ColumnType<
+  first_lesson_line: ColumnType<
     string | null,
     string | null | undefined,
     string | null

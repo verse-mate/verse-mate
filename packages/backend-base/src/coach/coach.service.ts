@@ -28,6 +28,7 @@ import {
   isPlaceholderAddress,
   releaseDeliveredVersions,
 } from "./coach-delivery.service";
+import type { ScorecardRating } from "./coach-first-lesson";
 import {
   coldRecallInFeedback,
   storedEvidence,
@@ -720,6 +721,7 @@ export class CoachService {
     firstLesson: boolean;
     score?: number | null;
     rationale?: string;
+    bigIdeasReview?: { value: string; rating: ScorecardRating };
     byUserId: string | null;
   }) {
     const { CoachReviewService } = await import("./coach-review.service");
@@ -745,6 +747,7 @@ export class CoachService {
         ...(input.firstLesson
           ? {}
           : {
+              bigIdeasReview: input.bigIdeasReview,
               dimensions: [
                 {
                   n: 9,
