@@ -18,6 +18,11 @@ import {
 } from "./coach-pipeline.service";
 import { CoachRetentionService } from "./coach-retention.service";
 import { CoachRetrievalService } from "./coach-retrieval.service";
+import {
+  CoachUploadMediaService,
+  ffprobe,
+  uploadTranscriber,
+} from "./coach-upload-media.service";
 import { HttpFirefliesClient } from "./fireflies.client";
 import { firefliesConfigured } from "./fireflies.config";
 
@@ -54,6 +59,7 @@ export interface CoachIntakeRunResult {
   retained: number;
   held: number;
   retrievalFailed: number;
+  uploadsProcessed?: number;
   /** Phase 3: sessions carried through to a report. */
   delivered: number;
   awaitingReview: number;
@@ -104,6 +110,18 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
   // Phase 3: score, publish, deliver. Each phase is independently guarded so
   // a failure in one does not silently stop the others, the sweep halting
   // the whole tick was the shape of an earlier bug.
+  let uploads = 0;
+  try {
+    uploads = (
+      await new CoachUploadMediaService(Database, undefined, {
+        probe: ffprobe,
+        transcriber: uploadTranscriber(),
+      }).process()
+    ).length;
+  } catch (error) {
+    console.error("[COACH-INTAKE] upload phase failed:", error);
+  }
+
   let pipeline: PipelineResult[] = [];
   try {
     pipeline = await new CoachPipelineService(
@@ -132,6 +150,7 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
     retained: sweep.retained,
     held: sweep.held,
     retrievalFailed: sweep.failed,
+    uploadsProcessed: uploads,
     delivered: pipeline.filter((p) => p.outcome === "scored-and-delivered")
       .length,
     awaitingReview: pipeline.filter(

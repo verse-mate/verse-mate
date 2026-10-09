@@ -7,6 +7,160 @@
     }
   },
   "refusals": {
+    "POST /coach/uploads": {
+      "invalid-date": {
+        "status": 400,
+        "message": "The session date must be a date like 2026-10-02"
+      },
+      "parallel-run": {
+        "status": 409,
+        "message": "Uploads open to leaders when the pipeline goes live. Until then an admin uploads a session for you."
+      },
+      "not-your-class": {
+        "status": 404,
+        "message": "That class is not one of yours"
+      },
+      "too-large": {
+        "status": 400,
+        "message": "The file is over 8 GB, the most an upload can be"
+      },
+      "not-video": {
+        "status": 400,
+        "message": "The file must be a video in MP4, MOV, WebM or MKV format. An audio-only file cannot be used, because a report needs video."
+      },
+      "date-in-future": {
+        "status": 400,
+        "message": "The session date is in the future: it must be today or earlier"
+      },
+      "date-too-old": {
+        "status": 400,
+        "message": "The session date is more than 60 days ago, the furthest back an upload can be"
+      },
+      "upload-exists": {
+        "status": 409,
+        "message": "A session was already uploaded for this class and date. An admin can replace it."
+      },
+      "already-recorded": {
+        "status": 409,
+        "message": "The recording bot already recorded this class on this date"
+      },
+      "not-replaceable": {
+        "status": 409,
+        "message": "That upload's report was already delivered, so it cannot be replaced"
+      },
+      "unknown-leader": {
+        "status": 404,
+        "message": "Leader not found"
+      }
+    },
+    "POST /coach/admin/uploads": {
+      "invalid-date": {
+        "status": 400,
+        "message": "The session date must be a date like 2026-10-02"
+      },
+      "parallel-run": {
+        "status": 409,
+        "message": "Uploads open to leaders when the pipeline goes live. Until then an admin uploads a session for you."
+      },
+      "not-your-class": {
+        "status": 404,
+        "message": "That class is not one of yours"
+      },
+      "too-large": {
+        "status": 400,
+        "message": "The file is over 8 GB, the most an upload can be"
+      },
+      "not-video": {
+        "status": 400,
+        "message": "The file must be a video in MP4, MOV, WebM or MKV format. An audio-only file cannot be used, because a report needs video."
+      },
+      "date-in-future": {
+        "status": 400,
+        "message": "The session date is in the future: it must be today or earlier"
+      },
+      "date-too-old": {
+        "status": 400,
+        "message": "The session date is more than 60 days ago, the furthest back an upload can be"
+      },
+      "upload-exists": {
+        "status": 409,
+        "message": "A session was already uploaded for this class and date. An admin can replace it."
+      },
+      "already-recorded": {
+        "status": 409,
+        "message": "The recording bot already recorded this class on this date"
+      },
+      "not-replaceable": {
+        "status": 409,
+        "message": "That upload's report was already delivered, so it cannot be replaced"
+      },
+      "unknown-leader": {
+        "status": 404,
+        "message": "Leader not found"
+      }
+    },
+    "POST /coach/uploads/:id/complete": {
+      "unknown-upload": {
+        "status": 404,
+        "message": "Upload not found"
+      },
+      "file-incomplete": {
+        "status": 409,
+        "message": "Not every part of the file has arrived: send the rest, then finish"
+      },
+      "not-awaiting-file": {
+        "status": 409,
+        "message": "This upload is already finished"
+      }
+    },
+    "POST /coach/admin/uploads/:id/complete": {
+      "unknown-upload": {
+        "status": 404,
+        "message": "Upload not found"
+      },
+      "file-incomplete": {
+        "status": 409,
+        "message": "Not every part of the file has arrived: send the rest, then finish"
+      },
+      "not-awaiting-file": {
+        "status": 409,
+        "message": "This upload is already finished"
+      }
+    },
+    "POST /coach/uploads/:id/parts": {
+      "unknown-upload": {
+        "status": 404,
+        "message": "Upload not found"
+      }
+    },
+    "POST /coach/admin/uploads/:id/parts": {
+      "unknown-upload": {
+        "status": 404,
+        "message": "Upload not found"
+      }
+    },
+    "GET /coach/admin/uploads/classes": {
+      "unknown-leader": {
+        "status": 404,
+        "message": "Leader not found"
+      }
+    },
+    "POST /coach/admin/duplicates/:sourceSessionId/dismiss": {
+      "not-a-duplicate": {
+        "status": 404,
+        "message": "No likely duplicate waits on that session"
+      }
+    },
+    "POST /coach/admin/duplicates/:sourceSessionId/score": {
+      "not-a-duplicate": {
+        "status": 404,
+        "message": "No likely duplicate waits on that session"
+      },
+      "already-delivered": {
+        "status": 409,
+        "message": "The upload's report was already delivered, so the recording-bot session cannot replace it"
+      }
+    },
     "POST /coach/admin/rotating-classes": {
       "invalid-address": {
         "status": 400,
@@ -2357,6 +2511,150 @@
       }
     },
     {
+      "route": "GET /coach/admin/duplicates",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "duplicates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceSessionId": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "const": "bot",
+                        "type": "string"
+                      },
+                      {
+                        "const": "upload",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "coachId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "classKey": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "sessionDate": {
+                    "type": "string"
+                  },
+                  "duplicateOf": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "against": {
+                    "anyOf": [
+                      {
+                        "const": "upload",
+                        "type": "string"
+                      },
+                      {
+                        "const": "host-report",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "canScoreInstead": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "sourceSessionId",
+                  "source",
+                  "coachId",
+                  "classKey",
+                  "title",
+                  "sessionDate",
+                  "duplicateOf",
+                  "against",
+                  "canScoreInstead"
+                ]
+              }
+            }
+          },
+          "required": ["duplicates"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/admin/leaders/:id/attribution",
       "response": {
         "200": {
@@ -3878,6 +4176,255 @@
                   "titleMatch",
                   "leaders"
                 ]
+              }
+            }
+          },
+          "required": ["classes"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/admin/uploads",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "uploads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "coachId": {
+                    "type": "string"
+                  },
+                  "classKey": {
+                    "type": "string"
+                  },
+                  "className": {
+                    "type": "string"
+                  },
+                  "sessionDate": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "anyOf": [
+                      {
+                        "const": "uploading",
+                        "type": "string"
+                      },
+                      {
+                        "const": "processing",
+                        "type": "string"
+                      },
+                      {
+                        "const": "held",
+                        "type": "string"
+                      },
+                      {
+                        "const": "waiting-for-admin",
+                        "type": "string"
+                      },
+                      {
+                        "const": "attributed-elsewhere",
+                        "type": "string"
+                      },
+                      {
+                        "const": "ready",
+                        "type": "string"
+                      },
+                      {
+                        "const": "failed",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reportId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "coachId",
+                  "classKey",
+                  "className",
+                  "sessionDate",
+                  "title",
+                  "status",
+                  "reason",
+                  "reportId",
+                  "createdAt"
+                ]
+              }
+            }
+          },
+          "required": ["uploads"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/admin/uploads/classes",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "classes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "const": "registered",
+                        "type": "string"
+                      },
+                      {
+                        "const": "rotating",
+                        "type": "string"
+                      },
+                      {
+                        "const": "group",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "required": ["key", "name", "kind"]
               }
             }
           },
@@ -6040,6 +6587,255 @@
       }
     },
     {
+      "route": "GET /coach/uploads",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "uploads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "coachId": {
+                    "type": "string"
+                  },
+                  "classKey": {
+                    "type": "string"
+                  },
+                  "className": {
+                    "type": "string"
+                  },
+                  "sessionDate": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "status": {
+                    "anyOf": [
+                      {
+                        "const": "uploading",
+                        "type": "string"
+                      },
+                      {
+                        "const": "processing",
+                        "type": "string"
+                      },
+                      {
+                        "const": "held",
+                        "type": "string"
+                      },
+                      {
+                        "const": "waiting-for-admin",
+                        "type": "string"
+                      },
+                      {
+                        "const": "attributed-elsewhere",
+                        "type": "string"
+                      },
+                      {
+                        "const": "ready",
+                        "type": "string"
+                      },
+                      {
+                        "const": "failed",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reportId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "createdAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "coachId",
+                  "classKey",
+                  "className",
+                  "sessionDate",
+                  "title",
+                  "status",
+                  "reason",
+                  "reportId",
+                  "createdAt"
+                ]
+              }
+            }
+          },
+          "required": ["uploads"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/uploads/classes",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "classes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "const": "registered",
+                        "type": "string"
+                      },
+                      {
+                        "const": "rotating",
+                        "type": "string"
+                      },
+                      {
+                        "const": "group",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                "required": ["key", "name", "kind"]
+              }
+            }
+          },
+          "required": ["classes"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "POST /coach/admin/coaches/:id/reports/:reportId/notes",
       "response": {
         "200": {
@@ -6091,6 +6887,130 @@
             "message": {
               "type": "string"
             }
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/duplicates/:sourceSessionId/dismiss",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "dismissed": {
+              "type": "boolean"
+            }
+          },
+          "required": ["dismissed"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/duplicates/:sourceSessionId/score",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "queued": {
+              "type": "boolean"
+            }
+          },
+          "required": ["queued"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
           },
           "required": ["error", "message"]
         },
@@ -7114,6 +8034,263 @@
       }
     },
     {
+      "route": "POST /coach/admin/uploads",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "uploadId": {
+              "type": "string"
+            },
+            "partBytes": {
+              "type": "number"
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "partNumber": {
+                    "type": "number"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": ["partNumber", "url"]
+              }
+            },
+            "expiresAt": {
+              "type": "string"
+            }
+          },
+          "required": ["uploadId", "partBytes", "parts", "expiresAt"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/uploads/:id/complete",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "anyOf": [
+                {
+                  "const": "uploading",
+                  "type": "string"
+                },
+                {
+                  "const": "processing",
+                  "type": "string"
+                },
+                {
+                  "const": "held",
+                  "type": "string"
+                },
+                {
+                  "const": "waiting-for-admin",
+                  "type": "string"
+                },
+                {
+                  "const": "attributed-elsewhere",
+                  "type": "string"
+                },
+                {
+                  "const": "ready",
+                  "type": "string"
+                },
+                {
+                  "const": "failed",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["status"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/uploads/:id/parts",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "uploadId": {
+              "type": "string"
+            },
+            "partBytes": {
+              "type": "number"
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "partNumber": {
+                    "type": "number"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": ["partNumber", "url"]
+              }
+            },
+            "expiresAt": {
+              "type": "string"
+            }
+          },
+          "required": ["uploadId", "partBytes", "parts", "expiresAt"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "POST /coach/classes",
       "response": {
         "200": {
@@ -7319,6 +8496,263 @@
               "required": ["state", "expiresAt"]
             }
           ]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/uploads",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "uploadId": {
+              "type": "string"
+            },
+            "partBytes": {
+              "type": "number"
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "partNumber": {
+                    "type": "number"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": ["partNumber", "url"]
+              }
+            },
+            "expiresAt": {
+              "type": "string"
+            }
+          },
+          "required": ["uploadId", "partBytes", "parts", "expiresAt"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/uploads/:id/complete",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "anyOf": [
+                {
+                  "const": "uploading",
+                  "type": "string"
+                },
+                {
+                  "const": "processing",
+                  "type": "string"
+                },
+                {
+                  "const": "held",
+                  "type": "string"
+                },
+                {
+                  "const": "waiting-for-admin",
+                  "type": "string"
+                },
+                {
+                  "const": "attributed-elsewhere",
+                  "type": "string"
+                },
+                {
+                  "const": "ready",
+                  "type": "string"
+                },
+                {
+                  "const": "failed",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["status"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/uploads/:id/parts",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "uploadId": {
+              "type": "string"
+            },
+            "partBytes": {
+              "type": "number"
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "partNumber": {
+                    "type": "number"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": ["partNumber", "url"]
+              }
+            },
+            "expiresAt": {
+              "type": "string"
+            }
+          },
+          "required": ["uploadId", "partBytes", "parts", "expiresAt"]
         },
         "400": {
           "type": "object",

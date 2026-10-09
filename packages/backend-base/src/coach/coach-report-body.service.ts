@@ -83,7 +83,7 @@ export interface BodyInput {
   sessionTitle: string;
   sessionDate: string;
   duration: string;
-  attendees: number;
+  attendees: number | null;
   newcomers: number;
   transcript: TimedLine[];
   dimensions: Array<{
@@ -336,7 +336,7 @@ function assemble(raw: Raw, input: BodyInput): BodyResult {
     ["Topic", body.topic ?? ""],
     ["Duration", input.duration],
     ["Location", text(raw.location)],
-    ["Attendees", String(input.attendees)],
+    ["Attendees", input.attendees === null ? "" : String(input.attendees)],
     ["Newcomers", String(input.newcomers)],
     [
       "Mentor Present",

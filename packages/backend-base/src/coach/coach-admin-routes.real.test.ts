@@ -8,6 +8,7 @@ import cacheConstants from "../shared/cache.constants";
 import redisClient from "../shared/redis-client";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { isolateTable } from "./coach-test-tables";
+import { MemoryStorage } from "./coach-upload.fixture";
 import coachPlugin from "./coach.plugin";
 import { COACH_REFUSALS } from "./coach.schema";
 import { CoachService } from "./coach.service";
@@ -226,7 +227,11 @@ beforeAll(async () => {
   token = await signer.decorator.jwt.sign({ sub: userId });
   await redisClient.set(cacheConstants.accessToken(userId), [token], "5m");
   await redisClient.delete(`rate-limit:coach:${userId}`);
-  store.coachService = new CoachService(Database, mailer);
+  store.coachService = new (class extends CoachService {
+    override uploads() {
+      return super.uploads(new MemoryStorage());
+    }
+  })(Database, mailer);
 });
 
 afterAll(async () => {
@@ -403,6 +408,93 @@ describe("every admin route answers through the real service within its response
         expectedCoachId: null,
       }),
     ).toEqual({ status: 200, body: { coachId: OTHER, state: "observed" } });
+  });
+});
+
+describe("the upload and duplicate routes", () => {
+  afterAll(async () => {
+    await conn
+      .deleteFrom("coach_uploads")
+      .where("coach_id", "=", LEADER)
+      .execute();
+  });
+
+  it("an admin lists a leader's classes, asks for upload addresses, cannot finish before the file arrives, and sees the upload listed", async () => {
+    const classes = await call("GET", `uploads/classes?coachId=${LEADER}`);
+    expect(classes).toEqual({
+      status: 200,
+      body: {
+        classes: [
+          { key: `group:${LEADER}`, name: expect.any(String), kind: "group" },
+        ],
+      },
+    });
+    const asked = await call("POST", "uploads", {
+      coachId: LEADER,
+      classKey: `group:${LEADER}`,
+      sessionDate: new Date(Date.now() - 3 * 86_400_000)
+        .toISOString()
+        .slice(0, 10),
+      title: null,
+      fileName: "session.mp4",
+      fileBytes: 1024,
+      contentType: "video/mp4",
+    });
+    expect(asked.status).toBe(200);
+    expect(asked.body?.parts).toHaveLength(1);
+    const early = await call(
+      "POST",
+      `uploads/${asked.body?.uploadId}/complete`,
+    );
+    expect(early).toMatchObject({
+      status:
+        COACH_REFUSALS["POST /coach/admin/uploads/:id/complete"][
+          "file-incomplete"
+        ].status,
+      body: { details: { refusal: "file-incomplete" } },
+    });
+    const listed = await call("GET", `uploads?coachId=${LEADER}`);
+    expect(listed.body?.uploads[0]).toMatchObject({
+      id: asked.body?.uploadId,
+      status: "uploading",
+    });
+    const refused = await call("POST", "uploads", {
+      coachId: LEADER,
+      classKey: `group:${LEADER}`,
+      sessionDate: "2999-01-01",
+      fileName: "session.mp4",
+      fileBytes: 1024,
+      contentType: "video/mp4",
+    });
+    expect(refused).toMatchObject({
+      status: 400,
+      body: { details: { refusal: "date-in-future" } },
+    });
+  });
+
+  it("the leader's own upload routes refuse an account that is not a leader", async () => {
+    const res = await app.handle(
+      new Request("http://localhost/coach/uploads", {
+        headers: { authorization: `Bearer ${token}` },
+      }),
+    );
+    expect(res.status).toBe(403);
+    const anonymous = await app.handle(
+      new Request("http://localhost/coach/uploads"),
+    );
+    expect(anonymous.status).toBe(401);
+  });
+
+  it("likely duplicates are listed, and dismissing one that is not waiting is coded", async () => {
+    const listed = await call("GET", "duplicates");
+    expect(listed.status).toBe(200);
+    expect(Array.isArray(listed.body?.duplicates)).toBe(true);
+    expect(await call("POST", "duplicates/nothing-here/dismiss")).toMatchObject(
+      {
+        status: 404,
+        body: { details: { refusal: "not-a-duplicate" } },
+      },
+    );
   });
 });
 

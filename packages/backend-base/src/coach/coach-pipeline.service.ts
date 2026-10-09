@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { ObjectStorageService } from "../shared/storage/storage.service";
 import { CoachArchiveService } from "./coach-archive.service";
 import { coachPipelineLive } from "./coach-cutover";
 import {
@@ -36,7 +37,10 @@ import {
 } from "./coach-session-state";
 import { timedLinesFrom } from "./coach-transcript";
 import type { CoachMailer } from "./coach.service";
-import type { FirefliesDetailClient } from "./fireflies.client";
+import type {
+  FirefliesDetailClient,
+  FirefliesTranscriptDetail,
+} from "./fireflies.client";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 /**
@@ -93,6 +97,7 @@ export class CoachPipelineService {
   private readonly publish: CoachPublishService;
   private readonly delivery: CoachDeliveryService | null;
   private readonly body: CoachReportBodyService;
+  private readonly storage: Pick<ObjectStorageService, "getGlobalObjectText">;
 
   constructor(
     private readonly db: db,
@@ -104,8 +109,10 @@ export class CoachPipelineService {
       publish?: CoachPublishService;
       delivery?: CoachDeliveryService;
       body?: CoachReportBodyService;
+      storage?: Pick<ObjectStorageService, "getGlobalObjectText">;
     } = {},
   ) {
+    this.storage = deps.storage ?? new ObjectStorageService();
     this.scoring = deps.scoring ?? new CoachScoringService(db);
     this.body = deps.body ?? new CoachReportBodyService(this.scoring.ai);
     this.frames = deps.frames ?? new CoachFrameService();
@@ -126,6 +133,7 @@ export class CoachPipelineService {
         "retry_count",
         "parallel_run",
         "rotating_class_id",
+        "source",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where(scorable)
@@ -333,8 +341,37 @@ export class CoachPipelineService {
       .execute();
   }
 
+  private async detailFor(
+    session: { source_session_id: string; source: string },
+    leaderName: string | null,
+  ): Promise<{
+    sentences: FirefliesTranscriptDetail["sentences"];
+    duration: number | null;
+    participantCount: number | null;
+  } | null> {
+    if (session.source !== "upload")
+      return this.fireflies.getTranscript(
+        session.source_session_id,
+        leaderName,
+      );
+    const stored = await this.storage.getGlobalObjectText(
+      CoachArchiveService.transcriptKey(session.source_session_id),
+    );
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as {
+      sentences?: FirefliesTranscriptDetail["sentences"];
+      duration?: number | null;
+    };
+    return {
+      sentences: parsed.sentences ?? [],
+      duration: parsed.duration ?? null,
+      participantCount: null,
+    };
+  }
+
   private async nameLeader(session: {
     source_session_id: string;
+    source: string;
     rotating_class_id: number | null;
   }): Promise<string | null> {
     const conn = this.db.getOrCreateConnection();
@@ -349,10 +386,7 @@ export class CoachPipelineService {
       .where("class_id", "=", session.rotating_class_id as number)
       .orderBy("coach_leaders.slug")
       .execute();
-    const detail = await this.fireflies.getTranscript(
-      session.source_session_id,
-      null,
-    );
+    const detail = await this.detailFor(session, null);
     const named = detail
       ? await this.scoring.nameRotatingLeader({
           transcript: timedLinesFrom(detail.sentences),
@@ -392,6 +426,7 @@ export class CoachPipelineService {
     title: string;
     date: string;
     parallel_run: boolean;
+    source: string;
     rotating_class_id: number | null;
   }): Promise<PipelineResult> {
     const conn = this.db.getOrCreateConnection();
@@ -410,10 +445,7 @@ export class CoachPipelineService {
       .where("slug", "=", coachId)
       .executeTakeFirst();
 
-    const detail = await this.fireflies.getTranscript(
-      session.source_session_id,
-      leader?.name ?? null,
-    );
+    const detail = await this.detailFor(session, leader?.name ?? null);
     if (!detail) {
       return {
         sourceSessionId: session.source_session_id,
@@ -456,7 +488,7 @@ export class CoachPipelineService {
       sessionTitle: session.title,
       sessionDate: session.date,
       duration: `${detail.duration ?? 0} min`,
-      attendees: detail.participantCount,
+      attendees: detail.participantCount ?? null,
       newcomers: scored.newcomers ?? 0,
       transcript,
       dimensions,
@@ -503,7 +535,7 @@ export class CoachPipelineService {
             keyMoments: generated.body.keyMoments,
             contextLine: generated.body.contextLine,
             topic: generated.body.topic,
-            attendees: detail.participantCount,
+            attendees: detail.participantCount ?? 0,
             newcomers: scored.newcomers ?? 0,
             duration: `${detail.duration ?? 0} min`,
             holdReason,

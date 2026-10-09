@@ -78,6 +78,11 @@ type Refusal = {
 };
 
 const REFUSALS: Record<string, Refusal> = {
+  "20260901161000-coach-uploads": {
+    seed: sessionWith("source = 'upload', state = 'received'"),
+    tables: ["coach_intake_sessions"],
+    rewrites: true,
+  },
   "20260901160000-coach-rotating-leader-cue": {
     seed: sessionWith("leader_cue = 'none'"),
     tables: ["coach_intake_sessions"],

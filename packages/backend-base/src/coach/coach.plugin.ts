@@ -29,6 +29,7 @@ import {
   EMAIL_RULE,
   ImprovementsEditBodySchema,
   LeaderMonthlyResponseSchema,
+  LikelyDuplicateSchema,
   MonthlySchema,
   NoteSchema,
   ParallelRunComparisonSchema,
@@ -40,6 +41,10 @@ import {
   RotatingClassBodySchema,
   RotatingClassSchema,
   RubricContractSchema,
+  UploadClassSchema,
+  UploadPartsSchema,
+  UploadRequestBodySchema,
+  UploadViewSchema,
 } from "./coach.schema";
 import {
   CoachService,
@@ -473,6 +478,103 @@ const plugin = new Elysia()
               url: t.String(),
               expiresInSeconds: t.Number(),
             }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/uploads/classes",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const coachId = await coachService.leaderIdFor(currentUserId);
+          if (!coachId) throw new ForbiddenError("Not a coaching account");
+          return {
+            classes: (await coachService.uploads().classesFor(coachId)) ?? [],
+          };
+        },
+        {
+          response: {
+            200: t.Object({ classes: t.Array(UploadClassSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/uploads",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const coachId = await coachService.leaderIdFor(currentUserId);
+          if (!coachId) throw new ForbiddenError("Not a coaching account");
+          return { uploads: await coachService.uploads().list(coachId) };
+        },
+        {
+          response: {
+            200: t.Object({ uploads: t.Array(UploadViewSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/uploads",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const coachId = await coachService.leaderIdFor(currentUserId);
+          if (!coachId) throw new ForbiddenError("Not a coaching account");
+          const asked = await coachService.uploads().request({
+            ...body,
+            coachId,
+            byUserId: currentUserId,
+            byAdmin: false,
+          });
+          if (!asked.ok) throw refuse("POST /coach/uploads", asked.refusal);
+          const { ok: _ok, ...parts } = asked;
+          return parts;
+        },
+        {
+          body: UploadRequestBodySchema,
+          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+        },
+      )
+      .post(
+        "/uploads/:id/parts",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const coachId = await coachService.leaderIdFor(currentUserId);
+          if (!coachId) throw new ForbiddenError("Not a coaching account");
+          const parts = await coachService
+            .uploads()
+            .refreshParts(params.id, coachId);
+          if (!parts)
+            throw refuse("POST /coach/uploads/:id/parts", "unknown-upload");
+          return parts;
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+        },
+      )
+      .post(
+        "/uploads/:id/complete",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          const coachId = await coachService.leaderIdFor(currentUserId);
+          if (!coachId) throw new ForbiddenError("Not a coaching account");
+          const done = await coachService
+            .uploads()
+            .complete(params.id, coachId);
+          if (!done.ok)
+            throw refuse("POST /coach/uploads/:id/complete", done.refusal);
+          return { status: done.status };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({ status: UploadViewSchema.properties.status }),
             ...StandardErrorResponses,
           },
         },
@@ -989,6 +1091,194 @@ const plugin = new Elysia()
           params: t.Object({ id: t.String() }),
           response: {
             200: t.Object({ attested: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/uploads/classes",
+        async ({ query, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const classes = await coachService
+            .uploads()
+            .classesFor(query.coachId);
+          if (!classes)
+            throw refuse("GET /coach/admin/uploads/classes", "unknown-leader");
+          return { classes };
+        },
+        {
+          query: t.Object({ coachId: t.String({ maxLength: 200 }) }),
+          response: {
+            200: t.Object({ classes: t.Array(UploadClassSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/uploads",
+        async ({ query, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return {
+            uploads: await coachService.uploads().list(query.coachId ?? null),
+          };
+        },
+        {
+          query: t.Object({
+            coachId: t.Optional(t.String({ maxLength: 200 })),
+          }),
+          response: {
+            200: t.Object({ uploads: t.Array(UploadViewSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/uploads",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const { coachId, replace, ...file } = body;
+          const asked = await coachService.uploads().request({
+            ...file,
+            coachId,
+            replace: replace === true,
+            byUserId: currentUserId,
+            byAdmin: true,
+          });
+          if (!asked.ok)
+            throw refuse("POST /coach/admin/uploads", asked.refusal);
+          const { ok: _ok, ...parts } = asked;
+          return parts;
+        },
+        {
+          body: t.Composite([
+            UploadRequestBodySchema,
+            t.Object({
+              coachId: t.String({ maxLength: 200 }),
+              replace: t.Optional(t.Boolean()),
+            }),
+          ]),
+          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+        },
+      )
+      .post(
+        "/admin/uploads/:id/parts",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const parts = await coachService
+            .uploads()
+            .refreshParts(params.id, null);
+          if (!parts)
+            throw refuse(
+              "POST /coach/admin/uploads/:id/parts",
+              "unknown-upload",
+            );
+          return parts;
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: { 200: UploadPartsSchema, ...StandardErrorResponses },
+        },
+      )
+      .post(
+        "/admin/uploads/:id/complete",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const done = await coachService.uploads().complete(params.id, null);
+          if (!done.ok)
+            throw refuse(
+              "POST /coach/admin/uploads/:id/complete",
+              done.refusal,
+            );
+          return { status: done.status };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({ status: UploadViewSchema.properties.status }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/duplicates",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return {
+            duplicates: await coachService.uploads().likelyDuplicates(),
+          };
+        },
+        {
+          response: {
+            200: t.Object({ duplicates: t.Array(LikelyDuplicateSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/duplicates/:sourceSessionId/dismiss",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (
+            !(await coachService
+              .uploads()
+              .dismissDuplicate(params.sourceSessionId))
+          )
+            throw refuse(
+              "POST /coach/admin/duplicates/:sourceSessionId/dismiss",
+              "not-a-duplicate",
+            );
+          return { dismissed: true };
+        },
+        {
+          params: t.Object({ sourceSessionId: t.String() }),
+          response: {
+            200: t.Object({ dismissed: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/duplicates/:sourceSessionId/score",
+        async ({ params, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const scored = await coachService
+            .uploads()
+            .scoreInstead(params.sourceSessionId);
+          if (!scored.ok)
+            throw refuse(
+              "POST /coach/admin/duplicates/:sourceSessionId/score",
+              scored.refusal,
+            );
+          return { queued: true };
+        },
+        {
+          params: t.Object({ sourceSessionId: t.String() }),
+          response: {
+            200: t.Object({ queued: t.Boolean() }),
             ...StandardErrorResponses,
           },
         },
