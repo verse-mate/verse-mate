@@ -28,7 +28,6 @@ import {
   isPlaceholderAddress,
   releaseDeliveredVersions,
 } from "./coach-delivery.service";
-import type { ScorecardRating } from "./coach-first-lesson";
 import {
   coldRecallInFeedback,
   storedEvidence,
@@ -37,6 +36,7 @@ import {
   type RetainedKind,
   RetainedMediaService,
 } from "./coach-retained-media.service";
+import type { ScorecardRating } from "./coach-scorecard";
 import {
   COLD_RECALL_FEEDBACK,
   type HoldKind,

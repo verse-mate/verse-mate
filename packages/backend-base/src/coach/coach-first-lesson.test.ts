@@ -2,14 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
-import {
-  BIG_IDEAS_REVIEW_LABEL,
-  applyFirstLessonDetection,
-  classDay,
-} from "./coach-first-lesson";
+import { applyFirstLessonDetection, classDay } from "./coach-first-lesson";
 import { parallelRunComparison } from "./coach-parallel-run";
 import { CoachPipelineService } from "./coach-pipeline.service";
 import { CoachReviewService } from "./coach-review.service";
+import { BIG_IDEAS_REVIEW_LABEL } from "./coach-scorecard";
 import { CoachScoringService } from "./coach-scoring.service";
 import type { TimedLine } from "./coach-transcript";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";

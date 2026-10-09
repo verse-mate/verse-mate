@@ -1,13 +1,13 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { coldRecallInFeedback } from "./coach-governance.service";
 import {
   type BigIdeasReviewRow,
   validBigIdeasReviewRow,
   withBigIdeasReviewRow,
   withoutBigIdeasReviewRow,
-} from "./coach-first-lesson";
-import { coldRecallInFeedback } from "./coach-governance.service";
+} from "./coach-scorecard";
 import { correctable, shownToAnyone } from "./coach-session-state";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import {
