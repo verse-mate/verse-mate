@@ -560,7 +560,6 @@ export class CoachService {
     delivered: boolean;
     refusal?: string;
     violations?: string[];
-    shortfalls?: string[];
     coldRecall?: string[];
     skipped?: string[];
   }> {
@@ -596,7 +595,6 @@ export class CoachService {
       ...(result.violations
         ? { violations: result.violations.map((v) => v.rule) }
         : {}),
-      ...(result.shortfalls ? { shortfalls: result.shortfalls } : {}),
       ...(result.coldRecall ? { coldRecall: result.coldRecall } : {}),
       ...(result.skipped?.length ? { skipped: result.skipped } : {}),
     };

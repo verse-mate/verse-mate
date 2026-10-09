@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
 
-import { calibrationShortfalls } from "./coach-calibration";
 import coachDataJson from "./coach.data.json";
 import { type CoachDataset, CoachService } from "./coach.service";
-import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const COACH = "guard-merge-coach";
@@ -166,43 +164,5 @@ describe("a fully backfilled leader's session list is paginated in the database"
     expect(page.items.map((r) => r.date)).toEqual(["2026-08-01"]);
     expect(full).not.toHaveBeenCalled();
     expect(paged).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("calibration gates every model-produced report", () => {
-  const REPORT = "guard-calibration-report";
-  afterEach(async () => {
-    await conn.deleteFrom("coach_reports").where("id", "=", REPORT).execute();
-  });
-
-  async function scoredBy(provenance: (n: number) => "machine" | "human") {
-    await stored(REPORT, "2026-09-01", `ff-${REPORT}`);
-    for (const d of DIMENSIONS) {
-      await conn
-        .insertInto("coach_report_dimension_scores")
-        .values({
-          report_id: REPORT,
-          dimension_n: d.n,
-          score: 3,
-          rationale: "r",
-          provenance: provenance(d.n),
-          model_version: "guard-uncalibrated-version",
-        })
-        .execute();
-    }
-  }
-
-  it("a model-produced report an admin corrected on every dimension is still held for calibration", async () => {
-    await scoredBy(() => "human");
-    expect(await calibrationShortfalls(Database, REPORT)).toEqual([
-      "no calibration is recorded for guard-uncalibrated-version",
-    ]);
-  });
-
-  it("one machine dimension left is enough to need calibration", async () => {
-    await scoredBy((n) => (n === 1 ? "machine" : "human"));
-    expect(await calibrationShortfalls(Database, REPORT)).toEqual([
-      "no calibration is recorded for guard-uncalibrated-version",
-    ]);
   });
 });

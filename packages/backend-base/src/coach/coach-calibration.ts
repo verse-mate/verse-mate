@@ -217,13 +217,6 @@ export function measureAgreement(
   };
 }
 
-/**
- * The delivery gate (task 5.9).
- *
- * Open question 3, answered provisionally 2026-09-01 (Andy confirms before
- * cutover): composite MAE at or under 5 points, AND at least 90% of dimension
- * comparisons within one point.
- */
 export const TOLERANCE_COMPOSITE_MAE = 5;
 export const TOLERANCE_DIMENSIONS_WITHIN_ONE = 0.9;
 
@@ -311,53 +304,4 @@ export async function recordCalibration(
     .returning("id")
     .executeTakeFirstOrThrow();
   return row.id;
-}
-
-export async function calibrationShortfalls(
-  database: db,
-  reportId: string,
-): Promise<string[]> {
-  const conn = database.getOrCreateConnection();
-  const versions = await conn
-    .selectFrom("coach_report_dimension_scores")
-    .select("model_version")
-    .distinct()
-    .where("report_id", "=", reportId)
-    .execute();
-
-  const shortfalls: string[] = [];
-  for (const { model_version } of versions) {
-    const version = model_version ?? "an unrecorded model version";
-    const latest = model_version
-      ? await conn
-          .selectFrom("coach_calibration_runs")
-          .selectAll()
-          .where("model_version", "=", model_version)
-          .orderBy("id", "desc")
-          .executeTakeFirst()
-      : undefined;
-    if (!latest) {
-      shortfalls.push(`no calibration is recorded for ${version}`);
-      continue;
-    }
-    if (latest.per_leader === null) {
-      shortfalls.push(
-        `${version}: no per-leader agreement is recorded for calibration run ${latest.id}`,
-      );
-      continue;
-    }
-    const verdict = checkCalibration({
-      overall: {
-        compositeMae: latest.composite_mae,
-        dimensionsWithinOne: latest.dimensions_within_one,
-        comparisons: latest.comparisons,
-        reports: latest.reports,
-      },
-      perLeader: new Map(
-        Object.entries(latest.per_leader as Record<string, Agreement>),
-      ),
-    });
-    shortfalls.push(...verdict.shortfalls.map((s) => `${version}: ${s}`));
-  }
-  return shortfalls;
 }

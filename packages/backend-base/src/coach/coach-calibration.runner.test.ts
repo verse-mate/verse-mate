@@ -14,7 +14,6 @@ import { db as Database } from "database";
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import {
   type HandScoredReport,
-  calibrationShortfalls,
   replayOrder,
   selectEligible,
 } from "./coach-calibration";
@@ -128,33 +127,6 @@ async function runsFor(version: string) {
   return Number(row.n);
 }
 
-async function modelScoredReport(id: string) {
-  await conn
-    .insertInto("coach_reports")
-    .values({
-      id,
-      coach_id: "calib-runner-coach",
-      session_date: "2026-09-01",
-      source_session_id: `ff-${id}`,
-      legacy_ids: [],
-      summary: {},
-      metrics: {},
-      body: {},
-    })
-    .execute();
-  await conn
-    .insertInto("coach_report_dimension_scores")
-    .values({
-      report_id: id,
-      dimension_n: 1,
-      score: 4,
-      rationale: "r",
-      provenance: "machine",
-      model_version: RUBRIC_MODEL_VERSION,
-    })
-    .execute();
-}
-
 let lastRunBefore = 0;
 
 beforeEach(async () => {
@@ -223,7 +195,7 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
     }
   });
 
-  it("a real run records the agreement under the model version it ran, and the delivery gate reads it", async () => {
+  it("a real run records the agreement under the model version it ran", async () => {
     const result = await runCalibration(deps(new HandCopyAi()), {
       dryRun: false,
     });
@@ -245,24 +217,14 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
     expect(printed).toMatch(
       new RegExp(`${singleReportLeader}: .*\\(measured, not gated\\)`),
     );
-
-    await modelScoredReport("calib-runner-r1");
-    expect(await calibrationShortfalls(Database, "calib-runner-r1")).toEqual(
-      [],
-    );
   });
 
-  it("a model that disagrees is recorded as outside tolerance, and the gate holds its reports", async () => {
+  it("a model that disagrees is recorded as outside tolerance", async () => {
     const result = await runCalibration(deps(new HandCopyAi(2)), {
       dryRun: false,
       limit: 6,
     });
     expect(result.verdict.withinTolerance).toBe(false);
-
-    await modelScoredReport("calib-runner-r2");
-    expect(
-      (await calibrationShortfalls(Database, "calib-runner-r2")).length,
-    ).toBeGreaterThan(0);
   });
 
   it("one favourable report does not unblock the programme", async () => {
@@ -272,11 +234,6 @@ describe("the calibration runner measures the bundle's own hand-scored corpus", 
     });
     expect(result.report.overall.reports).toBe(1);
     expect(result.verdict.withinTolerance).toBe(false);
-
-    await modelScoredReport("calib-runner-r3");
-    expect(
-      (await calibrationShortfalls(Database, "calib-runner-r3")).join(" "),
-    ).toContain("1 reports compared");
   });
 
   it("reports with no transcript are counted, and nothing is recorded when nothing was scored", async () => {

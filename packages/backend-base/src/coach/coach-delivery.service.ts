@@ -3,7 +3,6 @@ import { type ExpressionBuilder, sql } from "kysely";
 
 import { CoachReport, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
-import { calibrationShortfalls } from "./coach-calibration";
 import { coachPipelineLive } from "./coach-cutover";
 import {
   CoachGovernanceService,
@@ -79,7 +78,6 @@ export type DeliveryRefusal =
   | "awaiting-release"
   | "parallel-run"
   | "parallel-run-session"
-  | "calibration-blocked"
   | "governance-blocked"
   | "cold-recall-improvement"
   | "send-failed";
@@ -88,7 +86,6 @@ export interface DeliveryResult {
   delivered: boolean;
   refusal?: DeliveryRefusal;
   violations?: GovernanceViolation[];
-  shortfalls?: string[];
   coldRecall?: string[];
   /** Confirmed sends. Delivery is complete only at the full recipient set. */
   sends?: Array<{ email: string; delivered: boolean; error?: string }>;
@@ -302,27 +299,6 @@ export class CoachDeliveryService {
     const summary = (report.summary ?? {}) as Record<string, unknown>;
 
     const shown = shownToAnyone(claim);
-    const shortfalls = shown
-      ? []
-      : await calibrationShortfalls(this.db, reportId);
-    if (shortfalls.length > 0) {
-      await this.setHeld(reportId, true);
-      await conn
-        .updateTable("coach_intake_sessions")
-        .set({
-          state: "delivery_pending",
-          hold_reason: `held for calibration: ${shortfalls.join("; ")}`,
-          hold_kind: "calibration",
-          updated_at: sql`NOW()`,
-        })
-        .where("report_id", "=", reportId)
-        .where("state", "=", "delivering")
-        .execute();
-      console.error(
-        `[COACH-DELIVERY] ${reportId} held: ${shortfalls.join("; ")}`,
-      );
-      return { delivered: false, refusal: "calibration-blocked", shortfalls };
-    }
 
     const verdict = shown
       ? { passed: true, violations: [] }

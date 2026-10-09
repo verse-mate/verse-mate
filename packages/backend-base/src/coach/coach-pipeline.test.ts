@@ -17,7 +17,6 @@ import { CoachService } from "./coach.service";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { reattributeSession } from "./coach-attribution";
-import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE, coachPipelineLive } from "./coach-cutover";
 import { CoachDeliveryService } from "./coach-delivery.service";
 import { evidenceFrom } from "./coach-governance.service";
@@ -248,32 +247,6 @@ async function storedAuthenticity() {
     .executeTakeFirstOrThrow();
 }
 
-let calibrationRun: number | null = null;
-
-async function calibrate() {
-  const leader = {
-    compositeMae: 2,
-    dimensionsWithinOne: 0.95,
-    comparisons: 66,
-    reports: 6,
-  };
-  calibrationRun = await recordCalibration(Database, RUBRIC_MODEL_VERSION, {
-    overall: { ...leader, comparisons: 660, reports: 60 },
-    perLeader: new Map(
-      Array.from({ length: 10 }, (_, i) => [`calibrated-${i}`, leader]),
-    ),
-  });
-}
-
-async function uncalibrate() {
-  if (calibrationRun === null) return;
-  await conn
-    .deleteFrom("coach_calibration_runs")
-    .where("id", "=", calibrationRun)
-    .execute();
-  calibrationRun = null;
-}
-
 describe("a retained session reaches a delivered report", () => {
   beforeEach(async () => {
     await clear();
@@ -282,21 +255,20 @@ describe("a retained session reaches a delivered report", () => {
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
     await seedRetained();
-    await calibrate();
   });
   afterEach(async () => {
     await clear();
-    await uncalibrate();
   });
 
-  it("an uncalibrated scoring model publishes the report but does not send it", async () => {
-    await uncalibrate();
+  it("Delivery does not wait for a backtest: with no calibration run recorded, a machine-scored report is delivered", async () => {
+    await conn
+      .deleteFrom("coach_calibration_runs")
+      .where("model_version", "=", RUBRIC_MODEL_VERSION)
+      .execute();
     const mailer = new FakeMailer();
     const [result] = await pipeline(mailer).run();
-    expect(result.outcome).toBe("delivery-blocked");
-    expect(result.detail).toContain(RUBRIC_MODEL_VERSION);
-    expect(result.reportId).toBeTruthy();
-    expect(mailer.sent).toEqual([]);
+    expect(result.outcome).toBe("scored-and-delivered");
+    expect(mailer.sent.length).toBeGreaterThan(0);
   });
 
   it("scores it, publishes it, and emails it, in that order", async () => {
@@ -545,18 +517,6 @@ describe("a retained session reaches a delivered report", () => {
     }
   });
 
-  it("a released report still waits for calibration", async () => {
-    const [held] = await pipeline(new FakeMailer(), new FakeAi(5)).run();
-    await uncalibrate();
-    const mailer = new FakeMailer();
-    const result = await new CoachService(
-      Database,
-      mailer as any,
-    ).releaseHeldReport(held.reportId as string);
-    expect(result.refusal).toBe("calibration-blocked");
-    expect(mailer.sent).toEqual([]);
-  });
-
   it("only a report held for review can be released", async () => {
     const [delivered] = await pipeline(new FakeMailer()).run();
     expect(delivered.outcome).toBe("scored-and-delivered");
@@ -794,11 +754,9 @@ describe("a session that fails scoring is counted, capped and taken out of the q
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
-    await calibrate();
   });
   afterEach(async () => {
     await clear();
-    await uncalibrate();
   });
 
   it("a failed scoring attempt is counted and the session stays queued", async () => {
@@ -972,12 +930,10 @@ describe("a held report is not on the leader's portal until it is released", () 
         .executeTakeFirstOrThrow()
     ).id;
     await seedRetained();
-    await calibrate();
   });
   afterEach(async () => {
     await clear();
     await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
-    await uncalibrate();
   });
 
   it("a report the injection tripwire held is readable by the admin and by no leader read path", async () => {
@@ -1030,16 +986,6 @@ describe("a held report is not on the leader's portal until it is released", () 
     expect(seen.total).toBe(1);
     expect(seen.detail).toBe(false);
     expect(seen.trends).toBe(1);
-    expect(await adminSees(reportId)).toBe(true);
-  });
-
-  it("a report held for calibration is held from the leader too", async () => {
-    await uncalibrate();
-    const [blocked] = await pipeline(new FakeMailer()).run();
-    expect(blocked.outcome).toBe("delivery-blocked");
-    const reportId = blocked.reportId as string;
-
-    expect(await leaderSees(reportId)).toEqual(hidden);
     expect(await adminSees(reportId)).toBe(true);
   });
 
@@ -1112,12 +1058,6 @@ describe("a held report is not on the leader's portal until it is released", () 
     ).sessions.find((f) => f.sourceSessionId === "ff-pipe-1");
     expect(row).toMatchObject({ reportId, state: "delivery_pending" });
     expect(row?.reason).toContain("no mailer");
-  });
-
-  it("with no mailer and no calibration the report never reaches the leader", async () => {
-    await uncalibrate();
-    const [result] = await pipeline(null).run();
-    expect(await leaderSees(result.reportId as string)).toEqual(hidden);
   });
 
   it("once a mailer is configured the held report is delivered through the gates and reaches the leader", async () => {
@@ -1194,12 +1134,10 @@ describe("an admin's correction reaches the leader's report and the email", () =
         .executeTakeFirstOrThrow()
     ).id;
     await seedRetained();
-    await calibrate();
   });
   afterEach(async () => {
     await clear();
     await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
-    await uncalibrate();
   });
 
   it("Admin corrects a dimension: the leader's report and the email carry the corrected dimension, composite and band", async () => {
@@ -1309,13 +1247,11 @@ describe("The Parallel Run Is Silent", () => {
       })
       .execute();
     await seedRetained();
-    await calibrate();
   });
   afterEach(async () => {
     process.env[COACH_PIPELINE_LIVE] = "true";
     await clear();
     await conn.deleteFrom("user").where("email", "=", EMAIL).execute();
-    await uncalibrate();
   });
 
   it("the switch is off unless it is set to true", () => {
@@ -1383,11 +1319,9 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
     await seedRetained();
-    await calibrate();
   });
   afterEach(async () => {
     await clear();
-    await uncalibrate();
   });
 
   async function reportsForSession() {
@@ -1608,63 +1542,6 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
     expect(results.some((r) => r.sourceSessionId === "ff-pipe-2")).toBe(true);
   });
 
-  it("a report held for calibration does not starve a retryable one out of the batch", async () => {
-    for (let i = 0; i < PIPELINE_BATCH_LIMIT; i += 1) {
-      const id = `ff-extra-cal-${i}`;
-      await conn
-        .insertInto("coach_reports")
-        .values({
-          id,
-          coach_id: COACH,
-          session_date: "2026-08-01",
-          source_session_id: id,
-          legacy_ids: [],
-          summary: {},
-          metrics: {},
-          body: {},
-          held: true,
-        })
-        .execute();
-      await conn
-        .insertInto("coach_report_dimension_scores")
-        .values({
-          report_id: id,
-          dimension_n: 1,
-          score: 3,
-          rationale: "r",
-          provenance: "machine",
-          model_version: "an-uncalibrated-version",
-        })
-        .execute();
-      await conn
-        .insertInto("coach_intake_sessions")
-        .values({
-          source_session_id: id,
-          coach_id: COACH,
-          matched_by: "title_match",
-          title: "t",
-          session_date: "2026-08-01",
-          state: "delivery_pending",
-          report_id: id,
-          hold_reason: "held for calibration: no calibration is recorded",
-          hold_kind: "calibration",
-          retry_count: 0,
-        })
-        .execute();
-    }
-    const first = await pipeline(new FakeMailer(false)).run();
-    expect(first.find((o) => o.sourceSessionId === "ff-pipe-1")?.outcome).toBe(
-      "delivery-failed",
-    );
-    expect((await intakeRow("ff-pipe-1")).retry_count).toBe(1);
-
-    const mailer = new FakeMailer();
-    const outcomes = await pipeline(mailer).run();
-    expect(
-      outcomes.find((o) => o.sourceSessionId === "ff-pipe-1")?.outcome,
-    ).toBe("scored-and-delivered");
-  });
-
   it("a report held for want of a mailer does not starve a retryable one out of the batch", async () => {
     const first = await pipeline(new FakeMailer(false)).run();
     expect(first.find((o) => o.sourceSessionId === "ff-pipe-1")?.outcome).toBe(
@@ -1695,7 +1572,7 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
           score: 3,
           rationale: "r",
           provenance: "machine",
-          model_version: "an-uncalibrated-version",
+          model_version: "v-test",
         })
         .execute();
       await conn
@@ -1752,11 +1629,9 @@ describe("every hold carries a structured kind beside its prose", () => {
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
     await seedRetained();
-    await calibrate();
   });
   afterEach(async () => {
     await clear();
-    await uncalibrate();
   });
 
   async function kind() {
@@ -1779,13 +1654,6 @@ describe("every hold carries a structured kind beside its prose", () => {
     await pipeline(new FakeMailer(), new FakeAi(5)).run();
     expect(await kind()).toBe("review");
     expect(await listedKind()).toBe("review");
-  });
-
-  it("a calibration hold is calibration", async () => {
-    await uncalibrate();
-    await pipeline(new FakeMailer()).run();
-    expect(await kind()).toBe("calibration");
-    expect(await listedKind()).toBe("calibration");
   });
 
   it("no mailer is no-mailer", async () => {
@@ -1851,12 +1719,10 @@ describe("Every Score Carries Provenance through a re-score", () => {
       ])
       .execute();
     await seedRetained();
-    await calibrate();
   });
   afterEach(async () => {
     await clear();
     await clearOther();
-    await uncalibrate();
   });
 
   async function storedRows(reportId: string) {

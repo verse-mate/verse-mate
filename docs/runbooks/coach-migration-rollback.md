@@ -106,3 +106,6 @@ The column's values are lost; the rows stay.
 ### Downs that touch no data
 
 `20260901128000-coach-one-report-per-session` drops an index only.
+
+`20260901154000-coach-no-calibration-hold` allows the `calibration` hold kind again. Its
+up cleared that kind from held sessions, and the down does not bring it back.
