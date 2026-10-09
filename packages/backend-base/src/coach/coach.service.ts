@@ -21,7 +21,6 @@ import {
   setLeaderAttribution,
   withLeaderKeywordLock,
 } from "./coach-attribution";
-import { coachPipelineLive } from "./coach-cutover";
 import {
   COACH_REPLY_TO_EMAIL,
   COACH_REPLY_TO_NAME,
@@ -1454,18 +1453,13 @@ export class CoachService {
     previous: string,
     name: string,
   ): Promise<boolean> {
-    if (
-      !this.notification ||
-      !coachPipelineLive() ||
-      isPlaceholderAddress(previous)
-    )
-      return false;
+    if (!this.notification || isPlaceholderAddress(previous)) return false;
     try {
       const sent = (await this.notification.sendEmail({
         to: { email: previous, name },
         replyTo: { name: COACH_REPLY_TO_NAME, email: COACH_REPLY_TO_EMAIL },
         subject: "Your VerseMate coaching address was changed",
-        text: `A program admin changed the email address your VerseMate coaching reports go to. Reports and notes are no longer sent to this address. If you did not expect this, reply to this email or write to ${COACH_REPLY_TO_EMAIL}.`,
+        text: `A program admin changed the email address your VerseMate coaching reports and sign-in use. From now on they use the new address, not this one. If you did not expect this, reply to this email or write to ${COACH_REPLY_TO_EMAIL}.`,
         html: render(
           CoachAddressChanged({ name, replyTo: COACH_REPLY_TO_EMAIL }),
         ),

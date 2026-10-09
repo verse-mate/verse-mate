@@ -27,7 +27,8 @@ export default function CoachAddressChanged({
           <Text style={text}>{name ? `Hi ${name},` : "Hi,"}</Text>
           <Text style={text}>
             A program admin changed the email address your VerseMate coaching
-            reports go to. Reports and notes are no longer sent to this address.
+            reports and sign-in use. From now on they use the new address, not
+            this one.
           </Text>
           <Text style={muted}>
             If you did not expect this, reply to this email or write to{" "}
