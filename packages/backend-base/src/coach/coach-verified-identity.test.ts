@@ -63,3 +63,30 @@ describe("coaching identity requires a verified email", () => {
     expect(await service.isCoach(unverified)).toBe(true);
   });
 });
+
+describe("stage 1: coaching identity needs a verified email on every path (task 10.5)", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  it("Unverified account matching a roster email: getMe answers with the non-coach gate, and the leader routes refuse it", async () => {
+    const inviter = await account(ADMIN, true);
+    await new CoachService(Database).addLeader(inviter, {
+      email: LEADER,
+      name: "Verified Leader",
+    });
+    const unverified = await account(LEADER, false);
+    const service = new CoachService(Database);
+    expect(await service.getMe(unverified)).toBeNull();
+    expect(await service.leaderIdFor(unverified)).toBeNull();
+    expect(await service.getTrends(unverified)).toBeNull();
+    expect(await service.getMyMonthlySummary(unverified, "2026-09")).toBeNull();
+  });
+
+  it("Non-admin attempts an admin capability: an unverified account on an admin address is refused", async () => {
+    await conn.insertInto("coach_admins").values({ email: ADMIN }).execute();
+    const unverified = await account(ADMIN, false);
+    const service = new CoachService(Database);
+    expect(await service.isAdmin(unverified)).toBe(false);
+    expect(await service.getMe(unverified)).toBeNull();
+  });
+});
