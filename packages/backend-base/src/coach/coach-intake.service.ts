@@ -8,6 +8,7 @@ import {
 } from "./coach-attribution";
 import { coachPipelineLive } from "./coach-cutover";
 import { calendarDate } from "./coach-reminder.service";
+import { loadRotatingClasses } from "./coach-rotating.service";
 import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
 
 /**
@@ -133,6 +134,7 @@ export class CoachIntakeService {
     }
 
     const roster = await loadAttributionRoster(this.db);
+    const rotating = await loadRotatingClasses(this.db);
     const parallelRun = !coachPipelineLive();
     let unresolved = 0;
     // Counted from what was actually INSERTED, not from what the provider
@@ -148,7 +150,7 @@ export class CoachIntakeService {
         );
         continue;
       }
-      const match = attributeSession(t, roster);
+      const match = attributeSession(t, roster, rotating);
       if (match.matchedBy === "unresolved") unresolved += 1;
       // Strip control characters from the title before it is persisted. It is
       // leader-authored, and it reaches an email SUBJECT line (task 6.3b) and
@@ -161,11 +163,12 @@ export class CoachIntakeService {
       await sql`
         INSERT INTO coach_intake_sessions
           (source_session_id, coach_id, matched_by, title, host_email,
-           session_date, session_started_at, duration_minutes, parallel_run)
+           session_date, session_started_at, duration_minutes, parallel_run,
+           rotating_class_id)
         VALUES (
           ${t.id}, ${match.coachId}, ${match.matchedBy}, ${title},
           NULL, ${calendarDate(started)}::date, ${started.toISOString()}::timestamptz,
-          ${t.duration}, ${parallelRun}
+          ${t.duration}, ${parallelRun}, ${match.rotatingClassId ?? null}
         )
         -- Belt and braces against two workers polling the same window: the
         -- pre-read above is not a lock.

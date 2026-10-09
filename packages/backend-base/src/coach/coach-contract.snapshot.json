@@ -7,6 +7,52 @@
     }
   },
   "refusals": {
+    "POST /coach/admin/rotating-classes": {
+      "invalid-address": {
+        "status": 400,
+        "message": "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot"
+      },
+      "address-in-use": {
+        "status": 409,
+        "message": "That address is a leader's own address or another rotating class's group address"
+      },
+      "no-leaders": {
+        "status": 400,
+        "message": "Name at least one roster leader who takes turns"
+      },
+      "unknown-leader": {
+        "status": 404,
+        "message": "Leader not found"
+      }
+    },
+    "PUT /coach/admin/rotating-classes/:id": {
+      "invalid-address": {
+        "status": 400,
+        "message": "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot"
+      },
+      "address-in-use": {
+        "status": 409,
+        "message": "That address is a leader's own address or another rotating class's group address"
+      },
+      "no-leaders": {
+        "status": 400,
+        "message": "Name at least one roster leader who takes turns"
+      },
+      "unknown-leader": {
+        "status": 404,
+        "message": "Leader not found"
+      },
+      "unknown-class": {
+        "status": 404,
+        "message": "Rotating class not found"
+      }
+    },
+    "PUT /coach/admin/leaders/:id/rotating-only": {
+      "unknown-leader": {
+        "status": 404,
+        "message": "Leader not found"
+      }
+    },
     "GET /coach/admin/reports/:reportId/review": {
       "unknown-report": {
         "status": 404,
@@ -375,6 +421,10 @@
       "taken": {
         "status": 409,
         "message": "Another leader already uses that address"
+      },
+      "group-address": {
+        "status": 409,
+        "message": "That is a rotating class's group address, which is never a leader's own address"
       },
       "confirm-required": {
         "status": 409,
@@ -2173,6 +2223,10 @@
                         "type": "string"
                       },
                       {
+                        "const": "rotating-class",
+                        "type": "string"
+                      },
+                      {
                         "const": "attested-not-teaching",
                         "type": "string"
                       },
@@ -3713,6 +3767,113 @@
             }
           },
           "required": ["requests"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/admin/rotating-classes",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "classes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "groupEmail": {
+                    "type": "string"
+                  },
+                  "titleMatch": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "leaders": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "rotatingOnly": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["id", "name", "rotatingOnly"]
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "groupEmail",
+                  "titleMatch",
+                  "leaders"
+                ]
+              }
+            }
+          },
+          "required": ["classes"]
         },
         "400": {
           "type": "object",
@@ -6818,6 +6979,68 @@
       }
     },
     {
+      "route": "POST /coach/admin/rotating-classes",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "number"
+            }
+          },
+          "required": ["id"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "POST /coach/admin/sessions/:sourceSessionId/attribute",
       "response": {
         "200": {
@@ -7375,6 +7598,68 @@
       }
     },
     {
+      "route": "PUT /coach/admin/leaders/:id/rotating-only",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "rotatingOnly": {
+              "type": "boolean"
+            }
+          },
+          "required": ["rotatingOnly"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "PUT /coach/admin/reports/:reportId/first-lesson",
       "response": {
         "200": {
@@ -7575,6 +7860,68 @@
             }
           },
           "required": ["applied"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "PUT /coach/admin/rotating-classes/:id",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "number"
+            }
+          },
+          "required": ["id"]
         },
         "400": {
           "type": "object",

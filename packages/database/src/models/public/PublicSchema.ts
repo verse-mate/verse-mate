@@ -26,6 +26,8 @@ import type { default as CoachReportAmendmentsTable } from "./CoachReportAmendme
 import type { default as CoachReportDimensionScoresTable } from "./CoachReportDimensionScores";
 import type { default as CoachReportEditsTable } from "./CoachReportEdits";
 import type { default as CoachReportsTable } from "./CoachReports";
+import type { default as CoachRotatingClassLeadersTable } from "./CoachRotatingClassLeaders";
+import type { default as CoachRotatingClassesTable } from "./CoachRotatingClasses";
 import type { default as CoachSessionAssetsTable } from "./CoachSessionAssets";
 import type { default as CoachZoomLinksTable } from "./CoachZoomLinks";
 import type { default as ConversationsTable } from "./Conversations";
@@ -213,6 +215,10 @@ export default interface PublicSchema {
   coach_report_edits: CoachReportEditsTable;
 
   coach_leader_email_changes: CoachLeaderEmailChangesTable;
+
+  coach_rotating_classes: CoachRotatingClassesTable;
+
+  coach_rotating_class_leaders: CoachRotatingClassLeadersTable;
 
   coach_leader_email_requests: CoachLeaderEmailRequestsTable;
 

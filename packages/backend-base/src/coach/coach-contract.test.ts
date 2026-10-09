@@ -32,6 +32,7 @@ describe("the committed coach contract snapshot matches the routes", () => {
       .properties.basis;
     expect(consts(basis)).toEqual([
       "observed",
+      "rotating-class",
       "attested-not-teaching",
       "attestation-lapsed",
       "no-observation",

@@ -4,6 +4,7 @@
 import type { ColumnType, Insertable, Selectable, Updateable } from "kysely";
 
 import type { CoachReportsId } from "./CoachReports";
+import type { CoachRotatingClassesId } from "./CoachRotatingClasses";
 
 /** Represents the table public.coach_intake_sessions */
 export default interface CoachIntakeSessionsTable {
@@ -89,6 +90,12 @@ export default interface CoachIntakeSessionsTable {
     Date | null,
     Date | string | null | undefined,
     Date | string | null
+  >;
+
+  rotating_class_id: ColumnType<
+    CoachRotatingClassesId | null,
+    CoachRotatingClassesId | null | undefined,
+    CoachRotatingClassesId | null
   >;
 
   hold_kind: ColumnType<

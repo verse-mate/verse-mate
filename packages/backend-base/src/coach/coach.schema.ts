@@ -469,6 +469,7 @@ export const CoverageReportSchema = t.Object({
       covered: t.Boolean(),
       basis: t.Union([
         t.Literal("observed"),
+        t.Literal("rotating-class"),
         t.Literal("attested-not-teaching"),
         t.Literal("attestation-lapsed"),
         t.Literal("no-observation"),
@@ -651,7 +652,23 @@ const INVALID_MONTH = {
   "invalid-month": refusal(400, "month must be YYYY-MM"),
 };
 
+const ROTATING_CLASS = {
+  "invalid-address": refusal(400, EMAIL_RULE),
+  "address-in-use": refusal(
+    409,
+    "That address is a leader's own address or another rotating class's group address",
+  ),
+  "no-leaders": refusal(400, "Name at least one roster leader who takes turns"),
+  ...UNKNOWN_LEADER,
+};
+
 export const COACH_REFUSALS = {
+  "POST /coach/admin/rotating-classes": ROTATING_CLASS,
+  "PUT /coach/admin/rotating-classes/:id": {
+    ...ROTATING_CLASS,
+    "unknown-class": refusal(404, "Rotating class not found"),
+  },
+  "PUT /coach/admin/leaders/:id/rotating-only": UNKNOWN_LEADER,
   "GET /coach/admin/reports/:reportId/review": pick("unknown-report"),
   "POST /coach/admin/reports/:reportId/dimensions/:dimensionN": {
     "invalid-dimension": refusal(400, "A dimension is a whole number, 1 to 12"),
@@ -819,6 +836,10 @@ export const COACH_REFUSALS = {
   "PUT /coach/admin/leaders/:id/email": {
     "invalid-address": refusal(400, EMAIL_RULE),
     taken: refusal(409, "Another leader already uses that address"),
+    "group-address": refusal(
+      409,
+      "That is a rotating class's group address, which is never a leader's own address",
+    ),
     "confirm-required": refusal(
       409,
       "This is the benchmark leader, whose address receives every leader's reports: send confirm: true to change it",
@@ -857,3 +878,22 @@ export const COACH_REFUSALS = {
 } satisfies Record<string, Record<string, CoachRefusal>>;
 
 export type CoachRefusalRoute = keyof typeof COACH_REFUSALS;
+
+export const RotatingClassSchema = t.Object({
+  id: t.Number(),
+  name: t.String(),
+  groupEmail: t.String(),
+  titleMatch: t.Array(t.String()),
+  leaders: t.Array(
+    t.Object({ id: t.String(), name: t.String(), rotatingOnly: t.Boolean() }),
+  ),
+});
+
+export const RotatingClassBodySchema = t.Object({
+  name: t.String({ minLength: 1, maxLength: 200 }),
+  groupEmail: t.String({ maxLength: 254 }),
+  titleMatch: t.Array(t.String({ minLength: 3, maxLength: 100 }), {
+    maxItems: 50,
+  }),
+  leaders: t.Array(t.String({ maxLength: 200 }), { maxItems: 50 }),
+});
