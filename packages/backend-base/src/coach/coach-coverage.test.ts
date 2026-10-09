@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  setSystemTime,
+} from "bun:test";
 import { db as Database } from "database";
 
 import type { db } from "../shared/shared.plugin";
@@ -461,5 +468,96 @@ describe("a not-teaching attestation lapses, and an observed session ends it", (
       covered: true,
       basis: "attested-not-teaching",
     });
+  });
+});
+
+describe("the eight-week lapse, on a frozen clock", () => {
+  const ATTESTED = new Date("2026-06-01T12:00:00.000Z");
+  const MINUTE = 60_000;
+  const EIGHT_WEEKS = 56 * 86_400_000;
+
+  beforeEach(clear);
+  afterEach(async () => {
+    setSystemTime();
+    await clear();
+  });
+
+  async function basisAt(now: Date) {
+    setSystemTime(now);
+    return (
+      await new CoachCoverageService(Database).assess({ windowDays: 30 })
+    ).leaders.find((l) => l.coachId === "cov-attested");
+  }
+
+  async function observedAt(when: Date, id: string) {
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: `ff-cov-attested-${id}`,
+        coach_id: "cov-attested",
+        matched_by: "title_match",
+        title: "s",
+        session_date: when.toISOString().slice(0, 10),
+        observed_at: when,
+      })
+      .execute();
+  }
+
+  it("56 days less a minute after the attestation it still covers; 56 days and a minute after, it has lapsed", async () => {
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: ATTESTED,
+    });
+    expect(
+      await basisAt(new Date(ATTESTED.getTime() + EIGHT_WEEKS - MINUTE)),
+    ).toMatchObject({ covered: true, basis: "attested-not-teaching" });
+    expect(
+      await basisAt(new Date(ATTESTED.getTime() + EIGHT_WEEKS + MINUTE)),
+    ).toMatchObject({
+      covered: false,
+      basis: "attestation-lapsed",
+      attestedAt: ATTESTED.toISOString(),
+    });
+  });
+
+  it("a session observed at the very instant of the attestation does not end it", async () => {
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: ATTESTED,
+    });
+    await observedAt(ATTESTED, "same-instant");
+    expect(
+      await basisAt(new Date(ATTESTED.getTime() + 40 * 86_400_000)),
+    ).toMatchObject({
+      covered: true,
+      basis: "attested-not-teaching",
+      attestedAt: ATTESTED.toISOString(),
+    });
+  });
+
+  it("a fresh attestation after a session ended the earlier one covers again, for eight weeks from the fresh one", async () => {
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: ATTESTED,
+    });
+    const session = new Date(ATTESTED.getTime() + 10 * 86_400_000);
+    await observedAt(session, "after");
+    expect(
+      await basisAt(new Date(session.getTime() + 40 * 86_400_000)),
+    ).toMatchObject({ covered: false, basis: "no-observation" });
+
+    const fresh = new Date(session.getTime() + 20 * 86_400_000);
+    await conn
+      .updateTable("coach_leaders")
+      .set({ not_teaching_attested_at: fresh })
+      .where("slug", "=", "cov-attested")
+      .execute();
+    expect(
+      await basisAt(new Date(fresh.getTime() + EIGHT_WEEKS - MINUTE)),
+    ).toMatchObject({
+      covered: true,
+      basis: "attested-not-teaching",
+      attestedAt: fresh.toISOString(),
+    });
+    expect(
+      await basisAt(new Date(fresh.getTime() + EIGHT_WEEKS + MINUTE)),
+    ).toMatchObject({ covered: false, basis: "attestation-lapsed" });
   });
 });
