@@ -176,7 +176,7 @@ async function session() {
 }
 
 describe("a session walks the whole lifecycle", () => {
-  it("intake, attribution, retrieval, scoring, publish, delivery, leader read, amend and revision send", async () => {
+  it("intake, attribution, retrieval, scoring, publish, the first-version hold and its release, delivery, leader read, amend and revision send", async () => {
     await new CoachIntakeService(Database, new Provider()).poll();
     expect(await session()).toMatchObject({
       coach_id: COACH,
@@ -199,12 +199,16 @@ describe("a session walks the whole lifecycle", () => {
     );
     const results = await pipeline.run();
     const result = results.find((r) => r.sourceSessionId === SESSION);
-    expect(result?.outcome).toBe("scored-and-delivered");
+    expect(result?.outcome).toBe("scored-awaiting-review");
+    expect(result?.detail).toContain("scoring version");
+    expect(mailer.subjects).toEqual([]);
     const reportId = result?.reportId as string;
+
+    const service = new CoachService(Database, mailer as never);
+    expect((await service.releaseHeldReport(reportId)).delivered).toBe(true);
     expect((await session()).state).toBe("delivered");
     expect(mailer.subjects.length).toBeGreaterThan(0);
 
-    const service = new CoachService(Database, mailer as never);
     const read = (await service.getReports(leaderUser)) ?? [];
     const seen = read.find((r) => r.id === reportId);
     expect(seen).toBeTruthy();
