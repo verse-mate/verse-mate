@@ -62,6 +62,7 @@ async function backend(
   date: string,
   machine: Array<number | null>,
   corrected: Array<number | null> = machine,
+  newcomerBonus = 1,
 ) {
   const reportId = `backend-${sourceSessionId}`;
   await conn
@@ -73,7 +74,7 @@ async function backend(
       source_session_id: sourceSessionId,
       legacy_ids: [],
       summary: {},
-      metrics: JSON.stringify({ newcomerBonus: 1, sizeBonus: 0.5 }),
+      metrics: JSON.stringify({ newcomerBonus, sizeBonus: 0.5 }),
       body: {},
       held: true,
     })
@@ -155,6 +156,52 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
     ]);
     expect(compared.withinOne).toBe(2);
     expect(compared.comparable).toBe(2);
+    expect(compared.flagged).toBe(false);
+  });
+
+  it("A session both systems scored, read from the store: host 78.0 with 4, 3, 5 against backend 74.5 with 4, 4, not-applicable differs by 3.5, 2 of 2 within one, not flagged", async () => {
+    const machine = twelve([4, 4, null]);
+    const { base } = composeBaseScore(
+      new Map(machine.map((score, i) => [i + 1, score])),
+    );
+    await backend(
+      "ff-parallel-1",
+      A,
+      "2026-10-01",
+      machine,
+      machine,
+      74.5 - base - 0.5,
+    );
+    await host(A, "2026-10-01", 78.0, twelve([4, 3, 5], null));
+    const { sessions } = await read();
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({
+      backend: { composite: 74.5 },
+      host: { composite: 78 },
+      compositeDifference: 3.5,
+      withinOne: 2,
+      comparable: 2,
+      flagged: false,
+    });
+    expect(sessions[0].dimensions.slice(0, 3)).toEqual([
+      { n: 1, host: 4, backend: 4, difference: 0 },
+      { n: 2, host: 3, backend: 4, difference: 1 },
+      { n: 3, host: 5, backend: null, difference: null },
+    ]);
+  });
+
+  it("a dimension not-applicable on the host's side is shown and left out, and half points from the host compare as they are: 1.5 apart is neither within one nor flagged", () => {
+    const compared = compareScores(
+      { composite: 80, dimensions: [null, 3.5, 4.5] },
+      { composite: 80, dimensions: [4, 5, 4] },
+    );
+    expect(compared.dimensions).toEqual([
+      { n: 1, host: null, backend: 4, difference: null },
+      { n: 2, host: 3.5, backend: 5, difference: 1.5 },
+      { n: 3, host: 4.5, backend: 4, difference: 0.5 },
+    ]);
+    expect(compared.comparable).toBe(2);
+    expect(compared.withinOne).toBe(1);
     expect(compared.flagged).toBe(false);
   });
 
