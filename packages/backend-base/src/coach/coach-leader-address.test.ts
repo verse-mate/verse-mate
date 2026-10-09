@@ -544,6 +544,21 @@ describe("A Leader's Address Can Be Corrected, once the new address confirms", (
     expect(await leaderEmail(SLUG)).toBe(OLD);
   });
 
+  it("a link confirmed one minute before it expires still works", async () => {
+    await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
+    await conn
+      .updateTable("coach_leader_email_requests")
+      .set({ expires_at: sql`NOW() + interval '1 minute'` })
+      .where("slug", "=", SLUG)
+      .execute();
+    expect(await live.confirmLeaderEmailChange(mail.tokenFor(NEW))).toEqual({
+      ok: true,
+      email: NEW,
+      noticeSent: true,
+    });
+    expect(await leaderEmail(SLUG)).toBe(NEW);
+  });
+
   it("A mistyped address never confirms: a newer change for the same leader stops the older link", async () => {
     const MISTYPED = "addr-nwe@example.test";
     await live.updateLeaderEmail(SLUG, MISTYPED, { byUserId: null });
