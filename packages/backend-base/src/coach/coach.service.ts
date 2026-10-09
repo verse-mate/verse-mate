@@ -32,6 +32,7 @@ import {
   coldRecallInFeedback,
   storedEvidence,
 } from "./coach-governance.service";
+import type { ProgramReport } from "./coach-monthly.service";
 import {
   type RetainedKind,
   RetainedMediaService,
@@ -306,6 +307,7 @@ export interface LeaderMonthlySummary {
   conversationGuide: { label: string; q: string }[];
   focus: { clusterName: string; clusterPct: number | null; goals: string[] };
   sessions: LeaderMonthlySessionDetail[];
+  profile?: { study?: string; format?: string; groupSize?: string | number };
 }
 
 /** What the per-leader monthly-summary endpoints return. */
@@ -441,6 +443,7 @@ export interface CoachMonthly {
    *  or null when the dataset carries none for it. Passed straight through from
    *  the coaching pipeline so the portal and the PDF read the same words. */
   narrative: CoachMonthlyNarrative | null;
+  programReport?: ProgramReport;
 }
 
 export class CoachService {
@@ -2344,7 +2347,33 @@ export class CoachService {
       },
       leaders,
       availableMonths,
-      narrative: await this.narrativeFor(month),
+      ...(await this.programNarrative(month)),
+    };
+  }
+
+  private async programNarrative(month: string): Promise<{
+    narrative: CoachMonthlyNarrative | null;
+    programReport?: ProgramReport;
+  }> {
+    const host = await this.narrativeFor(month);
+    const produced = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_monthly_reports")
+      .select("summary")
+      .where("kind", "=", "program")
+      .where("month", "=", month)
+      .executeTakeFirst();
+    if (!produced) return { narrative: host };
+    const report = produced.summary as {
+      executiveSummary?: string[];
+      trends?: { text?: string[] };
+    };
+    return {
+      narrative: host ?? {
+        executiveSummary: report.executiveSummary ?? [],
+        trends: report.trends?.text ?? [],
+      },
+      programReport: produced.summary as ProgramReport,
     };
   }
 
@@ -2398,12 +2427,45 @@ export class CoachService {
       ...Object.keys(byMonth),
       ...reports.map((r) => r.date.slice(0, 7)),
     ]);
+    const derived = byMonth[month]
+      ? null
+      : CoachService.deriveMonthlySummary(record, month, reports);
     return {
       profile: { id: record.id, name: record.name, group: record.group },
       summary:
         byMonth[month] ??
-        CoachService.deriveMonthlySummary(record, month, reports),
+        (derived && (await this.withMonthlyProse(derived, audience))),
       availableMonths: [...months].sort((a, b) => (a < b ? 1 : -1)),
+    };
+  }
+
+  private async withMonthlyProse(
+    derived: LeaderMonthlySummary,
+    audience: "leader" | "admin",
+  ): Promise<LeaderMonthlySummary> {
+    const written = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_monthly_reports")
+      .select("summary")
+      .where("kind", "=", "leader")
+      .where("coach_id", "=", derived.leaderId)
+      .where("month", "=", derived.month)
+      .$if(audience === "leader", (q) => q.where("state", "=", "sent"))
+      .executeTakeFirst();
+    if (!written) return derived;
+    const prose = written.summary as LeaderMonthlySummary;
+    return {
+      ...derived,
+      ...(prose.profile ? { profile: prose.profile } : {}),
+      clusters: derived.clusters.map((c) => ({
+        ...c,
+        insight: prose.clusters?.find((p) => p.name === c.name)?.insight ?? "",
+      })),
+      strengths: prose.strengths ?? [],
+      growth: prose.growth ?? [],
+      trends: prose.trends ?? [],
+      conversationGuide: prose.conversationGuide ?? [],
+      focus: { ...derived.focus, goals: prose.focus?.goals ?? [] },
     };
   }
 
@@ -2417,7 +2479,7 @@ export class CoachService {
     "Being Real": "br",
   };
 
-  private static deriveMonthlySummary(
+  static deriveMonthlySummary(
     record: CoachRecord,
     month: string,
     reports: CoachReport[],

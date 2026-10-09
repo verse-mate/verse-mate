@@ -13,7 +13,9 @@ import {
 } from "../common/errors";
 import { createRateLimit } from "../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../common/response-schemas";
+import { getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
+import { CoachMonthlyService } from "./coach-monthly.service";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import { HOLD_KINDS } from "./coach-session-state";
 import {
@@ -30,6 +32,8 @@ import {
   ImprovementsEditBodySchema,
   LeaderMonthlyResponseSchema,
   LikelyDuplicateSchema,
+  MonthlyReportEditSchema,
+  MonthlyReportRowSchema,
   MonthlySchema,
   NoteSchema,
   ParallelRunComparisonSchema,
@@ -1279,6 +1283,115 @@ const plugin = new Elysia()
           params: t.Object({ sourceSessionId: t.String() }),
           response: {
             200: t.Object({ queued: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/monthly-reports",
+        async ({ query, store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const rows = await new CoachMonthlyService(
+            store.db,
+            () => getAiProvider(),
+            store.notification,
+          ).list(query.month);
+          return { reports: rows as never };
+        },
+        {
+          query: t.Object({ month: t.Optional(t.String({ maxLength: 7 })) }),
+          response: {
+            200: t.Object({ reports: t.Array(MonthlyReportRowSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/admin/monthly-reports/:id",
+        async ({ params, body, store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const id = Number(params.id);
+          const edited = Number.isInteger(id)
+            ? await new CoachMonthlyService(
+                store.db,
+                () => getAiProvider(),
+                store.notification,
+              ).edit(id, body)
+            : ({ ok: false, refusal: "unknown-summary" } as const);
+          if (!edited.ok)
+            throw refuse(
+              "PUT /coach/admin/monthly-reports/:id",
+              edited.refusal,
+            );
+          return { edited: true };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: MonthlyReportEditSchema,
+          response: {
+            200: t.Object({ edited: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/monthly-reports/:id/release",
+        async ({ params, store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const id = Number(params.id);
+          const released = Number.isInteger(id)
+            ? await new CoachMonthlyService(
+                store.db,
+                () => getAiProvider(),
+                store.notification,
+              ).release(id)
+            : ({ released: false, refusal: "unknown-summary" } as const);
+          if (!released.released)
+            throw refuse(
+              "POST /coach/admin/monthly-reports/:id/release",
+              released.refusal,
+            );
+          return { released: true, sent: released.sent };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          response: {
+            200: t.Object({ released: t.Boolean(), sent: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/monthly-reports/produce",
+        async ({ body, store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (!/^\d{4}-\d{2}$/.test(body.month))
+            throw refuse(
+              "POST /coach/admin/monthly-reports/produce",
+              "invalid-month",
+            );
+          return new CoachMonthlyService(
+            store.db,
+            () => getAiProvider(),
+            store.notification,
+          ).produce(body.month);
+        },
+        {
+          body: t.Object({ month: t.String({ maxLength: 7 }) }),
+          response: {
+            200: t.Object({ produced: t.Number() }),
             ...StandardErrorResponses,
           },
         },
