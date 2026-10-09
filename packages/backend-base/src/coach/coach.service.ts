@@ -1205,14 +1205,14 @@ export class CoachService {
         if (!leader) return { refusal: "unknown-leader" as const };
         if (leader.is_benchmark && options.confirm !== true)
           return { refusal: "confirm-required" as const };
-        if (leader.email === email)
-          return { refusal: null, name: leader.name, expiresAt: null };
         await trx
           .updateTable("coach_leader_email_requests")
           .set({ status: "superseded", resolved_at: sql`NOW()` })
           .where("slug", "=", slug)
           .where("status", "=", "pending")
           .execute();
+        if (leader.email === email)
+          return { refusal: null, name: leader.name, expiresAt: null };
         const created = await trx
           .insertInto("coach_leader_email_requests")
           .values({

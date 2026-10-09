@@ -539,6 +539,22 @@ describe("A Leader's Address Can Be Corrected, once the new address confirms", (
     ).toMatchObject({ ok: true, email: NEW });
   });
 
+  it("A mistyped address never confirms: setting the address the leader already has withdraws the pending change", async () => {
+    const MISTYPED = "addr-nwe@example.test";
+    await live.updateLeaderEmail(SLUG, MISTYPED, { byUserId: null });
+    const stale = mail.tokenFor(MISTYPED);
+    expect(
+      await live.updateLeaderEmail(SLUG, OLD, { byUserId: null }),
+    ).toMatchObject({ ok: true, status: "unchanged", confirmationSent: false });
+    expect(await live.confirmLeaderEmailChange(stale)).toEqual({
+      ok: false,
+      refusal: "superseded",
+    });
+    expect(await leaderEmail(SLUG)).toBe(OLD);
+    expect(await changes(SLUG)).toEqual([]);
+    expect(await addressChange(SLUG)).toBeNull();
+  });
+
   it("the benchmark leader's address changes only with confirm, and is audited once the new address confirms", async () => {
     expect(
       await live.updateLeaderEmail(BENCH, NEW, { byUserId: null }),
