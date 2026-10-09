@@ -748,6 +748,65 @@ describe("a score names what produced it", () => {
     );
   });
 
+  it("The prompt changes: a change to the vision instructions is a different prompt version", () => {
+    const before = promptVersion();
+    const original = CoachScoringService.buildVisionInstructions;
+    const changed = spyOn(
+      CoachScoringService,
+      "buildVisionInstructions",
+    ).mockImplementation(() => `${original()}\nOne more rule.`);
+    try {
+      expect(promptVersion()).not.toBe(before);
+    } finally {
+      changed.mockRestore();
+    }
+    expect(promptVersion()).toBe(before);
+  });
+
+  it("The prompt changes: a change to how the transcript or the title is framed for the model is a different prompt version", () => {
+    const before = promptVersion();
+    for (const method of ["transcriptMessage", "titleMessage"] as const) {
+      const original = CoachScoringService[method];
+      const changed = spyOn(CoachScoringService, method).mockImplementation(
+        (input: never) => `Here is the session:\n${original(input)}`,
+      );
+      try {
+        expect(promptVersion()).not.toBe(before);
+      } finally {
+        changed.mockRestore();
+      }
+    }
+    expect(promptVersion()).toBe(before);
+  });
+
+  it("what the model is sent is built from the framing the prompt version hashes", async () => {
+    const sent: AiChatOptions[] = [];
+    class Capturing extends VisionFours {
+      override async chatComplete(opts: AiChatOptions) {
+        sent.push(opts);
+        return super.chatComplete(opts);
+      }
+    }
+    const frame = new Uint8Array([1, 2, 3]);
+    await new CoachScoringService(
+      Database,
+      new Capturing(ALL_FOURS),
+    ).scoreSession({ ...INPUT, frames: [frame] });
+    const text = sent.find((o) => !o.messages.some((m) => m.images?.length));
+    const vision = sent.find((o) => o.messages.some((m) => m.images?.length));
+    expect(text?.messages.map((m) => m.content)).toEqual([
+      CoachScoringService.buildInstructions(),
+      CoachScoringService.transcriptMessage(INPUT.transcript),
+    ]);
+    expect(vision?.messages.map((m) => m.content)).toEqual([
+      CoachScoringService.buildVisionInstructions(),
+      CoachScoringService.titleMessage(INPUT.sessionTitle),
+    ]);
+    expect(vision?.messages[1].images).toEqual([
+      CoachScoringService.frameUrl(frame),
+    ]);
+  });
+
   it("a score recorded before this existed shows those items as not recorded", async () => {
     await conn
       .insertInto("coach_report_dimension_scores")
