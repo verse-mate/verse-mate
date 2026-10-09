@@ -221,6 +221,7 @@ export async function applyFirstLessonDetection(
     .updateTable("coach_report_dimension_scores")
     .set({
       score: null,
+      machine_score: null,
       rationale: FIRST_LESSON_RATIONALE,
       updated_at: sql`NOW()`,
     })
