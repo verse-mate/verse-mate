@@ -393,6 +393,19 @@ describe("a retained session reaches a delivered report", () => {
     }
   });
 
+  it("the scoring stage is given the transcript with the time of each line", async () => {
+    const sent: AiChatOptions[] = [];
+    class Capturing extends FakeAi {
+      override async chatComplete(opts: AiChatOptions) {
+        sent.push(opts);
+        return super.chatComplete(opts);
+      }
+    }
+    await pipeline(new FakeMailer(), new Capturing()).run();
+    const text = sent.find((o) => !o.messages.some((m) => m.images?.length));
+    expect(text?.messages[1].content).toContain("[00:00:00] LEADER: welcome");
+  });
+
   it("scores it, publishes it, and emails it, in that order", async () => {
     const mailer = new FakeMailer();
     const [result] = await pipeline(mailer).run();

@@ -30,6 +30,7 @@ import {
   versionDeliveredToLeader,
   waitingOnAPersonLast,
 } from "./coach-session-state";
+import { timedLinesFrom } from "./coach-transcript";
 import type { CoachMailer } from "./coach.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
@@ -313,7 +314,7 @@ export class CoachPipelineService {
       .catch(() => [] as Uint8Array[]);
 
     const scored = await this.scoring.scoreSession({
-      transcript: detail.sentences,
+      transcript: timedLinesFrom(detail.sentences),
       sessionTitle: session.title,
       frames,
       authenticityBaseline: await this.authenticityBaselineFor(
