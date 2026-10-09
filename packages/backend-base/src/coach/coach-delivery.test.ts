@@ -22,6 +22,7 @@ import type { ReportEvidence } from "./coach-governance.service";
 import { CoachReviewService } from "./coach-review.service";
 import { isolateTable } from "./coach-test-tables";
 import { CoachService } from "./coach.service";
+import { DIMENSIONS, composeBaseScore } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 isolateTable("coach_admins");
@@ -1108,7 +1109,18 @@ describe("a slow send cannot turn into a second copy", () => {
     internals.claim = async (reportId: string) => {
       await conn
         .updateTable("coach_reports")
-        .set({ summary: { session: "Obadiah", score: 41, status: "Weak" } })
+        .set({
+          metrics: JSON.stringify({
+            clusters: [
+              {
+                name: "Building Ministry",
+                weight: 33,
+                scorePct: 41,
+                contribution: 13.53,
+              },
+            ],
+          }),
+        })
         .where("id", "=", reportId)
         .execute();
       return claim(reportId);
@@ -1118,8 +1130,8 @@ describe("a slow send cannot turn into a second copy", () => {
       evidence: evidence(),
     });
     expect(result.delivered).toBe(true);
-    expect(mailer.sent[0].html).toContain("41");
-    expect(mailer.sent[0].html).not.toContain("78");
+    expect(mailer.sent[0].html).toContain("41%");
+    expect(mailer.sent[0].html).toContain("13.5");
   });
 
   it("a retry after one recipient failed mails only the recipients still owed", async () => {
@@ -1907,5 +1919,121 @@ describe("a pipeline report is shown to its leader at its first confirmed send",
       edit: "partially-delivered",
       firstLesson: "partially-delivered",
     });
+  });
+});
+
+describe("The weekly report email carries no headline score (task 6.15)", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(clear);
+
+  const scores = new Map(DIMENSIONS.map((d) => [d.n, d.n < 4 ? 3 : 4]));
+  const { clusters } = composeBaseScore(scores);
+  const point = (kind: string, n: number) => ({
+    title: `${kind} title ${n}`,
+    paragraphs: [`${kind} one line ${n}.`, `${kind} longer paragraph ${n}.`],
+  });
+  const BODY = {
+    bigIdeas: ["one"],
+    contextLine: "A warm session that found its feet in the second half.",
+    feedback: {
+      headline: "A warm session",
+      overview: ["Overview."],
+      strengths: [1, 2, 3, 4, 5].map((n) => `Strength title ${n}`),
+      strengthsProse: [1, 2, 3, 4, 5].map((n) => point("Strength", n)),
+      improvements: [1, 2, 3, 4, 5].map((n) => `Improvement title ${n}`),
+      improvementsProse: [1, 2, 3, 4, 5].map((n) => point("Improvement", n)),
+      recommendations: ["r"],
+    },
+  };
+
+  async function seedScored(id: string, session = "Obadiah") {
+    await seedReport(id, LEADER, BODY);
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        summary: JSON.stringify({ session, score: 78.1, status: "Strong" }),
+        metrics: JSON.stringify({ clusters }),
+      })
+      .where("id", "=", id)
+      .execute();
+  }
+
+  it("The email carries no headline score: no composite, total or band, and the summary, four cluster rows, highlights, targets and link", async () => {
+    await seedScored("r-email");
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-email",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    const { html } = mailer.sent[0];
+    for (const absent of ["78.1", "/ 100", "Strong", "Total", "SESSION SCORE"])
+      expect(html).not.toContain(absent);
+    expect(html).toContain(BODY.contextLine);
+    for (const c of clusters) {
+      expect(html).toContain(c.name);
+      expect(html).toContain(`×${c.weight}`);
+      expect(html).toContain(c.contribution.toFixed(1));
+    }
+    for (const n of [1, 2, 3, 4, 5]) {
+      expect(html).toContain(`<strong>Strength title ${n}</strong>`);
+      expect(html).toContain(`Strength one line ${n}.`);
+      expect(html).toContain(`<strong>Improvement title ${n}</strong>`);
+      expect(html).toContain(`Improvement one line ${n}.`);
+    }
+    expect(html).not.toContain("longer paragraph");
+    expect(html).toMatch(/<a[^>]+href="[^"]*r-email/);
+  });
+
+  it("Report is delivered: the same body goes to all three recipients", async () => {
+    await seedScored("r-same");
+    const mailer = new FakeMailer();
+    await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-same",
+      evidence: evidence(),
+    });
+    expect(mailer.sent.length).toBe(3);
+    expect(new Set(mailer.sent.map((s) => s.html)).size).toBe(1);
+  });
+
+  it("governance rule 1 reads the email body too: the benchmark leader's name in it blocks delivery", async () => {
+    await seedScored("r-named", "Joint class with Avery Hollis");
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-named",
+      evidence: evidence(),
+    });
+    expect(result.refusal).toBe("governance-blocked");
+    expect(result.violations?.map((v) => v.rule)).toEqual(["benchmark-name"]);
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("a report with three highlights and three targets shows three of each", async () => {
+    await seedScored("r-three");
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        body: JSON.stringify({
+          ...BODY,
+          feedback: {
+            ...BODY.feedback,
+            strengths: BODY.feedback.strengths.slice(0, 3),
+            improvements: BODY.feedback.improvements.slice(0, 3),
+          },
+        }),
+      })
+      .where("id", "=", "r-three")
+      .execute();
+    const mailer = new FakeMailer();
+    await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-three",
+      evidence: evidence(),
+    });
+    const { html } = mailer.sent[0];
+    expect(html).toContain("Strength title 3");
+    expect(html).not.toContain("Strength title 4");
   });
 });

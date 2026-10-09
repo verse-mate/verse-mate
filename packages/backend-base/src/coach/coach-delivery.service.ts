@@ -17,7 +17,6 @@ import {
   shownToAnyone,
 } from "./coach-session-state";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
-import { statusForScore } from "./rubric";
 
 /**
  * Delivering a finished report (change: port-coach-pipeline, tasks 6.1, 6.3,
@@ -191,7 +190,7 @@ export class CoachDeliveryService {
     const report = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_reports")
-      .select(["id", "coach_id", "summary", "body", "first_lesson"])
+      .select(["id", "coach_id", "summary", "metrics", "body", "first_lesson"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("id", "=", reportId)
       .executeTakeFirst();
@@ -307,6 +306,7 @@ export class CoachDeliveryService {
     evidence: ReportEvidence,
     report: {
       summary: unknown;
+      metrics: unknown;
       body: unknown;
       first_lesson: boolean;
       date: string;
@@ -329,13 +329,21 @@ export class CoachDeliveryService {
     const summary = (report.summary ?? {}) as Record<string, unknown>;
 
     const shown = shownToAnyone(claim);
+    const email = await reportEmail({
+      reportId,
+      leaderName: leader?.name,
+      summary: report.summary,
+      metrics: report.metrics,
+      body: report.body,
+      date: report.date,
+    });
 
     const verdict = shown
       ? { passed: true, violations: [] }
       : await this.governance.check({
           reportId,
           coachId,
-          body: JSON.stringify(report.body ?? {}),
+          body: `${JSON.stringify(report.body ?? {})}\n${email.text}`,
           evidence,
         });
     if (!verdict.passed) {
@@ -399,7 +407,7 @@ export class CoachDeliveryService {
     });
 
     const { recipients, skipped } = await this.recipients(coachId, leader);
-    const html = await reportEmailHtml(reportId, leader?.name, summary, report);
+    const { html } = email;
 
     const sends: NonNullable<DeliveryResult["sends"]> = [];
     const fenced = (): DeliveryResult => ({
@@ -513,7 +521,7 @@ export class CoachDeliveryService {
 
     const report = await conn
       .selectFrom("coach_reports")
-      .select(["coach_id", "summary", "body"])
+      .select(["coach_id", "summary", "metrics", "body"])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where("id", "=", reportId)
       .executeTakeFirstOrThrow();
@@ -532,7 +540,14 @@ export class CoachDeliveryService {
       report.coach_id,
       leader,
     );
-    const html = await reportEmailHtml(reportId, leader?.name, summary, report);
+    const { html } = await reportEmail({
+      reportId,
+      leaderName: leader?.name,
+      summary: report.summary,
+      metrics: report.metrics,
+      body: report.body,
+      date: report.date,
+    });
 
     const confirmed = new Set(claim.sentTo);
     const unconfirmed = new Set(claim.attemptedTo);
@@ -927,26 +942,69 @@ function revisionLive(
   );
 }
 
-async function reportEmailHtml(
-  reportId: string,
-  name: string | undefined,
-  summary: Record<string, unknown>,
-  report: { body: unknown; date: string },
-): Promise<string> {
-  const score = Number(summary.score ?? 0);
-  return render(
+const EMAIL_POINTS = 5;
+
+function firstSentence(paragraph: unknown): string {
+  const said = typeof paragraph === "string" ? paragraph.trim() : "";
+  const end = said.search(/[.!?](\s|$)/);
+  return end < 0 ? said : said.slice(0, end + 1);
+}
+
+function emailPoints(titles: unknown, prose: unknown) {
+  const written = Array.isArray(prose)
+    ? (prose as Array<{ title?: unknown; paragraphs?: unknown[] }>)
+    : [];
+  return (Array.isArray(titles) ? titles : [])
+    .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+    .slice(0, EMAIL_POINTS)
+    .map((title, i) => {
+      const match =
+        written.find((p) => p.title === title) ??
+        (written[i]?.title === undefined ? written[i] : undefined);
+      return { title, line: firstSentence(match?.paragraphs?.[0]) };
+    });
+}
+
+export async function reportEmail(input: {
+  reportId: string;
+  leaderName: string | undefined;
+  summary: unknown;
+  metrics: unknown;
+  body: unknown;
+  date: string;
+}): Promise<{ html: string; text: string }> {
+  const summary = (input.summary ?? {}) as Record<string, unknown>;
+  const body = (input.body ?? {}) as {
+    contextLine?: unknown;
+    feedback?: Record<string, unknown>;
+  };
+  const feedback = body.feedback ?? {};
+  const clusters =
+    (((input.metrics ?? {}) as { clusters?: unknown }).clusters as
+      | Array<Record<string, unknown>>
+      | undefined) ?? [];
+  const html = await render(
     CoachReport({
-      name,
-      sessionLabel: `${String(summary.session ?? "Session")} — ${report.date}`,
-      score,
-      status: String(summary.status ?? statusForScore(score).label),
-      headline: String(
-        ((report.body ?? {}) as { feedback?: { headline?: string } }).feedback
-          ?.headline ?? "",
+      name: input.leaderName,
+      sessionLabel: `${String(summary.session ?? "Session")} — ${input.date}`,
+      summaryLine: String(
+        (typeof body.contextLine === "string" && body.contextLine) ||
+          feedback.headline ||
+          "",
       ),
-      portalUrl: portalUrlFor(reportId),
+      clusters: clusters.map((c) => ({
+        name: String(c.name ?? ""),
+        raw:
+          typeof c.scorePct === "number" ? `${Math.round(c.scorePct)}%` : "N/A",
+        weight: Number(c.weight ?? 0),
+        contribution: Number(c.contribution ?? 0).toFixed(1),
+      })),
+      highlights: emailPoints(feedback.strengths, feedback.strengthsProse),
+      targets: emailPoints(feedback.improvements, feedback.improvementsProse),
+      portalUrl: portalUrlFor(input.reportId),
     }),
   );
+  return { html, text: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ") };
 }
 
 function portalUrlFor(reportId: string): string {

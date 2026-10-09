@@ -27,17 +27,19 @@ const EMAILS = [LEADER_EMAIL, BENCH_EMAIL, ADMIN_EMAIL];
 const QUOTE = "we keep coming back to what grace costs";
 
 class FakeMailer {
-  sent: Array<{ to: string; subject: string; text: string }> = [];
+  sent: Array<{ to: string; subject: string; text: string; html: string }> = [];
   constructor(private readonly fail: (to: string) => boolean = () => false) {}
   async sendEmail(data: {
     subject: string;
     to: { email: string };
     text: string;
+    html?: string;
   }) {
     this.sent.push({
       to: data.to.email,
       subject: data.subject,
       text: data.text,
+      html: data.html ?? "",
     });
     return this.fail(data.to.email)
       ? { delivered: false, error: "rejected" }
@@ -478,6 +480,63 @@ describe("a delivered report can be revised", () => {
     expect(
       result.violations?.find((v) => v.rule === "reused-quote")?.detail,
     ).toContain("amend-earlier");
+  });
+
+  it("A revision changes the email's highlights: the revised email carries the amended strength", async () => {
+    await seed();
+    const mailer = new FakeMailer();
+    const result = await new CoachAmendService(Database, mailer).amend({
+      reportId: REPORT,
+      amendment: {
+        body: {
+          strengths: ["Scripture before opinion, every time"],
+          strengthsProse: [
+            {
+              title: "Scripture before opinion, every time",
+              paragraphs: [
+                "The group read each passage before anyone gave a view.",
+              ],
+            },
+          ],
+        },
+      },
+      byUserId: null,
+    });
+    expect(result.sent).toBe(true);
+    expect(mailer.sent.length).toBe(3);
+    for (const sent of mailer.sent) {
+      expect(sent.html).toContain(
+        "<strong>Scripture before opinion, every time</strong>",
+      );
+      expect(sent.html).toContain(
+        "The group read each passage before anyone gave a view.",
+      );
+      expect(sent.html).not.toContain("Scripture first<");
+    }
+  });
+
+  it("An amendment breaks a governance rule through the email: a session title naming the benchmark leader holds the revision", async () => {
+    await seed();
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        summary: JSON.stringify({
+          session: "Jonah with Avery Hollis",
+          score: 80,
+          status: "Strong",
+        }),
+      })
+      .where("id", "=", REPORT)
+      .execute();
+    const mailer = new FakeMailer();
+    const result = await new CoachAmendService(Database, mailer).amend({
+      reportId: REPORT,
+      amendment: { body: { headline: "A steady session, revised" } },
+      byUserId: null,
+    });
+    expect(result.refusal).toBe("governance-blocked");
+    expect(result.violations?.map((v) => v.rule)).toEqual(["benchmark-name"]);
+    expect(mailer.sent).toEqual([]);
   });
 
   it("A rationale quote is not compared: an amended rationale quoting another report's evidence is not blocked", async () => {

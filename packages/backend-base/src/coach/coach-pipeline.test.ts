@@ -1503,8 +1503,12 @@ describe("an admin's correction reaches the leader's report and the email", () =
       6,
     );
     expect(mailer.html.length).toBeGreaterThan(0);
+    const engaging = composeBaseScore(
+      new Map(corrected.map((d) => [d.dimension_n, d.score])),
+    ).clusters.find((c) => c.name === "Teaching Craft");
     for (const html of mailer.html) {
-      expect(html).toContain(band);
+      expect(html).toContain((engaging?.contribution ?? 0).toFixed(1));
+      expect(html).not.toContain(band);
       expect(html).not.toContain("Strong");
     }
   });
