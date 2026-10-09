@@ -33,7 +33,7 @@ const twelve = (first: Array<number | null>, rest: number | null = 4) =>
 async function host(
   coachId: string,
   date: string,
-  composite: number,
+  composite: number | null,
   dims: Array<number | null>,
   ordinal = 0,
 ) {
@@ -46,7 +46,7 @@ async function host(
       session_date: date,
       source_session_id: legacySourceSessionId(coachId, date, ordinal),
       legacy_ids: [],
-      summary: { score: composite },
+      summary: composite === null ? {} : { score: composite },
       metrics: JSON.stringify({
         dimensions: dims.map((score, i) => ({ n: i + 1, score, note: "r" })),
       }),
@@ -217,6 +217,23 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
         { composite: 80, dimensions: [4, 3] },
       ).flagged,
     ).toBe(true);
+  });
+
+  it("a host report with no composite is not compared on the composite: no difference, never flagged for it, its dimensions still compared", async () => {
+    await backend("ff-parallel-1", A, "2026-10-01", twelve([4, 4]));
+    await host(A, "2026-10-01", null, twelve([4, 3]));
+    const [s] = (await read()).sessions;
+    expect(s.host.composite).toBeNull();
+    expect(s.compositeDifference).toBeNull();
+    expect(s.flagged).toBe(false);
+    expect(s.comparable).toBe(12);
+    expect(s.withinOne).toBe(12);
+
+    await backend("ff-parallel-2", B, "2026-10-01", twelve([4, 2]));
+    await host(B, "2026-10-01", null, twelve([4, 4]));
+    expect((await read()).sessions.find((c) => c.coachId === B)?.flagged).toBe(
+      true,
+    );
   });
 
   it("The host's report arrives after the backend scored: the session moves from unmatched to compared", async () => {
