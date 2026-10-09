@@ -110,6 +110,19 @@ class LaterSessionAi extends FakeAi {
   }
 }
 
+class EachSessionAi extends FakeAi {
+  private sessions = 0;
+  override async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+    const answer = await super.chatComplete(opts);
+    if (opts.messages.some((m) => m.images?.length)) return answer;
+    this.sessions += 1;
+    return {
+      ...answer,
+      content: answer.content.replaceAll("12:", `${20 + this.sessions}:`),
+    };
+  }
+}
+
 class CountingAi extends FakeAi {
   calls = 0;
   override async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
@@ -1996,7 +2009,7 @@ describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () =
     expect(mailer.sent).toEqual([]);
     expect(await holdOf("ff-pipe-1")).toEqual({
       state: "scored",
-      hold_kind: "review",
+      hold_kind: "scoring-version",
     });
 
     const released = await new CoachService(
@@ -2060,5 +2073,136 @@ describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () =
       .execute();
     await pipeline(new FakeMailer()).run();
     expect((await holdOf("ff-pipe-1")).hold_kind).toBeNull();
+  });
+
+  async function twoHeldUnderOneVersion(mailer: FakeMailer) {
+    await seedRetained("ff-pipe-1");
+    await seedRetained("ff-pipe-2");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ session_date: "2026-08-29" })
+      .where("source_session_id", "=", "ff-pipe-2")
+      .execute();
+    const results = await pipeline(mailer, new EachSessionAi()).run();
+    return Object.fromEntries(
+      results.map((r) => [r.sourceSessionId, r]),
+    ) as Record<string, (typeof results)[number]>;
+  }
+
+  it("Until the first report under a version is released, a later one under it waits with it; releasing the first delivers both", async () => {
+    const mailer = new FakeMailer();
+    const held = await twoHeldUnderOneVersion(mailer);
+    expect(held["ff-pipe-1"].outcome).toBe("scored-awaiting-review");
+    expect(held["ff-pipe-2"].outcome).toBe("scored-awaiting-review");
+    expect(mailer.sent).toEqual([]);
+    expect(await holdOf("ff-pipe-1")).toEqual({
+      state: "scored",
+      hold_kind: "scoring-version",
+    });
+    expect(await holdOf("ff-pipe-2")).toEqual({
+      state: "scored",
+      hold_kind: "scoring-version",
+    });
+
+    const released = await new CoachService(
+      Database,
+      mailer as any,
+    ).releaseHeldReport(held["ff-pipe-1"].reportId as string);
+    expect(released.delivered).toBe(true);
+    expect((await holdOf("ff-pipe-1")).state).toBe("delivered");
+    expect(await holdOf("ff-pipe-2")).toEqual({
+      state: "delivered",
+      hold_kind: null,
+    });
+    expect(mailer.sent.filter((to) => to === EMAIL)).toHaveLength(2);
+  });
+
+  it("another leader's release under the same version does not deliver this leader's held reports", async () => {
+    const OTHER = "pipe-other-coach";
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: OTHER, email: "pipe-other@example.test", name: "Other" })
+      .execute();
+    try {
+      const mailer = new FakeMailer();
+      await twoHeldUnderOneVersion(mailer);
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({ coach_id: OTHER })
+        .where("source_session_id", "=", "ff-pipe-1")
+        .execute();
+      await conn
+        .updateTable("coach_reports")
+        .set({ coach_id: OTHER })
+        .where("source_session_id", "=", "ff-pipe-1")
+        .execute();
+      const reportId = (
+        await conn
+          .selectFrom("coach_intake_sessions")
+          .select("report_id")
+          .where("source_session_id", "=", "ff-pipe-1")
+          .executeTakeFirstOrThrow()
+      ).report_id as string;
+      expect(
+        (
+          await new CoachService(Database, mailer as any).releaseHeldReport(
+            reportId,
+          )
+        ).delivered,
+      ).toBe(true);
+      expect(mailer.sent).not.toContain(EMAIL);
+      expect(await holdOf("ff-pipe-2")).toEqual({
+        state: "scored",
+        hold_kind: "scoring-version",
+      });
+      await pipeline(mailer).run();
+      expect(mailer.sent).not.toContain(EMAIL);
+    } finally {
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", OTHER)
+        .execute();
+    }
+  });
+
+  it("no delivery path sends a report held for its version: a direct delivery is refused as awaiting release, and the redelivery tick passes it by", async () => {
+    const mailer = new FakeMailer();
+    const held = await twoHeldUnderOneVersion(mailer);
+    const reportId = held["ff-pipe-2"].reportId as string;
+    expect(
+      await new CoachDeliveryService(Database, mailer as any).deliver({
+        reportId,
+        evidence: { quotes: [], timestamps: [] },
+      }),
+    ).toEqual({ delivered: false, refusal: "awaiting-release" });
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ state: "delivery_pending" })
+      .where("source_session_id", "=", "ff-pipe-2")
+      .execute();
+    await pipeline(mailer).run();
+    expect(mailer.sent).toEqual([]);
+    expect(await holdOf("ff-pipe-2")).toEqual({
+      state: "delivery_pending",
+      hold_kind: "scoring-version",
+    });
+  });
+
+  it("once the first report under a version reaches the leader on a later attempt, the tick delivers the reports that waited with it", async () => {
+    const failing = new FakeMailer(false);
+    const held = await twoHeldUnderOneVersion(failing);
+    expect(
+      (
+        await new CoachService(Database, failing as any).releaseHeldReport(
+          held["ff-pipe-1"].reportId as string,
+        )
+      ).delivered,
+    ).toBe(false);
+    expect((await holdOf("ff-pipe-2")).hold_kind).toBe("scoring-version");
+    const mailer = new FakeMailer();
+    await pipeline(mailer).run();
+    expect((await holdOf("ff-pipe-1")).state).toBe("delivered");
+    await pipeline(mailer).run();
+    expect((await holdOf("ff-pipe-2")).state).toBe("delivered");
   });
 });

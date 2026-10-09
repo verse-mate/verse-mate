@@ -159,7 +159,7 @@ export class CoachPublishService {
           : session?.release_required
             ? "reattributed"
             : input.newVersionHold
-              ? "review"
+              ? "scoring-version"
               : null,
         updated_at: sql`NOW()`,
       })

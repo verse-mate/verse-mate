@@ -3034,7 +3034,8 @@
                           "governance",
                           "cold-recall",
                           "no-mailer",
-                          "send-failed"
+                          "send-failed",
+                          "scoring-version"
                         ]
                       },
                       {

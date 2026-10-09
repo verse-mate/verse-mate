@@ -26,6 +26,7 @@ import {
   COACH_REPLY_TO_NAME,
   CoachDeliveryService,
   isPlaceholderAddress,
+  releaseDeliveredVersions,
 } from "./coach-delivery.service";
 import {
   coldRecallInFeedback,
@@ -594,7 +595,7 @@ export class CoachService {
     const held = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
-      .select("parallel_run")
+      .select(["parallel_run", "coach_id"])
       .where("report_id", "=", reportId)
       .where(releasable)
       .executeTakeFirst();
@@ -609,14 +610,26 @@ export class CoachService {
         release_required: false,
         retry_count: sql`CASE WHEN state = 'delivery_failed' THEN 0 ELSE retry_count END`,
         state: sql`CASE WHEN state = 'delivery_failed' THEN 'delivery_pending' ELSE state END`,
+        hold_reason: sql`CASE WHEN hold_kind = 'scoring-version' THEN NULL ELSE hold_reason END`,
+        hold_kind: sql`CASE WHEN hold_kind = 'scoring-version' THEN NULL ELSE hold_kind END`,
       })
       .where("report_id", "=", reportId)
       .where(releasable)
       .execute();
-    const result = await new CoachDeliveryService(
-      this.db,
-      this.notification,
-    ).deliver({ reportId, evidence: await storedEvidence(this.db, reportId) });
+    const delivery = new CoachDeliveryService(this.db, this.notification);
+    const result = await delivery.deliver({
+      reportId,
+      evidence: await storedEvidence(this.db, reportId),
+    });
+    if (result.delivered && held.coach_id)
+      for (const waiting of await releaseDeliveredVersions(
+        this.db,
+        held.coach_id,
+      ))
+        await delivery.deliver({
+          reportId: waiting,
+          evidence: await storedEvidence(this.db, waiting),
+        });
     return {
       delivered: result.delivered,
       ...(result.refusal ? { refusal: result.refusal } : {}),

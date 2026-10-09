@@ -12,6 +12,7 @@ import {
 } from "./coach-governance.service";
 import {
   STALE_DELIVERY_CLAIM,
+  VERSION_DELIVERED_TO_LEADER,
   claimable,
   shownToAnyone,
 } from "./coach-session-state";
@@ -141,6 +142,30 @@ export interface RevisionSendResult {
   subject?: string;
 }
 
+export async function releaseDeliveredVersions(
+  database: db,
+  coachId?: string,
+): Promise<string[]> {
+  const released = await database
+    .getOrCreateConnection()
+    .updateTable("coach_intake_sessions")
+    .set({
+      state: "delivery_pending",
+      hold_kind: null,
+      hold_reason: null,
+      updated_at: sql`NOW()`,
+    })
+    .where("hold_kind", "=", "scoring-version")
+    .where("state", "in", ["scored", "delivery_pending"])
+    .$if(coachId !== undefined, (q) =>
+      q.where("coach_id", "=", coachId as string),
+    )
+    .where(VERSION_DELIVERED_TO_LEADER)
+    .returning("report_id")
+    .execute();
+  return released.map((r) => r.report_id as string);
+}
+
 export class CoachDeliveryService {
   private readonly governance: CoachGovernanceService;
 
@@ -216,14 +241,17 @@ export class CoachDeliveryService {
     }
     const session = await conn
       .selectFrom("coach_intake_sessions")
-      .select(["state", "release_required", "parallel_run"])
+      .select(["state", "release_required", "parallel_run", "hold_kind"])
       .where("report_id", "=", reportId)
       .executeTakeFirst();
     if (!session) return { status: "unknown-report" };
     if (session.parallel_run) return { status: "parallel-run-session" };
     if (session.state === "delivered") return { status: "already-delivered" };
     return {
-      status: session.release_required ? "awaiting-release" : "in-flight",
+      status:
+        session.release_required || session.hold_kind === "scoring-version"
+          ? "awaiting-release"
+          : "in-flight",
     };
   }
 

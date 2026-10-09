@@ -43,6 +43,7 @@ then rerun the down.
 | `20260901129000-coach-pipeline-states` | any session is `scoring_failed`, `delivery_pending`, `delivering` or `delivery_failed` (`SELECT state, count(*) FROM coach_intake_sessions GROUP BY state`) | Let each delivery finish on the current code. Settle each failed one by hand: record whether its recipients got the report, then move it to `delivered` or delete it. Turning these back into `scored` would make them claimable again on the older code, which could mail recipients twice. |
 | `20260901135000-coach-intake-admin-attribution` | any session has `matched_by = 'admin'` | Record those assignments, then set `matched_by` on each to the value the older code should see. |
 | `20260901146000-coach-reminder-claims` | any reminder claim has no confirmed send (`sent_at IS NULL`) | Check with the mail provider whether each went out. Set `sent_at` on the ones that did and delete the ones that did not. Deleting them blindly would let the older code send them again. |
+| `20260901154000-coach-no-calibration-hold` | any session is held for its scoring version (`hold_kind = 'scoring-version'`) | Release each one on the current code, or delete it. The older code has no such hold, so dropping it would let the report be delivered with no admin review. |
 
 ### Downs that refuse to drop data unless told to
 
@@ -110,5 +111,6 @@ The column's values are lost; the rows stay.
 
 `20260901128000-coach-one-report-per-session` drops an index only.
 
-`20260901154000-coach-no-calibration-hold` allows the `calibration` hold kind again. Its
-up cleared that kind from held sessions, and the down does not bring it back.
+`20260901154000-coach-no-calibration-hold` allows the `calibration` hold kind again once
+no session holds the `scoring-version` kind (above). Its up cleared the `calibration` kind
+from held sessions, and the down does not bring it back.
