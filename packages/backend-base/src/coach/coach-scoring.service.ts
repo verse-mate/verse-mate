@@ -43,6 +43,7 @@ export interface ScoringVersion {
   languageModel: string;
   promptVersion: string;
   settings: typeof SCORING_SETTINGS;
+  visionModel?: string;
 }
 
 const FRAMING_SAMPLE = {
@@ -314,6 +315,7 @@ export class CoachScoringService {
           content: CoachScoringService.transcriptMessage(input.transcript),
         },
       ],
+      ...SCORING_SETTINGS,
       maxTokens: SCORING_MAX_OUTPUT_TOKENS,
       responseFormat: { type: "json_object" },
     });
@@ -342,7 +344,7 @@ export class CoachScoringService {
     const visual = await this.scoreVisualAids(input);
     const withVisual = [
       ...raw.filter((d) => d.n !== VISUAL_AIDS_DIMENSION),
-      visual,
+      visual.score,
     ];
 
     const validated = validateDimensionScores(withVisual);
@@ -392,6 +394,7 @@ export class CoachScoringService {
         languageModel: response.model || this.model,
         promptVersion: promptVersion(),
         settings: SCORING_SETTINGS,
+        ...(visual.model ? { visionModel: visual.model } : {}),
       },
       ...(reviewReason ? { reviewReason } : {}),
       dimensions: [...scores].map(([n, score]) => ({
@@ -412,14 +415,16 @@ export class CoachScoringService {
    */
   private async scoreVisualAids(
     input: ScoringInput,
-  ): Promise<RawDimensionScore> {
+  ): Promise<{ score: RawDimensionScore; model?: string }> {
     if (!input.frames?.length) {
       return {
-        n: VISUAL_AIDS_DIMENSION,
-        score: null,
-        rationale:
-          "No frames were available for this session, so visual aids could not be observed.",
-        notApplicable: true,
+        score: {
+          n: VISUAL_AIDS_DIMENSION,
+          score: null,
+          rationale:
+            "No frames were available for this session, so visual aids could not be observed.",
+          notApplicable: true,
+        },
       };
     }
 
@@ -431,16 +436,20 @@ export class CoachScoringService {
       // this try, so a 500 or a timeout propagated out of scoreSession and
       // discarded all of them.
       return {
-        n: VISUAL_AIDS_DIMENSION,
-        score: null,
-        rationale:
-          "The vision model could not be reached for this session, so visual aids were not observed.",
-        notApplicable: true,
+        score: {
+          n: VISUAL_AIDS_DIMENSION,
+          score: null,
+          rationale:
+            "The vision model could not be reached for this session, so visual aids were not observed.",
+          notApplicable: true,
+        },
       };
     }
   }
 
-  private async visionCall(input: ScoringInput): Promise<RawDimensionScore> {
+  private async visionCall(
+    input: ScoringInput,
+  ): Promise<{ score: RawDimensionScore; model: string }> {
     const response = await this.ai.chatComplete({
       model: this.model,
       messages: [
@@ -454,9 +463,11 @@ export class CoachScoringService {
           images: (input.frames ?? []).map(CoachScoringService.frameUrl),
         },
       ],
+      ...SCORING_SETTINGS,
       maxTokens: 1000,
       responseFormat: { type: "json_object" },
     });
+    const model = response.model || this.model;
 
     try {
       const parsed = JSON.parse(response.content) as {
@@ -464,19 +475,23 @@ export class CoachScoringService {
         rationale?: string;
       };
       return {
-        n: VISUAL_AIDS_DIMENSION,
-        score: parsed.score ?? null,
-        rationale: parsed.rationale ?? "",
+        model,
+        score: {
+          n: VISUAL_AIDS_DIMENSION,
+          score: parsed.score ?? null,
+          rationale: parsed.rationale ?? "",
+        },
       };
     } catch {
-      // A vision call that fails must not fail the whole session: eleven
-      // dimensions are still legitimately scored.
       return {
-        n: VISUAL_AIDS_DIMENSION,
-        score: null,
-        rationale:
-          "The vision model returned no usable judgement for visual aids this session.",
-        notApplicable: true,
+        model,
+        score: {
+          n: VISUAL_AIDS_DIMENSION,
+          score: null,
+          rationale:
+            "The vision model returned no usable judgement for visual aids this session.",
+          notApplicable: true,
+        },
       };
     }
   }
@@ -505,7 +520,7 @@ export class CoachScoringService {
             VALUES (
               ${reportId}, ${d.n}, ${d.score}, ${d.note},
               'machine', ${RUBRIC_MODEL_VERSION},
-              ${producedBy?.languageModel ?? null}, ${producedBy?.promptVersion ?? null},
+              ${(d.n === VISUAL_AIDS_DIMENSION ? producedBy?.visionModel : undefined) ?? producedBy?.languageModel ?? null}, ${producedBy?.promptVersion ?? null},
               ${settings}::jsonb
             )
             ON CONFLICT (report_id, dimension_n) DO UPDATE SET

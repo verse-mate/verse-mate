@@ -807,6 +807,61 @@ describe("a score names what produced it", () => {
     ]);
   });
 
+  it("the settings recorded are the settings both model calls are sent", async () => {
+    const sent: AiChatOptions[] = [];
+    class Capturing extends VisionFours {
+      override async chatComplete(opts: AiChatOptions) {
+        sent.push(opts);
+        return super.chatComplete(opts);
+      }
+    }
+    const scored = await new CoachScoringService(
+      Database,
+      new Capturing(ALL_FOURS),
+    ).scoreSession({ ...INPUT, frames: [new Uint8Array([1])] });
+    expect(sent).toHaveLength(2);
+    for (const opts of sent)
+      expect({
+        temperature: opts.temperature,
+        reasoningEffort: opts.reasoningEffort,
+      }).toEqual(scored.producedBy?.settings as never);
+  });
+
+  it("Visual Aids records the model the vision call answered with, the other dimensions the text call's", async () => {
+    class TwoModels extends VisionFours {
+      override async chatComplete(opts: AiChatOptions) {
+        const answer = await super.chatComplete(opts);
+        return {
+          ...answer,
+          model: opts.messages.some((m) => m.images?.length)
+            ? "vision-model"
+            : "text-model",
+        };
+      }
+    }
+    const svc = new CoachScoringService(Database, new TwoModels(ALL_FOURS));
+    const scored = await svc.scoreSession({
+      ...INPUT,
+      frames: [new Uint8Array([1])],
+    });
+    await svc.persistDimensions(
+      REPORT,
+      scored.dimensions ?? [],
+      undefined,
+      scored.producedBy,
+    );
+    const rows = await conn
+      .selectFrom("coach_report_dimension_scores")
+      .select(["dimension_n", "language_model"])
+      .where("report_id", "=", REPORT)
+      .execute();
+    expect(rows).toHaveLength(12);
+    for (const r of rows)
+      expect(r.language_model).toBe(
+        r.dimension_n === 7 ? "vision-model" : "text-model",
+      );
+  });
+
   it("a score recorded before this existed shows those items as not recorded", async () => {
     await conn
       .insertInto("coach_report_dimension_scores")
