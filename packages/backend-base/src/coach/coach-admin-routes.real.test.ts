@@ -65,6 +65,10 @@ async function clear() {
     .where("slug", "in", [LEADER, OTHER])
     .execute();
   await conn
+    .deleteFrom("coach_leader_email_requests")
+    .where("slug", "in", [LEADER, OTHER])
+    .execute();
+  await conn
     .deleteFrom("coach_admins")
     .where("email", "=", ADMIN_EMAIL)
     .execute();
@@ -390,6 +394,7 @@ describe("every admin route answers through the real service within its response
     expect(moved.status).toBe(200);
     expect(moved.body).toMatchObject({
       email: "real-routes-other.new@example.test",
+      status: "pending",
     });
 
     expect(
@@ -484,7 +489,7 @@ describe("every admin refusal carries a structured code with the status and word
       "PUT /coach/admin/leaders/:id/email",
       `leaders/${LEADER}/email`,
       "taken",
-      { email: "real-routes-other.new@example.test" },
+      { email: OTHER_EMAIL },
     );
     await refused(
       "PUT /coach/admin/leaders/:id/email",

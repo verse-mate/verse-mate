@@ -78,6 +78,10 @@ type Refusal = {
 };
 
 const REFUSALS: Record<string, Refusal> = {
+  "20260901157000-coach-leader-email-requests": {
+    seed: "INSERT INTO coach_leader_email_requests (slug, new_email, token_hash, expires_at) VALUES ('roundtrip', 'after@example.test', 'h', now())",
+    tables: ["coach_leader_email_requests"],
+  },
   "20260901156000-coach-machine-score": {
     seed: `${REPORT}; INSERT INTO coach_report_dimension_scores (report_id, dimension_n, provenance, score, machine_score) VALUES ('roundtrip', 1, 'human', 2, 4)`,
     tables: ["coach_reports"],

@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { Elysia } from "elysia";
 import { sql } from "kysely";
 
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import coachPlugin from "./coach.plugin";
 import { type CoachDataset, CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
@@ -16,15 +18,67 @@ const MILO = "milo-kerr";
 const MILO_OLD = "milo.kerr@example.org";
 const MILO_NEW = "milo.new@example.test";
 
-const service = new CoachService(Database);
+class Inbox {
+  sent: Array<{ to: string; subject: string; text: string }> = [];
+  async sendEmail(data: {
+    to: { email: string };
+    subject: string;
+    text: string;
+  }) {
+    this.sent.push({
+      to: data.to.email,
+      subject: data.subject,
+      text: data.text,
+    });
+    return { delivered: true };
+  }
+  tokenFor(email: string): string {
+    const mail = this.sent.filter((m) => m.to === email).at(-1);
+    const token = mail?.text.match(
+      /confirm-address\?token=([A-Za-z0-9_-]+)/,
+    )?.[1];
+    if (!token) throw new Error(`no confirmation link was sent to ${email}`);
+    return token;
+  }
+}
+
+const inbox = new Inbox();
+const service = new CoachService(Database, inbox);
+
+async function changeAddress(
+  svc: CoachService,
+  mail: Inbox,
+  slug: string,
+  address: string,
+  options: { byUserId?: string | null; confirm?: boolean } = {},
+) {
+  const requested = await svc.updateLeaderEmail(slug, address, options);
+  if (!requested.ok || requested.status !== "pending") return requested;
+  return svc.confirmLeaderEmailChange(mail.tokenFor(requested.email));
+}
+
+async function leaderEmail(slug: string) {
+  return (
+    await conn
+      .selectFrom("coach_leaders")
+      .select("email")
+      .where("slug", "=", slug)
+      .executeTakeFirstOrThrow()
+  ).email;
+}
 
 async function clear() {
+  inbox.sent = [];
+  await conn
+    .deleteFrom("coach_leader_email_requests")
+    .where("slug", "in", [SLUG, WYATT, MILO, "addr-bench"])
+    .execute();
   await conn.deleteFrom("coach_reports").where("coach_id", "=", SLUG).execute();
   await conn
     .deleteFrom("coach_leaders")
     .where((eb) =>
       eb.or([
-        eb("slug", "in", [SLUG, WYATT, MILO]),
+        eb("slug", "in", [SLUG, WYATT, MILO, "addr-other"]),
         eb("email", "in", [OTHER, REAL, WYATT_REAL, MILO_NEW]),
       ]),
     )
@@ -76,7 +130,12 @@ describe("A leader signs up after their reports exist", () => {
     expect(await service.getMe(userId)).toBeNull();
 
     expect(
-      await service.updateLeaderEmail(SLUG, " Addr-Leader.Real@Example.TEST "),
+      await changeAddress(
+        service,
+        inbox,
+        SLUG,
+        " Addr-Leader.Real@Example.TEST ",
+      ),
     ).toEqual({
       ok: true,
       email: REAL,
@@ -102,7 +161,7 @@ describe("A leader signs up after their reports exist", () => {
     expect(bundled.slug).toBe(WYATT);
     const userId = await account(WYATT_REAL);
 
-    expect(await service.updateLeaderEmail(WYATT, WYATT_REAL)).toEqual({
+    expect(await changeAddress(service, inbox, WYATT, WYATT_REAL)).toEqual({
       ok: true,
       email: WYATT_REAL,
       noticeSent: false,
@@ -122,7 +181,7 @@ describe("A leader signs up after their reports exist", () => {
     const oldAccount = await account(MILO_OLD);
     expect((await service.getMe(oldAccount))?.profile?.id).toBe(MILO);
 
-    await service.updateLeaderEmail(MILO, MILO_NEW);
+    await changeAddress(service, inbox, MILO, MILO_NEW);
 
     expect(await service.getMe(oldAccount)).toBeNull();
   });
@@ -168,7 +227,10 @@ describe("A leader signs up after their reports exist", () => {
     expect(row.email).toBe(PLACEHOLDER);
   });
 
-  it("an address another admin gives a different leader at the same moment is refused as taken, not a server error", async () => {
+  it("an address another admin gives a different leader at the same moment is refused as taken at confirmation, not a server error", async () => {
+    const requested = await service.updateLeaderEmail(SLUG, REAL);
+    expect(requested).toMatchObject({ ok: true, status: "pending" });
+    const token = inbox.tokenFor(REAL);
     let pending = null as Promise<unknown> | null;
     await conn.transaction().execute(async (trx) => {
       await trx
@@ -176,7 +238,7 @@ describe("A leader signs up after their reports exist", () => {
         .set({ email: REAL })
         .where("slug", "=", "addr-other")
         .execute();
-      pending = service.updateLeaderEmail(SLUG, REAL).catch((e) => e);
+      pending = service.confirmLeaderEmailChange(token).catch((e) => e);
       for (let i = 0; i < 100; i += 1) {
         const waiting = await sql<{ n: string }>`
           SELECT count(*) AS n FROM pg_stat_activity
@@ -187,12 +249,7 @@ describe("A leader signs up after their reports exist", () => {
       }
     });
     expect(await pending).toEqual({ ok: false, refusal: "taken" });
-    const row = await conn
-      .selectFrom("coach_leaders")
-      .select("email")
-      .where("slug", "=", SLUG)
-      .executeTakeFirstOrThrow();
-    expect(row.email).toBe(PLACEHOLDER);
+    expect(await leaderEmail(SLUG)).toBe(PLACEHOLDER);
   });
 
   it("an unknown leader is refused", async () => {
@@ -210,7 +267,7 @@ describe("after an address change, every lookup by address follows the store", (
       .insertInto("coach_leaders")
       .values({ slug: MILO, email: MILO_OLD, name: "Milo Kerr" })
       .execute();
-    await service.updateLeaderEmail(MILO, MILO_NEW);
+    await changeAddress(service, inbox, MILO, MILO_NEW);
   });
   afterEach(async () => {
     await conn.deleteFrom("coach_leaders").where("slug", "=", ADDED).execute();
@@ -262,23 +319,13 @@ describe("after an address change, every lookup by address follows the store", (
   });
 });
 
-describe("a leader's address change is audited and announced to the old address", () => {
+describe("A Leader's Address Can Be Corrected, once the new address confirms", () => {
   const OLD = "addr-old@example.test";
   const NEW = "addr-new@example.test";
   const BENCH = "addr-bench";
   const BENCH_OLD = "addr-bench@example.test";
-  let sent: Array<{ to: string; subject: string; text: string }> = [];
-  const mailer = {
-    sendEmail: async (data: {
-      to: { email: string };
-      subject: string;
-      text: string;
-    }) => {
-      sent.push({ to: data.to.email, subject: data.subject, text: data.text });
-      return { delivered: true };
-    },
-  };
-  const live = new CoachService(Database, mailer);
+  const mail = new Inbox();
+  const live = new CoachService(Database, mail);
 
   async function changes(slug: string) {
     return conn
@@ -289,8 +336,12 @@ describe("a leader's address change is audited and announced to the old address"
       .execute();
   }
 
+  async function addressChange(slug: string) {
+    return (await live.listCoaches()).find((c) => c.id === slug)?.addressChange;
+  }
+
   beforeEach(async () => {
-    sent = [];
+    mail.sent = [];
     process.env[COACH_PIPELINE_LIVE] = "true";
     await conn
       .deleteFrom("coach_leader_email_changes")
@@ -321,20 +372,97 @@ describe("a leader's address change is audited and announced to the old address"
     await conn.deleteFrom("coach_leaders").where("slug", "=", BENCH).execute();
   });
 
-  it("records who changed it, from what, to what", async () => {
+  it("An admin changes a leader's address: a link goes to the new address, nothing changes yet, and the admin sees it awaiting confirmation", async () => {
     const adminId = await account(REAL);
-    expect(
-      await live.updateLeaderEmail(SLUG, NEW, { byUserId: adminId }),
-    ).toEqual({ ok: true, email: NEW, noticeSent: true });
+    const requested = await live.updateLeaderEmail(SLUG, NEW, {
+      byUserId: adminId,
+    });
+    expect(requested).toMatchObject({
+      ok: true,
+      email: NEW,
+      status: "pending",
+      confirmationSent: true,
+    });
+    expect(mail.sent.map((m) => m.to)).toEqual([NEW]);
+    expect(mail.tokenFor(NEW)).toBeTruthy();
+    expect(await leaderEmail(SLUG)).toBe(OLD);
+    expect(await changes(SLUG)).toEqual([]);
+    expect(await addressChange(SLUG)).toMatchObject({
+      newEmail: NEW,
+      state: "pending",
+      reason: null,
+    });
+    const stored = await conn
+      .selectFrom("coach_leader_email_requests")
+      .select("token_hash")
+      .where("slug", "=", SLUG)
+      .executeTakeFirstOrThrow();
+    expect(stored.token_hash).not.toBe(mail.tokenFor(NEW));
+  });
+
+  it("The link is fetched but not confirmed: describing it changes nothing and masks both addresses", async () => {
+    await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
+    const token = mail.tokenFor(NEW);
+    const described = await live.describeLeaderEmailChange(token);
+    expect(described).toMatchObject({
+      leaderName: "Addr Leader",
+      state: "pending",
+    });
+    expect(described?.currentEmail).not.toBe(OLD);
+    expect(described?.currentEmail).toEndWith("@example.test");
+    expect(described?.newEmail).not.toBe(NEW);
+    expect(await live.describeLeaderEmailChange(token)).toEqual(described);
+    expect(await leaderEmail(SLUG)).toBe(OLD);
+    expect(await addressChange(SLUG)).toMatchObject({ state: "pending" });
+    expect(await live.describeLeaderEmailChange("not-a-token")).toBeNull();
+  });
+
+  it("The new address confirms: the address changes, the change is recorded with the admin and the previous address, and the previous address is told", async () => {
+    const adminId = await account(REAL);
+    await live.updateLeaderEmail(SLUG, NEW, { byUserId: adminId });
+    expect(await live.confirmLeaderEmailChange(mail.tokenFor(NEW))).toEqual({
+      ok: true,
+      email: NEW,
+      noticeSent: true,
+    });
+    expect(await leaderEmail(SLUG)).toBe(NEW);
     expect(await changes(SLUG)).toEqual([
       { previous_email: OLD, new_email: NEW, changed_by: adminId },
     ]);
+    expect(mail.sent.map((m) => m.to)).toEqual([NEW, OLD]);
+    expect(mail.sent[1].text).toContain("changed");
+    expect(await addressChange(SLUG)).toBeNull();
   });
 
-  it("the old address is told, the new one is not", async () => {
+  it("the link works once", async () => {
     await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
-    expect(sent.map((s) => s.to)).toEqual([OLD]);
-    expect(sent[0].text).toContain("changed");
+    const token = mail.tokenFor(NEW);
+    expect(await live.confirmLeaderEmailChange(token)).toMatchObject({
+      ok: true,
+    });
+    expect(await live.confirmLeaderEmailChange(token)).toEqual({
+      ok: false,
+      refusal: "already-confirmed",
+    });
+    expect(await changes(SLUG)).toHaveLength(1);
+    expect(await live.confirmLeaderEmailChange("not-a-token")).toEqual({
+      ok: false,
+      refusal: "invalid-link",
+    });
+  });
+
+  it("An admin changes an address during the parallel run: the link is sent, and on confirmation the address changes with no notice to the previous one", async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    expect(
+      await live.updateLeaderEmail(SLUG, NEW, { byUserId: null }),
+    ).toMatchObject({ ok: true, status: "pending", confirmationSent: true });
+    expect(await live.confirmLeaderEmailChange(mail.tokenFor(NEW))).toEqual({
+      ok: true,
+      email: NEW,
+      noticeSent: false,
+    });
+    expect(await leaderEmail(SLUG)).toBe(NEW);
+    expect(mail.sent.map((m) => m.to)).toEqual([NEW]);
   });
 
   it("a placeholder old address gets no notice, and the change is still audited", async () => {
@@ -343,29 +471,81 @@ describe("a leader's address change is audited and announced to the old address"
       .set({ email: PLACEHOLDER })
       .where("slug", "=", SLUG)
       .execute();
-    expect(await live.updateLeaderEmail(SLUG, NEW, { byUserId: null })).toEqual(
-      { ok: true, email: NEW, noticeSent: false },
-    );
-    expect(sent).toEqual([]);
+    expect(
+      await changeAddress(live, mail, SLUG, NEW, { byUserId: null }),
+    ).toEqual({ ok: true, email: NEW, noticeSent: false });
+    expect(mail.sent.map((m) => m.to)).toEqual([NEW]);
     expect(await changes(SLUG)).toHaveLength(1);
   });
 
-  it("during the parallel run no notice is sent", async () => {
-    delete process.env[COACH_PIPELINE_LIVE];
-    expect(await live.updateLeaderEmail(SLUG, NEW, { byUserId: null })).toEqual(
-      { ok: true, email: NEW, noticeSent: false },
-    );
-    expect(sent).toEqual([]);
+  it("The new address is taken before it confirms: the change is refused, the address is unchanged, and the admin sees why", async () => {
+    await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: NEW })
+      .where("slug", "=", "addr-other")
+      .execute();
+    expect(await live.confirmLeaderEmailChange(mail.tokenFor(NEW))).toEqual({
+      ok: false,
+      refusal: "taken",
+    });
+    expect(await leaderEmail(SLUG)).toBe(OLD);
+    expect(await changes(SLUG)).toEqual([]);
+    expect(await addressChange(SLUG)).toMatchObject({
+      newEmail: NEW,
+      state: "refused",
+      reason: "taken",
+    });
   });
 
-  it("the benchmark leader's address changes only with confirm, and is audited then", async () => {
+  it("A pending change expires: after seven days the admin sees it expired and the link no longer works", async () => {
+    const requested = await live.updateLeaderEmail(SLUG, NEW, {
+      byUserId: null,
+    });
+    expect(requested.ok && requested.expiresAt).toBeTruthy();
+    const expiresAt = new Date(
+      (requested as { expiresAt: string }).expiresAt,
+    ).getTime();
+    expect(Math.round((expiresAt - Date.now()) / 86_400_000)).toBe(7);
+    await conn
+      .updateTable("coach_leader_email_requests")
+      .set({ expires_at: sql`NOW() - interval '1 minute'` })
+      .where("slug", "=", SLUG)
+      .execute();
+    expect(await addressChange(SLUG)).toMatchObject({ state: "expired" });
+    expect(await live.confirmLeaderEmailChange(mail.tokenFor(NEW))).toEqual({
+      ok: false,
+      refusal: "expired",
+    });
+    expect(await leaderEmail(SLUG)).toBe(OLD);
+  });
+
+  it("A mistyped address never confirms: a newer change for the same leader stops the older link", async () => {
+    const MISTYPED = "addr-nwe@example.test";
+    await live.updateLeaderEmail(SLUG, MISTYPED, { byUserId: null });
+    const stale = mail.tokenFor(MISTYPED);
+    await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
+    expect(await live.confirmLeaderEmailChange(stale)).toEqual({
+      ok: false,
+      refusal: "superseded",
+    });
+    expect(await leaderEmail(SLUG)).toBe(OLD);
+    expect(await addressChange(SLUG)).toMatchObject({
+      newEmail: NEW,
+      state: "pending",
+    });
+    expect(
+      await live.confirmLeaderEmailChange(mail.tokenFor(NEW)),
+    ).toMatchObject({ ok: true, email: NEW });
+  });
+
+  it("the benchmark leader's address changes only with confirm, and is audited once the new address confirms", async () => {
     expect(
       await live.updateLeaderEmail(BENCH, NEW, { byUserId: null }),
     ).toEqual({ ok: false, refusal: "confirm-required" });
-    expect(await changes(BENCH)).toEqual([]);
-    expect(sent).toEqual([]);
+    expect(mail.sent).toEqual([]);
     expect(
-      await live.updateLeaderEmail(BENCH, NEW, {
+      await changeAddress(live, mail, BENCH, NEW, {
         byUserId: null,
         confirm: true,
       }),
@@ -375,10 +555,78 @@ describe("a leader's address change is audited and announced to the old address"
 
   it("setting the address it already has writes nothing and sends nothing", async () => {
     expect(await live.updateLeaderEmail(SLUG, OLD, { byUserId: null })).toEqual(
-      { ok: true, email: OLD, noticeSent: false },
+      {
+        ok: true,
+        email: OLD,
+        status: "unchanged",
+        expiresAt: null,
+        confirmationSent: false,
+      },
     );
     expect(await changes(SLUG)).toEqual([]);
-    expect(sent).toEqual([]);
+    expect(mail.sent).toEqual([]);
+  });
+});
+
+describe("the confirmation page's routes need no sign-in, and only the POST changes anything", () => {
+  const NEW = "addr-route-new@example.test";
+  const app = new Elysia().use(coachPlugin);
+  const store = app.store as unknown as { coachService: unknown };
+  const realService = store.coachService;
+  const mail = new Inbox();
+
+  beforeEach(async () => {
+    mail.sent = [];
+    store.coachService = new CoachService(Database, mail);
+  });
+  afterEach(() => {
+    store.coachService = realService;
+  });
+
+  const request = (method: string, path: string, body?: unknown) =>
+    app.handle(
+      new Request(`http://localhost/coach/${path}`, {
+        method,
+        headers: body ? { "content-type": "application/json" } : {},
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    );
+
+  it("GET describes the change and changes nothing; POST confirms it once", async () => {
+    await (store.coachService as CoachService).updateLeaderEmail(SLUG, NEW);
+    const token = mail.tokenFor(NEW);
+
+    const described = await request(
+      "GET",
+      `confirm-address?token=${encodeURIComponent(token)}`,
+    );
+    expect(described.status).toBe(200);
+    expect(await described.json()).toMatchObject({
+      leaderName: "Addr Leader",
+      state: "pending",
+    });
+    expect(await leaderEmail(SLUG)).toBe(PLACEHOLDER);
+
+    const confirmed = await request("POST", "confirm-address", { token });
+    expect(confirmed.status).toBe(200);
+    expect(await confirmed.json()).toEqual({ email: NEW, noticeSent: false });
+    expect(await leaderEmail(SLUG)).toBe(NEW);
+
+    const again = await request("POST", "confirm-address", { token });
+    expect(again.status).toBe(409);
+    expect(
+      ((await again.json()) as { details: { refusal: string } }).details,
+    ).toMatchObject({ refusal: "already-confirmed" });
+  });
+
+  it("an unknown link is not found on either route", async () => {
+    expect(
+      (await request("GET", "confirm-address?token=not-a-token")).status,
+    ).toBe(404);
+    expect(
+      (await request("POST", "confirm-address", { token: "not-a-token" }))
+        .status,
+    ).toBe(404);
   });
 });
 
