@@ -331,6 +331,34 @@
         "message": "Leader not found"
       }
     },
+    "GET /coach/confirm-address": {
+      "invalid-link": {
+        "status": 404,
+        "message": "This confirmation link is not valid"
+      }
+    },
+    "POST /coach/confirm-address": {
+      "invalid-link": {
+        "status": 404,
+        "message": "This confirmation link is not valid"
+      },
+      "expired": {
+        "status": 409,
+        "message": "This confirmation link has expired. Ask your program admin to send a new one."
+      },
+      "superseded": {
+        "status": 409,
+        "message": "A newer address change replaced this one. Use the most recent confirmation email."
+      },
+      "already-confirmed": {
+        "status": 409,
+        "message": "This address change was already confirmed"
+      },
+      "taken": {
+        "status": 409,
+        "message": "Another leader already uses that address, so the change was not made. Your program admin has been shown why."
+      }
+    },
     "PUT /coach/admin/leaders/:id/email": {
       "invalid-address": {
         "status": 400,
@@ -683,6 +711,47 @@
                   },
                   "sessionCount": {
                     "type": "number"
+                  },
+                  "addressChange": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "newEmail": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "requestedAt": {
+                            "type": "string"
+                          },
+                          "expiresAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "newEmail",
+                          "state",
+                          "reason",
+                          "requestedAt",
+                          "expiresAt"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "latest": {
                     "anyOf": [
@@ -3739,6 +3808,86 @@
       }
     },
     {
+      "route": "GET /coach/confirm-address",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "leaderName": {
+              "type": "string"
+            },
+            "currentEmail": {
+              "type": "string"
+            },
+            "newEmail": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "expiresAt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "leaderName",
+            "currentEmail",
+            "newEmail",
+            "state",
+            "expiresAt"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/me",
       "response": {
         "200": {
@@ -5861,6 +6010,47 @@
                 "sessionCount": {
                   "type": "number"
                 },
+                "addressChange": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "newEmail": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        },
+                        "reason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "requestedAt": {
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "newEmail",
+                        "state",
+                        "reason",
+                        "requestedAt",
+                        "expiresAt"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "latest": {
                   "anyOf": [
                     {
@@ -6794,6 +6984,71 @@
       }
     },
     {
+      "route": "POST /coach/confirm-address",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string"
+            },
+            "noticeSent": {
+              "type": "boolean"
+            }
+          },
+          "required": ["email", "noticeSent"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "PUT /coach/admin/coaches/:id/reports/:reportId/recording",
       "response": {
         "200": {
@@ -6950,11 +7205,33 @@
             "email": {
               "type": "string"
             },
-            "noticeSent": {
+            "status": {
+              "anyOf": [
+                {
+                  "const": "pending",
+                  "type": "string"
+                },
+                {
+                  "const": "unchanged",
+                  "type": "string"
+                }
+              ]
+            },
+            "expiresAt": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "confirmationSent": {
               "type": "boolean"
             }
           },
-          "required": ["email", "noticeSent"]
+          "required": ["email", "status", "expiresAt", "confirmationSent"]
         },
         "400": {
           "type": "object",

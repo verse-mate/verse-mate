@@ -532,6 +532,14 @@ export const ParallelRunComparisonSchema = t.Object({
   }),
 });
 
+export const AddressChangeDescriptionSchema = t.Object({
+  leaderName: t.String(),
+  currentEmail: t.String(),
+  newEmail: t.String(),
+  state: t.String(),
+  expiresAt: t.String(),
+});
+
 export const EMAIL_RULE =
   "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot";
 
@@ -750,6 +758,28 @@ export const COACH_REFUSALS = {
       'Keywords refused: "<keyword>" is inside the name of <leader>; "<keyword>" is inside a keyword of <leader>',
     ),
     ...UNKNOWN_LEADER,
+  },
+  "GET /coach/confirm-address": {
+    "invalid-link": refusal(404, "This confirmation link is not valid"),
+  },
+  "POST /coach/confirm-address": {
+    "invalid-link": refusal(404, "This confirmation link is not valid"),
+    expired: refusal(
+      409,
+      "This confirmation link has expired. Ask your program admin to send a new one.",
+    ),
+    superseded: refusal(
+      409,
+      "A newer address change replaced this one. Use the most recent confirmation email.",
+    ),
+    "already-confirmed": refusal(
+      409,
+      "This address change was already confirmed",
+    ),
+    taken: refusal(
+      409,
+      "Another leader already uses that address, so the change was not made. Your program admin has been shown why.",
+    ),
   },
   "PUT /coach/admin/leaders/:id/email": {
     "invalid-address": refusal(400, EMAIL_RULE),

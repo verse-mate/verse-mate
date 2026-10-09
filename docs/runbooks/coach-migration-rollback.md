@@ -69,6 +69,7 @@ All rows of the table are lost.
 | `20260901143000-coach-reminder-sends` | `coach_reminder_sends` |
 | `20260901144000-coach-reminder-summaries` | `coach_reminder_summaries` |
 | `20260901145000-coach-report-edits` | `coach_report_edits` |
+| `20260901157000-coach-leader-email-requests` | `coach_leader_email_requests` (pending and resolved address changes; a pending one can no longer be confirmed) |
 
 #### Columns
 

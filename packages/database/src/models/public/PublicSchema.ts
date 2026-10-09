@@ -14,6 +14,7 @@ import type { default as CoachClassesTable } from "./CoachClasses";
 import type { default as CoachDatasetMetaTable } from "./CoachDatasetMeta";
 import type { default as CoachIntakeSessionsTable } from "./CoachIntakeSessions";
 import type { default as CoachLeaderEmailChangesTable } from "./CoachLeaderEmailChanges";
+import type { default as CoachLeaderEmailRequestsTable } from "./CoachLeaderEmailRequests";
 import type { default as CoachLeadersTable } from "./CoachLeaders";
 import type { default as CoachMonthlyLeaderSummariesTable } from "./CoachMonthlyLeaderSummaries";
 import type { default as CoachMonthlyNarrativesTable } from "./CoachMonthlyNarratives";
@@ -212,6 +213,8 @@ export default interface PublicSchema {
   coach_report_edits: CoachReportEditsTable;
 
   coach_leader_email_changes: CoachLeaderEmailChangesTable;
+
+  coach_leader_email_requests: CoachLeaderEmailRequestsTable;
 
   coach_reminder_sends: CoachReminderSendsTable;
 

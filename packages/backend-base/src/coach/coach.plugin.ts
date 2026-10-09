@@ -17,6 +17,7 @@ import shared from "../shared/shared.plugin";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import { HOLD_KINDS } from "./coach-session-state";
 import {
+  AddressChangeDescriptionSchema,
   AdminCoachClassSchema,
   AmendmentBodySchema,
   COACH_REFUSALS,
@@ -199,6 +200,18 @@ const CoachSummarySchema = t.Object({
   group: t.String(),
   coachName: t.String(),
   sessionCount: t.Number(),
+  addressChange: t.Optional(
+    t.Union([
+      t.Object({
+        newEmail: t.String(),
+        state: t.String(),
+        reason: t.Union([t.String(), t.Null()]),
+        requestedAt: t.String(),
+        expiresAt: t.String(),
+      }),
+      t.Null(),
+    ]),
+  ),
   latest: t.Union([
     t.Object({
       date: t.String(),
@@ -272,6 +285,42 @@ const plugin = new Elysia()
       })
       .resolve({ as: "scoped" }, authDerive)
       .onBeforeHandle(coachRateLimit)
+      .get(
+        "/confirm-address",
+        async ({ query, store: { coachService } }) => {
+          const change = await coachService.describeLeaderEmailChange(
+            query.token,
+          );
+          if (!change)
+            throw refuse("GET /coach/confirm-address", "invalid-link");
+          return change;
+        },
+        {
+          query: t.Object({ token: t.String({ maxLength: 200 }) }),
+          response: {
+            200: AddressChangeDescriptionSchema,
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/confirm-address",
+        async ({ body, store: { coachService } }) => {
+          const result = await coachService.confirmLeaderEmailChange(
+            body.token,
+          );
+          if (result.ok)
+            return { email: result.email, noticeSent: result.noticeSent };
+          throw refuse("POST /coach/confirm-address", result.refusal);
+        },
+        {
+          body: t.Object({ token: t.String({ maxLength: 200 }) }),
+          response: {
+            200: t.Object({ email: t.String(), noticeSent: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/me",
         async ({ store: { coachService }, currentUserId }) => {
@@ -1442,7 +1491,12 @@ const plugin = new Elysia()
             },
           );
           if (result.ok)
-            return { email: result.email, noticeSent: result.noticeSent };
+            return {
+              email: result.email,
+              status: result.status,
+              expiresAt: result.expiresAt,
+              confirmationSent: result.confirmationSent,
+            };
           throw refuse("PUT /coach/admin/leaders/:id/email", result.refusal);
         },
         {
@@ -1452,7 +1506,12 @@ const plugin = new Elysia()
             confirm: t.Optional(t.Boolean()),
           }),
           response: {
-            200: t.Object({ email: t.String(), noticeSent: t.Boolean() }),
+            200: t.Object({
+              email: t.String(),
+              status: t.Union([t.Literal("pending"), t.Literal("unchanged")]),
+              expiresAt: t.Union([t.String(), t.Null()]),
+              confirmationSent: t.Boolean(),
+            }),
             ...StandardErrorResponses,
           },
         },

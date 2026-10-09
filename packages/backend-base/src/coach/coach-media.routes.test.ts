@@ -106,7 +106,13 @@ beforeAll(async () => {
         return { ok: false, refusal: "unknown-leader" };
       if (email === "taken@example.test")
         return { ok: false, refusal: "taken" };
-      return { ok: true, email, noticeSent: true };
+      return {
+        ok: true,
+        email,
+        status: "pending",
+        expiresAt: "2026-10-16T12:00:00.000Z",
+        confirmationSent: true,
+      };
     },
     releaseHeldReport: async (id: string) => {
       released.push(id);
@@ -845,7 +851,7 @@ describe("an admin corrects a leader's address", () => {
     );
   }
 
-  it("the new address is stored, normalized", async () => {
+  it("the new address is requested for confirmation, normalized", async () => {
     admin = true;
     emailUpdates.length = 0;
     const res = await put("/coach/admin/leaders/leader-a/email", {
@@ -854,7 +860,9 @@ describe("an admin corrects a leader's address", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       email: "wyatt@example.test",
-      noticeSent: true,
+      status: "pending",
+      expiresAt: "2026-10-16T12:00:00.000Z",
+      confirmationSent: true,
     });
     expect(emailUpdates).toEqual([
       ["leader-a", "wyatt@example.test", { byUserId: USER, confirm: false }],

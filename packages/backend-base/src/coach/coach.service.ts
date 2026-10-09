@@ -1,8 +1,9 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { sql } from "kysely";
 
 import {
   CoachAddressChanged,
+  CoachAddressConfirm,
   CoachInvite,
   CoachNote,
   render,
@@ -324,12 +325,40 @@ export interface CoachDataset {
 const coachData = coachDataJson as unknown as CoachDataset;
 
 /** Compact roster row for the admin oversight view. */
+export const ADDRESS_CONFIRMATION_DAYS = 7;
+
+export type AddressChangeState =
+  | "pending"
+  | "expired"
+  | "confirmed"
+  | "superseded"
+  | "refused";
+
+export interface AddressChange {
+  newEmail: string;
+  state: AddressChangeState;
+  reason: string | null;
+  requestedAt: string;
+  expiresAt: string;
+}
+
+const tokenHash = (token: string) =>
+  createHash("sha256").update(token).digest("hex");
+
+export function maskAddress(email: string): string {
+  const [local, domain = ""] = email.split("@");
+  return `${local.slice(0, 2)}${"*".repeat(Math.max(local.length - 2, 1))}@${domain}`;
+}
+
+const requestState = sql<AddressChangeState>`CASE WHEN status = 'pending' AND expires_at <= NOW() THEN 'expired' ELSE status END`;
+
 export interface CoachSummary {
   id: string;
   name: string;
   group: string;
   coachName: string;
   sessionCount: number;
+  addressChange?: AddressChange | null;
   latest: {
     date: string;
     dateLabel: string;
@@ -1150,13 +1179,20 @@ export class CoachService {
     address: string,
     options: { byUserId?: string | null; confirm?: boolean } = {},
   ): Promise<
-    | { ok: true; email: string; noticeSent: boolean }
+    | {
+        ok: true;
+        email: string;
+        status: "pending" | "unchanged";
+        expiresAt: string | null;
+        confirmationSent: boolean;
+      }
     | { ok: false; refusal: "unknown-leader" | "taken" | "confirm-required" }
   > {
     const email = address.trim().toLowerCase();
     const holder = await this.resolveByEmail(email);
     if (holder && holder.id !== slug) return { ok: false, refusal: "taken" };
-    const change = await this.db
+    const token = randomBytes(32).toString("base64url");
+    const request = await this.db
       .getOrCreateConnection()
       .transaction()
       .execute(async (trx) => {
@@ -1170,32 +1206,245 @@ export class CoachService {
         if (leader.is_benchmark && options.confirm !== true)
           return { refusal: "confirm-required" as const };
         if (leader.email === email)
-          return { refusal: null, previous: null, name: leader.name };
+          return { refusal: null, name: leader.name, expiresAt: null };
         await trx
-          .updateTable("coach_leaders")
-          .set({ email })
+          .updateTable("coach_leader_email_requests")
+          .set({ status: "superseded", resolved_at: sql`NOW()` })
           .where("slug", "=", slug)
+          .where("status", "=", "pending")
           .execute();
-        await trx
-          .insertInto("coach_leader_email_changes")
+        const created = await trx
+          .insertInto("coach_leader_email_requests")
           .values({
             slug,
-            previous_email: leader.email,
             new_email: email,
-            changed_by: options.byUserId ?? null,
+            requested_by: options.byUserId ?? null,
+            token_hash: tokenHash(token),
+            expires_at: sql`NOW() + make_interval(days => ${ADDRESS_CONFIRMATION_DAYS})`,
           })
+          .returning("expires_at")
+          .executeTakeFirstOrThrow();
+        return {
+          refusal: null,
+          name: leader.name,
+          expiresAt: new Date(created.expires_at).toISOString(),
+        };
+      });
+    if (request.refusal) return { ok: false, refusal: request.refusal };
+    if (request.expiresAt === null)
+      return {
+        ok: true,
+        email,
+        status: "unchanged",
+        expiresAt: null,
+        confirmationSent: false,
+      };
+    return {
+      ok: true,
+      email,
+      status: "pending",
+      expiresAt: request.expiresAt,
+      confirmationSent: await this.sendAddressConfirmation(
+        email,
+        request.name,
+        token,
+      ),
+    };
+  }
+
+  async describeLeaderEmailChange(token: string): Promise<{
+    leaderName: string;
+    currentEmail: string;
+    newEmail: string;
+    state: AddressChangeState;
+    expiresAt: string;
+  } | null> {
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_leader_email_requests")
+      .innerJoin(
+        "coach_leaders",
+        "coach_leaders.slug",
+        "coach_leader_email_requests.slug",
+      )
+      .select([
+        "coach_leaders.name as name",
+        "coach_leaders.email as current",
+        "coach_leader_email_requests.new_email as next",
+        "coach_leader_email_requests.expires_at as expires_at",
+        requestState.as("state"),
+      ])
+      .where("coach_leader_email_requests.token_hash", "=", tokenHash(token))
+      .executeTakeFirst();
+    if (!row) return null;
+    return {
+      leaderName: row.name,
+      currentEmail: maskAddress(row.current),
+      newEmail: maskAddress(row.next),
+      state: row.state,
+      expiresAt: new Date(row.expires_at).toISOString(),
+    };
+  }
+
+  async confirmLeaderEmailChange(token: string): Promise<
+    | { ok: true; email: string; noticeSent: boolean }
+    | {
+        ok: false;
+        refusal:
+          | "invalid-link"
+          | "expired"
+          | "superseded"
+          | "already-confirmed"
+          | "taken";
+      }
+  > {
+    const conn = this.db.getOrCreateConnection();
+    const hash = tokenHash(token);
+    const found = await conn
+      .selectFrom("coach_leader_email_requests")
+      .select(["id", "slug", "new_email", requestState.as("state"), "refusal"])
+      .where("token_hash", "=", hash)
+      .executeTakeFirst();
+    if (!found) return { ok: false, refusal: "invalid-link" };
+    const refused = {
+      expired: "expired",
+      superseded: "superseded",
+      confirmed: "already-confirmed",
+      refused: "taken",
+    } as const;
+    if (found.state !== "pending")
+      return { ok: false, refusal: refused[found.state] };
+    const holder = await this.resolveByEmail(found.new_email);
+    const refuseTaken = async () => {
+      await conn
+        .updateTable("coach_leader_email_requests")
+        .set({ status: "refused", refusal: "taken", resolved_at: sql`NOW()` })
+        .where("id", "=", found.id)
+        .where("status", "=", "pending")
+        .execute();
+      return { ok: false as const, refusal: "taken" as const };
+    };
+    if (holder && holder.id !== found.slug) return refuseTaken();
+    const change = await conn
+      .transaction()
+      .execute(async (trx) => {
+        const request = await trx
+          .selectFrom("coach_leader_email_requests")
+          .select([
+            "slug",
+            "new_email",
+            "requested_by",
+            requestState.as("state"),
+          ])
+          .where("id", "=", found.id)
+          .forUpdate()
+          .executeTakeFirstOrThrow();
+        if (request.state !== "pending")
+          return { refusal: refused[request.state] };
+        const leader = await trx
+          .selectFrom("coach_leaders")
+          .select(["email", "name"])
+          .where("slug", "=", request.slug)
+          .forUpdate()
+          .executeTakeFirst();
+        if (!leader) return { refusal: "invalid-link" as const };
+        await trx
+          .updateTable("coach_leaders")
+          .set({ email: request.new_email })
+          .where("slug", "=", request.slug)
           .execute();
-        return { refusal: null, previous: leader.email, name: leader.name };
+        if (leader.email !== request.new_email)
+          await trx
+            .insertInto("coach_leader_email_changes")
+            .values({
+              slug: request.slug,
+              previous_email: leader.email,
+              new_email: request.new_email,
+              changed_by: request.requested_by,
+            })
+            .execute();
+        await trx
+          .updateTable("coach_leader_email_requests")
+          .set({ status: "confirmed", resolved_at: sql`NOW()` })
+          .where("id", "=", found.id)
+          .execute();
+        return {
+          refusal: null,
+          previous: leader.email === request.new_email ? null : leader.email,
+          name: leader.name,
+        };
       })
       .catch((error: unknown) => {
         if ((error as { code?: string }).code !== "23505") throw error;
         return { refusal: "taken" as const };
       });
+    if (change.refusal === "taken") return refuseTaken();
     if (change.refusal) return { ok: false, refusal: change.refusal };
     const noticeSent = change.previous
       ? await this.sendAddressChangedNotice(change.previous, change.name)
       : false;
-    return { ok: true, email, noticeSent };
+    return { ok: true, email: found.new_email, noticeSent };
+  }
+
+  private async addressChanges(): Promise<Map<string, AddressChange>> {
+    const rows = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_leader_email_requests")
+      .distinctOn("slug")
+      .select([
+        "slug",
+        "new_email",
+        "refusal",
+        "created_at",
+        "expires_at",
+        requestState.as("state"),
+      ])
+      .orderBy("slug")
+      .orderBy("id", "desc")
+      .execute();
+    return new Map(
+      rows
+        .filter((r) => r.state !== "confirmed" && r.state !== "superseded")
+        .map((r) => [
+          r.slug,
+          {
+            newEmail: r.new_email,
+            state: r.state,
+            reason: r.refusal,
+            requestedAt: new Date(r.created_at).toISOString(),
+            expiresAt: new Date(r.expires_at).toISOString(),
+          },
+        ]),
+    );
+  }
+
+  private async sendAddressConfirmation(
+    email: string,
+    name: string,
+    token: string,
+  ): Promise<boolean> {
+    if (!this.notification || isPlaceholderAddress(email)) return false;
+    const confirmUrl = `${process.env.APP_URL ?? ""}/coach/confirm-address?token=${token}`;
+    try {
+      const sent = (await this.notification.sendEmail({
+        to: { email, name },
+        replyTo: { name: COACH_REPLY_TO_NAME, email: COACH_REPLY_TO_EMAIL },
+        subject: "Confirm your VerseMate coaching address",
+        text: `A program admin asked for your VerseMate coaching reports to be sent to this address. Nothing changes until you confirm it: ${confirmUrl} . The link works once and expires in ${ADDRESS_CONFIRMATION_DAYS} days. If you did not expect this, ignore it, or write to ${COACH_REPLY_TO_EMAIL}.`,
+        html: render(
+          CoachAddressConfirm({
+            name,
+            confirmUrl,
+            days: ADDRESS_CONFIRMATION_DAYS,
+            replyTo: COACH_REPLY_TO_EMAIL,
+          }),
+        ),
+      })) as CoachSendResult | undefined;
+      return sent?.delivered === true;
+    } catch (err) {
+      console.log("[CoachService] address confirmation failed:", err);
+      return false;
+    }
   }
 
   private async sendAddressChangedNotice(
@@ -1654,7 +1903,10 @@ export class CoachService {
   /** Roster summary for the admin landing view. Includes admin-added leaders
    *  (0 sessions until the pipeline produces their first report). */
   async listCoaches(): Promise<CoachSummary[]> {
-    const records = await this.recordsWithStoreReports();
+    const [records, changes] = await Promise.all([
+      this.recordsWithStoreReports(),
+      this.addressChanges(),
+    ]);
     return records.map((c) => {
       // reports are stored newest-first.
       const latest = c.reports[0] ?? null;
@@ -1664,6 +1916,7 @@ export class CoachService {
         group: c.group,
         coachName: c.coachName,
         sessionCount: c.reports.length,
+        addressChange: changes.get(c.id) ?? null,
         latest: latest
           ? {
               date: latest.date,
