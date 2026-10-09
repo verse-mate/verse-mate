@@ -92,6 +92,18 @@ export default interface CoachIntakeSessionsTable {
     Date | string | null
   >;
 
+  leader_cue: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  leader_cue_line: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
   rotating_class_id: ColumnType<
     CoachRotatingClassesId | null,
     CoachRotatingClassesId | null | undefined,

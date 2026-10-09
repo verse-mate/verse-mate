@@ -1,21 +1,39 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
+import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import {
   attributeSession,
   loadAttributionRoster,
+  reattributeSession,
   reattributeUnresolved,
 } from "./coach-attribution";
 import { CoachCoverageService } from "./coach-coverage.service";
 import { CoachIntakeService } from "./coach-intake.service";
+import { CoachPipelineService } from "./coach-pipeline.service";
+import {
+  bodyAnswer,
+  bodySentences,
+  isBodyCall,
+} from "./coach-report-body.fixture";
 import {
   listRotatingClasses,
   loadRotatingClasses,
   saveRotatingClass,
   setRotatingOnly,
 } from "./coach-rotating.service";
+import {
+  CoachScoringService,
+  type ScoringInput,
+} from "./coach-scoring.service";
 import { CoachService } from "./coach.service";
-import type { FirefliesClient, FirefliesTranscript } from "./fireflies.client";
+import type {
+  FirefliesClient,
+  FirefliesDetailClient,
+  FirefliesTranscript,
+  FirefliesTranscriptDetail,
+} from "./fireflies.client";
+import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const SLUGS = ["rot-ana", "rot-ben", "rot-cy", "rot-solo"];
@@ -285,5 +303,254 @@ describe("rotating classes (task 3.14)", () => {
       covered: false,
       basis: "no-observation",
     });
+  });
+});
+
+describe("naming a rotating class's leader (task 5.19)", () => {
+  const SESSION = "rot-pipe-1";
+  const LINES = {
+    prayAna: "Lord, give Ana wisdom as she leads us tonight.",
+    prayGuest: "Lord, bless our guest Marco as he leads the opening.",
+    readBen: "Ben, would you read verse three for us?",
+    bothRead: "Ana and Ben, split the chapter between you.",
+  };
+
+  class CueAi implements AiProvider {
+    readonly name = "fake";
+    baselines: Array<number | null> = [];
+    calls = 0;
+    constructor(private readonly cues: unknown[]) {}
+    async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+      this.calls += 1;
+      if (
+        opts.messages[0]?.content ===
+        CoachScoringService.buildLeaderCueInstructions()
+      )
+        return { content: JSON.stringify({ cues: this.cues }), model: "fake" };
+      if (isBodyCall(opts)) return { content: bodyAnswer(), model: "fake" };
+      if (opts.messages.some((m) => m.images?.length))
+        return {
+          content: JSON.stringify({ score: 4, rationale: "a map on screen" }),
+          model: "fake",
+        };
+      return {
+        content: JSON.stringify({
+          dimensions: DIMENSIONS.map((d) => ({
+            n: d.n,
+            score: 4,
+            rationale: `a genuine reason for dimension ${d.n}`,
+          })),
+        }),
+        model: "fake",
+      };
+    }
+    private no(): never {
+      throw new Error("not part of the pipeline");
+    }
+    responsesCreate = () => this.no();
+    filesCreate = () => this.no();
+    filesRetrieve = () => this.no();
+    filesContent = () => this.no();
+    batchesCreate = () => this.no();
+    batchesRetrieve = () => this.no();
+    batchesCancel = () => this.no();
+  }
+
+  class Client implements FirefliesDetailClient {
+    async listTranscripts() {
+      return [];
+    }
+    async getTranscript(): Promise<FirefliesTranscriptDetail> {
+      const extra = Object.values(LINES).map((text, i) => ({
+        index: 100 + i,
+        speakerId: `speaker-${i + 4}`,
+        isLeader: false,
+        text,
+        start_time: 2000 + i * 10,
+        end_time: null,
+      }));
+      return {
+        id: SESSION,
+        title: "Harbor Men with Sol Ruiz",
+        host_email: null,
+        organizer_email: null,
+        dateString: "2026-10-01T13:00:00.000Z",
+        duration: 60,
+        audio_url: null,
+        video_url: null,
+        transcript_url: null,
+        participantCount: 10,
+        summary: null,
+        sentences: [...bodySentences(), ...extra],
+      };
+    }
+  }
+
+  class BaselineSpy extends CoachScoringService {
+    seen: Array<number | null | undefined> = [];
+    override async scoreSession(input: ScoringInput) {
+      this.seen.push(input.authenticityBaseline);
+      return super.scoreSession(input);
+    }
+  }
+
+  async function run(cues: unknown[]) {
+    const saved = await markRotating();
+    if (!saved.ok) throw new Error("not saved");
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: SESSION,
+        coach_id: null,
+        matched_by: "rotating_class",
+        rotating_class_id: saved.id,
+        title: "Harbor Men with Sol Ruiz",
+        session_date: "2026-10-01",
+        state: "retained",
+      })
+      .execute();
+    const ai = new CueAi(cues);
+    const scoring = new BaselineSpy(Database, ai);
+    const pipeline = new CoachPipelineService(Database, new Client(), null, {
+      scoring,
+      frames: { extract: async () => [] } as never,
+    });
+    const [result] = await pipeline.run();
+    return { result, ai, scoring, pipeline };
+  }
+
+  async function session() {
+    return conn
+      .selectFrom("coach_intake_sessions")
+      .select([
+        "coach_id",
+        "matched_by",
+        "leader_cue",
+        "leader_cue_line",
+        "report_id",
+        "state",
+      ])
+      .where("source_session_id", "=", SESSION)
+      .executeTakeFirstOrThrow();
+  }
+
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(async () => {
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "in", SLUGS)
+      .execute();
+    await clear();
+  });
+
+  const cue = (name: string, people: string[], line: string) => ({
+    cue: name,
+    people,
+    line,
+  });
+
+  it("The opening prayer names this week's leader: the session is theirs, recording the cue, even though the title names another leader", async () => {
+    const { result } = await run([
+      cue("opening_prayer", ["Ana"], LINES.prayAna),
+      cue("reading", ["Ben"], LINES.readBen),
+    ]);
+    expect(result.reportId).toBeTruthy();
+    expect(await session()).toMatchObject({
+      coach_id: "rot-ana",
+      leader_cue: "opening_prayer",
+      leader_cue_line: LINES.prayAna,
+    });
+    const report = await conn
+      .selectFrom("coach_reports")
+      .select("coach_id")
+      .where("id", "=", result.reportId as string)
+      .executeTakeFirstOrThrow();
+    expect(report.coach_id).toBe("rot-ana");
+  });
+
+  it("The opening prayer names a guest: the guest is passed over and the leader who calls on readers decides", async () => {
+    await run([
+      cue("opening_prayer", ["Marco"], LINES.prayGuest),
+      cue("reading", ["Ben Ostrow"], LINES.readBen),
+    ]);
+    expect(await session()).toMatchObject({
+      coach_id: "rot-ben",
+      leader_cue: "reading",
+    });
+  });
+
+  it("The leader is the one who assigns the readings: an opening prayer naming no one is skipped", async () => {
+    await run([
+      cue("opening_prayer", [], ""),
+      cue("reading", ["Ben"], LINES.readBen),
+    ]);
+    expect((await session()).coach_id).toBe("rot-ben");
+  });
+
+  it("a cue naming two of the class's leaders, or citing a line nobody said, is skipped", async () => {
+    await run([
+      cue("opening_prayer", ["Ana", "Ben"], LINES.bothRead),
+      cue("reading", ["Cy"], "Cy, read the whole chapter please."),
+      cue("application", ["Ben"], LINES.readBen),
+    ]);
+    expect(await session()).toMatchObject({
+      coach_id: "rot-ben",
+      leader_cue: "application",
+    });
+  });
+
+  it("A rotating class's leader cannot be told: the session waits in the unresolved queue, is not tried again, and is scored once an admin assigns it", async () => {
+    const { result, ai, pipeline } = await run([
+      cue("opening_prayer", ["Marco"], LINES.prayGuest),
+      cue("reading", ["Ana", "Ben"], LINES.bothRead),
+    ]);
+    expect(result.outcome).toBe("attribution-unresolved");
+    expect(await session()).toMatchObject({
+      coach_id: null,
+      leader_cue: "none",
+      report_id: null,
+    });
+    const calls = ai.calls;
+    await pipeline.run();
+    expect(ai.calls).toBe(calls);
+    const listed = (
+      await new CoachService(Database).listPipelineFailures()
+    ).sessions.find((s) => s.sourceSessionId === SESSION);
+    expect(listed).toMatchObject({
+      action: "attribute",
+      reason:
+        "unattributed: the transcript did not name which of the rotating class's leaders led",
+    });
+    await reattributeSession(Database, SESSION, "rot-cy", null);
+    const [scored] = await pipeline.run();
+    expect(scored.reportId).toBeTruthy();
+    expect((await session()).coach_id).toBe("rot-cy");
+  });
+
+  it("Rotating leaders keep separate baselines: the session is scored against the named leader's own history", async () => {
+    for (const [slug, authenticity, date] of [
+      ["rot-ana", 2, "2026-09-10"],
+      ["rot-ben", 5, "2026-09-17"],
+    ] as const)
+      await conn
+        .insertInto("coach_reports")
+        .values({
+          id: `rot-history-${slug}`,
+          coach_id: slug,
+          session_date: date,
+          source_session_id: `rot-history-${slug}`,
+          legacy_ids: [],
+          summary: {},
+          metrics: JSON.stringify({
+            dimensions: [{ n: 8, score: authenticity }],
+          }),
+          body: {},
+        })
+        .execute();
+    const { scoring } = await run([cue("reading", ["Ben"], LINES.readBen)]);
+    expect(scoring.seen).toEqual([5]);
   });
 });

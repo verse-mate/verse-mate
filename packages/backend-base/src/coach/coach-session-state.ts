@@ -87,8 +87,18 @@ export const abandonedClaim = (eb: Sessions) =>
     eb("updated_at", "<", STALE_DELIVERY_CLAIM),
   ]);
 
+export const awaitingLeaderCue = (eb: Sessions) =>
+  eb.and([
+    eb("coach_id", "is", null),
+    eb("rotating_class_id", "is not", null),
+    eb("leader_cue", "is", null),
+  ]);
+
 export const scorable = (eb: Sessions) =>
-  eb.and([eb("state", "=", "retained"), eb("coach_id", "is not", null)]);
+  eb.and([
+    eb("state", "=", "retained"),
+    eb.or([eb("coach_id", "is not", null), awaitingLeaderCue(eb)]),
+  ]);
 
 const notHeldForItsVersion = (eb: Sessions) =>
   eb.or([
@@ -168,7 +178,7 @@ export const stuck = (eb: Sessions) =>
         eb("release_required", "=", true),
       ]),
     ]),
-    eb("coach_id", "is", null),
+    eb.and([eb("coach_id", "is", null), eb.not(awaitingLeaderCue(eb))]),
     eb.and([
       eb("state", "=", "delivered"),
       eb(SKIPPED_LEADER_ADDRESS, "is not", null),

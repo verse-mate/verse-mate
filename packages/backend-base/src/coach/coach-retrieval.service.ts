@@ -76,7 +76,12 @@ export class CoachRetrievalService {
       .selectFrom("coach_intake_sessions")
       .select(["source_session_id", "retry_count"])
       .where("state", "in", ["observed", "held"])
-      .where("coach_id", "is not", null)
+      .where((eb) =>
+        eb.or([
+          eb("coach_id", "is not", null),
+          eb("rotating_class_id", "is not", null),
+        ]),
+      )
       .orderBy("observed_at")
       // A bounded budget per tick. Without it one slow morning of sessions
       // starves everything behind them, and the tick runs every 30 minutes
