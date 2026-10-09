@@ -10,35 +10,35 @@ import {
   Text,
 } from "@react-email/components";
 
+export interface CoachReportPoint {
+  title: string;
+  line: string;
+}
+
+export interface CoachReportCluster {
+  name: string;
+  raw: string;
+  weight: number;
+  contribution: string;
+}
+
 export interface CoachReportProps {
-  /** Leader's display name (falls back to a generic greeting when empty). */
   name?: string;
-  /** The session this report is about, e.g. "Obadiah, 22 August 2026". */
   sessionLabel: string;
-  /** Composite score out of 100. */
-  score: number;
-  /** Band label, e.g. "Strong". */
-  status: string;
-  /** One-line summary from the report's feedback headline. */
-  headline: string;
-  /** Deep link to the session in the coach portal, by its immutable id. */
+  summaryLine: string;
+  clusters: CoachReportCluster[];
+  highlights: CoachReportPoint[];
+  targets: CoachReportPoint[];
   portalUrl: string;
 }
 
-/**
- * A leader's session coaching report.
- *
- * Carries a prominent portal link and NO ATTACHMENT (task 6.3). The report
- * lives on the portal, addressed by its immutable id, so the link keeps working
- * after a re-score and there is no PDF to fall out of step with what the portal
- * shows.
- */
 export default function CoachReport({
   name,
   sessionLabel,
-  score,
-  status,
-  headline,
+  summaryLine,
+  clusters,
+  highlights,
+  targets,
   portalUrl,
 }: CoachReportProps) {
   return (
@@ -52,20 +52,49 @@ export default function CoachReport({
           <Text style={text}>
             Here is the coaching report for <strong>{sessionLabel}</strong>.
           </Text>
-          <Section style={scoreBox}>
-            <Text style={scoreText}>
-              {score} / 100, {status}
-            </Text>
-          </Section>
-          <Text style={text}>{headline}</Text>
+          {summaryLine && (
+            <Section style={summaryBox}>
+              <Text style={label}>Session summary</Text>
+              <Text style={text}>{summaryLine}</Text>
+            </Section>
+          )}
+          {clusters.length > 0 && (
+            <>
+              <Heading as="h2" style={h2}>
+                Cluster breakdown
+              </Heading>
+              <table style={table} cellPadding={6}>
+                <thead>
+                  <tr>
+                    <th style={th}>Cluster</th>
+                    <th style={th}>Raw</th>
+                    <th style={th}>Weight</th>
+                    <th style={th}>Contribution</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clusters.map((c) => (
+                    <tr key={c.name}>
+                      <td style={td}>{c.name}</td>
+                      <td style={td}>{c.raw}</td>
+                      <td style={td}>{`×${c.weight}`}</td>
+                      <td style={td}>{c.contribution}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          <Points heading="Top highlights" points={highlights} />
+          <Points heading="Top improvement targets" points={targets} />
           <Section style={buttonWrap}>
             <Button style={button} href={portalUrl}>
               Read the full report
             </Button>
           </Section>
           <Text style={muted}>
-            The full breakdown, every dimension, its score and the reasoning —
-            is on the portal. Reply to this email if anything looks wrong.
+            The full report, every dimension with its reasoning, is on the
+            portal. Reply to this email if anything looks wrong.
           </Text>
         </Container>
       </Body>
@@ -73,18 +102,67 @@ export default function CoachReport({
   );
 }
 
+function Points({
+  heading,
+  points,
+}: {
+  heading: string;
+  points: CoachReportPoint[];
+}) {
+  if (points.length === 0) return null;
+  return (
+    <>
+      <Heading as="h2" style={h2}>
+        {heading}
+      </Heading>
+      <ol style={listStyle}>
+        {points.map((p) => (
+          <li key={p.title} style={item}>
+            <strong>{p.title}</strong>
+            {p.line ? ` — ${p.line}` : ""}
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
 const main = { backgroundColor: "#f6f9fc", fontFamily: "sans-serif" };
 const container = { margin: "0 auto", padding: "24px", maxWidth: "560px" };
 const h1 = { fontSize: "22px", fontWeight: "bold", color: "#1a1a1a" };
+const h2 = {
+  fontSize: "17px",
+  fontWeight: "bold",
+  color: "#1a1a1a",
+  marginTop: "24px",
+};
 const text = { fontSize: "15px", lineHeight: "24px", color: "#333" };
+const label = {
+  fontSize: "12px",
+  fontWeight: "bold",
+  color: "#666",
+  textTransform: "uppercase" as const,
+  margin: "0",
+};
 const muted = { fontSize: "13px", lineHeight: "20px", color: "#666" };
-const scoreBox = {
+const summaryBox = {
   backgroundColor: "#ffffff",
   borderRadius: "8px",
-  padding: "16px",
-  textAlign: "center" as const,
+  padding: "12px 16px",
 };
-const scoreText = { fontSize: "20px", fontWeight: "bold", color: "#1a1a1a" };
+const table = {
+  width: "100%",
+  borderCollapse: "collapse" as const,
+  fontSize: "14px",
+};
+const th = {
+  textAlign: "left" as const,
+  borderBottom: "2px solid #ddd",
+  color: "#333",
+};
+const td = { borderBottom: "1px solid #eee", color: "#333" };
+const listStyle = { paddingLeft: "20px", margin: "0" };
+const item = { fontSize: "14px", lineHeight: "22px", color: "#333" };
 const buttonWrap = { textAlign: "center" as const, margin: "24px 0" };
 const button = {
   backgroundColor: "#2563eb",

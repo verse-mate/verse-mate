@@ -5,6 +5,7 @@ import { coachPipelineLive } from "./coach-cutover";
 import {
   CoachDeliveryService,
   type RevisionSendResult,
+  reportEmail,
 } from "./coach-delivery.service";
 import {
   CoachGovernanceService,
@@ -234,15 +235,28 @@ export class CoachAmendService {
 
         const nextDims = [...next.values()];
         const evidence = evidenceFromBody(nextBody);
+        const leader = await trx
+          .selectFrom("coach_leaders")
+          .select("name")
+          .where("slug", "=", report.coach_id)
+          .executeTakeFirst();
+        const email = await reportEmail({
+          reportId,
+          leaderName: leader?.name,
+          summary: report.summary,
+          metrics: report.metrics,
+          body: nextBody,
+          date: "",
+        });
         const verdict = await new CoachGovernanceService({
           getOrCreateConnection: () => trx,
         }).check({
           reportId,
           coachId: report.coach_id,
-          body: JSON.stringify({
+          body: `${JSON.stringify({
             body: nextBody,
             rationales: nextDims.map((d) => d.rationale),
-          }),
+          })}\n${email.text}`,
           evidence,
         });
         if (!verdict.passed)
