@@ -10,7 +10,7 @@ import {
 } from "./coach-delivery.service";
 import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
-import { evidenceFrom, storedEvidence } from "./coach-governance.service";
+import { storedEvidence } from "./coach-governance.service";
 import {
   AttributionChangedError,
   CoachPublishService,
@@ -432,7 +432,7 @@ export class CoachPipelineService {
 
     const result = await this.delivery.deliver({
       reportId: published.reportId,
-      evidence: evidenceFrom(scored.dimensions),
+      evidence: await storedEvidence(this.db, published.reportId),
     });
     return deliveryOutcome(
       session.source_session_id,

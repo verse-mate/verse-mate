@@ -6,6 +6,8 @@ import {
   type ReportEvidence,
   checkBenchmarkName,
   checkEvidenceReuse,
+  evidenceFromBody,
+  storedEvidence,
 } from "./coach-governance.service";
 
 const conn = Database.getOrCreateConnection();
@@ -317,5 +319,113 @@ describe("the check runs against what is persisted", () => {
     });
     expect(verdict.passed).toBe(false);
     expect(verdict.violations[0].rule).toBe("benchmark-name");
+  });
+});
+
+describe("Key Moments Are Recorded As Structured Evidence (task 6.14)", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+  });
+  afterEach(clear);
+
+  async function seedMachineReport(
+    id: string,
+    keyMoments: Array<{ quote: string; timestamp: string }>,
+    rationale: string,
+  ) {
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id,
+        coach_id: OTHER,
+        session_date: "2026-10-01",
+        source_session_id: `ff-${id}`,
+        legacy_ids: [],
+        summary: {},
+        metrics: {},
+        body: JSON.stringify({ bigIdeas: [], feedback: {}, keyMoments }),
+      })
+      .execute();
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: id,
+        dimension_n: 6,
+        score: 4,
+        rationale,
+        provenance: "machine",
+        model_version: "v3-weighted-100",
+      })
+      .execute();
+  }
+
+  it("Key moments feed the reuse check: the evidence is the key moments' quotes and timestamps", async () => {
+    await seedMachineReport(
+      "km-1",
+      [
+        { quote: "I haven't prayed in weeks", timestamp: "00:12:34" },
+        { quote: "Read verse four for us, please", timestamp: "00:20:01" },
+      ],
+      'the leader said "nothing in the key moments here" at 00:40:00',
+    );
+    expect(await storedEvidence(Database, "km-1")).toEqual({
+      quotes: ["I haven't prayed in weeks", "Read verse four for us, please"],
+      timestamps: ["00:12:34", "00:20:01"],
+    });
+    expect(evidenceFromBody({ keyMoments: "not a list" })).toEqual({
+      quotes: [],
+      timestamps: [],
+    });
+  });
+
+  it("A rationale quote is not compared: the same rationale quote in two reports does not block the later one", async () => {
+    const rationale =
+      'the leader said "let us sit with this verse a while" at 00:31:15';
+    await seedMachineReport(
+      "km-earlier",
+      [{ quote: "who wants to read first", timestamp: "00:05:00" }],
+      rationale,
+    );
+    await svc.recordEvidence(
+      "km-earlier",
+      await storedEvidence(Database, "km-earlier"),
+    );
+    await seedMachineReport(
+      "km-later",
+      [{ quote: "what would you say to her", timestamp: "00:44:10" }],
+      rationale,
+    );
+    const verdict = await svc.check({
+      reportId: "km-later",
+      coachId: OTHER,
+      body: "clean",
+      evidence: await storedEvidence(Database, "km-later"),
+    });
+    expect(verdict.passed).toBe(true);
+  });
+
+  it("a key moment repeated from an earlier report is still caught", async () => {
+    await seedMachineReport(
+      "km-earlier",
+      [{ quote: "who wants to read first", timestamp: "00:05:00" }],
+      "a plain rationale with no quote",
+    );
+    await svc.recordEvidence(
+      "km-earlier",
+      await storedEvidence(Database, "km-earlier"),
+    );
+    await seedMachineReport(
+      "km-later",
+      [{ quote: "Who wants  to read FIRST", timestamp: "00:09:00" }],
+      "a plain rationale with no quote",
+    );
+    const verdict = await svc.check({
+      reportId: "km-later",
+      coachId: OTHER,
+      body: "clean",
+      evidence: await storedEvidence(Database, "km-later"),
+    });
+    expect(verdict.violations.map((v) => v.rule)).toEqual(["reused-quote"]);
   });
 });

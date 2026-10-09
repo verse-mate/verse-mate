@@ -54,6 +54,7 @@ async function seed(
     improvementsProse?: Array<{ title: string; paragraphs: string[] }>;
     legacy?: boolean;
     firstLesson?: boolean;
+    keyMoments?: Array<{ quote: string; timestamp: string }>;
   } = {},
 ) {
   const id = options.id ?? REPORT;
@@ -99,6 +100,9 @@ async function seed(
             ? { improvementsProse: options.improvementsProse }
             : {}),
         },
+        keyMoments: options.keyMoments ?? [
+          { quote: QUOTE, timestamp: "14:05" },
+        ],
       }),
       evidence: JSON.stringify({ quotes: [QUOTE], timestamps: ["14:05"] }),
     })
@@ -412,19 +416,15 @@ describe("a delivered report can be revised", () => {
   });
 
   it("a revision is never blocked by its own earlier version's evidence", async () => {
-    await seed();
+    await seed({
+      keyMoments: [
+        { quote: "a line from the amended week", timestamp: "21:15" },
+      ],
+    });
     const amend = new CoachAmendService(Database, new FakeMailer());
     const first = await amend.amend({
       reportId: REPORT,
-      amendment: {
-        dimensions: [
-          {
-            n: 6,
-            score: 3,
-            rationale: 'half spoke, "a line from the amended week" at 21:15',
-          },
-        ],
-      },
+      amendment: { body: { headline: "A steady session, revised once" } },
       byUserId: null,
     });
     expect(first.applied).toBe(true);
@@ -435,8 +435,10 @@ describe("a delivered report can be revised", () => {
         .where("id", "=", REPORT)
         .executeTakeFirstOrThrow()
     ).evidence as { quotes: string[]; timestamps: string[] };
-    expect(stored.quotes).toContain("a line from the amended week");
-    expect(stored.timestamps).toContain("21:15");
+    expect(stored).toEqual({
+      quotes: ["a line from the amended week"],
+      timestamps: ["21:15"],
+    });
     const second = await amend.amend({
       reportId: REPORT,
       amendment: { body: { headline: "A steady session, revised" } },
@@ -446,8 +448,12 @@ describe("a delivered report can be revised", () => {
     expect(second.revision).toBe(2);
   });
 
-  it("a quote this leader used in another report still blocks the revision", async () => {
-    await seed();
+  it("a key moment quote this leader used in another report still blocks the revision", async () => {
+    await seed({
+      keyMoments: [
+        { quote: "a quote from an earlier week", timestamp: "30:00" },
+      ],
+    });
     await seed({ id: "amend-earlier" });
     await conn
       .updateTable("coach_reports")
@@ -464,11 +470,7 @@ describe("a delivered report can be revised", () => {
       new FakeMailer(),
     ).amend({
       reportId: REPORT,
-      amendment: {
-        dimensions: [
-          { n: 6, score: 3, rationale: 'said "a quote from an earlier week"' },
-        ],
-      },
+      amendment: { body: { headline: "A steady session, revised" } },
       byUserId: null,
     });
     expect(result.refusal).toBe("governance-blocked");
@@ -476,6 +478,41 @@ describe("a delivered report can be revised", () => {
     expect(
       result.violations?.find((v) => v.rule === "reused-quote")?.detail,
     ).toContain("amend-earlier");
+  });
+
+  it("A rationale quote is not compared: an amended rationale quoting another report's evidence is not blocked", async () => {
+    await seed();
+    await seed({
+      id: "amend-earlier",
+      keyMoments: [{ quote: "an earlier key moment", timestamp: "05:00" }],
+    });
+    await conn
+      .updateTable("coach_reports")
+      .set({
+        evidence: JSON.stringify({
+          quotes: ["a quote from an earlier week"],
+          timestamps: ["21:15"],
+        }),
+      })
+      .where("id", "=", "amend-earlier")
+      .execute();
+    const result = await new CoachAmendService(
+      Database,
+      new FakeMailer(),
+    ).amend({
+      reportId: REPORT,
+      amendment: {
+        dimensions: [
+          {
+            n: 6,
+            score: 3,
+            rationale: 'said "a quote from an earlier week" at 21:15',
+          },
+        ],
+      },
+      byUserId: null,
+    });
+    expect(result.applied).toBe(true);
   });
 
   it("The link a leader already has opens the revised report", async () => {

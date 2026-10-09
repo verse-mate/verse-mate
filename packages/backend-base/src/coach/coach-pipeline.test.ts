@@ -22,12 +22,17 @@ import {
   CoachDeliveryService,
   releaseDeliveredVersions,
 } from "./coach-delivery.service";
-import { evidenceFrom } from "./coach-governance.service";
+import { evidenceFromBody } from "./coach-governance.service";
 import {
   CoachPipelineService,
   PIPELINE_ATTEMPT_LIMIT,
   PIPELINE_BATCH_LIMIT,
 } from "./coach-pipeline.service";
+import {
+  CoachPublishService,
+  type PublishInput,
+  type PublishResult,
+} from "./coach-publish.service";
 import {
   CoachScoringService,
   SCORING_SETTINGS,
@@ -40,6 +45,7 @@ import type {
   FirefliesTranscript,
   FirefliesTranscriptDetail,
 } from "./fireflies.client";
+import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 import {
   DIMENSIONS,
   RUBRIC_MODEL_VERSION,
@@ -177,10 +183,40 @@ class FakeMailer {
 /** No ffmpeg, no bucket. */
 const noFrames = { extract: async () => [] };
 
+class RationaleMomentsPublish extends CoachPublishService {
+  override async publish(
+    input: PublishInput,
+    writer?: CoachReportsWriter,
+  ): Promise<PublishResult> {
+    const published = await super.publish(input, writer);
+    const stamps = [
+      ...new Set(
+        input.dimensions.flatMap(
+          (d) => d.note.match(/\b\d{1,2}:\d{2}\b/g) ?? [],
+        ),
+      ),
+    ];
+    await (writer ?? conn)
+      .updateTable("coach_reports")
+      .set({
+        body: sql`jsonb_set(body, '{keyMoments}', ${JSON.stringify(
+          stamps.map((timestamp) => ({
+            quote: `said at ${timestamp}`,
+            timestamp,
+          })),
+        )}::jsonb)`,
+      })
+      .where("id", "=", published.reportId)
+      .execute();
+    return published;
+  }
+}
+
 function pipeline(mailer: FakeMailer | null, ai = new FakeAi()) {
   return new CoachPipelineService(Database, new FakeClient(), mailer as any, {
     scoring: new CoachScoringService(Database, ai),
     frames: noFrames as any,
+    publish: new RationaleMomentsPublish(Database),
   });
 }
 
@@ -1983,34 +2019,38 @@ describe("Every Score Carries Provenance through a re-score", () => {
   });
 });
 
-describe("the evidence rule 2 compares is built from what the model cited", () => {
-  it("pulls quoted strings and timestamps out of the rationales", () => {
-    const ev = evidenceFrom([
-      { note: 'the leader said "let us read Obadiah slowly" at 12:04' },
-      { note: "no quote here, but a stamp at 00:31:15" },
+describe("the evidence rule 2 compares is the key moments' quotes and timestamps", () => {
+  it("pulls each key moment's quote and timestamp", () => {
+    const ev = evidenceFromBody({
+      keyMoments: [
+        { quote: "let us read Obadiah slowly", timestamp: "00:12:04" },
+        { quote: "who has a question", timestamp: "00:31:15" },
+      ],
+    });
+    expect(ev.quotes).toEqual([
+      "let us read Obadiah slowly",
+      "who has a question",
     ]);
-    expect(ev.quotes).toEqual(["let us read Obadiah slowly"]);
-    expect(ev.timestamps).toEqual(["12:04", "00:31:15"]);
+    expect(ev.timestamps).toEqual(["00:12:04", "00:31:15"]);
   });
 
   it("de-duplicates within one report", () => {
-    const ev = evidenceFrom([
-      { note: 'said "the same memorable line" at 10:00' },
-      { note: 'again "the same memorable line" at 10:00' },
-    ]);
+    const ev = evidenceFromBody({
+      keyMoments: [
+        { quote: "the same memorable line", timestamp: "00:10:00" },
+        { quote: "the same memorable line", timestamp: "00:10:00" },
+      ],
+    });
     expect(ev.quotes.length).toBe(1);
     expect(ev.timestamps.length).toBe(1);
   });
 
-  it("ignores a fragment too short to be a real quote", () => {
-    expect(evidenceFrom([{ note: 'he said "yes" then' }]).quotes).toEqual([]);
-  });
-
-  it("a rationale with neither yields nothing rather than throwing", () => {
-    expect(evidenceFrom([{ note: "structure was clear throughout" }])).toEqual({
+  it("a body with no key moments yields nothing rather than throwing", () => {
+    expect(evidenceFromBody({ feedback: {} })).toEqual({
       quotes: [],
       timestamps: [],
     });
+    expect(evidenceFromBody(null)).toEqual({ quotes: [], timestamps: [] });
   });
 });
 

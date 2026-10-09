@@ -7,18 +7,18 @@ import {
   type RevisionSendResult,
 } from "./coach-delivery.service";
 import {
+  CoachGovernanceService,
+  type GovernanceViolation,
+  coldRecallInFeedback,
+  evidenceFromBody,
+} from "./coach-governance.service";
+import { isLegacyReport, rescoreReport } from "./coach-review.service";
+import {
   type BigIdeasReviewRow,
   validBigIdeasReviewRow,
   withBigIdeasReviewRow,
   withoutBigIdeasReviewRow,
-} from "./coach-first-lesson";
-import {
-  CoachGovernanceService,
-  type GovernanceViolation,
-  coldRecallInFeedback,
-  evidenceFrom,
-} from "./coach-governance.service";
-import { isLegacyReport, rescoreReport } from "./coach-review.service";
+} from "./coach-scorecard";
 import { STALE_DELIVERY_CLAIM } from "./coach-session-state";
 import type { CoachMailer } from "./coach.service";
 import type { CoachReportsWriter } from "./repository/coach-reports.repository";
@@ -233,9 +233,7 @@ export class CoachAmendService {
         }
 
         const nextDims = [...next.values()];
-        const evidence = evidenceFrom(
-          nextDims.map((d) => ({ note: d.rationale })),
-        );
+        const evidence = evidenceFromBody(nextBody);
         const verdict = await new CoachGovernanceService({
           getOrCreateConnection: () => trx,
         }).check({

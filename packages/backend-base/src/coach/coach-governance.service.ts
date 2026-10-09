@@ -140,21 +140,15 @@ export function coldRecallInFeedback(feedback: unknown): string[] {
   ];
 }
 
-export function evidenceFrom(
-  dimensions: Array<{ note: string }>,
-): ReportEvidence {
+export function evidenceFromBody(body: unknown): ReportEvidence {
+  const moments = (body as { keyMoments?: unknown } | null)?.keyMoments;
   const quotes: string[] = [];
   const timestamps: string[] = [];
-  for (const d of dimensions) {
-    for (const quoted of d.note.matchAll(
-      /[""]([^""]{12,})[""]|"([^"]{12,})"/g,
-    )) {
-      const text = quoted[1] ?? quoted[2];
-      if (text) quotes.push(text.trim());
-    }
-    for (const stamp of d.note.matchAll(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g)) {
-      timestamps.push(stamp[0]);
-    }
+  for (const moment of Array.isArray(moments) ? moments : []) {
+    const { quote, timestamp } = (moment ?? {}) as Record<string, unknown>;
+    if (typeof quote === "string" && quote.trim()) quotes.push(quote.trim());
+    if (typeof timestamp === "string" && timestamp.trim())
+      timestamps.push(timestamp.trim());
   }
   return {
     quotes: [...new Set(quotes)],
@@ -238,11 +232,11 @@ export async function storedEvidence(
   database: Pick<db, "getOrCreateConnection">,
   reportId: string,
 ): Promise<ReportEvidence> {
-  const cited = await database
+  const report = await database
     .getOrCreateConnection()
-    .selectFrom("coach_report_dimension_scores")
-    .select("rationale")
-    .where("report_id", "=", reportId)
-    .execute();
-  return evidenceFrom(cited.map((c) => ({ note: c.rationale })));
+    .selectFrom("coach_reports")
+    .select("body")
+    .where("id", "=", reportId)
+    .executeTakeFirst();
+  return evidenceFromBody(report?.body);
 }
