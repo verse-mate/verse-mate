@@ -1330,6 +1330,13 @@ export class CoachService {
     const change = await conn
       .transaction()
       .execute(async (trx) => {
+        const leader = await trx
+          .selectFrom("coach_leaders")
+          .select(["email", "name"])
+          .where("slug", "=", found.slug)
+          .forUpdate()
+          .executeTakeFirst();
+        if (!leader) return { refusal: "invalid-link" as const };
         const request = await trx
           .selectFrom("coach_leader_email_requests")
           .select([
@@ -1343,13 +1350,6 @@ export class CoachService {
           .executeTakeFirstOrThrow();
         if (request.state !== "pending")
           return { refusal: refused[request.state] };
-        const leader = await trx
-          .selectFrom("coach_leaders")
-          .select(["email", "name"])
-          .where("slug", "=", request.slug)
-          .forUpdate()
-          .executeTakeFirst();
-        if (!leader) return { refusal: "invalid-link" as const };
         await trx
           .updateTable("coach_leaders")
           .set({ email: request.new_email })
