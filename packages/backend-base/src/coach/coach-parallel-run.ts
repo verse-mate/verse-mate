@@ -7,7 +7,7 @@ export const FLAG_COMPOSITE_DIFFERENCE = 5;
 export const FLAG_DIMENSION_DIFFERENCE = 2;
 
 export interface ScoreSide {
-  composite: number;
+  composite: number | null;
   dimensions: Array<number | null>;
 }
 
@@ -19,7 +19,7 @@ export interface DimensionComparison {
 }
 
 export interface ScoreComparison {
-  compositeDifference: number;
+  compositeDifference: number | null;
   dimensions: DimensionComparison[];
   withinOne: number;
   comparable: number;
@@ -30,7 +30,7 @@ export interface ComparedSession extends ScoreComparison {
   coachId: string;
   date: string;
   backend: { sourceSessionId: string; reportId: string; composite: number };
-  host: { reportId: string; composite: number };
+  host: { reportId: string; composite: number | null };
 }
 
 export interface ParallelRunComparison {
@@ -78,16 +78,17 @@ export function compareScores(
     };
   });
   const comparable = dimensions.filter((d) => d.difference !== null);
-  const compositeDifference = rounded(
-    Math.abs(backend.composite - host.composite),
-  );
+  const compositeDifference =
+    host.composite === null || backend.composite === null
+      ? null
+      : rounded(Math.abs(backend.composite - host.composite));
   return {
     compositeDifference,
     dimensions,
     withinOne: comparable.filter((d) => (d.difference as number) <= 1).length,
     comparable: comparable.length,
     flagged:
-      compositeDifference > FLAG_COMPOSITE_DIFFERENCE ||
+      (compositeDifference ?? 0) > FLAG_COMPOSITE_DIFFERENCE ||
       comparable.some(
         (d) => (d.difference as number) >= FLAG_DIMENSION_DIFFERENCE,
       ),
@@ -240,8 +241,9 @@ export async function parallelRunComparison(
       newcomerBonus: Number(bonuses.newcomerBonus ?? 0),
       sizeBonus: Number(bonuses.sizeBonus ?? 0),
     });
-    const hostComposite =
-      scoreOrNull((h.summary as { score?: unknown })?.score) ?? 0;
+    const hostComposite = scoreOrNull(
+      (h.summary as { score?: unknown })?.score,
+    );
     const compared = compareScores(
       { composite: hostComposite, dimensions: hostDimensions(h.metrics) },
       {

@@ -2660,13 +2660,27 @@
                         "type": "string"
                       },
                       "composite": {
-                        "type": "number"
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     },
                     "required": ["reportId", "composite"]
                   },
                   "compositeDifference": {
-                    "type": "number"
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "dimensions": {
                     "type": "array",

@@ -494,8 +494,11 @@ export const ParallelRunComparisonSchema = t.Object({
         reportId: t.String(),
         composite: t.Number(),
       }),
-      host: t.Object({ reportId: t.String(), composite: t.Number() }),
-      compositeDifference: t.Number(),
+      host: t.Object({
+        reportId: t.String(),
+        composite: t.Union([t.Number(), t.Null()]),
+      }),
+      compositeDifference: t.Union([t.Number(), t.Null()]),
       dimensions: t.Array(ComparedDimensionSchema),
       withinOne: t.Number(),
       comparable: t.Number(),
