@@ -15,6 +15,10 @@ import {
   AttributionChangedError,
   CoachPublishService,
 } from "./coach-publish.service";
+import {
+  CoachReportBodyService,
+  HISTORY_SESSIONS,
+} from "./coach-report-body.service";
 import { rescoreReport } from "./coach-review.service";
 import {
   AUTHENTICITY_DIMENSION,
@@ -87,6 +91,7 @@ export class CoachPipelineService {
   private readonly frames: CoachFrameService;
   private readonly publish: CoachPublishService;
   private readonly delivery: CoachDeliveryService | null;
+  private readonly body: CoachReportBodyService;
 
   constructor(
     private readonly db: db,
@@ -97,9 +102,11 @@ export class CoachPipelineService {
       frames?: CoachFrameService;
       publish?: CoachPublishService;
       delivery?: CoachDeliveryService;
+      body?: CoachReportBodyService;
     } = {},
   ) {
     this.scoring = deps.scoring ?? new CoachScoringService(db);
+    this.body = deps.body ?? new CoachReportBodyService(this.scoring.ai);
     this.frames = deps.frames ?? new CoachFrameService();
     this.publish = deps.publish ?? new CoachPublishService(db);
     this.delivery =
@@ -232,6 +239,55 @@ export class CoachPipelineService {
     );
   }
 
+  private async firstLessonFor(
+    sourceSessionId: string,
+    detected: string | null,
+  ): Promise<boolean> {
+    const stored = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_reports")
+      .select(["first_lesson", "first_lesson_source"])
+      .where("source_session_id", "=", sourceSessionId)
+      .executeTakeFirst();
+    return stored?.first_lesson_source === "admin"
+      ? stored.first_lesson
+      : detected !== null;
+  }
+
+  private async benchmarkHistory(
+    coachId: string,
+    sessionDate: string,
+    sourceSessionId: string,
+  ) {
+    const conn = this.db.getOrCreateConnection();
+    const leader = await conn
+      .selectFrom("coach_leaders")
+      .select("is_benchmark")
+      .where("slug", "=", coachId)
+      .executeTakeFirst();
+    if (!leader?.is_benchmark) return null;
+    const prior = await conn
+      .selectFrom("coach_reports")
+      .select(["metrics"])
+      .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
+      .where("coach_id", "=", coachId)
+      .where("session_date", "<", sql<Date>`${sessionDate}::date`)
+      .where("source_session_id", "!=", sourceSessionId)
+      .orderBy("session_date", "desc")
+      .limit(HISTORY_SESSIONS)
+      .execute();
+    return prior.map((p) => ({
+      date: p.date,
+      dimensions: (
+        ((p.metrics ?? {}) as { dimensions?: Array<Record<string, unknown>> })
+          .dimensions ?? []
+      ).map((d) => ({
+        n: Number(d.n),
+        score: typeof d.score === "number" ? d.score : null,
+      })),
+    }));
+  }
+
   private async deliveredUnder(
     coachId: string,
     version: ScoringVersion | undefined,
@@ -313,8 +369,9 @@ export class CoachPipelineService {
       .then((f) => f.map((x) => x.data))
       .catch(() => [] as Uint8Array[]);
 
+    const transcript = timedLinesFrom(detail.sentences);
     const scored = await this.scoring.scoreSession({
-      transcript: timedLinesFrom(detail.sentences),
+      transcript,
       sessionTitle: session.title,
       frames,
       authenticityBaseline: await this.authenticityBaselineFor(
@@ -332,8 +389,34 @@ export class CoachPipelineService {
     }
 
     const dimensions = scored.dimensions;
+    const generated = await this.body.generate({
+      sessionTitle: session.title,
+      sessionDate: session.date,
+      duration: `${detail.duration ?? 0} min`,
+      attendees: detail.participantCount,
+      newcomers: scored.newcomers ?? 0,
+      transcript,
+      dimensions,
+      firstLesson: await this.firstLessonFor(
+        session.source_session_id,
+        scored.firstLessonLine ?? null,
+      ),
+      history: await this.benchmarkHistory(
+        coachId,
+        session.date,
+        session.source_session_id,
+      ),
+    });
     const delivering = !session.parallel_run && coachPipelineLive();
-    const holdReason = scored.reviewReason ?? null;
+    const holdReason =
+      [
+        scored.reviewReason,
+        generated.issues.length > 0
+          ? `held for review: report body: ${generated.issues.join("; ")}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("; ") || null;
     const versionHold =
       delivering && !(await this.deliveredUnder(coachId, scored.producedBy))
         ? newVersionHold(scored.producedBy)
@@ -351,13 +434,12 @@ export class CoachPipelineService {
             base: scored.base ?? 0,
             clusters: scored.clusters ?? [],
             dimensions,
-            bigIdeas: [],
-            feedback: {
-              headline: "",
-              strengths: [],
-              improvements: [],
-              recommendations: [],
-            },
+            bigIdeas: generated.body.bigIdeas,
+            feedback: generated.body.feedback,
+            sections: generated.body.sections,
+            keyMoments: generated.body.keyMoments,
+            contextLine: generated.body.contextLine,
+            topic: generated.body.topic,
             attendees: detail.participantCount,
             newcomers: scored.newcomers ?? 0,
             duration: `${detail.duration ?? 0} min`,

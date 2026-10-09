@@ -34,6 +34,11 @@ import {
   type PublishResult,
 } from "./coach-publish.service";
 import {
+  bodyAnswer,
+  bodySentences,
+  isBodyCall,
+} from "./coach-report-body.fixture";
+import {
   CoachScoringService,
   SCORING_SETTINGS,
   type ScoringVersion,
@@ -80,6 +85,7 @@ class FakeAi implements AiProvider {
   readonly name = "fake";
   constructor(private readonly perDimension = 4) {}
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+    if (isBodyCall(opts)) return { content: bodyAnswer(), model: "fake" };
     if (opts.messages.some((m) => m.images?.length)) {
       return {
         content: JSON.stringify({
@@ -115,6 +121,7 @@ class FakeAi implements AiProvider {
 class LaterSessionAi extends FakeAi {
   override async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
     const answer = await super.chatComplete(opts);
+    if (isBodyCall(opts)) return answer;
     return { ...answer, content: answer.content.replaceAll("12:", "13:") };
   }
 }
@@ -123,7 +130,8 @@ class EachSessionAi extends FakeAi {
   private sessions = 0;
   override async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
     const answer = await super.chatComplete(opts);
-    if (opts.messages.some((m) => m.images?.length)) return answer;
+    if (opts.messages.some((m) => m.images?.length) || isBodyCall(opts))
+      return answer;
     this.sessions += 1;
     return {
       ...answer,
@@ -157,16 +165,7 @@ class FakeClient implements FirefliesDetailClient {
       transcript_url: null,
       participantCount: 9,
       summary: { overview: "ok" },
-      sentences: [
-        {
-          index: 0,
-          speakerId: "speaker-1",
-          isLeader: true,
-          text: "welcome",
-          start_time: 0,
-          end_time: 1,
-        },
-      ],
+      sentences: bodySentences(),
     };
   }
 }
@@ -442,6 +441,131 @@ describe("a retained session reaches a delivered report", () => {
     expect(text?.messages.map((m) => m.content).join("\n")).toContain(
       "[00:00:00] LEADER: welcome",
     );
+  });
+
+  it("A machine-scored report reads like a hand-written one: the body stage's sections are published and its key moments become the evidence on delivery", async () => {
+    const mailer = new FakeMailer();
+    const [result] = await new CoachPipelineService(
+      Database,
+      new FakeClient(),
+      mailer as any,
+      {
+        scoring: new CoachScoringService(Database, new FakeAi()),
+        frames: noFrames as any,
+      },
+    ).run();
+    expect(result.outcome).toBe("scored-and-delivered");
+    const row = await conn
+      .selectFrom("coach_reports")
+      .select(["id", "summary", "metrics", "body", "evidence"])
+      .select(
+        sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("session_date"),
+      )
+      .where("id", "=", result.reportId as string)
+      .executeTakeFirstOrThrow();
+    const report = rowToReport(row as never) as Record<string, any>;
+    expect(
+      [...Value.Errors(ReportSchema, report)].map(
+        (e) => `${e.path}: ${e.message}`,
+      ),
+    ).toEqual([]);
+    expect(report.feedback.headline).toBe("A room that started to open up");
+    expect(report.feedback.strengths.length).toBe(5);
+    expect(report.feedback.improvements.length).toBe(5);
+    expect(report.feedback.recommendations.length).toBe(5);
+    expect(report.bigIdeas.length).toBe(5);
+    expect(report.topic).toBe("The call of the reluctant prophet");
+    expect(report.sections?.map((s: { title: string }) => s.title)).toEqual([
+      "Session Details",
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `Scorecard — Table ${n}`),
+      "Application Questions",
+      "Monologues",
+      "Key Moments — The Pivot Points That Mattered Most",
+    ]);
+    expect(row.evidence).toEqual({
+      quotes: [
+        "I haven't prayed in weeks",
+        "Why would the prophet run the other way?",
+      ],
+      timestamps: ["00:12:34", "00:20:10"],
+    });
+  });
+
+  it("A generated section is incomplete: the report is held for review naming the section, and nothing is sent", async () => {
+    class ShortBodyAi extends FakeAi {
+      override async chatComplete(opts: AiChatOptions) {
+        if (isBodyCall(opts))
+          return {
+            content: bodyAnswer({ headline: "", strengths: [] }),
+            model: "fake",
+          };
+        return super.chatComplete(opts);
+      }
+    }
+    const mailer = new FakeMailer();
+    const [result] = await pipeline(mailer, new ShortBodyAi()).run();
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(result.detail).toContain("report body: headline: empty");
+    expect(result.detail).toContain("strengths: 0, five expected");
+    expect(mailer.sent).toEqual([]);
+    expect(await holdOf("ff-pipe-1")).toEqual({
+      state: "scored",
+      hold_kind: "review",
+    });
+  });
+
+  it("A session with no key moment is held for an admin to confirm", async () => {
+    class NoMomentAi extends FakeAi {
+      override async chatComplete(opts: AiChatOptions) {
+        if (isBodyCall(opts))
+          return { content: bodyAnswer({ keyMoments: [] }), model: "fake" };
+        return super.chatComplete(opts);
+      }
+    }
+    const mailer = new FakeMailer();
+    const [result] = await pipeline(mailer, new NoMomentAi()).run();
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(result.detail).toContain("key moments: none qualified");
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("The benchmark leader's machine report compares with his history, from his earlier reports", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ is_benchmark: true })
+      .where("slug", "=", COACH)
+      .execute();
+    for (const [i, date] of ["2026-08-01", "2026-08-08"].entries())
+      await conn
+        .insertInto("coach_reports")
+        .values({
+          id: `pipe-history-${i}`,
+          coach_id: COACH,
+          session_date: date,
+          source_session_id: `ff-pipe-history-${i}`,
+          legacy_ids: [],
+          summary: {},
+          metrics: JSON.stringify({
+            dimensions: DIMENSIONS.map((d) => ({ n: d.n, score: 2 })),
+          }),
+          body: {},
+        })
+        .execute();
+    const [result] = await pipeline(null).run();
+    const body = (
+      await conn
+        .selectFrom("coach_reports")
+        .select("body")
+        .where("id", "=", result.reportId as string)
+        .executeTakeFirstOrThrow()
+    ).body as { sections: Array<{ title: string; bullets?: string[] }> };
+    const sos = body.sections.find(
+      (s) => s.title === "Session-Over-Session Comparison",
+    );
+    expect(sos?.bullets).toContain(
+      "Participant Engagement: 4 this session against 2 over the last 3 sessions ↑",
+    );
+    expect(body.sections.some((s) => s.title === "Drift Check")).toBe(true);
   });
 
   it("scores it, publishes it, and emails it, in that order", async () => {

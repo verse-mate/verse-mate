@@ -238,7 +238,7 @@ export interface ScoringResult {
 }
 
 export class CoachScoringService {
-  private readonly ai: AiProvider;
+  readonly ai: AiProvider;
 
   constructor(
     private readonly db: db,
