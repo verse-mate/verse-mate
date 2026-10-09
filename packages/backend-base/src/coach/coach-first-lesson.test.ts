@@ -9,6 +9,7 @@ import {
   isFirstLesson,
   legacyReportBook,
 } from "./coach-first-lesson";
+import { parallelRunComparison } from "./coach-parallel-run";
 import { CoachPipelineService } from "./coach-pipeline.service";
 import { CoachReviewService } from "./coach-review.service";
 import {
@@ -448,7 +449,7 @@ describe("the pipeline applies detection when scoring returns a book", () => {
     }
   }
 
-  async function runWith(book: string | undefined) {
+  async function runWith(book: string | undefined, parallelRun = false) {
     await seed({ ...AVERY[0], legacy: false, book: "Jonah" });
     await conn
       .insertInto("coach_intake_sessions")
@@ -460,6 +461,7 @@ describe("the pipeline applies detection when scoring returns a book", () => {
         session_date: "2026-10-01",
         session_started_at: "2026-10-02T00:00:00.000Z",
         state: "retained",
+        parallel_run: parallelRun,
       })
       .execute();
     const client = {
@@ -497,6 +499,27 @@ describe("the pipeline applies detection when scoring returns a book", () => {
     expect(s.first_lesson_source).toBe("detected");
     expect(s.dim9?.score).toBeNull();
     expect(s.score).toBeCloseTo(allFoursWithoutNine(), 6);
+  });
+
+  it("a detected first lesson reaches the parallel-run comparison as not-applicable on Memory Reinforcement, left out of the share", async () => {
+    await seed({
+      id: "fl-host-2026-10-01",
+      date: "2026-10-01",
+      session: "Thursday 7pm",
+      legacy: true,
+    });
+    await runWith("Amos", true);
+    const compared = (await parallelRunComparison(Database)).sessions.find(
+      (c) => c.coachId === COACH,
+    );
+    expect(compared?.dimensions.find((d) => d.n === 9)).toEqual({
+      n: 9,
+      host: 4,
+      backend: null,
+      difference: null,
+    });
+    expect(compared?.comparable).toBe(11);
+    expect(compared?.backend.composite).toBeCloseTo(allFoursWithoutNine(), 6);
   });
 
   it("with no book, the scored report is left exactly as scored", async () => {
