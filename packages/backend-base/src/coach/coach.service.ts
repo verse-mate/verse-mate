@@ -1436,7 +1436,7 @@ export class CoachService {
     token: string,
   ): Promise<boolean> {
     if (!this.notification || isPlaceholderAddress(email)) return false;
-    const confirmUrl = `${process.env.APP_URL ?? ""}/coach/confirm-address?token=${token}`;
+    const confirmUrl = `${process.env.APP_URL ?? ""}/coach/confirm-address#token=${token}`;
     try {
       const sent = (await this.notification.sendEmail({
         to: { email, name },
