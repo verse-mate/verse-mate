@@ -137,7 +137,7 @@ describe("retained media is minted per request, never listed", () => {
     expect(url).toBeTruthy();
   });
 
-  it("an issued address EXPIRES, 24 hours (open question 5, provisional)", async () => {
+  it("An issued address expires after one hour (open question 5, final)", async () => {
     await seedReport(OWNER, "r-own", "ff-own");
     await seedAsset(OWNER, "ff-own", "r-own");
     const { svc, storage } = service();
@@ -148,7 +148,7 @@ describe("retained media is minted per request, never listed", () => {
       isAdmin: false,
     });
     expect(storage.presigns[0].ttl).toBe(MINTED_URL_LIFETIME_SECONDS);
-    expect(MINTED_URL_LIFETIME_SECONDS).toBe(24 * 60 * 60);
+    expect(MINTED_URL_LIFETIME_SECONDS).toBe(60 * 60);
   });
 
   it("a session with no retained asset mints nothing", async () => {
@@ -219,8 +219,6 @@ describe("the detail response says WHETHER material exists, never where", () => 
   });
 
   it("describing a LIST of sessions mints nothing, whatever its length", async () => {
-    // The scenario: 'a session list does not fetch recordings'. Minting per row
-    // would sign one URL per session on every page load, each valid for a day.
     for (let i = 0; i < 5; i += 1) {
       await seedReport(OWNER, `r-${i}`, `ff-${i}`);
       await seedAsset(OWNER, `ff-${i}`, `r-${i}`);

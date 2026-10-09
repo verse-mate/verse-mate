@@ -354,7 +354,7 @@ const plugin = new Elysia()
       )
       // ── One session's retained recording ──────────────────────────────
       // A separate call on purpose (design D10, task 4.5). The address is
-      // minted for ONE session at a time and lives 24 hours, so a paginated
+      // minted for ONE session at a time and lives one hour, so a paginated
       // list mints nothing; the detail response says only WHETHER material
       // exists. A browser media element cannot send a bearer header, so the
       // API never proxies the bytes, object storage serves them, Range

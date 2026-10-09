@@ -18,16 +18,7 @@ import { ObjectStorageService } from "../shared/storage/storage.service";
  * address that was never signed cannot leak.
  */
 
-/**
- * How long a minted address lives.
- *
- * Open question 5, answered provisionally 2026-09-01 (Andy confirms the
- * forwarding residual before cutover): 24 hours. The residual is real and worth
- * restating, a leader who forwards the address inside that window shares the
- * recording with whoever receives it, because storage serves it without
- * knowing who is asking.
- */
-export const MINTED_URL_LIFETIME_SECONDS = 24 * 60 * 60;
+export const MINTED_URL_LIFETIME_SECONDS = 60 * 60;
 
 export type PreferredRecording = "attached" | "retained" | "none";
 
@@ -129,8 +120,8 @@ export class RetainedMediaService {
    *
    * Deliberately not `recordingUrl`: that field is overlaid onto every row of
    * every list, so carrying a minted address on it would sign one URL per
-   * session on every page load, each live for a day. This says only WHETHER
-   * material exists; the address comes from `mint`, one session at a time.
+   * session on every page load. This says only WHETHER material exists; the
+   * address comes from `mint`, one session at a time.
    */
   async describe(
     coachId: string,
