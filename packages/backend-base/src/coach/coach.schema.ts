@@ -719,6 +719,9 @@ const MONTHLY_REPORT = {
 };
 
 export const COACH_REFUSALS = {
+  "POST /coach/admin/identity-nudges": {
+    "no-mailer": refusal(409, NO_MAILER),
+  },
   "PUT /coach/admin/monthly-reports/:id": {
     ...MONTHLY_REPORT,
     "already-sent": refusal(
