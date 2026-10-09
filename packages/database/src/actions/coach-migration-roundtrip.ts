@@ -78,6 +78,10 @@ type Refusal = {
 };
 
 const REFUSALS: Record<string, Refusal> = {
+  "20260901159000-coach-rotating-classes": {
+    seed: "INSERT INTO coach_rotating_classes (name, group_email) VALUES ('roundtrip', 'group@example.test')",
+    tables: ["coach_rotating_classes"],
+  },
   "20260901158000-coach-first-lesson-line": {
     seed: reportWith("first_lesson_line = 'We start Ruth today'"),
     tables: ["coach_reports"],

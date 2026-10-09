@@ -1,6 +1,10 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import {
+  type RotatingClass,
+  loadRotatingClasses,
+} from "./coach-rotating.service";
 import { rescorable } from "./coach-session-state";
 import type { FirefliesTranscript } from "./fireflies.client";
 
@@ -49,11 +53,17 @@ function containsWords(haystack: string, needle: string): boolean {
   return needle.length > 0 && ` ${haystack} `.includes(` ${needle} `);
 }
 
-export type MatchedBy = "title_match" | "name" | "alt_email" | "unresolved";
+export type MatchedBy =
+  | "title_match"
+  | "name"
+  | "alt_email"
+  | "unresolved"
+  | "rotating_class";
 
 export interface Attribution {
   coachId: string | null;
   matchedBy: MatchedBy;
+  rotatingClassId?: number;
 }
 
 export async function loadAttributionRoster(
@@ -87,8 +97,25 @@ export function attributeSession(
     "title" | "host_email" | "organizer_email"
   >,
   roster: AttributionLeader[],
+  rotating: RotatingClass[] = [],
 ): Attribution {
   const title = titleWords(transcript.title ?? "");
+  const senders = [transcript.host_email, transcript.organizer_email]
+    .filter((e): e is string => Boolean(e))
+    .map((e) => e.toLowerCase());
+
+  const classes = rotating.filter(
+    (c) =>
+      senders.includes(c.groupEmail) ||
+      c.titleMatch.some((k) => containsWords(title, titleWords(k))),
+  );
+  if (classes.length === 1)
+    return {
+      coachId: null,
+      matchedBy: "rotating_class",
+      rotatingClassId: classes[0].id,
+    };
+  if (classes.length > 1) return { coachId: null, matchedBy: "unresolved" };
 
   const keyworded = roster
     .flatMap((leader) =>
@@ -107,9 +134,6 @@ export function attributeSession(
     .filter((l) => containsWords(title, titleWords(l.name)))
     .map((l) => l.slug);
 
-  const senders = [transcript.host_email, transcript.organizer_email]
-    .filter((e): e is string => Boolean(e))
-    .map((e) => e.toLowerCase());
   const byAddress = roster
     .filter((l) =>
       [l.email, ...l.altEmails]
@@ -145,6 +169,7 @@ export async function reattributeUnresolved(
     .selectFrom("coach_intake_sessions")
     .select(["source_session_id", "title"])
     .where("coach_id", "is", null)
+    .where("rotating_class_id", "is", null)
     .where(
       "observed_at",
       ">=",
@@ -155,12 +180,27 @@ export async function reattributeUnresolved(
     .execute();
   if (unresolved.length === 0) return 0;
   const roster = await loadAttributionRoster(database);
+  const rotating = await loadRotatingClasses(database);
   let resolved = 0;
   for (const session of unresolved) {
     const match = attributeSession(
       { title: session.title, host_email: null, organizer_email: null },
       roster,
+      rotating,
     );
+    if (match.rotatingClassId !== undefined) {
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set({
+          matched_by: "rotating_class",
+          rotating_class_id: match.rotatingClassId,
+          updated_at: sql`NOW()`,
+        })
+        .where("source_session_id", "=", session.source_session_id)
+        .where("coach_id", "is", null)
+        .execute();
+      continue;
+    }
     if (!match.coachId) continue;
     const updated = await conn
       .updateTable("coach_intake_sessions")

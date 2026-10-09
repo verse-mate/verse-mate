@@ -1,6 +1,7 @@
 import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
+import { loadRotatingClasses } from "./coach-rotating.service";
 
 /**
  * Recording-bot coverage (change: port-coach-pipeline, task 4.7, design D6).
@@ -27,6 +28,7 @@ import type { db } from "../shared/shared.plugin";
 
 export type CoverageBasis =
   | "observed"
+  | "rotating-class"
   | "attested-not-teaching"
   | "attestation-lapsed"
   | "no-observation";
@@ -109,6 +111,7 @@ export class CoachCoverageService {
         "coach_leaders.name as name",
         "coach_leaders.email as email",
         "coach_leaders.not_teaching_attested_at as not_teaching_attested_at",
+        "coach_leaders.rotating_only as rotating_only",
         "user.email as attested_by",
       ])
       .where("coach_leaders.is_coach", "=", true)
@@ -136,6 +139,13 @@ export class CoachCoverageService {
       observations.map((o) => [o.coach_id as string, new Date(o.last)]),
     );
     const lapseBefore = Date.now() - ATTESTATION_LAPSES_AFTER_DAYS * 86_400_000;
+    const rotating = await loadRotatingClasses(this.db);
+    const classTaught = (slug: string) =>
+      rotating.some(
+        (c) =>
+          c.leaders.includes(slug) &&
+          c.leaders.some((l) => (observedByCoach.get(l) ?? 0) > 0),
+      );
 
     // The join path, stated because it is not obvious: the roster keys on
     // EMAIL, `coach_classes` keys on `user.id`. They meet only through `user`.
@@ -177,7 +187,9 @@ export class CoachCoverageService {
         attestedAt !== null && !(lastObserved && lastObserved > attestedAt);
       const lapsed = recorded && attestedAt.getTime() < lapseBefore;
       const attested = recorded && !lapsed;
-      const covered = observed > 0 || attested;
+      const byClass =
+        observed === 0 && l.rotating_only === true && classTaught(coachId);
+      const covered = observed > 0 || byClass || attested;
       const linkedClassName = classByEmail.get(email) ?? null;
       return {
         coachId,
@@ -187,15 +199,18 @@ export class CoachCoverageService {
         basis:
           observed > 0
             ? "observed"
-            : attested
-              ? "attested-not-teaching"
-              : lapsed
-                ? "attestation-lapsed"
-                : "no-observation",
+            : byClass
+              ? "rotating-class"
+              : attested
+                ? "attested-not-teaching"
+                : lapsed
+                  ? "attestation-lapsed"
+                  : "no-observation",
         observedSessions: observed,
         accountStatus: withAccount.has(email) ? "has-account" : "no-account",
         linkedClassName,
-        classAlert: linkedClassName !== null && observed === 0 && !attested,
+        classAlert:
+          linkedClassName !== null && observed === 0 && !byClass && !attested,
         attestedAt: recorded ? attestedAt.toISOString() : null,
         attestedBy: recorded ? l.attested_by ?? null : null,
       };

@@ -36,6 +36,12 @@ import {
   type RetainedKind,
   RetainedMediaService,
 } from "./coach-retained-media.service";
+import {
+  isGroupAddress,
+  listRotatingClasses,
+  saveRotatingClass,
+  setRotatingOnly,
+} from "./coach-rotating.service";
 import type { ScorecardRating } from "./coach-scorecard";
 import {
   COLD_RECALL_FEEDBACK,
@@ -1182,6 +1188,26 @@ export class CoachService {
     return [...bundled, ...synthetic];
   }
 
+  listRotatingClasses() {
+    return listRotatingClasses(this.db);
+  }
+
+  saveRotatingClass(
+    input: {
+      name: string;
+      groupEmail: string;
+      titleMatch: string[];
+      leaders: string[];
+    },
+    id?: number,
+  ) {
+    return saveRotatingClass(this.db, input, id);
+  }
+
+  setRotatingOnly(slug: string, rotatingOnly: boolean) {
+    return setRotatingOnly(this.db, slug, rotatingOnly);
+  }
+
   async updateLeaderEmail(
     slug: string,
     address: string,
@@ -1194,9 +1220,18 @@ export class CoachService {
         expiresAt: string | null;
         confirmationSent: boolean;
       }
-    | { ok: false; refusal: "unknown-leader" | "taken" | "confirm-required" }
+    | {
+        ok: false;
+        refusal:
+          | "unknown-leader"
+          | "taken"
+          | "confirm-required"
+          | "group-address";
+      }
   > {
     const email = address.trim().toLowerCase();
+    if (await isGroupAddress(this.db, email))
+      return { ok: false, refusal: "group-address" };
     const holder = await this.resolveByEmail(email);
     if (holder && holder.id !== slug) return { ok: false, refusal: "taken" };
     const token = randomBytes(32).toString("base64url");

@@ -37,6 +37,8 @@ import {
   RevisionResultSchema,
   RevisionSendSchema,
   RevisionsSchema,
+  RotatingClassBodySchema,
+  RotatingClassSchema,
   RubricContractSchema,
 } from "./coach.schema";
 import {
@@ -987,6 +989,104 @@ const plugin = new Elysia()
           params: t.Object({ id: t.String() }),
           response: {
             200: t.Object({ attested: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/rotating-classes",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return { classes: await coachService.listRotatingClasses() };
+        },
+        {
+          response: {
+            200: t.Object({ classes: t.Array(RotatingClassSchema) }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/admin/rotating-classes",
+        async ({ body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (!isEmailAddress(body.groupEmail.trim().toLowerCase()))
+            throw refuse(
+              "POST /coach/admin/rotating-classes",
+              "invalid-address",
+            );
+          const saved = await coachService.saveRotatingClass(body);
+          if (!saved.ok)
+            throw refuse("POST /coach/admin/rotating-classes", saved.refusal);
+          return { id: saved.id };
+        },
+        {
+          body: RotatingClassBodySchema,
+          response: {
+            200: t.Object({ id: t.Number() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/admin/rotating-classes/:id",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (!isEmailAddress(body.groupEmail.trim().toLowerCase()))
+            throw refuse(
+              "PUT /coach/admin/rotating-classes/:id",
+              "invalid-address",
+            );
+          const id = Number(params.id);
+          const saved = Number.isInteger(id)
+            ? await coachService.saveRotatingClass(body, id)
+            : ({ ok: false, refusal: "unknown-class" } as const);
+          if (!saved.ok)
+            throw refuse(
+              "PUT /coach/admin/rotating-classes/:id",
+              saved.refusal,
+            );
+          return { id: saved.id };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: RotatingClassBodySchema,
+          response: {
+            200: t.Object({ id: t.Number() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .put(
+        "/admin/leaders/:id/rotating-only",
+        async ({ params, body, store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          if (
+            !(await coachService.setRotatingOnly(params.id, body.rotatingOnly))
+          )
+            throw refuse(
+              "PUT /coach/admin/leaders/:id/rotating-only",
+              "unknown-leader",
+            );
+          return { rotatingOnly: body.rotatingOnly };
+        },
+        {
+          params: t.Object({ id: t.String() }),
+          body: t.Object({ rotatingOnly: t.Boolean() }),
+          response: {
+            200: t.Object({ rotatingOnly: t.Boolean() }),
             ...StandardErrorResponses,
           },
         },

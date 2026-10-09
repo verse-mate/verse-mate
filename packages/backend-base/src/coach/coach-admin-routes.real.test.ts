@@ -406,6 +406,117 @@ describe("every admin route answers through the real service within its response
   });
 });
 
+describe("the rotating-class admin routes", () => {
+  const GROUP = "real-routes-group@example.test";
+  afterAll(async () => {
+    await conn
+      .deleteFrom("coach_rotating_classes")
+      .where("group_email", "=", GROUP)
+      .execute();
+  });
+
+  it("an admin marks a class as rotating, edits it, lists it and flags a leader as teaching only within it", async () => {
+    const created = await call("POST", "rotating-classes", {
+      name: "Harbor Group",
+      groupEmail: GROUP,
+      titleMatch: ["harbor group"],
+      leaders: [LEADER, OTHER],
+    });
+    expect(created.status).toBe(200);
+    const id = created.body?.id as number;
+    const edited = await call("PUT", `rotating-classes/${id}`, {
+      name: "Harbor Group",
+      groupEmail: GROUP,
+      titleMatch: ["harbor group"],
+      leaders: [LEADER],
+    });
+    expect(edited.status).toBe(200);
+    const flagged = await call("PUT", `leaders/${LEADER}/rotating-only`, {
+      rotatingOnly: true,
+    });
+    expect(flagged).toEqual({ status: 200, body: { rotatingOnly: true } });
+    const listed = await call("GET", "rotating-classes");
+    expect(listed.status).toBe(200);
+    expect(
+      listed.body?.classes.find((c: { id: number }) => c.id === id),
+    ).toEqual({
+      id,
+      name: "Harbor Group",
+      groupEmail: GROUP,
+      titleMatch: ["harbor group"],
+      leaders: [{ id: LEADER, name: expect.any(String), rotatingOnly: true }],
+    });
+  });
+
+  it("refusals are coded: a leader's address as the group address, an unknown leader or class, and the group address as a leader's own", async () => {
+    const route = (r: string) => r as keyof typeof COACH_REFUSALS;
+    const expectRefused = async (
+      r: string,
+      res: { status: number; body: Record<string, any> | null },
+      code: string,
+    ) => {
+      const listed = (
+        COACH_REFUSALS[route(r)] as Record<
+          string,
+          { status: number; message: string }
+        >
+      )[code];
+      expect(listed).toBeDefined();
+      expect(res).toMatchObject({
+        status: listed.status,
+        body: { details: { refusal: code } },
+      });
+    };
+    const body = (over: Record<string, unknown>) => ({
+      name: "Harbor Group",
+      groupEmail: GROUP,
+      titleMatch: [],
+      leaders: [LEADER],
+      ...over,
+    });
+    await expectRefused(
+      "POST /coach/admin/rotating-classes",
+      await call(
+        "POST",
+        "rotating-classes",
+        body({ groupEmail: LEADER_EMAIL }),
+      ),
+      "address-in-use",
+    );
+    await expectRefused(
+      "POST /coach/admin/rotating-classes",
+      await call(
+        "POST",
+        "rotating-classes",
+        body({ leaders: ["nobody-here"] }),
+      ),
+      "unknown-leader",
+    );
+    await expectRefused(
+      "PUT /coach/admin/rotating-classes/:id",
+      await call(
+        "PUT",
+        "rotating-classes/999999",
+        body({ groupEmail: "real-routes-other-group@example.test" }),
+      ),
+      "unknown-class",
+    );
+    await expectRefused(
+      "PUT /coach/admin/leaders/:id/rotating-only",
+      await call("PUT", "leaders/nobody-here/rotating-only", {
+        rotatingOnly: true,
+      }),
+      "unknown-leader",
+    );
+    await call("POST", "rotating-classes", body({}));
+    await expectRefused(
+      "PUT /coach/admin/leaders/:id/email",
+      await call("PUT", `leaders/${OTHER}/email`, { email: GROUP }),
+      "group-address",
+    );
+  });
+});
+
 describe("every admin refusal carries a structured code with the status and words the contract lists", () => {
   async function refused(
     route: keyof typeof COACH_REFUSALS,

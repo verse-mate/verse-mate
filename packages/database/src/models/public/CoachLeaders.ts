@@ -30,6 +30,8 @@ export default interface CoachLeadersTable {
 
   is_benchmark: ColumnType<boolean, boolean | undefined, boolean>;
 
+  rotating_only: ColumnType<boolean, boolean | undefined, boolean>;
+
   title_match: ColumnType<string[], string[] | undefined, string[]>;
 
   alt_emails: ColumnType<string[], string[] | undefined, string[]>;
