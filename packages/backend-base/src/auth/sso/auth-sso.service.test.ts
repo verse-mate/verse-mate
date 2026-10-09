@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 import type { User } from "database/src/models/public/User";
-import { ValidationError } from "../../common/errors";
+import { ConflictError, ValidationError } from "../../common/errors";
 import shared from "../../shared/shared.plugin";
 import { AuthService } from "../auth.service";
 import type { SSOUserInfo } from "./sso-provider.interface";
@@ -303,6 +303,107 @@ describe("AuthService - SSO Operations", () => {
         .deleteFrom("user")
         .where("id", "=", existingUser.id)
         .execute();
+    });
+
+    it("refuses to link or sign in to an existing account when the provider did not verify the email", async () => {
+      const providerUserId = `unverified-${faker.string.uuid()}`;
+      const userEmail =
+        `unverified-link-${faker.string.uuid()}@example.com`.toLowerCase();
+      const existingUser = await db
+        .getOrCreateConnection()
+        .insertInto("user")
+        .values({
+          email: userEmail,
+          firstName: faker.person.firstName(),
+          lastName: faker.person.lastName(),
+          password: await Bun.password.hash("password123", {
+            algorithm: "bcrypt",
+            cost: 10,
+          }),
+          emailVerified: true,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      try {
+        await expect(
+          authService.loginWithSSO(
+            SsoProviderEnum.google,
+            {
+              providerUserId,
+              email: userEmail.toUpperCase(),
+              emailVerified: false,
+              name: "Someone Else",
+            },
+            mockJwt as any,
+          ),
+        ).rejects.toBeInstanceOf(ConflictError);
+        expect(
+          await userSsoAccountRepository.findByProviderAndProviderId(
+            SsoProviderEnum.google,
+            providerUserId,
+          ),
+        ).toBeUndefined();
+        const after = await db
+          .getOrCreateConnection()
+          .selectFrom("user")
+          .select(["password", "emailVerified"])
+          .where("id", "=", existingUser.id)
+          .executeTakeFirstOrThrow();
+        expect(after.emailVerified).toBe(true);
+        expect(after.password).toBe(existingUser.password);
+      } finally {
+        await db
+          .getOrCreateConnection()
+          .deleteFrom("user")
+          .where("id", "=", existingUser.id)
+          .execute();
+      }
+    });
+
+    it("an unverified provider email does not take over an unverified password account either", async () => {
+      const providerUserId = `unverified-2-${faker.string.uuid()}`;
+      const userEmail =
+        `unverified-pre-${faker.string.uuid()}@example.com`.toLowerCase();
+      const existingUser = await db
+        .getOrCreateConnection()
+        .insertInto("user")
+        .values({
+          email: userEmail,
+          firstName: faker.person.firstName(),
+          lastName: faker.person.lastName(),
+          password: await Bun.password.hash("password123", {
+            algorithm: "bcrypt",
+            cost: 10,
+          }),
+          emailVerified: false,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      try {
+        await expect(
+          authService.loginWithSSO(
+            SsoProviderEnum.apple,
+            { providerUserId, email: userEmail, emailVerified: false },
+            mockJwt as any,
+          ),
+        ).rejects.toBeInstanceOf(ConflictError);
+        const after = await db
+          .getOrCreateConnection()
+          .selectFrom("user")
+          .select(["password", "emailVerified"])
+          .where("id", "=", existingUser.id)
+          .executeTakeFirstOrThrow();
+        expect(after).toEqual({
+          password: existingUser.password,
+          emailVerified: false,
+        });
+      } finally {
+        await db
+          .getOrCreateConnection()
+          .deleteFrom("user")
+          .where("id", "=", existingUser.id)
+          .execute();
+      }
     });
 
     it("should handle case-insensitive email matching for auto-linking", async () => {

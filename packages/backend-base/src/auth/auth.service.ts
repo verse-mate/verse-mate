@@ -218,6 +218,10 @@ export class AuthService {
       .executeTakeFirst();
 
     if (user) {
+      if (!emailVerified)
+        throw new ConflictError(
+          "An account with this email already exists, and the sign-in provider has not verified the email. Sign in with your password instead.",
+        );
       if (!user.emailVerified) {
         await this.userSsoAccountRepository.deleteAllByUserId(user.id);
         await this.logoutAll(user.id);
