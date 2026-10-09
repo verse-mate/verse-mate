@@ -163,7 +163,7 @@ beforeAll(async () => {
   ).id;
   await conn
     .insertInto("coach_admins")
-    .values({ email: ADMIN_EMAIL })
+    .values({ email: ADMIN_EMAIL, user_id: userId as never })
     .execute();
   await conn
     .insertInto("coach_leaders")

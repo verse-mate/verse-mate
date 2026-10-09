@@ -1426,9 +1426,17 @@ export class CoachService {
           return { refusal: refused[request.state] };
         await trx
           .updateTable("coach_leaders")
-          .set({ email: request.new_email })
+          .set({ email: request.new_email, user_id: null })
           .where("slug", "=", request.slug)
           .execute();
+        await sql`
+          UPDATE coach_leaders l SET user_id = u.id
+          FROM "user" u
+          WHERE l.slug = ${request.slug}
+            AND lower(u.email) = ${request.new_email}
+            AND u."emailVerified" = true
+            AND NOT EXISTS (SELECT 1 FROM coach_leaders b WHERE b.user_id = u.id)
+        `.execute(trx);
         if (leader.email !== request.new_email)
           await trx
             .insertInto("coach_leader_email_changes")
@@ -1605,16 +1613,6 @@ export class CoachService {
     return this.bundle.coaches.find((c) => c.id === coachId) ?? null;
   }
 
-  private async isAdminEmailAsync(email: string): Promise<boolean> {
-    const row = await this.db
-      .getOrCreateConnection()
-      .selectFrom("coach_admins")
-      .select("email")
-      .where("email", "=", email.trim().toLowerCase())
-      .executeTakeFirst();
-    return row !== undefined;
-  }
-
   private async emailFor(userId: string): Promise<string | null> {
     const user = await this.userService.findOne(userId);
     if (!user?.email || user.emailVerified !== true) return null;
@@ -1626,7 +1624,22 @@ export class CoachService {
    *  both the bundled roster and admin-added leaders. */
   private async recordFor(userId: string): Promise<CoachRecord | null> {
     const email = await this.emailFor(userId);
-    return email ? this.resolveByEmail(email) : null;
+    if (!email) return null;
+    const conn = this.db.getOrCreateConnection();
+    const bound = await conn
+      .selectFrom("coach_leaders")
+      .select(["slug", "id"])
+      .where("user_id", "=", userId as never)
+      .executeTakeFirst();
+    if (bound) return this.resolveById(bound.slug ?? String(bound.id));
+    const claimed = await sql<{ slug: string | null; id: string }>`
+      UPDATE coach_leaders SET user_id = ${userId}
+      WHERE lower(email) = ${email} AND user_id IS NULL
+        AND NOT EXISTS (SELECT 1 FROM coach_leaders b WHERE b.user_id = ${userId})
+      RETURNING slug, id
+    `.execute(conn);
+    const row = claimed.rows[0];
+    return row ? this.resolveById(row.slug ?? String(row.id)) : null;
   }
 
   async isCoach(userId: string): Promise<boolean> {
@@ -1637,16 +1650,22 @@ export class CoachService {
    *  leader). Admins need not be coachees. */
   async isAdmin(userId: string): Promise<boolean> {
     const email = await this.emailFor(userId);
-    return email ? this.isAdminEmailAsync(email) : false;
+    if (!email) return false;
+    const row = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_admins")
+      .select("email")
+      .where("user_id", "=", userId as never)
+      .executeTakeFirst();
+    return row !== undefined;
   }
 
   async getMe(userId: string) {
     const email = await this.emailFor(userId);
     if (!email) return null;
 
-    const record = await this.resolveByEmail(email);
-    const admin = await this.isAdminEmailAsync(email);
-    // Authenticated but neither a coachee nor an admin → not a coaching account.
+    const record = await this.recordFor(userId);
+    const admin = await this.isAdmin(userId);
     if (!record && !admin) return null;
 
     // Church + Bible-coach settings apply to any portal member (coachee OR
