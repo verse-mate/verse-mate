@@ -2037,3 +2037,97 @@ describe("The weekly report email carries no headline score (task 6.15)", () => 
     expect(html).not.toContain("Strength title 4");
   });
 });
+
+describe("A rotating leader has no address of their own (task 6.18)", () => {
+  const GROUP = "deliv-group@example.test";
+  beforeEach(async () => {
+    await clear();
+    await seedLeaders();
+    await conn
+      .insertInto("coach_rotating_classes")
+      .values({ name: "Harbor", group_email: GROUP })
+      .execute();
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: GROUP })
+      .where("slug", "=", LEADER)
+      .execute();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_rotating_classes")
+      .where("group_email", "=", GROUP)
+      .execute();
+    await conn.deleteFrom("coach_leaders").where("email", "=", GROUP).execute();
+  });
+
+  it("nothing goes to the class's group address, the oversight lead and the program owner receive theirs, and the delivery completes", async () => {
+    await seedReport("r-rotating");
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-rotating",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(mailer.sent.map((s) => s.to).sort()).toEqual(
+      [EMAILS[1], EMAILS[2]].sort(),
+    );
+    expect(result.skipped).toEqual([GROUP]);
+  });
+
+  it("the admin is told the leader was skipped", async () => {
+    await seedReport("r-rotating");
+    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
+      reportId: "r-rotating",
+      evidence: evidence(),
+    });
+    const listed = (
+      await new CoachService(Database).listPipelineFailures()
+    ).sessions.find((s) => s.reportId === "r-rotating");
+    expect(listed?.reason).toBe(
+      `delivered, but not emailed to ${GROUP}: a rotating class's group address, not the leader's own`,
+    );
+  });
+
+  it("a revision skips the group address the same way", async () => {
+    await seedReport("r-rotating");
+    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
+      reportId: "r-rotating",
+      evidence: evidence(),
+    });
+    await conn
+      .insertInto("coach_report_amendments")
+      .values({
+        report_id: "r-rotating",
+        revision: 1,
+        coach_id: LEADER,
+        previous: JSON.stringify({}),
+        changes: JSON.stringify({}),
+      })
+      .execute();
+    const mailer = new FakeMailer();
+    const sent = await new CoachDeliveryService(Database, mailer).sendRevision(
+      "r-rotating",
+    );
+    expect(sent.sent).toBe(true);
+    expect(sent.skipped).toEqual([GROUP]);
+    expect(mailer.sent.map((s) => s.to)).not.toContain(GROUP);
+  });
+
+  it("Leader-only send is a defect: a leader with an address of their own gets the report with both other recipients", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: EMAILS[0] })
+      .where("slug", "=", LEADER)
+      .execute();
+    await seedReport("r-three");
+    const mailer = new FakeMailer();
+    const result = await new CoachDeliveryService(Database, mailer).deliver({
+      reportId: "r-three",
+      evidence: evidence(),
+    });
+    expect(result.delivered).toBe(true);
+    expect(mailer.sent.map((s) => s.to).sort()).toEqual([...EMAILS].sort());
+  });
+});

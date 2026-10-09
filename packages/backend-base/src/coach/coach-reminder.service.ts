@@ -5,6 +5,7 @@ import type { db } from "../shared/shared.plugin";
 import { coachPipelineLive } from "./coach-cutover";
 import { isPlaceholderAddress } from "./coach-delivery.service";
 import { classDay } from "./coach-first-lesson";
+import { isGroupAddress } from "./coach-rotating.service";
 import { STALE_DELIVERY_CLAIM } from "./coach-session-state";
 import type { CoachMailer, CoachSendResult } from "./coach.service";
 
@@ -257,6 +258,13 @@ export class CoachReminderService {
       result.failed.push({
         coachId,
         reason: `placeholder address ${email}, not sent`,
+      });
+      return;
+    }
+    if (await isGroupAddress(this.db, email)) {
+      result.failed.push({
+        coachId,
+        reason: `${email} is a rotating class's group address, not the leader's own: not sent`,
       });
       return;
     }

@@ -10,6 +10,7 @@ import {
   type ReportEvidence,
   coldRecallInFeedback,
 } from "./coach-governance.service";
+import { groupAddresses } from "./coach-rotating.service";
 import {
   STALE_DELIVERY_CLAIM,
   VERSION_DELIVERED_TO_LEADER,
@@ -37,6 +38,10 @@ export const DELIVERY_ATTEMPT_LIMIT = 5;
 
 export function isPlaceholderAddress(email: string): boolean {
   return email.trim().toLowerCase().replace(/\.+$/, "").endsWith(".invalid");
+}
+
+export function noOwnAddress(email: string, groups: Set<string>): boolean {
+  return isPlaceholderAddress(email) || groups.has(email.trim().toLowerCase());
 }
 
 const CLAIM_TOKEN = sql<string>`updated_at::text`;
@@ -892,13 +897,14 @@ export class CoachDeliveryService {
     skipped: string[];
   }> {
     const conn = this.db.getOrCreateConnection();
-    const [benchmark, admins] = await Promise.all([
+    const [benchmark, admins, groups] = await Promise.all([
       conn
         .selectFrom("coach_leaders")
         .select(["name", "email"])
         .where("is_benchmark", "=", true)
         .executeTakeFirst(),
       conn.selectFrom("coach_admins").select("email").execute(),
+      groupAddresses(this.db),
     ]);
 
     const out: Array<{ name: string; email: string }> = [];
@@ -908,7 +914,7 @@ export class CoachDeliveryService {
       const key = (email ?? "").trim().toLowerCase();
       if (!key || seen.has(key)) return;
       seen.add(key);
-      if (isPlaceholderAddress(key)) skipped.push(key);
+      if (noOwnAddress(key, groups)) skipped.push(key);
       else out.push({ name, email: key });
     };
 

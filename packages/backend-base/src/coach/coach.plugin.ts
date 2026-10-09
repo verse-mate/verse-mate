@@ -1458,6 +1458,8 @@ const plugin = new Elysia()
             });
           if (result.reason === "no-slug")
             throw refuse("POST /coach/admin/leaders", "no-slug");
+          if (result.reason === "group-address")
+            throw refuse("POST /coach/admin/leaders", "group-address");
           if (result.reason === "keyword-conflict")
             throw refuse("POST /coach/admin/leaders", "keyword-conflict", {
               details: { conflicts: result.conflicts },

@@ -187,3 +187,14 @@ export async function setRotatingOnly(
     .executeTakeFirst();
   return Number(updated.numUpdatedRows ?? 0) > 0;
 }
+
+export async function groupAddresses(
+  database: Pick<db, "getOrCreateConnection">,
+): Promise<Set<string>> {
+  const rows = await database
+    .getOrCreateConnection()
+    .selectFrom("coach_rotating_classes")
+    .select("group_email")
+    .execute();
+  return new Set(rows.map((r) => r.group_email));
+}

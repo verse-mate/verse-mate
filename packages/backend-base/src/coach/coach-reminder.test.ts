@@ -300,6 +300,38 @@ describe("leaders get a reminder before each class", () => {
     );
   });
 
+  it("A rotating leader has no address of their own: the class's group address gets no reminder, and the skip is reported", async () => {
+    const GROUP = "remind-group@example.test";
+    await conn
+      .insertInto("coach_rotating_classes")
+      .values({ name: "Harbor", group_email: GROUP })
+      .execute();
+    try {
+      await report(LEADERS.thursday, "2026-09-24");
+      await conn
+        .updateTable("coach_leaders")
+        .set({ email: GROUP })
+        .where("slug", "=", LEADERS.thursday)
+        .execute();
+      const mailer = new FakeMailer();
+      const result = await run(mailer, WEDNESDAY_6PM);
+      expect(mailer.to(GROUP)).toEqual([]);
+      expect(result.failed).toContainEqual({
+        coachId: LEADERS.thursday,
+        reason: `${GROUP} is a rotating class's group address, not the leader's own: not sent`,
+      });
+    } finally {
+      await conn
+        .deleteFrom("coach_rotating_classes")
+        .where("group_email", "=", GROUP)
+        .execute();
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("email", "=", GROUP)
+        .execute();
+    }
+  });
+
   it("a latest report with no strengths or recommendations gets no reminder rather than an empty one", async () => {
     await report(LEADERS.empty, "2026-09-24", {
       pipelineState: "delivered",
