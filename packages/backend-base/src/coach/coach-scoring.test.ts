@@ -703,7 +703,7 @@ describe("a score names what produced it", () => {
   });
   afterEach(clear);
 
-  it("An admin reviews a machine-scored dimension: rubric version, language model, prompt version and settings are shown", async () => {
+  it("An admin reviews a machine-scored dimension: rubric version, language model, prompt version and settings are shown, with no model on Visual Aids when no frames were seen", async () => {
     const svc = new CoachScoringService(Database, new FakeAi(ALL_FOURS));
     const scored = await svc.scoreSession(INPUT);
     await svc.persistDimensions(
@@ -719,7 +719,7 @@ describe("a score names what produced it", () => {
       expect(d).toMatchObject({
         provenance: "machine",
         modelVersion: RUBRIC_MODEL_VERSION,
-        languageModel: "fake",
+        languageModel: d.n === 7 ? null : "fake",
         promptVersion: promptVersion(),
         settings: { temperature: null, reasoningEffort: null },
       });

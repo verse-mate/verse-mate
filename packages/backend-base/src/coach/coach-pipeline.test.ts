@@ -18,7 +18,10 @@ import { CoachService } from "./coach.service";
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { reattributeSession } from "./coach-attribution";
 import { COACH_PIPELINE_LIVE, coachPipelineLive } from "./coach-cutover";
-import { CoachDeliveryService } from "./coach-delivery.service";
+import {
+  CoachDeliveryService,
+  releaseDeliveredVersions,
+} from "./coach-delivery.service";
 import { evidenceFrom } from "./coach-governance.service";
 import {
   CoachPipelineService,
@@ -264,7 +267,7 @@ function currentVersion(): ScoringVersion {
 }
 
 async function deliveredBefore(
-  version = currentVersion(),
+  version: ScoringVersion = currentVersion(),
   id = "delivered-before",
   coachId = COACH,
 ) {
@@ -296,6 +299,21 @@ async function deliveredBefore(
       generation_settings: JSON.stringify(version.settings),
     })
     .execute();
+  if (version.visionModel)
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: id,
+        dimension_n: 7,
+        score: 4,
+        rationale: "r",
+        provenance: "machine",
+        model_version: RUBRIC_MODEL_VERSION,
+        language_model: version.visionModel,
+        prompt_version: version.promptVersion,
+        generation_settings: JSON.stringify(version.settings),
+      })
+      .execute();
   await conn
     .insertInto("coach_intake_sessions")
     .values({
@@ -352,16 +370,21 @@ describe("a retained session reaches a delivered report", () => {
     expect(mailer.sent.length).toBeGreaterThan(0);
   });
 
-  it("every dimension the pipeline stores names the language model, prompt version and settings that produced it", async () => {
+  it("every dimension the pipeline stores names the language model, prompt version and settings that produced it, and Visual Aids names no model when no vision call was made", async () => {
     const [result] = await pipeline(new FakeMailer()).run();
     const rows = await conn
       .selectFrom("coach_report_dimension_scores")
-      .select(["language_model", "prompt_version", "generation_settings"])
+      .select([
+        "dimension_n",
+        "language_model",
+        "prompt_version",
+        "generation_settings",
+      ])
       .where("report_id", "=", result.reportId as string)
       .execute();
     expect(rows.length).toBe(12);
     for (const row of rows) {
-      expect(row.language_model).toBeTruthy();
+      expect(row.language_model).toBe(row.dimension_n === 7 ? null : "fake");
       expect(row.prompt_version).toBe(promptVersion());
       expect(row.generation_settings).toEqual({
         temperature: null,
@@ -2078,6 +2101,75 @@ describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () =
       expect(mailer.sent).toEqual([]);
     },
   );
+
+  const oneFrame = {
+    extract: async () => [{ data: new Uint8Array([1]), index: 0 }],
+  };
+
+  function seenPipeline(mailer: FakeMailer) {
+    return new CoachPipelineService(Database, new FakeClient(), mailer as any, {
+      scoring: new CoachScoringService(Database, new FakeAi()),
+      frames: oneFrame as any,
+    });
+  }
+
+  it.each([
+    [
+      "the text model changed while the vision model is the same",
+      { languageModel: "an-older-model", visionModel: "fake" },
+    ],
+    [
+      "the vision model changed alone",
+      { languageModel: "fake", visionModel: "an-older-vision-model" },
+    ],
+    ["there was no vision call before", { languageModel: "fake" }],
+  ])(
+    "a report seen by the vision model is held when %s, and a delivered report under the older version does not release it",
+    async (_what, models) => {
+      await deliveredBefore({ ...currentVersion(), ...models });
+      await seedRetained();
+      const mailer = new FakeMailer();
+      const [result] = await seenPipeline(mailer).run();
+      expect(result.outcome).toBe("scored-awaiting-review");
+      expect(mailer.sent).toEqual([]);
+      expect(await releaseDeliveredVersions(Database, COACH)).toEqual([]);
+      expect(await holdOf("ff-pipe-1")).toEqual({
+        state: "scored",
+        hold_kind: "scoring-version",
+      });
+    },
+  );
+
+  it("a report seen by the vision model is not held when the leader was delivered one under the same text model, prompt, settings and vision model", async () => {
+    await deliveredBefore({ ...currentVersion(), visionModel: "fake" });
+    await seedRetained();
+    const mailer = new FakeMailer();
+    const [result] = await seenPipeline(mailer).run();
+    expect(result.outcome).toBe("scored-and-delivered");
+    expect(mailer.sent).toContain(EMAIL);
+  });
+
+  it("a held report is not released by a delivered report that shares only its vision model", async () => {
+    await seedRetained();
+    const [held] = await seenPipeline(new FakeMailer()).run();
+    expect(held.outcome).toBe("scored-awaiting-review");
+    await deliveredBefore({
+      ...currentVersion(),
+      languageModel: "an-older-model",
+      visionModel: "fake",
+    });
+    expect(await releaseDeliveredVersions(Database, COACH)).toEqual([]);
+  });
+
+  it("a held report is released once the leader has a report delivered under its whole version, vision model included", async () => {
+    await seedRetained();
+    const [held] = await seenPipeline(new FakeMailer()).run();
+    expect(held.outcome).toBe("scored-awaiting-review");
+    await deliveredBefore({ ...currentVersion(), visionModel: "fake" });
+    expect(await releaseDeliveredVersions(Database, COACH)).toEqual([
+      held.reportId as string,
+    ]);
+  });
 
   it("another leader's delivery under the version does not release this leader's first report", async () => {
     await deliveredBefore(currentVersion(), "other-leader", "pipe-other-coach");

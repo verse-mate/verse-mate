@@ -17,6 +17,8 @@ export const RUBRIC_MODEL_VERSION = "v3-weighted-100";
 
 export const MEMORY_REINFORCEMENT = 9;
 
+export const VISUAL_AIDS_DIMENSION = 7;
+
 export const FIRST_LESSON_RATIONALE =
   "Not applicable: the first lesson of a new study, so there are no prior big ideas to review.";
 
