@@ -16,10 +16,12 @@ import type { RetainResult } from "./coach-archive.service";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachDeliveryService } from "./coach-delivery.service";
 import { CoachIntakeService } from "./coach-intake.service";
+import { parallelRunComparison } from "./coach-parallel-run";
 import { CoachPipelineService } from "./coach-pipeline.service";
 import { CoachReshareService } from "./coach-reshare.service";
 import { CoachRetrievalService } from "./coach-retrieval.service";
 import { CoachScoringService } from "./coach-scoring.service";
+import { reportToRow } from "./coach-store.transform";
 import { CoachService } from "./coach.service";
 import type {
   FirefliesDetailClient,
@@ -249,6 +251,56 @@ async function observedDuringTheParallelRun() {
   await new CoachRetrievalService(Database, new Archive()).sweep();
   process.env[COACH_PIPELINE_LIVE] = "true";
 }
+
+describe("a parallel-run session and the host's report for its class date are compared, whatever the hour in UTC", () => {
+  const HOST = "lifecycle-host-2026-10-01";
+  const evening = { ...transcript, dateString: "2026-10-02T00:30:00.000Z" };
+  class EveningProvider extends Provider {
+    override async listTranscripts(): Promise<FirefliesTranscript[]> {
+      return [evening];
+    }
+    override async getTranscript(): Promise<FirefliesTranscriptDetail> {
+      return { ...(await super.getTranscript()), ...evening };
+    }
+  }
+  afterEach(async () => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await conn.deleteFrom("coach_reports").where("id", "=", HOST).execute();
+  });
+
+  it("a session recorded at 19:30 in Chicago on 1 October, 00:30 UTC on the 2nd, is compared with the host's 1 October report, on the first parallel-run day", async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await new CoachIntakeService(Database, new EveningProvider()).poll();
+    await new CoachRetrievalService(Database, new Archive()).sweep();
+    await new CoachPipelineService(Database, new EveningProvider(), null, {
+      scoring: new CoachScoringService(Database, new Ai()),
+      frames: { extract: async () => [] } as never,
+    }).run();
+    await conn
+      .insertInto("coach_reports")
+      .values(
+        reportToRow(COACH, {
+          id: HOST,
+          date: "2026-10-01",
+          score: 80,
+          dimensions: DIMENSIONS.map((d) => ({ n: d.n, score: 4 })),
+        }),
+      )
+      .execute();
+
+    const comparison = await parallelRunComparison(Database);
+    const ours = (c: { coachId: string }) => c.coachId === COACH;
+    expect(comparison.unmatched.backend.filter(ours)).toEqual([]);
+    expect(comparison.unmatched.host.filter(ours)).toEqual([]);
+    expect(comparison.sessions.filter(ours)).toMatchObject([
+      {
+        date: "2026-10-01",
+        backend: { sourceSessionId: SESSION },
+        host: { reportId: HOST, composite: 80 },
+      },
+    ]);
+  });
+});
 
 describe("The Parallel Run Is Silent, after cutover too", () => {
   afterEach(() => {

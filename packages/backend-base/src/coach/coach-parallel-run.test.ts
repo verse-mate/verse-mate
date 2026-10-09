@@ -236,6 +236,26 @@ describe("Machine Scores Are Compared With The Host's During The Parallel Run", 
     );
   });
 
+  it("the host's report for the first parallel-run day is listed even while the backend's session of that day is not scored yet", async () => {
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "ff-parallel-first-day",
+        coach_id: B,
+        matched_by: "title_match",
+        title: "t",
+        session_date: "2026-09-30",
+        state: "observed",
+        parallel_run: true,
+      })
+      .execute();
+    await backend("ff-parallel-1", A, "2026-10-01", twelve([]));
+    const firstDay = await host(B, "2026-09-30", 70, twelve([]));
+    expect((await read()).unmatched.host).toEqual([
+      { coachId: B, date: "2026-09-30", reportId: firstDay },
+    ]);
+  });
+
   it("The host's report arrives after the backend scored: the session moves from unmatched to compared", async () => {
     await backend("ff-parallel-1", A, "2026-10-01", twelve([]));
     expect((await read()).unmatched.backend).toEqual([
