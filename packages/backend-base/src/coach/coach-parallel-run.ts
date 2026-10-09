@@ -140,17 +140,21 @@ export async function parallelRunComparison(
     .orderBy("coach_intake_sessions.source_session_id")
     .execute();
 
-  const machine = backendRows.length
-    ? await conn
-        .selectFrom("coach_report_dimension_scores")
-        .select(["report_id", "dimension_n", "machine_score"])
-        .where(
-          "report_id",
-          "in",
-          backendRows.map((r) => r.reportId),
-        )
-        .execute()
-    : [];
+  const machine = await conn
+    .selectFrom("coach_report_dimension_scores")
+    .innerJoin(
+      "coach_intake_sessions",
+      "coach_intake_sessions.report_id",
+      "coach_report_dimension_scores.report_id",
+    )
+    .select([
+      "coach_report_dimension_scores.report_id as report_id",
+      "coach_report_dimension_scores.dimension_n as dimension_n",
+      "coach_report_dimension_scores.machine_score as machine_score",
+    ])
+    .where("coach_intake_sessions.parallel_run", "=", true)
+    .where("coach_intake_sessions.coach_id", "is not", null)
+    .execute();
   const machineByReport = new Map<string, Map<number, number | null>>();
   for (const m of machine) {
     const scores = machineByReport.get(m.report_id) ?? new Map();
