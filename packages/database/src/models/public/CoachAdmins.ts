@@ -16,6 +16,8 @@ export default interface CoachAdminsTable {
   >;
 
   granted_at: ColumnType<Date, Date | string | undefined, Date | string>;
+
+  user_id: ColumnType<UserId | null, UserId | null | undefined, UserId | null>;
 }
 
 export type CoachAdmins = Selectable<CoachAdminsTable>;

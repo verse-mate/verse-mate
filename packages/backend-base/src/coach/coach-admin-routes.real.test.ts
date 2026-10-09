@@ -498,6 +498,31 @@ describe("the upload and duplicate routes", () => {
   });
 });
 
+describe("the admin role routes", () => {
+  it("lists admins, refuses a grant with no verified account and refuses an unknown revoke", async () => {
+    const listed = await call("GET", "admins");
+    expect(listed.status).toBe(200);
+    expect(
+      listed.body?.admins.some(
+        (a: { email: string }) => a.email === ADMIN_EMAIL,
+      ),
+    ).toBe(true);
+    expect(await call("POST", "admins", { email: OTHER_EMAIL })).toMatchObject({
+      status: 409,
+      body: { details: { refusal: "no-verified-account" } },
+    });
+    expect(
+      await call(
+        "DELETE",
+        `admins/${encodeURIComponent("nobody@example.test")}`,
+      ),
+    ).toMatchObject({
+      status: 404,
+      body: { details: { refusal: "unknown-admin" } },
+    });
+  });
+});
+
 describe("the identity audit route", () => {
   it("lists the roster and admins with their account state", async () => {
     const audit = await call("GET", "identity-audit");
