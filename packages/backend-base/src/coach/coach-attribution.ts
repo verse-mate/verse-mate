@@ -6,7 +6,9 @@ import {
   loadRotatingClasses,
 } from "./coach-rotating.service";
 import { rescorable } from "./coach-session-state";
+import { botClassKey, markLikelyDuplicate } from "./coach-upload.service";
 import type { FirefliesTranscript } from "./fireflies.client";
+import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 /**
  * Attributing a recorded session to a leader (change: port-coach-pipeline,
@@ -373,7 +375,7 @@ export async function reattributeSession(
       if (!leader) return { ok: false, refusal: "unknown-leader" } as const;
       const session = await trx
         .selectFrom("coach_intake_sessions")
-        .select(["state", "report_id", "coach_id"])
+        .select(["state", "report_id", "coach_id", "meeting_link", "source"])
         .where("source_session_id", "=", sourceSessionId)
         .forUpdate()
         .executeTakeFirst();
@@ -387,6 +389,11 @@ export async function reattributeSession(
 
       const rescore = rescorable(session.state);
       const state = rescore ? "retained" : session.state;
+      const classKey = await botClassKey(trx as CoachReportsWriter, {
+        coachId,
+        rotatingClassId: null,
+        meetingLink: session.meeting_link,
+      });
       await trx
         .updateTable("coach_intake_sessions")
         .set({
@@ -394,6 +401,7 @@ export async function reattributeSession(
           matched_by: "admin",
           release_required: true,
           state,
+          ...(session.source === "bot" ? { class_key: classKey } : {}),
           ...(rescore
             ? {
                 retry_count: 0,
@@ -438,6 +446,10 @@ export async function reattributeSession(
           .where("report_id", "=", session.report_id)
           .execute();
       }
-      return { ok: true, state } as const;
+      const duplicate = await markLikelyDuplicate(
+        trx as CoachReportsWriter,
+        sourceSessionId,
+      );
+      return { ok: true, state: duplicate ? "duplicate" : state } as const;
     });
 }

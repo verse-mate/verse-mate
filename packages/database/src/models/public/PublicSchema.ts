@@ -29,6 +29,7 @@ import type { default as CoachReportsTable } from "./CoachReports";
 import type { default as CoachRotatingClassLeadersTable } from "./CoachRotatingClassLeaders";
 import type { default as CoachRotatingClassesTable } from "./CoachRotatingClasses";
 import type { default as CoachSessionAssetsTable } from "./CoachSessionAssets";
+import type { default as CoachUploadsTable } from "./CoachUploads";
 import type { default as CoachZoomLinksTable } from "./CoachZoomLinks";
 import type { default as ConversationsTable } from "./Conversations";
 import type { default as DailyVerseHistoryTable } from "./DailyVerseHistory";
@@ -219,6 +220,8 @@ export default interface PublicSchema {
   coach_rotating_classes: CoachRotatingClassesTable;
 
   coach_rotating_class_leaders: CoachRotatingClassLeadersTable;
+
+  coach_uploads: CoachUploadsTable;
 
   coach_leader_email_requests: CoachLeaderEmailRequestsTable;
 

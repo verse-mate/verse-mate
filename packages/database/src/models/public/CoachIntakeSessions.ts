@@ -104,6 +104,32 @@ export default interface CoachIntakeSessionsTable {
     string | null
   >;
 
+  source: ColumnType<string, string | undefined, string>;
+
+  class_key: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  meeting_link: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  duplicate_of: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  duplicate_dismissed_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
+
   rotating_class_id: ColumnType<
     CoachRotatingClassesId | null,
     CoachRotatingClassesId | null | undefined,

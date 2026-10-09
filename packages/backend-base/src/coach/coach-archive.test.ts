@@ -218,6 +218,46 @@ describe("a report's evidence outlives the provider's share link", () => {
     expect(recording?.bytes).toBe("VIDEOBYTES".length);
   });
 
+  it("a retained session records its class, and one landing on a class and date that has an upload is held as a likely duplicate", async () => {
+    await seedSession("ff-1");
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "upload:archive-dup",
+        source: "upload",
+        coach_id: COACH,
+        matched_by: "upload",
+        title: "Uploaded",
+        session_date: "2026-08-22",
+        state: "retained",
+        class_key: `group:${COACH}`,
+      })
+      .execute();
+    try {
+      await service(
+        new FakeClient(detail({ meeting_link: "https://zoom.us/j/1" })),
+        new FakeStorage(),
+        { "https://provider.test/video.mp4": "V" },
+      ).retain("ff-1");
+      const row = await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["state", "class_key", "meeting_link", "duplicate_of"])
+        .where("source_session_id", "=", "ff-1")
+        .executeTakeFirstOrThrow();
+      expect(row).toEqual({
+        state: "duplicate",
+        class_key: `group:${COACH}`,
+        meeting_link: "https://zoom.us/j/1",
+        duplicate_of: "upload:archive-dup",
+      });
+    } finally {
+      await conn
+        .deleteFrom("coach_intake_sessions")
+        .where("source_session_id", "=", "upload:archive-dup")
+        .execute();
+    }
+  });
+
   it("the session moves to retained, so the pipeline can tell what it holds", async () => {
     await seedSession("ff-1");
     const storage = new FakeStorage();

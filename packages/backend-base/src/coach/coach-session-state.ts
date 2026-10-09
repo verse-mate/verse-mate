@@ -13,6 +13,9 @@ export const SESSION_STATES = [
   "delivery_pending",
   "delivering",
   "delivery_failed",
+  "received",
+  "upload_failed",
+  "duplicate",
 ] as const;
 
 export type SessionState = (typeof SESSION_STATES)[number];
@@ -175,6 +178,7 @@ export const stuck = (eb: Sessions) =>
       "scoring_failed",
       "delivery_pending",
       "delivery_failed",
+      "upload_failed",
     ]),
     eb.and([
       eb("state", "=", "scored"),

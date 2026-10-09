@@ -107,6 +107,24 @@ export class ObjectStorageService {
     return this.helper.presignUrl(key, ttl, "GET");
   }
 
+  public async getGlobalObjectUploadUrl({
+    key,
+    expiresInSeconds,
+  }: {
+    key: string;
+    expiresInSeconds: number;
+  }): Promise<string> {
+    return this.helper.presignUrl(key, expiresInSeconds, "PUT");
+  }
+
+  public async objectExists(key: string): Promise<boolean> {
+    return this.helper.exists(key);
+  }
+
+  public async getGlobalObjectText(key: string): Promise<string | null> {
+    return this.helper.getObjectText(key);
+  }
+
   /**
    * Delete an object by key from the default bucket. Returns false if the
    * underlying call throws (callers retry the DB row on the next sweep).

@@ -34,6 +34,7 @@ export interface FirefliesTranscript {
 
 /** The heavy per-session fetch, for a session intake has decided to keep. */
 export interface FirefliesTranscriptDetail extends FirefliesTranscript {
+  meeting_link?: string | null;
   audio_url: string | null;
   video_url: string | null;
   transcript_url: string | null;
@@ -116,6 +117,14 @@ query Transcript($id: String!) {
 }
 `;
 
+const Q_MEETING_LINK = `
+query MeetingLink($id: String!) {
+  transcript(id: $id) {
+    meeting_link
+  }
+}
+`;
+
 export class FirefliesError extends Error {}
 
 async function query<T>(
@@ -163,6 +172,17 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
       },
     );
     return data.transcripts ?? [];
+  }
+
+  private async meetingLink(id: string): Promise<string | null> {
+    try {
+      const data = await query<{
+        transcript: { meeting_link?: string | null } | null;
+      }>(Q_MEETING_LINK, { id });
+      return data.transcript?.meeting_link ?? null;
+    } catch {
+      return null;
+    }
   }
 
   async getTranscript(
@@ -215,6 +235,7 @@ export class HttpFirefliesClient implements FirefliesDetailClient {
 
     return {
       ...rest,
+      meeting_link: await this.meetingLink(id),
       sentences: pseudonymised,
       // A count, never names (open question 4). Derived from the speaker list
       // because that is the only participant signal the query still asks for.

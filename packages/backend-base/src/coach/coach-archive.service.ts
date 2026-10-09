@@ -4,7 +4,9 @@ import { sql } from "kysely";
 
 import type { db } from "../shared/shared.plugin";
 import { ObjectStorageService } from "../shared/storage/storage.service";
+import { botClassKey, markLikelyDuplicate } from "./coach-upload.service";
 import type { FirefliesDetailClient } from "./fireflies.client";
+import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 /**
  * Retrieving and retaining a session's source material (change:
@@ -231,7 +233,7 @@ export class CoachArchiveService {
     const conn = this.db.getOrCreateConnection();
     const session = await conn
       .selectFrom("coach_intake_sessions")
-      .select(["source_session_id", "coach_id"])
+      .select(["source_session_id", "coach_id", "rotating_class_id"])
       .where("source_session_id", "=", sourceSessionId)
       .executeTakeFirst();
     if (!session) return { retained: false, reason: "unknown-session" };
@@ -356,11 +358,23 @@ export class CoachArchiveService {
       contentType: "application/json",
     });
 
+    const writer = conn as CoachReportsWriter;
     await conn
       .updateTable("coach_intake_sessions")
-      .set({ state: "retained", retry_count: 0, updated_at: sql`NOW()` })
+      .set({
+        state: "retained",
+        retry_count: 0,
+        meeting_link: detail.meeting_link ?? null,
+        class_key: await botClassKey(writer, {
+          coachId: session.coach_id,
+          rotatingClassId: session.rotating_class_id,
+          meetingLink: detail.meeting_link ?? null,
+        }),
+        updated_at: sql`NOW()`,
+      })
       .where("source_session_id", "=", sourceSessionId)
       .execute();
+    await markLikelyDuplicate(writer, sourceSessionId);
 
     return { retained: true, recordingBytes };
   }

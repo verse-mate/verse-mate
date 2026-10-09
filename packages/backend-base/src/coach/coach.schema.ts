@@ -662,7 +662,74 @@ const ROTATING_CLASS = {
   ...UNKNOWN_LEADER,
 };
 
+const UPLOAD_REQUEST = {
+  "invalid-date": refusal(
+    400,
+    "The session date must be a date like 2026-10-02",
+  ),
+  "parallel-run": refusal(
+    409,
+    "Uploads open to leaders when the pipeline goes live. Until then an admin uploads a session for you.",
+  ),
+  "not-your-class": refusal(404, "That class is not one of yours"),
+  "too-large": refusal(400, "The file is over 8 GB, the most an upload can be"),
+  "not-video": refusal(
+    400,
+    "The file must be a video in MP4, MOV, WebM or MKV format. An audio-only file cannot be used, because a report needs video.",
+  ),
+  "date-in-future": refusal(
+    400,
+    "The session date is in the future: it must be today or earlier",
+  ),
+  "date-too-old": refusal(
+    400,
+    "The session date is more than 60 days ago, the furthest back an upload can be",
+  ),
+  "upload-exists": refusal(
+    409,
+    "A session was already uploaded for this class and date. An admin can replace it.",
+  ),
+  "already-recorded": refusal(
+    409,
+    "The recording bot already recorded this class on this date",
+  ),
+  "not-replaceable": refusal(
+    409,
+    "That upload's report was already delivered, so it cannot be replaced",
+  ),
+  ...UNKNOWN_LEADER,
+};
+
+const UPLOAD_COMPLETE = {
+  "unknown-upload": refusal(404, "Upload not found"),
+  "file-incomplete": refusal(
+    409,
+    "Not every part of the file has arrived: send the rest, then finish",
+  ),
+  "not-awaiting-file": refusal(409, "This upload is already finished"),
+};
+
+const UNKNOWN_UPLOAD = { "unknown-upload": refusal(404, "Upload not found") };
+const NOT_A_DUPLICATE = {
+  "not-a-duplicate": refusal(404, "No likely duplicate waits on that session"),
+};
+
 export const COACH_REFUSALS = {
+  "POST /coach/uploads": UPLOAD_REQUEST,
+  "POST /coach/admin/uploads": UPLOAD_REQUEST,
+  "POST /coach/uploads/:id/complete": UPLOAD_COMPLETE,
+  "POST /coach/admin/uploads/:id/complete": UPLOAD_COMPLETE,
+  "POST /coach/uploads/:id/parts": UNKNOWN_UPLOAD,
+  "POST /coach/admin/uploads/:id/parts": UNKNOWN_UPLOAD,
+  "GET /coach/admin/uploads/classes": UNKNOWN_LEADER,
+  "POST /coach/admin/duplicates/:sourceSessionId/dismiss": NOT_A_DUPLICATE,
+  "POST /coach/admin/duplicates/:sourceSessionId/score": {
+    ...NOT_A_DUPLICATE,
+    "already-delivered": refusal(
+      409,
+      "The upload's report was already delivered, so the recording-bot session cannot replace it",
+    ),
+  },
   "POST /coach/admin/rotating-classes": ROTATING_CLASS,
   "PUT /coach/admin/rotating-classes/:id": {
     ...ROTATING_CLASS,
@@ -904,4 +971,63 @@ export const RotatingClassBodySchema = t.Object({
     maxItems: 50,
   }),
   leaders: t.Array(t.String({ maxLength: 200 }), { maxItems: 50 }),
+});
+
+export const UploadClassSchema = t.Object({
+  key: t.String(),
+  name: t.String(),
+  kind: t.Union([
+    t.Literal("registered"),
+    t.Literal("rotating"),
+    t.Literal("group"),
+  ]),
+});
+
+export const UploadRequestBodySchema = t.Object({
+  classKey: t.String({ maxLength: 200 }),
+  sessionDate: t.String({ maxLength: 10 }),
+  title: t.Optional(t.Union([t.String({ maxLength: 80 }), t.Null()])),
+  fileName: t.String({ minLength: 1, maxLength: 255 }),
+  fileBytes: t.Integer(),
+  contentType: t.String({ maxLength: 100 }),
+});
+
+export const UploadPartsSchema = t.Object({
+  uploadId: t.String(),
+  partBytes: t.Number(),
+  parts: t.Array(t.Object({ partNumber: t.Number(), url: t.String() })),
+  expiresAt: t.String(),
+});
+
+export const UploadViewSchema = t.Object({
+  id: t.String(),
+  coachId: t.String(),
+  classKey: t.String(),
+  className: t.String(),
+  sessionDate: t.String(),
+  title: t.Union([t.String(), t.Null()]),
+  status: t.Union([
+    t.Literal("uploading"),
+    t.Literal("processing"),
+    t.Literal("held"),
+    t.Literal("waiting-for-admin"),
+    t.Literal("attributed-elsewhere"),
+    t.Literal("ready"),
+    t.Literal("failed"),
+  ]),
+  reason: t.Union([t.String(), t.Null()]),
+  reportId: t.Union([t.String(), t.Null()]),
+  createdAt: t.String(),
+});
+
+export const LikelyDuplicateSchema = t.Object({
+  sourceSessionId: t.String(),
+  source: t.Union([t.Literal("bot"), t.Literal("upload")]),
+  coachId: t.Union([t.String(), t.Null()]),
+  classKey: t.Union([t.String(), t.Null()]),
+  title: t.String(),
+  sessionDate: t.String(),
+  duplicateOf: t.Union([t.String(), t.Null()]),
+  against: t.Union([t.Literal("upload"), t.Literal("host-report")]),
+  canScoreInstead: t.Boolean(),
 });

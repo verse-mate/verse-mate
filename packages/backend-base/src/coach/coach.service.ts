@@ -54,6 +54,7 @@ import {
   stuck,
 } from "./coach-session-state";
 import { rowToReport, rowToSummary } from "./coach-store.transform";
+import { CoachUploadService, type UploadStorage } from "./coach-upload.service";
 import coachDataJson from "./coach.data.json";
 import { CoachReportsRepository } from "./repository/coach-reports.repository";
 import {
@@ -578,19 +579,21 @@ export class CoachService {
         ? { coldRecall: coldRecallInFeedback(r.cold_recall_feedback) }
         : {}),
       action:
-        r.coach_id === null
-          ? ("attribute" as const)
-          : r.parallel_run
-            ? r.state === "scoring_failed"
-              ? ("requeue" as const)
-              : null
-            : r.state === "delivered"
-              ? null
-              : r.state === "scored" || r.release_required
-                ? ("release" as const)
-                : r.state === "delivery_pending"
-                  ? null
-                  : ("requeue" as const),
+        r.state === "upload_failed"
+          ? null
+          : r.coach_id === null
+            ? ("attribute" as const)
+            : r.parallel_run
+              ? r.state === "scoring_failed"
+                ? ("requeue" as const)
+                : null
+              : r.state === "delivered"
+                ? null
+                : r.state === "scored" || r.release_required
+                  ? ("release" as const)
+                  : r.state === "delivery_pending"
+                    ? null
+                    : ("requeue" as const),
       parallelRun: r.parallel_run,
       updatedAt: new Date(r.updated_at as unknown as string),
     }));
@@ -1191,6 +1194,14 @@ export class CoachService {
       .filter((a) => !bundledEmails.has(a.email))
       .map(CoachService.syntheticRecord);
     return [...bundled, ...synthetic];
+  }
+
+  uploads(storage?: UploadStorage) {
+    return new CoachUploadService(this.db, storage);
+  }
+
+  async leaderIdFor(userId: string): Promise<string | null> {
+    return (await this.recordFor(userId))?.id ?? null;
   }
 
   listRotatingClasses() {
