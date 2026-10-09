@@ -335,7 +335,7 @@ export type AddressChangeState =
 
 export interface AddressChange {
   newEmail: string;
-  state: AddressChangeState;
+  state: "pending" | "expired" | "refused";
   reason: string | null;
   requestedAt: string;
   expiresAt: string;
@@ -1406,7 +1406,11 @@ export class CoachService {
       .execute();
     return new Map(
       rows
-        .filter((r) => r.state !== "confirmed" && r.state !== "superseded")
+        .flatMap((r) =>
+          r.state === "confirmed" || r.state === "superseded"
+            ? []
+            : [{ ...r, state: r.state }],
+        )
         .map((r) => [
           r.slug,
           {

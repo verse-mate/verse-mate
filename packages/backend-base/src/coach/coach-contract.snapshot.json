@@ -721,7 +721,20 @@
                             "type": "string"
                           },
                           "state": {
-                            "type": "string"
+                            "anyOf": [
+                              {
+                                "const": "pending",
+                                "type": "string"
+                              },
+                              {
+                                "const": "expired",
+                                "type": "string"
+                              },
+                              {
+                                "const": "refused",
+                                "type": "string"
+                              }
+                            ]
                           },
                           "reason": {
                             "anyOf": [
@@ -2146,7 +2159,24 @@
                     "type": "boolean"
                   },
                   "basis": {
-                    "type": "string"
+                    "anyOf": [
+                      {
+                        "const": "observed",
+                        "type": "string"
+                      },
+                      {
+                        "const": "attested-not-teaching",
+                        "type": "string"
+                      },
+                      {
+                        "const": "attestation-lapsed",
+                        "type": "string"
+                      },
+                      {
+                        "const": "no-observation",
+                        "type": "string"
+                      }
+                    ]
                   },
                   "observedSessions": {
                     "type": "number"
@@ -5939,7 +5969,20 @@
                           "type": "string"
                         },
                         "state": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "const": "pending",
+                              "type": "string"
+                            },
+                            {
+                              "const": "expired",
+                              "type": "string"
+                            },
+                            {
+                              "const": "refused",
+                              "type": "string"
+                            }
+                          ]
                         },
                         "reason": {
                           "anyOf": [
