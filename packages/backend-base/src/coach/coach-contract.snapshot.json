@@ -331,7 +331,7 @@
         "message": "Leader not found"
       }
     },
-    "GET /coach/confirm-address": {
+    "POST /coach/confirm-address/describe": {
       "invalid-link": {
         "status": 404,
         "message": "This confirmation link is not valid"
@@ -3808,86 +3808,6 @@
       }
     },
     {
-      "route": "GET /coach/confirm-address",
-      "response": {
-        "200": {
-          "type": "object",
-          "properties": {
-            "leaderName": {
-              "type": "string"
-            },
-            "currentEmail": {
-              "type": "string"
-            },
-            "newEmail": {
-              "type": "string"
-            },
-            "state": {
-              "type": "string"
-            },
-            "expiresAt": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "leaderName",
-            "currentEmail",
-            "newEmail",
-            "state",
-            "expiresAt"
-          ]
-        },
-        "400": {
-          "type": "object",
-          "properties": {
-            "error": {
-              "type": "string"
-            },
-            "message": {
-              "type": "string"
-            },
-            "retryAfter": {
-              "type": "number"
-            },
-            "data": {}
-          },
-          "required": ["error", "message"]
-        },
-        "429": {
-          "type": "object",
-          "properties": {
-            "error": {
-              "type": "string"
-            },
-            "message": {
-              "type": "string"
-            },
-            "retryAfter": {
-              "type": "number"
-            },
-            "data": {}
-          },
-          "required": ["error", "message"]
-        },
-        "500": {
-          "type": "object",
-          "properties": {
-            "error": {
-              "type": "string"
-            },
-            "message": {
-              "type": "string"
-            },
-            "retryAfter": {
-              "type": "number"
-            },
-            "data": {}
-          },
-          "required": ["error", "message"]
-        }
-      }
-    },
-    {
       "route": "GET /coach/me",
       "response": {
         "200": {
@@ -6997,6 +6917,111 @@
             }
           },
           "required": ["email", "noticeSent"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/confirm-address/describe",
+      "response": {
+        "200": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "leaderName": {
+                  "type": "string"
+                },
+                "newEmail": {
+                  "type": "string"
+                },
+                "state": {
+                  "const": "pending",
+                  "type": "string"
+                },
+                "expiresAt": {
+                  "type": "string"
+                }
+              },
+              "required": ["leaderName", "newEmail", "state", "expiresAt"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "state": {
+                  "anyOf": [
+                    {
+                      "const": "expired",
+                      "type": "string"
+                    },
+                    {
+                      "const": "confirmed",
+                      "type": "string"
+                    },
+                    {
+                      "const": "superseded",
+                      "type": "string"
+                    },
+                    {
+                      "const": "refused",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "expiresAt": {
+                  "type": "string"
+                }
+              },
+              "required": ["state", "expiresAt"]
+            }
+          ]
         },
         "400": {
           "type": "object",

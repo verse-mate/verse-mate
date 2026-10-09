@@ -285,18 +285,21 @@ const plugin = new Elysia()
       })
       .resolve({ as: "scoped" }, authDerive)
       .onBeforeHandle(coachRateLimit)
-      .get(
-        "/confirm-address",
-        async ({ query, store: { coachService } }) => {
+      .post(
+        "/confirm-address/describe",
+        async ({ body, store: { coachService } }) => {
           const change = await coachService.describeLeaderEmailChange(
-            query.token,
+            body.token,
           );
           if (!change)
-            throw refuse("GET /coach/confirm-address", "invalid-link");
+            throw refuse(
+              "POST /coach/confirm-address/describe",
+              "invalid-link",
+            );
           return change;
         },
         {
-          query: t.Object({ token: t.String({ maxLength: 200 }) }),
+          body: t.Object({ token: t.String({ maxLength: 200 }) }),
           response: {
             200: AddressChangeDescriptionSchema,
             ...StandardErrorResponses,

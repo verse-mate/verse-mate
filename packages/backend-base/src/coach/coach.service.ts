@@ -346,8 +346,8 @@ const tokenHash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 
 export function maskAddress(email: string): string {
-  const [local, domain = ""] = email.split("@");
-  return `${local.slice(0, 2)}${"*".repeat(Math.max(local.length - 2, 1))}@${domain}`;
+  const at = email.lastIndexOf("@");
+  return `${email.slice(0, 1)}***@${email.slice(at + 1)}`;
 }
 
 const requestState = sql<AddressChangeState>`CASE WHEN status = 'pending' AND expires_at <= NOW() THEN 'expired' ELSE status END`;
@@ -1252,13 +1252,16 @@ export class CoachService {
     };
   }
 
-  async describeLeaderEmailChange(token: string): Promise<{
-    leaderName: string;
-    currentEmail: string;
-    newEmail: string;
-    state: AddressChangeState;
-    expiresAt: string;
-  } | null> {
+  async describeLeaderEmailChange(token: string): Promise<
+    | {
+        leaderName: string;
+        newEmail: string;
+        state: "pending";
+        expiresAt: string;
+      }
+    | { state: Exclude<AddressChangeState, "pending">; expiresAt: string }
+    | null
+  > {
     const row = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_leader_email_requests")
@@ -1269,7 +1272,6 @@ export class CoachService {
       )
       .select([
         "coach_leaders.name as name",
-        "coach_leaders.email as current",
         "coach_leader_email_requests.new_email as next",
         "coach_leader_email_requests.expires_at as expires_at",
         requestState.as("state"),
@@ -1277,12 +1279,13 @@ export class CoachService {
       .where("coach_leader_email_requests.token_hash", "=", tokenHash(token))
       .executeTakeFirst();
     if (!row) return null;
+    const expiresAt = new Date(row.expires_at).toISOString();
+    if (row.state !== "pending") return { state: row.state, expiresAt };
     return {
       leaderName: row.name,
-      currentEmail: maskAddress(row.current),
       newEmail: maskAddress(row.next),
       state: row.state,
-      expiresAt: new Date(row.expires_at).toISOString(),
+      expiresAt,
     };
   }
 
