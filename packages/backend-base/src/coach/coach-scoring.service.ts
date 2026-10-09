@@ -33,7 +33,13 @@ import {
  */
 
 export const DEFAULT_SCORING_MODEL = "gpt-5";
-const SCORING_MAX_OUTPUT_TOKENS = 8000;
+
+export const SCORING_REQUEST = {
+  textMaxTokens: 8000,
+  visionMaxTokens: 1000,
+  maxTitleChars: 500,
+  responseFormat: { type: "json_object" } as { type: "json_object" | "text" },
+};
 
 export const SCORING_SETTINGS = {
   temperature: null,
@@ -65,13 +71,13 @@ export function promptVersion(): string {
     CoachScoringService.buildVisionInstructions(),
     CoachScoringService.titleMessage(FRAMING_SAMPLE.title),
     CoachScoringService.frameUrl(FRAMING_SAMPLE.frame),
+    JSON.stringify(SCORING_REQUEST),
   ])
     hash.update(part).update("\0");
   return hash.digest("hex").slice(0, 12);
 }
 
 export const MAX_TRANSCRIPT_CHARS = 200_000;
-const MAX_TITLE_CHARS = 500;
 
 export const MIN_SCORED_DIMENSIONS = 8;
 export const MAX_SHARE_AT_MAXIMUM = 2 / 3;
@@ -296,7 +302,10 @@ export class CoachScoringService {
   }
 
   static titleMessage(title: string): string {
-    return fenced("SESSION_TITLE", title.slice(0, MAX_TITLE_CHARS));
+    return fenced(
+      "SESSION_TITLE",
+      title.slice(0, SCORING_REQUEST.maxTitleChars),
+    );
   }
 
   static frameUrl(frame: Uint8Array): string {
@@ -314,8 +323,8 @@ export class CoachScoringService {
         },
       ],
       ...SCORING_SETTINGS,
-      maxTokens: SCORING_MAX_OUTPUT_TOKENS,
-      responseFormat: { type: "json_object" },
+      maxTokens: SCORING_REQUEST.textMaxTokens,
+      responseFormat: SCORING_REQUEST.responseFormat,
     });
 
     let raw: RawDimensionScore[];
@@ -462,8 +471,8 @@ export class CoachScoringService {
         },
       ],
       ...SCORING_SETTINGS,
-      maxTokens: 1000,
-      responseFormat: { type: "json_object" },
+      maxTokens: SCORING_REQUEST.visionMaxTokens,
+      responseFormat: SCORING_REQUEST.responseFormat,
     });
     const model = response.model || this.model;
 

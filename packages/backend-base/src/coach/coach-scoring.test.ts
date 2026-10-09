@@ -6,6 +6,7 @@ import { CoachReviewService } from "./coach-review.service";
 import {
   CoachScoringService,
   MAX_TRANSCRIPT_CHARS,
+  SCORING_REQUEST,
   authenticityBaseline,
   promptVersion,
 } from "./coach-scoring.service";
@@ -779,6 +780,27 @@ describe("a score names what produced it", () => {
     expect(promptVersion()).toBe(before);
   });
 
+  it.each([
+    ["the title length the vision call keeps", "maxTitleChars", 400],
+    ["the text call's output token cap", "textMaxTokens", 4000],
+    ["the vision call's output token cap", "visionMaxTokens", 500],
+    ["the response format", "responseFormat", { type: "text" }],
+  ] as const)(
+    "The request changes: a change to %s is a different prompt version",
+    (_what, key, value) => {
+      const before = promptVersion();
+      const request = SCORING_REQUEST as Record<string, unknown>;
+      const original = request[key];
+      request[key] = value;
+      try {
+        expect(promptVersion()).not.toBe(before);
+      } finally {
+        request[key] = original;
+      }
+      expect(promptVersion()).toBe(before);
+    },
+  );
+
   it("what the model is sent is built from the framing the prompt version hashes", async () => {
     const sent: AiChatOptions[] = [];
     class Capturing extends VisionFours {
@@ -805,6 +827,14 @@ describe("a score names what produced it", () => {
     expect(vision?.messages[1].images).toEqual([
       CoachScoringService.frameUrl(frame),
     ]);
+    expect(text).toMatchObject({
+      maxTokens: SCORING_REQUEST.textMaxTokens,
+      responseFormat: SCORING_REQUEST.responseFormat,
+    });
+    expect(vision).toMatchObject({
+      maxTokens: SCORING_REQUEST.visionMaxTokens,
+      responseFormat: SCORING_REQUEST.responseFormat,
+    });
   });
 
   it("the settings recorded are the settings both model calls are sent", async () => {
