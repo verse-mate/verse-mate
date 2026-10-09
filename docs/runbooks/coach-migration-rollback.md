@@ -112,5 +112,6 @@ The column's values are lost; the rows stay.
 `20260901128000-coach-one-report-per-session` drops an index only.
 
 `20260901154000-coach-no-calibration-hold` allows the `calibration` hold kind again once
-no session holds the `scoring-version` kind (above). Its up cleared the `calibration` kind
-from held sessions, and the down does not bring it back.
+no session holds the `scoring-version` kind (above). Its up turned every calibration hold
+into a `scoring-version` hold, still held until an admin releases it, and the down does not
+turn them back.
