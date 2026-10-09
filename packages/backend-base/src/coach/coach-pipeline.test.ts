@@ -2161,6 +2161,26 @@ describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () =
     expect(await releaseDeliveredVersions(Database, COACH)).toEqual([]);
   });
 
+  it.each([
+    ["a parallel-run session", { parallel_run: true }],
+    ["a session whose release an admin owes", { release_required: true }],
+  ])(
+    "the release of reports held for their version passes by %s, as a delivery claim does",
+    async (_what, flag) => {
+      await seedRetained();
+      const [held] = await pipeline(new FakeMailer()).run();
+      expect(held.outcome).toBe("scored-awaiting-review");
+      await deliveredBefore();
+      await conn
+        .updateTable("coach_intake_sessions")
+        .set(flag)
+        .where("source_session_id", "=", "ff-pipe-1")
+        .execute();
+      expect(await releaseDeliveredVersions(Database, COACH)).toEqual([]);
+      expect((await holdOf("ff-pipe-1")).hold_kind).toBe("scoring-version");
+    },
+  );
+
   it("a held report is released once the leader has a report delivered under its whole version, vision model included", async () => {
     await seedRetained();
     const [held] = await seenPipeline(new FakeMailer()).run();

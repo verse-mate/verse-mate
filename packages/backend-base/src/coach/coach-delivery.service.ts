@@ -157,6 +157,8 @@ export async function releaseDeliveredVersions(
     })
     .where("hold_kind", "=", "scoring-version")
     .where("state", "in", ["scored", "delivery_pending"])
+    .where("parallel_run", "=", false)
+    .where("release_required", "=", false)
     .$if(coachId !== undefined, (q) =>
       q.where("coach_id", "=", coachId as string),
     )
