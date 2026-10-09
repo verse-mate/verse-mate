@@ -10,6 +10,7 @@ const API = [
   "Verse notification",
   "Coach reminder",
   "Coach monthly",
+  "Coach Monday reminder",
 ];
 
 async function startAs(role: WorkerRole) {
@@ -43,6 +44,7 @@ describe("the container starts only the workers its role owns", () => {
       "Verse notification",
       "Coach reminder",
       "Coach monthly",
+      "Coach Monday reminder",
     ]);
   });
 
@@ -62,6 +64,7 @@ describe("the container starts only the workers its role owns", () => {
         "Verse notification",
         "Coach reminder",
         "Coach monthly",
+        "Coach Monday reminder",
       ].sort(),
     );
   });
