@@ -63,7 +63,8 @@ export type PipelineOutcome =
   | "scoring-failed"
   | "delivery-blocked"
   | "delivery-failed"
-  | "attribution-changed";
+  | "attribution-changed"
+  | "attribution-unresolved";
 
 export interface PipelineResult {
   sourceSessionId: string;
@@ -124,6 +125,7 @@ export class CoachPipelineService {
         "title",
         "retry_count",
         "parallel_run",
+        "rotating_class_id",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where(scorable)
@@ -331,15 +333,76 @@ export class CoachPipelineService {
       .execute();
   }
 
+  private async nameLeader(session: {
+    source_session_id: string;
+    rotating_class_id: number | null;
+  }): Promise<string | null> {
+    const conn = this.db.getOrCreateConnection();
+    const leaders = await conn
+      .selectFrom("coach_rotating_class_leaders")
+      .innerJoin(
+        "coach_leaders",
+        "coach_leaders.slug",
+        "coach_rotating_class_leaders.leader_slug",
+      )
+      .select(["coach_leaders.slug as slug", "coach_leaders.name as name"])
+      .where("class_id", "=", session.rotating_class_id as number)
+      .orderBy("coach_leaders.slug")
+      .execute();
+    const detail = await this.fireflies.getTranscript(
+      session.source_session_id,
+      null,
+    );
+    const named = detail
+      ? await this.scoring.nameRotatingLeader({
+          transcript: timedLinesFrom(detail.sentences),
+          leaders: leaders.map((l) => ({
+            slug: l.slug as string,
+            name: l.name,
+          })),
+        })
+      : null;
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set(
+        named
+          ? {
+              coach_id: named.slug,
+              leader_cue: named.cue,
+              leader_cue_line: named.line,
+              updated_at: sql`NOW()`,
+            }
+          : { leader_cue: "none", updated_at: sql`NOW()` },
+      )
+      .where("source_session_id", "=", session.source_session_id)
+      .where("coach_id", "is", null)
+      .execute();
+    if (named)
+      await conn
+        .updateTable("coach_session_assets")
+        .set({ coach_id: named.slug })
+        .where("source_session_id", "=", session.source_session_id)
+        .execute();
+    return named?.slug ?? null;
+  }
+
   private async runOne(session: {
     source_session_id: string;
     coach_id: string | null;
     title: string;
     date: string;
     parallel_run: boolean;
+    rotating_class_id: number | null;
   }): Promise<PipelineResult> {
     const conn = this.db.getOrCreateConnection();
-    const coachId = session.coach_id as string;
+    const coachId = session.coach_id ?? (await this.nameLeader(session));
+    if (!coachId)
+      return {
+        sourceSessionId: session.source_session_id,
+        outcome: "attribution-unresolved",
+        detail:
+          "the transcript did not name which of the rotating class's leaders led",
+      };
 
     const leader = await conn
       .selectFrom("coach_leaders")

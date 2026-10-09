@@ -78,6 +78,10 @@ type Refusal = {
 };
 
 const REFUSALS: Record<string, Refusal> = {
+  "20260901160000-coach-rotating-leader-cue": {
+    seed: sessionWith("leader_cue = 'none'"),
+    tables: ["coach_intake_sessions"],
+  },
   "20260901159000-coach-rotating-classes": {
     seed: "INSERT INTO coach_rotating_classes (name, group_email) VALUES ('roundtrip', 'group@example.test')",
     tables: ["coach_rotating_classes"],

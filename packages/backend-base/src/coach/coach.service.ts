@@ -535,6 +535,7 @@ export class CoachService {
         "parallel_run",
         "session_started_at",
         "updated_at",
+        "leader_cue",
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .select(SKIPPED_LEADER_ADDRESS.as("skipped_leader"))
@@ -563,7 +564,9 @@ export class CoachService {
       reportId: r.report_id,
       reason:
         r.coach_id === null
-          ? "unattributed: no leader matched the session title"
+          ? r.leader_cue === "none"
+            ? "unattributed: the transcript did not name which of the rotating class's leaders led"
+            : "unattributed: no leader matched the session title"
           : r.state === "delivered" && r.skipped_leader
             ? `delivered, but not emailed to ${r.skipped_leader}: placeholder address`
             : r.hold_reason ?? (r.release_required ? REATTRIBUTED_HOLD : null),
