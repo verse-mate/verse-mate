@@ -78,6 +78,10 @@ type Refusal = {
 };
 
 const REFUSALS: Record<string, Refusal> = {
+  "20260901163000-coach-monday-reminders": {
+    seed: "INSERT INTO coach_monday_reminders (run_date, kind, coach_id, found, outcome) VALUES ('2026-01-05', 'leader', 'roundtrip', false, 'sent')",
+    tables: ["coach_monday_reminders"],
+  },
   "20260901162000-coach-monthly-reports": {
     seed: "INSERT INTO coach_monthly_reports (kind, month, summary, state) VALUES ('program', '2026-01', '{}', 'held')",
     tables: ["coach_monthly_reports"],
