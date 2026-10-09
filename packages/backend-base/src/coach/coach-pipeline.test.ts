@@ -2223,7 +2223,7 @@ describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () =
     ) as Record<string, (typeof results)[number]>;
   }
 
-  it("Until the first report under a version is released, a later one under it waits with it; releasing the first delivers both", async () => {
+  it("Until the first report under a version is released, a later one under it waits with it; releasing the first delivers it, and the next tick delivers the other", async () => {
     const mailer = new FakeMailer();
     const held = await twoHeldUnderOneVersion(mailer);
     expect(held["ff-pipe-1"].outcome).toBe("scored-awaiting-review");
@@ -2244,6 +2244,13 @@ describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () =
     ).releaseHeldReport(held["ff-pipe-1"].reportId as string);
     expect(released.delivered).toBe(true);
     expect((await holdOf("ff-pipe-1")).state).toBe("delivered");
+    expect(await holdOf("ff-pipe-2")).toEqual({
+      state: "delivery_pending",
+      hold_kind: null,
+    });
+    expect(mailer.sent.filter((to) => to === EMAIL)).toHaveLength(1);
+
+    await pipeline(mailer).run();
     expect(await holdOf("ff-pipe-2")).toEqual({
       state: "delivered",
       hold_kind: null,

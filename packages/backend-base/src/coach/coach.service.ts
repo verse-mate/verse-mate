@@ -622,14 +622,7 @@ export class CoachService {
       evidence: await storedEvidence(this.db, reportId),
     });
     if (result.delivered && held.coach_id)
-      for (const waiting of await releaseDeliveredVersions(
-        this.db,
-        held.coach_id,
-      ))
-        await delivery.deliver({
-          reportId: waiting,
-          evidence: await storedEvidence(this.db, waiting),
-        });
+      await releaseDeliveredVersions(this.db, held.coach_id);
     return {
       delivered: result.delivered,
       ...(result.refusal ? { refusal: result.refusal } : {}),
