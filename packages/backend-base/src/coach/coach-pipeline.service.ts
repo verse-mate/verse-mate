@@ -340,6 +340,7 @@ export class CoachPipelineService {
           report.reportId,
           dimensions,
           trx as CoachReportsWriter,
+          scored.producedBy,
         );
         await applyFirstLessonDetection(
           trx as CoachReportsWriter,

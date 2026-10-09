@@ -1,11 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { db as Database } from "database";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
+import { CoachReviewService } from "./coach-review.service";
 import {
   CoachScoringService,
   MAX_TRANSCRIPT_CHARS,
   authenticityBaseline,
+  promptVersion,
 } from "./coach-scoring.service";
 import { DIMENSIONS, RUBRIC_MODEL_VERSION, composeBaseScore } from "./rubric";
 
@@ -691,5 +693,78 @@ describe("authenticity is scored against the leader's established baseline", () 
     const result = await score(withAuthenticity(5, 5), 3);
     expect(authenticity(result)?.score).toBe(4);
     expect(result.reviewReason).toContain("at the maximum");
+  });
+});
+
+describe("a score names what produced it", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedReport();
+  });
+  afterEach(clear);
+
+  it("An admin reviews a machine-scored dimension: rubric version, language model, prompt version and settings are shown", async () => {
+    const svc = new CoachScoringService(Database, new FakeAi(ALL_FOURS));
+    const scored = await svc.scoreSession(INPUT);
+    await svc.persistDimensions(
+      REPORT,
+      scored.dimensions ?? [],
+      undefined,
+      scored.producedBy,
+    );
+
+    const review = await new CoachReviewService(Database).review(REPORT);
+    expect(review?.dimensions.length).toBe(12);
+    for (const d of review?.dimensions ?? []) {
+      expect(d).toMatchObject({
+        provenance: "machine",
+        modelVersion: RUBRIC_MODEL_VERSION,
+        languageModel: "fake",
+        promptVersion: promptVersion(),
+        settings: { temperature: null, reasoningEffort: null },
+      });
+    }
+  });
+
+  it("The prompt changes: a session scored after the prompt text changed records a different prompt version", async () => {
+    const svc = new CoachScoringService(Database, new FakeAi(ALL_FOURS));
+    const before = await svc.scoreSession(INPUT);
+    const original = CoachScoringService.buildInstructions;
+    const changed = spyOn(
+      CoachScoringService,
+      "buildInstructions",
+    ).mockImplementation(() => `${original()}\nOne more rule.`);
+    try {
+      const after = await svc.scoreSession(INPUT);
+      expect(after.producedBy?.promptVersion).toBeTruthy();
+      expect(after.producedBy?.promptVersion).not.toBe(
+        before.producedBy?.promptVersion,
+      );
+    } finally {
+      changed.mockRestore();
+    }
+    expect((await svc.scoreSession(INPUT)).producedBy?.promptVersion).toBe(
+      before.producedBy?.promptVersion as string,
+    );
+  });
+
+  it("a score recorded before this existed shows those items as not recorded", async () => {
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: REPORT,
+        dimension_n: 1,
+        score: 4,
+        rationale: "r",
+        provenance: "machine",
+        model_version: RUBRIC_MODEL_VERSION,
+      })
+      .execute();
+    const review = await new CoachReviewService(Database).review(REPORT);
+    expect(review?.dimensions[0]).toMatchObject({
+      languageModel: null,
+      promptVersion: null,
+      settings: null,
+    });
   });
 });

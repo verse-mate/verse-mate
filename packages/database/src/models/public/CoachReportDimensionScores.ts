@@ -24,6 +24,24 @@ export default interface CoachReportDimensionScoresTable {
     string | null
   >;
 
+  language_model: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  prompt_version: ColumnType<
+    string | null,
+    string | null | undefined,
+    string | null
+  >;
+
+  generation_settings: ColumnType<
+    unknown | null,
+    unknown | null | undefined,
+    unknown | null
+  >;
+
   corrected_by: ColumnType<
     UserId | null,
     UserId | null | undefined,

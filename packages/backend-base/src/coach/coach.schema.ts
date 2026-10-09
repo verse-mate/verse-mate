@@ -327,6 +327,15 @@ export const ReviewStateSchema = t.Object({
       rationale: t.String(),
       provenance: t.String(),
       modelVersion: t.Union([t.String(), t.Null()]),
+      languageModel: t.Union([t.String(), t.Null()]),
+      promptVersion: t.Union([t.String(), t.Null()]),
+      settings: t.Union([
+        t.Object({
+          temperature: t.Union([t.Number(), t.Null()]),
+          reasoningEffort: t.Union([t.String(), t.Null()]),
+        }),
+        t.Null(),
+      ]),
     }),
   ),
 });

@@ -25,7 +25,7 @@ import {
   PIPELINE_ATTEMPT_LIMIT,
   PIPELINE_BATCH_LIMIT,
 } from "./coach-pipeline.service";
-import { CoachScoringService } from "./coach-scoring.service";
+import { CoachScoringService, promptVersion } from "./coach-scoring.service";
 import { isolateTable } from "./coach-test-tables";
 import type {
   FirefliesDetailClient,
@@ -269,6 +269,24 @@ describe("a retained session reaches a delivered report", () => {
     const [result] = await pipeline(mailer).run();
     expect(result.outcome).toBe("scored-and-delivered");
     expect(mailer.sent.length).toBeGreaterThan(0);
+  });
+
+  it("every dimension the pipeline stores names the language model, prompt version and settings that produced it", async () => {
+    const [result] = await pipeline(new FakeMailer()).run();
+    const rows = await conn
+      .selectFrom("coach_report_dimension_scores")
+      .select(["language_model", "prompt_version", "generation_settings"])
+      .where("report_id", "=", result.reportId as string)
+      .execute();
+    expect(rows.length).toBe(12);
+    for (const row of rows) {
+      expect(row.language_model).toBeTruthy();
+      expect(row.prompt_version).toBe(promptVersion());
+      expect(row.generation_settings).toEqual({
+        temperature: null,
+        reasoningEffort: null,
+      });
+    }
   });
 
   it("scores it, publishes it, and emails it, in that order", async () => {

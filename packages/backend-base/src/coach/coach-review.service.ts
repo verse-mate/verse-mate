@@ -39,6 +39,12 @@ export interface ReviewState {
     rationale: string;
     provenance: string;
     modelVersion: string | null;
+    languageModel: string | null;
+    promptVersion: string | null;
+    settings: {
+      temperature: number | null;
+      reasoningEffort: string | null;
+    } | null;
   }>;
   base: number;
   /** True when any dimension was corrected by a human. */
@@ -89,6 +95,9 @@ export class CoachReviewService {
         "rationale",
         "provenance",
         "model_version",
+        "language_model",
+        "prompt_version",
+        "generation_settings",
       ])
       .where("report_id", "=", reportId)
       .orderBy("dimension_n")
@@ -111,6 +120,10 @@ export class CoachReviewService {
         rationale: r.rationale,
         provenance: r.provenance,
         modelVersion: r.model_version,
+        languageModel: r.language_model,
+        promptVersion: r.prompt_version,
+        settings:
+          r.generation_settings as ReviewState["dimensions"][number]["settings"],
       })),
       base: composeBaseScore(scores).base,
       humanCorrected: rows.some((r) => r.provenance === "human"),
