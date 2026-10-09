@@ -532,13 +532,23 @@ export const ParallelRunComparisonSchema = t.Object({
   }),
 });
 
-export const AddressChangeDescriptionSchema = t.Object({
-  leaderName: t.String(),
-  currentEmail: t.String(),
-  newEmail: t.String(),
-  state: t.String(),
-  expiresAt: t.String(),
-});
+export const AddressChangeDescriptionSchema = t.Union([
+  t.Object({
+    leaderName: t.String(),
+    newEmail: t.String(),
+    state: t.Literal("pending"),
+    expiresAt: t.String(),
+  }),
+  t.Object({
+    state: t.Union([
+      t.Literal("expired"),
+      t.Literal("confirmed"),
+      t.Literal("superseded"),
+      t.Literal("refused"),
+    ]),
+    expiresAt: t.String(),
+  }),
+]);
 
 export const EMAIL_RULE =
   "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot";
@@ -759,7 +769,7 @@ export const COACH_REFUSALS = {
     ),
     ...UNKNOWN_LEADER,
   },
-  "GET /coach/confirm-address": {
+  "POST /coach/confirm-address/describe": {
     "invalid-link": refusal(404, "This confirmation link is not valid"),
   },
   "POST /coach/confirm-address": {

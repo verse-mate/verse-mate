@@ -400,21 +400,40 @@ describe("A Leader's Address Can Be Corrected, once the new address confirms", (
     expect(stored.token_hash).not.toBe(mail.tokenFor(NEW));
   });
 
-  it("The link is fetched but not confirmed: describing it changes nothing and masks both addresses", async () => {
+  it("The link is fetched but not confirmed: describing it changes nothing, shows the requested address masked to a fixed length, and never the current one", async () => {
     await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
     const token = mail.tokenFor(NEW);
     const described = await live.describeLeaderEmailChange(token);
-    expect(described).toMatchObject({
+    expect(described).toEqual({
       leaderName: "Addr Leader",
+      newEmail: "a***@example.test",
       state: "pending",
+      expiresAt: expect.any(String),
     });
-    expect(described?.currentEmail).not.toBe(OLD);
-    expect(described?.currentEmail).toEndWith("@example.test");
-    expect(described?.newEmail).not.toBe(NEW);
     expect(await live.describeLeaderEmailChange(token)).toEqual(described);
     expect(await leaderEmail(SLUG)).toBe(OLD);
     expect(await addressChange(SLUG)).toMatchObject({ state: "pending" });
     expect(await live.describeLeaderEmailChange("not-a-token")).toBeNull();
+  });
+
+  it("a link that no longer works shows only that, with no leader name or address", async () => {
+    await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
+    const token = mail.tokenFor(NEW);
+    await live.updateLeaderEmail(SLUG, "addr-newer@example.test", {
+      byUserId: null,
+    });
+    expect(await live.describeLeaderEmailChange(token)).toEqual({
+      state: "superseded",
+      expiresAt: expect.any(String),
+    });
+    await live.confirmLeaderEmailChange(
+      mail.tokenFor("addr-newer@example.test"),
+    );
+    expect(
+      await live.describeLeaderEmailChange(
+        mail.tokenFor("addr-newer@example.test"),
+      ),
+    ).toEqual({ state: "confirmed", expiresAt: expect.any(String) });
   });
 
   it("The new address confirms: the address changes, the change is recorded with the admin and the previous address, and the previous address is told", async () => {
@@ -584,7 +603,7 @@ describe("A Leader's Address Can Be Corrected, once the new address confirms", (
   });
 });
 
-describe("the confirmation page's routes need no sign-in, and only the POST changes anything", () => {
+describe("the confirmation page's routes need no sign-in, and only the confirm changes anything", () => {
   const NEW = "addr-route-new@example.test";
   const app = new Elysia().use(coachPlugin);
   const store = app.store as unknown as { coachService: unknown };
@@ -608,17 +627,17 @@ describe("the confirmation page's routes need no sign-in, and only the POST chan
       }),
     );
 
-  it("GET describes the change and changes nothing; POST confirms it once", async () => {
+  it("POST describe shows the change and changes nothing; POST confirm applies it once", async () => {
     await (store.coachService as CoachService).updateLeaderEmail(SLUG, NEW);
     const token = mail.tokenFor(NEW);
 
-    const described = await request(
-      "GET",
-      `confirm-address?token=${encodeURIComponent(token)}`,
-    );
+    const described = await request("POST", "confirm-address/describe", {
+      token,
+    });
     expect(described.status).toBe(200);
     expect(await described.json()).toMatchObject({
       leaderName: "Addr Leader",
+      newEmail: "a***@example.test",
       state: "pending",
     });
     expect(await leaderEmail(SLUG)).toBe(PLACEHOLDER);
@@ -633,11 +652,35 @@ describe("the confirmation page's routes need no sign-in, and only the POST chan
     expect(
       ((await again.json()) as { details: { refusal: string } }).details,
     ).toMatchObject({ refusal: "already-confirmed" });
+
+    const after = await request("POST", "confirm-address/describe", { token });
+    expect(after.status).toBe(200);
+    expect(await after.json()).toEqual({
+      state: "confirmed",
+      expiresAt: expect.any(String),
+    });
+  });
+
+  it("the token never travels in a query string", async () => {
+    await (store.coachService as CoachService).updateLeaderEmail(SLUG, NEW);
+    const token = mail.tokenFor(NEW);
+    expect(
+      (
+        await request(
+          "GET",
+          `confirm-address?token=${encodeURIComponent(token)}`,
+        )
+      ).status,
+    ).toBe(404);
   });
 
   it("an unknown link is not found on either route", async () => {
     expect(
-      (await request("GET", "confirm-address?token=not-a-token")).status,
+      (
+        await request("POST", "confirm-address/describe", {
+          token: "not-a-token",
+        })
+      ).status,
     ).toBe(404);
     expect(
       (await request("POST", "confirm-address", { token: "not-a-token" }))
