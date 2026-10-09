@@ -162,7 +162,17 @@ export async function parallelRunComparison(
     machineByReport.set(m.report_id, scores);
   }
 
-  const since = backendRows[0]?.date;
+  const since = (
+    await conn
+      .selectFrom("coach_intake_sessions")
+      .select(
+        sql<string | null>`to_char(min(session_date), 'YYYY-MM-DD')`.as(
+          "first",
+        ),
+      )
+      .where("parallel_run", "=", true)
+      .executeTakeFirst()
+  )?.first;
   const hostRows = since
     ? await conn
         .selectFrom("coach_reports")
