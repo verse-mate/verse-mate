@@ -35,9 +35,11 @@ class Inbox {
   tokenFor(email: string): string {
     const mail = this.sent.filter((m) => m.to === email).at(-1);
     const token = mail?.text.match(
-      /confirm-address\?token=([A-Za-z0-9_-]+)/,
+      /\/coach\/confirm-address#token=([A-Za-z0-9_-]+)/,
     )?.[1];
     if (!token) throw new Error(`no confirmation link was sent to ${email}`);
+    if (mail?.text.includes("?token="))
+      throw new Error("the confirmation link carries the token in its query");
     return token;
   }
 }
