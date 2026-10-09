@@ -10,6 +10,7 @@ import type {
   AiProvider,
   AiResponseOptions,
   AiResponseResult,
+  AiTranscription,
 } from "./ai-provider.interface";
 
 /**
@@ -29,6 +30,25 @@ export class OpenAiProvider implements AiProvider {
       );
     }
     this.client = new OpenAI({ apiKey: key });
+  }
+
+  async transcribeAudio(opts: {
+    file: File | Blob;
+    model?: string;
+  }): Promise<AiTranscription> {
+    const result = await this.client.audio.transcriptions.create({
+      file: opts.file as File,
+      model: opts.model ?? "whisper-1",
+      response_format: "verbose_json",
+      timestamp_granularities: ["segment"],
+    });
+    return {
+      segments: (result.segments ?? []).map((s) => ({
+        start: s.start,
+        end: s.end,
+        text: s.text,
+      })),
+    };
   }
 
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {

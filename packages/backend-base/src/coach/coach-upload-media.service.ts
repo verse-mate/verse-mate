@@ -303,11 +303,3 @@ export const ffprobe: MediaProbe = {
     return readProbe(out);
   },
 };
-
-export function uploadTranscriber(): Transcriber {
-  return {
-    async transcribe() {
-      throw new Error("speech-to-text is not set up on this server");
-    },
-  };
-}

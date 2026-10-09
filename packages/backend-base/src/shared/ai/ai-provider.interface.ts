@@ -166,9 +166,18 @@ export interface AiBatchResult {
   errors?: { object: string; data: unknown[] } | null;
 }
 
+export interface AiTranscription {
+  segments: Array<{ start: number; end: number; text: string }>;
+}
+
 export interface AiProvider {
   /** Provider identifier (e.g. "openai", "stub"). */
   readonly name: string;
+
+  transcribeAudio?(opts: {
+    file: File | Blob;
+    model?: string;
+  }): Promise<AiTranscription>;
 
   /** Send a chat completion request. */
   chatComplete(opts: AiChatOptions): Promise<AiChatResponse>;
