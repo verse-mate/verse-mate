@@ -25,7 +25,12 @@ import {
   PIPELINE_ATTEMPT_LIMIT,
   PIPELINE_BATCH_LIMIT,
 } from "./coach-pipeline.service";
-import { CoachScoringService, promptVersion } from "./coach-scoring.service";
+import {
+  CoachScoringService,
+  SCORING_SETTINGS,
+  type ScoringVersion,
+  promptVersion,
+} from "./coach-scoring.service";
 import { isolateTable } from "./coach-test-tables";
 import type {
   FirefliesDetailClient,
@@ -96,6 +101,13 @@ class FakeAi implements AiProvider {
   batchesCreate = () => this.no("batchesCreate");
   batchesRetrieve = () => this.no("batchesRetrieve");
   batchesCancel = () => this.no("batchesCancel");
+}
+
+class LaterSessionAi extends FakeAi {
+  override async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+    const answer = await super.chatComplete(opts);
+    return { ...answer, content: answer.content.replaceAll("12:", "13:") };
+  }
 }
 
 class CountingAi extends FakeAi {
@@ -230,6 +242,61 @@ async function priorReport(
   }
 }
 
+function currentVersion(): ScoringVersion {
+  return {
+    languageModel: "fake",
+    promptVersion: promptVersion(),
+    settings: SCORING_SETTINGS,
+  };
+}
+
+async function deliveredBefore(
+  version = currentVersion(),
+  id = "delivered-before",
+  coachId = COACH,
+) {
+  await conn
+    .insertInto("coach_reports")
+    .values({
+      id,
+      coach_id: coachId,
+      session_date: "2026-07-01",
+      source_session_id: `ff-pipe-${id}`,
+      legacy_ids: [],
+      summary: {},
+      metrics: {},
+      body: {},
+      held: true,
+    })
+    .execute();
+  await conn
+    .insertInto("coach_report_dimension_scores")
+    .values({
+      report_id: id,
+      dimension_n: 1,
+      score: 4,
+      rationale: "r",
+      provenance: "machine",
+      model_version: RUBRIC_MODEL_VERSION,
+      language_model: version.languageModel,
+      prompt_version: version.promptVersion,
+      generation_settings: JSON.stringify(version.settings),
+    })
+    .execute();
+  await conn
+    .insertInto("coach_intake_sessions")
+    .values({
+      source_session_id: `ff-pipe-${id}`,
+      coach_id: coachId,
+      matched_by: "title_match",
+      title: "t",
+      session_date: "2026-07-01",
+      state: "delivered",
+      report_id: id,
+    })
+    .execute();
+}
+
 async function storedAuthenticity() {
   return conn
     .selectFrom("coach_report_dimension_scores")
@@ -254,6 +321,7 @@ describe("a retained session reaches a delivered report", () => {
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
+    await deliveredBefore();
     await seedRetained();
   });
   afterEach(async () => {
@@ -303,7 +371,7 @@ describe("a retained session reaches a delivered report", () => {
     const report = await conn
       .selectFrom("coach_reports")
       .select(["id", "summary"])
-      .where("coach_id", "=", COACH)
+      .where("source_session_id", "=", "ff-pipe-1")
       .executeTakeFirstOrThrow();
     // Eleven 4s with dimension 7 at 3 from the vision stub.
     expect((report.summary as { score: number }).score).toBeGreaterThan(70);
@@ -323,7 +391,7 @@ describe("a retained session reaches a delivered report", () => {
       .select(
         sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("session_date"),
       )
-      .where("coach_id", "=", COACH)
+      .where("source_session_id", "=", "ff-pipe-1")
       .executeTakeFirstOrThrow();
 
     const report = rowToReport({
@@ -347,7 +415,7 @@ describe("a retained session reaches a delivered report", () => {
     const report = await conn
       .selectFrom("coach_reports")
       .select("id")
-      .where("coach_id", "=", COACH)
+      .where("source_session_id", "=", "ff-pipe-1")
       .executeTakeFirstOrThrow();
     const rows = await conn
       .selectFrom("coach_report_dimension_scores")
@@ -639,7 +707,7 @@ describe("a retained session reaches a delivered report", () => {
     const report = await conn
       .selectFrom("coach_reports")
       .select("evidence")
-      .where("coach_id", "=", COACH)
+      .where("source_session_id", "=", "ff-pipe-1")
       .executeTakeFirstOrThrow();
     expect(
       (report.evidence as { timestamps: string[] }).timestamps.length,
@@ -772,6 +840,7 @@ describe("a session that fails scoring is counted, capped and taken out of the q
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
+    await deliveredBefore();
   });
   afterEach(async () => {
     await clear();
@@ -935,6 +1004,7 @@ describe("a held report is not on the leader's portal until it is released", () 
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
+    await deliveredBefore();
     leaderUser = (
       await conn
         .insertInto("user")
@@ -1139,6 +1209,7 @@ describe("an admin's correction reaches the leader's report and the email", () =
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
+    await deliveredBefore();
     leaderUser = (
       await conn
         .insertInto("user")
@@ -1314,11 +1385,19 @@ describe("The Parallel Run Is Silent", () => {
     expect(await service.getReportDetail(COACH, reportId)).toBeNull();
   });
 
-  it("Cutover switches the pipeline on: its reports are delivered and become visible", async () => {
+  it("Cutover switches the pipeline on: its first report is held for review, then delivered and visible once released", async () => {
     process.env[COACH_PIPELINE_LIVE] = "true";
     const mailer = new FakeMailer();
     const [result] = await pipeline(mailer).run();
-    expect(result.outcome).toBe("scored-and-delivered");
+    expect(result.outcome).toBe("scored-awaiting-review");
+    expect(mailer.sent).toEqual([]);
+    expect(
+      (
+        await new CoachService(Database, mailer as any).releaseHeldReport(
+          result.reportId as string,
+        )
+      ).delivered,
+    ).toBe(true);
     expect(mailer.sent.length).toBeGreaterThan(0);
     expect(
       await new CoachService(Database).getReportDetail(
@@ -1336,6 +1415,7 @@ describe("a failure after scoring leaves the session somewhere a queue reads", (
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
+    await deliveredBefore();
     await seedRetained();
   });
   afterEach(async () => {
@@ -1646,6 +1726,7 @@ describe("every hold carries a structured kind beside its prose", () => {
       .insertInto("coach_leaders")
       .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
       .execute();
+    await deliveredBefore();
     await seedRetained();
   });
   afterEach(async () => {
@@ -1879,5 +1960,105 @@ describe("the evidence rule 2 compares is built from what the model cited", () =
       quotes: [],
       timestamps: [],
     });
+  });
+});
+
+async function holdOf(id: string) {
+  return conn
+    .selectFrom("coach_intake_sessions")
+    .select(["state", "hold_kind"])
+    .where("source_session_id", "=", id)
+    .executeTakeFirstOrThrow();
+}
+
+describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () => {
+  beforeEach(async () => {
+    await clear();
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: COACH, email: EMAIL, name: "Pipe Leader" })
+      .execute();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("coach_id", "=", "pipe-other-coach")
+      .execute();
+  });
+
+  it("The first report after cutover is held: no report was ever delivered to the leader, so it waits for an admin, then goes out on release", async () => {
+    await seedRetained();
+    const mailer = new FakeMailer();
+    const [held] = await pipeline(mailer).run();
+    expect(held.outcome).toBe("scored-awaiting-review");
+    expect(held.detail).toContain("scoring version");
+    expect(mailer.sent).toEqual([]);
+    expect(await holdOf("ff-pipe-1")).toEqual({
+      state: "scored",
+      hold_kind: "review",
+    });
+
+    const released = await new CoachService(
+      Database,
+      mailer as any,
+    ).releaseHeldReport(held.reportId as string);
+    expect(released.delivered).toBe(true);
+    expect(mailer.sent).toContain(EMAIL);
+  });
+
+  it("The prompt changes after cutover: the first report under the new version is held, and later ones under it are delivered normally", async () => {
+    await deliveredBefore({
+      ...currentVersion(),
+      promptVersion: "older-prompt",
+    });
+    await seedRetained("ff-pipe-1");
+    const [first] = await pipeline(new FakeMailer()).run();
+    expect(first.outcome).toBe("scored-awaiting-review");
+    expect(first.detail).toContain("scoring version");
+    expect(
+      (
+        await new CoachService(
+          Database,
+          new FakeMailer() as any,
+        ).releaseHeldReport(first.reportId as string)
+      ).delivered,
+    ).toBe(true);
+
+    await seedRetained("ff-pipe-2");
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ session_date: "2026-08-29" })
+      .where("source_session_id", "=", "ff-pipe-2")
+      .execute();
+    const mailer = new FakeMailer();
+    const [later] = await pipeline(mailer, new LaterSessionAi()).run();
+    expect(later.outcome).toBe("scored-and-delivered");
+    expect(mailer.sent).toContain(EMAIL);
+  });
+
+  it("a leader already delivered a report under this version gets the next one without a hold", async () => {
+    await deliveredBefore();
+    await seedRetained();
+    const [result] = await pipeline(new FakeMailer()).run();
+    expect(result.outcome).toBe("scored-and-delivered");
+  });
+
+  it("another leader's delivery under the version does not release this leader's first report", async () => {
+    await deliveredBefore(currentVersion(), "other-leader", "pipe-other-coach");
+    await seedRetained();
+    const [result] = await pipeline(new FakeMailer()).run();
+    expect(result.outcome).toBe("scored-awaiting-review");
+  });
+
+  it("a parallel-run session is not marked held for a new version", async () => {
+    await seedRetained();
+    await conn
+      .updateTable("coach_intake_sessions")
+      .set({ parallel_run: true })
+      .where("source_session_id", "=", "ff-pipe-1")
+      .execute();
+    await pipeline(new FakeMailer()).run();
+    expect((await holdOf("ff-pipe-1")).hold_kind).toBeNull();
   });
 });

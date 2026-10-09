@@ -18,6 +18,7 @@ import { rescoreReport } from "./coach-review.service";
 import {
   AUTHENTICITY_DIMENSION,
   CoachScoringService,
+  type ScoringVersion,
   authenticityBaseline,
 } from "./coach-scoring.service";
 import {
@@ -72,6 +73,10 @@ const PARALLEL_RUN_HOLD =
   "parallel run: kept for admin comparison, nothing is sent until cutover";
 
 const NO_MAILER_HOLD = "held until delivered: no mailer is configured";
+
+function newVersionHold(version: ScoringVersion | undefined): string {
+  return `held for review: the first report to this leader under scoring version ${version?.languageModel ?? "unknown"} / prompt ${version?.promptVersion ?? "unknown"} / settings ${JSON.stringify(version?.settings ?? null)}`;
+}
 
 export class CoachPipelineService {
   private readonly scoring: CoachScoringService;
@@ -222,6 +227,40 @@ export class CoachPipelineService {
     );
   }
 
+  private async deliveredUnder(
+    coachId: string,
+    version: ScoringVersion | undefined,
+  ): Promise<boolean> {
+    if (!version) return false;
+    const delivered = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_intake_sessions")
+      .innerJoin(
+        "coach_report_dimension_scores",
+        "coach_report_dimension_scores.report_id",
+        "coach_intake_sessions.report_id",
+      )
+      .select("coach_intake_sessions.report_id")
+      .where("coach_intake_sessions.coach_id", "=", coachId)
+      .where("coach_intake_sessions.state", "=", "delivered")
+      .where(
+        "coach_report_dimension_scores.language_model",
+        "=",
+        version.languageModel,
+      )
+      .where(
+        "coach_report_dimension_scores.prompt_version",
+        "=",
+        version.promptVersion,
+      )
+      .where(
+        sql<boolean>`coach_report_dimension_scores.generation_settings = ${JSON.stringify(version.settings)}::jsonb`,
+      )
+      .limit(1)
+      .executeTakeFirst();
+    return delivered !== undefined;
+  }
+
   private async queueForRedelivery(sourceSessionId: string): Promise<void> {
     await this.db
       .getOrCreateConnection()
@@ -308,7 +347,12 @@ export class CoachPipelineService {
     }
 
     const dimensions = scored.dimensions;
+    const delivering = !session.parallel_run && coachPipelineLive();
     const holdReason = scored.reviewReason ?? null;
+    const versionHold =
+      delivering && !(await this.deliveredUnder(coachId, scored.producedBy))
+        ? newVersionHold(scored.producedBy)
+        : null;
     const published = await this.db
       .getOrCreateConnection()
       .transaction()
@@ -333,6 +377,7 @@ export class CoachPipelineService {
             newcomers: scored.newcomers ?? 0,
             duration: `${detail.duration ?? 0} min`,
             holdReason,
+            newVersionHold: versionHold,
           },
           trx as CoachReportsWriter,
         );

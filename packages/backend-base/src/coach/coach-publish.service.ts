@@ -34,6 +34,7 @@ export interface PublishInput {
   newcomerBonus?: number;
   sizeBonus?: number;
   holdReason: string | null;
+  newVersionHold?: string | null;
 }
 
 export interface PublishResult {
@@ -77,7 +78,9 @@ export class CoachPublishService {
       throw new AttributionChangedError(input.sourceSessionId);
     const holdReason =
       input.holdReason ??
-      (session?.release_required ? REATTRIBUTED_HOLD : null);
+      (session?.release_required
+        ? REATTRIBUTED_HOLD
+        : input.newVersionHold ?? null);
     // Computed here when the caller did not, from the head counts it passed.
     // Nothing used to compute them at all, so every report scored base-only.
     const derived = composeBonuses({
@@ -155,7 +158,9 @@ export class CoachPublishService {
           ? "review"
           : session?.release_required
             ? "reattributed"
-            : null,
+            : input.newVersionHold
+              ? "review"
+              : null,
         updated_at: sql`NOW()`,
       })
       .where("source_session_id", "=", input.sourceSessionId)
