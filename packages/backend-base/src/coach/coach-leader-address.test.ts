@@ -470,7 +470,7 @@ describe("A Leader's Address Can Be Corrected, once the new address confirms", (
     });
   });
 
-  it("An admin changes an address during the parallel run: the link is sent, and on confirmation the address changes with no notice to the previous one", async () => {
+  it("An admin changes an address during the parallel run: the link is sent, and on confirmation the address changes and the previous address is told, in words true before go-live", async () => {
     delete process.env[COACH_PIPELINE_LIVE];
     expect(
       await live.updateLeaderEmail(SLUG, NEW, { byUserId: null }),
@@ -478,10 +478,15 @@ describe("A Leader's Address Can Be Corrected, once the new address confirms", (
     expect(await live.confirmLeaderEmailChange(mail.tokenFor(NEW))).toEqual({
       ok: true,
       email: NEW,
-      noticeSent: false,
+      noticeSent: true,
     });
     expect(await leaderEmail(SLUG)).toBe(NEW);
-    expect(mail.sent.map((m) => m.to)).toEqual([NEW]);
+    expect(mail.sent.map((m) => m.to)).toEqual([NEW, OLD]);
+    const notice = mail.sent[1];
+    expect(notice.text).toContain(
+      "the email address your VerseMate coaching reports and sign-in use",
+    );
+    expect(notice.text).not.toMatch(/no longer sent|go to\b/);
   });
 
   it("a placeholder old address gets no notice, and the change is still audited", async () => {
