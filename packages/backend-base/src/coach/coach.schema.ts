@@ -467,6 +467,71 @@ export const CoverageReportSchema = t.Object({
   ),
 });
 
+const ComparedDimensionSchema = t.Object({
+  n: t.Number(),
+  host: t.Union([t.Number(), t.Null()]),
+  backend: t.Union([t.Number(), t.Null()]),
+  difference: t.Union([t.Number(), t.Null()]),
+});
+
+const SessionRefSchema = t.Object({
+  sourceSessionId: t.String(),
+  reportId: t.String(),
+});
+
+export const ParallelRunComparisonSchema = t.Object({
+  sessions: t.Array(
+    t.Object({
+      coachId: t.String(),
+      date: t.String(),
+      backend: t.Object({
+        sourceSessionId: t.String(),
+        reportId: t.String(),
+        composite: t.Number(),
+      }),
+      host: t.Object({ reportId: t.String(), composite: t.Number() }),
+      compositeDifference: t.Number(),
+      dimensions: t.Array(ComparedDimensionSchema),
+      withinOne: t.Number(),
+      comparable: t.Number(),
+      flagged: t.Boolean(),
+    }),
+  ),
+  needsPairing: t.Array(
+    t.Object({
+      coachId: t.String(),
+      date: t.String(),
+      backend: t.Array(SessionRefSchema),
+      host: t.Array(t.Object({ reportId: t.String() })),
+    }),
+  ),
+  unmatched: t.Object({
+    backend: t.Array(
+      t.Object({
+        coachId: t.String(),
+        date: t.String(),
+        sourceSessionId: t.String(),
+        reportId: t.String(),
+      }),
+    ),
+    host: t.Array(
+      t.Object({ coachId: t.String(), date: t.String(), reportId: t.String() }),
+    ),
+  }),
+  share: t.Object({
+    withinOne: t.Number(),
+    comparable: t.Number(),
+    ratio: t.Union([t.Number(), t.Null()]),
+  }),
+  counts: t.Object({
+    compared: t.Number(),
+    flagged: t.Number(),
+    needsPairing: t.Number(),
+    unmatchedBackend: t.Number(),
+    unmatchedHost: t.Number(),
+  }),
+});
+
 export const EMAIL_RULE =
   "Enter one email address: letters, digits and . _ % + - before the @, then a domain such as example.org, with no trailing dot";
 

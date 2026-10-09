@@ -327,6 +327,14 @@ describe("every admin route answers through the real service within its response
     });
   });
 
+  it("the parallel-run comparison", async () => {
+    const comparison = await call("GET", "parallel-run/comparison");
+    expect(comparison.status).toBe(200);
+    expect(Array.isArray(comparison.body?.sessions)).toBe(true);
+    expect(comparison.body?.unmatched).toBeDefined();
+    expect(typeof comparison.body?.counts.compared).toBe("number");
+  });
+
   it("re-share listing, send and resolve", async () => {
     const listed = await call("GET", "reshares");
     expect(listed.status).toBe(200);

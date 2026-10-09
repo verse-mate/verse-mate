@@ -29,6 +29,7 @@ import {
   LeaderMonthlyResponseSchema,
   MonthlySchema,
   NoteSchema,
+  ParallelRunComparisonSchema,
   ReportSchema,
   ReviewStateSchema,
   RevisionResultSchema,
@@ -861,6 +862,22 @@ const plugin = new Elysia()
             windowDays: t.Optional(t.Numeric({ minimum: 1, maximum: 365 })),
           }),
           response: { 200: CoverageReportSchema, ...StandardErrorResponses },
+        },
+      )
+      .get(
+        "/admin/parallel-run/comparison",
+        async ({ store: { coachService }, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return coachService.parallelRunComparison();
+        },
+        {
+          response: {
+            200: ParallelRunComparisonSchema,
+            ...StandardErrorResponses,
+          },
         },
       )
       .post(
