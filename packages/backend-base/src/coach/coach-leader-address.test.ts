@@ -579,6 +579,29 @@ describe("A Leader's Address Can Be Corrected, once the new address confirms", (
     expect(await addressChange(SLUG)).toBeNull();
   });
 
+  it("a confirmation racing a newer change for the same leader ends in success or superseded, never a server error", async () => {
+    for (let round = 0; round < 25; round++) {
+      await conn
+        .updateTable("coach_leaders")
+        .set({ email: OLD })
+        .where("slug", "=", SLUG)
+        .execute();
+      await live.updateLeaderEmail(SLUG, NEW, { byUserId: null });
+      const token = mail.tokenFor(NEW);
+      const [confirmed, newer] = await Promise.all([
+        live.confirmLeaderEmailChange(token),
+        live.updateLeaderEmail(SLUG, `addr-race-${round}@example.test`, {
+          byUserId: null,
+        }),
+      ]);
+      expect(
+        confirmed.ok ||
+          (confirmed as { refusal: string }).refusal === "superseded",
+      ).toBe(true);
+      expect(newer).toMatchObject({ ok: true, status: "pending" });
+    }
+  });
+
   it("the benchmark leader's address changes only with confirm, and is audited once the new address confirms", async () => {
     expect(
       await live.updateLeaderEmail(BENCH, NEW, { byUserId: null }),
