@@ -8,6 +8,7 @@ import {
   CLUSTERS,
   DIMENSIONS,
   RUBRIC_MODEL_VERSION,
+  VISUAL_AIDS_DIMENSION,
   composeBaseScore,
   statusForScore,
 } from "./rubric";
@@ -129,9 +130,6 @@ export interface ScoringInput {
   frames?: Uint8Array[];
   authenticityBaseline?: number | null;
 }
-
-/** The dimension that can only be answered from the picture. */
-export const VISUAL_AIDS_DIMENSION = 7;
 
 export const AUTHENTICITY_DIMENSION = 8;
 
@@ -520,7 +518,7 @@ export class CoachScoringService {
             VALUES (
               ${reportId}, ${d.n}, ${d.score}, ${d.note},
               'machine', ${RUBRIC_MODEL_VERSION},
-              ${(d.n === VISUAL_AIDS_DIMENSION ? producedBy?.visionModel : undefined) ?? producedBy?.languageModel ?? null}, ${producedBy?.promptVersion ?? null},
+              ${(d.n === VISUAL_AIDS_DIMENSION ? producedBy?.visionModel : producedBy?.languageModel) ?? null}, ${producedBy?.promptVersion ?? null},
               ${settings}::jsonb
             )
             ON CONFLICT (report_id, dimension_n) DO UPDATE SET

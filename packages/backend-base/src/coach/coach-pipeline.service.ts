@@ -25,7 +25,9 @@ import {
 import {
   redeliverable,
   scorable,
+  scoringVersionLiteral,
   unsentAfterPublish,
+  versionDeliveredToLeader,
   waitingOnAPersonLast,
 } from "./coach-session-state";
 import type { CoachMailer } from "./coach.service";
@@ -234,33 +236,13 @@ export class CoachPipelineService {
     version: ScoringVersion | undefined,
   ): Promise<boolean> {
     if (!version) return false;
-    const delivered = await this.db
-      .getOrCreateConnection()
-      .selectFrom("coach_intake_sessions")
-      .innerJoin(
-        "coach_report_dimension_scores",
-        "coach_report_dimension_scores.report_id",
-        "coach_intake_sessions.report_id",
-      )
-      .select("coach_intake_sessions.report_id")
-      .where("coach_intake_sessions.coach_id", "=", coachId)
-      .where("coach_intake_sessions.state", "=", "delivered")
-      .where(
-        "coach_report_dimension_scores.language_model",
-        "=",
-        version.languageModel,
-      )
-      .where(
-        "coach_report_dimension_scores.prompt_version",
-        "=",
-        version.promptVersion,
-      )
-      .where(
-        sql<boolean>`coach_report_dimension_scores.generation_settings = ${JSON.stringify(version.settings)}::jsonb`,
-      )
-      .limit(1)
-      .executeTakeFirst();
-    return delivered !== undefined;
+    const { rows } = await sql<{
+      delivered: boolean;
+    }>`SELECT ${versionDeliveredToLeader(
+      sql.val(coachId),
+      scoringVersionLiteral(version),
+    )} AS delivered`.execute(this.db.getOrCreateConnection());
+    return rows[0]?.delivered === true;
   }
 
   private async queueForRedelivery(sourceSessionId: string): Promise<void> {

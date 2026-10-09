@@ -1,5 +1,6 @@
 import type Database from "database/src/models/Database";
-import { type ExpressionBuilder, sql } from "kysely";
+import { type Expression, type ExpressionBuilder, sql } from "kysely";
+import { VISUAL_AIDS_DIMENSION } from "./rubric";
 
 export const SESSION_STATES = [
   "observed",
@@ -174,17 +175,46 @@ export const stuck = (eb: Sessions) =>
     ]),
   ]);
 
-export const VERSION_DELIVERED_TO_LEADER = sql<boolean>`EXISTS (
-  SELECT 1
-  FROM coach_report_dimension_scores mine
-  JOIN coach_report_dimension_scores theirs
-    ON theirs.dimension_n = mine.dimension_n
-   AND theirs.language_model = mine.language_model
-   AND theirs.prompt_version = mine.prompt_version
-   AND theirs.generation_settings = mine.generation_settings
-  JOIN coach_intake_sessions delivered
-    ON delivered.report_id = theirs.report_id
-  WHERE mine.report_id = coach_intake_sessions.report_id
-    AND delivered.coach_id = coach_intake_sessions.coach_id
-    AND delivered.state = 'delivered'
+export const scoringVersionOf = (reportId: Expression<unknown>) => sql<unknown>`(
+  SELECT CASE
+    WHEN COUNT(DISTINCT s.language_model) FILTER (WHERE s.dimension_n <> ${sql.lit(VISUAL_AIDS_DIMENSION)}) = 1
+     AND COUNT(DISTINCT s.prompt_version) = 1
+     AND COUNT(DISTINCT s.generation_settings) = 1
+    THEN jsonb_build_object(
+      'languageModel', MIN(s.language_model) FILTER (WHERE s.dimension_n <> ${sql.lit(VISUAL_AIDS_DIMENSION)}),
+      'promptVersion', MIN(s.prompt_version),
+      'settings', MIN(s.generation_settings::text)::jsonb,
+      'visionModel', MIN(s.language_model) FILTER (WHERE s.dimension_n = ${sql.lit(VISUAL_AIDS_DIMENSION)})
+    )
+  END
+  FROM coach_report_dimension_scores s
+  WHERE s.report_id = ${reportId}
 )`;
+
+export const scoringVersionLiteral = (version: {
+  languageModel: string;
+  promptVersion: string;
+  settings: unknown;
+  visionModel?: string;
+}) =>
+  sql<unknown>`${JSON.stringify({
+    languageModel: version.languageModel,
+    promptVersion: version.promptVersion,
+    settings: version.settings,
+    visionModel: version.visionModel ?? null,
+  })}::jsonb`;
+
+export const versionDeliveredToLeader = (
+  coachId: Expression<unknown>,
+  version: Expression<unknown>,
+) => sql<boolean>`EXISTS (
+  SELECT 1 FROM coach_intake_sessions delivered
+  WHERE delivered.coach_id = ${coachId}
+    AND delivered.state = 'delivered'
+    AND ${scoringVersionOf(sql.ref("delivered.report_id"))} = ${version}
+)`;
+
+export const VERSION_DELIVERED_TO_LEADER = versionDeliveredToLeader(
+  sql.ref("coach_intake_sessions.coach_id"),
+  scoringVersionOf(sql.ref("coach_intake_sessions.report_id")),
+);
