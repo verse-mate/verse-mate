@@ -186,7 +186,10 @@ describe("admin authority is data, and revoking it takes effect", () => {
       .executeTakeFirstOrThrow();
     const service = new CoachService(Database);
 
-    await conn.insertInto("coach_admins").values({ email: ADMIN }).execute();
+    await conn
+      .insertInto("coach_admins")
+      .values({ email: ADMIN, user_id: user.id })
+      .execute();
     expect(await service.isAdmin(user.id)).toBe(true);
 
     await conn.deleteFrom("coach_admins").where("email", "=", ADMIN).execute();
