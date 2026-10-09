@@ -23,6 +23,7 @@ export const HOLD_KINDS = [
   "cold-recall",
   "no-mailer",
   "send-failed",
+  "scoring-version",
 ] as const;
 
 export type HoldKind = (typeof HOLD_KINDS)[number];
@@ -32,6 +33,7 @@ const WAITING_ON_A_PERSON: readonly HoldKind[] = [
   "governance",
   "cold-recall",
   "no-mailer",
+  "scoring-version",
 ];
 
 export const waitingOnAPersonLast = sql<boolean>`COALESCE(hold_kind IN (${sql.join(
@@ -87,10 +89,17 @@ export const abandonedClaim = (eb: Sessions) =>
 export const scorable = (eb: Sessions) =>
   eb.and([eb("state", "=", "retained"), eb("coach_id", "is not", null)]);
 
+const notHeldForItsVersion = (eb: Sessions) =>
+  eb.or([
+    eb("hold_kind", "is", null),
+    eb("hold_kind", "!=", "scoring-version"),
+  ]);
+
 export const claimable = (eb: Sessions) =>
   eb.and([
     eb("release_required", "=", false),
     eb("parallel_run", "=", false),
+    notHeldForItsVersion(eb),
     eb.or([
       eb("state", "in", ["scored", "delivery_pending"]),
       abandonedClaim(eb),
@@ -101,6 +110,7 @@ export const redeliverable = (eb: Sessions) =>
   eb.and([
     eb("report_id", "is not", null),
     eb("parallel_run", "=", false),
+    notHeldForItsVersion(eb),
     eb.or([eb("state", "=", "delivery_pending"), abandonedClaim(eb)]),
   ]);
 
@@ -163,3 +173,18 @@ export const stuck = (eb: Sessions) =>
       eb(SKIPPED_LEADER_ADDRESS, "is not", null),
     ]),
   ]);
+
+export const VERSION_DELIVERED_TO_LEADER = sql<boolean>`EXISTS (
+  SELECT 1
+  FROM coach_report_dimension_scores mine
+  JOIN coach_report_dimension_scores theirs
+    ON theirs.dimension_n = mine.dimension_n
+   AND theirs.language_model = mine.language_model
+   AND theirs.prompt_version = mine.prompt_version
+   AND theirs.generation_settings = mine.generation_settings
+  JOIN coach_intake_sessions delivered
+    ON delivered.report_id = theirs.report_id
+  WHERE mine.report_id = coach_intake_sessions.report_id
+    AND delivered.coach_id = coach_intake_sessions.coach_id
+    AND delivered.state = 'delivered'
+)`;

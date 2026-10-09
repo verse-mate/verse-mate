@@ -6,6 +6,7 @@ import { coachPipelineLive } from "./coach-cutover";
 import {
   CoachDeliveryService,
   type DeliveryResult,
+  releaseDeliveredVersions,
 } from "./coach-delivery.service";
 import { applyFirstLessonDetection } from "./coach-first-lesson";
 import { CoachFrameService } from "./coach-frames.service";
@@ -154,6 +155,7 @@ export class CoachPipelineService {
   private async redeliver(): Promise<PipelineResult[]> {
     const delivery = this.delivery;
     if (!delivery) return [];
+    await releaseDeliveredVersions(this.db);
     const conn = this.db.getOrCreateConnection();
     const pending = await conn
       .selectFrom("coach_intake_sessions")

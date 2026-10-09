@@ -90,6 +90,11 @@ const REFUSALS: Record<string, Refusal> = {
     seed: `${REPORT}; INSERT INTO coach_report_dimension_scores (report_id, dimension_n, provenance, prompt_version) VALUES ('roundtrip', 1, 'machine', 'p1')`,
     tables: ["coach_reports"],
   },
+  "20260901154000-coach-no-calibration-hold": {
+    seed: sessionWith("hold_kind = 'scoring-version'"),
+    tables: ["coach_intake_sessions"],
+    rewrites: true,
+  },
   "20260901153000-coach-intake-send-unconfirmed": {
     seed: sessionWith("send_unconfirmed = true"),
     tables: ["coach_intake_sessions"],
