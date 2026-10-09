@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import { db as Database } from "database";
 
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
+import { getAiProvider } from "../shared/ai";
 import bullmqRedisConnection from "../shared/bullmq-redis";
 import { CoachArchiveService } from "./coach-archive.service";
 import {
@@ -18,11 +19,8 @@ import {
 } from "./coach-pipeline.service";
 import { CoachRetentionService } from "./coach-retention.service";
 import { CoachRetrievalService } from "./coach-retrieval.service";
-import {
-  CoachUploadMediaService,
-  ffprobe,
-  uploadTranscriber,
-} from "./coach-upload-media.service";
+import { speechToText } from "./coach-transcribe.service";
+import { CoachUploadMediaService, ffprobe } from "./coach-upload-media.service";
 import { HttpFirefliesClient } from "./fireflies.client";
 import { firefliesConfigured } from "./fireflies.config";
 
@@ -115,7 +113,7 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
     uploads = (
       await new CoachUploadMediaService(Database, undefined, {
         probe: ffprobe,
-        transcriber: uploadTranscriber(),
+        transcriber: speechToText(getAiProvider()),
       }).process()
     ).length;
   } catch (error) {
