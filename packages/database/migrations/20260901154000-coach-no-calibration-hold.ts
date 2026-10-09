@@ -21,9 +21,21 @@ async function allow(db: Kysely<Database>, kinds: string[]): Promise<void> {
 
 export async function up(db: Kysely<Database>): Promise<void> {
   await allow(db, [...KEPT, "calibration", "scoring-version"]);
+  await sql`
+    UPDATE coach_reports SET held = true
+    WHERE id IN (
+      SELECT report_id FROM coach_intake_sessions
+      WHERE hold_kind = 'calibration' AND report_id IS NOT NULL
+    )
+  `.execute(db);
   await db
     .updateTable("coach_intake_sessions")
-    .set({ hold_kind: null, hold_reason: null })
+    .set({
+      state: "scored",
+      hold_kind: "scoring-version",
+      hold_reason:
+        "held for review: it was held by the calibration gate, which has been removed; an admin releases it to deliver it",
+    })
     .where("hold_kind", "=", "calibration")
     .execute();
   await allow(db, [...KEPT, "scoring-version"]);
