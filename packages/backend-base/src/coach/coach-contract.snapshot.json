@@ -2523,6 +2523,318 @@
       }
     },
     {
+      "route": "GET /coach/admin/parallel-run/comparison",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "sessions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "coachId": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "backend": {
+                    "type": "object",
+                    "properties": {
+                      "sourceSessionId": {
+                        "type": "string"
+                      },
+                      "reportId": {
+                        "type": "string"
+                      },
+                      "composite": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["sourceSessionId", "reportId", "composite"]
+                  },
+                  "host": {
+                    "type": "object",
+                    "properties": {
+                      "reportId": {
+                        "type": "string"
+                      },
+                      "composite": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["reportId", "composite"]
+                  },
+                  "compositeDifference": {
+                    "type": "number"
+                  },
+                  "dimensions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "n": {
+                          "type": "number"
+                        },
+                        "host": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "backend": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "difference": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["n", "host", "backend", "difference"]
+                    }
+                  },
+                  "withinOne": {
+                    "type": "number"
+                  },
+                  "comparable": {
+                    "type": "number"
+                  },
+                  "flagged": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "coachId",
+                  "date",
+                  "backend",
+                  "host",
+                  "compositeDifference",
+                  "dimensions",
+                  "withinOne",
+                  "comparable",
+                  "flagged"
+                ]
+              }
+            },
+            "needsPairing": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "coachId": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "backend": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sourceSessionId": {
+                          "type": "string"
+                        },
+                        "reportId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["sourceSessionId", "reportId"]
+                    }
+                  },
+                  "host": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "reportId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["reportId"]
+                    }
+                  }
+                },
+                "required": ["coachId", "date", "backend", "host"]
+              }
+            },
+            "unmatched": {
+              "type": "object",
+              "properties": {
+                "backend": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "coachId": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "sourceSessionId": {
+                        "type": "string"
+                      },
+                      "reportId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "coachId",
+                      "date",
+                      "sourceSessionId",
+                      "reportId"
+                    ]
+                  }
+                },
+                "host": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "coachId": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string"
+                      },
+                      "reportId": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["coachId", "date", "reportId"]
+                  }
+                }
+              },
+              "required": ["backend", "host"]
+            },
+            "share": {
+              "type": "object",
+              "properties": {
+                "withinOne": {
+                  "type": "number"
+                },
+                "comparable": {
+                  "type": "number"
+                },
+                "ratio": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["withinOne", "comparable", "ratio"]
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "compared": {
+                  "type": "number"
+                },
+                "flagged": {
+                  "type": "number"
+                },
+                "needsPairing": {
+                  "type": "number"
+                },
+                "unmatchedBackend": {
+                  "type": "number"
+                },
+                "unmatchedHost": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "compared",
+                "flagged",
+                "needsPairing",
+                "unmatchedBackend",
+                "unmatchedHost"
+              ]
+            }
+          },
+          "required": [
+            "sessions",
+            "needsPairing",
+            "unmatched",
+            "share",
+            "counts"
+          ]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "GET /coach/admin/pipeline-failures",
       "response": {
         "200": {

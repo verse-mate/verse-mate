@@ -768,3 +768,44 @@ describe("a score names what produced it", () => {
     });
   });
 });
+
+describe("the machine's own score is kept beside an admin's correction", () => {
+  beforeEach(async () => {
+    await clear();
+    await seedReport();
+  });
+  afterEach(clear);
+
+  it("a correction leaves the machine score, and a re-score refreshes it under the correction", async () => {
+    const svc = new CoachScoringService(Database, new FakeAi(ALL_FOURS));
+    await svc.persistDimensions(
+      REPORT,
+      (await svc.scoreSession(INPUT)).dimensions ?? [],
+    );
+    await conn
+      .updateTable("coach_report_dimension_scores")
+      .set({ score: 2, provenance: "human" })
+      .where("report_id", "=", REPORT)
+      .where("dimension_n", "=", 1)
+      .execute();
+    const corrected = (await storedScores()).find((r) => r.dimension_n === 1);
+    expect(corrected).toMatchObject({ score: 2, machine_score: 4 });
+
+    const fives = payload(DIMENSIONS.map((d) => ({ n: d.n, score: 5 })));
+    const again = new CoachScoringService(Database, new FakeAi(fives));
+    await again.persistDimensions(
+      REPORT,
+      (await again.scoreSession(INPUT)).dimensions ?? [],
+    );
+    const rows = await storedScores();
+    expect(rows.find((r) => r.dimension_n === 1)).toMatchObject({
+      score: 2,
+      machine_score: 5,
+      provenance: "human",
+    });
+    expect(rows.find((r) => r.dimension_n === 2)).toMatchObject({
+      score: 5,
+      machine_score: 5,
+    });
+  });
+});

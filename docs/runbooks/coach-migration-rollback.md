@@ -95,6 +95,7 @@ The column's values are lost; the rows stay.
 | `20260901152000-coach-intake-hold-kind` | `coach_intake_sessions`: `hold_kind` |
 | `20260901153000-coach-intake-send-unconfirmed` | `coach_intake_sessions`: `send_unconfirmed` |
 | `20260901155000-coach-score-produced-by` | `coach_report_dimension_scores`: `language_model`, `prompt_version`, `generation_settings` |
+| `20260901156000-coach-machine-score` | `coach_report_dimension_scores`: `machine_score` (refuses only while a human-corrected row holds one; on a machine row it equals `score`, which the up copies again) |
 
 ### Downs that drop data without a check
 

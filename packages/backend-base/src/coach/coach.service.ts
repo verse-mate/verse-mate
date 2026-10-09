@@ -845,6 +845,11 @@ export class CoachService {
     return new CoachCoverageService(this.db).assess({ windowDays });
   }
 
+  async parallelRunComparison() {
+    const { parallelRunComparison } = await import("./coach-parallel-run");
+    return parallelRunComparison(this.db);
+  }
+
   async setNotTeaching(
     slug: string,
     attested: boolean,

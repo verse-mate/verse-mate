@@ -493,6 +493,12 @@ export class CoachScoringService {
               updated_at          = NOW()
             WHERE coach_report_dimension_scores.provenance = 'machine'
           `.execute(trx);
+        await trx
+          .updateTable("coach_report_dimension_scores")
+          .set({ machine_score: d.score })
+          .where("report_id", "=", reportId)
+          .where("dimension_n", "=", d.n)
+          .execute();
       }
     };
     if (writer) return write(writer);
