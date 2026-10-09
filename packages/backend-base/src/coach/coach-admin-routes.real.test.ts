@@ -515,3 +515,173 @@ describe("every admin refusal carries a structured code with the status and word
     );
   });
 });
+
+describe("the parallel-run comparison route", () => {
+  const MEMBER_EMAIL = "real-routes-member@example.test";
+  const COMPARED = "ff-real-routes-compared";
+  const PAIR = ["ff-real-routes-pair-a", "ff-real-routes-pair-b"];
+  const ALONE = "ff-real-routes-alone";
+  const BACKEND = [COMPARED, ...PAIR, ALONE];
+  const HOST = "real-routes-host-2026-11-02";
+  let memberId = "";
+  let memberToken = "";
+
+  async function backendSession(id: string, date: string) {
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id,
+        coach_id: LEADER,
+        session_date: date,
+        source_session_id: id,
+        legacy_ids: [],
+        held: true,
+        summary: {},
+        metrics: JSON.stringify({ newcomerBonus: 0, sizeBonus: 0 }),
+        body: {},
+      })
+      .execute();
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values(
+        DIMENSIONS.map((d) => ({
+          report_id: id,
+          dimension_n: d.n,
+          score: 4,
+          machine_score: 4,
+          rationale: "r",
+          provenance: "machine",
+          model_version: "v3-weighted-100",
+        })),
+      )
+      .execute();
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: id,
+        coach_id: LEADER,
+        matched_by: "title_match",
+        title: "t",
+        session_date: date,
+        state: "scored",
+        report_id: id,
+        parallel_run: true,
+      })
+      .execute();
+  }
+
+  async function clearComparison() {
+    await conn
+      .deleteFrom("coach_intake_sessions")
+      .where("source_session_id", "in", BACKEND)
+      .execute();
+    await conn
+      .deleteFrom("coach_reports")
+      .where("id", "in", [...BACKEND, HOST])
+      .execute();
+    await conn.deleteFrom("user").where("email", "=", MEMBER_EMAIL).execute();
+  }
+
+  beforeAll(async () => {
+    await clearComparison();
+    await backendSession(COMPARED, "2026-11-02");
+    for (const id of PAIR) await backendSession(id, "2026-11-03");
+    await backendSession(ALONE, "2026-11-04");
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: HOST,
+        coach_id: LEADER,
+        session_date: "2026-11-02",
+        source_session_id: `legacy:${LEADER}:2026-11-02`,
+        legacy_ids: [],
+        summary: { score: 80 },
+        metrics: JSON.stringify({
+          dimensions: DIMENSIONS.map((d) => ({ n: d.n, score: 4 })),
+        }),
+        body: {},
+      })
+      .execute();
+    memberId = (
+      await conn
+        .insertInto("user")
+        .values({
+          email: MEMBER_EMAIL,
+          firstName: "Mira",
+          lastName: "Member",
+          emailVerified: true,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+    const signer = new Elysia().use(
+      jwt({
+        name: "jwt",
+        secret: process.env.AUTH_ACCESS_TOKEN_SECRET as string,
+      }),
+    );
+    memberToken = await signer.decorator.jwt.sign({ sub: memberId });
+    await redisClient.set(
+      cacheConstants.accessToken(memberId),
+      [memberToken],
+      "5m",
+    );
+  });
+
+  afterAll(async () => {
+    await redisClient.set(cacheConstants.accessToken(memberId), [], "1s");
+    await redisClient.delete(`rate-limit:coach:${memberId}`);
+    await clearComparison();
+  });
+
+  const comparisonAs = (bearer: string | null) =>
+    app.handle(
+      new Request("http://localhost/coach/admin/parallel-run/comparison", {
+        headers: bearer ? { authorization: `Bearer ${bearer}` } : {},
+      }),
+    );
+
+  it("an anonymous caller gets 401 and a signed-in leader who is not an admin 403", async () => {
+    expect((await comparisonAs(null)).status).toBe(401);
+    expect((await comparisonAs(memberToken)).status).toBe(403);
+  });
+
+  it("an admin gets one compared session, one pair to make and one unmatched session, within the response schema", async () => {
+    const { status, body } = await call("GET", "parallel-run/comparison");
+    expect(status).toBe(200);
+    const ours = (c: { coachId: string }) => c.coachId === LEADER;
+    expect(body?.sessions.filter(ours)).toEqual([
+      {
+        coachId: LEADER,
+        date: "2026-11-02",
+        backend: {
+          sourceSessionId: COMPARED,
+          reportId: COMPARED,
+          composite: expect.any(Number),
+        },
+        host: { reportId: HOST, composite: 80 },
+        compositeDifference: expect.any(Number),
+        dimensions: expect.any(Array),
+        withinOne: 12,
+        comparable: 12,
+        flagged: expect.any(Boolean),
+      },
+    ]);
+    expect(body?.needsPairing.filter(ours)).toEqual([
+      {
+        coachId: LEADER,
+        date: "2026-11-03",
+        backend: PAIR.map((id) => ({ sourceSessionId: id, reportId: id })),
+        host: [],
+      },
+    ]);
+    expect(body?.unmatched.backend.filter(ours)).toEqual([
+      {
+        coachId: LEADER,
+        date: "2026-11-04",
+        sourceSessionId: ALONE,
+        reportId: ALONE,
+      },
+    ]);
+  });
+});
