@@ -1305,6 +1305,32 @@ const plugin = new Elysia()
           },
         },
       )
+      .post(
+        "/admin/identity-nudges",
+        async ({ store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          const result = await new CoachIdentityService(
+            store.db,
+            store.notification,
+          ).nudge();
+          if (result.refusal)
+            throw refuse("POST /coach/admin/identity-nudges", result.refusal);
+          return result;
+        },
+        {
+          response: {
+            200: t.Object({
+              sent: t.Array(t.String()),
+              skipped: t.Array(t.String()),
+              failed: t.Array(t.String()),
+            }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
       .get(
         "/admin/monthly-reports",
         async ({ query, store, currentUserId }) => {

@@ -7,6 +7,12 @@
     }
   },
   "refusals": {
+    "POST /coach/admin/identity-nudges": {
+      "no-mailer": {
+        "status": 409,
+        "message": "No mailer is configured"
+      }
+    },
     "PUT /coach/admin/monthly-reports/:id": {
       "unknown-summary": {
         "status": 404,
@@ -7289,6 +7295,83 @@
             }
           },
           "required": ["queued"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/identity-nudges",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "sent": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "skipped": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "failed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["sent", "skipped", "failed"]
         },
         "400": {
           "type": "object",

@@ -1,7 +1,14 @@
 import { sql } from "kysely";
 
+import { CoachIdentityNudge, render } from "../../../emails";
 import type { db } from "../shared/shared.plugin";
-import type { CoachMailer } from "./coach.service";
+import {
+  COACH_REPLY_TO_EMAIL,
+  COACH_REPLY_TO_NAME,
+  noOwnAddress,
+} from "./coach-delivery.service";
+import { groupAddresses } from "./coach-rotating.service";
+import type { CoachMailer, CoachSendResult } from "./coach.service";
 
 export type AccountState = "none" | "unverified" | "verified";
 
@@ -62,5 +69,63 @@ export class CoachIdentityService {
       entries,
       atRisk: entries.filter((e) => e.account !== "verified").length,
     };
+  }
+
+  async nudge(): Promise<{
+    sent: string[];
+    skipped: string[];
+    failed: string[];
+    refusal?: "no-mailer";
+  }> {
+    const result = {
+      sent: [] as string[],
+      skipped: [] as string[],
+      failed: [] as string[],
+    };
+    if (!this.mailer) return { ...result, refusal: "no-mailer" };
+    const groups = await groupAddresses(this.db);
+    const names = new Map(
+      (
+        await this.db
+          .getOrCreateConnection()
+          .selectFrom("coach_leaders")
+          .select(["slug", "name"])
+          .where("slug", "is not", null)
+          .execute()
+      ).map((l) => [l.slug as string, l.name]),
+    );
+    const portalUrl = `${process.env.APP_URL ?? ""}/coach`;
+    for (const entry of (await this.audit()).entries) {
+      if (entry.kind !== "leader" || entry.account === "verified") continue;
+      const email = entry.email.trim().toLowerCase();
+      if (noOwnAddress(email, groups)) {
+        result.skipped.push(email);
+        continue;
+      }
+      const hasAccount = entry.account === "unverified";
+      let sent: CoachSendResult | undefined;
+      try {
+        sent = (await this.mailer.sendEmail({
+          to: { name: names.get(entry.id ?? "") ?? "", email },
+          replyTo: { name: COACH_REPLY_TO_NAME, email: COACH_REPLY_TO_EMAIL },
+          subject: hasAccount
+            ? "Confirm your email to see your coaching reports"
+            : "Create your VerseMate account to see your coaching reports",
+          text: `${hasAccount ? "Confirm this email address in the coaching portal" : "Create your VerseMate account with this email address"} to see your coaching reports: ${portalUrl}`,
+          html: await render(
+            CoachIdentityNudge({
+              name: names.get(entry.id ?? ""),
+              hasAccount,
+              portalUrl,
+            }),
+          ),
+        })) as CoachSendResult | undefined;
+      } catch {
+        sent = undefined;
+      }
+      if (sent?.delivered) result.sent.push(email);
+      else result.failed.push(email);
+    }
+    return result;
   }
 }
