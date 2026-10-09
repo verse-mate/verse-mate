@@ -1,5 +1,4 @@
-import { afterEach, describe, expect, it } from "bun:test";
-import { db as Database } from "database";
+import { describe, expect, it } from "bun:test";
 
 import {
   type Agreement,
@@ -10,11 +9,9 @@ import {
   type MachineScoring,
   TOLERANCE_COMPOSITE_MAE,
   TOLERANCE_DIMENSIONS_WITHIN_ONE,
-  calibrationShortfalls,
   checkCalibration,
   checkTolerance,
   measureAgreement,
-  recordCalibration,
   replayOrder,
   selectEligible,
 } from "./coach-calibration";
@@ -441,81 +438,6 @@ describe("the calibration gate applies its per-leader rule and a minimum sample"
     expect(verdict.withinTolerance).toBe(false);
     expect(verdict.shortfalls.join(" ")).toContain(
       `${MIN_CALIBRATION_LEADERS - 1} leaders compared, below ${MIN_CALIBRATION_LEADERS}`,
-    );
-  });
-});
-
-describe("the delivery gate reads the per-leader agreement it was recorded with", () => {
-  const VERSION = "calib-per-leader-test";
-  const REPORT = "calib-per-leader-report";
-  const conn = Database.getOrCreateConnection();
-
-  afterEach(async () => {
-    await conn
-      .deleteFrom("coach_calibration_runs")
-      .where("model_version", "=", VERSION)
-      .execute();
-    await conn.deleteFrom("coach_reports").where("id", "=", REPORT).execute();
-  });
-
-  async function reportScoredBy(version: string) {
-    await conn
-      .insertInto("coach_reports")
-      .values({
-        id: REPORT,
-        coach_id: "calib-per-leader-coach",
-        session_date: "2026-09-01",
-        source_session_id: `ff-${REPORT}`,
-        legacy_ids: [],
-        summary: {},
-        metrics: {},
-        body: {},
-      })
-      .execute();
-    await conn
-      .insertInto("coach_report_dimension_scores")
-      .values({
-        report_id: REPORT,
-        dimension_n: 1,
-        score: 4,
-        rationale: "r",
-        provenance: "machine",
-        model_version: version,
-      })
-      .execute();
-  }
-
-  it("a stored run whose leaders disagree holds delivery", async () => {
-    const run = passingRun();
-    run.perLeader.set("leader-0", agreement(6, 12));
-    await recordCalibration(Database, VERSION, run);
-    await reportScoredBy(VERSION);
-
-    expect((await calibrationShortfalls(Database, REPORT)).join(" ")).toContain(
-      "leader-0: composite MAE 12.00",
-    );
-  });
-
-  it("a stored passing run releases delivery", async () => {
-    await recordCalibration(Database, VERSION, passingRun());
-    await reportScoredBy(VERSION);
-    expect(await calibrationShortfalls(Database, REPORT)).toEqual([]);
-  });
-
-  it("a run recorded without per-leader agreement fails closed", async () => {
-    await conn
-      .insertInto("coach_calibration_runs")
-      .values({
-        model_version: VERSION,
-        composite_mae: 1,
-        dimensions_within_one: 0.95,
-        comparisons: 1000,
-        reports: 100,
-      })
-      .execute();
-    await reportScoredBy(VERSION);
-    expect((await calibrationShortfalls(Database, REPORT)).join(" ")).toContain(
-      "no per-leader agreement",
     );
   });
 });

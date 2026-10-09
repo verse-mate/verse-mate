@@ -19,7 +19,6 @@ export type SessionState = (typeof SESSION_STATES)[number];
 export const HOLD_KINDS = [
   "review",
   "reattributed",
-  "calibration",
   "governance",
   "cold-recall",
   "no-mailer",
@@ -30,7 +29,6 @@ export type HoldKind = (typeof HOLD_KINDS)[number];
 
 const WAITING_ON_A_PERSON: readonly HoldKind[] = [
   "review",
-  "calibration",
   "governance",
   "cold-recall",
   "no-mailer",

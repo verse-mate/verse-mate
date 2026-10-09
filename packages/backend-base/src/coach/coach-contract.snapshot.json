@@ -2620,7 +2620,6 @@
                         "enum": [
                           "review",
                           "reattributed",
-                          "calibration",
                           "governance",
                           "cold-recall",
                           "no-mailer",
@@ -5922,12 +5921,6 @@
               "type": "string"
             },
             "violations": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "shortfalls": {
               "type": "array",
               "items": {
                 "type": "string"

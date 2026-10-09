@@ -142,8 +142,8 @@ beforeAll(async () => {
             state: "delivery_pending",
             attempts: 0,
             reportId: "r-held",
-            reason: "held for calibration: no calibration is recorded for v3",
-            holdKind: "calibration",
+            reason: "held by governance: benchmark-name",
+            holdKind: "governance",
             action: null,
             parallelRun: false,
             updatedAt: new Date("2026-09-01T00:00:00Z"),
@@ -292,7 +292,7 @@ describe("the pipeline-failures surface carries why a session is held", () => {
       sessions: Array<{ reason?: string | null }>;
     };
     expect(body.sessions.map((s) => s.reason)).toEqual([
-      "held for calibration: no calibration is recorded for v3",
+      "held by governance: benchmark-name",
     ]);
   });
 

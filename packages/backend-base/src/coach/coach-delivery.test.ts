@@ -11,7 +11,6 @@ import { db as Database } from "database";
 import { sql } from "kysely";
 
 import { reattributeSession } from "./coach-attribution";
-import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import {
   CoachDeliveryService,
@@ -1168,145 +1167,33 @@ describe("a slow send cannot turn into a second copy", () => {
   });
 });
 
-describe("a model-produced report waits for its model version to be calibrated", () => {
-  const VERSION = "v-test-calibration";
-  const runs: number[] = [];
-
-  async function modelScored(id: string) {
-    await seedReport(id);
-    await conn
-      .insertInto("coach_report_dimension_scores")
-      .values({
-        report_id: id,
-        dimension_n: 1,
-        score: 4,
-        rationale: "a reason",
-        provenance: "machine",
-        model_version: VERSION,
-      })
-      .execute();
-  }
-
-  async function record(compositeMae: number, dimensionsWithinOne: number) {
-    runs.push(
-      await recordCalibration(Database, VERSION, {
-        overall: {
-          compositeMae,
-          dimensionsWithinOne,
-          comparisons: 660,
-          reports: 60,
-        },
-        perLeader: new Map(
-          Array.from({ length: 10 }, (_, i) => [
-            `calibrated-${i}`,
-            { compositeMae, dimensionsWithinOne, comparisons: 66, reports: 6 },
-          ]),
-        ),
-      }),
-    );
-  }
-
+describe("Delivery does not wait for a backtest", () => {
   beforeEach(async () => {
     await clear();
     await seedLeaders();
   });
-  afterEach(async () => {
-    await clear();
-    if (runs.length > 0) {
-      await conn
-        .deleteFrom("coach_calibration_runs")
-        .where("id", "in", runs.splice(0))
-        .execute();
-    }
-  });
+  afterEach(clear);
 
-  it("an uncalibrated model version blocks delivery and says so", async () => {
-    await modelScored("r-cal");
+  it("a machine-scored report whose model version was never calibrated is delivered", async () => {
+    await seedReport("r-uncalibrated");
+    await conn
+      .insertInto("coach_report_dimension_scores")
+      .values({
+        report_id: "r-uncalibrated",
+        dimension_n: 1,
+        score: 4,
+        rationale: "a reason",
+        provenance: "machine",
+        model_version: "v-never-calibrated",
+      })
+      .execute();
     const mailer = new FakeMailer();
     const result = await new CoachDeliveryService(Database, mailer).deliver({
-      reportId: "r-cal",
+      reportId: "r-uncalibrated",
       evidence: evidence(),
     });
-    expect(result.refusal).toBe("calibration-blocked");
-    expect(result.shortfalls?.join(" ")).toContain(VERSION);
-    expect(mailer.sent).toEqual([]);
-    const row = await conn
-      .selectFrom("coach_intake_sessions")
-      .select(["state", "retry_count"])
-      .where("report_id", "=", "r-cal")
-      .executeTakeFirstOrThrow();
-    expect(row).toEqual({ state: "delivery_pending", retry_count: 0 });
-  });
-
-  it("a held report is listed for an admin with the shortfall that holds it", async () => {
-    await modelScored("r-cal");
-    await record(9, 0.95);
-    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
-      reportId: "r-cal",
-      evidence: evidence(),
-    });
-    const { sessions: failures } = await new CoachService(
-      Database,
-    ).listPipelineFailures();
-    const held = failures.find((f) => f.reportId === "r-cal");
-    expect(held?.state).toBe("delivery_pending");
-    expect(held?.reason).toContain("calibration");
-    expect(held?.reason).toContain(VERSION);
-    expect(held?.reason).toContain("composite MAE");
-  });
-
-  it("the hold reason is cleared once the report goes out", async () => {
-    await modelScored("r-cal");
-    await new CoachDeliveryService(Database, new FakeMailer()).deliver({
-      reportId: "r-cal",
-      evidence: evidence(),
-    });
-    await record(3, 0.95);
-    const result = await new CoachDeliveryService(
-      Database,
-      new FakeMailer(),
-    ).deliver({ reportId: "r-cal", evidence: evidence() });
     expect(result.delivered).toBe(true);
-    const row = await conn
-      .selectFrom("coach_intake_sessions")
-      .select("hold_reason")
-      .where("report_id", "=", "r-cal")
-      .executeTakeFirstOrThrow();
-    expect(row.hold_reason).toBeNull();
-  });
-
-  it("agreement outside tolerance blocks delivery with the shortfall named", async () => {
-    await modelScored("r-cal");
-    await record(9, 0.95);
-    const mailer = new FakeMailer();
-    const result = await new CoachDeliveryService(Database, mailer).deliver({
-      reportId: "r-cal",
-      evidence: evidence(),
-    });
-    expect(result.refusal).toBe("calibration-blocked");
-    expect(result.shortfalls?.join(" ")).toContain("composite MAE");
-    expect(mailer.sent).toEqual([]);
-  });
-
-  it("agreement within tolerance lets it go out", async () => {
-    await modelScored("r-cal");
-    await record(3, 0.95);
-    const result = await new CoachDeliveryService(
-      Database,
-      new FakeMailer(),
-    ).deliver({ reportId: "r-cal", evidence: evidence() });
-    expect(result.delivered).toBe(true);
-  });
-
-  it("the latest measurement for the version is the one that counts", async () => {
-    await modelScored("r-cal");
-    await record(3, 0.95);
-    await record(3, 0.5);
-    const result = await new CoachDeliveryService(
-      Database,
-      new FakeMailer(),
-    ).deliver({ reportId: "r-cal", evidence: evidence() });
-    expect(result.refusal).toBe("calibration-blocked");
+    expect(mailer.sent.length).toBeGreaterThan(0);
   });
 });
 
@@ -1562,22 +1449,6 @@ describe("a report its leader was already emailed is never hidden again", () => 
             body: { feedback: { headline: "Not yet at Avery Hollis's level" } },
           })
           .where("id", "=", id)
-          .execute();
-      },
-    ],
-    [
-      "a calibration shortfall",
-      async (id: string) => {
-        await conn
-          .insertInto("coach_report_dimension_scores")
-          .values({
-            report_id: id,
-            dimension_n: 1,
-            score: 4,
-            rationale: "a reason",
-            provenance: "machine",
-            model_version: "v-never-calibrated",
-          })
           .execute();
       },
     ],

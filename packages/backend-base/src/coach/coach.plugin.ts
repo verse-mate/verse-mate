@@ -1025,7 +1025,6 @@ const plugin = new Elysia()
               delivered: t.Boolean(),
               refusal: t.Optional(t.String()),
               violations: t.Optional(t.Array(t.String())),
-              shortfalls: t.Optional(t.Array(t.String())),
               coldRecall: t.Optional(t.Array(t.String())),
               skipped: t.Optional(t.Array(t.String())),
             }),

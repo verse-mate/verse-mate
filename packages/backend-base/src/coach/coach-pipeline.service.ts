@@ -35,7 +35,7 @@ import type { CoachReportsWriter } from "./repository/coach-reports.repository";
  *
  * Each stage was built and tested on its own and then never joined up: the
  * worker ran intake and retrieval and stopped, so scoring, publishing,
- * delivery, frame extraction, coverage, retention and the calibration harness
+ * delivery, frame extraction, coverage and retention
  * were all unreachable code. Recordings were retrieved, stored and paid for,
  * and no report was ever produced from them.
  *
@@ -423,14 +423,12 @@ function deliveryOutcome(
     sourceSessionId,
     outcome:
       result.refusal === "governance-blocked" ||
-      result.refusal === "calibration-blocked" ||
       result.refusal === "cold-recall-improvement"
         ? "delivery-blocked"
         : "delivery-failed",
     reportId,
     detail:
       result.violations?.map((v) => v.rule).join(", ") ??
-      result.shortfalls?.join("; ") ??
       result.coldRecall?.join("; ") ??
       result.refusal,
   };

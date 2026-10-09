@@ -13,7 +13,6 @@ import { sql } from "kysely";
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { CoachAmendService } from "./coach-amend.service";
 import type { RetainResult } from "./coach-archive.service";
-import { recordCalibration } from "./coach-calibration";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import { CoachDeliveryService } from "./coach-delivery.service";
 import { CoachIntakeService } from "./coach-intake.service";
@@ -27,7 +26,7 @@ import type {
   FirefliesTranscript,
   FirefliesTranscriptDetail,
 } from "./fireflies.client";
-import { DIMENSIONS, RUBRIC_MODEL_VERSION } from "./rubric";
+import { DIMENSIONS } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
 const SESSION = "ff-life-1";
@@ -120,7 +119,6 @@ class Mailer {
   }
 }
 
-let calibrationRun: number | null = null;
 let leaderUser = "";
 
 async function clear() {
@@ -165,28 +163,8 @@ beforeEach(async () => {
       .returning("id")
       .executeTakeFirstOrThrow()
   ).id;
-  const leader = {
-    compositeMae: 2,
-    dimensionsWithinOne: 0.95,
-    comparisons: 66,
-    reports: 6,
-  };
-  calibrationRun = await recordCalibration(Database, RUBRIC_MODEL_VERSION, {
-    overall: { ...leader, comparisons: 660, reports: 60 },
-    perLeader: new Map(
-      Array.from({ length: 10 }, (_, i) => [`calibrated-${i}`, leader]),
-    ),
-  });
 });
-afterEach(async () => {
-  await clear();
-  if (calibrationRun !== null)
-    await conn
-      .deleteFrom("coach_calibration_runs")
-      .where("id", "=", calibrationRun)
-      .execute();
-  calibrationRun = null;
-});
+afterEach(clear);
 
 async function session() {
   return conn
