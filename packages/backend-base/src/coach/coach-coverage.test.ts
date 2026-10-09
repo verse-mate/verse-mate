@@ -358,3 +358,108 @@ describe("Leader not covered by the bot: an admin attests a leader is not teachi
     expect(await service.clearNotTeaching("cov-nobody")).toBe(false);
   });
 });
+
+describe("a not-teaching attestation lapses, and an observed session ends it", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
+
+  async function row(slug: string) {
+    const report = await new CoachCoverageService(Database).assess({
+      windowDays: 30,
+    });
+    return report.leaders.find((l) => l.coachId === slug);
+  }
+
+  it("Leader not covered by the bot: no observation and no attestation is uncovered, distinctly from an attested absence", async () => {
+    await leader("cov-silent", "cov-silent@example.test");
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: daysAgo(10),
+    });
+    expect(await row("cov-silent")).toMatchObject({
+      covered: false,
+      basis: "no-observation",
+      attestedAt: null,
+    });
+    expect(await row("cov-attested")).toMatchObject({
+      covered: true,
+      basis: "attested-not-teaching",
+    });
+  });
+
+  it("A not-teaching attestation lapses: older than eight weeks with no session since, it is uncovered and shown lapsed with its date", async () => {
+    const attested = daysAgo(57);
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: attested,
+    });
+    const lapsed = await row("cov-attested");
+    expect(lapsed).toMatchObject({
+      covered: false,
+      basis: "attestation-lapsed",
+      attestedAt: attested.toISOString(),
+    });
+    const report = await new CoachCoverageService(Database).assess({
+      windowDays: 30,
+    });
+    expect(report.uncovered.map((l) => l.coachId)).toContain("cov-attested");
+  });
+
+  it("an attestation inside eight weeks still covers", async () => {
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: daysAgo(55),
+    });
+    expect(await row("cov-attested")).toMatchObject({
+      covered: true,
+      basis: "attested-not-teaching",
+    });
+  });
+
+  it("a fresh attestation restarts the eight weeks", async () => {
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: daysAgo(70),
+    });
+    expect((await row("cov-attested"))?.basis).toBe("attestation-lapsed");
+    const admin = await conn
+      .insertInto("user")
+      .values({
+        email: "cov-attested@example.test",
+        firstName: "A",
+        lastName: "T",
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await new CoachCoverageService(Database).attestNotTeaching(
+      "cov-attested",
+      admin.id,
+    );
+    expect(await row("cov-attested")).toMatchObject({
+      covered: true,
+      basis: "attested-not-teaching",
+    });
+  });
+
+  it("An observed session ends an attestation: a session after it, then silence across the window, is uncovered", async () => {
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: daysAgo(50),
+    });
+    await observed("cov-attested", 40);
+    expect(await row("cov-attested")).toMatchObject({
+      covered: false,
+      basis: "no-observation",
+      attestedAt: null,
+      attestedBy: null,
+    });
+  });
+
+  it("a session observed before the attestation does not end it", async () => {
+    await leader("cov-attested", "cov-attested@example.test", {
+      not_teaching_attested_at: daysAgo(20),
+    });
+    await observed("cov-attested", 40);
+    expect(await row("cov-attested")).toMatchObject({
+      covered: true,
+      basis: "attested-not-teaching",
+    });
+  });
+});

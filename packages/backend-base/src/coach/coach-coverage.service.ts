@@ -28,7 +28,10 @@ import type { db } from "../shared/shared.plugin";
 export type CoverageBasis =
   | "observed"
   | "attested-not-teaching"
+  | "attestation-lapsed"
   | "no-observation";
+
+export const ATTESTATION_LAPSES_AFTER_DAYS = 56;
 
 export type AccountStatus = "has-account" | "no-account";
 
@@ -116,14 +119,23 @@ export class CoachCoverageService {
     const observations = await conn
       .selectFrom("coach_intake_sessions")
       .select("coach_id")
-      .select((eb) => eb.fn.countAll<string>().as("n"))
+      .select((eb) => [
+        eb.fn
+          .count<string>("source_session_id")
+          .filterWhere("observed_at", ">=", since)
+          .as("n"),
+        eb.fn.max("observed_at").as("last"),
+      ])
       .where("coach_id", "is not", null)
-      .where("observed_at", ">=", since)
       .groupBy("coach_id")
       .execute();
     const observedByCoach = new Map(
       observations.map((o) => [o.coach_id as string, Number(o.n)]),
     );
+    const lastObservedByCoach = new Map(
+      observations.map((o) => [o.coach_id as string, new Date(o.last)]),
+    );
+    const lapseBefore = Date.now() - ATTESTATION_LAPSES_AFTER_DAYS * 86_400_000;
 
     // The join path, stated because it is not obvious: the roster keys on
     // EMAIL, `coach_classes` keys on `user.id`. They meet only through `user`.
@@ -157,7 +169,14 @@ export class CoachCoverageService {
       const email = l.email.toLowerCase();
       const coachId = l.slug ?? l.id;
       const observed = observedByCoach.get(coachId) ?? 0;
-      const attested = Boolean(l.not_teaching_attested_at);
+      const attestedAt = l.not_teaching_attested_at
+        ? new Date(l.not_teaching_attested_at)
+        : null;
+      const lastObserved = lastObservedByCoach.get(coachId);
+      const recorded =
+        attestedAt !== null && !(lastObserved && lastObserved > attestedAt);
+      const lapsed = recorded && attestedAt.getTime() < lapseBefore;
+      const attested = recorded && !lapsed;
       const covered = observed > 0 || attested;
       const linkedClassName = classByEmail.get(email) ?? null;
       return {
@@ -170,15 +189,15 @@ export class CoachCoverageService {
             ? "observed"
             : attested
               ? "attested-not-teaching"
-              : "no-observation",
+              : lapsed
+                ? "attestation-lapsed"
+                : "no-observation",
         observedSessions: observed,
         accountStatus: withAccount.has(email) ? "has-account" : "no-account",
         linkedClassName,
         classAlert: linkedClassName !== null && observed === 0 && !attested,
-        attestedAt: l.not_teaching_attested_at
-          ? new Date(l.not_teaching_attested_at).toISOString()
-          : null,
-        attestedBy: attested ? l.attested_by ?? null : null,
+        attestedAt: recorded ? attestedAt.toISOString() : null,
+        attestedBy: recorded ? l.attested_by ?? null : null,
       };
     });
 
