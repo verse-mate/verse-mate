@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { getAiProvider, resetAiProviderCache } from "./ai-provider.factory";
+import type { AiChatOptions } from "./ai-provider.interface";
+import { OpenAiProvider } from "./openai.provider";
 import { StubAiProvider } from "./stub.provider";
 
 describe("AiProvider factory", () => {
@@ -140,5 +142,47 @@ describe("StubAiProvider responsesCreate", () => {
       maxOutputTokens: 5000,
     });
     expect(a.outputText).toBe(b.outputText);
+  });
+});
+
+describe("OpenAiProvider chatComplete", () => {
+  async function sentFor(opts: Partial<AiChatOptions>) {
+    const sent: Record<string, unknown>[] = [];
+    const provider = new OpenAiProvider("test-key");
+    (provider as unknown as { client: unknown }).client = {
+      chat: {
+        completions: {
+          create: async (body: Record<string, unknown>) => {
+            sent.push(body);
+            return {
+              model: "m",
+              choices: [{ message: { content: "{}" } }],
+            };
+          },
+        },
+      },
+    };
+    await provider.chatComplete({
+      model: "m",
+      messages: [{ role: "user", content: "hi" }],
+      ...opts,
+    });
+    return sent[0];
+  }
+
+  it("null settings send neither key, the same request as none at all", async () => {
+    const withNulls = await sentFor({
+      temperature: null,
+      reasoningEffort: null,
+    });
+    expect(withNulls).not.toHaveProperty("temperature");
+    expect(withNulls).not.toHaveProperty("reasoning_effort");
+    expect(withNulls).toEqual(await sentFor({}));
+  });
+
+  it("set settings are passed through", async () => {
+    expect(
+      await sentFor({ temperature: 0.2, reasoningEffort: "low" }),
+    ).toMatchObject({ temperature: 0.2, reasoning_effort: "low" });
   });
 });
