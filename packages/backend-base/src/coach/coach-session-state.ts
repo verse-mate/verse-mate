@@ -152,6 +152,11 @@ export const requeuable = (eb: Sessions) =>
     ]),
   ]);
 
+export const SKIPPED_LEADER_IS_GROUP = sql<boolean>`EXISTS (
+  SELECT 1 FROM coach_rotating_classes g
+  WHERE g.group_email = ANY(coach_intake_sessions.skipped_recipients)
+)`;
+
 export const SKIPPED_LEADER_ADDRESS = sql<string | null>`(
   SELECT l.email FROM coach_leaders l
   WHERE l.slug = coach_intake_sessions.coach_id

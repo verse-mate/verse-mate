@@ -761,6 +761,10 @@ export const COACH_REFUSALS = {
       409,
       "The session's leader has only a placeholder address: set their real address first",
     ),
+    "group-address": refusal(
+      409,
+      "The session's leader has only their rotating class's group address, which is never sent to: set their own address first",
+    ),
     "send-failed": refusal(
       400,
       "The mail service did not accept the request: try again",
@@ -794,6 +798,10 @@ export const COACH_REFUSALS = {
       'Name refused: it contains "<keyword>", a keyword of <leader>. Their sessions would be routed to that leader. Enter a different name or change that leader\'s keywords first.',
     ),
     "email-taken": refusal(409, "That email is already a leader"),
+    "group-address": refusal(
+      409,
+      "That is a rotating class's group address, which is never a leader's own address",
+    ),
   },
   "GET /coach/admin/leaders/:id/attribution": UNKNOWN_LEADER,
   "PUT /coach/admin/leaders/:id/attribution": {

@@ -214,6 +214,47 @@ describe("asking a leader to re-share a recording", () => {
   });
 });
 
+describe("a rotating leader with no address of their own is not asked to re-share", () => {
+  beforeAll(() => {
+    process.env[COACH_PIPELINE_LIVE] = "true";
+  });
+  afterAll(() => {
+    delete process.env[COACH_PIPELINE_LIVE];
+  });
+  beforeEach(clear);
+  afterEach(async () => {
+    await clear();
+    await conn
+      .deleteFrom("coach_rotating_classes")
+      .where("group_email", "=", "reshare-group@example.test")
+      .execute();
+  });
+
+  it("nothing is sent to the class's group address", async () => {
+    await seed("retrieval_failed", { reshare_requested_at: new Date() });
+    await conn
+      .insertInto("coach_rotating_classes")
+      .values({ name: "Harbor", group_email: "reshare-group@example.test" })
+      .execute();
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: "reshare-group@example.test" })
+      .where("slug", "=", COACH)
+      .execute();
+    const mailer = new FakeMailer();
+    const result = await new CoachReshareService(Database, mailer).send(
+      "ff-reshare",
+    );
+    await conn.deleteFrom("coach_leaders").where("slug", "=", COACH).execute();
+    expect(result).toEqual({
+      sent: false,
+      refusal: "group-address",
+      to: "reshare-group@example.test",
+    });
+    expect(mailer.sent).toEqual([]);
+  });
+});
+
 describe("a leader on a placeholder address is not asked to re-share", () => {
   beforeAll(() => {
     process.env[COACH_PIPELINE_LIVE] = "true";

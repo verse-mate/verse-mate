@@ -47,6 +47,7 @@ import {
   COLD_RECALL_FEEDBACK,
   type HoldKind,
   SKIPPED_LEADER_ADDRESS,
+  SKIPPED_LEADER_IS_GROUP,
   STALE_DELIVERY_CLAIM,
   releasable,
   requeuable,
@@ -539,6 +540,7 @@ export class CoachService {
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .select(SKIPPED_LEADER_ADDRESS.as("skipped_leader"))
+      .select(SKIPPED_LEADER_IS_GROUP.as("skipped_group"))
       .select(COLD_RECALL_FEEDBACK.as("cold_recall_feedback"))
       .select(sql<string>`count(*) OVER ()`.as("total"))
       .where(stuck)
@@ -568,7 +570,7 @@ export class CoachService {
             ? "unattributed: the transcript did not name which of the rotating class's leaders led"
             : "unattributed: no leader matched the session title"
           : r.state === "delivered" && r.skipped_leader
-            ? `delivered, but not emailed to ${r.skipped_leader}: placeholder address`
+            ? `delivered, but not emailed to ${r.skipped_leader}: ${r.skipped_group ? "a rotating class's group address, not the leader's own" : "placeholder address"}`
             : r.hold_reason ?? (r.release_required ? REATTRIBUTED_HOLD : null),
       holdKind: (r.hold_kind ??
         (r.release_required ? "reattributed" : null)) as HoldKind | null,
@@ -2033,6 +2035,7 @@ export class CoachService {
   ): Promise<
     | { ok: true; coach: CoachSummary }
     | { ok: false; reason: "duplicate" }
+    | { ok: false; reason: "group-address" }
     | { ok: false; reason: "no-slug" }
     | { ok: false; reason: "slug-taken"; slug: string }
     | {
@@ -2044,6 +2047,8 @@ export class CoachService {
     const email = input.email.trim().toLowerCase();
     if (await this.resolveByEmail(email))
       return { ok: false, reason: "duplicate" };
+    if (await isGroupAddress(this.db, email))
+      return { ok: false, reason: "group-address" };
 
     const name = input.name?.trim() || CoachService.nameFromEmail(email);
     const slug = leaderSlug(name);
@@ -2172,7 +2177,8 @@ export class CoachService {
       if (
         this.notification &&
         record.email &&
-        !isPlaceholderAddress(record.email)
+        !isPlaceholderAddress(record.email) &&
+        !(await isGroupAddress(this.db, record.email))
       ) {
         const portalUrl = `${process.env.APP_URL ?? ""}/coach`;
         // Read the result. Mailgun failures are RETURNED, not thrown (that is

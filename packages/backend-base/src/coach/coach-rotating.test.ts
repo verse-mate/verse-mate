@@ -210,6 +210,13 @@ describe("rotating classes (task 3.14)", () => {
     ).toEqual({ ok: false, refusal: "address-in-use" });
   });
 
+  it("a new leader cannot be added on a rotating class's group address", async () => {
+    await markRotating();
+    expect(
+      await new CoachService(Database).addLeader("admin", { email: GROUP }),
+    ).toEqual({ ok: false, reason: "group-address" });
+  });
+
   it("a class naming a leader not on the roster, or with no leader, is refused", async () => {
     expect(
       await saveRotatingClass(Database, {
