@@ -1100,3 +1100,19 @@ export const MonthlyReportEditSchema = t.Object({
   ),
   snapshots: t.Optional(t.Record(t.String(), t.String({ maxLength: 4000 }))),
 });
+
+export const IdentityAuditSchema = t.Object({
+  entries: t.Array(
+    t.Object({
+      kind: t.Union([t.Literal("leader"), t.Literal("admin")]),
+      id: t.Union([t.String(), t.Null()]),
+      email: t.String(),
+      account: t.Union([
+        t.Literal("none"),
+        t.Literal("unverified"),
+        t.Literal("verified"),
+      ]),
+    }),
+  ),
+  atRisk: t.Number(),
+});
