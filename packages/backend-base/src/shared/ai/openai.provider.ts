@@ -53,6 +53,9 @@ export class OpenAiProvider implements AiProvider {
           : { role: m.role, content: m.content },
       ),
       ...(opts.temperature !== undefined && { temperature: opts.temperature }),
+      ...(opts.reasoningEffort !== undefined && {
+        reasoning_effort: opts.reasoningEffort,
+      }),
       ...(opts.maxTokens !== undefined && { max_tokens: opts.maxTokens }),
       ...(opts.responseFormat && { response_format: opts.responseFormat }),
     });

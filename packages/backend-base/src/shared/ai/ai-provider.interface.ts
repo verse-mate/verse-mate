@@ -33,8 +33,10 @@ export interface AiChatOptions {
   model: string;
   /** Conversation messages in order. */
   messages: AiChatMessage[];
-  /** 0..2, sampling randomness. Provider may clamp. */
-  temperature?: number;
+  /** 0..2, sampling randomness. Provider may clamp. Null asks for the provider's default. */
+  temperature?: number | null;
+  /** Reasoning effort for models that take one. Null asks for the provider's default. */
+  reasoningEffort?: "minimal" | "low" | "medium" | "high" | null;
   /** Optional max tokens for the response. */
   maxTokens?: number;
   /**
