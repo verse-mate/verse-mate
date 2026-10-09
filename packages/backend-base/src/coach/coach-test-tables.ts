@@ -1,7 +1,10 @@
 import { afterAll, beforeAll } from "bun:test";
 import { db as Database } from "database";
 
-type SharedTable = "coach_dataset_meta" | "coach_admins";
+type SharedTable =
+  | "coach_dataset_meta"
+  | "coach_admins"
+  | "coach_monthly_reports";
 
 export function isolateTable(table: SharedTable): void {
   const conn = Database.getOrCreateConnection();

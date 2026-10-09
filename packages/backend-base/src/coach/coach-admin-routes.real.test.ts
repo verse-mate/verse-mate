@@ -498,6 +498,29 @@ describe("the upload and duplicate routes", () => {
   });
 });
 
+describe("the monthly report admin routes", () => {
+  it("list, edit, release and produce answer within their schemas, and refusals are coded", async () => {
+    const listed = await call("GET", "monthly-reports?month=2031-01");
+    expect(listed).toEqual({ status: 200, body: { reports: [] } });
+    expect(
+      await call("PUT", "monthly-reports/999999", { trends: ["x"] }),
+    ).toMatchObject({
+      status: 404,
+      body: { details: { refusal: "unknown-summary" } },
+    });
+    expect(await call("POST", "monthly-reports/999999/release")).toMatchObject({
+      status: 404,
+      body: { details: { refusal: "unknown-summary" } },
+    });
+    expect(
+      await call("POST", "monthly-reports/produce", { month: "2031-9" }),
+    ).toMatchObject({
+      status: 400,
+      body: { details: { refusal: "invalid-month" } },
+    });
+  });
+});
+
 describe("the rotating-class admin routes", () => {
   const GROUP = "real-routes-group@example.test";
   afterAll(async () => {

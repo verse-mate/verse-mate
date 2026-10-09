@@ -173,6 +173,11 @@ import {
   coachIntakeWorker,
   registerCoachIntakeCron,
 } from "../coach/coach-intake.worker";
+import { coachMonthlyQueue } from "../coach/coach-monthly.queue";
+import {
+  coachMonthlyWorker,
+  registerCoachMonthlyCron,
+} from "../coach/coach-monthly.worker";
 import { coachReminderQueue } from "../coach/coach-reminder.queue";
 import {
   coachReminderWorker,
@@ -226,6 +231,12 @@ export const QUEUE_WORKERS: QueueWorkerEntry[] = [
     side: "api",
     worker: coachReminderWorker,
     registerCron: registerCoachReminderCron,
+  },
+  {
+    name: "Coach monthly",
+    side: "api",
+    worker: coachMonthlyWorker,
+    registerCron: registerCoachMonthlyCron,
   },
 ];
 
@@ -328,6 +339,8 @@ setup.onStop(async () => {
   coachIntakeWorker.close();
   coachReminderQueue.close();
   coachReminderWorker.close();
+  coachMonthlyQueue.close();
+  coachMonthlyWorker.close();
 });
 
 export default setup;

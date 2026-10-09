@@ -714,7 +714,31 @@ const NOT_A_DUPLICATE = {
   "not-a-duplicate": refusal(404, "No likely duplicate waits on that session"),
 };
 
+const MONTHLY_REPORT = {
+  "unknown-summary": refusal(404, "Monthly summary not found"),
+};
+
 export const COACH_REFUSALS = {
+  "PUT /coach/admin/monthly-reports/:id": {
+    ...MONTHLY_REPORT,
+    "already-sent": refusal(
+      409,
+      "That summary was already sent, and a sent summary is kept as it was sent",
+    ),
+  },
+  "POST /coach/admin/monthly-reports/:id/release": {
+    ...MONTHLY_REPORT,
+    "not-held": refusal(409, "That summary is not held"),
+    "benchmark-name": refusal(
+      409,
+      "It still names the benchmark leader in another leader's summary: correct the text first",
+    ),
+    "parallel-run": refusal(
+      409,
+      "It was produced during the parallel run: it is kept for admins and never sent",
+    ),
+  },
+  "POST /coach/admin/monthly-reports/produce": INVALID_MONTH,
   "POST /coach/uploads": UPLOAD_REQUEST,
   "POST /coach/admin/uploads": UPLOAD_REQUEST,
   "POST /coach/uploads/:id/complete": UPLOAD_COMPLETE,
@@ -1030,4 +1054,49 @@ export const LikelyDuplicateSchema = t.Object({
   duplicateOf: t.Union([t.String(), t.Null()]),
   against: t.Union([t.Literal("upload"), t.Literal("host-report")]),
   canScoreInstead: t.Boolean(),
+});
+
+export const MonthlyReportRowSchema = t.Object({
+  id: t.Number(),
+  kind: t.Union([t.Literal("leader"), t.Literal("program")]),
+  coachId: t.Union([t.String(), t.Null()]),
+  month: t.String(),
+  state: t.Union([
+    t.Literal("held"),
+    t.Literal("pending"),
+    t.Literal("sending"),
+    t.Literal("sent"),
+    t.Literal("parallel-run"),
+  ]),
+  holdReason: t.Union([t.String(), t.Null()]),
+  skipped: t.Array(t.String()),
+  summary: t.Unknown(),
+});
+
+export const MonthlyReportEditSchema = t.Object({
+  strengths: t.Optional(
+    t.Array(t.Object({ text: t.String(), session: t.String() }), {
+      maxItems: 10,
+    }),
+  ),
+  growth: t.Optional(
+    t.Array(t.Object({ text: t.String(), session: t.String() }), {
+      maxItems: 10,
+    }),
+  ),
+  trends: t.Optional(t.Array(t.String({ maxLength: 4000 }), { maxItems: 10 })),
+  conversationGuide: t.Optional(
+    t.Array(t.Object({ label: t.String(), q: t.String() }), { maxItems: 10 }),
+  ),
+  focusGoals: t.Optional(
+    t.Array(t.String({ maxLength: 1000 }), { maxItems: 5 }),
+  ),
+  insights: t.Optional(t.Record(t.String(), t.String({ maxLength: 4000 }))),
+  executiveSummary: t.Optional(
+    t.Array(t.String({ maxLength: 4000 }), { maxItems: 5 }),
+  ),
+  initiatives: t.Optional(
+    t.Array(t.String({ maxLength: 2000 }), { maxItems: 5 }),
+  ),
+  snapshots: t.Optional(t.Record(t.String(), t.String({ maxLength: 4000 }))),
 });

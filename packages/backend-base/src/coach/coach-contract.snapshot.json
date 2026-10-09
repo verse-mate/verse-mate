@@ -7,6 +7,40 @@
     }
   },
   "refusals": {
+    "PUT /coach/admin/monthly-reports/:id": {
+      "unknown-summary": {
+        "status": 404,
+        "message": "Monthly summary not found"
+      },
+      "already-sent": {
+        "status": 409,
+        "message": "That summary was already sent, and a sent summary is kept as it was sent"
+      }
+    },
+    "POST /coach/admin/monthly-reports/:id/release": {
+      "unknown-summary": {
+        "status": 404,
+        "message": "Monthly summary not found"
+      },
+      "not-held": {
+        "status": 409,
+        "message": "That summary is not held"
+      },
+      "benchmark-name": {
+        "status": 409,
+        "message": "It still names the benchmark leader in another leader's summary: correct the text first"
+      },
+      "parallel-run": {
+        "status": 409,
+        "message": "It was produced during the parallel run: it is kept for admins and never sent"
+      }
+    },
+    "POST /coach/admin/monthly-reports/produce": {
+      "invalid-month": {
+        "status": 400,
+        "message": "month must be YYYY-MM"
+      }
+    },
     "POST /coach/uploads": {
       "invalid-date": {
         "status": 400,
@@ -2938,6 +2972,152 @@
             "availableMonths",
             "narrative"
           ]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "GET /coach/admin/monthly-reports",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "reports": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "number"
+                  },
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "const": "leader",
+                        "type": "string"
+                      },
+                      {
+                        "const": "program",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "coachId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "month": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "anyOf": [
+                      {
+                        "const": "held",
+                        "type": "string"
+                      },
+                      {
+                        "const": "pending",
+                        "type": "string"
+                      },
+                      {
+                        "const": "sending",
+                        "type": "string"
+                      },
+                      {
+                        "const": "sent",
+                        "type": "string"
+                      },
+                      {
+                        "const": "parallel-run",
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "holdReason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "skipped": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "summary": {}
+                },
+                "required": [
+                  "id",
+                  "kind",
+                  "coachId",
+                  "month",
+                  "state",
+                  "holdReason",
+                  "skipped",
+                  "summary"
+                ]
+              }
+            }
+          },
+          "required": ["reports"]
         },
         "400": {
           "type": "object",
@@ -7286,6 +7466,133 @@
       }
     },
     {
+      "route": "POST /coach/admin/monthly-reports/:id/release",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "released": {
+              "type": "boolean"
+            },
+            "sent": {
+              "type": "boolean"
+            }
+          },
+          "required": ["released", "sent"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "POST /coach/admin/monthly-reports/produce",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "produced": {
+              "type": "number"
+            }
+          },
+          "required": ["produced"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
       "route": "POST /coach/admin/pipeline-failures/:sourceSessionId/requeue",
       "response": {
         "200": {
@@ -9050,6 +9357,68 @@
             }
           },
           "required": ["rotatingOnly"]
+        },
+        "400": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "429": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        },
+        "500": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryAfter": {
+              "type": "number"
+            },
+            "data": {}
+          },
+          "required": ["error", "message"]
+        }
+      }
+    },
+    {
+      "route": "PUT /coach/admin/monthly-reports/:id",
+      "response": {
+        "200": {
+          "type": "object",
+          "properties": {
+            "edited": {
+              "type": "boolean"
+            }
+          },
+          "required": ["edited"]
         },
         "400": {
           "type": "object",

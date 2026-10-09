@@ -9,6 +9,7 @@ const API = [
   "Processing",
   "Verse notification",
   "Coach reminder",
+  "Coach monthly",
 ];
 
 async function startAs(role: WorkerRole) {
@@ -38,7 +39,11 @@ describe("the container starts only the workers its role owns", () => {
   it("the API container starts no media worker and schedules no media cron", async () => {
     const { ran, crons } = await startAs("api");
     expect(ran.sort()).toEqual([...API].sort());
-    expect(crons).toEqual(["Verse notification", "Coach reminder"]);
+    expect(crons).toEqual([
+      "Verse notification",
+      "Coach reminder",
+      "Coach monthly",
+    ]);
   });
 
   it("the media container starts only the media workers and their crons", async () => {
@@ -56,6 +61,7 @@ describe("the container starts only the workers its role owns", () => {
         "Coach intake",
         "Verse notification",
         "Coach reminder",
+        "Coach monthly",
       ].sort(),
     );
   });
