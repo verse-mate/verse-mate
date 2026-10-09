@@ -2057,6 +2057,28 @@ describe("A New Scoring Version Is Reviewed Before It Reaches Each Leader", () =
     expect(result.outcome).toBe("scored-and-delivered");
   });
 
+  it.each([
+    ["a different language model", { languageModel: "an-older-model" }],
+    [
+      "different settings",
+      { settings: { temperature: 0.2, reasoningEffort: null } },
+    ],
+  ])(
+    "a leader delivered under the same prompt but %s is held: the version is the model, the prompt and the settings together",
+    async (_what, differs) => {
+      await deliveredBefore({
+        ...currentVersion(),
+        ...differs,
+      } as ScoringVersion);
+      await seedRetained();
+      const mailer = new FakeMailer();
+      const [result] = await pipeline(mailer).run();
+      expect(result.outcome).toBe("scored-awaiting-review");
+      expect((await holdOf("ff-pipe-1")).hold_kind).toBe("scoring-version");
+      expect(mailer.sent).toEqual([]);
+    },
+  );
+
   it("another leader's delivery under the version does not release this leader's first report", async () => {
     await deliveredBefore(currentVersion(), "other-leader", "pipe-other-coach");
     await seedRetained();

@@ -45,13 +45,27 @@ export interface ScoringVersion {
   settings: typeof SCORING_SETTINGS;
 }
 
+const FRAMING_SAMPLE = {
+  transcript: [
+    { speakerId: "{speaker}", isLeader: false, text: "{text}" },
+    { speakerId: "{speaker}", isLeader: true, text: "{text}" },
+  ],
+  title: "{title}",
+  frame: new Uint8Array(),
+};
+
 export function promptVersion(): string {
-  return createHash("sha256")
-    .update(CoachScoringService.buildInstructions())
-    .update("\0")
-    .update(CoachScoringService.buildVisionInstructions())
-    .digest("hex")
-    .slice(0, 12);
+  const hash = createHash("sha256");
+  for (const part of [
+    CoachScoringService.buildInstructions(),
+    CoachScoringService.transcriptMessage(FRAMING_SAMPLE.transcript),
+    truncationNote(),
+    CoachScoringService.buildVisionInstructions(),
+    CoachScoringService.titleMessage(FRAMING_SAMPLE.title),
+    CoachScoringService.frameUrl(FRAMING_SAMPLE.frame),
+  ])
+    hash.update(part).update("\0");
+  return hash.digest("hex").slice(0, 12);
 }
 
 export const MAX_TRANSCRIPT_CHARS = 200_000;
@@ -73,9 +87,13 @@ function fenced(label: string, body: string): string {
   ].join("\n");
 }
 
+function truncationNote(): string {
+  return `\n[transcript truncated at ${MAX_TRANSCRIPT_CHARS} characters]`;
+}
+
 function boundedTranscript(text: string): string {
   if (text.length <= MAX_TRANSCRIPT_CHARS) return text;
-  return `${text.slice(0, MAX_TRANSCRIPT_CHARS)}\n[transcript truncated at ${MAX_TRANSCRIPT_CHARS} characters]`;
+  return `${text.slice(0, MAX_TRANSCRIPT_CHARS)}${truncationNote()}`;
 }
 
 export function distributionHold(
@@ -267,20 +285,33 @@ export class CoachScoringService {
     ].join("\n");
   }
 
-  async scoreSession(input: ScoringInput): Promise<ScoringResult> {
-    const transcript = boundedTranscript(
-      input.transcript
-        .map((l) => `${l.isLeader ? "LEADER" : l.speakerId}: ${l.text}`)
-        .join("\n"),
+  static transcriptMessage(transcript: ScoringInput["transcript"]): string {
+    return fenced(
+      "SESSION_TRANSCRIPT",
+      boundedTranscript(
+        transcript
+          .map((l) => `${l.isLeader ? "LEADER" : l.speakerId}: ${l.text}`)
+          .join("\n"),
+      ),
     );
+  }
 
+  static titleMessage(title: string): string {
+    return fenced("SESSION_TITLE", title.slice(0, MAX_TITLE_CHARS));
+  }
+
+  static frameUrl(frame: Uint8Array): string {
+    return `data:image/jpeg;base64,${Buffer.from(frame).toString("base64")}`;
+  }
+
+  async scoreSession(input: ScoringInput): Promise<ScoringResult> {
     const response = await this.ai.chatComplete({
       model: this.model,
       messages: [
         { role: "system", content: CoachScoringService.buildInstructions() },
         {
           role: "user",
-          content: fenced("SESSION_TRANSCRIPT", transcript),
+          content: CoachScoringService.transcriptMessage(input.transcript),
         },
       ],
       maxTokens: SCORING_MAX_OUTPUT_TOKENS,
@@ -419,14 +450,8 @@ export class CoachScoringService {
         },
         {
           role: "user",
-          content: fenced(
-            "SESSION_TITLE",
-            input.sessionTitle.slice(0, MAX_TITLE_CHARS),
-          ),
-          images: (input.frames ?? []).map(
-            (f) =>
-              `data:image/jpeg;base64,${Buffer.from(f).toString("base64")}`,
-          ),
+          content: CoachScoringService.titleMessage(input.sessionTitle),
+          images: (input.frames ?? []).map(CoachScoringService.frameUrl),
         },
       ],
       maxTokens: 1000,
