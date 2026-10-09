@@ -498,6 +498,16 @@ describe("the upload and duplicate routes", () => {
   });
 });
 
+describe("the identity audit route", () => {
+  it("lists the roster and admins with their account state", async () => {
+    const audit = await call("GET", "identity-audit");
+    expect(audit.status).toBe(200);
+    expect(
+      audit.body?.entries.find((e: { id: string }) => e.id === LEADER),
+    ).toMatchObject({ kind: "leader", email: LEADER_EMAIL });
+  });
+});
+
 describe("the monthly report admin routes", () => {
   it("list, edit, release and produce answer within their schemas, and refusals are coded", async () => {
     const listed = await call("GET", "monthly-reports?month=2031-01");

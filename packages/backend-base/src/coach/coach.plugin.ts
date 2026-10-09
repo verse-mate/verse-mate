@@ -15,6 +15,7 @@ import { createRateLimit } from "../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../common/response-schemas";
 import { getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
+import { CoachIdentityService } from "./coach-identity.service";
 import { CoachMonthlyService } from "./coach-monthly.service";
 import { MINTED_URL_LIFETIME_SECONDS } from "./coach-retained-media.service";
 import { HOLD_KINDS } from "./coach-session-state";
@@ -29,6 +30,7 @@ import {
   type CoachRefusalRoute,
   CoverageReportSchema,
   EMAIL_RULE,
+  IdentityAuditSchema,
   ImprovementsEditBodySchema,
   LeaderMonthlyResponseSchema,
   LikelyDuplicateSchema,
@@ -1283,6 +1285,22 @@ const plugin = new Elysia()
           params: t.Object({ sourceSessionId: t.String() }),
           response: {
             200: t.Object({ queued: t.Boolean() }),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/admin/identity-audit",
+        async ({ store, currentUserId }) => {
+          if (!currentUserId)
+            throw new UnauthorizedError("Authentication required");
+          if (!(await store.coachService.isAdmin(currentUserId)))
+            throw new ForbiddenError("Admin access required");
+          return new CoachIdentityService(store.db, store.notification).audit();
+        },
+        {
+          response: {
+            200: IdentityAuditSchema,
             ...StandardErrorResponses,
           },
         },
