@@ -36,9 +36,9 @@ import {
 export const DEFAULT_SCORING_MODEL = "gpt-5";
 
 export const SCORING_REQUEST = {
-  textMaxTokens: 8000,
+  textMaxTokens: 32000,
   visionMaxTokens: 4000,
-  leaderCueMaxTokens: 8000,
+  leaderCueMaxTokens: 16000,
   leaderCueReasoningEffort: "low" as const,
   maxTitleChars: 500,
   responseFormat: { type: "json_object" } as { type: "json_object" | "text" },
