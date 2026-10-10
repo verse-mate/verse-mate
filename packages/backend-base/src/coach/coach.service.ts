@@ -1401,6 +1401,7 @@ export class CoachService {
       return { ok: false as const, refusal: "taken" as const };
     };
     if (holder && holder.id !== found.slug) return refuseTaken();
+    if (await isGroupAddress(this.db, found.new_email)) return refuseTaken();
     const change = await conn
       .transaction()
       .execute(async (trx) => {
