@@ -98,6 +98,11 @@ describe("the identity gate holds under a re-registration attempt (task 10.7)", 
       .set({ email: MOVED_EMAIL })
       .where("id", "=", original)
       .execute();
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: true, email_verified_at: new Date() })
+      .where("id", "=", original)
+      .execute();
     newcomer = await account(LEADER_EMAIL);
     expect(await get("me", newcomer)).toBe(403);
     expect(await get("reports", newcomer)).toBe(403);

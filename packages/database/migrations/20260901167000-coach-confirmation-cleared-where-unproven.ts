@@ -10,22 +10,64 @@ export async function clearUnprovenRosterConfirmations(
   `.execute(db);
 }
 
+const STAMP_164000 = sql`
+  CREATE OR REPLACE FUNCTION stamp_email_verified_at() RETURNS trigger AS $$
+  BEGIN
+    IF NOT NEW."emailVerified" THEN
+      NEW.email_verified_at := NULL;
+    ELSIF TG_OP = 'INSERT' OR NOT OLD."emailVerified" THEN
+      NEW.email_verified_at := now();
+    END IF;
+    RETURN NEW;
+  END
+  $$ LANGUAGE plpgsql
+`;
+
 export async function up(db: Kysely<Database>): Promise<void> {
   await sql`
+    CREATE OR REPLACE FUNCTION stamp_email_verified_at() RETURNS trigger AS $$
+    BEGIN
+      IF TG_OP = 'UPDATE'
+        AND lower(trim(NEW.email)) IS DISTINCT FROM lower(trim(OLD.email)) THEN
+        NEW."emailVerified" := false;
+      END IF;
+      IF NOT NEW."emailVerified" THEN
+        NEW.email_verified_at := NULL;
+      ELSIF TG_OP = 'INSERT' AND NEW.email_verified_at IS NULL THEN
+        NEW.email_verified_at := now();
+      END IF;
+      RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql
+  `.execute(db);
+  await sql`DROP TRIGGER stamp_email_verified_at ON "user"`.execute(db);
+  await sql`
+    CREATE TRIGGER stamp_email_verified_at
+    BEFORE INSERT OR UPDATE OF "emailVerified", email ON "user"
+    FOR EACH ROW EXECUTE FUNCTION stamp_email_verified_at()
+  `.execute(db);
+  await sql`
     CREATE FUNCTION coach_clear_unproven_confirmation(address text) RETURNS void AS $$
-      UPDATE "user" u SET "emailVerified" = false
-      WHERE lower(u.email) = lower(trim(address))
-        AND u."emailVerified"
-        AND u.email_verified_at IS NULL
-        AND NOT (
-          u.password IS NULL
-          AND EXISTS (SELECT 1 FROM user_sso_accounts s WHERE s.user_id = u.id)
-          AND NOT EXISTS (
-            SELECT 1 FROM user_sso_accounts s
-            WHERE s.user_id = u.id
-              AND lower(trim(s.email)) <> lower(trim(u.email))
+      WITH cleared AS (
+        SELECT u.id, u.email FROM "user" u
+        WHERE lower(trim(u.email)) = lower(trim(address))
+          AND u."emailVerified"
+          AND u.email_verified_at IS NULL
+          AND NOT (
+            u.password IS NULL
+            AND EXISTS (SELECT 1 FROM user_sso_accounts s WHERE s.user_id = u.id)
+            AND NOT EXISTS (
+              SELECT 1 FROM user_sso_accounts s
+              WHERE s.user_id = u.id
+                AND lower(trim(s.email)) <> lower(trim(u.email))
+            )
           )
-        )
+      ), foreign_links AS (
+        DELETE FROM user_sso_accounts s USING cleared c
+        WHERE s.user_id = c.id AND lower(trim(s.email)) <> lower(trim(c.email))
+      )
+      UPDATE "user" SET "emailVerified" = false
+      WHERE id IN (SELECT id FROM cleared)
     $$ LANGUAGE sql
   `.execute(db);
   await sql`
@@ -56,4 +98,11 @@ export async function down(db: Kysely<Database>): Promise<void> {
   await sql`DROP FUNCTION IF EXISTS coach_clear_unproven_confirmation(text)`.execute(
     db,
   );
+  await STAMP_164000.execute(db);
+  await sql`DROP TRIGGER stamp_email_verified_at ON "user"`.execute(db);
+  await sql`
+    CREATE TRIGGER stamp_email_verified_at
+    BEFORE INSERT OR UPDATE OF "emailVerified" ON "user"
+    FOR EACH ROW EXECUTE FUNCTION stamp_email_verified_at()
+  `.execute(db);
 }
