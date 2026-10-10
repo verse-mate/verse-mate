@@ -658,7 +658,7 @@ const PARALLEL_RUN =
 const NO_MAILER = "No mailer is configured";
 
 export interface CoachRefusal {
-  status: 400 | 404 | 409;
+  status: 400 | 403 | 404 | 409;
   message: string;
   template?: true;
 }
@@ -799,6 +799,12 @@ const MONTHLY_REPORT = {
 };
 
 export const COACH_REFUSALS = {
+  "GET /coach/me": {
+    "confirm-email": refusal(
+      403,
+      "Confirm your email to see your coaching reports: open the link we send to your address",
+    ),
+  },
   "POST /coach/admin/admins": {
     "no-verified-account": refusal(
       409,

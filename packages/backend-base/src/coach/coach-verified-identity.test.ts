@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 import { confirmRosterAddressesAgain } from "database/migrations/20260901164000-coach-identity-binding";
+import { sql } from "kysely";
 
 import { CoachIdentityService } from "./coach-identity.service";
 import { CoachService } from "./coach.service";
@@ -282,6 +283,100 @@ describe("the identity migration asks roster and admin addresses to confirm agai
           .where("email", "=", ADMIN)
           .executeTakeFirstOrThrow()
       ).user_id,
+    ).toBeNull();
+  });
+});
+
+describe("only a confirmation made from this deploy on binds, whatever order the roster arrives in", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  async function confirmedBeforeDeploy(email: string) {
+    const id = await account(email, true);
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    return id;
+  }
+
+  it("an account confirmed before the deploy, on a leader address the roster gains afterwards, claims nothing until it confirms again", async () => {
+    const userId = await confirmedBeforeDeploy(LEADER);
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: "verified-late", email: LEADER, name: "Late Leader" })
+      .execute();
+    const service = new CoachService(Database);
+    expect(await service.leaderIdFor(userId)).toBeNull();
+    expect(await service.needsEmailConfirmation(userId)).toBe(true);
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: sql`now()` })
+      .where("id", "=", userId)
+      .execute();
+    expect(await service.leaderIdFor(userId)).toBe("verified-late");
+    expect(await service.needsEmailConfirmation(userId)).toBe(false);
+  });
+
+  it("the same holds for an admin row, an invite binding and a grant", async () => {
+    await conn.insertInto("coach_admins").values({ email: ADMIN }).execute();
+    const admin = await confirmedBeforeDeploy(ADMIN);
+    expect(await new CoachService(Database).isAdmin(admin)).toBe(false);
+    expect(
+      await new CoachIdentityService(Database, null).grantAdmin(ADMIN, null),
+    ).toEqual({ ok: false, refusal: "no-verified-account" });
+    const invitee = await confirmedBeforeDeploy(LEADER);
+    const inviter = await account("verified-inviter@example.test", true);
+    try {
+      await new CoachService(Database).addLeader(inviter, {
+        email: LEADER,
+        name: "Invited Late",
+      });
+      expect(
+        (
+          await conn
+            .selectFrom("coach_leaders")
+            .select("user_id")
+            .where("email", "=", LEADER)
+            .executeTakeFirstOrThrow()
+        ).user_id,
+      ).toBeNull();
+      expect(invitee).toBeTruthy();
+    } finally {
+      await conn
+        .deleteFrom("user")
+        .where("email", "=", "verified-inviter@example.test")
+        .execute();
+    }
+  });
+
+  it("a new confirmation stamps the time, and changing the address clears it", async () => {
+    const id = await account(LEADER, false);
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: true })
+      .where("id", "=", id)
+      .execute();
+    const stamped = await conn
+      .selectFrom("user")
+      .select("email_verified_at")
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+    expect(stamped.email_verified_at).not.toBeNull();
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: false })
+      .where("id", "=", id)
+      .execute();
+    expect(
+      (
+        await conn
+          .selectFrom("user")
+          .select("email_verified_at")
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow()
+      ).email_verified_at,
     ).toBeNull();
   });
 });

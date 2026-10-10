@@ -43,8 +43,8 @@ export class ForbiddenError extends ApiError {
   status = 403;
   code = "FORBIDDEN";
 
-  constructor(message = "Access forbidden") {
-    super(message);
+  constructor(message = "Access forbidden", details?: any) {
+    super(message, details);
   }
 }
 

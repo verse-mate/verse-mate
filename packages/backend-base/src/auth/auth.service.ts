@@ -192,14 +192,23 @@ export class AuthService {
         .selectAll()
         .executeTakeFirstOrThrow();
 
-      if (!emailVerified && user.password)
-        throw new ConflictError(
-          "The sign-in provider has not verified this email. Sign in with your password instead.",
-        );
+      if (!emailVerified && normalizedEmail) {
+        const otherLinks = await this.db
+          .getOrCreateConnection()
+          .selectFrom("user_sso_accounts")
+          .select("id")
+          .where("user_id", "=", user.id)
+          .where("provider_user_id", "!=", providerUserId)
+          .executeTakeFirst();
+        if (user.password || otherLinks)
+          throw new ConflictError(
+            "The sign-in provider has not verified this email. Sign in another way instead.",
+          );
+      }
 
       const confirms =
         emailVerified &&
-        !user.emailVerified &&
+        (!user.emailVerified || !user.email_verified_at) &&
         user.email.trim().toLowerCase() === normalizedEmail;
       const changed = picture && picture !== user.imageSrc;
       if (confirms || changed) {
@@ -210,7 +219,9 @@ export class AuthService {
             ...(changed
               ? { imageSrc: picture, picture_source: provider as any }
               : {}),
-            ...(confirms ? { emailVerified: true } : {}),
+            ...(confirms
+              ? { emailVerified: true, email_verified_at: sql`now()` }
+              : {}),
           })
           .where("id", "=", user.id)
           .execute();
@@ -278,8 +289,9 @@ export class AuthService {
         updates.password = null;
       }
 
-      if (!user.emailVerified && emailVerified) {
+      if (emailVerified) {
         updates.emailVerified = true;
+        updates.email_verified_at = sql`now()`;
       }
       if (picture && picture !== user.imageSrc) {
         updates.imageSrc = picture;
@@ -679,7 +691,7 @@ export class AuthService {
       throw new NotFoundError("User not found");
     }
 
-    if (user.emailVerified) {
+    if (user.emailVerified && user.email_verified_at) {
       throw new ConflictError("User already verified");
     }
 
@@ -708,6 +720,7 @@ export class AuthService {
       .updateTable("user")
       .set({
         emailVerified: true,
+        email_verified_at: sql`now()`,
       })
       .where("id", "=", user.id)
       .execute();

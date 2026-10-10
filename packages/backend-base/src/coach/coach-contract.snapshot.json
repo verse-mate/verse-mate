@@ -7,6 +7,12 @@
     }
   },
   "refusals": {
+    "GET /coach/me": {
+      "confirm-email": {
+        "status": 403,
+        "message": "Confirm your email to see your coaching reports: open the link we send to your address"
+      }
+    },
     "POST /coach/admin/admins": {
       "no-verified-account": {
         "status": 409,

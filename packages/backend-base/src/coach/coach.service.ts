@@ -1216,7 +1216,7 @@ export class CoachService {
       FROM "user" u
       WHERE l.slug = ${slug} AND l.user_id IS NULL
         AND lower(u.email) = ${email.trim().toLowerCase()}
-        AND u."emailVerified" = true
+        AND u."emailVerified" = true AND u.email_verified_at IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM coach_leaders b WHERE b.user_id = u.id)
     `.execute(this.db.getOrCreateConnection());
   }
@@ -1438,7 +1438,7 @@ export class CoachService {
           FROM "user" u
           WHERE l.slug = ${request.slug}
             AND lower(u.email) = ${request.new_email}
-            AND u."emailVerified" = true
+            AND u."emailVerified" = true AND u.email_verified_at IS NOT NULL
             AND NOT EXISTS (SELECT 1 FROM coach_leaders b WHERE b.user_id = u.id)
         `.execute(trx);
         if (leader.email !== request.new_email)
@@ -1645,6 +1645,7 @@ export class CoachService {
       WHERE lower(email) = ${email} AND user_id IS NULL
         AND NOT EXISTS (SELECT 1 FROM coach_leaders b WHERE b.user_id = ${userId})
         AND (SELECT count(*) FROM coach_leaders c WHERE lower(c.email) = ${email}) = 1
+        AND EXISTS (SELECT 1 FROM "user" f WHERE f.id = ${userId} AND f.email_verified_at IS NOT NULL)
       RETURNING slug, id
     `
       .execute(conn)
@@ -1654,6 +1655,25 @@ export class CoachService {
       });
     const row = claimed.rows[0];
     return row ? this.resolveById(row.slug ?? String(row.id)) : boundRecord();
+  }
+
+  async needsEmailConfirmation(userId: string): Promise<boolean> {
+    const user = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .select(["email", "email_verified_at"])
+      .where("id", "=", userId as never)
+      .executeTakeFirst();
+    if (!user?.email || user.email_verified_at) return false;
+    const email = user.email.trim().toLowerCase();
+    const unbound = await sql<{ n: number }>`
+      SELECT count(*)::int AS n FROM (
+        SELECT 1 FROM coach_leaders WHERE lower(email) = ${email} AND user_id IS NULL
+        UNION ALL
+        SELECT 1 FROM coach_admins WHERE lower(email) = ${email} AND user_id IS NULL
+      ) pending
+    `.execute(this.db.getOrCreateConnection());
+    return (unbound.rows[0]?.n ?? 0) > 0;
   }
 
   async isCoach(userId: string): Promise<boolean> {
@@ -1677,6 +1697,7 @@ export class CoachService {
       UPDATE coach_admins SET user_id = ${userId}
       WHERE lower(email) = ${email} AND user_id IS NULL
         AND NOT EXISTS (SELECT 1 FROM coach_admins b WHERE b.user_id = ${userId})
+        AND EXISTS (SELECT 1 FROM "user" f WHERE f.id = ${userId} AND f.email_verified_at IS NOT NULL)
       RETURNING email
     `
       .execute(conn)

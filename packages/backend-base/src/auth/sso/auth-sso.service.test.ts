@@ -401,6 +401,106 @@ describe("AuthService - SSO Operations", () => {
       }
     });
 
+    it("a stale unverified link no longer signs in to an account that has another way in", async () => {
+      const providerUserId = `stale-sso-${faker.string.uuid()}`;
+      const userEmail =
+        `stale-sso-${faker.string.uuid()}@example.com`.toLowerCase();
+      const owner = await db
+        .getOrCreateConnection()
+        .insertInto("user")
+        .values({
+          email: userEmail,
+          firstName: faker.person.firstName(),
+          lastName: faker.person.lastName(),
+          password: null,
+          emailVerified: true,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      await userSsoAccountRepository.create({
+        user_id: owner.id,
+        provider: SsoProviderEnum.apple,
+        provider_user_id: `apple-${owner.id}`,
+        email: userEmail,
+      });
+      await userSsoAccountRepository.create({
+        user_id: owner.id,
+        provider: SsoProviderEnum.google,
+        provider_user_id: providerUserId,
+        email: userEmail,
+      });
+      try {
+        await expect(
+          authService.loginWithSSO(
+            SsoProviderEnum.google,
+            {
+              providerUserId,
+              email: userEmail,
+              emailVerified: false,
+              name: "Someone Else",
+            },
+            mockJwt as any,
+          ),
+        ).rejects.toBeInstanceOf(ConflictError);
+      } finally {
+        await db
+          .getOrCreateConnection()
+          .deleteFrom("user")
+          .where("id", "=", owner.id)
+          .execute();
+      }
+    });
+
+    it("a provider-verified sign-in stamps a confirmation made before this deploy as fresh", async () => {
+      const providerUserId = `stamp-${faker.string.uuid()}`;
+      const userEmail =
+        `stamp-${faker.string.uuid()}@example.com`.toLowerCase();
+      const user = await db
+        .getOrCreateConnection()
+        .insertInto("user")
+        .values({
+          email: userEmail,
+          firstName: faker.person.firstName(),
+          lastName: faker.person.lastName(),
+          password: null,
+          emailVerified: true,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      await db
+        .getOrCreateConnection()
+        .updateTable("user")
+        .set({ email_verified_at: null })
+        .where("id", "=", user.id)
+        .execute();
+      await userSsoAccountRepository.create({
+        user_id: user.id,
+        provider: SsoProviderEnum.google,
+        provider_user_id: providerUserId,
+        email: userEmail,
+      });
+      try {
+        await authService.loginWithSSO(
+          SsoProviderEnum.google,
+          { providerUserId, email: userEmail, emailVerified: true, name: "T" },
+          mockJwt as any,
+        );
+        const after = await db
+          .getOrCreateConnection()
+          .selectFrom("user")
+          .select("email_verified_at")
+          .where("id", "=", user.id)
+          .executeTakeFirstOrThrow();
+        expect(after.email_verified_at).not.toBeNull();
+      } finally {
+        await db
+          .getOrCreateConnection()
+          .deleteFrom("user")
+          .where("id", "=", user.id)
+          .execute();
+      }
+    });
+
     it("refuses to link or sign in to an existing account when the provider did not verify the email", async () => {
       const providerUserId = `unverified-${faker.string.uuid()}`;
       const userEmail =
