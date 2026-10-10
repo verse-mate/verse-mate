@@ -5,6 +5,7 @@ import {
   type TimedLine,
   checkQuoteAt,
   formatTimestamp,
+  spokenText,
   timedLinesFrom,
 } from "./coach-transcript";
 
@@ -177,6 +178,28 @@ describe("A key moment's quote is not in the transcript", () => {
     ];
     expect(checkQuoteAt(untimed, "we start Ruth today", "00:00:00")).toBe(
       "timestamp-not-at-quote",
+    );
+  });
+});
+
+describe("a rendered transcript line with a full-name speaker label", () => {
+  it("strips the time and a multi-word speaker label, as a recording bot labels speakers by full name", () => {
+    expect(
+      spokenText(
+        "[00:00:10] Leader Alpha Example: Lena, would you read for us?",
+      ),
+    ).toBe("Lena, would you read for us?");
+  });
+
+  it("leaves a colon inside the spoken words alone when the line has no time stamp", () => {
+    expect(spokenText("Note: this is said aloud")).toBe(
+      "Note: this is said aloud",
+    );
+  });
+
+  it("does not take a sentence as a speaker label", () => {
+    expect(spokenText("[00:00:10] He said this. Then: more")).toBe(
+      "He said this. Then: more",
     );
   });
 });

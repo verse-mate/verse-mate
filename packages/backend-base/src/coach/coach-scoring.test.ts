@@ -10,6 +10,7 @@ import {
   authenticityBaseline,
   promptVersion,
 } from "./coach-scoring.service";
+import type { TimedLine } from "./coach-transcript";
 import { DIMENSIONS, RUBRIC_MODEL_VERSION, composeBaseScore } from "./rubric";
 
 const conn = Database.getOrCreateConnection();
@@ -999,7 +1000,6 @@ describe("token budgets on a reasoning model", () => {
     });
     expect(asked[0]).toBe(SCORING_REQUEST.leaderCueMaxTokens);
     expect(SCORING_REQUEST.leaderCueMaxTokens).toBeGreaterThanOrEqual(8000);
-    expect(SCORING_REQUEST.leaderCueMaxTokens).toBeGreaterThanOrEqual(4000);
     expect(SCORING_REQUEST.visionMaxTokens).toBeGreaterThanOrEqual(4000);
   });
 });
@@ -1029,5 +1029,64 @@ describe("the leader-cue prompt", () => {
     expect(prompt).toContain("the person who PERFORMS the cue");
     expect(prompt).toContain("never the person they call on");
     expect(prompt).toContain("leave people empty");
+  });
+
+  it("keeps the opening-prayer cue as the leader the prayer names, never the person praying", () => {
+    const prompt = CoachScoringService.buildLeaderCueInstructions();
+    expect(prompt).toContain(
+      "opening_prayer: the leader the opening prayer names, asking help for them as they lead",
+    );
+    expect(prompt).toContain("never the person praying)");
+  });
+
+  it("a change to the leader-cue prompt text is a different prompt version", () => {
+    const before = promptVersion();
+    const original = CoachScoringService.buildLeaderCueInstructions;
+    CoachScoringService.buildLeaderCueInstructions = () =>
+      `${original()} changed`;
+    try {
+      expect(promptVersion()).not.toBe(before);
+    } finally {
+      CoachScoringService.buildLeaderCueInstructions = original;
+    }
+  });
+});
+
+describe("the leader-cue answer quotes a rendered line", () => {
+  it("a cue line quoted with its time and a full-name speaker label still names the leader", async () => {
+    const transcript: TimedLine[] = [
+      {
+        speakerId: "Leader Alpha Example",
+        isLeader: false,
+        text: "Ben, would you read verse one?",
+        startTime: 10,
+      },
+    ];
+    const ai = {
+      chatComplete: async (): Promise<AiChatResponse> => ({
+        content: JSON.stringify({
+          cues: [
+            { cue: "opening_prayer", people: [], line: "" },
+            {
+              cue: "reading",
+              people: ["Leader Alpha Example"],
+              line: "[00:00:10] Leader Alpha Example: Ben, would you read verse one?",
+            },
+          ],
+        }),
+        model: "m",
+      }),
+    } as unknown as AiProvider;
+    const named = await new CoachScoringService(
+      Database as never,
+      ai,
+    ).nameRotatingLeader({
+      transcript,
+      leaders: [
+        { slug: "leader-alpha", name: "Leader Alpha Example" },
+        { slug: "leader-beta", name: "Ben Beta" },
+      ],
+    });
+    expect(named?.slug).toBe("leader-alpha");
   });
 });
