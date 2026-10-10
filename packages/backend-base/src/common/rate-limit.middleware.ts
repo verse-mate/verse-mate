@@ -1,5 +1,5 @@
 import type { cache } from "../shared/shared.plugin";
-import { clientIp } from "./client-ip";
+import { clientIp, trustedProxyHops } from "./client-ip";
 
 interface RateLimitOptions {
   /**
@@ -50,23 +50,32 @@ const normalizedEmail = (value: unknown): string =>
     .trim()
     .toLowerCase();
 
+const onceProxyHopsAreSet =
+  (limit: (context: any) => Promise<void>) => async (context: any) => {
+    if (trustedProxyHops() !== null) await limit(context);
+  };
+
 // Predefined rate limiters
 export const authRateLimiters = {
-  login: createRateLimit({
-    windowSeconds: 60,
-    max: 5,
-    keyGenerator: (context) =>
-      `login:${normalizedEmail(context.body?.email)}:${clientIp(context.request, context.server)}`,
-    message: "Too many login attempts, please try again in a minute",
-  }),
+  login: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 60,
+      max: 5,
+      keyGenerator: (context) =>
+        `login:${normalizedEmail(context.body?.email)}:${clientIp(context.request, context.server)}`,
+      message: "Too many login attempts, please try again in a minute",
+    }),
+  ),
 
-  loginIp: createRateLimit({
-    windowSeconds: 60,
-    max: 30,
-    keyGenerator: (context) =>
-      `login-ip:${clientIp(context.request, context.server)}`,
-    message: "Too many login attempts, please try again in a minute",
-  }),
+  loginIp: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 60,
+      max: 30,
+      keyGenerator: (context) =>
+        `login-ip:${clientIp(context.request, context.server)}`,
+      message: "Too many login attempts, please try again in a minute",
+    }),
+  ),
 
   signup: createRateLimit({
     windowSeconds: 3600,
