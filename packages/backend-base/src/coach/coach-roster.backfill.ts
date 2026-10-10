@@ -143,6 +143,8 @@ export async function backfillCoachRoster(
         executive_summary = EXCLUDED.executive_summary,
         trends            = EXCLUDED.trends,
         updated_at        = NOW()
+      WHERE (coach_monthly_narratives.executive_summary, coach_monthly_narratives.trends)
+        IS DISTINCT FROM (EXCLUDED.executive_summary, EXCLUDED.trends)
     `.execute(conn);
   }
 
@@ -157,6 +159,7 @@ export async function backfillCoachRoster(
         ON CONFLICT (coach_id, month) DO UPDATE SET
           summary    = EXCLUDED.summary,
           updated_at = NOW()
+        WHERE coach_monthly_leader_summaries.summary IS DISTINCT FROM EXCLUDED.summary
       `.execute(conn);
       leaderSummaries += 1;
     }
