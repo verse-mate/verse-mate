@@ -89,13 +89,12 @@ export class OpenAiProvider implements AiProvider {
       }, this.idleMs);
     };
     const total = setTimeout(() => abort.abort(), this.totalMs);
-    quiet();
     try {
       return await this.streamChat(opts, reasons, abort.signal, quiet, () =>
         stalled
           ? `no data for ${this.idleMs} ms`
           : abort.signal.aborted
-            ? `over ${this.totalMs} ms in all`
+            ? `ran past the ${this.totalMs} ms limit`
             : null,
       );
     } finally {
@@ -155,6 +154,7 @@ export class OpenAiProvider implements AiProvider {
       | { input_tokens: number; output_tokens: number; total_tokens: number }
       | undefined;
     let completed = false;
+    heard();
     for await (const event of stream as AsyncIterable<OpenAiStreamEvent>) {
       heard();
       if (event.type === "response.output_text.delta") {
@@ -178,10 +178,10 @@ export class OpenAiProvider implements AiProvider {
         );
       }
     }
-    const stopped = stoppedBecause();
+    const stopped = completed ? null : stoppedBecause();
     if (stopped) {
       throw new Error(
-        `OpenAI stream stalled for model=${opts.model}: ${stopped}`,
+        `OpenAI stream stopped for model=${opts.model}: ${stopped}`,
       );
     }
     if (!completed) {

@@ -372,4 +372,65 @@ describe("OpenAiProvider chatComplete", () => {
     const sent = await sentFor({ model: "gpt-5-chat-latest" });
     expect(sent).not.toHaveProperty("reasoning");
   });
+
+  it("the idle limit does not run while the request waits for its response to start, which the SDK's own timeout covers", async () => {
+    const provider = new OpenAiProvider("test-key", { idleMs: 20 });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 60));
+          return streamOf(eventsOf(['{"ok":true}']));
+        },
+      },
+    };
+    const response = await provider.chatComplete({
+      model: "gpt-5",
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(response.content).toBe('{"ok":true}');
+  });
+
+  it("a stream running past the total limit is stopped with a message naming the limit", async () => {
+    const provider = new OpenAiProvider("test-key", {
+      idleMs: 1000,
+      totalMs: 60,
+    });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async (_body: unknown, options: { signal: AbortSignal }) =>
+          (async function* () {
+            while (!options.signal.aborted) {
+              yield { type: "response.output_text.delta", delta: "." };
+              await new Promise((resolve) => setTimeout(resolve, 10));
+            }
+          })(),
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("ran past the 60 ms limit");
+  });
+
+  it("a request that fails to start is that failure, with no timer left running", async () => {
+    const provider = new OpenAiProvider("test-key", {
+      idleMs: 10,
+      totalMs: 20,
+    });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async () => {
+          throw new Error("401 invalid key");
+        },
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("401 invalid key");
+  });
 });
