@@ -258,3 +258,27 @@ describe("TRUSTED_PROXY_HOPS is loud when it cannot be read", () => {
     expect(clientIp(request, server)).toBe("192.0.2.2");
   });
 });
+
+describe("the confirmation email cannot be used to flood an address", () => {
+  it("one account gets five confirmation emails an hour, and another account is not affected", async () => {
+    const cache = memoryCache();
+    const send = (userId: string) =>
+      authRateLimiters
+        .sendEmailVerification({
+          request: new Request("http://localhost/auth/send-email-verification"),
+          server: {
+            requestIP: () => ({ address: CLIENT, family: "IPv4", port: 1 }),
+          },
+          store: { cache },
+          currentUserId: userId,
+          set: {},
+        })
+        .then(
+          () => "ok",
+          (e: { status?: number }) => e.status,
+        );
+    for (let i = 0; i < 5; i += 1) expect(await send("u1")).toBe("ok");
+    expect(await send("u1")).toBe(429);
+    expect(await send("u2")).toBe("ok");
+  });
+});
