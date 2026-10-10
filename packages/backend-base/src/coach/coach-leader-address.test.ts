@@ -810,3 +810,72 @@ describe("notes and invites mail only real addresses, about reports the leader c
     expect(sent).toEqual([]);
   });
 });
+
+describe("a confirmed address change moves the record's account binding", () => {
+  async function bindTo(slug: string, userId: string) {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ user_id: userId as never })
+      .where("slug", "=", slug)
+      .execute();
+  }
+
+  it("the new address's confirmed account gets the record, and the old account loses it", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: MILO_OLD })
+      .where("slug", "=", SLUG)
+      .execute();
+    const oldAccount = await account(MILO_OLD);
+    expect(await service.leaderIdFor(oldAccount)).toBe(SLUG);
+    const newAccount = await account(REAL);
+    await changeAddress(service, inbox, SLUG, REAL);
+    expect(await service.leaderIdFor(newAccount)).toBe(SLUG);
+    expect(await service.leaderIdFor(oldAccount)).toBeNull();
+  });
+
+  it("with no account on the new address the record waits unbound, and is claimed on the first confirmed visit", async () => {
+    await changeAddress(service, inbox, SLUG, REAL);
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("user_id")
+      .where("slug", "=", SLUG)
+      .executeTakeFirstOrThrow();
+    expect(row.user_id).toBeNull();
+    const later = await account(REAL);
+    expect(await service.leaderIdFor(later)).toBe(SLUG);
+  });
+
+  it("an account already bound to another record does not take this one too", async () => {
+    const holder = await account(REAL);
+    await bindTo("addr-other", holder);
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: "addr-other-moved@example.test" })
+      .where("slug", "=", "addr-other")
+      .execute();
+    await changeAddress(service, inbox, SLUG, REAL);
+    const row = await conn
+      .selectFrom("coach_leaders")
+      .select("user_id")
+      .where("slug", "=", SLUG)
+      .executeTakeFirstOrThrow();
+    expect(row.user_id).toBeNull();
+    await conn
+      .deleteFrom("coach_leaders")
+      .where("email", "=", "addr-other-moved@example.test")
+      .execute();
+  });
+
+  it("confirming the address the record already has keeps its binding", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: REAL })
+      .where("slug", "=", SLUG)
+      .execute();
+    const bound = await account(MILO_OLD);
+    await bindTo(SLUG, bound);
+    await changeAddress(service, inbox, SLUG, REAL, { confirm: true });
+    expect(await service.leaderIdFor(bound)).toBe(SLUG);
+  });
+});
