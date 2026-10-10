@@ -954,3 +954,23 @@ describe("the machine's own score is kept beside an admin's correction", () => {
     });
   });
 });
+
+describe("prompts sent in OpenAI JSON mode", () => {
+  it("every system prompt says JSON, which OpenAI requires for a json_object response format", async () => {
+    const { CoachReportBodyService } = await import(
+      "./coach-report-body.service"
+    );
+    const prompts = {
+      scoring: CoachScoringService.buildInstructions(),
+      leaderCues: CoachScoringService.buildLeaderCueInstructions(),
+      vision: CoachScoringService.buildVisionInstructions(),
+      body: CoachReportBodyService.buildInstructions(),
+    };
+    for (const [name, prompt] of Object.entries(prompts)) {
+      expect({ name, mentionsJson: /json/i.test(prompt) }).toEqual({
+        name,
+        mentionsJson: true,
+      });
+    }
+  });
+});
