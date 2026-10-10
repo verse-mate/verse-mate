@@ -147,26 +147,17 @@ describe("rule 2, no quote or timestamp reused by one leader", () => {
     expect(v.length).toBe(1);
   });
 
-  it("does NOT claim to catch a re-punctuated quote, a stated limit", () => {
-    // A similarity threshold nobody has calibrated would block a leader's
-    // report on a judgement call, which is worse than a narrow rule.
+  it("ignores punctuation as well as case and spacing when comparing quotes", () => {
     const v = checkEvidenceReuse(evidence(['"The LORD is my shepherd."']), [
       evidence(["the LORD is my shepherd"]),
     ]);
-    expect(v).toEqual([]);
+    expect(v.length).toBe(1);
   });
 
-  it("catches a reused timestamp, compared EXACTLY", () => {
+  it("Two reports with the same timestamp and different quotes are not held: a timestamp alone is not reuse", () => {
     expect(
-      checkEvidenceReuse(evidence([], ["00:12:30"]), [
-        evidence([], ["00:12:30"]),
-      ]).length,
-    ).toBe(1);
-    // Not an overlapping range: two genuinely different moments in the same
-    // minute are not the same citation.
-    expect(
-      checkEvidenceReuse(evidence([], ["00:12:31"]), [
-        evidence([], ["00:12:30"]),
+      checkEvidenceReuse(evidence(["a fresh line"], ["00:12:30"]), [
+        evidence(["an older line"], ["00:12:30"]),
       ]),
     ).toEqual([]);
   });
