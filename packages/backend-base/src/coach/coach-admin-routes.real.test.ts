@@ -529,7 +529,142 @@ describe("the identity audit route", () => {
     expect(audit.status).toBe(200);
     expect(
       audit.body?.entries.find((e: { id: string }) => e.id === LEADER),
-    ).toMatchObject({ kind: "leader", email: LEADER_EMAIL });
+    ).toMatchObject({ kind: "leader", email: LEADER_EMAIL, bound: false });
+  });
+});
+
+describe("a leader's monthly summary with written prose", () => {
+  it("carries the study profile and the prose through the response schema", async () => {
+    const prose = {
+      profile: { study: "Nahum", format: "In person", groupSize: 12 },
+      strengths: [{ text: "Scripture first.", session: "2026-09-26" }],
+      growth: [{ text: "Invite quieter members.", session: "2026-09-26" }],
+      trends: ["Steady through the month."],
+      conversationGuide: [{ label: "Open", q: "What went well?" }],
+      focus: { goals: ["Ask one open question each week."] },
+      clusters: [],
+    };
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: "real-routes-august",
+        coach_id: LEADER,
+        session_date: "2026-08-15",
+        source_session_id: "ff-real-routes-august",
+        legacy_ids: [],
+        held: false,
+        summary: {
+          session: "Nahum, Lesson 0",
+          score: 80,
+          status: "Strong",
+          clusters: [],
+        },
+        metrics: JSON.stringify({
+          newcomerBonus: 0,
+          sizeBonus: 0,
+          dimensions: [],
+        }),
+        body: JSON.stringify({ bigIdeas: [], feedback: {} }),
+      } as never)
+      .execute();
+    await conn
+      .insertInto("coach_monthly_reports")
+      .values({
+        kind: "leader",
+        coach_id: LEADER,
+        month: "2026-08",
+        summary: JSON.stringify(prose),
+        state: "held",
+      } as never)
+      .execute();
+    try {
+      const got = await call(
+        "GET",
+        `coaches/${LEADER}/monthly-summary?month=2026-08`,
+      );
+      expect(got).toMatchObject({ status: 200 });
+      expect(got.body?.summary).toMatchObject({
+        profile: prose.profile,
+        strengths: prose.strengths,
+        growth: prose.growth,
+        trends: prose.trends,
+        conversationGuide: prose.conversationGuide,
+      });
+      expect(got.body?.summary.focus.goals).toEqual(prose.focus.goals);
+    } finally {
+      await conn
+        .deleteFrom("coach_monthly_reports")
+        .where("coach_id", "=", LEADER)
+        .execute();
+      await conn
+        .deleteFrom("coach_reports")
+        .where("id", "=", "real-routes-august")
+        .execute();
+    }
+  });
+});
+
+describe("the admin monthly view", () => {
+  it("carries the month's program report through the response schema", async () => {
+    const programReport = {
+      month: "2031-02",
+      monthLabel: "February 2031",
+      overview: {
+        sessions: 1,
+        leaders: 1,
+        from: "2031-02-01",
+        to: "2031-02-28",
+      },
+      leaderboard: [
+        { id: LEADER, name: "Leader", composite: 80, status: "Strong" },
+      ],
+      bands: [{ label: "Strong", count: 1 }],
+      heatMap: {
+        dimensions: [{ n: 1, name: "Dim" }],
+        rows: [
+          {
+            id: LEADER,
+            name: "Leader",
+            cells: [{ n: 1, avg: 4, mark: "strong" }],
+          },
+        ],
+      },
+      trends: {
+        priorAvg: null,
+        allTimeAvg: 80,
+        bestImproving: null,
+        mostImprovedDimension: null,
+        needsAttention: null,
+        text: ["Steady."],
+      },
+      snapshots: [{ id: LEADER, name: "Leader", text: "A good month." }],
+      priorityMatrix: { lowest: ["Dim"], declining: [], plateau: [] },
+      initiatives: ["Practise recall."],
+      executiveSummary: ["One session."],
+    };
+    await conn
+      .insertInto("coach_monthly_reports")
+      .values({
+        kind: "program",
+        month: "2031-02",
+        summary: JSON.stringify(programReport),
+        state: "held",
+      } as never)
+      .execute();
+    try {
+      const monthly = await call("GET", "monthly?month=2031-02");
+      expect(monthly.status).toBe(200);
+      expect(monthly.body?.programReport).toEqual(programReport);
+      expect(monthly.body?.narrative).toEqual({
+        executiveSummary: ["One session."],
+        trends: ["Steady."],
+      });
+    } finally {
+      await conn
+        .deleteFrom("coach_monthly_reports")
+        .where("month", "=", "2031-02")
+        .execute();
+    }
   });
 });
 

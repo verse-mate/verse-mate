@@ -149,6 +149,74 @@ export const MonthlyLeaderSchema = t.Object({
   delta: t.Union([t.Number(), t.Null()]),
 });
 
+const ProgramReportSchema = t.Object({
+  month: t.String(),
+  monthLabel: t.String(),
+  overview: t.Object({
+    sessions: t.Number(),
+    leaders: t.Number(),
+    from: t.String(),
+    to: t.String(),
+  }),
+  leaderboard: t.Array(
+    t.Object({
+      id: t.String(),
+      name: t.String(),
+      composite: t.Number(),
+      status: t.String(),
+    }),
+  ),
+  bands: t.Array(t.Object({ label: t.String(), count: t.Number() })),
+  heatMap: t.Object({
+    dimensions: t.Array(t.Object({ n: t.Number(), name: t.String() })),
+    rows: t.Array(
+      t.Object({
+        id: t.String(),
+        name: t.String(),
+        cells: t.Array(
+          t.Object({
+            n: t.Number(),
+            avg: t.Union([t.Number(), t.Null()]),
+            mark: t.Union([
+              t.Literal("strong"),
+              t.Literal("middle"),
+              t.Literal("weak"),
+              t.Null(),
+            ]),
+          }),
+        ),
+      }),
+    ),
+  }),
+  trends: t.Object({
+    priorAvg: t.Union([t.Number(), t.Null()]),
+    allTimeAvg: t.Union([t.Number(), t.Null()]),
+    bestImproving: t.Union([
+      t.Object({ id: t.String(), name: t.String(), delta: t.Number() }),
+      t.Null(),
+    ]),
+    mostImprovedDimension: t.Union([
+      t.Object({ name: t.String(), delta: t.Number() }),
+      t.Null(),
+    ]),
+    needsAttention: t.Union([
+      t.Object({ name: t.String(), avg: t.Number() }),
+      t.Null(),
+    ]),
+    text: t.Array(t.String()),
+  }),
+  snapshots: t.Array(
+    t.Object({ id: t.String(), name: t.String(), text: t.String() }),
+  ),
+  priorityMatrix: t.Object({
+    lowest: t.Array(t.String()),
+    declining: t.Array(t.String()),
+    plateau: t.Array(t.String()),
+  }),
+  initiatives: t.Array(t.String()),
+  executiveSummary: t.Array(t.String()),
+});
+
 export const MonthlySchema = t.Object({
   month: t.String(),
   monthLabel: t.String(),
@@ -179,6 +247,7 @@ export const MonthlySchema = t.Object({
     }),
     t.Null(),
   ]),
+  programReport: t.Optional(ProgramReportSchema),
 });
 
 // ─── Per-leader monthly summary (full parity with the individual monthly PDF)
@@ -248,6 +317,13 @@ export const LeaderMonthlySummarySchema = t.Object({
       strongestDim: DimStat,
       weakestDim: DimStat,
       insight: t.String(),
+    }),
+  ),
+  profile: t.Optional(
+    t.Object({
+      study: t.Optional(t.String()),
+      format: t.Optional(t.String()),
+      groupSize: t.Optional(t.Union([t.String(), t.Number()])),
     }),
   ),
   strengths: t.Array(t.Object({ text: t.String(), session: t.String() })),
@@ -1125,6 +1201,7 @@ export const IdentityAuditSchema = t.Object({
         t.Literal("unverified"),
         t.Literal("verified"),
       ]),
+      bound: t.Boolean(),
     }),
   ),
   atRisk: t.Number(),
