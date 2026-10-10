@@ -489,6 +489,21 @@ describe("naming a rotating class's leader (task 5.19)", () => {
     });
   });
 
+  it("a cue line copied with its time and speaker, as the model sees it, still counts", async () => {
+    await run([
+      cue("opening_prayer", ["Ana"], `[00:33:20] speaker-4: ${LINES.prayAna}`),
+    ]);
+    expect((await session()).coach_id).toBe("rot-ana");
+  });
+
+  it("a guest who shares a leader's first name is not that leader", async () => {
+    await run([
+      cue("opening_prayer", ["Ana Guestly"], LINES.prayAna),
+      cue("reading", ["Ben"], LINES.readBen),
+    ]);
+    expect((await session()).coach_id).toBe("rot-ben");
+  });
+
   it("The leader is the one who assigns the readings: an opening prayer naming no one is skipped", async () => {
     await run([
       cue("opening_prayer", [], ""),

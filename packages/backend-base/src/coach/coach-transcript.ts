@@ -63,19 +63,37 @@ function normalized(text: string): string {
 
 const QUOTE_EDGES = /^[\s"'.,;:!?…-]+|[\s"'.,;:!?…-]+$/g;
 const SPEAKER_PREFIX = /^[^\s:]{1,40}(?: \d{1,3})?:\s*/;
+const TIME_PREFIX = /^\[\d{1,2}(?::\d{2}){1,2}\]\s*/;
+const WORD = /[\p{L}\p{N}']/u;
 
-function lineStartOf(lines: TimedLine[], quote: string): number | null {
+export function spokenText(line: string): string {
+  const untimed = line.trim().replace(TIME_PREFIX, "");
+  return untimed === line.trim()
+    ? untimed
+    : untimed.replace(SPEAKER_PREFIX, "");
+}
+
+function lineStartsOf(lines: TimedLine[], quote: string): number[] {
   const offsets: number[] = [];
   let joined = "";
   for (const line of lines) {
     offsets.push(joined.length);
     joined += `${normalized(line.text)} `;
   }
-  const at = joined.indexOf(quote);
-  if (at < 0) return null;
-  let index = 0;
-  while (index + 1 < offsets.length && offsets[index + 1] <= at) index += 1;
-  return index;
+  const found: number[] = [];
+  for (
+    let at = joined.indexOf(quote);
+    at >= 0;
+    at = joined.indexOf(quote, at + 1)
+  ) {
+    const before = at === 0 ? "" : joined[at - 1];
+    const after = joined[at + quote.length] ?? "";
+    if ((before && WORD.test(before)) || (after && WORD.test(after))) continue;
+    let index = 0;
+    while (index + 1 < offsets.length && offsets[index + 1] <= at) index += 1;
+    found.push(index);
+  }
+  return found;
 }
 
 export function checkQuoteAt(
@@ -83,15 +101,18 @@ export function checkQuoteAt(
   quote: string,
   timestamp: string,
 ): QuoteProblem | null {
-  const wanted = normalized(quote).replace(QUOTE_EDGES, "");
+  const wanted = normalized(spokenText(quote)).replace(QUOTE_EDGES, "");
   if (!wanted) return "quote-not-in-transcript";
-  const index =
-    lineStartOf(lines, wanted) ??
-    lineStartOf(lines, wanted.replace(SPEAKER_PREFIX, ""));
-  if (index === null) return "quote-not-in-transcript";
-  const said = lines[index].startTime;
+  const found = lineStartsOf(lines, wanted);
+  const starts =
+    found.length > 0
+      ? found
+      : lineStartsOf(lines, wanted.replace(SPEAKER_PREFIX, ""));
+  if (starts.length === 0) return "quote-not-in-transcript";
   const claimed = parseTimestamp(timestamp);
-  if (said == null || claimed === null || claimed !== Math.floor(said))
-    return "timestamp-not-at-quote";
-  return null;
+  const matches = starts.some((index) => {
+    const said = lines[index].startTime;
+    return said != null && claimed !== null && claimed === Math.floor(said);
+  });
+  return matches ? null : "timestamp-not-at-quote";
 }
