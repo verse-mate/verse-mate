@@ -334,9 +334,14 @@ export class CoachMonthlyService {
           return null;
         },
       );
+      if (!written) {
+        await this.sendDue();
+        throw new Error(
+          `the ${month} program report could not be written; the run is retried`,
+        );
+      }
       if (
-        written &&
-        (await this.store(
+        await this.store(
           "program",
           null,
           month,
@@ -344,7 +349,7 @@ export class CoachMonthlyService {
           live,
           written.issues,
           firstHold,
-        ))
+        )
       )
         produced += 1;
     }
@@ -885,8 +890,14 @@ export class CoachMonthlyService {
       } catch (error) {
         result = { delivered: false, error: String(error) } as CoachSendResult;
       }
-      if (result?.delivered) sent.push(to.email);
-      else failed.push(to.email);
+      if (result?.delivered) {
+        sent.push(to.email);
+        await conn
+          .updateTable("coach_monthly_reports")
+          .set({ sent_to: sql`array_append(sent_to, ${to.email})` })
+          .where("id", "=", row.id)
+          .execute();
+      } else failed.push(to.email);
     }
     await conn
       .updateTable("coach_monthly_reports")
