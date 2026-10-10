@@ -122,7 +122,7 @@ export class CoachPipelineService {
   }
 
   /** Carry every session whose material is retained through to a report. */
-  async run(): Promise<PipelineResult[]> {
+  async run(opts: { uploadsOnly?: boolean } = {}): Promise<PipelineResult[]> {
     const due = await this.db
       .getOrCreateConnection()
       .selectFrom("coach_intake_sessions")
@@ -137,6 +137,7 @@ export class CoachPipelineService {
       ])
       .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
       .where(scorable)
+      .$if(opts.uploadsOnly === true, (q) => q.where("source", "=", "upload"))
       .orderBy("retry_count")
       .orderBy("observed_at")
       // Bounded: each session is a model call plus a frame extraction, so an
@@ -144,7 +145,9 @@ export class CoachPipelineService {
       .limit(PIPELINE_BATCH_LIMIT)
       .execute();
 
-    const out: PipelineResult[] = await this.redeliver();
+    const out: PipelineResult[] = opts.uploadsOnly
+      ? []
+      : await this.redeliver();
     for (const session of due) {
       let result: PipelineResult;
       try {

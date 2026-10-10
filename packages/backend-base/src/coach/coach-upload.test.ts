@@ -4,6 +4,7 @@ import { sql } from "kysely";
 
 import { reattributeSession } from "./coach-attribution";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
+import { saveRotatingClass } from "./coach-rotating.service";
 import { MemoryStorage } from "./coach-upload.fixture";
 import {
   CoachUploadService,
@@ -137,8 +138,22 @@ function request(over: Record<string, unknown> = {}) {
 }
 
 async function arrive(uploadId: string, parts: number) {
-  for (let part = 1; part <= parts; part += 1)
-    storage.objects.set(uploadPartKey(uploadId, part), new Uint8Array([part]));
+  const row = await conn
+    .selectFrom("coach_uploads")
+    .select(["file_bytes", "parts"])
+    .where("id", "=", uploadId as never)
+    .executeTakeFirstOrThrow();
+  const total = Number(row.file_bytes);
+  for (let part = 1; part <= parts; part += 1) {
+    const key = uploadPartKey(uploadId, part);
+    storage.objects.set(key, new Uint8Array([part]));
+    storage.sizes.set(
+      key,
+      part < row.parts
+        ? UPLOAD_PART_BYTES
+        : total - UPLOAD_PART_BYTES * (row.parts - 1),
+    );
+  }
 }
 
 async function uploadComplete(over: Record<string, unknown> = {}) {
@@ -601,5 +616,213 @@ describe("A Leader Can Upload A Session Video (task 4.13)", () => {
       WHERE coach_id = ${LEADER} AND observed_at >= now() - interval '28 days'
     `.execute(conn);
     expect(rows[0].n).toBe(1);
+  });
+});
+
+describe("review fixes: duplicates, retries and limits on uploads", () => {
+  async function rotatingBot(id: string, key: string) {
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: id,
+        coach_id: null,
+        rotating_class_id: Number(key.slice("rotating:".length)),
+        matched_by: "rotating_class",
+        title: "Up Rotation",
+        session_date: "2026-10-02",
+        state: "retained",
+        class_key: key,
+      })
+      .execute();
+  }
+  async function rotating() {
+    const saved = await saveRotatingClass(Database, {
+      name: "Up Rotation",
+      groupEmail: "up-rotation@example.test",
+      titleMatch: [],
+      leaders: [LEADER, OTHER],
+    });
+    if (!saved.ok) throw new Error("not saved");
+    return `rotating:${saved.id}`;
+  }
+  afterEach(async () => {
+    await conn
+      .deleteFrom("coach_rotating_classes")
+      .where("group_email", "=", "up-rotation@example.test")
+      .execute();
+  });
+
+  it("a rotating class's bot session, before its leader is named, blocks an upload for that class and date", async () => {
+    const key = await rotating();
+    await rotatingBot("up-bot-rot", key);
+    expect(await request({ classKey: key })).toEqual({
+      ok: false,
+      refusal: "already-recorded",
+    });
+  });
+
+  it("a rotating class's bot session arriving after an upload is listed as a likely duplicate", async () => {
+    const key = await rotating();
+    const id = await uploadComplete({ classKey: key });
+    await rotatingBot("up-bot-rot", key);
+    expect(
+      await markLikelyDuplicate(conn as CoachReportsWriter, "up-bot-rot"),
+    ).toBe(true);
+    expect(await session("up-bot-rot")).toMatchObject({
+      state: "duplicate",
+      duplicate_of: uploadSessionId(id),
+    });
+  });
+
+  it("re-attributing a rotating class's session keeps its class key", async () => {
+    const key = await rotating();
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "up-bot-rot",
+        coach_id: OTHER,
+        rotating_class_id: Number(key.slice("rotating:".length)),
+        matched_by: "rotating_class",
+        title: "Up Rotation",
+        session_date: "2026-10-02",
+        state: "retained",
+        class_key: key,
+      })
+      .execute();
+    await reattributeSession(Database, "up-bot-rot", LEADER, OTHER);
+    expect((await session("up-bot-rot")).class_key).toBe(key);
+  });
+
+  it("the bot records the class while the upload is still sending: completing is refused and the upload fails saying so", async () => {
+    const asked = await request();
+    if (!asked.ok) throw new Error(asked.refusal);
+    await arrive(asked.uploadId, asked.parts.length);
+    await botSession("up-bot-mid", "retained", `class:${classIds[0]}`);
+    expect(await uploads.complete(asked.uploadId, LEADER)).toEqual({
+      ok: false,
+      refusal: "already-recorded",
+    });
+    expect((await uploads.list(LEADER))[0]).toMatchObject({
+      status: "failed",
+    });
+    expect(storage.objects.has(uploadPartKey(asked.uploadId, 1))).toBe(false);
+  });
+
+  it("during the parallel run an admin's upload on a date the host reported is processed, to be compared with the host's report", async () => {
+    delete process.env[COACH_PIPELINE_LIVE];
+    await conn
+      .insertInto("coach_reports")
+      .values({
+        id: "up-host-parallel",
+        coach_id: LEADER,
+        session_date: "2026-10-02",
+        source_session_id: "legacy:up-host-parallel",
+        legacy_ids: [],
+        summary: {},
+        metrics: {},
+        body: {},
+      })
+      .execute();
+    const asked = await request({ byAdmin: true });
+    if (!asked.ok) throw new Error(asked.refusal);
+    await arrive(asked.uploadId, asked.parts.length);
+    expect(await uploads.complete(asked.uploadId, null)).toEqual({
+      ok: true,
+      status: "processing",
+    });
+    expect((await session(uploadSessionId(asked.uploadId))).state).toBe(
+      "received",
+    );
+  });
+
+  it("a leader who abandoned an unfinished upload can start again for the same class and date, and the old parts are removed", async () => {
+    const first = await request();
+    if (!first.ok) throw new Error(first.refusal);
+    await arrive(first.uploadId, 1);
+    const second = await request();
+    expect(second.ok).toBe(true);
+    expect(storage.objects.has(uploadPartKey(first.uploadId, 1))).toBe(false);
+    expect((await uploads.list(LEADER)).map((u) => u.id)).not.toContain(
+      first.uploadId,
+    );
+  });
+
+  it("another leader's unfinished upload for a shared class still blocks, until its addresses have expired", async () => {
+    const key = await rotating();
+    const first = await request({ classKey: key });
+    if (!first.ok) throw new Error(first.refusal);
+    expect(await request({ classKey: key, coachId: OTHER })).toEqual({
+      ok: false,
+      refusal: "upload-exists",
+    });
+    await conn
+      .updateTable("coach_uploads")
+      .set({ created_at: sql`now() - interval '4 hours'` })
+      .where("id", "=", first.uploadId as never)
+      .execute();
+    expect((await request({ classKey: key, coachId: OTHER })).ok).toBe(true);
+  });
+
+  it("a part of the wrong size is not a whole file", async () => {
+    const asked = await request();
+    if (!asked.ok) throw new Error(asked.refusal);
+    await arrive(asked.uploadId, asked.parts.length);
+    storage.sizes.set(uploadPartKey(asked.uploadId, 1), 5 * 1024 ** 3);
+    expect(await uploads.complete(asked.uploadId, LEADER)).toEqual({
+      ok: false,
+      refusal: "file-incomplete",
+    });
+  });
+
+  it("completing twice at once receives the upload once and refuses the other", async () => {
+    const asked = await request();
+    if (!asked.ok) throw new Error(asked.refusal);
+    await arrive(asked.uploadId, asked.parts.length);
+    const results = await Promise.all([
+      uploads.complete(asked.uploadId, LEADER),
+      uploads.complete(asked.uploadId, LEADER),
+    ]);
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => !r.ok)).toEqual([
+      { ok: false, refusal: "not-awaiting-file" },
+    ]);
+  });
+
+  it("control characters in a title are replaced before it reaches email subjects and prompts", async () => {
+    const id = await uploadComplete({ title: "Week\u00004\nRomans" });
+    expect((await uploads.list(LEADER)).find((u) => u.id === id)?.title).toBe(
+      "Week 4 Romans",
+    );
+  });
+
+  it("a leader's classes follow the account bound to the record, not the account's current address", async () => {
+    const userId = (
+      await conn
+        .selectFrom("user")
+        .select("id")
+        .where("email", "=", EMAILS[0])
+        .executeTakeFirstOrThrow()
+    ).id;
+    await conn
+      .updateTable("coach_leaders")
+      .set({ user_id: userId as never })
+      .where("slug", "=", LEADER)
+      .execute();
+    await conn
+      .updateTable("user")
+      .set({ email: "up-leader-moved@example.test" })
+      .where("id", "=", userId)
+      .execute();
+    try {
+      expect((await uploads.classesFor(LEADER))?.map((c) => c.key)).toContain(
+        `class:${classIds[0]}`,
+      );
+    } finally {
+      await conn
+        .updateTable("user")
+        .set({ email: EMAILS[0] })
+        .where("id", "=", userId)
+        .execute();
+    }
   });
 });

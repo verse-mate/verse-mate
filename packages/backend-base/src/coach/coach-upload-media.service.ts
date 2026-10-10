@@ -3,15 +3,21 @@ import { sql } from "kysely";
 import type { db } from "../shared/shared.plugin";
 import { ObjectStorageService } from "../shared/storage/storage.service";
 import { CoachArchiveService } from "./coach-archive.service";
+import { VIDEO_FORMATS, mediaInput } from "./coach-media-input";
 import type { TimedLine } from "./coach-transcript";
 import {
   UPLOAD_MIN_SECONDS,
   type UploadStorage,
+  partKeys,
   uploadPartKey,
 } from "./coach-upload.service";
 
 export const MEDIA_BATCH_LIMIT = 2;
 export const MEDIA_ADDRESS_SECONDS = 60 * 60;
+export const UPLOAD_MAX_SECONDS = 4 * 60 * 60;
+export const MEDIA_ATTEMPTS = 3;
+const CLAIM_LAPSES = sql`interval '2 hours'`;
+const ABANDONED_AFTER = sql`interval '24 hours'`;
 
 export interface MediaProbe {
   probe(url: string): Promise<{ hasVideo: boolean; seconds: number }>;
@@ -29,7 +35,9 @@ export const UPLOAD_FAILURES = {
   unreadable: "the file could not be read as a video",
   noVideo: "the file has no video track, and a report needs video",
   short: "the recording runs under two minutes and may be incomplete",
+  long: "the recording runs over four hours, the longest an upload can be",
   transcription: "the recording could not be transcribed",
+  abandoned: "the file was not finished uploading within a day",
 } as const;
 
 class UploadFailed extends Error {}
@@ -52,12 +60,13 @@ export class CoachUploadMediaService {
   async process(limit = MEDIA_BATCH_LIMIT): Promise<
     Array<{
       sourceSessionId: string;
-      outcome: "retained" | "failed";
+      outcome: "retained" | "failed" | "retry";
       reason?: string;
     }>
   > {
-    const due = await this.db
-      .getOrCreateConnection()
+    await this.sweepAbandoned();
+    const conn = this.db.getOrCreateConnection();
+    const due = await conn
       .selectFrom("coach_intake_sessions as s")
       .innerJoin(
         "coach_uploads as u",
@@ -75,34 +84,67 @@ export class CoachUploadMediaService {
       ])
       .where("s.source", "=", "upload")
       .where("s.state", "=", "received")
+      .where((eb) =>
+        eb.or([
+          eb("u.claimed_at", "is", null),
+          eb("u.claimed_at", "<", sql<Date>`now() - ${CLAIM_LAPSES}`),
+        ]),
+      )
       .orderBy("s.observed_at")
       .limit(limit)
       .execute();
     const out: Array<{
       sourceSessionId: string;
-      outcome: "retained" | "failed";
+      outcome: "retained" | "failed" | "retry";
       reason?: string;
     }> = [];
     for (const upload of due) {
+      const uploadId = upload.uploadId as string;
+      const claim = await conn
+        .updateTable("coach_uploads")
+        .set({ claimed_at: sql`now()`, attempts: sql`attempts + 1` })
+        .where("id", "=", uploadId as never)
+        .where((eb) =>
+          eb.or([
+            eb("claimed_at", "is", null),
+            eb("claimed_at", "<", sql<Date>`now() - ${CLAIM_LAPSES}`),
+          ]),
+        )
+        .returning("attempts")
+        .executeTakeFirst();
+      if (!claim) continue;
       try {
-        await this.processOne({
-          ...upload,
-          uploadId: upload.uploadId as string,
-        });
+        await this.processOne({ ...upload, uploadId });
         out.push({
           sourceSessionId: upload.sourceSessionId,
           outcome: "retained",
         });
       } catch (error) {
+        if (!(error instanceof UploadFailed))
+          console.error(
+            `[coach-upload] ${upload.sourceSessionId} attempt ${claim.attempts}:`,
+            error,
+          );
+        if (
+          !(error instanceof UploadFailed) &&
+          claim.attempts < MEDIA_ATTEMPTS
+        ) {
+          await conn
+            .updateTable("coach_uploads")
+            .set({ claimed_at: null })
+            .where("id", "=", uploadId as never)
+            .execute();
+          out.push({
+            sourceSessionId: upload.sourceSessionId,
+            outcome: "retry",
+          });
+          continue;
+        }
         const reason =
           error instanceof UploadFailed
             ? error.message
-            : `${UPLOAD_FAILURES.transcription}: ${error instanceof Error ? error.message : String(error)}`;
-        await this.fail(
-          upload.sourceSessionId,
-          upload.uploadId as string,
-          reason,
-        );
+            : UPLOAD_FAILURES.transcription;
+        await this.fail(upload.sourceSessionId, uploadId, upload.parts, reason);
         out.push({
           sourceSessionId: upload.sourceSessionId,
           outcome: "failed",
@@ -111,6 +153,20 @@ export class CoachUploadMediaService {
       }
     }
     return out;
+  }
+
+  private async sweepAbandoned() {
+    const abandoned = await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_uploads")
+      .set({ state: "failed", failure: UPLOAD_FAILURES.abandoned })
+      .where("state", "=", "awaiting-file")
+      .where("created_at", "<", sql<Date>`now() - ${ABANDONED_AFTER}`)
+      .returning(["id", "parts"])
+      .execute();
+    for (const upload of abandoned)
+      for (const key of partKeys(upload.id as string, upload.parts))
+        await this.storage.deleteObject(key);
   }
 
   private async processOne(upload: {
@@ -142,6 +198,8 @@ export class CoachUploadMediaService {
     if (!probed.hasVideo) throw new UploadFailed(UPLOAD_FAILURES.noVideo);
     if (probed.seconds < UPLOAD_MIN_SECONDS)
       throw new UploadFailed(UPLOAD_FAILURES.short);
+    if (probed.seconds > UPLOAD_MAX_SECONDS)
+      throw new UploadFailed(UPLOAD_FAILURES.long);
     const lines = await this.transcriber.transcribe({
       recordingUrl,
       recordingKey,
@@ -244,8 +302,15 @@ export class CoachUploadMediaService {
   private async fail(
     sourceSessionId: string,
     uploadId: string,
+    parts: number,
     reason: string,
   ) {
+    for (const key of [
+      ...partKeys(uploadId, parts),
+      CoachArchiveService.recordingKey(sourceSessionId),
+      CoachArchiveService.transcriptKey(sourceSessionId),
+    ])
+      await this.storage.deleteObject(key);
     const conn = this.db.getOrCreateConnection();
     await conn
       .updateTable("coach_intake_sessions")
@@ -280,26 +345,31 @@ export function readProbe(output: string): {
   };
 }
 
-export const ffprobe: MediaProbe = {
-  async probe(url) {
-    const proc = Bun.spawn(
-      [
-        "ffprobe",
-        "-v",
-        "error",
-        "-show_entries",
-        "stream=codec_type:format=duration",
-        "-of",
-        "json",
-        url,
-      ],
-      { stdout: "pipe", stderr: "pipe" },
-    );
-    const [out, code] = await Promise.all([
-      new Response(proc.stdout).text(),
-      proc.exited,
-    ]);
-    if (code !== 0) throw new Error(`ffprobe exited ${code}`);
-    return readProbe(out);
-  },
-};
+export function ffprobeWith(formats = VIDEO_FORMATS): MediaProbe {
+  return {
+    async probe(url) {
+      const proc = Bun.spawn(
+        [
+          "ffprobe",
+          "-v",
+          "error",
+          ...mediaInput(formats),
+          "-show_entries",
+          "stream=codec_type:format=duration",
+          "-of",
+          "json",
+          url,
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      const [out, code] = await Promise.all([
+        new Response(proc.stdout).text(),
+        proc.exited,
+      ]);
+      if (code !== 0) throw new Error(`ffprobe exited ${code}`);
+      return readProbe(out);
+    },
+  };
+}
+
+export const ffprobe: MediaProbe = ffprobeWith();

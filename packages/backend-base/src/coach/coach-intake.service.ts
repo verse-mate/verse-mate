@@ -75,6 +75,7 @@ export class CoachIntakeService {
       // recorded three weeks ago but first observed today pushed the window to
       // "now minus a week", excluding its still-unobserved neighbours forever.
       .select((eb) => eb.fn.max("session_date").as("newest"))
+      .where("source", "=", "bot")
       .executeTakeFirst();
     if (!row?.newest) return null;
     return new Date(new Date(row.newest).getTime() - WATERMARK_OVERLAP_MS);

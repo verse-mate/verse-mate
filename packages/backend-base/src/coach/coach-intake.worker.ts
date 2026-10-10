@@ -75,39 +75,13 @@ export interface CoachIntakeRunResult {
  * `firefliesConfigured()`, not that a missing credential actually skips.
  */
 export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
-  // Refuse rather than degrade. Without the credential every tick would poll
-  // nothing and report success, which is indistinguishable from a quiet week
-  //, and the quiet week is the one that is fine.
-  if (!firefliesConfigured()) {
+  const configured = firefliesConfigured();
+  if (!configured)
     console.error(
-      "[COACH-INTAKE] FIREFLIES_API_KEY is not set; intake cannot run",
+      "[COACH-INTAKE] FIREFLIES_API_KEY is not set; recording-bot intake cannot run, uploads still do",
     );
-    return {
-      skipped: "no-credential",
-      observed: 0,
-      alreadySeen: 0,
-      unresolved: 0,
-      retrievalAttempted: 0,
-      retained: 0,
-      held: 0,
-      retrievalFailed: 0,
-      delivered: 0,
-      awaitingReview: 0,
-      pipelineFailed: 0,
-      pruned: 0,
-    };
-  }
-
   const client = new HttpFirefliesClient();
-  const poll = await new CoachIntakeService(Database, client).poll();
-  const sweep = await new CoachRetrievalService(
-    Database,
-    new CoachArchiveService(Database, client),
-  ).sweep();
 
-  // Phase 3: score, publish, deliver. Each phase is independently guarded so
-  // a failure in one does not silently stop the others, the sweep halting
-  // the whole tick was the shape of an earlier bug.
   let uploads = 0;
   try {
     uploads = (
@@ -120,19 +94,35 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
     console.error("[COACH-INTAKE] upload phase failed:", error);
   }
 
+  let poll = { observed: 0, alreadySeen: 0, unresolved: 0 };
+  let sweep = { attempted: 0, retained: 0, held: 0, failed: 0 };
+  if (configured) {
+    try {
+      poll = await new CoachIntakeService(Database, client).poll();
+    } catch (error) {
+      console.error("[COACH-INTAKE] poll phase failed:", error);
+    }
+    try {
+      sweep = await new CoachRetrievalService(
+        Database,
+        new CoachArchiveService(Database, client),
+      ).sweep();
+    } catch (error) {
+      console.error("[COACH-INTAKE] retrieval phase failed:", error);
+    }
+  }
+
   let pipeline: PipelineResult[] = [];
   try {
     pipeline = await new CoachPipelineService(
       Database,
       client,
       new EmailNotificationConsumer(),
-    ).run();
+    ).run(configured ? {} : { uploadsOnly: true });
   } catch (error) {
     console.error("[COACH-INTAKE] pipeline phase failed:", error);
   }
 
-  // Phase 4: bounded retention. Runs after publishing so a report produced
-  // this tick counts toward its leader's four.
   let pruned = 0;
   try {
     pruned = (await new CoachRetentionService(Database).prune()).deleted;
@@ -141,6 +131,7 @@ export async function runCoachIntakeTick(): Promise<CoachIntakeRunResult> {
   }
 
   return {
+    ...(configured ? {} : { skipped: "no-credential" as const }),
     observed: poll.observed,
     alreadySeen: poll.alreadySeen,
     unresolved: poll.unresolved,

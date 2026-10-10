@@ -11,6 +11,7 @@ declare const Bun: {
   }) => {
     file(key: string): {
       exists(): Promise<boolean>;
+      stat(): Promise<{ size: number }>;
       write(
         body: Buffer | Uint8Array | string,
         opts?: { type?: string },
@@ -271,6 +272,11 @@ export class BunS3Helper {
   /** Check if an object exists. */
   async exists(key: string): Promise<boolean> {
     return this.client.file(key).exists();
+  }
+
+  async size(key: string): Promise<number | null> {
+    if (!(await this.client.file(key).exists())) return null;
+    return (await this.client.file(key).stat()).size;
   }
 
   /**

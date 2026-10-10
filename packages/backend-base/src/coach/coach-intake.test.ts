@@ -99,6 +99,24 @@ describe("session intake polls the recording bot, not the leader's inbox", () =>
     expect(client.calls[1].since).toBeInstanceOf(Date);
   });
 
+  it("an uploaded session does not move the recording bot's watermark", async () => {
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "ff-upload-1",
+        source: "upload",
+        coach_id: COACH_SLUG,
+        matched_by: "upload",
+        title: "Uploaded",
+        session_date: "2026-10-02",
+        state: "received",
+      })
+      .execute();
+    const client = new FakeFireflies([[]]);
+    await new CoachIntakeService(Database, client).poll();
+    expect(client.calls[0].since).toBeNull();
+  });
+
   it("the watermark looks BACK past the newest session, so a late arrival is still seen", async () => {
     const client = new FakeFireflies([[transcript("ff-1")], []]);
     const service = new CoachIntakeService(Database, client);

@@ -1,4 +1,5 @@
 import { ObjectStorageService } from "../shared/storage/storage.service";
+import { mediaInput } from "./coach-media-input";
 
 /**
  * Frame extraction for the Visual Aids dimension (change: port-coach-pipeline,
@@ -85,6 +86,7 @@ export class CoachFrameService {
     if (!stream) return [];
 
     const frames = await this.runFfmpeg(stream, [
+      ...mediaInput(),
       "-i",
       "pipe:0",
       "-vf",

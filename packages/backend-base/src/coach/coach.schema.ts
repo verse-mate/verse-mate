@@ -783,6 +783,10 @@ const UPLOAD_COMPLETE = {
     "Not every part of the file has arrived: send the rest, then finish",
   ),
   "not-awaiting-file": refusal(409, "This upload is already finished"),
+  "already-recorded": refusal(
+    409,
+    "The recording bot recorded this class on this date while the file was uploading, so the upload was not used",
+  ),
 };
 
 const UNKNOWN_UPLOAD = { "unknown-upload": refusal(404, "Upload not found") };
