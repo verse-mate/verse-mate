@@ -73,11 +73,13 @@ describe("no participant name is captured anywhere", () => {
     expect(detail).not.toMatch(/speaker_name/);
   });
 
-  it("the report contract carries attendees as a number", async () => {
+  it("the report contract carries attendees as a number, or null when no count was recorded", async () => {
     const schema = await Bun.file(
       new URL("./coach.schema.ts", import.meta.url).pathname,
     ).text();
-    expect(schema).toMatch(/attendees:\s*t\.Number\(\)/);
+    expect(schema).toMatch(
+      /attendees:\s*t\.Union\(\[t\.Number\(\), t\.Null\(\)\]\)/,
+    );
   });
 
   it("the deployed corpus itself only ever stored a count", async () => {

@@ -629,15 +629,25 @@ describe("the answers the portal's email confirmation reads", () => {
         return Promise.resolve({ delivered: true });
       },
     );
-    await Backend.store.cache.delete("rate-limit:signup:unknown");
     const email = faker.internet.email().toLocaleLowerCase();
-    const { data } = await client.auth.signup.post({
-      email,
-      firstName: "P",
-      lastName: "C",
-      password: faker.internet.password(),
-    });
+    const password = faker.internet.password();
+    await Backend.store.db
+      .getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: false,
+      })
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
     const headers = { authorization: `Bearer ${data?.accessToken}` };
+    await client.auth["send-email-verification"].post(undefined, { headers });
     const me = async () =>
       (
         await Backend.store.db
