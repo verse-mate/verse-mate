@@ -129,7 +129,13 @@ export async function saveRotatingClass(
         .selectFrom("coach_leaders")
         .select("slug")
         .where(
-          sql<boolean>`lower(email) = ${groupEmail} OR ${groupEmail} = ANY(alt_emails)`,
+          sql<boolean>`lower(email) = ${groupEmail}
+            OR EXISTS (SELECT 1 FROM unnest(alt_emails) a WHERE lower(a) = ${groupEmail})
+            OR EXISTS (
+              SELECT 1 FROM coach_leader_email_requests r
+              WHERE lower(r.new_email) = ${groupEmail}
+                AND r.status = 'pending' AND r.expires_at > now()
+            )`,
         )
         .executeTakeFirst();
       const sharing = await trx

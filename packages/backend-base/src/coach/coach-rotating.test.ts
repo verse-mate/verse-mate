@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { createHash } from "node:crypto";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import {
@@ -134,6 +136,51 @@ describe("rotating classes (task 3.14)", () => {
         { id: "rot-ben", name: "Ben Ostrow", rotatingOnly: false },
         { id: "rot-cy", name: "Cy Danner", rotatingOnly: false },
       ],
+    });
+  });
+
+  it("an address a leader is changing to cannot become a class's group address, and a change to an address that became one is refused", async () => {
+    const token = "rot-pending-token";
+    await conn
+      .insertInto("coach_leader_email_requests")
+      .values({
+        slug: "rot-ana",
+        new_email: GROUP,
+        token_hash: createHash("sha256").update(token).digest("hex"),
+        expires_at: sql`now() + interval '1 day'`,
+      } as never)
+      .execute();
+    expect(await markRotating()).toEqual({
+      ok: false,
+      refusal: "address-in-use",
+    });
+    await conn
+      .insertInto("coach_rotating_classes")
+      .values({ name: "Harbor", group_email: GROUP })
+      .execute();
+    expect(
+      await new CoachService(Database).confirmLeaderEmailChange(token),
+    ).toEqual({ ok: false, refusal: "taken" });
+    expect(
+      (
+        await conn
+          .selectFrom("coach_leaders")
+          .select("email")
+          .where("slug", "=", "rot-ana")
+          .executeTakeFirstOrThrow()
+      ).email,
+    ).toBe("rot-ana@example.test");
+  });
+
+  it("a leader's other address, in any case, cannot be a class's group address", async () => {
+    await conn
+      .updateTable("coach_leaders")
+      .set({ alt_emails: ["Rot-Group@Example.test"] })
+      .where("slug", "=", "rot-solo")
+      .execute();
+    expect(await markRotating()).toEqual({
+      ok: false,
+      refusal: "address-in-use",
     });
   });
 
