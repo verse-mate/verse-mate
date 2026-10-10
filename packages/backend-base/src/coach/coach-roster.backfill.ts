@@ -2,27 +2,9 @@ import { db as Database } from "database";
 import { sql } from "kysely";
 
 import { leaderSlug } from "./coach-attribution";
-import { assertBeforeCutover } from "./coach-cutover";
 import leaderMapJson from "./coach-leader-map.json";
 import { assertBundleKeepsStore } from "./coach-store.backfill";
 import coachDataJson from "./coach.data.json";
-
-/**
- * One-time backfill of the roster and the monthly structures out of the
- * deployed `coach.data.json` and into the database (change:
- * port-coach-pipeline, tasks 3.4 and 3.10).
- *
- * Every count it returns is DERIVED from the dataset it was handed, never a
- * literal: the host republishes hourly while the port is in flight, and the
- * roster moved from 16 leaders to 17 (`barry-smitherman`) during this plan's
- * review. A hardcoded figure is stale on arrival, and asserting against one
- * would fail a correct backfill.
- *
- * Idempotent, and deliberately NOT a full overwrite. Attribution keywords are
- * admin-editable once seeded (design open question 6), so a re-run must not
- * revert an admin's edit, `title_match` and `alt_emails` are written only when
- * the stored value is still empty.
- */
 
 interface BundleCoach {
   id: string;
@@ -91,7 +73,6 @@ export async function backfillCoachRoster(
   dataset: unknown = coachDataJson,
   leaderMap: unknown = leaderMapJson,
 ): Promise<RosterBackfillResult> {
-  assertBeforeCutover();
   const conn = Database.getOrCreateConnection();
   await assertBundleKeepsStore(conn, dataset);
   const bundle = dataset as Bundle;
@@ -188,25 +169,4 @@ export async function backfillCoachRoster(
     narrativeMonths: narratives.length,
     leaderSummaries,
   };
-}
-
-// Runnable: `bun src/coach/coach-roster.backfill.ts`
-if (import.meta.main) {
-  backfillCoachRoster()
-    .then((r) => {
-      console.log(
-        `Backfilled ${r.leaders} leaders, ${r.admins} admin(s), ` +
-          `${r.narrativeMonths} monthly narrative(s), ` +
-          `${r.leaderSummaries} leader-month summaries.`,
-      );
-      if (r.leadersWithoutKeywords.length > 0)
-        console.log(
-          `No attribution keywords for: ${r.leadersWithoutKeywords.join(", ")}`,
-        );
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error("Roster backfill failed:", err);
-      process.exit(1);
-    });
 }

@@ -142,15 +142,17 @@ describe("coach-store backfill (DB)", () => {
     expect([...counts.values()].reduce((a, b) => a + b, 0)).toBe(deployedCount);
   });
 
-  it("Cutover switches the pipeline on: the backfill is not run again", async () => {
+  it("after cutover the backfill still runs, and the bundle it reloads changes no count", async () => {
     await clear();
+    await backfillCoachStore();
+    const before = await countsByCoach();
     process.env[COACH_PIPELINE_LIVE] = "true";
     try {
-      await expect(backfillCoachStore()).rejects.toThrow(/cutover/);
+      await backfillCoachStore();
     } finally {
       delete process.env[COACH_PIPELINE_LIVE];
     }
-    expect((await countsByCoach()).size).toBe(0);
+    expect(await countsByCoach()).toEqual(before);
   });
 });
 

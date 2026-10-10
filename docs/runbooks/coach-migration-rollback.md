@@ -105,19 +105,23 @@ The column's values are lost; the rows stay.
 | `20260901158000-coach-first-lesson-line` | `coach_reports`: `first_lesson_line` (the line that showed a first lesson) |
 | `20260901160000-coach-rotating-leader-cue` | `coach_intake_sessions`: `leader_cue`, `leader_cue_line` |
 | `20260901161000-coach-uploads` | `coach_intake_sessions`: `source`, `class_key`, `meeting_link`, `duplicate_of`, `duplicate_dismissed_at` (refuses while an upload session, a received, failed or duplicate state, or a class key exists) |
-| `20260901164000-coach-identity-binding` | `coach_leaders.user_id`, `coach_admins.user_id` (refuses while any record or admin is bound). Its up cleared the email confirmation of every account on a roster or admin address; the down does not restore it |
+| `20260901164000-coach-identity-binding` | `coach_leaders.user_id`, `coach_admins.user_id` (refuses while any record or admin is bound) |
 | `20260901165000-coach-upload-claims` | `coach_uploads`: `attempts`, `claimed_at` |
 | `20260901166000-coach-monthly-send-claims` | `coach_monthly_reports`: `sending_at` |
 
 ### Downs that drop data without a check
 
 - `20260901123000-coach-admin-role` drops `coach_admins`. Its rows are configuration
-  that its own up seeds from `COACH_SEED_ADMIN_EMAIL` (nothing when it is unset) and the
-  roster backfill fills, and the list is short enough to re-enter.
+  that the roster backfill fills at every deploy, and the list is short enough to
+  re-enter.
 - `20260901146000-coach-reminder-claims` drops `coach_reminder_sends.claimed_at` once no
   unconfirmed claim is left. Its up sets it from `sent_at` again.
 
 ### Downs that touch no data
+
+`20260901167000-coach-confirmation-cleared-where-unproven` drops its function and the
+triggers on `coach_leaders` and `coach_admins`. The email confirmations its up and its
+triggers cleared stay cleared: those accounts confirm again through the link.
 
 `20260901128000-coach-one-report-per-session` drops an index only.
 

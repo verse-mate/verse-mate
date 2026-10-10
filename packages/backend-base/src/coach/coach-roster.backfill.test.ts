@@ -308,20 +308,29 @@ describe("roster and monthly backfill (DB)", () => {
     expect(rows).toEqual([{ slug: target.id, name: target.name }]);
   });
 
-  it("Cutover switches the pipeline on: the roster backfill is not run again", async () => {
+  it("after cutover the roster backfill still runs, and the bundle it reloads changes no leader", async () => {
     await clear();
+    await backfillCoachRoster();
+    const before = await conn
+      .selectFrom("coach_leaders")
+      .selectAll()
+      .where("email", "in", BUNDLE_EMAILS)
+      .orderBy("slug")
+      .execute();
     process.env[COACH_PIPELINE_LIVE] = "true";
     try {
-      await expect(backfillCoachRoster()).rejects.toThrow(/cutover/);
+      await backfillCoachRoster();
     } finally {
       delete process.env[COACH_PIPELINE_LIVE];
     }
-    const rows = await conn
-      .selectFrom("coach_leaders")
-      .select("slug")
-      .where("email", "in", BUNDLE_EMAILS)
-      .execute();
-    expect(rows).toEqual([]);
+    expect(
+      await conn
+        .selectFrom("coach_leaders")
+        .selectAll()
+        .where("email", "in", BUNDLE_EMAILS)
+        .orderBy("slug")
+        .execute(),
+    ).toEqual(before);
   });
 
   it("A bundle missing reports is refused: the roster backfill of the stale dd28af72 publish writes nothing", async () => {

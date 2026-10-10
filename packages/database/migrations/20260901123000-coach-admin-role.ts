@@ -47,14 +47,6 @@ export async function up(db: Kysely<Database>): Promise<void> {
     FOR EACH ROW EXECUTE FUNCTION coach_admins_normalize_email();
   `.execute(db);
 
-  const seedAdmin = seedAdminEmail();
-  if (seedAdmin) {
-    await sql`
-      INSERT INTO coach_admins (email) VALUES (${seedAdmin})
-      ON CONFLICT (email) DO NOTHING
-    `.execute(db);
-  }
-
   console.log("coach_admins created successfully");
 }
 
@@ -64,11 +56,4 @@ export async function down(db: Kysely<Database>): Promise<void> {
   );
   await sql`DROP FUNCTION IF EXISTS coach_admins_normalize_email()`.execute(db);
   await db.schema.dropTable("coach_admins").ifExists().execute();
-}
-
-export function seedAdminEmail(
-  env: Record<string, string | undefined> = process.env,
-): string | null {
-  const email = env.COACH_SEED_ADMIN_EMAIL?.trim().toLowerCase();
-  return email ? email : null;
 }
