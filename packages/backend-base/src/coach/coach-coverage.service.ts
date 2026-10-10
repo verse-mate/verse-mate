@@ -140,11 +140,22 @@ export class CoachCoverageService {
     );
     const lapseBefore = Date.now() - ATTESTATION_LAPSES_AFTER_DAYS * 86_400_000;
     const rotating = await loadRotatingClasses(this.db);
+    const observedClasses = new Set(
+      (
+        await conn
+          .selectFrom("coach_intake_sessions")
+          .select("rotating_class_id")
+          .where("rotating_class_id", "is not", null)
+          .where("observed_at", ">=", since)
+          .execute()
+      ).map((r) => r.rotating_class_id as number),
+    );
     const classTaught = (slug: string) =>
       rotating.some(
         (c) =>
           c.leaders.includes(slug) &&
-          c.leaders.some((l) => (observedByCoach.get(l) ?? 0) > 0),
+          (observedClasses.has(c.id) ||
+            c.leaders.some((l) => (observedByCoach.get(l) ?? 0) > 0)),
       );
 
     // The join path, stated because it is not obvious: the roster keys on
