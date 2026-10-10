@@ -1364,7 +1364,7 @@ const plugin = new Elysia()
           const revoked = await new CoachIdentityService(
             store.db,
             null,
-          ).revokeAdmin(decodeURIComponent(params.email));
+          ).revokeAdmin(params.email);
           if (!revoked.ok)
             throw refuse("DELETE /coach/admin/admins/:email", revoked.refusal);
           return { revoked: true };

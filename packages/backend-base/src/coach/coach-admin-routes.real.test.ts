@@ -523,6 +523,20 @@ describe("the admin role routes", () => {
   });
 });
 
+describe("removing an admin by address", () => {
+  it("an address holding a percent sign is looked up as written, not decoded twice", async () => {
+    expect(
+      await call(
+        "DELETE",
+        `admins/${encodeURIComponent("50%off@example.test")}`,
+      ),
+    ).toMatchObject({
+      status: 404,
+      body: { details: { refusal: "unknown-admin" } },
+    });
+  });
+});
+
 describe("the identity audit route", () => {
   it("lists the roster and admins with their account state", async () => {
     const audit = await call("GET", "identity-audit");
