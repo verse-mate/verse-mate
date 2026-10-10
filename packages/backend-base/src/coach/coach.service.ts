@@ -1661,13 +1661,26 @@ export class CoachService {
   async isAdmin(userId: string): Promise<boolean> {
     const email = await this.emailFor(userId);
     if (!email) return false;
-    const row = await this.db
-      .getOrCreateConnection()
-      .selectFrom("coach_admins")
-      .select("email")
-      .where("user_id", "=", userId as never)
-      .executeTakeFirst();
-    return row !== undefined;
+    const conn = this.db.getOrCreateConnection();
+    const bound = async () =>
+      (await conn
+        .selectFrom("coach_admins")
+        .select("email")
+        .where("user_id", "=", userId as never)
+        .executeTakeFirst()) !== undefined;
+    if (await bound()) return true;
+    const claimed = await sql`
+      UPDATE coach_admins SET user_id = ${userId}
+      WHERE lower(email) = ${email} AND user_id IS NULL
+        AND NOT EXISTS (SELECT 1 FROM coach_admins b WHERE b.user_id = ${userId})
+      RETURNING email
+    `
+      .execute(conn)
+      .catch((error: unknown) => {
+        if ((error as { code?: string }).code === "23505") return { rows: [] };
+        throw error;
+      });
+    return claimed.rows.length > 0 || bound();
   }
 
   async getMe(userId: string) {

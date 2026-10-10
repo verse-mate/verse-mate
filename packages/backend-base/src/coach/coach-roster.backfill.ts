@@ -136,12 +136,18 @@ export async function backfillCoachRoster(
     `.execute(conn);
   }
 
-  for (const email of bundle.admins ?? []) {
-    await sql`
-      INSERT INTO coach_admins (email) VALUES (${email})
-      ON CONFLICT (email) DO NOTHING
-    `.execute(conn);
-  }
+  const hasAdmins = await conn
+    .selectFrom("coach_admins")
+    .select("email")
+    .limit(1)
+    .executeTakeFirst();
+  if (!hasAdmins)
+    for (const email of bundle.admins ?? []) {
+      await sql`
+        INSERT INTO coach_admins (email) VALUES (${email})
+        ON CONFLICT (email) DO NOTHING
+      `.execute(conn);
+    }
 
   const narratives = Object.entries(bundle.monthlyNarratives ?? {});
   for (const [month, narrative] of narratives) {

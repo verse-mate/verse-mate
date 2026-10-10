@@ -72,7 +72,7 @@ export class CoachIdentityService {
     ];
     return {
       entries,
-      atRisk: entries.filter((e) => e.account !== "verified").length,
+      atRisk: entries.filter((e) => !e.bound).length,
     };
   }
 

@@ -1,5 +1,19 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
+import { refuseToDrop } from "./20260825120000-create-coach-reports-store";
+
+export async function confirmRosterAddressesAgain(
+  db: Kysely<Database>,
+): Promise<void> {
+  await sql`
+    UPDATE "user" SET "emailVerified" = false
+    WHERE "emailVerified" = true
+      AND lower(email) IN (
+        SELECT lower(email) FROM coach_leaders
+        UNION SELECT lower(email) FROM coach_admins
+      )
+  `.execute(db);
+}
 
 export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
@@ -15,22 +29,20 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
     .alterTable("coach_admins")
     .addColumn("user_id", "uuid", (col) =>
-      col.references("user.id").onDelete("cascade"),
+      col.references("user.id").onDelete("set null"),
     )
     .execute();
   await sql`
-    UPDATE coach_leaders l SET user_id = u.id
-    FROM "user" u
-    WHERE lower(u.email) = lower(l.email) AND u."emailVerified" = true
+    CREATE UNIQUE INDEX coach_admins_user_uidx
+    ON coach_admins (user_id) WHERE user_id IS NOT NULL
   `.execute(db);
-  await sql`
-    UPDATE coach_admins a SET user_id = u.id
-    FROM "user" u
-    WHERE lower(u.email) = lower(a.email) AND u."emailVerified" = true
-  `.execute(db);
+  await confirmRosterAddressesAgain(db);
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await refuseToDrop(db, "coach_leaders", "user_id IS NOT NULL");
+  await refuseToDrop(db, "coach_admins", "user_id IS NOT NULL");
+  await sql`DROP INDEX IF EXISTS coach_admins_user_uidx`.execute(db);
   await sql`DROP INDEX IF EXISTS coach_leaders_user_uidx`.execute(db);
   await db.schema.alterTable("coach_admins").dropColumn("user_id").execute();
   await db.schema.alterTable("coach_leaders").dropColumn("user_id").execute();

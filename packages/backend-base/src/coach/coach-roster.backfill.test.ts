@@ -6,6 +6,7 @@ import history from "./coach-bundle-history.fixture.json";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
 import leaderMapJson from "./coach-leader-map.json";
 import { backfillCoachRoster } from "./coach-roster.backfill";
+import { isolateTable } from "./coach-test-tables";
 import coachDataJson from "./coach.data.json";
 
 const conn = Database.getOrCreateConnection();
@@ -350,5 +351,22 @@ describe("roster and monthly backfill (DB)", () => {
     expect({ summaries: await summaries(), leaders: await leaders() }).toEqual(
       before,
     );
+  });
+});
+
+describe("the backfill never restores an admin someone removed", () => {
+  isolateTable("coach_admins");
+
+  it("bundle admins are seeded only into an empty admin list", async () => {
+    await conn
+      .insertInto("coach_admins")
+      .values({ email: "kept-admin@example.test" })
+      .execute();
+    await backfillCoachRoster();
+    expect(
+      (await conn.selectFrom("coach_admins").select("email").execute()).map(
+        (a) => a.email,
+      ),
+    ).toEqual(["kept-admin@example.test"]);
   });
 });
