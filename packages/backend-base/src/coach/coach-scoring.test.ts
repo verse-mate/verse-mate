@@ -784,6 +784,7 @@ describe("a score names what produced it", () => {
     ["the title length the vision call keeps", "maxTitleChars", 400],
     ["the text call's output token cap", "textMaxTokens", 4000],
     ["the vision call's output token cap", "visionMaxTokens", 500],
+    ["the leader-cue call's output token cap", "leaderCueMaxTokens", 500],
     ["the response format", "responseFormat", { type: "text" }],
   ] as const)(
     "The request changes: a change to %s is a different prompt version",
@@ -965,6 +966,12 @@ describe("prompts sent in OpenAI JSON mode", () => {
       leaderCues: CoachScoringService.buildLeaderCueInstructions(),
       vision: CoachScoringService.buildVisionInstructions(),
       body: CoachReportBodyService.buildInstructions(),
+      monthlyLeader: (
+        await import("./coach-monthly.service")
+      ).CoachMonthlyService.leaderInstructions(),
+      monthlyProgram: (
+        await import("./coach-monthly.service")
+      ).CoachMonthlyService.programInstructions(),
     };
     for (const [name, prompt] of Object.entries(prompts)) {
       expect({ name, mentionsJson: /json/i.test(prompt) }).toEqual({
@@ -972,5 +979,55 @@ describe("prompts sent in OpenAI JSON mode", () => {
         mentionsJson: true,
       });
     }
+  });
+});
+
+describe("token budgets on a reasoning model", () => {
+  it("the leader-cue and vision calls each have a budget that leaves room for reasoning, since gpt-5 counts reasoning against the limit", async () => {
+    const asked: number[] = [];
+    const ai = {
+      chatComplete: async (opts: AiChatOptions): Promise<AiChatResponse> => {
+        asked.push(opts.maxTokens ?? 0);
+        return { content: JSON.stringify({ cues: [] }), model: "m" };
+      },
+    } as unknown as AiProvider;
+    await new CoachScoringService(Database as never, ai).nameRotatingLeader({
+      transcript: [
+        { speakerId: "s", isLeader: false, text: "Let's pray.", startTime: 0 },
+      ],
+      leaders: [{ slug: "leader-a", name: "Leader A" }],
+    });
+    expect(asked[0]).toBe(SCORING_REQUEST.leaderCueMaxTokens);
+    expect(SCORING_REQUEST.leaderCueMaxTokens).toBeGreaterThanOrEqual(8000);
+    expect(SCORING_REQUEST.leaderCueMaxTokens).toBeGreaterThanOrEqual(4000);
+    expect(SCORING_REQUEST.visionMaxTokens).toBeGreaterThanOrEqual(4000);
+  });
+});
+
+describe("the leader-cue call", () => {
+  it("asks for low reasoning effort: a real gpt-5 call at the default effort spent its whole budget reasoning and returned nothing", async () => {
+    const efforts: Array<string | null | undefined> = [];
+    const ai = {
+      chatComplete: async (opts: AiChatOptions): Promise<AiChatResponse> => {
+        efforts.push(opts.reasoningEffort);
+        return { content: JSON.stringify({ cues: [] }), model: "m" };
+      },
+    } as unknown as AiProvider;
+    await new CoachScoringService(Database as never, ai).nameRotatingLeader({
+      transcript: [
+        { speakerId: "s", isLeader: false, text: "Let's pray.", startTime: 0 },
+      ],
+      leaders: [{ slug: "leader-a", name: "Leader A" }],
+    });
+    expect(efforts).toEqual(["low"]);
+  });
+});
+
+describe("the leader-cue prompt", () => {
+  it("asks for the person who performs each cue, never the person called on: a real gpt-5 call named the member asked to pray as the leader", () => {
+    const prompt = CoachScoringService.buildLeaderCueInstructions();
+    expect(prompt).toContain("the person who PERFORMS the cue");
+    expect(prompt).toContain("never the person they call on");
+    expect(prompt).toContain("leave people empty");
   });
 });
