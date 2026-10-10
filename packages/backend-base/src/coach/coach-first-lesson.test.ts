@@ -313,12 +313,28 @@ describe("Memory Reinforcement is not applicable on a study's first lesson (task
     expect(result.firstLessonLine).toBe("We're starting Amos this week");
   });
 
+  it("a line that says a new book begins counts even when it ends in a chapter number", async () => {
+    for (const line of [
+      "We're starting Amos 1",
+      "Let's begin Romans 1",
+      "Intro to Romans 1",
+    ]) {
+      const { result } = await score(line, CONTINUING, { answer: true, line });
+      expect(result.firstLessonLine).toBe(line);
+    }
+  });
+
   it("a yes that cites only a book and chapter is not a first lesson", async () => {
     const { result } = await score("Jonah 1", CONTINUING, {
       answer: true,
       line: "Jonah 1",
     });
     expect(result.firstLessonLine).toBeNull();
+    const spelled = await score("Song of Songs chapter 1", CONTINUING, {
+      answer: true,
+      line: "Song of Songs chapter 1",
+    });
+    expect(spelled.result.firstLessonLine).toBeNull();
   });
 
   it("a yes citing a line that is in neither the title nor the transcript is not a first lesson", async () => {

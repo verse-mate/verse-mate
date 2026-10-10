@@ -213,7 +213,7 @@ export function firstLessonShown(
 }
 
 const CHAPTER_ONLY =
-  /^(?!.*\b(?:lesson|week|session|part|study|book)\b)(?:\d\s+)?\p{L}+(?:\s+\p{L}+){0,2}\s+\d+(?:[:.]\d+(?:-\d+)?)?$/iu;
+  /^(?!.*\b(?:[Ll]esson|LESSON|[Ww]eek|WEEK|[Ss]ession|[Pp]art|[Ss]tudy|[Bb]ook)\b)(?:\d\s+)?\p{Lu}\p{L}*(?:\s+(?:of|\p{Lu}\p{L}*)){0,2}(?:\s+(?:[Cc]hapter|[Cc]h))?\s+\d+(?:[:.]\d+(?:-\d+)?)?$/u;
 
 export const LEADER_CUES = [
   "opening_prayer",
