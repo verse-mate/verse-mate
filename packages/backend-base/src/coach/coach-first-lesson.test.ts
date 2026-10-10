@@ -170,10 +170,12 @@ class AnsweringAi implements AiProvider {
   sent: AiChatOptions[] = [];
   constructor(
     private readonly firstLesson: unknown = { answer: false, line: "" },
+    private readonly body: Record<string, unknown> = {},
   ) {}
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
     this.sent.push(opts);
-    if (isBodyCall(opts)) return { content: bodyAnswer(), model: "fake" };
+    if (isBodyCall(opts))
+      return { content: bodyAnswer(this.body), model: "fake" };
     if (opts.messages.some((m) => m.images?.length))
       return {
         content: JSON.stringify({ score: 4, rationale: "a chart on screen" }),
@@ -421,7 +423,11 @@ describe("the pipeline applies the scoring stage's first-lesson answer", () => {
   beforeEach(clear);
   afterEach(clear);
 
-  async function runWith(firstLesson: unknown, parallelRun = false) {
+  async function runWith(
+    firstLesson: unknown,
+    parallelRun = false,
+    body: Record<string, unknown> = {},
+  ) {
     await conn
       .insertInto("coach_intake_sessions")
       .values({
@@ -463,7 +469,10 @@ describe("the pipeline applies the scoring stage's first-lesson answer", () => {
       }),
     };
     await new CoachPipelineService(Database, client as never, null, {
-      scoring: new CoachScoringService(Database, new AnsweringAi(firstLesson)),
+      scoring: new CoachScoringService(
+        Database,
+        new AnsweringAi(firstLesson, body),
+      ),
       frames: {
         extract: async () => [{ data: new Uint8Array([1, 2, 3]) }],
       } as never,
@@ -490,6 +499,33 @@ describe("the pipeline applies the scoring stage's first-lesson answer", () => {
     expect(s.rows).toContain(
       "Overall Class Time: 1h 30m  (Target: 1.5-2h)  → ON TARGET",
     );
+  });
+
+  it("a detected first lesson reaches the body stage: an improvement asking to recall earlier lessons holds the report", async () => {
+    const answer = JSON.parse(bodyAnswer()) as {
+      improvements: Array<Record<string, unknown>>;
+    };
+    await runWith(
+      { answer: true, line: "We're starting Amos this week" },
+      false,
+      {
+        improvements: [
+          {
+            ...answer.improvements[0],
+            title: "Recall last week's big ideas",
+            line: "Open by asking the group to recall last week's big ideas.",
+          },
+          ...answer.improvements.slice(1),
+        ],
+      },
+    );
+    const session = await conn
+      .selectFrom("coach_intake_sessions")
+      .select(["state", "hold_reason"])
+      .where("source_session_id", "=", "ff-fl-pipeline")
+      .executeTakeFirstOrThrow();
+    expect(session.hold_reason).toContain("cold-recall");
+    expect(session.state).not.toBe("delivered");
   });
 
   it("a no keeps the Big Ideas review row the body stage wrote", async () => {
