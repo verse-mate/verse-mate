@@ -62,7 +62,7 @@ function normalized(text: string): string {
 }
 
 const QUOTE_EDGES = /^[\s"'.,;:!?…-]+|[\s"'.,;:!?…-]+$/g;
-const SPEAKER_PREFIX = /^[^\s:]{1,40}(?: \d{1,3})?:\s*/;
+const SPEAKER_PREFIX = /^[^\s:.!?]+(?: [^\s:.!?]+){0,5}:\s*/;
 const TIME_PREFIX = /^\[\d{1,2}(?::\d{2}){1,2}\]\s*/;
 const WORD = /[\p{L}\p{N}']/u;
 
