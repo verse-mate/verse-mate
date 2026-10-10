@@ -168,8 +168,9 @@ async function* streamOf(events: Iterable<StreamEvent>) {
 function providerSending(
   sent: Record<string, unknown>[],
   events: () => Iterable<StreamEvent> = () => eventsOf(["{", "}"]),
+  timing?: { idleMs?: number; totalMs?: number },
 ) {
-  const provider = new OpenAiProvider("test-key");
+  const provider = new OpenAiProvider("test-key", timing);
   (provider as unknown as { client: unknown }).client = {
     responses: {
       create: async (body: Record<string, unknown>) => {
@@ -312,5 +313,63 @@ describe("OpenAiProvider chatComplete", () => {
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("max_output_tokens");
+  });
+
+  it("a stream that ends without completing is an error, never a partial answer", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await expect(
+      providerSending(sent, function* () {
+        yield { type: "response.output_text.delta", delta: '{"strengths":[' };
+      }).chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("ended before completing");
+  });
+
+  it("a failed response and an error event are errors", async () => {
+    for (const event of [
+      {
+        type: "response.failed",
+        response: { error: { message: "server_error" } },
+      },
+      { type: "error", message: "rate limited" },
+    ]) {
+      const sent: Record<string, unknown>[] = [];
+      await expect(
+        providerSending(sent, function* () {
+          yield event;
+        }).chatComplete({
+          model: "gpt-5",
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      ).rejects.toThrow("did not complete");
+    }
+  });
+
+  it("a stream that stops sending events is aborted after the idle limit and reported as stalled", async () => {
+    const provider = new OpenAiProvider("test-key", { idleMs: 50 });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async (_body: unknown, options: { signal: AbortSignal }) =>
+          (async function* () {
+            yield { type: "response.output_text.delta", delta: "{" };
+            await new Promise<void>((resolve) =>
+              options.signal.addEventListener("abort", () => resolve()),
+            );
+          })(),
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("no data for 50 ms");
+  });
+
+  it("gpt-5-chat models get no reasoning request, since they do not reason", async () => {
+    const sent = await sentFor({ model: "gpt-5-chat-latest" });
+    expect(sent).not.toHaveProperty("reasoning");
   });
 });
