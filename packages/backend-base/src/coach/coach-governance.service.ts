@@ -26,8 +26,7 @@ export interface ReportEvidence {
 
 export type GovernanceViolation =
   | { rule: "benchmark-name"; detail: string }
-  | { rule: "reused-quote"; detail: string }
-  | { rule: "reused-timestamp"; detail: string };
+  | { rule: "reused-quote"; detail: string };
 
 export interface GovernanceVerdict {
   passed: boolean;
@@ -74,37 +73,31 @@ export function checkBenchmarkName(input: {
   ];
 }
 
+function quoteKey(quote: string): string {
+  return normalizeQuote(quote)
+    .replace(/[^\p{L}\p{N}\s]+/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function checkEvidenceReuse(
   candidate: ReportEvidence,
   earlier: Array<ReportEvidence & { reportId?: string }>,
 ): GovernanceViolation[] {
   const seenQuotes = new Map<string, string | undefined>();
-  const seenTimestamps = new Map<string, string | undefined>();
-  for (const e of earlier) {
+  for (const e of earlier)
     for (const q of e.quotes)
-      if (!seenQuotes.has(normalizeQuote(q)))
-        seenQuotes.set(normalizeQuote(q), e.reportId);
-    for (const t of e.timestamps)
-      if (!seenTimestamps.has(t)) seenTimestamps.set(t, e.reportId);
-  }
+      if (!seenQuotes.has(quoteKey(q))) seenQuotes.set(quoteKey(q), e.reportId);
   const named = (reportId: string | undefined) =>
     reportId ? `earlier report ${reportId}` : "an earlier report";
 
   const violations: GovernanceViolation[] = [];
   for (const quote of candidate.quotes) {
-    const key = normalizeQuote(quote);
-    if (seenQuotes.has(key)) {
+    const key = quoteKey(quote);
+    if (key && seenQuotes.has(key)) {
       violations.push({
         rule: "reused-quote",
         detail: `a quote already used in ${named(seenQuotes.get(key))}: "${quote.slice(0, 60)}"`,
-      });
-    }
-  }
-  for (const stamp of candidate.timestamps) {
-    if (seenTimestamps.has(stamp)) {
-      violations.push({
-        rule: "reused-timestamp",
-        detail: `timestamp ${stamp} already cited in ${named(seenTimestamps.get(stamp))}`,
       });
     }
   }

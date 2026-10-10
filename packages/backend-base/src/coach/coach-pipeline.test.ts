@@ -2024,7 +2024,12 @@ describe("every hold carries a structured kind beside its prose", () => {
     await priorReport("pipe-coach-prior-evidence", "2026-08-15", 4);
     await conn
       .updateTable("coach_reports")
-      .set({ evidence: JSON.stringify({ quotes: [], timestamps: ["12:01"] }) })
+      .set({
+        evidence: JSON.stringify({
+          quotes: ["said at 12:01"],
+          timestamps: [],
+        }),
+      })
       .where("id", "=", "pipe-coach-prior-evidence")
       .execute();
     await pipeline(new FakeMailer()).run();

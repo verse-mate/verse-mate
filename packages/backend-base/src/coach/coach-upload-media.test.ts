@@ -266,6 +266,7 @@ describe("an uploaded video is checked and transcribed by the media worker (task
   it("a failed upload leaves nothing in storage", async () => {
     const id = await received();
     await media({ hasVideo: true, seconds: 90 }).process();
+    expect((await state(id)).upload.state).toBe("failed");
     expect([...storage.objects.keys()]).toEqual([]);
   });
 

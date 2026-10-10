@@ -581,10 +581,7 @@ describe("delivery", () => {
       evidence: evidence(["a line the leader said once"], ["12:34"]),
     });
     expect(later.refusal).toBe("governance-blocked");
-    expect(later.violations?.map((v) => v.rule)).toEqual([
-      "reused-quote",
-      "reused-timestamp",
-    ]);
+    expect(later.violations?.map((v) => v.rule)).toEqual(["reused-quote"]);
     for (const v of later.violations ?? [])
       expect(v.detail).toContain("r-partial");
     expect(mailer.sent).toEqual([]);
