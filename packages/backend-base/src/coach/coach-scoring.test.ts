@@ -1053,12 +1053,12 @@ describe("the leader-cue prompt", () => {
 });
 
 describe("the leader-cue answer quotes a rendered line", () => {
-  it("a cue line quoted with its time and a full-name speaker label still names the leader", async () => {
+  it("a cue line quoted with its time and the recording bot's speaker label still names the leader", async () => {
     const transcript: TimedLine[] = [
       {
-        speakerId: "Leader Alpha Example",
+        speakerId: "speaker-2",
         isLeader: false,
-        text: "Ben, would you read verse one?",
+        text: "Thanks, Alpha. Ben, would you read verse one?",
         startTime: 10,
       },
     ];
@@ -1069,8 +1069,8 @@ describe("the leader-cue answer quotes a rendered line", () => {
             { cue: "opening_prayer", people: [], line: "" },
             {
               cue: "reading",
-              people: ["Leader Alpha Example"],
-              line: "[00:00:10] Leader Alpha Example: Ben, would you read verse one?",
+              people: ["Alpha"],
+              line: "[00:00:10] speaker-2: Thanks, Alpha. Ben, would you read verse one?",
             },
           ],
         }),
@@ -1083,10 +1083,46 @@ describe("the leader-cue answer quotes a rendered line", () => {
     ).nameRotatingLeader({
       transcript,
       leaders: [
-        { slug: "leader-alpha", name: "Leader Alpha Example" },
+        { slug: "leader-alpha", name: "Alpha Example" },
         { slug: "leader-beta", name: "Ben Beta" },
       ],
     });
     expect(named?.slug).toBe("leader-alpha");
+  });
+
+  it("an opening-prayer answer counts only when the leader's name is in the prayer line", async () => {
+    const transcript: TimedLine[] = [
+      {
+        speakerId: "speaker-1",
+        isLeader: false,
+        text: "Lord, thank you for this group. Amen.",
+        startTime: 0,
+      },
+    ];
+    const ai = {
+      chatComplete: async (): Promise<AiChatResponse> => ({
+        content: JSON.stringify({
+          cues: [
+            {
+              cue: "opening_prayer",
+              people: ["Alpha Example"],
+              line: "Lord, thank you for this group. Amen.",
+            },
+          ],
+        }),
+        model: "m",
+      }),
+    } as unknown as AiProvider;
+    const named = await new CoachScoringService(
+      Database as never,
+      ai,
+    ).nameRotatingLeader({
+      transcript,
+      leaders: [
+        { slug: "leader-alpha", name: "Alpha Example" },
+        { slug: "leader-beta", name: "Ben Beta" },
+      ],
+    });
+    expect(named).toBeNull();
   });
 });
