@@ -568,6 +568,40 @@ describe("a retained session reaches a delivered report", () => {
     expect(body.sections.some((s) => s.title === "Drift Check")).toBe(true);
   });
 
+  it("any other leader's machine report carries no comparison with history, even with earlier reports", async () => {
+    for (const [i, date] of ["2026-08-01", "2026-08-08"].entries())
+      await conn
+        .insertInto("coach_reports")
+        .values({
+          id: `pipe-history-${i}`,
+          coach_id: COACH,
+          session_date: date,
+          source_session_id: `ff-pipe-history-${i}`,
+          legacy_ids: [],
+          summary: {},
+          metrics: JSON.stringify({
+            dimensions: DIMENSIONS.map((d) => ({ n: d.n, score: 2 })),
+          }),
+          body: {},
+        })
+        .execute();
+    const [result] = await pipeline(null).run();
+    const body = (
+      await conn
+        .selectFrom("coach_reports")
+        .select("body")
+        .where("id", "=", result.reportId as string)
+        .executeTakeFirstOrThrow()
+    ).body as { sections: Array<{ title: string }> };
+    expect(
+      body.sections.some(
+        (s) =>
+          s.title === "Session-Over-Session Comparison" ||
+          s.title === "Drift Check",
+      ),
+    ).toBe(false);
+  });
+
   it("scores it, publishes it, and emails it, in that order", async () => {
     const mailer = new FakeMailer();
     const [result] = await pipeline(mailer).run();
