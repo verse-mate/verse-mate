@@ -33,14 +33,15 @@ export async function runCoachDeployStep(
       try {
         await sql`SELECT pg_advisory_lock(${DEPLOY_LOCK})`.execute(lockHolder);
       } catch (error) {
+        const { message, code } = error as { message?: string; code?: string };
         console.error(
-          `[coach-deploy] skipped: another process held the deploy lock for ${lockTimeout} (${(error as { message?: string }).message ?? String(error)})`,
+          code === "55P03"
+            ? `[coach-deploy] skipped: another process held the deploy lock for ${lockTimeout}`
+            : `[coach-deploy] skipped: the deploy lock could not be taken (${code ?? "no code"}): ${message ?? String(error)}`,
         );
         return;
       } finally {
-        await sql`SELECT set_config('lock_timeout', '0', false)`.execute(
-          lockHolder,
-        );
+        await sql`RESET lock_timeout`.execute(lockHolder);
       }
       try {
         await step("roster backfill", async () => {

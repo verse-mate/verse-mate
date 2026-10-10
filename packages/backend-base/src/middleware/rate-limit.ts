@@ -31,9 +31,13 @@ export function createIpRateLimit(
     const entry = windows.get(ip);
 
     if (!entry || now >= entry.resetAt) {
-      if (!entry && windows.size >= MAX_TRACKED)
-        for (const [key, window] of windows)
-          if (now >= window.resetAt) windows.delete(key);
+      for (const [key, window] of windows) {
+        if (now < window.resetAt) break;
+        windows.delete(key);
+      }
+      windows.delete(ip);
+      if (windows.size >= MAX_TRACKED)
+        windows.delete(windows.keys().next().value as string);
       windows.set(ip, { count: 1, resetAt: now + WINDOW_MS });
       return;
     }

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { extractClientIp } from "../auth/sso/sso.utils";
 import { createIpRateLimit } from "../middleware/rate-limit";
 import redisClient from "../shared/redis-client";
-import { clientIp } from "./client-ip";
+import { clientIp, forgetLoggedForwardedCounts } from "./client-ip";
 import { authRateLimiters, createRateLimit } from "./rate-limit.middleware";
 
 const PROXY = "10.10.10.10";
@@ -292,20 +292,25 @@ describe("until the proxy count is set, nothing a user does today is refused bec
     ).toBe(CLIENT);
   });
 
-  it("the log shows how many forwarded addresses requests carry, once per count, and no address", () => {
+  it("the log shows each new fewest count of forwarded addresses, never a larger one, and no address", () => {
+    forgetLoggedForwardedCounts();
     const logs = spyOn(console, "log").mockImplementation(() => {});
     try {
-      const forwarded = (xff: string) =>
+      const forwarded = (n: number) =>
         clientIp(
           new Request("http://localhost/", {
-            headers: { "x-forwarded-for": xff },
+            headers: {
+              "x-forwarded-for": Array.from(
+                { length: n },
+                (_, i) => `192.0.2.${i + 10}`,
+              ).join(", "),
+            },
           }),
           { requestIP: () => ({ address: PROXY }) },
         );
-      forwarded("192.0.2.10, 192.0.2.11, 192.0.2.12, 192.0.2.13, 192.0.2.14");
-      forwarded("192.0.2.20, 192.0.2.21, 192.0.2.22, 192.0.2.23, 192.0.2.24");
+      for (const n of [3, 5, 3, 9, 2, 4]) forwarded(n);
       const lines = logs.mock.calls.flat().join("\n");
-      expect(lines.match(/carried 5 forwarded/g)).toHaveLength(1);
+      expect(lines.match(/carried \d+/g)).toEqual(["carried 3", "carried 2"]);
       expect(lines).not.toMatch(/192\.0\.2\./);
     } finally {
       logs.mockRestore();
@@ -351,7 +356,7 @@ describe("an unreadable proxy count is not a confirmed one", () => {
 });
 
 describe("the per-route IP limiter does not grow without bound", () => {
-  it("expired windows are dropped once it tracks many addresses", () => {
+  it("expired windows are dropped, and live ones never pass the cap", () => {
     hops(undefined);
     const logs = spyOn(console, "log").mockImplementation(() => {});
     const limiter = createIpRateLimit(1);
@@ -370,6 +375,12 @@ describe("the per-route IP limiter does not grow without bound", () => {
       now.mockReturnValue(1_000 + 61_000);
       at("192.0.2.200");
       expect(limiter.tracked()).toBe(1);
+      let most = 0;
+      for (let i = 0; i < 20_000; i++) {
+        at(`11.${i >> 16}.${(i >> 8) & 255}.${i & 255}`);
+        most = Math.max(most, limiter.tracked());
+      }
+      expect(most).toBe(10_000);
     } finally {
       now.mockRestore();
       logs.mockRestore();
