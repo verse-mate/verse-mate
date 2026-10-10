@@ -71,6 +71,10 @@ All rows of the table are lost.
 | `20260901144000-coach-reminder-summaries` | `coach_reminder_summaries` |
 | `20260901145000-coach-report-edits` | `coach_report_edits` |
 | `20260901157000-coach-leader-email-requests` | `coach_leader_email_requests` (pending and resolved address changes; a pending one can no longer be confirmed) |
+| `20260901159000-coach-rotating-classes` | `coach_rotating_classes` and their leaders |
+| `20260901161000-coach-uploads` | `coach_uploads` (the uploaded recordings stay in the bucket, unreferenced) |
+| `20260901162000-coach-monthly-reports` | `coach_monthly_reports` (produced, held and sent summaries and program reports) |
+| `20260901163000-coach-monday-reminders` | `coach_monday_reminders` |
 
 #### Columns
 
@@ -98,6 +102,12 @@ The column's values are lost; the rows stay.
 | `20260901153000-coach-intake-send-unconfirmed` | `coach_intake_sessions`: `send_unconfirmed` |
 | `20260901155000-coach-score-produced-by` | `coach_report_dimension_scores`: `language_model`, `prompt_version`, `generation_settings` |
 | `20260901156000-coach-machine-score` | `coach_report_dimension_scores`: `machine_score` (refuses only while a human-corrected row holds one; on a machine row it equals `score`, which the up copies again) |
+| `20260901158000-coach-first-lesson-line` | `coach_reports`: `first_lesson_line` (the line that showed a first lesson) |
+| `20260901160000-coach-rotating-leader-cue` | `coach_intake_sessions`: `leader_cue`, `leader_cue_line` |
+| `20260901161000-coach-uploads` | `coach_intake_sessions`: `source`, `class_key`, `meeting_link`, `duplicate_of`, `duplicate_dismissed_at` (refuses while an upload session, a received, failed or duplicate state, or a class key exists) |
+| `20260901164000-coach-identity-binding` | `coach_leaders.user_id`, `coach_admins.user_id` (refuses while any record or admin is bound). Its up cleared the email confirmation of every account on a roster or admin address; the down does not restore it |
+| `20260901165000-coach-upload-claims` | `coach_uploads`: `attempts`, `claimed_at` |
+| `20260901166000-coach-monthly-send-claims` | `coach_monthly_reports`: `sending_at` |
 
 ### Downs that drop data without a check
 
