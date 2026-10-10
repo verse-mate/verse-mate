@@ -66,6 +66,8 @@ export default interface CoachUploadsTable {
     Date | string | null | undefined,
     Date | string | null
   >;
+
+  addresses_at: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
 export type CoachUploads = Selectable<CoachUploadsTable>;

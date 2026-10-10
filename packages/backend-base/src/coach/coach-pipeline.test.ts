@@ -931,6 +931,14 @@ describe("a retained session reaches a delivered report", () => {
     expect(after.state).toBe("delivered");
   });
 
+  it("with the recording-bot key unset, a pending delivery is still retried on the next tick", async () => {
+    await pipeline(new FakeMailer(false)).run();
+    const mailer = new FakeMailer();
+    const retried = await pipeline(mailer).run({ uploadsOnly: true });
+    expect(retried.map((r) => r.outcome)).toEqual(["scored-and-delivered"]);
+    expect(mailer.sent.length).toBeGreaterThan(0);
+  });
+
   it("delivery attempts are counted from zero, not on top of earlier scoring failures", async () => {
     await conn
       .updateTable("coach_intake_sessions")

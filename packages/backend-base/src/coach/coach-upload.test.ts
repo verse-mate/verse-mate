@@ -735,11 +735,22 @@ describe("review fixes: duplicates, retries and limits on uploads", () => {
     );
   });
 
+  async function userOf(email: string) {
+    return (
+      await conn
+        .selectFrom("user")
+        .select("id")
+        .where("email", "=", email)
+        .executeTakeFirstOrThrow()
+    ).id;
+  }
+
   it("a leader who abandoned an unfinished upload can start again for the same class and date, and the old parts are removed", async () => {
-    const first = await request();
+    const me = await userOf(EMAILS[0]);
+    const first = await request({ byUserId: me });
     if (!first.ok) throw new Error(first.refusal);
     await arrive(first.uploadId, 1);
-    const second = await request();
+    const second = await request({ byUserId: me });
     expect(second.ok).toBe(true);
     expect(storage.objects.has(uploadPartKey(first.uploadId, 1))).toBe(false);
     expect((await uploads.list(LEADER)).map((u) => u.id)).not.toContain(
@@ -757,10 +768,48 @@ describe("review fixes: duplicates, retries and limits on uploads", () => {
     });
     await conn
       .updateTable("coach_uploads")
-      .set({ created_at: sql`now() - interval '4 hours'` })
+      .set({ addresses_at: sql`now() - interval '4 hours'` })
       .where("id", "=", first.uploadId as never)
       .execute();
     expect((await request({ classKey: key, coachId: OTHER })).ok).toBe(true);
+  });
+
+  it("an admin's upload for the leader does not throw away the leader's own upload still in progress", async () => {
+    const me = await userOf(EMAILS[0]);
+    const mine = await request({ byUserId: me });
+    if (!mine.ok) throw new Error(mine.refusal);
+    expect(
+      await request({ byUserId: await userOf(EMAILS[1]), byAdmin: true }),
+    ).toEqual({ ok: false, refusal: "upload-exists" });
+  });
+
+  it("an upload still asking for fresh addresses is not taken for abandoned", async () => {
+    const key = await rotating();
+    const first = await request({ classKey: key });
+    if (!first.ok) throw new Error(first.refusal);
+    await conn
+      .updateTable("coach_uploads")
+      .set({ created_at: sql`now() - interval '4 hours'` })
+      .where("id", "=", first.uploadId as never)
+      .execute();
+    expect(await uploads.refreshParts(first.uploadId, LEADER)).not.toBeNull();
+    expect(await request({ classKey: key, coachId: OTHER })).toEqual({
+      ok: false,
+      refusal: "upload-exists",
+    });
+  });
+
+  it("an upload the media worker is processing cannot be replaced until it finishes", async () => {
+    const id = await uploadComplete();
+    await conn
+      .updateTable("coach_uploads")
+      .set({ claimed_at: sql`now()` })
+      .where("id", "=", id as never)
+      .execute();
+    expect(await request({ byAdmin: true, replace: true })).toEqual({
+      ok: false,
+      refusal: "not-replaceable",
+    });
   });
 
   it("a part of the wrong size is not a whole file", async () => {

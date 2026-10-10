@@ -5,6 +5,6 @@ export function mediaInput(formats = VIDEO_FORMATS): string[] {
     "-format_whitelist",
     formats,
     "-protocol_whitelist",
-    "file,pipe,https,tls,tcp,crypto",
+    "file,pipe,http,https,tls,tcp,crypto",
   ];
 }
