@@ -16,8 +16,12 @@ import coachPlugin from "./coach.plugin";
 
 const USER = "admin-authz-user";
 const app = new Elysia().use(coachPlugin);
-const store = app.store as unknown as { coachService: unknown };
+const store = app.store as unknown as {
+  coachService: unknown;
+  notification: unknown;
+};
 const realService = store.coachService;
+const realNotification = store.notification;
 
 const IDENTITY_CHECKS = new Set(["isAdmin", "getMe", "isCoach"]);
 let role: "admin" | "leader" = "leader";
@@ -97,11 +101,13 @@ beforeAll(async () => {
   token = await signer.decorator.jwt.sign({ sub: USER });
   await redisClient.set(cacheConstants.accessToken(USER), [token], "5m");
   store.coachService = stubService;
+  store.notification = { sendEmail: async () => ({ delivered: true }) };
   await clearLimits();
 });
 
 afterAll(async () => {
   store.coachService = realService;
+  store.notification = realNotification;
   await redisClient.set(cacheConstants.accessToken(USER), [], "1s");
   await clearLimits();
 });
