@@ -313,6 +313,70 @@ describe("until the proxy count is set, nothing a user does today is refused bec
   });
 });
 
+describe("an unreadable proxy count is not a confirmed one", () => {
+  it("the sign-in limits stay off", async () => {
+    hops("2hops");
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const cache = memoryCache();
+      const results = [];
+      for (let i = 0; i < 7; i++)
+        results.push(
+          await hit(
+            authRateLimiters.login,
+            cache,
+            PROXY,
+            {},
+            { email: "x@example.test" },
+          ),
+        );
+      expect(results.every((r) => r === "ok")).toBe(true);
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it("a request with no forwarded address is not logged as a count", () => {
+    hops(undefined);
+    const logs = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      clientIp(new Request("http://localhost/"), {
+        requestIP: () => ({ address: CLIENT }),
+      });
+      expect(logs.mock.calls.flat().join(" ")).not.toContain("carried 0");
+    } finally {
+      logs.mockRestore();
+    }
+  });
+});
+
+describe("the per-route IP limiter does not grow without bound", () => {
+  it("expired windows are dropped once it tracks many addresses", () => {
+    hops(undefined);
+    const logs = spyOn(console, "log").mockImplementation(() => {});
+    const limiter = createIpRateLimit(1);
+    const now = spyOn(Date, "now").mockReturnValue(1_000);
+    try {
+      const at = (ip: string) =>
+        limiter({
+          request: new Request("http://localhost/", {
+            headers: { "x-forwarded-for": ip },
+          }),
+          set: {},
+        } as never);
+      for (let i = 0; i < 10_000; i++)
+        at(`10.${i >> 16}.${(i >> 8) & 255}.${i & 255}`);
+      expect(limiter.tracked()).toBe(10_000);
+      now.mockReturnValue(1_000 + 61_000);
+      at("192.0.2.200");
+      expect(limiter.tracked()).toBe(1);
+    } finally {
+      now.mockRestore();
+      logs.mockRestore();
+    }
+  });
+});
+
 describe("the confirmation email cannot be used to flood an address", () => {
   it("one account gets five confirmation emails an hour, and another account is not affected", async () => {
     const cache = memoryCache();

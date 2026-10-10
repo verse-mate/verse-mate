@@ -12,7 +12,10 @@ async function step(name: string, run: () => Promise<string>): Promise<void> {
   try {
     console.log(`[coach-deploy] ${name}: ${await run()}`);
   } catch (error) {
-    console.error(`[coach-deploy] ${name} failed:`, error);
+    const { message, code } = error as { message?: string; code?: string };
+    console.error(
+      `[coach-deploy] ${name} failed${code ? ` (${code})` : ""}: ${message ?? String(error)}`,
+    );
   }
 }
 
@@ -31,8 +34,7 @@ export async function runCoachDeployStep(
         await sql`SELECT pg_advisory_lock(${DEPLOY_LOCK})`.execute(lockHolder);
       } catch (error) {
         console.error(
-          `[coach-deploy] skipped: another process held the deploy lock for ${lockTimeout}`,
-          error,
+          `[coach-deploy] skipped: another process held the deploy lock for ${lockTimeout} (${(error as { message?: string }).message ?? String(error)})`,
         );
         return;
       } finally {
