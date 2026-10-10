@@ -349,6 +349,30 @@ describe("rotating classes (task 3.14)", () => {
     });
   });
 
+  it("a class session still waiting to have its leader named covers the class's rotating-only leaders", async () => {
+    const saved = await markRotating();
+    if (!saved.ok) throw new Error("not saved");
+    await setRotatingOnly(Database, "rot-cy", true);
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "rot-waiting",
+        coach_id: null,
+        rotating_class_id: saved.id,
+        matched_by: "rotating_class",
+        title: "Harbor Men",
+        session_date: "2026-10-01",
+      })
+      .execute();
+    const report = await new CoachCoverageService(Database).assess({
+      windowDays: 28,
+    });
+    expect(report.leaders.find((l) => l.coachId === "rot-cy")).toMatchObject({
+      covered: true,
+      basis: "rotating-class",
+    });
+  });
+
   it("a rotating class with no session in the window covers nobody", async () => {
     await markRotating();
     await setRotatingOnly(Database, "rot-cy", true);
