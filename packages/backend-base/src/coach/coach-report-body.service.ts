@@ -4,6 +4,7 @@ import {
   normalizeQuote,
 } from "./coach-governance.service";
 import { SCORECARD_RATINGS, withoutBigIdeasReviewRow } from "./coach-scorecard";
+import { boundedTranscript } from "./coach-scoring.service";
 import {
   type TimedLine,
   checkQuoteAt,
@@ -276,7 +277,7 @@ export class CoachReportBodyService {
           role: "user",
           content: fenced(
             "SESSION_TRANSCRIPT",
-            input.transcript.map(renderLine).join("\n"),
+            boundedTranscript(input.transcript.map(renderLine).join("\n")),
           ),
         },
         {

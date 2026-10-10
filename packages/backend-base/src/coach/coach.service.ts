@@ -569,13 +569,16 @@ export class CoachService {
       attempts: r.retry_count,
       reportId: r.report_id,
       reason:
-        r.coach_id === null
-          ? r.leader_cue === "none"
-            ? "unattributed: the transcript did not name which of the rotating class's leaders led"
-            : "unattributed: no leader matched the session title"
-          : r.state === "delivered" && r.skipped_leader
-            ? `delivered, but not emailed to ${r.skipped_leader}: ${r.skipped_group ? "a rotating class's group address, not the leader's own" : "placeholder address"}`
-            : r.hold_reason ?? (r.release_required ? REATTRIBUTED_HOLD : null),
+        r.state === "upload_failed"
+          ? r.hold_reason
+          : r.coach_id === null
+            ? r.leader_cue === "none"
+              ? "unattributed: the transcript did not name which of the rotating class's leaders led"
+              : "unattributed: no leader matched the session title"
+            : r.state === "delivered" && r.skipped_leader
+              ? `delivered, but not emailed to ${r.skipped_leader}: ${r.skipped_group ? "a rotating class's group address, not the leader's own" : "placeholder address"}`
+              : r.hold_reason ??
+                (r.release_required ? REATTRIBUTED_HOLD : null),
       holdKind: (r.hold_kind ??
         (r.release_required ? "reattributed" : null)) as HoldKind | null,
       ...(r.hold_kind === "cold-recall"

@@ -390,16 +390,15 @@ export class CoachPipelineService {
       .orderBy("coach_leaders.slug")
       .execute();
     const detail = await this.detailFor(session, null);
-    const named = detail
-      ? await this.scoring.nameRotatingLeader({
-          transcript: timedLinesFrom(detail.sentences),
-          leaders: leaders.map((l) => ({
-            slug: l.slug as string,
-            name: l.name,
-          })),
-        })
-      : null;
-    await conn
+    if (!detail) throw new Error("the transcript could not be read");
+    const named = await this.scoring.nameRotatingLeader({
+      transcript: timedLinesFrom(detail.sentences),
+      leaders: leaders.map((l) => ({
+        slug: l.slug as string,
+        name: l.name,
+      })),
+    });
+    const updated = await conn
       .updateTable("coach_intake_sessions")
       .set(
         named
@@ -413,7 +412,15 @@ export class CoachPipelineService {
       )
       .where("source_session_id", "=", session.source_session_id)
       .where("coach_id", "is", null)
-      .execute();
+      .executeTakeFirst();
+    if (Number(updated.numUpdatedRows ?? 0) === 0) {
+      const now = await conn
+        .selectFrom("coach_intake_sessions")
+        .select("coach_id")
+        .where("source_session_id", "=", session.source_session_id)
+        .executeTakeFirst();
+      return now?.coach_id ?? null;
+    }
     if (named)
       await conn
         .updateTable("coach_session_assets")
@@ -421,6 +428,22 @@ export class CoachPipelineService {
         .where("source_session_id", "=", session.source_session_id)
         .execute();
     return named?.slug ?? null;
+  }
+
+  private async uploadedByAnother(
+    session: { source_session_id: string; source: string },
+    coachId: string,
+  ): Promise<string | null> {
+    if (session.source !== "upload") return null;
+    const upload = await this.db
+      .getOrCreateConnection()
+      .selectFrom("coach_uploads")
+      .select("coach_id")
+      .where("source_session_id", "=", session.source_session_id)
+      .executeTakeFirst();
+    return upload && upload.coach_id !== coachId
+      ? "held for review: uploaded for another leader of the class than the one the transcript names"
+      : null;
   }
 
   private async runOne(session: {
@@ -509,6 +532,7 @@ export class CoachPipelineService {
     const holdReason =
       [
         scored.reviewReason,
+        await this.uploadedByAnother(session, coachId),
         generated.issues.length > 0
           ? `held for review: report body: ${generated.issues.join("; ")}`
           : null,

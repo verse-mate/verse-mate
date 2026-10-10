@@ -4,6 +4,7 @@ import { db as Database } from "database";
 import { sql } from "kysely";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
+import { CoachArchiveService } from "./coach-archive.service";
 import {
   attributeSession,
   loadAttributionRoster,
@@ -28,6 +29,7 @@ import {
   CoachScoringService,
   type ScoringInput,
 } from "./coach-scoring.service";
+import { MemoryStorage } from "./coach-upload.fixture";
 import { CoachService } from "./coach.service";
 import type {
   FirefliesClient,
@@ -549,6 +551,168 @@ describe("naming a rotating class's leader (task 5.19)", () => {
       cue("reading", ["Ben"], LINES.readBen),
     ]);
     expect((await session()).coach_id).toBe("rot-ben");
+  });
+
+  it("a transcript that cannot be read leaves the session to be tried again, not parked as unnamed", async () => {
+    const saved = await markRotating();
+    if (!saved.ok) throw new Error("not saved");
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: SESSION,
+        coach_id: null,
+        matched_by: "rotating_class",
+        rotating_class_id: saved.id,
+        title: "Harbor Men with Sol Ruiz",
+        session_date: "2026-10-01",
+        state: "retained",
+      })
+      .execute();
+    class Gone extends Client {
+      override async getTranscript(): Promise<FirefliesTranscriptDetail> {
+        return null as never;
+      }
+    }
+    const [result] = await new CoachPipelineService(
+      Database,
+      new Gone(),
+      null,
+      {
+        scoring: new CoachScoringService(Database, new CueAi([])),
+        frames: { extract: async () => [] } as never,
+      },
+    ).run();
+    expect(result.outcome).toBe("scoring-failed");
+    expect((await session()).leader_cue).toBeNull();
+  });
+
+  it("an admin who assigns the session while the cues are read wins, and its recording stays with that leader", async () => {
+    const saved = await markRotating();
+    if (!saved.ok) throw new Error("not saved");
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: SESSION,
+        coach_id: null,
+        matched_by: "rotating_class",
+        rotating_class_id: saved.id,
+        title: "Harbor Men with Sol Ruiz",
+        session_date: "2026-10-01",
+        state: "retained",
+      })
+      .execute();
+    await conn
+      .insertInto("coach_session_assets")
+      .values({
+        coach_id: "",
+        source_session_id: SESSION,
+        kind: "recording",
+        storage_key: `coach/recordings/${SESSION}.mp4`,
+        byte_size: 1,
+        content_type: "video/mp4",
+      } as never)
+      .execute();
+    class Racing extends CueAi {
+      override async chatComplete(opts: AiChatOptions) {
+        if (
+          opts.messages[0]?.content ===
+          CoachScoringService.buildLeaderCueInstructions()
+        )
+          await conn
+            .updateTable("coach_intake_sessions")
+            .set({ coach_id: "rot-ben" })
+            .where("source_session_id", "=", SESSION)
+            .execute();
+        return super.chatComplete(opts);
+      }
+    }
+    try {
+      await new CoachPipelineService(Database, new Client(), null, {
+        scoring: new CoachScoringService(
+          Database,
+          new Racing([cue("opening_prayer", ["Ana"], LINES.prayAna)]),
+        ),
+        frames: { extract: async () => [] } as never,
+      }).run();
+      expect((await session()).coach_id).toBe("rot-ben");
+      expect(
+        (
+          await conn
+            .selectFrom("coach_session_assets")
+            .select("coach_id")
+            .where("source_session_id", "=", SESSION)
+            .executeTakeFirstOrThrow()
+        ).coach_id,
+      ).not.toBe("rot-ana");
+    } finally {
+      await conn
+        .deleteFrom("coach_session_assets")
+        .where("source_session_id", "=", SESSION)
+        .execute();
+    }
+  });
+
+  it("an upload the transcript attributes to another leader of the class is held for an admin", async () => {
+    const saved = await markRotating();
+    if (!saved.ok) throw new Error("not saved");
+    const storage = new MemoryStorage();
+    const detail = await new Client().getTranscript();
+    storage.objects.set(
+      CoachArchiveService.transcriptKey(SESSION),
+      new TextEncoder().encode(
+        JSON.stringify({ sentences: detail.sentences, duration: 60 }),
+      ),
+    );
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: SESSION,
+        source: "upload",
+        coach_id: null,
+        matched_by: "rotating_class",
+        rotating_class_id: saved.id,
+        title: "Harbor Men",
+        session_date: "2026-10-01",
+        state: "retained",
+      })
+      .execute();
+    await conn
+      .insertInto("coach_uploads")
+      .values({
+        coach_id: "rot-ben",
+        class_key: `rotating:${saved.id}`,
+        class_name: "Harbor Men",
+        session_date: "2026-10-01",
+        file_name: "a.mp4",
+        file_bytes: 1,
+        content_type: "video/mp4",
+        parts: 1,
+        state: "received",
+        source_session_id: SESSION,
+      })
+      .execute();
+    try {
+      await new CoachPipelineService(Database, new Client(), null, {
+        scoring: new CoachScoringService(
+          Database,
+          new CueAi([cue("opening_prayer", ["Ana"], LINES.prayAna)]),
+        ),
+        frames: { extract: async () => [] } as never,
+        storage,
+      }).run();
+      const row = await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["coach_id", "hold_reason"])
+        .where("source_session_id", "=", SESSION)
+        .executeTakeFirstOrThrow();
+      expect(row.coach_id).toBe("rot-ana");
+      expect(row.hold_reason).toContain("uploaded for another leader");
+    } finally {
+      await conn
+        .deleteFrom("coach_uploads")
+        .where("source_session_id", "=", SESSION)
+        .execute();
+    }
   });
 
   it("The leader is the one who assigns the readings: an opening prayer naming no one is skipped", async () => {
