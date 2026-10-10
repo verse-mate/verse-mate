@@ -3,8 +3,8 @@ import { describe, expect, it } from "bun:test";
 import { CoachScoringService } from "./coach-scoring.service";
 import {
   type TimedLine,
-  checkQuoteAt,
   formatTimestamp,
+  locateQuote,
   spokenText,
   timedLinesFrom,
 } from "./coach-transcript";
@@ -73,72 +73,39 @@ describe("timed transcript (task 5.18)", () => {
   });
 });
 
-describe("A key moment's quote is not in the transcript", () => {
-  it("a quote said twice is accepted at the time of either line, and refused at any other", () => {
-    const twice: TimedLine[] = [
-      { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: 60 },
-      { speakerId: "s2", isLeader: false, text: "Amen.", startTime: 70 },
-      { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: 3000 },
-    ];
-    expect(checkQuoteAt(twice, "Let's pray", "00:50:00")).toBeNull();
-    expect(checkQuoteAt(twice, "Let's pray", "00:01:00")).toBeNull();
-    expect(checkQuoteAt(twice, "Let's pray", "00:49:00")).toBe(
-      "timestamp-not-at-quote",
+const at = (lines: TimedLine[], quote: string, near = "") =>
+  locateQuote(lines, quote, near)?.startTime;
+
+describe("A quote found exactly takes the time of its line", () => {
+  it("the line where the quote begins sets the time, whatever time the model gave", () => {
+    expect(locateQuote(LINES, "I haven't prayed in weeks", "00:12:40")).toEqual(
+      {
+        quote: "I haven't prayed in weeks",
+        startTime: 754.9,
+      },
     );
+    expect(at(LINES, "I haven't prayed in weeks", "00:00:03")).toBe(754.9);
+    expect(at(LINES, "I haven't prayed in weeks")).toBe(754.9);
+  });
+
+  it("ignores case, spacing, punctuation and curly quotes", () => {
+    expect(at(LINES, "i HAVEN’T   prayed in weeks")).toBe(754.9);
+    expect(at(LINES, "I have to say I haven't prayed, in weeks!")).toBe(754.9);
+    expect(at(LINES, '"welcome back everyone"')).toBe(3.4);
   });
 
   it("a fragment cut from the middle of words is not a quote", () => {
-    expect(checkQuoteAt(LINES, "aven't pray", "00:12:34")).toBe(
-      "quote-not-in-transcript",
-    );
+    expect(locateQuote(LINES, "aven't pray", "00:12:34")).toBeNull();
   });
 
-  it("a verbatim quote at the time of its line is accepted", () => {
+  it("a quote that is not in the transcript is not located", () => {
     expect(
-      checkQuoteAt(LINES, "I haven't prayed in weeks", "00:12:34"),
+      locateQuote(LINES, "I stopped reading my Bible", "00:12:34"),
     ).toBeNull();
+    expect(locateQuote(LINES, "   ", "00:12:34")).toBeNull();
   });
 
-  it("accepts the timestamp in brackets or as minutes and seconds", () => {
-    expect(
-      checkQuoteAt(LINES, "I haven't prayed in weeks", "[00:12:34]"),
-    ).toBeNull();
-    expect(
-      checkQuoteAt(LINES, "I haven't prayed in weeks", "12:34"),
-    ).toBeNull();
-  });
-
-  it("ignores case, spacing and curly quotes when finding the quote", () => {
-    expect(
-      checkQuoteAt(LINES, "i HAVEN’T   prayed in weeks", "00:12:34"),
-    ).toBeNull();
-  });
-
-  it("a quote that is not in the transcript is rejected", () => {
-    expect(checkQuoteAt(LINES, "I stopped reading my Bible", "00:12:34")).toBe(
-      "quote-not-in-transcript",
-    );
-  });
-
-  it("a quote whose timestamp is not the time of its line is rejected", () => {
-    expect(checkQuoteAt(LINES, "I haven't prayed in weeks", "00:12:40")).toBe(
-      "timestamp-not-at-quote",
-    );
-    expect(checkQuoteAt(LINES, "I haven't prayed in weeks", "00:00:03")).toBe(
-      "timestamp-not-at-quote",
-    );
-  });
-
-  it("a quote running across two lines takes the time of the line it begins on", () => {
-    expect(
-      checkQuoteAt(LINES, "it scares me. Let's turn to verse four", "00:12:34"),
-    ).toBeNull();
-    expect(
-      checkQuoteAt(LINES, "it scares me. Let's turn to verse four", "01:02:05"),
-    ).toBe("timestamp-not-at-quote");
-  });
-
-  it("allows a speaker prefix on the transcript line", () => {
+  it("allows a speaker label on the transcript line or before the quote", () => {
     const prefixed: TimedLine[] = [
       {
         speakerId: "speaker-1",
@@ -147,27 +114,78 @@ describe("A key moment's quote is not in the transcript", () => {
         startTime: 61,
       },
     ];
-    expect(
-      checkQuoteAt(prefixed, "we start Ruth today", "00:01:01"),
-    ).toBeNull();
-    expect(
-      checkQuoteAt(LINES, "speaker-2: I haven't prayed in weeks", "00:12:34"),
-    ).toBeNull();
-    expect(
-      checkQuoteAt(LINES, "LEADER: Let's turn to verse four", "01:02:05"),
-    ).toBeNull();
+    expect(at(prefixed, "we start Ruth today")).toBe(61);
+    expect(at(LINES, "speaker-2: I haven't prayed in weeks")).toBe(754.9);
+    expect(at(LINES, "LEADER: Let's turn to verse four")).toBe(3725);
+    expect(at(LINES, "[01:02:05] LEADER: Let's turn to verse four")).toBe(3725);
   });
 
-  it("an unreadable timestamp or an empty quote is rejected", () => {
-    expect(checkQuoteAt(LINES, "I haven't prayed in weeks", "soon")).toBe(
-      "timestamp-not-at-quote",
-    );
-    expect(checkQuoteAt(LINES, "   ", "00:12:34")).toBe(
-      "quote-not-in-transcript",
-    );
+  it("the stored quote is the transcript's words, never the label or time in front of the model's quote", () => {
+    expect(
+      locateQuote(LINES, "[00:12:34] speaker-2: I haven't prayed in weeks")
+        ?.quote,
+    ).toBe("I haven't prayed in weeks");
+    expect(
+      locateQuote(LINES, "speaker-2: i haven’t prayed in weeks")?.quote,
+    ).toBe("I haven't prayed in weeks");
   });
 
-  it("a line with no recorded time cannot anchor a moment", () => {
+  it("a provider's speaker name on the line is left out of the stored quote", () => {
+    const labelled: TimedLine[] = [
+      {
+        speakerId: "speaker-1",
+        isLeader: true,
+        text: "Dan: we start Ruth today",
+        startTime: 61,
+      },
+    ];
+    expect(locateQuote(labelled, "Dan: we start Ruth today")).toEqual({
+      quote: "we start Ruth today",
+      startTime: 61,
+    });
+  });
+
+  it("a passage cut inside quotation marks keeps no unpaired mark", () => {
+    const said: TimedLine[] = [
+      {
+        speakerId: "s1",
+        isLeader: true,
+        text: 'He said "go now" and left the room',
+        startTime: 5,
+      },
+    ];
+    expect(locateQuote(said, "go now and left the room")?.quote).toBe(
+      "go now and left the room",
+    );
+    expect(locateQuote(said, "He said go now")?.quote).toBe("He said go now");
+  });
+
+  it("a speaker label does not count towards the words that may differ", () => {
+    const labelled: TimedLine[] = [
+      {
+        speakerId: "speaker-1",
+        isLeader: true,
+        text: "Dan: we start Ruth today",
+        startTime: 61,
+      },
+    ];
+    expect(locateQuote(labelled, "Dan: we start Ruth now")).toBeNull();
+    expect(locateQuote(labelled, "Speaker 1: we start Ruth now")).toBeNull();
+  });
+
+  it("composed and decomposed accents are the same letters", () => {
+    const accented: TimedLine[] = [
+      {
+        speakerId: "s1",
+        isLeader: false,
+        text: "Jose\u0301 read the passage aloud",
+        startTime: 42,
+      },
+    ];
+    expect(at(accented, "Jos\u00e9 read the passage")).toBe(42);
+  });
+
+  it("a line with no recorded time locates the quote without a time", () => {
     const untimed: TimedLine[] = [
       {
         speakerId: "speaker-1",
@@ -176,9 +194,188 @@ describe("A key moment's quote is not in the transcript", () => {
         startTime: null,
       },
     ];
-    expect(checkQuoteAt(untimed, "we start Ruth today", "00:00:00")).toBe(
-      "timestamp-not-at-quote",
+    expect(locateQuote(untimed, "we start Ruth today", "00:00:00")).toEqual({
+      quote: "we start Ruth today",
+      startTime: null,
+    });
+  });
+});
+
+describe("A quote spanning two transcript lines", () => {
+  it("keeps the punctuation where the lines join", () => {
+    expect(
+      locateQuote(LINES, "it scares me. Let's turn to verse four")?.quote,
+    ).toBe("it scares me. Let's turn to verse four.");
+  });
+
+  it("takes the time of the line it begins on", () => {
+    expect(
+      at(LINES, "it scares me. Let's turn to verse four", "01:02:05"),
+    ).toBe(754.9);
+  });
+
+  it("a sentence speech-to-text split across segments is found as one quote", () => {
+    const segments: TimedLine[] = [
+      {
+        speakerId: "speaker",
+        isLeader: false,
+        text: "Thank you, Lina, so before I say anything,",
+        startTime: 36.76,
+      },
+      {
+        speakerId: "speaker",
+        isLeader: false,
+        text: "what jumps out at you in those 3 verses?",
+        startTime: 41.2,
+      },
+    ];
+    expect(
+      at(
+        segments,
+        "so before I say anything, what jumps out at you",
+        "00:00:41",
+      ),
+    ).toBe(36.76);
+  });
+});
+
+describe("A repeated quote takes the occurrence nearest the model's time", () => {
+  const twice: TimedLine[] = [
+    { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: 60 },
+    { speakerId: "s2", isLeader: false, text: "Amen.", startTime: 70 },
+    { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: 3000 },
+  ];
+
+  it("the occurrence nearest the given time wins", () => {
+    expect(at(twice, "Let's pray", "00:49:10")).toBe(3000);
+    expect(at(twice, "Let's pray", "00:01:30")).toBe(60);
+  });
+
+  it("the first occurrence when the model gave no time it could read", () => {
+    expect(at(twice, "Let's pray")).toBe(60);
+    expect(at(twice, "Let's pray", "soon")).toBe(60);
+  });
+
+  it("reads the model's time in brackets or as minutes and seconds", () => {
+    expect(at(twice, "Let's pray", "[00:49:10]")).toBe(3000);
+    expect(at(twice, "Let's pray", "49:10")).toBe(3000);
+  });
+
+  it("an occurrence with a recorded time is preferred over one without", () => {
+    const untimedFirst: TimedLine[] = [
+      { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: null },
+      { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: 50 },
+    ];
+    expect(at(untimedFirst, "Let's pray")).toBe(50);
+    expect(at(untimedFirst, "Let's pray", "00:00:01")).toBe(50);
+  });
+});
+
+describe("A quote found approximately is replaced by the transcript's words", () => {
+  const segments: TimedLine[] = [
+    {
+      speakerId: "speaker",
+      isLeader: false,
+      text: "So my question for you is, where in your own week",
+      startTime: 85.1,
+    },
+    {
+      speakerId: "speaker",
+      isLeader: false,
+      text: "do you notice yourself heading for Tarshish?",
+      startTime: 89.6,
+    },
+  ];
+
+  it("one word in five may differ, and the stored quote becomes the transcript's words", () => {
+    expect(
+      locateQuote(
+        segments,
+        "where in your own week do you find yourself heading for Tarshish?",
+        "00:01:29",
+      ),
+    ).toEqual({
+      quote:
+        "where in your own week do you notice yourself heading for Tarshish?",
+      startTime: 85.1,
+    });
+    expect(
+      locateQuote(
+        segments,
+        "where in your week do you notice yourself heading to Tarshish",
+      )?.quote,
+    ).toBe(
+      "where in your own week do you notice yourself heading for Tarshish?",
     );
+  });
+
+  it("more than one word in five is not located", () => {
+    expect(
+      locateQuote(
+        segments,
+        "where in our own lives do we notice ourselves heading for Tarshish",
+      ),
+    ).toBeNull();
+  });
+
+  it("an extra first word in the quote does not pull in the previous line", () => {
+    const lines: TimedLine[] = [
+      {
+        speakerId: "s1",
+        isLeader: false,
+        text: "Okay, thank you.",
+        startTime: 10,
+      },
+      {
+        speakerId: "s2",
+        isLeader: true,
+        text: "where in your own week do you notice yourself heading for Tarshish?",
+        startTime: 15,
+      },
+    ];
+    expect(
+      locateQuote(
+        lines,
+        "So where in your own week do you notice yourself heading for Tarshish",
+      ),
+    ).toEqual({
+      quote:
+        "where in your own week do you notice yourself heading for Tarshish?",
+      startTime: 15,
+    });
+  });
+
+  it("the nearest occurrence wins among approximate matches, and an exact match beats a nearer approximate one", () => {
+    const twice: TimedLine[] = [
+      {
+        speakerId: "s1",
+        isLeader: true,
+        text: "where in your own week do you notice yourself heading for Tarshish",
+        startTime: 60,
+      },
+      {
+        speakerId: "s1",
+        isLeader: true,
+        text: "where in your own week do you see yourself heading for Tarshish",
+        startTime: 3000,
+      },
+    ];
+    const changed =
+      "where in your own week do you find yourself heading for Tarshish";
+    expect(at(twice, changed, "00:49:00")).toBe(3000);
+    expect(at(twice, changed, "00:01:00")).toBe(60);
+    expect(
+      at(
+        twice,
+        "where in your own week do you notice yourself heading for Tarshish",
+        "00:50:00",
+      ),
+    ).toBe(60);
+  });
+
+  it("a quote of four words or fewer must be exact", () => {
+    expect(locateQuote(LINES, "turn to chapter four")).toBeNull();
+    expect(locateQuote(LINES, "Welcome back, everybody")).toBeNull();
   });
 });
 
@@ -210,15 +407,13 @@ describe("scripture references and colons in quoted words", () => {
         startTime: 20,
       },
     ];
-    expect(checkQuoteAt(lines, "Read with me John 3:16", "00:00:20")).toBe(
-      "quote-not-in-transcript",
-    );
+    expect(locateQuote(lines, "Read with me John 3:16", "00:00:20")).toBeNull();
     expect(
-      checkQuoteAt(
+      locateQuote(
         lines,
         "Marcus Reed the elder told us: let us pray together now",
         "00:00:10",
       ),
-    ).toBe("quote-not-in-transcript");
+    ).toBeNull();
   });
 });

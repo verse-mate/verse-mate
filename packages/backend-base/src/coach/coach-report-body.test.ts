@@ -270,7 +270,9 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
         ...answer.strengths.slice(2),
       ],
     });
-    expect(issues.join(" ")).toMatch(/strengths 2: quote-not-in-transcript/);
+    expect(issues.join(" ")).toMatch(
+      /strengths 2: its quote is not in the transcript/,
+    );
   });
 
   it("on a first lesson, a leader's own words quoted as evidence are not read as a cold-recall improvement", async () => {
@@ -333,12 +335,88 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
     expect(issues.join(" ")).toContain(
       'key moment 1 ("A confession met with welcome"): its quote is not in the transcript',
     );
-    const late = await generate({
-      keyMoments: [{ ...answer.keyMoments[0], timestamp: "00:12:40" }],
+  });
+
+  it("A quote found exactly takes the time of its line: the model's timestamp is replaced, not held", async () => {
+    const answer = JSON.parse(bodyAnswer()) as {
+      keyMoments: Array<Record<string, unknown>>;
+      strengths: Array<Record<string, unknown>>;
+    };
+    const { body, issues } = await generate({
+      keyMoments: [
+        { ...answer.keyMoments[0], timestamp: "00:12:40" },
+        { ...answer.keyMoments[1], timestamp: "" },
+      ],
+      strengths: [
+        { ...answer.strengths[0], timestamp: "00:29:00" },
+        ...answer.strengths.slice(1),
+      ],
     });
-    expect(late.issues.join(" ")).toContain(
-      "its timestamp is not the time of the line where the quote begins",
+    expect(issues).toEqual([]);
+    expect(body.keyMoments.map((m) => m.timestamp)).toEqual([
+      "00:12:34",
+      "00:20:10",
+    ]);
+    expect(body.feedback.strengthsProse[0].evidence).toEqual({
+      quote: "strength evidence 1",
+      timestamp: "00:31:00",
+    });
+  });
+
+  it("A quote found approximately is replaced by the transcript's words", async () => {
+    const answer = JSON.parse(bodyAnswer()) as {
+      keyMoments: Array<Record<string, unknown>>;
+      improvements: Array<Record<string, unknown>>;
+    };
+    const { body, issues } = await generate({
+      keyMoments: [
+        {
+          ...answer.keyMoments[0],
+          quote: "I have not prayed in weeks and it scares me",
+          timestamp: "00:13:00",
+        },
+      ],
+      improvements: [
+        {
+          ...answer.improvements[0],
+          quote: "Let me tell you about the shipping lanes of the time",
+          timestamp: "00:20:00",
+        },
+        ...answer.improvements.slice(1),
+      ],
+    });
+    expect(issues).toEqual([]);
+    expect(body.keyMoments[0]).toMatchObject({
+      quote: "I haven't prayed in weeks and it scares me.",
+      timestamp: "00:12:34",
+    });
+    expect(body.feedback.improvementsProse[0].evidence).toEqual({
+      quote: "Let me tell you about the shipping routes of the time.",
+      timestamp: "00:25:00",
+    });
+  });
+
+  it("A quote whose line has no recorded time holds the report, naming the item", async () => {
+    const answer = JSON.parse(bodyAnswer()) as {
+      keyMoments: Array<Record<string, unknown>>;
+    };
+    const { issues } = await generate(
+      { keyMoments: [answer.keyMoments[0]] },
+      {
+        transcript: [
+          ...INPUT.transcript.filter((l) => l.startTime !== 754),
+          {
+            speakerId: "speaker-2",
+            isLeader: false,
+            text: "I haven't prayed in weeks and it scares me.",
+            startTime: null,
+          },
+        ],
+      },
     );
+    expect(issues).toEqual([
+      'key moment 1 ("A confession met with welcome"): the line its quote begins on has no recorded time',
+    ]);
   });
 
   it("A missed moment quotes its trigger and gives a concrete alternative: one without the alternative is incomplete", async () => {
@@ -396,7 +474,7 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
     const { issues } = await generate({
       strengths: [
         { ...answer.strengths[0], quote: "I haven't prayed in weeks" },
-        { ...answer.strengths[1], timestamp: "00:20:10" },
+        { ...answer.strengths[1], quote: "the prophet run the other way" },
         ...answer.strengths.slice(2),
       ],
     });
