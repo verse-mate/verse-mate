@@ -74,11 +74,13 @@ export class CoachMondayReminderService {
     const from = startOfDay(addDays(today, -MONDAY_WINDOW_DAYS_BEFORE));
     const to = startOfDay(addDays(today, 1));
     const conn = this.db.getOrCreateConnection();
+    const utc = (at: Date) =>
+      sql<Date>`(${at.toISOString()}::timestamptz AT TIME ZONE 'UTC')`;
     const arrived = await conn
       .selectFrom("coach_intake_sessions")
       .select(["coach_id", "rotating_class_id"])
-      .where("observed_at", ">=", from)
-      .where("observed_at", "<", to)
+      .where("observed_at", ">=", utc(from))
+      .where("observed_at", "<", utc(to))
       .execute();
     const leadersWithSession = new Set(
       arrived.map((a) => a.coach_id).filter((c): c is string => c !== null),
@@ -161,7 +163,7 @@ export class CoachMondayReminderService {
       });
       if (found) continue;
       for (const slug of klass.leaders) {
-        if (remindedByClass.has(slug)) continue;
+        if (remindedByClass.has(slug) || leadersWithSession.has(slug)) continue;
         remindedByClass.add(slug);
         consider(slug, false);
       }
@@ -194,19 +196,22 @@ export class CoachMondayReminderService {
       consider(slug, false);
     }
 
-    const already = new Set(
-      (
-        await conn
-          .selectFrom("coach_monday_reminders")
-          .select("email")
-          .where("run_date", "=", sql<Date>`${today}::date`)
-          .where("outcome", "=", "sent")
-          .execute()
-      ).map((r) => r.email),
-    );
+    for (const r of records) await this.record(today, r);
+
     const uploadUrl = `${process.env.APP_URL ?? ""}/coach/upload`;
     for (const [email, slugs] of due) {
-      if (already.has(email)) continue;
+      let claimed = false;
+      for (const slug of slugs)
+        claimed =
+          (await this.record(today, {
+            kind: "leader",
+            coachId: slug,
+            classId: null,
+            found: false,
+            outcome: "sent",
+            email,
+          })) || claimed;
+      if (!claimed) continue;
       const leader = byId.get(slugs[0]);
       let sent: CoachSendResult | undefined;
       try {
@@ -225,34 +230,48 @@ export class CoachMondayReminderService {
       } catch (error) {
         sent = { delivered: false, error: String(error) } as CoachSendResult;
       }
-      const ok = sent?.delivered === true;
-      if (ok) result.sent += 1;
-      else result.failed += 1;
-      for (const slug of slugs)
-        records.push({
-          kind: "leader",
-          coachId: slug,
-          classId: null,
-          found: false,
-          outcome: ok ? "sent" : "failed",
-          email,
-          ...(ok
-            ? {}
-            : { reason: sent?.error ?? "the mail service refused it" }),
-        });
+      if (sent?.delivered === true) {
+        result.sent += 1;
+        continue;
+      }
+      result.failed += 1;
+      await conn
+        .updateTable("coach_monday_reminders")
+        .set({
+          outcome: "failed",
+          reason: sent?.error ?? "the mail service refused it",
+        })
+        .where("run_date", "=", sql<Date>`${today}::date`)
+        .where("kind", "=", "leader")
+        .where("coach_id", "in", slugs)
+        .execute();
     }
-
-    for (const r of records)
-      await sql`
-        INSERT INTO coach_monday_reminders
-          (run_date, kind, coach_id, rotating_class_id, found, outcome, email, reason)
-        VALUES (${today}::date, ${r.kind}, ${r.coachId}, ${r.classId}, ${r.found},
-                ${r.outcome}, ${r.email ?? null}, ${r.reason ?? null})
-        ON CONFLICT (run_date, kind, coalesce(coach_id, ''), coalesce(rotating_class_id, 0))
-        DO UPDATE SET found = EXCLUDED.found, outcome = EXCLUDED.outcome,
-                      email = EXCLUDED.email, reason = EXCLUDED.reason
-        WHERE coach_monday_reminders.outcome <> 'sent'
-      `.execute(conn);
     return result;
+  }
+
+  private async record(
+    today: string,
+    r: {
+      kind: "leader" | "class";
+      coachId: string | null;
+      classId: number | null;
+      found: boolean;
+      outcome: Outcome;
+      email?: string;
+      reason?: string;
+    },
+  ): Promise<boolean> {
+    const written = await sql`
+      INSERT INTO coach_monday_reminders
+        (run_date, kind, coach_id, rotating_class_id, found, outcome, email, reason)
+      VALUES (${today}::date, ${r.kind}, ${r.coachId}, ${r.classId}, ${r.found},
+              ${r.outcome}, ${r.email ?? null}, ${r.reason ?? null})
+      ON CONFLICT (run_date, kind, coalesce(coach_id, ''), coalesce(rotating_class_id, 0))
+      DO UPDATE SET found = EXCLUDED.found, outcome = EXCLUDED.outcome,
+                    email = EXCLUDED.email, reason = EXCLUDED.reason
+      WHERE coach_monday_reminders.outcome <> 'sent'
+      RETURNING 1
+    `.execute(this.db.getOrCreateConnection());
+    return written.rows.length > 0;
   }
 }
