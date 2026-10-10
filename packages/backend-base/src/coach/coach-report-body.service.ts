@@ -17,7 +17,7 @@ import {
 import { DIMENSIONS } from "./rubric";
 
 export const BODY_MODEL = "gpt-5";
-export const BODY_MAX_TOKENS = 16000;
+export const BODY_MAX_TOKENS = 64000;
 export const MAX_SESSION_ROW_CHARS = 80;
 export const MAX_KEY_MOMENTS = 5;
 export const HISTORY_SESSIONS = 4;

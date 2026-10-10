@@ -7,6 +7,7 @@ import {
   bodyAnswer,
 } from "./coach-report-body.fixture";
 import {
+  BODY_MAX_TOKENS,
   type BodyInput,
   CoachReportBodyService,
   type ReportBody,
@@ -544,5 +545,13 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
     const other = await generate({}, { history: null });
     expect(section(other.body, /^Session-Over-Session/)).toBeUndefined();
     expect(section(other.body, /^Drift Check$/)).toBeUndefined();
+  });
+});
+
+describe("token budget on a reasoning model", () => {
+  it("the body call has a budget a 90-minute session's reasoning fits in, since gpt-5 counts reasoning against the limit", async () => {
+    const { ai } = await generate();
+    expect(ai.sent[0].maxTokens).toBe(BODY_MAX_TOKENS);
+    expect(BODY_MAX_TOKENS).toBeGreaterThanOrEqual(64000);
   });
 });

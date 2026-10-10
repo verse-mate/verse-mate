@@ -999,8 +999,26 @@ describe("token budgets on a reasoning model", () => {
       leaders: [{ slug: "leader-a", name: "Leader A" }],
     });
     expect(asked[0]).toBe(SCORING_REQUEST.leaderCueMaxTokens);
-    expect(SCORING_REQUEST.leaderCueMaxTokens).toBeGreaterThanOrEqual(8000);
+    expect(SCORING_REQUEST.leaderCueMaxTokens).toBeGreaterThanOrEqual(16000);
     expect(SCORING_REQUEST.visionMaxTokens).toBeGreaterThanOrEqual(4000);
+  });
+
+  it("the text call has a budget a 90-minute session's reasoning fits in, since gpt-5 counts reasoning against the limit", async () => {
+    const asked: number[] = [];
+    const ai = {
+      chatComplete: async (opts: AiChatOptions): Promise<AiChatResponse> => {
+        asked.push(opts.maxTokens ?? 0);
+        return { content: "not json", model: "m" };
+      },
+    } as unknown as AiProvider;
+    await new CoachScoringService(Database as never, ai).scoreSession({
+      transcript: [
+        { speakerId: "s", isLeader: false, text: "Let's pray.", startTime: 0 },
+      ],
+      sessionTitle: "A session",
+    });
+    expect(asked[0]).toBe(SCORING_REQUEST.textMaxTokens);
+    expect(SCORING_REQUEST.textMaxTokens).toBeGreaterThanOrEqual(32000);
   });
 });
 
