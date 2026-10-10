@@ -1660,6 +1660,27 @@
                         ]
                       }
                     },
+                    "profile": {
+                      "type": "object",
+                      "properties": {
+                        "study": {
+                          "type": "string"
+                        },
+                        "format": {
+                          "type": "string"
+                        },
+                        "groupSize": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
+                      }
+                    },
                     "strengths": {
                       "type": "array",
                       "items": {
@@ -2900,9 +2921,12 @@
                         "type": "string"
                       }
                     ]
+                  },
+                  "bound": {
+                    "type": "boolean"
                   }
                 },
-                "required": ["kind", "id", "email", "account"]
+                "required": ["kind", "id", "email", "account", "bound"]
               }
             },
             "atRisk": {
@@ -3234,6 +3258,314 @@
                 {
                   "type": "null"
                 }
+              ]
+            },
+            "programReport": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "string"
+                },
+                "monthLabel": {
+                  "type": "string"
+                },
+                "overview": {
+                  "type": "object",
+                  "properties": {
+                    "sessions": {
+                      "type": "number"
+                    },
+                    "leaders": {
+                      "type": "number"
+                    },
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["sessions", "leaders", "from", "to"]
+                },
+                "leaderboard": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "composite": {
+                        "type": "number"
+                      },
+                      "status": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name", "composite", "status"]
+                  }
+                },
+                "bands": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "count": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["label", "count"]
+                  }
+                },
+                "heatMap": {
+                  "type": "object",
+                  "properties": {
+                    "dimensions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "n": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["n", "name"]
+                      }
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "cells": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "n": {
+                                  "type": "number"
+                                },
+                                "avg": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "mark": {
+                                  "anyOf": [
+                                    {
+                                      "const": "strong",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "middle",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "const": "weak",
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": ["n", "avg", "mark"]
+                            }
+                          }
+                        },
+                        "required": ["id", "name", "cells"]
+                      }
+                    }
+                  },
+                  "required": ["dimensions", "rows"]
+                },
+                "trends": {
+                  "type": "object",
+                  "properties": {
+                    "priorAvg": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "allTimeAvg": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bestImproving": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "delta": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["id", "name", "delta"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mostImprovedDimension": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "delta": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["name", "delta"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "needsAttention": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "avg": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["name", "avg"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "text": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "priorAvg",
+                    "allTimeAvg",
+                    "bestImproving",
+                    "mostImprovedDimension",
+                    "needsAttention",
+                    "text"
+                  ]
+                },
+                "snapshots": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "text": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name", "text"]
+                  }
+                },
+                "priorityMatrix": {
+                  "type": "object",
+                  "properties": {
+                    "lowest": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "declining": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "plateau": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["lowest", "declining", "plateau"]
+                },
+                "initiatives": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "executiveSummary": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "month",
+                "monthLabel",
+                "overview",
+                "leaderboard",
+                "bands",
+                "heatMap",
+                "trends",
+                "snapshots",
+                "priorityMatrix",
+                "initiatives",
+                "executiveSummary"
               ]
             }
           },
@@ -5556,6 +5888,27 @@
                           "weakestDim",
                           "insight"
                         ]
+                      }
+                    },
+                    "profile": {
+                      "type": "object",
+                      "properties": {
+                        "study": {
+                          "type": "string"
+                        },
+                        "format": {
+                          "type": "string"
+                        },
+                        "groupSize": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
                       }
                     },
                     "strengths": {
