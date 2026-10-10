@@ -414,7 +414,7 @@ describe("OpenAiProvider chatComplete", () => {
     ).rejects.toThrow("ran past the 60 ms limit");
   });
 
-  it("a request that fails to start is that failure, with no timer left running", async () => {
+  it("a request that fails to start is reported as that failure", async () => {
     const provider = new OpenAiProvider("test-key", {
       idleMs: 10,
       totalMs: 20,
@@ -432,5 +432,25 @@ describe("OpenAiProvider chatComplete", () => {
         messages: [{ role: "user", content: "hi" }],
       }),
     ).rejects.toThrow("401 invalid key");
+  });
+
+  it("a request still starting when the total limit passes is reported as running past the limit", async () => {
+    const provider = new OpenAiProvider("test-key", { totalMs: 30 });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: (_body: unknown, options: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) =>
+            options.signal.addEventListener("abort", () =>
+              reject(new Error("Request was aborted.")),
+            ),
+          ),
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("ran past the 30 ms limit");
   });
 });

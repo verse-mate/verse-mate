@@ -110,43 +110,52 @@ export class OpenAiProvider implements AiProvider {
     heard: () => void,
     stoppedBecause: () => string | null,
   ): Promise<AiChatResponse> {
-    const stream = await (this.client as any).responses.create(
-      {
-        model: opts.model,
-        input: opts.messages.map((m) =>
-          m.role === "user" && m.images?.length
-            ? {
-                role: "user",
-                content: [
-                  { type: "input_text", text: m.content },
-                  ...m.images.map((url) => ({
-                    type: "input_image",
-                    image_url: url,
-                  })),
-                ],
-              }
-            : { role: m.role, content: m.content },
-        ),
-        ...(opts.temperature != null && { temperature: opts.temperature }),
-        ...(reasons && {
-          reasoning: {
-            ...(opts.reasoningEffort != null && {
-              effort: opts.reasoningEffort,
-            }),
-            summary: "auto",
-          },
-        }),
-        ...(opts.maxTokens !== undefined && {
-          max_output_tokens: opts.maxTokens,
-        }),
-        ...(opts.responseFormat && {
-          text: { format: { type: opts.responseFormat.type } },
-        }),
-        store: false,
-        stream: true,
-      },
-      { signal },
-    );
+    const stream = await (this.client as any).responses
+      .create(
+        {
+          model: opts.model,
+          input: opts.messages.map((m) =>
+            m.role === "user" && m.images?.length
+              ? {
+                  role: "user",
+                  content: [
+                    { type: "input_text", text: m.content },
+                    ...m.images.map((url) => ({
+                      type: "input_image",
+                      image_url: url,
+                    })),
+                  ],
+                }
+              : { role: m.role, content: m.content },
+          ),
+          ...(opts.temperature != null && { temperature: opts.temperature }),
+          ...(reasons && {
+            reasoning: {
+              ...(opts.reasoningEffort != null && {
+                effort: opts.reasoningEffort,
+              }),
+              summary: "auto",
+            },
+          }),
+          ...(opts.maxTokens !== undefined && {
+            max_output_tokens: opts.maxTokens,
+          }),
+          ...(opts.responseFormat && {
+            text: { format: { type: opts.responseFormat.type } },
+          }),
+          store: false,
+          stream: true,
+        },
+        { signal },
+      )
+      .catch((error: unknown) => {
+        const stopped = stoppedBecause();
+        if (stopped)
+          throw new Error(
+            `OpenAI stream stopped for model=${opts.model}: ${stopped}`,
+          );
+        throw error;
+      });
 
     let content = "";
     let model = "";
