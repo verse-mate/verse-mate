@@ -185,7 +185,6 @@ export class AuthService {
       );
 
     if (existingSsoAccount) {
-      // SSO account is already linked, get the user and login
       const user = await this.db
         .getOrCreateConnection()
         .selectFrom("user")
@@ -193,20 +192,36 @@ export class AuthService {
         .selectAll()
         .executeTakeFirstOrThrow();
 
-      // Update profile picture if it changed
-      if (picture && picture !== user.imageSrc) {
+      if (!emailVerified && user.password)
+        throw new ConflictError(
+          "The sign-in provider has not verified this email. Sign in with your password instead.",
+        );
+
+      const confirms =
+        emailVerified &&
+        !user.emailVerified &&
+        user.email.trim().toLowerCase() === normalizedEmail;
+      const changed = picture && picture !== user.imageSrc;
+      if (confirms || changed) {
         await this.db
           .getOrCreateConnection()
           .updateTable("user")
           .set({
-            imageSrc: picture,
-            picture_source: provider as any,
+            ...(changed
+              ? { imageSrc: picture, picture_source: provider as any }
+              : {}),
+            ...(confirms ? { emailVerified: true } : {}),
           })
           .where("id", "=", user.id)
           .execute();
       }
 
-      return this.loginUser(user, jwt, userAgent, ipAddress);
+      return this.loginUser(
+        confirms ? { ...user, emailVerified: true } : user,
+        jwt,
+        userAgent,
+        ipAddress,
+      );
     }
 
     // Step 2: Check if a user with this email already exists (case-insensitive)
