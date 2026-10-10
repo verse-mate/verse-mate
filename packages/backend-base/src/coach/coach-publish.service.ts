@@ -32,7 +32,7 @@ export interface PublishInput {
   keyMoments?: unknown[];
   contextLine?: string;
   topic?: string | null;
-  attendees: number;
+  attendees: number | null;
   newcomers: number;
   duration: string;
   newcomerBonus?: number;

@@ -89,7 +89,7 @@ export const ReportSchema = t.Object({
   session: t.String(),
   topic: t.String(),
   duration: t.String(),
-  attendees: t.Number(),
+  attendees: t.Union([t.Number(), t.Null()]),
   newcomers: t.Number(),
   score: t.Number(),
   base: t.Number(),

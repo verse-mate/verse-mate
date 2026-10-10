@@ -131,7 +131,7 @@ export interface CoachReport {
   session: string;
   topic: string;
   duration: string;
-  attendees: number;
+  attendees: number | null;
   newcomers: number;
   score: number;
   base: number;
