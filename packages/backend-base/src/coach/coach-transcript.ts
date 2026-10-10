@@ -5,8 +5,6 @@ export interface TimedLine {
   startTime?: number | null;
 }
 
-export type QuoteProblem = "quote-not-in-transcript" | "timestamp-not-at-quote";
-
 export function timedLinesFrom(
   sentences: Array<{
     speakerId: string;
@@ -52,19 +50,10 @@ export function renderLine(line: TimedLine): string {
     : `[${formatTimestamp(line.startTime)}] ${said}`;
 }
 
-function normalized(text: string): string {
-  return text
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-const QUOTE_EDGES = /^[\s"'.,;:!?…-]+|[\s"'.,;:!?…-]+$/g;
 const SPEAKER_PREFIX = /^[^\s:]{1,40}(?: \d{1,3})?:\s*/;
 const TIME_PREFIX = /^\[\d{1,2}(?::\d{2}){1,2}\]\s*/;
-const WORD = /[\p{L}\p{N}']/u;
+const WORD = /[\p{L}\p{N}]+(?:['‘’ʼ][\p{L}\p{N}]+)*/gu;
+const WORDS_PER_ALLOWED_DIFFERENCE = 5;
 
 export function spokenText(line: string): string {
   const untimed = line.trim().replace(TIME_PREFIX, "");
@@ -73,46 +62,148 @@ export function spokenText(line: string): string {
     : untimed.replace(SPEAKER_PREFIX, "");
 }
 
-function lineStartsOf(lines: TimedLine[], quote: string): number[] {
-  const offsets: number[] = [];
-  let joined = "";
-  for (const line of lines) {
-    offsets.push(joined.length);
-    joined += `${normalized(line.text)} `;
-  }
-  const found: number[] = [];
-  for (
-    let at = joined.indexOf(quote);
-    at >= 0;
-    at = joined.indexOf(quote, at + 1)
-  ) {
-    const before = at === 0 ? "" : joined[at - 1];
-    const after = joined[at + quote.length] ?? "";
-    if ((before && WORD.test(before)) || (after && WORD.test(after))) continue;
-    let index = 0;
-    while (index + 1 < offsets.length && offsets[index + 1] <= at) index += 1;
-    found.push(index);
-  }
-  return found;
+interface Word {
+  text: string;
+  line: number;
+  from: number;
+  to: number;
 }
 
-export function checkQuoteAt(
+interface Match {
+  cost: number;
+  first: number;
+  last: number;
+  distance: number;
+}
+
+export interface LocatedQuote {
+  quote: string;
+  startTime: number | null;
+}
+
+const SENTENCE_END = /^[.?!…]+/;
+const CLAUSE_END = /^[.,;:?!…]+/;
+const DOUBLE_QUOTE_MARKS = /["“”]/g;
+
+function wordsOf(text: string, line = 0): Word[] {
+  return [...text.normalize("NFC").matchAll(WORD)].map((m) => ({
+    text: m[0].toLowerCase().replace(/[‘’ʼ]/g, "'"),
+    line,
+    from: m.index,
+    to: m.index + m[0].length,
+  }));
+}
+
+function bestMatch(
+  lines: TimedLine[],
+  said: Word[],
+  quote: string[],
+  claimed: number | null,
+  allowed: number,
+): Match | null {
+  if (quote.length === 0) return null;
+  let cost = said.map(() => 0).concat(0);
+  let first = cost.map((_, j) => j);
+  for (let i = 1; i <= quote.length; i++) {
+    const nextCost = [i];
+    const nextFirst = [0];
+    for (let j = 1; j <= said.length; j++) {
+      const same = quote[i - 1] === said[j - 1].text;
+      const diagonal = cost[j - 1] + (same ? 0 : 1);
+      const quoteWordMissing = cost[j] + 1;
+      const extraSaidWord = nextCost[j - 1] + 1;
+      if (
+        (same ? diagonal <= quoteWordMissing : diagonal < quoteWordMissing) &&
+        diagonal <= extraSaidWord
+      ) {
+        nextCost.push(diagonal);
+        nextFirst.push(first[j - 1]);
+      } else if (quoteWordMissing <= extraSaidWord) {
+        nextCost.push(quoteWordMissing);
+        nextFirst.push(first[j]);
+      } else {
+        nextCost.push(extraSaidWord);
+        nextFirst.push(nextFirst[j - 1]);
+      }
+    }
+    cost = nextCost;
+    first = nextFirst;
+  }
+  let best: Match | null = null;
+  for (let j = 1; j <= said.length; j++) {
+    if (cost[j] > allowed || first[j] >= j) continue;
+    const time = lines[said[first[j]].line].startTime;
+    const distance =
+      time == null
+        ? Number.POSITIVE_INFINITY
+        : claimed === null
+          ? 0
+          : Math.abs(time - claimed);
+    if (
+      !best ||
+      cost[j] < best.cost ||
+      (cost[j] === best.cost && distance < best.distance)
+    )
+      best = { cost: cost[j], first: first[j], last: j - 1, distance };
+  }
+  return best;
+}
+
+function passage(lines: TimedLine[], words: Word[]): string {
+  const parts = new Map<number, { from: number; to: number }>();
+  for (const word of words) {
+    const part = parts.get(word.line);
+    parts.set(word.line, { from: part?.from ?? word.from, to: word.to });
+  }
+  return [...parts]
+    .map(([line, { from, to }], index, all) => {
+      const text = lines[line].text.normalize("NFC");
+      const after = index === all.length - 1 ? SENTENCE_END : CLAUSE_END;
+      return text.slice(
+        from,
+        to + (text.slice(to).match(after)?.[0].length ?? 0),
+      );
+    })
+    .join(" ")
+    .replace(DOUBLE_QUOTE_MARKS, "");
+}
+
+export function locateQuote(
   lines: TimedLine[],
   quote: string,
-  timestamp: string,
-): QuoteProblem | null {
-  const wanted = normalized(spokenText(quote)).replace(QUOTE_EDGES, "");
-  if (!wanted) return "quote-not-in-transcript";
-  const found = lineStartsOf(lines, wanted);
-  const starts =
-    found.length > 0
-      ? found
-      : lineStartsOf(lines, wanted.replace(SPEAKER_PREFIX, ""));
-  if (starts.length === 0) return "quote-not-in-transcript";
-  const claimed = parseTimestamp(timestamp);
-  const matches = starts.some((index) => {
-    const said = lines[index].startTime;
-    return said != null && claimed !== null && claimed === Math.floor(said);
-  });
-  return matches ? null : "timestamp-not-at-quote";
+  near = "",
+): LocatedQuote | null {
+  const said = lines.flatMap((line, index) => wordsOf(line.text, index));
+  const claimed = parseTimestamp(near);
+  const spoken = spokenText(quote);
+  const unlabelled = spoken.replace(SPEAKER_PREFIX, "");
+  const allowed = Math.floor(
+    wordsOf(unlabelled).length / WORDS_PER_ALLOWED_DIFFERENCE,
+  );
+  const best = [...new Set([unlabelled, spoken])]
+    .map((variant) =>
+      bestMatch(
+        lines,
+        said,
+        wordsOf(variant).map((w) => w.text),
+        claimed,
+        allowed,
+      ),
+    )
+    .reduce<Match | null>(
+      (a, b) =>
+        !b
+          ? a
+          : !a ||
+              b.cost < a.cost ||
+              (b.cost === a.cost && b.distance < a.distance)
+            ? b
+            : a,
+      null,
+    );
+  if (!best) return null;
+  return {
+    quote: passage(lines, said.slice(best.first, best.last + 1)),
+    startTime: lines[said[best.first].line].startTime ?? null,
+  };
 }

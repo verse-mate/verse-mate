@@ -6,9 +6,10 @@ import {
 import { SCORECARD_RATINGS, withoutBigIdeasReviewRow } from "./coach-scorecard";
 import { boundedTranscript } from "./coach-scoring.service";
 import {
+  type LocatedQuote,
   type TimedLine,
-  checkQuoteAt,
   formatTimestamp,
+  locateQuote,
   parseTimestamp,
   renderLine,
   spokenText,
@@ -127,6 +128,13 @@ function fenced(label: string, body: string): string {
     body.replace(/[<>]{3,}/g, " "),
     `>>>END_${label}`,
   ].join("\n");
+}
+
+function quoteProblem(located: LocatedQuote | null): string | null {
+  if (!located) return "its quote is not in the transcript";
+  if (located.startTime == null)
+    return "the line its quote begins on has no recorded time";
+  return null;
 }
 
 function emptyBody(): ReportBody {
@@ -395,16 +403,20 @@ function assemble(raw: Raw, input: BodyInput): BodyResult {
       issues.push(`${kind}: ${points.length}, five expected`);
     points.forEach((p, i) => {
       const title = text(p.title);
-      const quote = text(p.quote);
-      const stamp = text(p.timestamp);
+      let quote = text(p.quote);
+      let stamp = text(p.timestamp);
       if (!title || !text(p.line))
         issues.push(`${kind} ${i + 1}: no title or line`);
-      if (!quote || !stamp)
-        issues.push(`${kind} ${i + 1}: no evidence from the session`);
+      if (!quote) issues.push(`${kind} ${i + 1}: no evidence from the session`);
       else {
-        claim(quote, stamp, `${kind} ${i + 1}`);
-        const problem = checkQuoteAt(input.transcript, quote, stamp);
+        const located = locateQuote(input.transcript, quote, stamp);
+        const problem = quoteProblem(located);
         if (problem) issues.push(`${kind} ${i + 1}: ${problem}`);
+        else if (located?.startTime != null) {
+          quote = located.quote;
+          stamp = formatTimestamp(located.startTime);
+        }
+        claim(quote, stamp, `${kind} ${i + 1}`);
       }
       const seconds = parseTimestamp(stamp);
       body.feedback[kind].push(title);
@@ -560,8 +572,16 @@ function keyMoments(
       clusterImpact: text(m.clusterImpact),
     };
     const named = `key moment ${i + 1} ("${moment.title}")`;
-    const seconds = parseTimestamp(moment.timestamp);
-    if (seconds !== null) moment.timestamp = formatTimestamp(seconds);
+    const located = locateQuote(transcript, moment.quote, moment.timestamp);
+    const problem = quoteProblem(located);
+    if (problem) issues.push(`${named}: ${problem}`);
+    if (located?.startTime != null) {
+      moment.quote = located.quote;
+      moment.timestamp = formatTimestamp(located.startTime);
+    } else {
+      const seconds = parseTimestamp(moment.timestamp);
+      if (seconds !== null) moment.timestamp = formatTimestamp(seconds);
+    }
     if (!MOMENT_TYPES.includes(moment.type))
       issues.push(`${named}: type is not Capitalized, Pivot or Missed`);
     for (const field of [
@@ -580,13 +600,6 @@ function keyMoments(
       );
     if (CLAIMED_CHANGE.test(moment.clusterImpact))
       issues.push(`${named}: cluster impact claims a score change`);
-    const problem = checkQuoteAt(transcript, moment.quote, moment.timestamp);
-    if (problem === "quote-not-in-transcript")
-      issues.push(`${named}: its quote is not in the transcript`);
-    if (problem === "timestamp-not-at-quote")
-      issues.push(
-        `${named}: its timestamp is not the time of the line where the quote begins`,
-      );
     return moment;
   });
 }
