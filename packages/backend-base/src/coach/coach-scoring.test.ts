@@ -1126,3 +1126,42 @@ describe("the leader-cue answer quotes a rendered line", () => {
     expect(named).toBeNull();
   });
 });
+
+describe("Thin evidence scores low, not not-applicable", () => {
+  const scoring = CoachScoringService.buildInstructions().replace(/\s+/g, " ");
+  const vision = CoachScoringService.buildVisionInstructions().replace(
+    /\s+/g,
+    " ",
+  );
+
+  it("the scoring prompt scores a missing or thin practice low, with its reason", () => {
+    expect(scoring).not.toMatch(
+      /absence of evidence is not evidence of absence/i,
+    );
+    expect(scoring).not.toMatch(/do not score it low/i);
+    expect(scoring).toMatch(/thin or absent evidence is the finding/i);
+    expect(scoring).toMatch(/score it low/i);
+  });
+
+  it("A dimension cannot be evaluated: no score only when the session gave the leader no occasion", () => {
+    expect(scoring).toMatch(
+      /set score to null only when the session gave the leader no occasion/i,
+    );
+    for (const occasion of [
+      /Newcomer Welcome when no newcomers are present/,
+      /Memory Reinforcement on the first lesson of a new study/,
+      /Scripture Engagement, Application Questions or Homework References in a week the group announced would have none of it/,
+      /any dimension whose part of the session was held off the recording/,
+      /Every other dimension gets a score/,
+    ])
+      expect(scoring).toMatch(occasion);
+  });
+
+  it("Frames that show no visual aid score 1, and no score only when no frame shows the session", () => {
+    expect(vision).not.toMatch(/do not score low/i);
+    expect(vision).toMatch(/no visual aid in any of them, score 1/i);
+    expect(vision).toMatch(
+      /set score to null only when no frame shows the session/i,
+    );
+  });
+});
