@@ -111,8 +111,9 @@ const PRIOR =
 function itemText(item: unknown): string {
   if (typeof item === "string") return item;
   if (item && typeof item === "object")
-    return Object.values(item as Record<string, unknown>)
-      .map(itemText)
+    return Object.entries(item as Record<string, unknown>)
+      .filter(([key]) => key !== "evidence")
+      .map(([, value]) => itemText(value))
       .join(" ");
   return "";
 }

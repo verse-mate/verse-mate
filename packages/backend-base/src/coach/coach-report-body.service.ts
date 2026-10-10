@@ -11,6 +11,7 @@ import {
   formatTimestamp,
   parseTimestamp,
   renderLine,
+  spokenText,
 } from "./coach-transcript";
 import { DIMENSIONS } from "./rubric";
 
@@ -70,8 +71,16 @@ export interface ReportBody {
     strengths: string[];
     improvements: string[];
     recommendations: string[];
-    strengthsProse: Array<{ title: string; paragraphs: string[] }>;
-    improvementsProse: Array<{ title: string; paragraphs: string[] }>;
+    strengthsProse: Array<{
+      title: string;
+      paragraphs: string[];
+      evidence?: { quote: string; timestamp: string };
+    }>;
+    improvementsProse: Array<{
+      title: string;
+      paragraphs: string[];
+      evidence?: { quote: string; timestamp: string };
+    }>;
     recommendationsProse: Array<{ title: string; paragraphs: string[] }>;
   };
   sections: BodySection[];
@@ -401,13 +410,17 @@ function assemble(raw: Raw, input: BodyInput): BodyResult {
       body.feedback[kind].push(title);
       body.feedback[`${kind}Prose`].push({
         title,
-        paragraphs: [
-          text(p.line),
-          ...list(p.paragraphs).map(text),
-          quote && seconds !== null
-            ? `Evidence: “${quote}” at ${formatTimestamp(seconds)}`
-            : "",
-        ].filter(Boolean),
+        paragraphs: [text(p.line), ...list(p.paragraphs).map(text)].filter(
+          Boolean,
+        ),
+        ...(quote && seconds !== null
+          ? {
+              evidence: {
+                quote: spokenText(quote),
+                timestamp: formatTimestamp(seconds),
+              },
+            }
+          : {}),
       });
     });
   }

@@ -2099,6 +2099,18 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "properties": {
+                              "quote": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["quote", "timestamp"]
                           }
                         },
                         "required": ["title", "paragraphs"]
@@ -2117,6 +2129,18 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "properties": {
+                              "quote": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["quote", "timestamp"]
                           }
                         },
                         "required": ["title", "paragraphs"]
@@ -2135,6 +2159,18 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "properties": {
+                              "quote": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["quote", "timestamp"]
                           }
                         },
                         "required": ["title", "paragraphs"]
@@ -6326,6 +6362,18 @@
                               "items": {
                                 "type": "string"
                               }
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "properties": {
+                                "quote": {
+                                  "type": "string"
+                                },
+                                "timestamp": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["quote", "timestamp"]
                             }
                           },
                           "required": ["title", "paragraphs"]
@@ -6344,6 +6392,18 @@
                               "items": {
                                 "type": "string"
                               }
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "properties": {
+                                "quote": {
+                                  "type": "string"
+                                },
+                                "timestamp": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["quote", "timestamp"]
                             }
                           },
                           "required": ["title", "paragraphs"]
@@ -6362,6 +6422,18 @@
                               "items": {
                                 "type": "string"
                               }
+                            },
+                            "evidence": {
+                              "type": "object",
+                              "properties": {
+                                "quote": {
+                                  "type": "string"
+                                },
+                                "timestamp": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["quote", "timestamp"]
                             }
                           },
                           "required": ["title", "paragraphs"]
@@ -6696,6 +6768,18 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "properties": {
+                              "quote": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["quote", "timestamp"]
                           }
                         },
                         "required": ["title", "paragraphs"]
@@ -6714,6 +6798,18 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "properties": {
+                              "quote": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["quote", "timestamp"]
                           }
                         },
                         "required": ["title", "paragraphs"]
@@ -6732,6 +6828,18 @@
                             "items": {
                               "type": "string"
                             }
+                          },
+                          "evidence": {
+                            "type": "object",
+                            "properties": {
+                              "quote": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["quote", "timestamp"]
                           }
                         },
                         "required": ["title", "paragraphs"]

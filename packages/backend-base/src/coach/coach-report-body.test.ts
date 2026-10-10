@@ -87,8 +87,8 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
       paragraphs: [
         "One line about strength 1.",
         "A paragraph about strength 1.",
-        "Evidence: “strength evidence 1” at 00:31:00",
       ],
+      evidence: { quote: "strength evidence 1", timestamp: "00:31:00" },
     });
     expect(
       body.sections.filter((s) => /^Scorecard — Table \d$/.test(s.title))
@@ -256,9 +256,10 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
   it("each strength and improvement keeps its evidence, and a quote the session never had is refused", async () => {
     const good = await generate({});
     expect(good.issues).toEqual([]);
-    expect(good.body.feedback.strengthsProse[0].paragraphs).toContain(
-      "Evidence: “strength evidence 1” at 00:31:00",
-    );
+    expect(good.body.feedback.strengthsProse[0].evidence).toEqual({
+      quote: "strength evidence 1",
+      timestamp: "00:31:00",
+    });
     const answer = JSON.parse(bodyAnswer()) as {
       strengths: Array<Record<string, unknown>>;
     };
@@ -270,6 +271,35 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
       ],
     });
     expect(issues.join(" ")).toMatch(/strengths 2: quote-not-in-transcript/);
+  });
+
+  it("on a first lesson, a leader's own words quoted as evidence are not read as a cold-recall improvement", async () => {
+    const answer = JSON.parse(bodyAnswer()) as {
+      improvements: Array<Record<string, unknown>>;
+    };
+    const transcript = [
+      ...BODY_TRANSCRIPT,
+      {
+        speakerId: "speaker-1",
+        isLeader: true,
+        text: "Let's quickly review last week before we start Amos",
+        startTime: 3300,
+      },
+    ];
+    const { issues } = await generate(
+      {
+        improvements: [
+          {
+            ...answer.improvements[0],
+            quote: "Let's quickly review last week before we start Amos",
+            timestamp: "00:55:00",
+          },
+          ...answer.improvements.slice(1),
+        ],
+      },
+      { transcript, firstLesson: true },
+    );
+    expect(issues.join(" ")).not.toMatch(/cold-recall/);
   });
 
   it("a very long transcript is cut for the model at the same bound scoring uses", async () => {

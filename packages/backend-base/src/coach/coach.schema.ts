@@ -27,6 +27,7 @@ export const DimensionSchema = t.Object({
 export const FeedbackPointSchema = t.Object({
   title: t.String(),
   paragraphs: t.Array(t.String()),
+  evidence: t.Optional(t.Object({ quote: t.String(), timestamp: t.String() })),
 });
 
 // A timestamped moment inside a report section (e.g. a Key Moment or a Session
