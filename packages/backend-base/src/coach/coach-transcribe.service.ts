@@ -3,8 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { AiProvider } from "../shared/ai";
+import { mediaInput } from "./coach-media-input";
 import type { TimedLine } from "./coach-transcript";
-import { type Transcriber, ffprobe } from "./coach-upload-media.service";
+import {
+  type Transcriber,
+  UPLOAD_MAX_SECONDS,
+  ffprobeWith,
+} from "./coach-upload-media.service";
 
 export const SPEECH_PART_MAX_BYTES = 24 * 1024 ** 2;
 export const SPEECH_PART_SECONDS = 3000;
@@ -26,8 +31,11 @@ export async function splitAudio(
       "-hide_banner",
       "-loglevel",
       "error",
+      ...mediaInput(),
       "-i",
       recordingUrl,
+      "-t",
+      String(UPLOAD_MAX_SECONDS),
       "-vn",
       "-ac",
       "1",
@@ -50,14 +58,16 @@ export async function splitAudio(
     proc.exited,
   ]);
   if (code !== 0)
-    throw new Error(`the audio could not be extracted (${err.slice(0, 200)})`);
+    throw new Error(
+      `the audio could not be extracted (ffmpeg exited ${code}: ${err.slice(0, 200)})`,
+    );
   const names = (await readdir(dir)).filter((n) => n.endsWith(".mp3")).sort();
   const parts: AudioPart[] = [];
   for (const name of names) {
     const path = join(dir, name);
     parts.push({
       path,
-      seconds: (await ffprobe.probe(path)).seconds,
+      seconds: (await ffprobeWith("mp3").probe(path)).seconds,
       bytes: (await stat(path)).size,
     });
   }

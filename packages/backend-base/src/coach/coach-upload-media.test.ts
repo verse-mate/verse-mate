@@ -1,15 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import { CoachArchiveService } from "./coach-archive.service";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
-import { CoachUploadMediaService } from "./coach-upload-media.service";
+import { CoachUploadMediaService, ffprobe } from "./coach-upload-media.service";
 import { MemoryStorage } from "./coach-upload.fixture";
 import {
   CoachUploadService,
   uploadPartKey,
   uploadSessionId,
 } from "./coach-upload.service";
+import { CoachService } from "./coach.service";
 
 const conn = Database.getOrCreateConnection();
 const LEADER = "media-leader";
@@ -217,9 +222,105 @@ describe("an uploaded video is checked and transcribed by the media worker (task
       { hasVideo: true, seconds: 3600 },
       new Error("the speech-to-text service did not answer"),
     ).process();
-    expect((await state(id)).upload.failure).toBe(
-      "the recording could not be transcribed: the speech-to-text service did not answer",
+    const service = media(
+      { hasVideo: true, seconds: 3600 },
+      new Error("the speech-to-text service did not answer"),
     );
+    await service.process();
+    await service.process();
+    expect((await state(id)).upload.failure).toBe(
+      "the recording could not be transcribed",
+    );
+    const listed = await new CoachService(Database).listPipelineFailures({
+      limit: 200,
+    });
+    expect(
+      listed.sessions.find((f) => f.sourceSessionId === uploadSessionId(id)),
+    ).toMatchObject({ reason: expect.stringContaining("transcribed") });
+  });
+
+  it("a passing error is tried again before the upload fails, and the leader never sees the raw error", async () => {
+    const id = await received();
+    await media(
+      { hasVideo: true, seconds: 3600 },
+      new Error(
+        "connect ECONNRESET https://store.example.test/x?X-Amz-Signature=secret",
+      ),
+    ).process();
+    expect(await state(id)).toMatchObject({
+      session: { state: "received" },
+      upload: { state: "received", failure: null },
+    });
+    await media({ hasVideo: true, seconds: 3600 }).process();
+    expect((await state(id)).session.state).toBe("retained");
+  });
+
+  it("a recording over four hours fails naming the limit", async () => {
+    const id = await received();
+    await media({ hasVideo: true, seconds: 5 * 3600 }).process();
+    expect((await state(id)).upload.failure).toBe(
+      "the recording runs over four hours, the longest an upload can be",
+    );
+  });
+
+  it("a failed upload leaves nothing in storage", async () => {
+    const id = await received();
+    await media({ hasVideo: true, seconds: 90 }).process();
+    expect([...storage.objects.keys()]).toEqual([]);
+  });
+
+  it("two workers at once transcribe an upload once", async () => {
+    const id = await received();
+    let calls = 0;
+    const counting = () =>
+      new CoachUploadMediaService(Database, storage, {
+        probe: { probe: async () => ({ hasVideo: true, seconds: 3600 }) },
+        transcriber: {
+          transcribe: async () => {
+            calls += 1;
+            await new Promise((r) => setTimeout(r, 50));
+            return [
+              { speakerId: "s", isLeader: false, text: "Hi", startTime: 0 },
+            ];
+          },
+        },
+      });
+    await Promise.all([counting().process(), counting().process()]);
+    expect(calls).toBe(1);
+    expect((await state(id)).session.state).toBe("retained");
+  });
+
+  it("an upload left unfinished for a day is failed and its parts removed", async () => {
+    const asked = await new CoachUploadService(Database, storage).request({
+      coachId: LEADER,
+      classKey: `group:${LEADER}`,
+      sessionDate: "2026-10-02",
+      fileName: "session.mp4",
+      fileBytes: 3,
+      contentType: "video/mp4",
+      byUserId: null,
+      byAdmin: false,
+      today: "2026-10-08",
+    });
+    if (!asked.ok) throw new Error(asked.refusal);
+    storage.objects.set(uploadPartKey(asked.uploadId, 1), new Uint8Array([1]));
+    await conn
+      .updateTable("coach_uploads")
+      .set({ created_at: sql`now() - interval '25 hours'` })
+      .where("id", "=", asked.uploadId as never)
+      .execute();
+    await media({ hasVideo: true, seconds: 3600 }).process();
+    expect(
+      await conn
+        .selectFrom("coach_uploads")
+        .select(["state", "failure"])
+        .where("id", "=", asked.uploadId as never)
+        .executeTakeFirstOrThrow(),
+    ).toEqual({
+      state: "failed",
+      failure: "the file was not finished uploading within a day",
+    });
+    expect(storage.objects.size).toBe(0);
   });
 
   it("a file that did not arrive whole fails", async () => {
@@ -331,4 +432,23 @@ describe("An uploaded session's report: scored from its stored transcript like a
       .where("id", "=", result.reportId as string)
       .execute();
   });
+});
+
+describe("ffmpeg reads only video containers from an upload", () => {
+  it.skipIf(!Bun.which("ffprobe"))(
+    "a playlist disguised as a video is refused before anything is fetched",
+    async () => {
+      const dir = await mkdtemp(join(tmpdir(), "coach-probe-"));
+      try {
+        const path = join(dir, "evil.m3u8");
+        await writeFile(
+          path,
+          "#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\nhttp://127.0.0.1:9/seg.ts\n#EXT-X-ENDLIST\n",
+        );
+        await expect(ffprobe.probe(path)).rejects.toThrow();
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  );
 });

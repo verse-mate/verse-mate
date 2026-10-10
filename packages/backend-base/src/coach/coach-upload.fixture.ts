@@ -2,6 +2,7 @@ import type { UploadStorage } from "./coach-upload.service";
 
 export class MemoryStorage implements UploadStorage {
   objects = new Map<string, Uint8Array>();
+  sizes = new Map<string, number>();
   signed: string[] = [];
 
   async getGlobalObjectUploadUrl({ key }: { key: string }) {
@@ -11,8 +12,9 @@ export class MemoryStorage implements UploadStorage {
   async getGlobalObjectUrl({ key }: { key: string }) {
     return `https://store.example.test/${key}?get`;
   }
-  async objectExists(key: string) {
-    return this.objects.has(key);
+  async objectSize(key: string) {
+    if (!this.objects.has(key)) return null;
+    return this.sizes.get(key) ?? this.objects.get(key)?.byteLength ?? null;
   }
   async getGlobalObjectStream(key: string) {
     const bytes = this.objects.get(key);
@@ -46,6 +48,7 @@ export class MemoryStorage implements UploadStorage {
     return bytes ? Buffer.from(bytes).toString("utf8") : null;
   }
   async deleteObject(key: string) {
+    this.sizes.delete(key);
     return this.objects.delete(key);
   }
 }

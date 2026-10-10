@@ -167,6 +167,10 @@
       "not-awaiting-file": {
         "status": 409,
         "message": "This upload is already finished"
+      },
+      "already-recorded": {
+        "status": 409,
+        "message": "The recording bot recorded this class on this date while the file was uploading, so the upload was not used"
       }
     },
     "POST /coach/admin/uploads/:id/complete": {
@@ -181,6 +185,10 @@
       "not-awaiting-file": {
         "status": 409,
         "message": "This upload is already finished"
+      },
+      "already-recorded": {
+        "status": 409,
+        "message": "The recording bot recorded this class on this date while the file was uploading, so the upload was not used"
       }
     },
     "POST /coach/uploads/:id/parts": {

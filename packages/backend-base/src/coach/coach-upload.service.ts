@@ -32,7 +32,7 @@ const USABLE_BOT_STATES = [
 export type UploadStorage = Pick<
   ObjectStorageService,
   | "getGlobalObjectUploadUrl"
-  | "objectExists"
+  | "objectSize"
   | "getGlobalObjectStream"
   | "putGlobalObjectStream"
   | "putGlobalObject"
@@ -127,15 +127,12 @@ export class CoachUploadService {
     const conn = this.db.getOrCreateConnection();
     const leader = await conn
       .selectFrom("coach_leaders")
-      .select(["slug", "name", "email", "group_name"])
+      .select(["slug", "name", "email", "group_name", "user_id"])
       .where("slug", "=", coachId)
       .executeTakeFirst();
     if (!leader) return null;
-    const registered = await conn
-      .selectFrom("coach_classes")
-      .innerJoin("user", "user.id", "coach_classes.user_id")
+    const registered = await leaderClasses(conn, leader)
       .select(["coach_classes.id as id", "coach_classes.name as name"])
-      .where(sql`lower("user".email)`, "=", leader.email.toLowerCase())
       .orderBy("coach_classes.name")
       .execute();
     const rotating = await conn
@@ -212,34 +209,41 @@ export class CoachUploadService {
       return { ok: false, refusal: "date-too-old" };
 
     const conn = this.db.getOrCreateConnection();
-    const recorded = await conn
-      .selectFrom("coach_intake_sessions")
-      .select("source_session_id")
-      .where("source", "=", "bot")
-      .where("class_key", "=", chosen.key)
-      .where("session_date", "=", sql<Date>`${input.sessionDate}::date`)
-      .where("coach_id", "is not", null)
-      .where("state", "in", USABLE_BOT_STATES)
-      .executeTakeFirst();
-    if (recorded) return { ok: false, refusal: "already-recorded" };
+    if (await botRecorded(conn, chosen.key, input.sessionDate))
+      return { ok: false, refusal: "already-recorded" };
 
     const parts = Math.ceil(input.fileBytes / UPLOAD_PART_BYTES);
-    const title = input.title?.trim().slice(0, UPLOAD_TITLE_CHARS) || null;
+    const title = uploadTitle(input.title);
+    const garbage: string[] = [];
     const created = await conn
       .transaction()
       .execute(async (trx) => {
         const existing = await trx
           .selectFrom("coach_uploads")
-          .select(["id", "source_session_id"])
+          .select(["id", "source_session_id", "state", "coach_id"])
+          .select(
+            sql<boolean>`created_at < now() - make_interval(secs => ${UPLOAD_ADDRESS_SECONDS})`.as(
+              "expired",
+            ),
+          )
           .where("class_key", "=", chosen.key)
           .where("session_date", "=", sql<Date>`${input.sessionDate}::date`)
           .where("state", "in", ["awaiting-file", "received"])
           .forUpdate()
           .executeTakeFirst();
         if (existing) {
-          if (!(input.byAdmin && input.replace))
+          const abandoned =
+            existing.state === "awaiting-file" &&
+            (existing.coach_id === input.coachId || existing.expired);
+          if (!abandoned && !(input.byAdmin && input.replace))
             return { refusal: "upload-exists" as const };
-          if (!(await discardUpload(trx as CoachReportsWriter, existing.id)))
+          if (
+            !(await discardUpload(
+              trx as CoachReportsWriter,
+              existing.id,
+              garbage,
+            ))
+          )
             return { refusal: "not-replaceable" as const };
         }
         const row = await trx
@@ -268,6 +272,7 @@ export class CoachUploadService {
       });
     if (!("id" in created) || !created.id)
       return { ok: false, refusal: created.refusal ?? "upload-exists" };
+    await this.collect(garbage);
     return { ok: true, ...(await this.partAddresses(created.id, parts)) };
   }
 
@@ -321,31 +326,69 @@ export class CoachUploadService {
     | { ok: true; status: UploadStatus }
     | {
         ok: false;
-        refusal: "unknown-upload" | "file-incomplete" | "not-awaiting-file";
+        refusal:
+          | "unknown-upload"
+          | "file-incomplete"
+          | "not-awaiting-file"
+          | "already-recorded";
       }
   > {
     const upload = await this.owned(uploadId, coachId);
     if (!upload) return { ok: false, refusal: "unknown-upload" };
     if (upload.state !== "awaiting-file")
       return { ok: false, refusal: "not-awaiting-file" };
-    for (let part = 1; part <= upload.parts; part += 1)
-      if (!(await this.storage.objectExists(uploadPartKey(uploadId, part))))
+    const total = Number(upload.file_bytes);
+    for (let part = 1; part <= upload.parts; part += 1) {
+      const expected =
+        part < upload.parts
+          ? UPLOAD_PART_BYTES
+          : total - UPLOAD_PART_BYTES * (upload.parts - 1);
+      if (
+        (await this.storage.objectSize(uploadPartKey(uploadId, part))) !==
+        expected
+      )
         return { ok: false, refusal: "file-incomplete" };
+    }
 
     const date = upload.date;
+    const conn = this.db.getOrCreateConnection();
+    if (await botRecorded(conn, upload.class_key, date)) {
+      const failed = await conn
+        .updateTable("coach_uploads")
+        .set({ state: "failed", failure: ALREADY_RECORDED })
+        .where("id", "=", upload.id)
+        .where("state", "=", "awaiting-file")
+        .executeTakeFirst();
+      if (Number(failed.numUpdatedRows ?? 0) === 0)
+        return { ok: false, refusal: "not-awaiting-file" };
+      await this.collect(partKeys(uploadId, upload.parts));
+      return { ok: false, refusal: "already-recorded" };
+    }
     const rotating = upload.class_key.startsWith("rotating:")
       ? Number(upload.class_key.slice("rotating:".length))
       : null;
-    const conn = this.db.getOrCreateConnection();
-    const host = await conn
-      .selectFrom("coach_reports")
-      .select("id")
-      .where("coach_id", "=", upload.coach_id)
-      .where("session_date", "=", sql<Date>`${date}::date`)
-      .where("source_session_id", "like", "legacy:%")
-      .executeTakeFirst();
+    const host = coachPipelineLive()
+      ? await conn
+          .selectFrom("coach_reports")
+          .select("id")
+          .where("coach_id", "=", upload.coach_id)
+          .where("session_date", "=", sql<Date>`${date}::date`)
+          .where("source_session_id", "like", "legacy:%")
+          .executeTakeFirst()
+      : undefined;
     const sourceSessionId = uploadSessionId(uploadId);
-    await conn.transaction().execute(async (trx) => {
+    const received = await conn.transaction().execute(async (trx) => {
+      const claimed = await trx
+        .updateTable("coach_uploads")
+        .set({
+          state: "received",
+          received_at: sql`now()`,
+          source_session_id: sourceSessionId,
+        })
+        .where("id", "=", upload.id)
+        .where("state", "=", "awaiting-file")
+        .executeTakeFirst();
+      if (Number(claimed.numUpdatedRows ?? 0) === 0) return false;
       await trx
         .insertInto("coach_intake_sessions")
         .values({
@@ -362,17 +405,14 @@ export class CoachUploadService {
           class_key: upload.class_key,
         })
         .execute();
-      await trx
-        .updateTable("coach_uploads")
-        .set({
-          state: "received",
-          received_at: sql`now()`,
-          source_session_id: sourceSessionId,
-        })
-        .where("id", "=", upload.id)
-        .execute();
+      return true;
     });
+    if (!received) return { ok: false, refusal: "not-awaiting-file" };
     return { ok: true, status: host ? "held" : "processing" };
+  }
+
+  private async collect(keys: string[]) {
+    for (const key of keys) await this.storage.deleteObject(key);
   }
 
   async list(coachId: string | null): Promise<UploadView[]> {
@@ -500,7 +540,8 @@ export class CoachUploadService {
     | { ok: true }
     | { ok: false; refusal: "not-a-duplicate" | "already-delivered" }
   > {
-    return this.db
+    const garbage: string[] = [];
+    const result = await this.db
       .getOrCreateConnection()
       .transaction()
       .execute(async (trx) => {
@@ -522,7 +563,11 @@ export class CoachUploadService {
           .executeTakeFirst();
         if (
           !upload ||
-          !(await discardUpload(trx as CoachReportsWriter, upload.id as string))
+          !(await discardUpload(
+            trx as CoachReportsWriter,
+            upload.id as string,
+            garbage,
+          ))
         )
           return { ok: false as const, refusal: "already-delivered" as const };
         await trx
@@ -536,6 +581,8 @@ export class CoachUploadService {
           .execute();
         return { ok: true as const };
       });
+    await this.collect(garbage);
+    return result;
   }
 }
 
@@ -574,10 +621,11 @@ function uploadStatus(r: {
 export async function discardUpload(
   trx: CoachReportsWriter,
   uploadId: string,
+  garbage: string[] = [],
 ): Promise<boolean> {
   const upload = await trx
     .selectFrom("coach_uploads")
-    .select(["source_session_id"])
+    .select(["source_session_id", "parts", "state"])
     .where("id", "=", uploadId as never)
     .forUpdate()
     .executeTakeFirst();
@@ -597,6 +645,12 @@ export async function discardUpload(
         session.delivered_to.length > 0)
     )
       return false;
+    const assets = await trx
+      .selectFrom("coach_session_assets")
+      .select("storage_key")
+      .where("source_session_id", "=", upload.source_session_id)
+      .execute();
+    garbage.push(...assets.map((a) => a.storage_key));
     await trx
       .deleteFrom("coach_reports")
       .where("source_session_id", "=", upload.source_session_id)
@@ -610,6 +664,8 @@ export async function discardUpload(
       .where("source_session_id", "=", upload.source_session_id)
       .execute();
   }
+  if (upload.state === "awaiting-file" || upload.state === "received")
+    garbage.push(...partKeys(uploadId, upload.parts));
   await trx
     .updateTable("coach_uploads")
     .set({ state: "discarded" })
@@ -618,20 +674,74 @@ export async function discardUpload(
   return true;
 }
 
+export function partKeys(uploadId: string, parts: number): string[] {
+  return Array.from({ length: parts }, (_, i) =>
+    uploadPartKey(uploadId, i + 1),
+  );
+}
+
+export const ALREADY_RECORDED =
+  "the recording bot recorded this class on this date while the file was uploading";
+
+export function uploadTitle(title: string | null | undefined): string | null {
+  return (
+    (title ?? "")
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: stripping control characters is the point
+      .replace(/[\u0000-\u001f\u007f]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, UPLOAD_TITLE_CHARS) || null
+  );
+}
+
+function leaderClasses(
+  conn: CoachReportsWriter | ReturnType<db["getOrCreateConnection"]>,
+  leader: { email: string; user_id: string | null },
+) {
+  const base = (conn as CoachReportsWriter)
+    .selectFrom("coach_classes")
+    .innerJoin("user", "user.id", "coach_classes.user_id");
+  return leader.user_id
+    ? base.where("coach_classes.user_id", "=", leader.user_id as never)
+    : base.where(sql`lower("user".email)`, "=", leader.email.toLowerCase());
+}
+
+async function botRecorded(
+  conn: CoachReportsWriter | ReturnType<db["getOrCreateConnection"]>,
+  classKey: string,
+  date: string,
+): Promise<boolean> {
+  const recorded = await (conn as CoachReportsWriter)
+    .selectFrom("coach_intake_sessions")
+    .select("source_session_id")
+    .where("source", "=", "bot")
+    .where("class_key", "=", classKey)
+    .where("session_date", "=", sql<Date>`${date}::date`)
+    .where((eb) =>
+      eb.or([
+        eb("coach_id", "is not", null),
+        eb("rotating_class_id", "is not", null),
+      ]),
+    )
+    .where("state", "in", USABLE_BOT_STATES)
+    .executeTakeFirst();
+  return recorded !== undefined;
+}
+
 export async function markLikelyDuplicate(
   conn: CoachReportsWriter,
   sourceSessionId: string,
 ): Promise<boolean> {
   const session = await conn
     .selectFrom("coach_intake_sessions")
-    .select(["coach_id", "class_key", "source", "state"])
+    .select(["coach_id", "class_key", "source", "state", "rotating_class_id"])
     .select(sql<string>`to_char(session_date, 'YYYY-MM-DD')`.as("date"))
     .where("source_session_id", "=", sourceSessionId)
     .executeTakeFirst();
   if (
     !session ||
     session.source !== "bot" ||
-    !session.coach_id ||
+    (!session.coach_id && session.rotating_class_id === null) ||
     !session.class_key ||
     session.state !== "retained"
   )
@@ -680,15 +790,12 @@ export async function botClassKey(
   if (!session.coachId) return null;
   const leader = await conn
     .selectFrom("coach_leaders")
-    .select("email")
+    .select(["email", "user_id"])
     .where("slug", "=", session.coachId)
     .executeTakeFirst();
   if (!leader) return `group:${session.coachId}`;
-  const classes = await conn
-    .selectFrom("coach_classes")
-    .innerJoin("user", "user.id", "coach_classes.user_id")
+  const classes = await leaderClasses(conn, leader)
     .select(["coach_classes.id as id", "coach_classes.zoom_link as link"])
-    .where(sql`lower("user".email)`, "=", leader.email.toLowerCase())
     .execute();
   const link = normalizedMeetingLink(session.meetingLink);
   const linked = link

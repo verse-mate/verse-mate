@@ -375,7 +375,14 @@ export async function reattributeSession(
       if (!leader) return { ok: false, refusal: "unknown-leader" } as const;
       const session = await trx
         .selectFrom("coach_intake_sessions")
-        .select(["state", "report_id", "coach_id", "meeting_link", "source"])
+        .select([
+          "state",
+          "report_id",
+          "coach_id",
+          "meeting_link",
+          "source",
+          "rotating_class_id",
+        ])
         .where("source_session_id", "=", sourceSessionId)
         .forUpdate()
         .executeTakeFirst();
@@ -391,7 +398,7 @@ export async function reattributeSession(
       const state = rescore ? "retained" : session.state;
       const classKey = await botClassKey(trx as CoachReportsWriter, {
         coachId,
-        rotatingClassId: null,
+        rotatingClassId: session.rotating_class_id,
         meetingLink: session.meeting_link,
       });
       await trx

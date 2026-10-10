@@ -117,8 +117,8 @@ export class ObjectStorageService {
     return this.helper.presignUrl(key, expiresInSeconds, "PUT");
   }
 
-  public async objectExists(key: string): Promise<boolean> {
-    return this.helper.exists(key);
+  public async objectSize(key: string): Promise<number | null> {
+    return this.helper.size(key);
   }
 
   public async getGlobalObjectText(key: string): Promise<string | null> {
