@@ -102,13 +102,15 @@ function holdDeployLock() {
 }
 
 let errors: ReturnType<typeof spyOn>;
+let logs: ReturnType<typeof spyOn>;
 beforeEach(async () => {
   await clear();
   errors = spyOn(console, "error").mockImplementation(() => {});
-  spyOn(console, "log").mockImplementation(() => {});
+  logs = spyOn(console, "log").mockImplementation(() => {});
 });
 afterEach(() => {
   errors.mockRestore();
+  logs.mockRestore();
 });
 afterAll(clear);
 

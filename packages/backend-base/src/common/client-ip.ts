@@ -3,8 +3,7 @@ interface AddressSource {
 }
 
 let reportedHops = "";
-const loggedCounts = new Set<number>();
-const MAX_LOGGED_COUNTS = 32;
+let smallestLogged = Number.POSITIVE_INFINITY;
 
 export function trustedProxyHops(): number | null {
   const raw = (process.env.TRUSTED_PROXY_HOPS ?? "").trim();
@@ -19,16 +18,15 @@ export function trustedProxyHops(): number | null {
   return null;
 }
 
+export function forgetLoggedForwardedCounts(): void {
+  smallestLogged = Number.POSITIVE_INFINITY;
+}
+
 function logForwardedCount(count: number): void {
-  if (
-    count === 0 ||
-    loggedCounts.has(count) ||
-    loggedCounts.size >= MAX_LOGGED_COUNTS
-  )
-    return;
-  loggedCounts.add(count);
+  if (count === 0 || count >= smallestLogged) return;
+  smallestLogged = count;
   console.log(
-    `[CLIENT-IP] TRUSTED_PROXY_HOPS is not set; a request carried ${count} forwarded address(es); set it to the smallest count logged`,
+    `[CLIENT-IP] TRUSTED_PROXY_HOPS is not set; a request carried ${count} forwarded address(es), the fewest so far; set it to the fewest logged`,
   );
 }
 

@@ -212,7 +212,7 @@ export class AuthService {
         user.email.trim().toLowerCase() === normalizedEmail;
       const changed = picture && picture !== user.imageSrc;
       if (confirms || changed) {
-        await this.db
+        const written = await this.db
           .getOrCreateConnection()
           .updateTable("user")
           .set({
@@ -224,7 +224,14 @@ export class AuthService {
               : {}),
           })
           .where("id", "=", user.id)
-          .execute();
+          .$if(Boolean(confirms), (qb) =>
+            qb.where(sql`lower(trim(email))`, "=", normalizedEmail),
+          )
+          .executeTakeFirst();
+        if (confirms && Number(written.numUpdatedRows) === 0)
+          throw new ConflictError(
+            "The account's email changed while signing in. Sign in again.",
+          );
       }
 
       return this.loginUser(
@@ -301,12 +308,17 @@ export class AuthService {
       let userToLogin: User = user;
 
       if (Object.keys(updates).length > 0) {
-        await this.db
+        const written = await this.db
           .getOrCreateConnection()
           .updateTable("user")
           .set(updates)
           .where("id", "=", user.id)
-          .execute();
+          .where(sql`lower(trim(email))`, "=", normalizedEmail)
+          .executeTakeFirst();
+        if (Number(written.numUpdatedRows) === 0)
+          throw new ConflictError(
+            "The account's email changed while signing in. Sign in again.",
+          );
 
         // Update local user object
         userToLogin = { ...user, ...updates };
@@ -715,7 +727,7 @@ export class AuthService {
 
     await this.cache.delete(cacheKey);
 
-    await this.db
+    const confirmed = await this.db
       .getOrCreateConnection()
       .updateTable("user")
       .set({
@@ -723,7 +735,10 @@ export class AuthService {
         email_verified_at: sql`now()`,
       })
       .where("id", "=", user.id)
-      .execute();
+      .where(sql`lower(trim(email))`, "=", payload.email)
+      .executeTakeFirst();
+    if (Number(confirmed.numUpdatedRows) === 0)
+      throw new ValidationError("Invalid verification token");
 
     return this.loginUser(user, jwt);
   }

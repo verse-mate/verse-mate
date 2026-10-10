@@ -265,12 +265,11 @@ run() {
   write_env
 
   log "restoring $DUMP"
-  docker cp "$DUMP" "$PG:/tmp/dump"
-  if docker exec "$PG" pg_restore -l /tmp/dump >/dev/null 2>&1; then
-    docker exec "$PG" pg_restore -U rehearsal -d rehearsal --no-owner --no-privileges /tmp/dump \
-      >"$OUT/restore.log" 2>&1 || true
+  if [ "$(head -c 5 "$DUMP")" = "PGDMP" ]; then
+    docker exec -i "$PG" pg_restore -U rehearsal -d rehearsal --no-owner --no-privileges \
+      <"$DUMP" >"$OUT/restore.log" 2>&1 || true
   else
-    docker exec "$PG" psql -U rehearsal -d rehearsal -q -f /tmp/dump >"$OUT/restore.log" 2>&1 || true
+    docker exec -i "$PG" psql -U rehearsal -d rehearsal -q -f - <"$DUMP" >"$OUT/restore.log" 2>&1 || true
   fi
   q 'SELECT 1 FROM "user" LIMIT 1' >/dev/null || die "the dump has no user table (restore.log)"
 
@@ -388,7 +387,7 @@ run() {
     echo
     echo "- Dump: \`$(basename "$DUMP")\`, restored into $PG_IMAGE ($(grep -c -i error "$OUT/restore.log" || true) restore error lines, restore.log)"
     echo "- Branch image: \`$BRANCH_IMAGE\`; main image: \`$MAIN_IMAGE\`"
-    echo "- Every container ran on an internal Docker network with no route out, the databases in memory, and dummy mail and model keys: nothing was sent anywhere"
+    echo "- Every container ran on an internal Docker network with no route out, the dump streamed into databases held in memory, and dummy mail and model keys: nothing was sent anywhere"
     echo
     echo "## Migrations and the deploy backfill"
     echo
@@ -407,6 +406,7 @@ run() {
     echo
     echo "## Checks"
     echo
+    check "the dump restored without errors" "$(grep -c -i error "$OUT/restore.log" || true)" 0
     check "the migrator accepts the new migrations' order" "$order_ok" yes
     check "the deploy backfill logged no failure" "$(grep -c 'failed\|skipped' "$OUT/coach-deploy.log" || true)" 0
     check "only roster or admin addresses changed confirmation" "$off_roster" 0
