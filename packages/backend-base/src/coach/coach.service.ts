@@ -1626,20 +1626,30 @@ export class CoachService {
     const email = await this.emailFor(userId);
     if (!email) return null;
     const conn = this.db.getOrCreateConnection();
-    const bound = await conn
-      .selectFrom("coach_leaders")
-      .select(["slug", "id"])
-      .where("user_id", "=", userId as never)
-      .executeTakeFirst();
-    if (bound) return this.resolveById(bound.slug ?? String(bound.id));
+    const boundRecord = async () => {
+      const bound = await conn
+        .selectFrom("coach_leaders")
+        .select(["slug", "id"])
+        .where("user_id", "=", userId as never)
+        .executeTakeFirst();
+      return bound ? this.resolveById(bound.slug ?? String(bound.id)) : null;
+    };
+    const bound = await boundRecord();
+    if (bound) return bound;
     const claimed = await sql<{ slug: string | null; id: string }>`
       UPDATE coach_leaders SET user_id = ${userId}
       WHERE lower(email) = ${email} AND user_id IS NULL
         AND NOT EXISTS (SELECT 1 FROM coach_leaders b WHERE b.user_id = ${userId})
+        AND (SELECT count(*) FROM coach_leaders c WHERE lower(c.email) = ${email}) = 1
       RETURNING slug, id
-    `.execute(conn);
+    `
+      .execute(conn)
+      .catch((error: unknown) => {
+        if ((error as { code?: string }).code === "23505") return { rows: [] };
+        throw error;
+      });
     const row = claimed.rows[0];
-    return row ? this.resolveById(row.slug ?? String(row.id)) : null;
+    return row ? this.resolveById(row.slug ?? String(row.id)) : boundRecord();
   }
 
   async isCoach(userId: string): Promise<boolean> {

@@ -172,3 +172,22 @@ describe("stage 2: coaching identity resolves by account binding (task 10.6)", (
     expect(await service.isAdmin(registrant)).toBe(false);
   });
 });
+
+describe("the first visit after an account is confirmed", () => {
+  beforeEach(clear);
+  afterEach(clear);
+
+  it("several coach requests at once all resolve the leader, not only the one that claimed the record", async () => {
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: "verified-race", email: LEADER, name: "Race Leader" })
+      .execute();
+    const userId = await account(LEADER, true);
+    const ids = await Promise.all(
+      Array.from({ length: 30 }, () =>
+        new CoachService(Database).leaderIdFor(userId),
+      ),
+    );
+    expect(ids).toEqual(Array(30).fill("verified-race"));
+  });
+});
