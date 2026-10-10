@@ -40,18 +40,18 @@ function hit(
   );
 }
 
-describe("the signup and SSO limiters key on an address the caller cannot choose", () => {
-  const saved = process.env.TRUSTED_PROXY_HOPS;
-  beforeEach(() => {
+const savedHops = process.env.TRUSTED_PROXY_HOPS;
+function hops(value: string | undefined) {
+  if (value === undefined)
     Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
-  });
-  afterEach(() => {
-    if (saved === undefined)
-      Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
-    else process.env.TRUSTED_PROXY_HOPS = saved;
-  });
+  else process.env.TRUSTED_PROXY_HOPS = value;
+}
+afterEach(() => hops(savedHops));
 
-  it("with TRUSTED_PROXY_HOPS unset, a prepended X-Forwarded-For does not win a new signup bucket", async () => {
+describe("once the proxy count is set, the signup and SSO limiters key on an address the caller cannot choose", () => {
+  beforeEach(() => hops("1"));
+
+  it("a prepended X-Forwarded-For does not win a new signup bucket", async () => {
     const cache = memoryCache();
     const results = [];
     for (let i = 1; i <= 4; i++) {
@@ -64,7 +64,7 @@ describe("the signup and SSO limiters key on an address the caller cannot choose
     expect(results).toEqual(["ok", "ok", "ok", 429]);
   });
 
-  it("with TRUSTED_PROXY_HOPS unset, the SSO limiter ignores prepended entries too", async () => {
+  it("the SSO limiter ignores prepended entries too", async () => {
     const cache = memoryCache();
     const results = [];
     for (let i = 1; i <= 11; i++) {
@@ -133,6 +133,7 @@ describe("the signup and SSO limiters key on an address the caller cannot choose
 
 describe("the login limiter cannot be used to lock someone else out", () => {
   const VICTIM = "victim@example.test";
+  beforeEach(() => hops("1"));
 
   function login(
     cache: ReturnType<typeof memoryCache>,
@@ -226,24 +227,17 @@ describe("the limiter counts atomically", () => {
 });
 
 describe("TRUSTED_PROXY_HOPS is loud when it cannot be read", () => {
-  const saved = process.env.TRUSTED_PROXY_HOPS;
-  afterEach(() => {
-    if (saved === undefined)
-      Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
-    else process.env.TRUSTED_PROXY_HOPS = saved;
-  });
-
   const request = new Request("http://localhost/", {
     headers: { "x-forwarded-for": "192.0.2.1, 192.0.2.2, 192.0.2.3" },
   });
   const server = { requestIP: () => ({ address: PROXY }) };
 
   for (const raw of ["-1", "abc", "1.5", "2hops"]) {
-    it(`"${raw}" is reported and the default of one hop is used`, () => {
+    it(`"${raw}" is reported and read as not set`, () => {
       process.env.TRUSTED_PROXY_HOPS = raw;
       const errors = spyOn(console, "error").mockImplementation(() => {});
       try {
-        expect(clientIp(request, server)).toBe("192.0.2.3");
+        expect(clientIp(request, server)).toBe("192.0.2.1");
         expect(errors.mock.calls.flat().join(" ")).toContain(
           `TRUSTED_PROXY_HOPS "${raw}"`,
         );
@@ -256,6 +250,66 @@ describe("TRUSTED_PROXY_HOPS is loud when it cannot be read", () => {
   it("a whole number is used as given", () => {
     process.env.TRUSTED_PROXY_HOPS = "2";
     expect(clientIp(request, server)).toBe("192.0.2.2");
+  });
+});
+
+describe("until the proxy count is set, nothing a user does today is refused because of this change", () => {
+  beforeEach(() => hops(undefined));
+
+  it("Deployed without the proxy count: the sign-in limits do not apply", async () => {
+    const cache = memoryCache();
+    const results = [];
+    for (let i = 0; i < 40; i++)
+      results.push(
+        await hit(
+          authRateLimiters.login,
+          cache,
+          PROXY,
+          { "x-forwarded-for": CLIENT },
+          { email: "same@example.test" },
+        ),
+        await hit(authRateLimiters.loginIp, cache, PROXY, {
+          "x-forwarded-for": CLIENT,
+        }),
+      );
+    expect(results.every((r) => r === "ok")).toBe(true);
+  });
+
+  it("network-keyed limits read the first forwarded address, as before this change", async () => {
+    const cache = memoryCache();
+    const results = [];
+    for (let i = 1; i <= 4; i++)
+      results.push(
+        await hit(authRateLimiters.signup, cache, PROXY, {
+          "x-forwarded-for": `198.51.100.${i}, ${PROXY}`,
+        }),
+      );
+    expect(results).toEqual(["ok", "ok", "ok", "ok"]);
+    expect(
+      clientIp(new Request("http://localhost/"), {
+        requestIP: () => ({ address: CLIENT }),
+      }),
+    ).toBe(CLIENT);
+  });
+
+  it("the log shows how many forwarded addresses requests carry, once per count, and no address", () => {
+    const logs = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const forwarded = (xff: string) =>
+        clientIp(
+          new Request("http://localhost/", {
+            headers: { "x-forwarded-for": xff },
+          }),
+          { requestIP: () => ({ address: PROXY }) },
+        );
+      forwarded("192.0.2.10, 192.0.2.11, 192.0.2.12, 192.0.2.13, 192.0.2.14");
+      forwarded("192.0.2.20, 192.0.2.21, 192.0.2.22, 192.0.2.23, 192.0.2.24");
+      const lines = logs.mock.calls.flat().join("\n");
+      expect(lines.match(/carried 5 forwarded/g)).toHaveLength(1);
+      expect(lines).not.toMatch(/192\.0\.2\./);
+    } finally {
+      logs.mockRestore();
+    }
   });
 });
 

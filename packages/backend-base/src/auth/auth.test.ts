@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, spyOn } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 import { db as Database } from "database";
 
@@ -323,8 +323,15 @@ describe("Auth - Rate Limiting", () => {
   const client = getTestClient<AuthPlugin>(Backend);
   const cacheService = Backend.store.cache;
 
+  const savedHops = process.env.TRUSTED_PROXY_HOPS;
   beforeAll(async () => {
+    process.env.TRUSTED_PROXY_HOPS = "1";
     await cacheService.delete("rate-limit:login-ip:unknown");
+  });
+  afterAll(() => {
+    if (savedHops === undefined)
+      Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
+    else process.env.TRUSTED_PROXY_HOPS = savedHops;
   });
 
   it("signup rate limit - returns 429 after 3 attempts", async () => {
