@@ -18,6 +18,24 @@ import type {
  *
  * Apikey from `OPEN_AI_KEY` env. Models passed through as-is.
  */
+const REASONING_MODEL = /^(gpt-5|o\d)/;
+
+interface OpenAiStreamEvent {
+  type: string;
+  delta?: string;
+  message?: string;
+  response?: {
+    model?: string;
+    usage?: {
+      input_tokens: number;
+      output_tokens: number;
+      total_tokens: number;
+    };
+    incomplete_details?: { reason?: string };
+    error?: { message?: string };
+  };
+}
+
 export class OpenAiProvider implements AiProvider {
   readonly name = "openai";
   private readonly client: OpenAI;
@@ -52,47 +70,80 @@ export class OpenAiProvider implements AiProvider {
   }
 
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
-    const completion = await this.client.chat.completions.create({
+    const reasons = REASONING_MODEL.test(opts.model);
+    const stream = await (this.client as any).responses.create({
       model: opts.model,
-      // A USER message carrying images becomes OpenAI's multi-part content
-      // form; everything else stays a plain string, so nothing existing
-      // changes shape. Images ride only on user messages because that is the
-      // only role the API accepts them on.
-      messages: opts.messages.map((m) =>
+      input: opts.messages.map((m) =>
         m.role === "user" && m.images?.length
           ? {
-              role: "user" as const,
+              role: "user",
               content: [
-                { type: "text" as const, text: m.content },
+                { type: "input_text", text: m.content },
                 ...m.images.map((url) => ({
-                  type: "image_url" as const,
-                  image_url: { url },
+                  type: "input_image",
+                  image_url: url,
                 })),
               ],
             }
           : { role: m.role, content: m.content },
       ),
       ...(opts.temperature != null && { temperature: opts.temperature }),
-      ...(opts.reasoningEffort != null && {
-        reasoning_effort: opts.reasoningEffort,
+      ...(reasons && {
+        reasoning: {
+          ...(opts.reasoningEffort != null && {
+            effort: opts.reasoningEffort,
+          }),
+          summary: "auto",
+        },
       }),
-      ...(opts.maxTokens !== undefined && { max_tokens: opts.maxTokens }),
-      ...(opts.responseFormat && { response_format: opts.responseFormat }),
+      ...(opts.maxTokens !== undefined && {
+        max_output_tokens: opts.maxTokens,
+      }),
+      ...(opts.responseFormat && {
+        text: { format: { type: opts.responseFormat.type } },
+      }),
+      store: false,
+      stream: true,
     });
 
-    const choice = completion.choices[0];
-    if (!choice?.message?.content) {
+    let content = "";
+    let model = "";
+    let usage:
+      | { input_tokens: number; output_tokens: number; total_tokens: number }
+      | undefined;
+    for await (const event of stream as AsyncIterable<OpenAiStreamEvent>) {
+      if (event.type === "response.output_text.delta") {
+        content += event.delta ?? "";
+      } else if (event.type === "response.completed") {
+        model = event.response?.model ?? model;
+        usage = event.response?.usage;
+      } else if (
+        event.type === "response.failed" ||
+        event.type === "response.incomplete" ||
+        event.type === "error"
+      ) {
+        const reason =
+          event.response?.incomplete_details?.reason ??
+          event.response?.error?.message ??
+          event.message ??
+          event.type;
+        throw new Error(
+          `OpenAI did not complete the response for model=${opts.model}: ${reason}`,
+        );
+      }
+    }
+    if (!content) {
       throw new Error(`OpenAI returned no content for model=${opts.model}`);
     }
 
     return {
-      content: choice.message.content,
-      model: completion.model,
-      ...(completion.usage && {
+      content,
+      model: model || opts.model,
+      ...(usage && {
         usage: {
-          promptTokens: completion.usage.prompt_tokens,
-          completionTokens: completion.usage.completion_tokens,
-          totalTokens: completion.usage.total_tokens,
+          promptTokens: usage.input_tokens,
+          completionTokens: usage.output_tokens,
+          totalTokens: usage.total_tokens,
         },
       }),
     };
