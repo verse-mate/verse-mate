@@ -729,3 +729,39 @@ describe("the answers the portal's email confirmation reads", () => {
     expect(after.email_verified_at).not.toBeNull();
   });
 });
+
+describe("the confirmation email limit through the route", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  it("a sixth confirmation email within the hour is refused for that account", async () => {
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
+      Promise.resolve({ delivered: true }),
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    await Backend.store.db
+      .getOrCreateConnection()
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: false,
+      })
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      const res = await client.auth["send-email-verification"].post(undefined, {
+        headers,
+      });
+      statuses.push(res.status);
+    }
+    expect(statuses.slice(0, 5).every((s) => s === 204)).toBe(true);
+    expect(statuses[5]).toBe(429);
+  });
+});
