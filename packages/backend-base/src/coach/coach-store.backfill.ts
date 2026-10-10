@@ -80,8 +80,9 @@ export async function backfillCoachStore(
   await conn.transaction().execute(async (trx) => {
     await assertBundleKeepsStore(trx as Executor, dataset);
 
+    let changed = false;
     for (const row of rows) {
-      await trx
+      const written = await trx
         .insertInto("coach_reports")
         .values({
           id: row.id,
@@ -94,35 +95,44 @@ export async function backfillCoachStore(
           body: row.body,
         })
         .onConflict((oc) =>
-          oc.column("source_session_id").doUpdateSet({
-            summary: row.summary,
-            metrics: row.metrics,
-            body: row.body,
+          oc
+            .column("source_session_id")
+            .doUpdateSet({
+              summary: row.summary,
+              metrics: row.metrics,
+              body: row.body,
+              updated_at: new Date(),
+            })
+            .where(
+              sql`(coach_reports.summary, coach_reports.metrics, coach_reports.body)`,
+              "is distinct from",
+              sql`(excluded.summary, excluded.metrics, excluded.body)`,
+            ),
+        )
+        .executeTakeFirst();
+      if (Number(written.numInsertedOrUpdatedRows ?? 0) > 0) changed = true;
+    }
+
+    if (changed)
+      await trx
+        .insertInto("coach_dataset_meta")
+        .values({
+          id: true,
+          version: "1",
+          report_count: meta.report_count,
+          generated_at: meta.generated_at,
+          schema_version: meta.schema_version,
+        })
+        .onConflict((oc) =>
+          oc.column("id").doUpdateSet({
+            version: sql`coach_dataset_meta.version + 1`,
+            report_count: sql`GREATEST(coach_dataset_meta.report_count, ${meta.report_count})`,
+            generated_at: meta.generated_at,
+            schema_version: meta.schema_version,
             updated_at: new Date(),
           }),
         )
         .execute();
-    }
-
-    await trx
-      .insertInto("coach_dataset_meta")
-      .values({
-        id: true,
-        version: "1",
-        report_count: meta.report_count,
-        generated_at: meta.generated_at,
-        schema_version: meta.schema_version,
-      })
-      .onConflict((oc) =>
-        oc.column("id").doUpdateSet({
-          version: sql`coach_dataset_meta.version + 1`,
-          report_count: sql`GREATEST(coach_dataset_meta.report_count, ${meta.report_count})`,
-          generated_at: meta.generated_at,
-          schema_version: meta.schema_version,
-          updated_at: new Date(),
-        }),
-      )
-      .execute();
   });
 
   return { loaded: rows.length };
