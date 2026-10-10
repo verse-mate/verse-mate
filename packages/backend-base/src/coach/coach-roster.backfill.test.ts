@@ -356,6 +356,8 @@ describe("roster and monthly backfill (DB)", () => {
 
 describe("the backfill never restores an admin someone removed", () => {
   isolateTable("coach_admins");
+  beforeAll(clear);
+  afterAll(clear);
 
   it("bundle admins are seeded only into an empty admin list", async () => {
     await conn
