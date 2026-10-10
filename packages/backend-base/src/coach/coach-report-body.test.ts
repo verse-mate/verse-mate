@@ -87,6 +87,7 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
       paragraphs: [
         "One line about strength 1.",
         "A paragraph about strength 1.",
+        "Evidence: “strength evidence 1” at 00:31:00",
       ],
     });
     expect(
@@ -250,6 +251,25 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
       const { issues } = await generate(override);
       expect(issues.join(" ")).toMatch(named);
     }
+  });
+
+  it("each strength and improvement keeps its evidence, and a quote the session never had is refused", async () => {
+    const good = await generate({});
+    expect(good.issues).toEqual([]);
+    expect(good.body.feedback.strengthsProse[0].paragraphs).toContain(
+      "Evidence: “strength evidence 1” at 00:31:00",
+    );
+    const answer = JSON.parse(bodyAnswer()) as {
+      strengths: Array<Record<string, unknown>>;
+    };
+    const { issues } = await generate({
+      strengths: [
+        answer.strengths[0],
+        { ...answer.strengths[1], quote: "words nobody said" },
+        ...answer.strengths.slice(2),
+      ],
+    });
+    expect(issues.join(" ")).toMatch(/strengths 2: quote-not-in-transcript/);
   });
 
   it("an answer that cannot be read is incomplete, not a crash", async () => {

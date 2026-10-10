@@ -391,13 +391,22 @@ function assemble(raw: Raw, input: BodyInput): BodyResult {
         issues.push(`${kind} ${i + 1}: no title or line`);
       if (!quote || !stamp)
         issues.push(`${kind} ${i + 1}: no evidence from the session`);
-      else claim(quote, stamp, `${kind} ${i + 1}`);
+      else {
+        claim(quote, stamp, `${kind} ${i + 1}`);
+        const problem = checkQuoteAt(input.transcript, quote, stamp);
+        if (problem) issues.push(`${kind} ${i + 1}: ${problem}`);
+      }
+      const seconds = parseTimestamp(stamp);
       body.feedback[kind].push(title);
       body.feedback[`${kind}Prose`].push({
         title,
-        paragraphs: [text(p.line), ...list(p.paragraphs).map(text)].filter(
-          Boolean,
-        ),
+        paragraphs: [
+          text(p.line),
+          ...list(p.paragraphs).map(text),
+          quote && seconds !== null
+            ? `Evidence: “${quote}” at ${formatTimestamp(seconds)}`
+            : "",
+        ].filter(Boolean),
       });
     });
   }

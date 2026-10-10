@@ -40,6 +40,14 @@ export const BODY_TRANSCRIPT: TimedLine[] = [
     text: "Let me tell you about the shipping routes of the time.",
     startTime: 1500,
   },
+  ...(["Strength", "Improvement"] as const).flatMap((kind, k) =>
+    [1, 2, 3, 4, 5].map((n) => ({
+      speakerId: "speaker-1",
+      isLeader: true,
+      text: `${kind.toLowerCase()} evidence ${n}`,
+      startTime: (30 + k * 10 + n) * 60,
+    })),
+  ),
 ];
 
 const ROW = (
