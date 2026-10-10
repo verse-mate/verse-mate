@@ -681,4 +681,51 @@ describe("the answers the portal's email confirmation reads", () => {
     );
     expect(await me()).toBe(true);
   });
+
+  it("an account confirmed before the confirmation was stamped can confirm again", async () => {
+    let key = "";
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(
+      (message) => {
+        if (message.text.includes("?key="))
+          key = message.text.split("?key=").at(-1) ?? "";
+        return Promise.resolve({ delivered: true });
+      },
+    );
+    const email = faker.internet.email().toLocaleLowerCase();
+    const password = faker.internet.password();
+    const conn = Backend.store.db.getOrCreateConnection();
+    const { id } = await conn
+      .insertInto("user")
+      .values({
+        email,
+        firstName: "P",
+        lastName: "C",
+        password: await Bun.password.hash(password, {
+          algorithm: "bcrypt",
+          cost: 4,
+        }),
+        emailVerified: true,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    const { data } = await client.auth.login.post({ email, password });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    await client.auth["send-email-verification"].post(undefined, { headers });
+    const confirmed = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(confirmed.error).toBeNull();
+    const after = await conn
+      .selectFrom("user")
+      .select("email_verified_at")
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+    expect(after.email_verified_at).not.toBeNull();
+  });
 });

@@ -246,6 +246,34 @@ describe("a leader's upload through the routes", () => {
   });
 });
 
+describe("the coaching gate asks for a fresh confirmation", () => {
+  it("an account confirmed before the deploy, on an unbound leader address, is told to confirm, not that it is no coach", async () => {
+    const stale = "happy-stale@example.test";
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: "happy-stale", email: stale, name: "Hap Stale" })
+      .execute();
+    try {
+      const id = await account(stale);
+      await conn
+        .updateTable("user")
+        .set({ email_verified_at: null })
+        .where("id", "=", id)
+        .execute();
+      expect(await call(stale, "GET", "me")).toMatchObject({
+        status: 403,
+        body: { details: { refusal: "confirm-email" } },
+      });
+    } finally {
+      await conn
+        .deleteFrom("coach_leaders")
+        .where("slug", "=", "happy-stale")
+        .execute();
+      await conn.deleteFrom("user").where("email", "=", stale).execute();
+    }
+  });
+});
+
 describe("identity nudges through the route", () => {
   it("sends to the unconfirmed leader and skips a group address, and with no mailer claims nothing", async () => {
     await conn

@@ -141,6 +141,7 @@ export class CoachIdentityService {
       .select("id")
       .where(sql`lower(email)`, "=", email.trim().toLowerCase())
       .where("emailVerified", "=", true)
+      .where("email_verified_at", "is not", null)
       .executeTakeFirst();
     return user?.id ?? null;
   }

@@ -97,6 +97,7 @@ export { EMAIL_RULE };
 
 const REFUSAL_ERRORS = {
   400: ValidationError,
+  403: ForbiddenError,
   404: NotFoundError,
   409: ConflictError,
 } as const;
@@ -348,8 +349,10 @@ const plugin = new Elysia()
           if (!currentUserId)
             throw new UnauthorizedError("Authentication required");
           const me = await coachService.getMe(currentUserId);
-          if (!me) throw new ForbiddenError("Not a coaching account");
-          return me;
+          if (me) return me;
+          if (await coachService.needsEmailConfirmation(currentUserId))
+            throw refuse("GET /coach/me", "confirm-email");
+          throw new ForbiddenError("Not a coaching account");
         },
         { response: { 200: MeSchema, ...StandardErrorResponses } },
       )
