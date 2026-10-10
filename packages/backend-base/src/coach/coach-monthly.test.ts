@@ -720,6 +720,20 @@ describe("review fixes: the monthly job survives failures and never sends twice"
     expect(byCoach.program.state).toBe("sent");
   });
 
+  it("a program report the model fails to write fails the run after the summaries are stored, so the job retries it", async () => {
+    await sentBefore();
+    await report(ANA, "2031-09-03");
+    const failing = new MonthlyAi(undefined, () => {
+      throw new Error("model timed out");
+    });
+    await expect(
+      service(new Mailer(), failing).produce("2031-09"),
+    ).rejects.toThrow(/program report/);
+    expect((await rows()).map((r) => r.kind)).toEqual(["leader"]);
+    await service(new Mailer()).produce("2031-09");
+    expect((await rows()).map((r) => r.kind)).toEqual(["leader", "program"]);
+  });
+
   it("producing the same month twice at once stores each summary once and does not fail", async () => {
     await sentBefore();
     await report(ANA, "2031-09-03");
@@ -745,6 +759,40 @@ describe("review fixes: the monthly job survives failures and never sends twice"
     expect(
       (await rows()).find((r) => r.kind === "program")?.sent_to.sort(),
     ).toEqual([ADMIN, EMAIL(BENCH)].sort());
+  });
+
+  it("a send that stops partway records who already got it, so the release reaches only the rest", async () => {
+    await sentBefore();
+    await report(ANA, "2031-09-03");
+    let calls = 0;
+    const crashing = new Mailer();
+    const original = crashing.sendEmail.bind(crashing);
+    crashing.sendEmail = async (data) => {
+      calls += 1;
+      if (calls === 3)
+        throw {
+          toString(): string {
+            throw new Error("worker stopped");
+          },
+        };
+      return original(data);
+    };
+    await service(crashing)
+      .produce("2031-09")
+      .catch(() => {});
+    const program = (await rows()).find((r) => r.kind === "program");
+    await conn
+      .updateTable("coach_monthly_reports")
+      .set({ sending_at: sql`now() - interval '2 hours'` })
+      .where("id", "=", program?.id as number)
+      .execute();
+    const after = new Mailer();
+    await service(after).sendDue();
+    await service(after).release(program?.id as number);
+    const already = crashing.sent
+      .filter((m) => m.subject.includes("program report"))
+      .map((m) => m.to);
+    for (const to of already) expect(after.to(to)).toEqual([]);
   });
 
   it("a summary left sending by a crash is held for an admin to check, not stuck", async () => {
