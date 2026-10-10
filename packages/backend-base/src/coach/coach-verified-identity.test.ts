@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { confirmRosterAddressesAgain } from "database/migrations/20260901164000-coach-identity-binding";
 
 import { CoachIdentityService } from "./coach-identity.service";
 import { CoachService } from "./coach.service";
@@ -11,7 +12,10 @@ const LEADER = "verified-leader@example.test";
 async function clear() {
   await conn.deleteFrom("coach_admins").where("email", "=", ADMIN).execute();
   await conn.deleteFrom("coach_leaders").where("email", "=", LEADER).execute();
-  await conn.deleteFrom("user").where("email", "in", [ADMIN, LEADER]).execute();
+  await conn
+    .deleteFrom("user")
+    .where("email", "in", [ADMIN, LEADER, LEADER.toUpperCase()])
+    .execute();
 }
 
 async function account(email: string, emailVerified: boolean) {
@@ -148,9 +152,9 @@ describe("stage 2: coaching identity resolves by account binding (task 10.6)", (
     expect(await service.leaderIdFor(original)).not.toBeNull();
   });
 
-  it("Registering the former admin email grants nothing: an admin row no account was ever bound to is inert", async () => {
+  it("Registering the former admin email grants nothing: registering the address without confirming it claims no admin row", async () => {
     await conn.insertInto("coach_admins").values({ email: ADMIN }).execute();
-    const registrant = await account(ADMIN, true);
+    const registrant = await account(ADMIN, false);
     expect(await new CoachService(Database).isAdmin(registrant)).toBe(false);
   });
 
@@ -189,5 +193,95 @@ describe("the first visit after an account is confirmed", () => {
       ),
     );
     expect(ids).toEqual(Array(30).fill("verified-race"));
+  });
+});
+
+describe("the identity migration asks roster and admin addresses to confirm again (owner, option A)", () => {
+  const STRANGER = "verified-stranger@example.test";
+  beforeEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", STRANGER).execute();
+  });
+  afterEach(async () => {
+    await clear();
+    await conn.deleteFrom("user").where("email", "=", STRANGER).execute();
+  });
+
+  it("clears the confirmation of every account on a roster or admin address, binds nothing, and leaves other accounts alone", async () => {
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: "verified-mig", email: LEADER, name: "Mig Leader" })
+      .execute();
+    await conn.insertInto("coach_admins").values({ email: ADMIN }).execute();
+    const leader = await account(LEADER.toUpperCase(), true);
+    const admin = await account(ADMIN, true);
+    const stranger = await account(STRANGER, true);
+    await confirmRosterAddressesAgain(
+      Database.getOrCreateConnection() as never,
+    );
+    const flags = await conn
+      .selectFrom("user")
+      .select(["id", "emailVerified"])
+      .where("id", "in", [leader, admin, stranger])
+      .execute();
+    expect(
+      Object.fromEntries(flags.map((f) => [f.id, f.emailVerified])),
+    ).toEqual({
+      [leader]: false,
+      [admin]: false,
+      [stranger]: true,
+    });
+    expect(
+      (
+        await conn
+          .selectFrom("coach_leaders")
+          .select("user_id")
+          .where("slug", "=", "verified-mig")
+          .executeTakeFirstOrThrow()
+      ).user_id,
+    ).toBeNull();
+  });
+
+  it("an admin row binds to the account that confirms its address and signs in, and only that account", async () => {
+    await conn.insertInto("coach_admins").values({ email: ADMIN }).execute();
+    const userId = await account(ADMIN, true);
+    const service = new CoachService(Database);
+    const answers = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        new CoachService(Database).isAdmin(userId),
+      ),
+    );
+    expect(answers).toEqual(Array(10).fill(true));
+    expect(
+      (
+        await conn
+          .selectFrom("coach_admins")
+          .select("user_id")
+          .where("email", "=", ADMIN)
+          .executeTakeFirstOrThrow()
+      ).user_id,
+    ).toBe(userId);
+    await conn
+      .updateTable("user")
+      .set({ email: STRANGER })
+      .where("id", "=", userId)
+      .execute();
+    const newcomer = await account(ADMIN, true);
+    expect(await service.isAdmin(newcomer)).toBe(false);
+  });
+
+  it("an unconfirmed account on an admin address claims nothing", async () => {
+    await conn.insertInto("coach_admins").values({ email: ADMIN }).execute();
+    const userId = await account(ADMIN, false);
+    expect(await new CoachService(Database).isAdmin(userId)).toBe(false);
+    expect(
+      (
+        await conn
+          .selectFrom("coach_admins")
+          .select("user_id")
+          .where("email", "=", ADMIN)
+          .executeTakeFirstOrThrow()
+      ).user_id,
+    ).toBeNull();
   });
 });

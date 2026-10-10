@@ -20,11 +20,11 @@ const store = app.store as unknown as { coachService: unknown };
 const realService = store.coachService;
 const tokens = new Map<string, string>();
 
-async function account(email: string) {
+async function account(email: string, emailVerified = true) {
   const id = (
     await conn
       .insertInto("user")
-      .values({ email, firstName: "X", lastName: "A", emailVerified: true })
+      .values({ email, firstName: "X", lastName: "A", emailVerified })
       .returning("id")
       .executeTakeFirstOrThrow()
   ).id;
@@ -110,7 +110,7 @@ describe("the identity gate holds under a re-registration attempt (task 10.7)", 
       .insertInto("coach_admins")
       .values({ email: FORMER_ADMIN })
       .execute();
-    registrant = await account(FORMER_ADMIN);
+    registrant = await account(FORMER_ADMIN, false);
     expect(await get("admin/coaches", registrant)).toBe(403);
     expect(await get("admin/pipeline-failures", registrant)).toBe(403);
     expect(await get("me", registrant)).toBe(403);
