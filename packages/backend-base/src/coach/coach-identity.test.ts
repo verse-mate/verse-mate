@@ -135,6 +135,25 @@ describe("verification nudges (task 10.2)", () => {
     }
   });
 
+  it("a leader whose account was confirmed before the deploy, and kept that confirmation, is still nudged to confirm", async () => {
+    const id = await account(EMAIL("id-none"), true);
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    const mailer = new Mailer();
+    await new CoachIdentityService(Database, mailer as never).nudge();
+    expect(mailer.sent.find((s) => s.to === EMAIL("id-none"))?.subject).toBe(
+      "Confirm your email to see your coaching reports",
+    );
+    expect(
+      (await new CoachIdentityService(Database, null).audit()).entries.find(
+        (e) => e.id === "id-none",
+      )?.account,
+    ).toBe("unverified");
+  });
+
   it("with no mailer, nothing is claimed sent", async () => {
     expect(
       await new CoachIdentityService(Database, null).nudge(),
