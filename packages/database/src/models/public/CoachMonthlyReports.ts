@@ -46,6 +46,12 @@ export default interface CoachMonthlyReportsTable {
     Date | string | null | undefined,
     Date | string | null
   >;
+
+  sending_at: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
 }
 
 export type CoachMonthlyReports = Selectable<CoachMonthlyReportsTable>;

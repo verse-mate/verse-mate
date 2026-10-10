@@ -64,7 +64,13 @@ export async function registerCoachMonthlyCron(): Promise<void> {
   await coachMonthlyQueue.add(
     COACH_MONTHLY_JOB,
     {},
-    { repeat, removeOnComplete: { count: 12 }, removeOnFail: 24 },
+    {
+      repeat,
+      attempts: 3,
+      backoff: { type: "exponential", delay: 600_000 },
+      removeOnComplete: { count: 12 },
+      removeOnFail: 24,
+    },
   );
   console.log(
     `[COACH-MONTHLY] repeatable job registered (cron: ${repeat.pattern} ${repeat.tz})`,

@@ -78,6 +78,10 @@ type Refusal = {
 };
 
 const REFUSALS: Record<string, Refusal> = {
+  "20260901166000-coach-monthly-send-claims": {
+    seed: "INSERT INTO coach_monthly_reports (kind, month, summary, state, sending_at) VALUES ('program', '2026-01', '{}', 'sending', now())",
+    tables: ["coach_monthly_reports"],
+  },
   "20260901165000-coach-upload-claims": {
     seed: "INSERT INTO coach_uploads (coach_id, class_key, class_name, session_date, file_name, file_bytes, content_type, parts, attempts) VALUES ('roundtrip', 'group:roundtrip', 'Roundtrip', '2026-01-05', 'a.mp4', 1, 'video/mp4', 1, 1)",
     tables: ["coach_uploads"],

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { db as Database } from "database";
+import { sql } from "kysely";
 
 import type { AiChatOptions, AiChatResponse, AiProvider } from "../shared/ai";
 import { COACH_PIPELINE_LIVE } from "./coach-cutover";
@@ -679,5 +680,89 @@ describe("the monthly job", () => {
       pattern: "0 9 1 * *",
       tz: "America/Chicago",
     });
+  });
+});
+
+describe("review fixes: the monthly job survives failures and never sends twice", () => {
+  it("A month the host did not summarise before cutover: produced again after cutover and held for release, the parallel-run copies never sent", async () => {
+    await sentBefore();
+    delete process.env[COACH_PIPELINE_LIVE];
+    await report(ANA, "2031-09-03");
+    const mailer = new Mailer();
+    await service(mailer).produce("2031-09");
+    process.env[COACH_PIPELINE_LIVE] = "true";
+    await service(mailer).produce("2031-09");
+    const after = await rows();
+    expect(after.map((r) => r.state)).toEqual(["held", "held"]);
+    expect(after[0].hold_reason).toContain("ended before cutover");
+    expect(mailer.sent).toEqual([]);
+    const leaderRow = after.find((r) => r.kind === "leader");
+    await service(mailer).release(leaderRow?.id as number);
+    expect(mailer.to(EMAIL(ANA))).toHaveLength(1);
+  });
+
+  it("one summary the model fails to write is held saying so, and the rest of the month is still produced and sent", async () => {
+    await sentBefore();
+    await report(ANA, "2031-09-03");
+    await report(BEN, "2031-09-04");
+    const ai = new MonthlyAi((prompt) => {
+      if (prompt.includes("Ben Ostrow")) throw new Error("model timed out");
+      return leaderProse();
+    });
+    const mailer = new Mailer();
+    await service(mailer, ai).produce("2031-09");
+    const byCoach = Object.fromEntries(
+      (await rows()).map((r) => [r.coach_id ?? "program", r]),
+    );
+    expect(byCoach[BEN]).toMatchObject({ state: "held" });
+    expect(byCoach[BEN].hold_reason).toContain("could not be written");
+    expect(byCoach[ANA].state).toBe("sent");
+    expect(byCoach.program.state).toBe("sent");
+  });
+
+  it("producing the same month twice at once stores each summary once and does not fail", async () => {
+    await sentBefore();
+    await report(ANA, "2031-09-03");
+    await Promise.all([
+      service(new Mailer()).produce("2031-09"),
+      service(new Mailer()).produce("2031-09"),
+    ]);
+    expect((await rows()).map((r) => r.kind)).toEqual(["leader", "program"]);
+  });
+
+  it("releasing after a partly failed send reaches only the recipients who did not get it", async () => {
+    await sentBefore();
+    await report(ANA, "2031-09-03");
+    const rejectOnce = new Set([ADMIN]);
+    const flaky = new Mailer((to) => rejectOnce.delete(to));
+    await service(flaky).produce("2031-09");
+    const program = (await rows()).find((r) => r.kind === "program");
+    expect(program?.state).toBe("held");
+    const before = flaky.sent.length;
+    await service(flaky).release(program?.id as number);
+    const resent = flaky.sent.slice(before).map((s) => s.to);
+    expect(resent).toEqual([ADMIN]);
+    expect(
+      (await rows()).find((r) => r.kind === "program")?.sent_to.sort(),
+    ).toEqual([ADMIN, EMAIL(BENCH)].sort());
+  });
+
+  it("a summary left sending by a crash is held for an admin to check, not stuck", async () => {
+    await sentBefore();
+    await conn
+      .insertInto("coach_monthly_reports")
+      .values({
+        kind: "leader",
+        coach_id: ANA,
+        month: "2031-09",
+        summary: JSON.stringify({}),
+        state: "sending",
+        sending_at: sql`now() - interval '2 hours'`,
+      })
+      .execute();
+    await service(new Mailer()).sendDue();
+    const row = (await rows()).find((r) => r.coach_id === ANA);
+    expect(row?.state).toBe("held");
+    expect(row?.hold_reason).toContain("send unconfirmed");
   });
 });

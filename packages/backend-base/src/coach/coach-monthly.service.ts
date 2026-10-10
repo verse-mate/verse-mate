@@ -35,6 +35,14 @@ export type MonthlyState =
   | "sent"
   | "parallel-run";
 
+export const PRE_CUTOVER_HOLD =
+  "held: a month that ended before cutover waits for an admin to release it";
+export const UNCONFIRMED_SEND =
+  "send unconfirmed: the job stopped while sending; check who received it before releasing";
+const UNWRITTEN =
+  "the summary could not be written by the model; correct its text before releasing it";
+const SEND_CLAIM_LAPSES = sql`interval '1 hour'`;
+
 export const FIRST_MONTH_HOLD =
   "held: the first month after cutover, or a month before it, waits for an admin to release it";
 
@@ -230,8 +238,20 @@ export class CoachMonthlyService {
   async produce(month: string): Promise<{ produced: number }> {
     const conn = this.db.getOrCreateConnection();
     const live = coachPipelineLive();
+    const reopened = live
+      ? await conn
+          .deleteFrom("coach_monthly_reports")
+          .where("month", "=", month)
+          .where("state", "=", "parallel-run")
+          .returning("id")
+          .execute()
+      : [];
     const firstHold =
-      live && !(await this.anySentBefore(month)) ? FIRST_MONTH_HOLD : null;
+      reopened.length > 0
+        ? PRE_CUTOVER_HOLD
+        : live && !(await this.anySentBefore(month))
+          ? FIRST_MONTH_HOLD
+          : null;
     const existing = await conn
       .selectFrom("coach_monthly_reports")
       .select(["kind", "coach_id"])
@@ -280,7 +300,10 @@ export class CoachMonthlyService {
         leader.name,
         summary,
         inMonth,
-      );
+      ).catch((error: unknown) => {
+        console.error(`[COACH-MONTHLY] ${id} ${month}:`, error);
+        return { summary, issues: [UNWRITTEN] };
+      });
       if (benchmark && !leader.is_benchmark) {
         const leak = checkBenchmarkName({
           reportCoachId: id,
@@ -293,8 +316,10 @@ export class CoachMonthlyService {
             "it names the benchmark leader in another leader's summary",
           );
       }
-      await this.store("leader", id, month, written, live, issues, firstHold);
-      produced += 1;
+      if (
+        await this.store("leader", id, month, written, live, issues, firstHold)
+      )
+        produced += 1;
     }
 
     const hostProgram = await conn
@@ -303,9 +328,25 @@ export class CoachMonthlyService {
       .where("month", "=", month)
       .executeTakeFirst();
     if (active.length > 0 && !has("program", null) && !hostProgram) {
-      const { report, issues } = await this.programReport(month, active);
-      await this.store("program", null, month, report, live, issues, firstHold);
-      produced += 1;
+      const written = await this.programReport(month, active).catch(
+        (error: unknown) => {
+          console.error(`[COACH-MONTHLY] program ${month}:`, error);
+          return null;
+        },
+      );
+      if (
+        written &&
+        (await this.store(
+          "program",
+          null,
+          month,
+          written.report,
+          live,
+          written.issues,
+          firstHold,
+        ))
+      )
+        produced += 1;
     }
     await this.sendDue();
     return { produced };
@@ -329,7 +370,7 @@ export class CoachMonthlyService {
       : reasons.length > 0
         ? "held"
         : "pending";
-    await this.db
+    const inserted = await this.db
       .getOrCreateConnection()
       .insertInto("coach_monthly_reports")
       .values({
@@ -340,7 +381,9 @@ export class CoachMonthlyService {
         state,
         hold_reason: reasons.length > 0 ? reasons.join("; ") : null,
       })
-      .execute();
+      .onConflict((oc) => oc.doNothing())
+      .executeTakeFirst();
+    return Number(inserted.numInsertedOrUpdatedRows ?? 0) > 0;
   }
 
   private async leaderProse(
@@ -731,11 +774,22 @@ export class CoachMonthlyService {
   async sendDue(): Promise<number> {
     if (!this.mailer || !coachPipelineLive()) return 0;
     const conn = this.db.getOrCreateConnection();
+    await conn
+      .updateTable("coach_monthly_reports")
+      .set({ state: "held", hold_reason: UNCONFIRMED_SEND, sending_at: null })
+      .where("state", "=", "sending")
+      .where((eb) =>
+        eb.or([
+          eb("sending_at", "is", null),
+          eb("sending_at", "<", sql<Date>`now() - ${SEND_CLAIM_LAPSES}`),
+        ]),
+      )
+      .execute();
     const due = await conn
       .updateTable("coach_monthly_reports")
-      .set({ state: "sending" })
+      .set({ state: "sending", sending_at: sql`now()` })
       .where("state", "=", "pending")
-      .returning(["id", "kind", "coach_id", "month", "summary"])
+      .returning(["id", "kind", "coach_id", "month", "summary", "sent_to"])
       .execute();
     for (const row of due) await this.send(row);
     return due.length;
@@ -747,6 +801,7 @@ export class CoachMonthlyService {
     coach_id: string | null;
     month: string;
     summary: unknown;
+    sent_to: string[];
   }) {
     const conn = this.db.getOrCreateConnection();
     const groups = await groupAddresses(this.db);
@@ -814,9 +869,10 @@ export class CoachMonthlyService {
         }),
       );
     }
-    const sent: string[] = [];
+    const sent: string[] = [...row.sent_to];
     const failed: string[] = [];
     for (const to of recipients) {
+      if (sent.includes(to.email)) continue;
       let result: CoachSendResult | undefined;
       try {
         result = (await this.mailer?.sendEmail({
@@ -838,6 +894,7 @@ export class CoachMonthlyService {
         failed.length === 0
           ? {
               state: "sent",
+              sending_at: null,
               sent_at: sql`now()`,
               sent_to: sql`${sql.val(sent)}::text[]`,
               skipped: sql`${sql.val(skipped)}::text[]`,
@@ -845,6 +902,7 @@ export class CoachMonthlyService {
             }
           : {
               state: "held",
+              sending_at: null,
               sent_to: sql`${sql.val(sent)}::text[]`,
               skipped: sql`${sql.val(skipped)}::text[]`,
               hold_reason: `send failed to ${failed.join(", ")}: release it to send again`,
