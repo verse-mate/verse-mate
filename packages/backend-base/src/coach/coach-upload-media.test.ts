@@ -28,7 +28,12 @@ async function clear() {
     .execute();
   await conn
     .deleteFrom("coach_intake_sessions")
-    .where("coach_id", "=", LEADER)
+    .where((eb) =>
+      eb.or([
+        eb("coach_id", "=", LEADER),
+        eb("source_session_id", "=", "media-bot-dup"),
+      ]),
+    )
     .execute();
   await conn
     .deleteFrom("coach_uploads")
@@ -491,4 +496,109 @@ describe("ffmpeg reads only video containers from an upload", () => {
       }
     },
   );
+});
+
+describe("review fixes: the media worker and its races", () => {
+  it("a worker that loses its upload to another worker's finished run leaves that run's recording alone", async () => {
+    const id = await received();
+    const sid = uploadSessionId(id);
+    const service = new CoachUploadMediaService(Database, storage, {
+      probe: {
+        probe: async () => {
+          await conn
+            .updateTable("coach_intake_sessions")
+            .set({ state: "retained" })
+            .where("source_session_id", "=", sid)
+            .execute();
+          return { hasVideo: true, seconds: 90 };
+        },
+      },
+      transcriber: { transcribe: async () => [] },
+    });
+    await service.process();
+    expect((await state(id)).session.state).toBe("retained");
+    expect(storage.objects.has(CoachArchiveService.recordingKey(sid))).toBe(
+      true,
+    );
+  });
+
+  it("an upload discarded while it was being processed leaves no media behind", async () => {
+    const id = await received();
+    const sid = uploadSessionId(id);
+    const service = new CoachUploadMediaService(Database, storage, {
+      probe: { probe: async () => ({ hasVideo: true, seconds: 3600 }) },
+      transcriber: {
+        transcribe: async () => {
+          await conn
+            .deleteFrom("coach_intake_sessions")
+            .where("source_session_id", "=", sid)
+            .execute();
+          return [
+            { speakerId: "s", isLeader: false, text: "Hi", startTime: 0 },
+          ];
+        },
+      },
+    });
+    await service.process();
+    expect(storage.objects.has(CoachArchiveService.recordingKey(sid))).toBe(
+      false,
+    );
+    expect(storage.objects.has(CoachArchiveService.transcriptKey(sid))).toBe(
+      false,
+    );
+    expect(
+      await conn
+        .selectFrom("coach_session_assets")
+        .select("kind")
+        .where("source_session_id", "=", sid)
+        .execute(),
+    ).toEqual([]);
+  });
+
+  it("a bot session parked as a duplicate of an upload that then fails goes back to be scored", async () => {
+    const id = await received();
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "media-bot-dup",
+        coach_id: LEADER,
+        matched_by: "title_match",
+        title: "Bot",
+        session_date: "2026-10-02",
+        state: "duplicate",
+        duplicate_of: uploadSessionId(id),
+      })
+      .execute();
+    await media({ hasVideo: true, seconds: 90 }).process();
+    expect(
+      await conn
+        .selectFrom("coach_intake_sessions")
+        .select(["state", "duplicate_of"])
+        .where("source_session_id", "=", "media-bot-dup")
+        .executeTakeFirstOrThrow(),
+    ).toEqual({ state: "retained", duplicate_of: null });
+  });
+
+  it("an upload whose worker kept crashing is failed once its attempts are used up, without another try", async () => {
+    const id = await received();
+    await conn
+      .updateTable("coach_uploads")
+      .set({ attempts: 3, claimed_at: sql`now() - interval '3 hours'` })
+      .where("id", "=", id as never)
+      .execute();
+    let called = false;
+    await new CoachUploadMediaService(Database, storage, {
+      probe: {
+        probe: async () => {
+          called = true;
+          return { hasVideo: true, seconds: 3600 };
+        },
+      },
+      transcriber: { transcribe: async () => [] },
+    }).process();
+    expect(called).toBe(false);
+    expect((await state(id)).upload.failure).toBe(
+      "the recording could not be transcribed",
+    );
+  });
 });

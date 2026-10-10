@@ -145,9 +145,7 @@ export class CoachPipelineService {
       .limit(PIPELINE_BATCH_LIMIT)
       .execute();
 
-    const out: PipelineResult[] = opts.uploadsOnly
-      ? []
-      : await this.redeliver();
+    const out: PipelineResult[] = await this.redeliver();
     for (const session of due) {
       let result: PipelineResult;
       try {

@@ -220,9 +220,9 @@ export class CoachUploadService {
       .execute(async (trx) => {
         const existing = await trx
           .selectFrom("coach_uploads")
-          .select(["id", "source_session_id", "state", "coach_id"])
+          .select(["id", "source_session_id", "state", "uploaded_by"])
           .select(
-            sql<boolean>`created_at < now() - make_interval(secs => ${UPLOAD_ADDRESS_SECONDS})`.as(
+            sql<boolean>`addresses_at < now() - make_interval(secs => ${UPLOAD_ADDRESS_SECONDS})`.as(
               "expired",
             ),
           )
@@ -234,7 +234,9 @@ export class CoachUploadService {
         if (existing) {
           const abandoned =
             existing.state === "awaiting-file" &&
-            (existing.coach_id === input.coachId || existing.expired);
+            ((existing.uploaded_by !== null &&
+              existing.uploaded_by === input.byUserId) ||
+              existing.expired);
           if (!abandoned && !(input.byAdmin && input.replace))
             return { refusal: "upload-exists" as const };
           if (
@@ -316,6 +318,12 @@ export class CoachUploadService {
   ): Promise<UploadParts | null> {
     const upload = await this.owned(uploadId, coachId);
     if (!upload || upload.state !== "awaiting-file") return null;
+    await this.db
+      .getOrCreateConnection()
+      .updateTable("coach_uploads")
+      .set({ addresses_at: sql`now()` })
+      .where("id", "=", upload.id)
+      .execute();
     return this.partAddresses(uploadId, upload.parts);
   }
 
@@ -408,6 +416,19 @@ export class CoachUploadService {
       return true;
     });
     if (!received) return { ok: false, refusal: "not-awaiting-file" };
+    const raced = await conn
+      .selectFrom("coach_intake_sessions")
+      .select("source_session_id")
+      .where("source", "=", "bot")
+      .where("class_key", "=", upload.class_key)
+      .where("session_date", "=", sql<Date>`${date}::date`)
+      .where("state", "=", "retained")
+      .execute();
+    for (const bot of raced)
+      await markLikelyDuplicate(
+        conn as CoachReportsWriter,
+        bot.source_session_id,
+      );
     return { ok: true, status: host ? "held" : "processing" };
   }
 
@@ -626,10 +647,16 @@ export async function discardUpload(
   const upload = await trx
     .selectFrom("coach_uploads")
     .select(["source_session_id", "parts", "state"])
+    .select(
+      sql<boolean>`claimed_at IS NOT NULL AND claimed_at > now() - interval '2 hours'`.as(
+        "processing",
+      ),
+    )
     .where("id", "=", uploadId as never)
     .forUpdate()
     .executeTakeFirst();
   if (!upload) return false;
+  if (upload.state === "received" && upload.processing) return false;
   if (upload.source_session_id) {
     const session = await trx
       .selectFrom("coach_intake_sessions")

@@ -113,6 +113,20 @@ export class CoachUploadMediaService {
         .returning("attempts")
         .executeTakeFirst();
       if (!claim) continue;
+      if (claim.attempts > MEDIA_ATTEMPTS) {
+        await this.fail(
+          upload.sourceSessionId,
+          uploadId,
+          upload.parts,
+          UPLOAD_FAILURES.transcription,
+        );
+        out.push({
+          sourceSessionId: upload.sourceSessionId,
+          outcome: "failed",
+          reason: UPLOAD_FAILURES.transcription,
+        });
+        continue;
+      }
       try {
         await this.processOne({ ...upload, uploadId });
         out.push({
@@ -248,7 +262,7 @@ export class CoachUploadMediaService {
           byte_size = EXCLUDED.byte_size,
           content_type = EXCLUDED.content_type
       `.execute(conn);
-    await conn
+    const kept = await conn
       .updateTable("coach_intake_sessions")
       .set({
         state: "retained",
@@ -257,7 +271,23 @@ export class CoachUploadMediaService {
       })
       .where("source_session_id", "=", upload.sourceSessionId)
       .where("state", "=", "received")
-      .execute();
+      .executeTakeFirst();
+    if (Number(kept.numUpdatedRows ?? 0) === 0) {
+      const session = await conn
+        .selectFrom("coach_intake_sessions")
+        .select("state")
+        .where("source_session_id", "=", upload.sourceSessionId)
+        .executeTakeFirst();
+      if (!session) {
+        await conn
+          .deleteFrom("coach_session_assets")
+          .where("source_session_id", "=", upload.sourceSessionId)
+          .execute();
+        await this.storage.deleteObject(recordingKey);
+        await this.storage.deleteObject(transcriptKey);
+      }
+      return;
+    }
     for (let part = 1; part <= upload.parts; part += 1)
       await this.storage.deleteObject(uploadPartKey(upload.uploadId, part));
   }
@@ -305,27 +335,41 @@ export class CoachUploadMediaService {
     parts: number,
     reason: string,
   ) {
+    const conn = this.db.getOrCreateConnection();
+    const failed = await conn.transaction().execute(async (trx) => {
+      const session = await trx
+        .updateTable("coach_intake_sessions")
+        .set({
+          state: "upload_failed",
+          hold_reason: reason,
+          updated_at: sql`now()`,
+        })
+        .where("source_session_id", "=", sourceSessionId)
+        .where("state", "=", "received")
+        .executeTakeFirst();
+      if (Number(session.numUpdatedRows ?? 0) === 0) return false;
+      await trx
+        .updateTable("coach_uploads")
+        .set({ state: "failed", failure: reason })
+        .where("id", "=", uploadId as never)
+        .where("state", "=", "received")
+        .execute();
+      await trx
+        .updateTable("coach_intake_sessions")
+        .set({ state: "retained", duplicate_of: null, updated_at: sql`now()` })
+        .where("duplicate_of", "=", sourceSessionId)
+        .where("state", "=", "duplicate")
+        .where("duplicate_dismissed_at", "is", null)
+        .execute();
+      return true;
+    });
+    if (!failed) return;
     for (const key of [
       ...partKeys(uploadId, parts),
       CoachArchiveService.recordingKey(sourceSessionId),
       CoachArchiveService.transcriptKey(sourceSessionId),
     ])
       await this.storage.deleteObject(key);
-    const conn = this.db.getOrCreateConnection();
-    await conn
-      .updateTable("coach_intake_sessions")
-      .set({
-        state: "upload_failed",
-        hold_reason: reason,
-        updated_at: sql`now()`,
-      })
-      .where("source_session_id", "=", sourceSessionId)
-      .execute();
-    await conn
-      .updateTable("coach_uploads")
-      .set({ state: "failed", failure: reason })
-      .where("id", "=", uploadId as never)
-      .execute();
   }
 }
 
