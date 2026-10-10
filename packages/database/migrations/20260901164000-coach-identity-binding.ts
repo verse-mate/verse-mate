@@ -2,19 +2,6 @@ import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
 import { refuseToDrop } from "./20260825120000-create-coach-reports-store";
 
-export async function confirmRosterAddressesAgain(
-  db: Kysely<Database>,
-): Promise<void> {
-  await sql`
-    UPDATE "user" SET "emailVerified" = false
-    WHERE "emailVerified" = true
-      AND lower(email) IN (
-        SELECT lower(email) FROM coach_leaders
-        UNION SELECT lower(email) FROM coach_admins
-      )
-  `.execute(db);
-}
-
 export async function up(db: Kysely<Database>): Promise<void> {
   await db.schema
     .alterTable("user")
@@ -57,7 +44,6 @@ export async function up(db: Kysely<Database>): Promise<void> {
     CREATE UNIQUE INDEX coach_admins_user_uidx
     ON coach_admins (user_id) WHERE user_id IS NOT NULL
   `.execute(db);
-  await confirmRosterAddressesAgain(db);
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {

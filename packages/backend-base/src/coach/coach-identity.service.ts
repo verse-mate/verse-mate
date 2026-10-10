@@ -30,7 +30,7 @@ export class CoachIdentityService {
     const conn = this.db.getOrCreateConnection();
     const accountOf = sql<AccountState>`CASE
       WHEN u.id IS NULL THEN 'none'
-      WHEN u."emailVerified" THEN 'verified'
+      WHEN u."emailVerified" AND u.email_verified_at IS NOT NULL THEN 'verified'
       ELSE 'unverified' END`;
     const leaders = await conn
       .selectFrom("coach_leaders as l")
