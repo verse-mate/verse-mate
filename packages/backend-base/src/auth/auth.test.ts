@@ -617,3 +617,58 @@ describe("Auth - Security (audit fixes)", () => {
     expect(aUser.emailVerified).toBe(false);
   });
 });
+
+describe("the answers the portal's email confirmation reads", () => {
+  const client = getTestClient<AuthPlugin>(Backend);
+  it("a bad key answers 400, and a used one 409 'User already verified'", async () => {
+    let key = "";
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(
+      (message) => {
+        if (message.text.includes("?key="))
+          key = message.text.split("?key=").at(-1) ?? "";
+        return Promise.resolve({ delivered: true });
+      },
+    );
+    await Backend.store.cache.delete("rate-limit:signup:unknown");
+    const email = faker.internet.email().toLocaleLowerCase();
+    const { data } = await client.auth.signup.post({
+      email,
+      firstName: "P",
+      lastName: "C",
+      password: faker.internet.password(),
+    });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    const me = async () =>
+      (
+        await Backend.store.db
+          .getOrCreateConnection()
+          .selectFrom("user")
+          .select("emailVerified")
+          .where("email", "=", email)
+          .executeTakeFirstOrThrow()
+      ).emailVerified;
+    expect(await me()).toBe(false);
+    const bad = await client.auth["verify-email"].post(
+      { token: "not-a-key" },
+      { headers },
+    );
+    expect(bad.error?.status).toBe(400);
+    expect((bad.error?.value as { message?: string }).message).toBe(
+      "Invalid verification token",
+    );
+    const good = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(good.error).toBeNull();
+    const again = await client.auth["verify-email"].post(
+      { token: key },
+      { headers },
+    );
+    expect(again.error?.status as number).toBe(409);
+    expect((again.error?.value as { message?: string }).message).toBe(
+      "User already verified",
+    );
+    expect(await me()).toBe(true);
+  });
+});

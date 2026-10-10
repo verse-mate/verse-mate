@@ -41,6 +41,7 @@ describe("User", () => {
     expect(data?.email).toBe(authSignupInput.email);
     expect(data?.firstName).toBe(authSignupInput.firstName);
     expect(data?.lastName).toBe(authSignupInput.lastName);
+    expect(typeof data?.emailVerified).toBe("boolean");
   });
 
   it("update", async () => {
