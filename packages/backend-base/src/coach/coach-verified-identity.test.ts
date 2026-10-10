@@ -8,13 +8,20 @@ import { CoachService } from "./coach.service";
 const conn = Database.getOrCreateConnection();
 const ADMIN = "verified-admin@example.test";
 const LEADER = "verified-leader@example.test";
+const STRANGER_ADDRESS = "verified-renamer@example.test";
 
 async function clear() {
   await conn.deleteFrom("coach_admins").where("email", "=", ADMIN).execute();
   await conn.deleteFrom("coach_leaders").where("email", "=", LEADER).execute();
   await conn
     .deleteFrom("user")
-    .where("email", "in", [ADMIN, LEADER, LEADER.toUpperCase()])
+    .where("email", "in", [
+      ADMIN,
+      LEADER,
+      LEADER.toUpperCase(),
+      STRANGER_ADDRESS,
+      ` ${STRANGER_ADDRESS.toUpperCase()} `,
+    ])
     .execute();
 }
 
@@ -63,7 +70,7 @@ describe("coaching identity requires a verified email", () => {
 
     await conn
       .updateTable("user")
-      .set({ emailVerified: true })
+      .set({ emailVerified: true, email_verified_at: new Date() })
       .where("id", "=", unverified)
       .execute();
     expect(await service.isCoach(unverified)).toBe(true);
@@ -136,7 +143,7 @@ describe("stage 2: coaching identity resolves by account binding (task 10.6)", (
     expect(row.user_id).toBe(leader);
   });
 
-  it("Re-registered address cannot claim a record: the bound account keeps it after changing its own email, and a new account on the old address gets nothing", async () => {
+  it("Re-registered address cannot claim a record: the bound account keeps it after changing its own email and confirming the new one, and a new account on the old address gets nothing", async () => {
     await invite();
     const original = await account(LEADER, true);
     const service = new CoachService(Database);
@@ -144,6 +151,12 @@ describe("stage 2: coaching identity resolves by account binding (task 10.6)", (
     await conn
       .updateTable("user")
       .set({ email: MOVED })
+      .where("id", "=", original)
+      .execute();
+    expect(await service.leaderIdFor(original)).toBeNull();
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: true, email_verified_at: new Date() })
       .where("id", "=", original)
       .execute();
     const newcomer = await account(LEADER, true);
@@ -169,6 +182,12 @@ describe("stage 2: coaching identity resolves by account binding (task 10.6)", (
     await conn
       .updateTable("user")
       .set({ email: MOVED })
+      .where("id", "=", admin)
+      .execute();
+    expect(await service.isAdmin(admin)).toBe(false);
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: true, email_verified_at: new Date() })
       .where("id", "=", admin)
       .execute();
     expect(await service.isAdmin(admin)).toBe(true);
@@ -296,7 +315,7 @@ describe("only a confirmation made from this deploy on binds, whatever order the
     expect(await service.needsEmailConfirmation(userId)).toBe(true);
     await conn
       .updateTable("user")
-      .set({ emailVerified: true })
+      .set({ emailVerified: true, email_verified_at: new Date() })
       .where("id", "=", userId)
       .execute();
     expect(await service.leaderIdFor(userId)).toBe("verified-late");
@@ -335,33 +354,65 @@ describe("only a confirmation made from this deploy on binds, whatever order the
     }
   });
 
-  it("a new confirmation stamps the time, and changing the address clears it", async () => {
+  async function stampOf(id: string) {
+    return conn
+      .selectFrom("user")
+      .select(["emailVerified", "email_verified_at"])
+      .where("id", "=", id)
+      .executeTakeFirstOrThrow();
+  }
+
+  it("a confirmation stamps only when this code says so, and unconfirming clears the stamp", async () => {
+    const id = await account(LEADER, false);
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: true, email_verified_at: new Date() })
+      .where("id", "=", id)
+      .execute();
+    expect((await stampOf(id)).email_verified_at).not.toBeNull();
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: false })
+      .where("id", "=", id)
+      .execute();
+    expect((await stampOf(id)).email_verified_at).toBeNull();
+  });
+
+  it("an older build confirming an account (the flag alone) leaves it without a stamp, so it binds nothing", async () => {
+    await conn
+      .insertInto("coach_leaders")
+      .values({ slug: "verified-old-build", email: LEADER, name: "Old Build" })
+      .execute();
     const id = await account(LEADER, false);
     await conn
       .updateTable("user")
       .set({ emailVerified: true })
       .where("id", "=", id)
       .execute();
-    const stamped = await conn
-      .selectFrom("user")
-      .select("email_verified_at")
-      .where("id", "=", id)
-      .executeTakeFirstOrThrow();
-    expect(stamped.email_verified_at).not.toBeNull();
+    expect(await stampOf(id)).toEqual({
+      emailVerified: true,
+      email_verified_at: null,
+    });
+    expect(await new CoachService(Database).leaderIdFor(id)).toBeNull();
+  });
+
+  it("changing an account's address, by any code, drops its confirmation and stamp; a change of case alone does not", async () => {
+    const id = await account(STRANGER_ADDRESS, true);
     await conn
       .updateTable("user")
-      .set({ emailVerified: false })
+      .set({ email: ` ${STRANGER_ADDRESS.toUpperCase()} ` })
       .where("id", "=", id)
       .execute();
-    expect(
-      (
-        await conn
-          .selectFrom("user")
-          .select("email_verified_at")
-          .where("id", "=", id)
-          .executeTakeFirstOrThrow()
-      ).email_verified_at,
-    ).toBeNull();
+    expect((await stampOf(id)).email_verified_at).not.toBeNull();
+    await conn
+      .updateTable("user")
+      .set({ email: LEADER })
+      .where("id", "=", id)
+      .execute();
+    expect(await stampOf(id)).toEqual({
+      emailVerified: false,
+      email_verified_at: null,
+    });
   });
 });
 
@@ -454,6 +505,42 @@ describe("a confirmation is cleared only where a rename could have put it", () =
       password: false,
       links: [OTHER],
     });
+    await addLeader();
+    expect(await confirmed(id)).toBe(false);
+  });
+
+  it("one link for another address among links for its own is enough to clear, and that link is removed", async () => {
+    const id = await confirmedBeforeDeploy(LEADER, {
+      password: false,
+      links: [LEADER, OTHER],
+    });
+    await addLeader();
+    expect(await confirmed(id)).toBe(false);
+    const links = await conn
+      .selectFrom("user_sso_accounts")
+      .select("email")
+      .where("user_id", "=", id)
+      .execute();
+    expect(links.map((l) => l.email)).toEqual([LEADER]);
+  });
+
+  it("a cleared account's link for another address is removed, so it cannot sign in through it after the owner confirms", async () => {
+    const id = await confirmedBeforeDeploy(LEADER, {
+      password: false,
+      links: [OTHER],
+    });
+    await addLeader();
+    expect(
+      await conn
+        .selectFrom("user_sso_accounts")
+        .select("id")
+        .where("user_id", "=", id)
+        .execute(),
+    ).toEqual([]);
+  });
+
+  it("a password account stored in another case is matched and cleared", async () => {
+    const id = await confirmedBeforeDeploy(LEADER.toUpperCase());
     await addLeader();
     expect(await confirmed(id)).toBe(false);
   });
