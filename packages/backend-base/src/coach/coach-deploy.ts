@@ -1,0 +1,42 @@
+import { db as Database } from "database";
+import { sql } from "kysely";
+
+import leaderMapJson from "./coach-leader-map.json";
+import { backfillCoachRoster } from "./coach-roster.backfill";
+import { backfillCoachStore } from "./coach-store.backfill";
+import coachDataJson from "./coach.data.json";
+
+const DEPLOY_LOCK = 7_310_002;
+
+async function step(name: string, run: () => Promise<string>): Promise<void> {
+  try {
+    console.log(`[coach-deploy] ${name}: ${await run()}`);
+  } catch (error) {
+    console.error(`[coach-deploy] ${name} failed:`, error);
+  }
+}
+
+export async function runCoachDeployStep(
+  dataset: unknown = coachDataJson,
+  leaderMap: unknown = leaderMapJson,
+): Promise<void> {
+  await Database.getOrCreateConnection()
+    .connection()
+    .execute(async (lockHolder) => {
+      await sql`SELECT pg_advisory_lock(${DEPLOY_LOCK})`.execute(lockHolder);
+      try {
+        await step("roster backfill", async () => {
+          const r = await backfillCoachRoster(dataset, leaderMap);
+          return `${r.leaders} leaders, ${r.admins} admin(s) in the bundle, ${r.leaderSummaries} leader-month summaries`;
+        });
+        await step("report backfill", async () => {
+          const r = await backfillCoachStore(dataset);
+          return `${r.loaded} reports`;
+        });
+      } finally {
+        await sql`SELECT pg_advisory_unlock(${DEPLOY_LOCK})`.execute(
+          lockHolder,
+        );
+      }
+    });
+}

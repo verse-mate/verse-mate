@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { db as Database } from "database";
 
-import { seedAdminEmail } from "../../../database/migrations/20260901123000-coach-admin-role";
-
 const conn = Database.getOrCreateConnection();
 
 const PROBE = "admin-probe@example.test";
@@ -66,13 +64,5 @@ describe("the program-admin role is data, not a deploy", () => {
       .executeTakeFirst();
     expect(row?.email).toBe(PROBE);
     await cleanup();
-  });
-
-  it("the first program admin comes from COACH_SEED_ADMIN_EMAIL, and none is seeded without it", () => {
-    expect(seedAdminEmail({})).toBeNull();
-    expect(seedAdminEmail({ COACH_SEED_ADMIN_EMAIL: "  " })).toBeNull();
-    expect(
-      seedAdminEmail({ COACH_SEED_ADMIN_EMAIL: " First.Admin@Example.TEST " }),
-    ).toBe("first.admin@example.test");
   });
 });

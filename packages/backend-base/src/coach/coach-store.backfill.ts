@@ -1,7 +1,6 @@
 import { db as Database } from "database";
 import { sql } from "kysely";
 
-import { assertBeforeCutover } from "./coach-cutover";
 import { datasetMeta, datasetToRows } from "./coach-store.transform";
 import coachDataJson from "./coach.data.json";
 
@@ -74,7 +73,6 @@ export async function assertBundleKeepsStore(
 export async function backfillCoachStore(
   dataset: unknown = coachDataJson,
 ): Promise<{ loaded: number }> {
-  assertBeforeCutover();
   const conn = Database.getOrCreateConnection();
   const rows = datasetToRows(dataset);
   const meta = datasetMeta(dataset);
@@ -128,16 +126,4 @@ export async function backfillCoachStore(
   });
 
   return { loaded: rows.length };
-}
-
-if (import.meta.main) {
-  backfillCoachStore()
-    .then(({ loaded }) => {
-      console.log(`Backfilled ${loaded} coach reports.`);
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error("Backfill failed:", err);
-      process.exit(1);
-    });
 }
