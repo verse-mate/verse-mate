@@ -4,7 +4,7 @@ import type { CoachReportsWriter } from "./repository/coach-reports.repository";
 
 import { type AiProvider, getAiProvider } from "../shared/ai";
 import type { db } from "../shared/shared.plugin";
-import { type TimedLine, renderLine } from "./coach-transcript";
+import { type TimedLine, renderLine, spokenText } from "./coach-transcript";
 import {
   CLUSTERS,
   DIMENSIONS,
@@ -200,8 +200,9 @@ export function firstLessonShown(
 ): string | null {
   const given = (answer ?? {}) as { answer?: unknown; line?: unknown };
   if (given.answer !== true || typeof given.line !== "string") return null;
-  const line = given.line.trim();
-  if (!line) return null;
+  const line = spokenText(given.line);
+  if (!line || CHAPTER_ONLY.test(line.replace(/["'.,;:!?]+/g, "").trim()))
+    return null;
   const said = (text: string) =>
     text.replace(/[‘’ʼ]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
   const wanted = said(line).replace(/^["']+|["'.,;:!?]+$/g, "");
@@ -210,6 +211,9 @@ export function firstLessonShown(
     said(transcript.map((l) => l.text).join(" ")).includes(wanted);
   return shown ? line : null;
 }
+
+const CHAPTER_ONLY =
+  /^(?!.*\b(?:lesson|week|session|part|study|book)\b)(?:\d\s+)?\p{L}+(?:\s+\p{L}+){0,2}\s+\d+(?:[:.]\d+(?:-\d+)?)?$/iu;
 
 export const LEADER_CUES = [
   "opening_prayer",
@@ -387,7 +391,11 @@ export class CoachScoringService {
         ? answer.people.filter((p): p is string => typeof p === "string")
         : [];
       const line = typeof answer?.line === "string" ? answer.line.trim() : "";
-      if (people.length === 0 || !line || !spoken.includes(said(line)))
+      if (
+        people.length === 0 ||
+        !line ||
+        !spoken.includes(said(spokenText(line)))
+      )
         continue;
       const named = people.map((person) =>
         input.leaders.filter((l) => namesLeader(person, l.name)),

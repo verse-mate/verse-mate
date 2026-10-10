@@ -303,6 +303,22 @@ describe("Memory Reinforcement is not applicable on a study's first lesson (task
     expect(result.dimensions?.find((d) => d.n === 9)?.score).toBe(4);
   });
 
+  it("a line copied with its time and speaker, as the model sees it, still shows the first lesson", async () => {
+    const { result } = await score("Sat mornings", OPENING, {
+      answer: true,
+      line: "[00:00:04] LEADER: We're starting Amos this week",
+    });
+    expect(result.firstLessonLine).toBe("We're starting Amos this week");
+  });
+
+  it("a yes that cites only a book and chapter is not a first lesson", async () => {
+    const { result } = await score("Jonah 1", CONTINUING, {
+      answer: true,
+      line: "Jonah 1",
+    });
+    expect(result.firstLessonLine).toBeNull();
+  });
+
   it("a yes citing a line that is in neither the title nor the transcript is not a first lesson", async () => {
     const { result } = await score("Jonah 1", CONTINUING, {
       answer: true,

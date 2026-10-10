@@ -73,6 +73,25 @@ describe("timed transcript (task 5.18)", () => {
 });
 
 describe("A key moment's quote is not in the transcript", () => {
+  it("a quote said twice is accepted at the time of either line, and refused at any other", () => {
+    const twice: TimedLine[] = [
+      { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: 60 },
+      { speakerId: "s2", isLeader: false, text: "Amen.", startTime: 70 },
+      { speakerId: "s1", isLeader: true, text: "Let's pray.", startTime: 3000 },
+    ];
+    expect(checkQuoteAt(twice, "Let's pray", "00:50:00")).toBeNull();
+    expect(checkQuoteAt(twice, "Let's pray", "00:01:00")).toBeNull();
+    expect(checkQuoteAt(twice, "Let's pray", "00:49:00")).toBe(
+      "timestamp-not-at-quote",
+    );
+  });
+
+  it("a fragment cut from the middle of words is not a quote", () => {
+    expect(checkQuoteAt(LINES, "aven't pray", "00:12:34")).toBe(
+      "quote-not-in-transcript",
+    );
+  });
+
   it("a verbatim quote at the time of its line is accepted", () => {
     expect(
       checkQuoteAt(LINES, "I haven't prayed in weeks", "00:12:34"),
