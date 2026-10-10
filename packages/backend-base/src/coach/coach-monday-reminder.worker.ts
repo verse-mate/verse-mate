@@ -46,7 +46,13 @@ export async function registerCoachMondayReminderCron(): Promise<void> {
   await coachMondayReminderQueue.add(
     COACH_MONDAY_REMINDER_JOB,
     {},
-    { repeat, removeOnComplete: { count: 20 }, removeOnFail: 50 },
+    {
+      repeat,
+      attempts: 3,
+      backoff: { type: "exponential", delay: 600_000 },
+      removeOnComplete: { count: 20 },
+      removeOnFail: 50,
+    },
   );
   console.log(
     `[COACH-MONDAY] repeatable job registered (cron: ${repeat.pattern} ${repeat.tz})`,

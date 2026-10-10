@@ -324,3 +324,66 @@ describe("Leaders Without A Session In The Past Week Are Reminded To Upload (tas
     expect((await records()).filter(ours).length).toBe(SLUGS.length);
   });
 });
+
+describe("review fixes: the Monday reminder", () => {
+  it("a rotating class's leader who held a session of their own that week is not reminded on the quiet class's account", async () => {
+    const klass = await saveRotatingClass(Database, {
+      name: "Harbor",
+      groupEmail: GROUP,
+      titleMatch: [],
+      leaders: ["mr-ana", "mr-ben"],
+    });
+    if (!klass.ok) throw new Error("not saved");
+    await session("mr-own-1", "mr-ana", "2031-03-07T01:00:00Z");
+    const mailer = new Mailer();
+    await run(mailer);
+    expect(mailer.to(EMAIL("mr-ana"))).toEqual([]);
+    expect(mailer.to(EMAIL("mr-ben"))).toHaveLength(1);
+  });
+
+  it("a run stopped after some sends does not send those again when it is retried", async () => {
+    let calls = 0;
+    const crashing = new Mailer();
+    const original = crashing.sendEmail.bind(crashing);
+    crashing.sendEmail = async (data) => {
+      calls += 1;
+      if (calls === 3)
+        throw {
+          toString(): string {
+            throw new Error("worker stopped");
+          },
+        };
+      return original(data);
+    };
+    await run(crashing).catch(() => {});
+    const retry = new Mailer();
+    await run(retry);
+    const firstTwo = crashing.sent.map((s) => s.to);
+    expect(firstTwo).toHaveLength(2);
+    for (const to of firstTwo) expect(retry.to(to)).toEqual([]);
+  });
+
+  it("a leader whose own address is a class's group address is skipped and recorded", async () => {
+    const klass = await saveRotatingClass(Database, {
+      name: "Harbor",
+      groupEmail: GROUP,
+      titleMatch: [],
+      leaders: ["mr-cy"],
+    });
+    if (!klass.ok) throw new Error("not saved");
+    await conn
+      .updateTable("coach_leaders")
+      .set({ email: GROUP })
+      .where("slug", "=", "mr-dee")
+      .execute();
+    const mailer = new Mailer();
+    await run(mailer);
+    expect(mailer.to(GROUP)).toEqual([]);
+    expect(
+      (await records()).find((r) => r.coach_id === "mr-dee"),
+    ).toMatchObject({
+      outcome: "skipped",
+      reason: "no address of their own, only the class's group address",
+    });
+  });
+});
