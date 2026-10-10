@@ -272,6 +272,21 @@ describe("Machine Reports Carry The Full Report Body (task 6.10)", () => {
     expect(issues.join(" ")).toMatch(/strengths 2: quote-not-in-transcript/);
   });
 
+  it("a very long transcript is cut for the model at the same bound scoring uses", async () => {
+    const long = Array.from({ length: 3000 }, (_, i) => ({
+      speakerId: "speaker-9",
+      isLeader: false,
+      text: "x".repeat(100),
+      startTime: 2000 + i,
+    }));
+    const { ai } = await generate(
+      {},
+      { transcript: [...BODY_TRANSCRIPT, ...long] },
+    );
+    const said = ai.sent[0].messages.map((m) => m.content).join("\n");
+    expect(said).toContain("[transcript truncated at 200000 characters]");
+  });
+
   it("an answer that cannot be read is incomplete, not a crash", async () => {
     const ai = new BodyAi("not json");
     const { issues } = await new CoachReportBodyService(ai).generate(INPUT);

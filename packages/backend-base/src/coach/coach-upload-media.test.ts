@@ -323,6 +323,40 @@ describe("an uploaded video is checked and transcribed by the media worker (task
     expect(storage.objects.size).toBe(0);
   });
 
+  it("a failed upload for a rotating class is listed with why it failed, not as unattributed", async () => {
+    await conn
+      .insertInto("coach_intake_sessions")
+      .values({
+        source_session_id: "upload:media-rotating-failed",
+        source: "upload",
+        coach_id: null,
+        matched_by: "rotating_class",
+        title: "Rotating",
+        session_date: "2026-10-02",
+        state: "upload_failed",
+        hold_reason: "the recording could not be transcribed",
+      })
+      .execute();
+    try {
+      const listed = await new CoachService(Database).listPipelineFailures({
+        limit: 200,
+      });
+      expect(
+        listed.sessions.find(
+          (f) => f.sourceSessionId === "upload:media-rotating-failed",
+        ),
+      ).toMatchObject({
+        reason: "the recording could not be transcribed",
+        action: null,
+      });
+    } finally {
+      await conn
+        .deleteFrom("coach_intake_sessions")
+        .where("source_session_id", "=", "upload:media-rotating-failed")
+        .execute();
+    }
+  });
+
   it("a file that did not arrive whole fails", async () => {
     const id = await received([1, 2, 3]);
     storage.objects.set(uploadPartKey(id, 1), new Uint8Array([1]));

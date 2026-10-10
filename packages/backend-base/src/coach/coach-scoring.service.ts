@@ -100,7 +100,7 @@ function truncationNote(): string {
   return `\n[transcript truncated at ${MAX_TRANSCRIPT_CHARS} characters]`;
 }
 
-function boundedTranscript(text: string): string {
+export function boundedTranscript(text: string): string {
   if (text.length <= MAX_TRANSCRIPT_CHARS) return text;
   return `${text.slice(0, MAX_TRANSCRIPT_CHARS)}${truncationNote()}`;
 }
