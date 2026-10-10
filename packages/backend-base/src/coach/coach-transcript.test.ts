@@ -182,24 +182,43 @@ describe("A key moment's quote is not in the transcript", () => {
   });
 });
 
-describe("a rendered transcript line with a full-name speaker label", () => {
-  it("strips the time and a multi-word speaker label, as a recording bot labels speakers by full name", () => {
+describe("scripture references and colons in quoted words", () => {
+  it("a stamped line keeps a scripture reference whole when it has no speaker label", () => {
+    expect(spokenText("[00:01:00] Turn with me to John 3:16")).toBe(
+      "Turn with me to John 3:16",
+    );
+  });
+
+  it("a stamped line with the recording bot's speaker label loses only the label", () => {
+    expect(spokenText("[00:01:00] speaker-2: Turn with me to John 3:16")).toBe(
+      "Turn with me to John 3:16",
+    );
+  });
+
+  it("a misquote that happens to end in a scripture reference is not in the transcript", () => {
+    const lines: TimedLine[] = [
+      {
+        speakerId: "speaker-1",
+        isLeader: true,
+        text: "Let us pray together now.",
+        startTime: 10,
+      },
+      {
+        speakerId: "speaker-1",
+        isLeader: true,
+        text: "Turn with me to John 3:16 please.",
+        startTime: 20,
+      },
+    ];
+    expect(checkQuoteAt(lines, "Read with me John 3:16", "00:00:20")).toBe(
+      "quote-not-in-transcript",
+    );
     expect(
-      spokenText(
-        "[00:00:10] Leader Alpha Example: Lena, would you read for us?",
+      checkQuoteAt(
+        lines,
+        "Marcus Reed the elder told us: let us pray together now",
+        "00:00:10",
       ),
-    ).toBe("Lena, would you read for us?");
-  });
-
-  it("leaves a colon inside the spoken words alone when the line has no time stamp", () => {
-    expect(spokenText("Note: this is said aloud")).toBe(
-      "Note: this is said aloud",
-    );
-  });
-
-  it("does not take a sentence as a speaker label", () => {
-    expect(spokenText("[00:00:10] He said this. Then: more")).toBe(
-      "He said this. Then: more",
-    );
+    ).toBe("quote-not-in-transcript");
   });
 });

@@ -413,6 +413,15 @@ export class CoachScoringService {
       if (named.some((matches) => matches.length !== 1)) continue;
       const slugs = new Set(named.map((matches) => matches[0].slug));
       if (slugs.size !== 1) continue;
+      if (cue === "opening_prayer") {
+        const prayed = nameWords(spokenText(line));
+        if (
+          !people.some((person) =>
+            nameWords(person).some((w) => prayed.includes(w)),
+          )
+        )
+          continue;
+      }
       return { slug: [...slugs][0], cue, line };
     }
     return null;
