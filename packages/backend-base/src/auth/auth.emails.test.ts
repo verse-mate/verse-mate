@@ -51,6 +51,7 @@ describe("account emails show their link in the HTML part", () => {
     const link = linkIn(mails[0].text);
     expect(link).toBeTruthy();
     expect(mails[0].html).toContain(`href="${link}"`);
+    expect(mails[0].html).toContain(`>${link}</a>`);
     expect(mails[0].html).not.toContain("Hello World");
   });
 
@@ -60,6 +61,7 @@ describe("account emails show their link in the HTML part", () => {
     const link = linkIn(mails[0].text);
     expect(link).toBeTruthy();
     expect(mails[0].html).toContain(`href="${link}"`);
+    expect(mails[0].html).toContain(`>${link}</a>`);
     expect(mails[0].html).not.toContain("Hello World");
   });
 });

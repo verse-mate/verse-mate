@@ -4,6 +4,7 @@ import { clientIp } from "../common/client-ip";
 
 const WINDOW_MS = 60_000;
 const DEFAULT_MAX_REQUESTS = 100;
+const MAX_TRACKED = 10_000;
 
 type RateLimitHandler = (args: {
   request: Request;
@@ -21,15 +22,18 @@ type RateLimitHandler = (args: {
  */
 export function createIpRateLimit(
   maxRequests: number = DEFAULT_MAX_REQUESTS,
-): RateLimitHandler {
+): RateLimitHandler & { tracked: () => number } {
   const windows = new Map<string, { count: number; resetAt: number }>();
 
-  return ({ request, set, server }) => {
+  const handler: RateLimitHandler = ({ request, set, server }) => {
     const ip = clientIp(request, server);
     const now = Date.now();
     const entry = windows.get(ip);
 
     if (!entry || now >= entry.resetAt) {
+      if (!entry && windows.size >= MAX_TRACKED)
+        for (const [key, window] of windows)
+          if (now >= window.resetAt) windows.delete(key);
       windows.set(ip, { count: 1, resetAt: now + WINDOW_MS });
       return;
     }
@@ -40,6 +44,7 @@ export function createIpRateLimit(
       return { error: "TOO_MANY_REQUESTS", message: "Rate limit exceeded" };
     }
   };
+  return Object.assign(handler, { tracked: () => windows.size });
 }
 
 /**
