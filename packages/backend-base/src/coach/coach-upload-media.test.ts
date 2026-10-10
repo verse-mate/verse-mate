@@ -427,6 +427,11 @@ describe("An uploaded session's report: scored from its stored transcript like a
     );
     expect(details).toContain("Duration: 90 min");
     expect(details?.some((r) => r.startsWith("Attendees"))).toBe(false);
+    expect((report.summary as { attendees: unknown }).attendees).toBeNull();
+    const read = (
+      await new CoachService(Database).getReportsById("media-leader")
+    )?.find((r) => r.id === result.reportId);
+    expect(read?.attendees).toBeNull();
     await conn
       .deleteFrom("coach_reports")
       .where("id", "=", result.reportId as string)

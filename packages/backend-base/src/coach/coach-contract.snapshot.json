@@ -1958,7 +1958,14 @@
                   "type": "string"
                 },
                 "attendees": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "newcomers": {
                   "type": "number"
@@ -6178,7 +6185,14 @@
                     "type": "string"
                   },
                   "attendees": {
-                    "type": "number"
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "newcomers": {
                     "type": "number"
@@ -6541,7 +6555,14 @@
                   "type": "string"
                 },
                 "attendees": {
-                  "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "newcomers": {
                   "type": "number"

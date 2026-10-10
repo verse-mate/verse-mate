@@ -538,7 +538,7 @@ export class CoachPipelineService {
             keyMoments: generated.body.keyMoments,
             contextLine: generated.body.contextLine,
             topic: generated.body.topic,
-            attendees: detail.participantCount ?? 0,
+            attendees: detail.participantCount ?? null,
             newcomers: scored.newcomers ?? 0,
             duration: `${detail.duration ?? 0} min`,
             holdReason,
