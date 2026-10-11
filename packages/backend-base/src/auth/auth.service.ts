@@ -185,7 +185,6 @@ export class AuthService {
       );
 
     if (existingSsoAccount) {
-      // SSO account is already linked, get the user and login
       const user = await this.db
         .getOrCreateConnection()
         .selectFrom("user")
@@ -193,20 +192,54 @@ export class AuthService {
         .selectAll()
         .executeTakeFirstOrThrow();
 
-      // Update profile picture if it changed
-      if (picture && picture !== user.imageSrc) {
-        await this.db
+      if (!emailVerified && normalizedEmail) {
+        const otherLinks = await this.db
+          .getOrCreateConnection()
+          .selectFrom("user_sso_accounts")
+          .select("id")
+          .where("user_id", "=", user.id)
+          .where("provider_user_id", "!=", providerUserId)
+          .executeTakeFirst();
+        if (user.password || otherLinks)
+          throw new ConflictError(
+            "The sign-in provider has not verified this email. Sign in another way instead.",
+          );
+      }
+
+      const confirms =
+        emailVerified &&
+        (!user.emailVerified || !user.email_verified_at) &&
+        user.email.trim().toLowerCase() === normalizedEmail;
+      const changed = picture && picture !== user.imageSrc;
+      if (confirms || changed) {
+        const written = await this.db
           .getOrCreateConnection()
           .updateTable("user")
           .set({
-            imageSrc: picture,
-            picture_source: provider as any,
+            ...(changed
+              ? { imageSrc: picture, picture_source: provider as any }
+              : {}),
+            ...(confirms
+              ? { emailVerified: true, email_verified_at: sql`now()` }
+              : {}),
           })
           .where("id", "=", user.id)
-          .execute();
+          .$if(Boolean(confirms), (qb) =>
+            qb.where(sql`lower(trim(email))`, "=", normalizedEmail),
+          )
+          .executeTakeFirst();
+        if (confirms && Number(written.numUpdatedRows) === 0)
+          throw new ConflictError(
+            "The account's email changed while signing in. Sign in again.",
+          );
       }
 
-      return this.loginUser(user, jwt, userAgent, ipAddress);
+      return this.loginUser(
+        confirms ? { ...user, emailVerified: true } : user,
+        jwt,
+        userAgent,
+        ipAddress,
+      );
     }
 
     // Step 2: Check if a user with this email already exists (case-insensitive)
@@ -218,6 +251,14 @@ export class AuthService {
       .executeTakeFirst();
 
     if (user) {
+      if (!emailVerified)
+        throw new ConflictError(
+          "An account with this email already exists, and the sign-in provider has not verified the email. Sign in with your password instead.",
+        );
+      if (!user.emailVerified) {
+        await this.userSsoAccountRepository.deleteAllByUserId(user.id);
+        await this.logoutAll(user.id);
+      }
       // User exists, create SSO link to existing account
       // Handle potential unique constraint race conditions
       try {
@@ -253,11 +294,11 @@ export class AuthService {
       // untouched and keeps their password.
       if (user.password && !user.emailVerified) {
         updates.password = null;
-        await this.logoutAll(user.id);
       }
 
-      if (!user.emailVerified && emailVerified) {
+      if (emailVerified) {
         updates.emailVerified = true;
+        updates.email_verified_at = sql`now()`;
       }
       if (picture && picture !== user.imageSrc) {
         updates.imageSrc = picture;
@@ -267,12 +308,17 @@ export class AuthService {
       let userToLogin: User = user;
 
       if (Object.keys(updates).length > 0) {
-        await this.db
+        const written = await this.db
           .getOrCreateConnection()
           .updateTable("user")
           .set(updates)
           .where("id", "=", user.id)
-          .execute();
+          .where(sql`lower(trim(email))`, "=", normalizedEmail)
+          .executeTakeFirst();
+        if (Number(written.numUpdatedRows) === 0)
+          throw new ConflictError(
+            "The account's email changed while signing in. Sign in again.",
+          );
 
         // Update local user object
         userToLogin = { ...user, ...updates };
@@ -445,7 +491,7 @@ export class AuthService {
     const uuid = randomUUID();
     await this.cache.set(
       cacheConstants.verifyEmail(uuid),
-      { id: userId },
+      { id: userId, email: user.email.trim().toLowerCase() },
       "1h",
     );
 
@@ -458,7 +504,7 @@ export class AuthService {
         email: user.email,
         name: "",
       },
-      html: render(VerifyEmail()),
+      html: render(VerifyEmail({ href })),
     });
   }
 
@@ -579,7 +625,7 @@ export class AuthService {
 
       subject: "Forgot password",
       text: `Click the link to reset your password: ${href}`,
-      html: render(ResetPassword()),
+      html: render(ResetPassword({ href })),
     });
 
     return true;
@@ -657,14 +703,16 @@ export class AuthService {
       throw new NotFoundError("User not found");
     }
 
-    if (user.emailVerified) {
+    if (user.emailVerified && user.email_verified_at) {
       throw new ConflictError("User already verified");
     }
 
     const cacheKey = cacheConstants.verifyEmail(token);
-    const payload = await this.cache.get<{ id: string }>(cacheKey);
+    const payload = await this.cache.get<{ id: string; email?: string }>(
+      cacheKey,
+    );
 
-    if (!payload) {
+    if (!payload || payload.email !== user.email.trim().toLowerCase()) {
       throw new ValidationError("Invalid verification token");
     }
 
@@ -679,14 +727,18 @@ export class AuthService {
 
     await this.cache.delete(cacheKey);
 
-    await this.db
+    const confirmed = await this.db
       .getOrCreateConnection()
       .updateTable("user")
       .set({
         emailVerified: true,
+        email_verified_at: sql`now()`,
       })
       .where("id", "=", user.id)
-      .execute();
+      .where(sql`lower(trim(email))`, "=", payload.email)
+      .executeTakeFirst();
+    if (Number(confirmed.numUpdatedRows) === 0)
+      throw new ValidationError("Invalid verification token");
 
     return this.loginUser(user, jwt);
   }
@@ -739,14 +791,31 @@ export class AuthService {
     if (typeof email === "string")
       updatePayload.email = email.toLowerCase().trim();
 
+    const current = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .select("email")
+      .where("id", "=", userId)
+      .executeTakeFirst();
+    const emailChanged =
+      updatePayload.email !== undefined &&
+      current !== undefined &&
+      updatePayload.email !== current.email.trim().toLowerCase();
+
     if (Object.keys(updatePayload).length > 0) {
       await this.db
         .getOrCreateConnection()
         .updateTable("user")
-        .set(updatePayload)
+        .set(
+          emailChanged
+            ? { ...updatePayload, emailVerified: false }
+            : updatePayload,
+        )
         .where("id", "=", userId)
         .execute();
     }
+
+    if (emailChanged) await this.sendVerifyEmail(userId);
 
     // Return the updated user information
     return this.getUserById(userId);
