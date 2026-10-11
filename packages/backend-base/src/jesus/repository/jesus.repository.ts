@@ -1,6 +1,7 @@
 import type Database from "database/src/models/Database";
 import { type ExpressionBuilder, sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
+import { containsPattern } from "../../shared/utils/like-pattern";
 import { JESUS_KINDS, type JesusKind } from "../jesus.constants";
 import { formatReference } from "../utils/reference.utils";
 
@@ -381,7 +382,7 @@ export class JesusRepository {
       }
 
       if (filter.search?.trim()) {
-        const term = `%${filter.search.trim()}%`;
+        const term = containsPattern(filter.search.trim());
         conditions.push(
           eb.or([
             sql<boolean>`jesus_entries.title ILIKE ${term}`,

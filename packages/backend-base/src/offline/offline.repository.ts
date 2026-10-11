@@ -111,6 +111,14 @@ export interface OfflineUserBookmark {
   created_at: string;
 }
 
+function languageName(displayNames: Intl.DisplayNames, code: string): string {
+  try {
+    return displayNames.of(code) || code;
+  } catch {
+    return code;
+  }
+}
+
 export class OfflineRepository {
   constructor(private readonly db: db) {}
 
@@ -206,7 +214,7 @@ export class OfflineRepository {
     const topicManifests: TopicLanguageManifest[] = topicLanguages.map(
       (lang) => ({
         code: lang.language_code,
-        name: displayNames.of(lang.language_code) || lang.language_code,
+        name: languageName(displayNames, lang.language_code),
         updated_at: new Date(lang.updated_at).toISOString(),
         // Estimate ~1000 bytes per topic
         size_bytes: Number(lang.topic_count || 0) * 1000,
