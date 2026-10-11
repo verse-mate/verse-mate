@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 
 import authPlugin from "../auth/auth.plugin";
@@ -325,16 +325,32 @@ describe("Admin Plugin", () => {
 
     it("POST /admin/batch-auto-highlights - admin can create batch", async () => {
       const db = Backend.store.db.getOrCreateConnection();
-      const seededPrompt = await db
-        .insertInto("prompts")
-        .values({
-          prompt: "Highlight the themes of {book_name}.",
-          status: PromptStatusEnum.active,
-          prompt_type: "auto-highlight",
-        })
-        .onConflict((oc) => oc.column("prompt_type").doNothing())
-        .returning("prompt_id")
+      const existingPrompt = await db
+        .selectFrom("prompts")
+        .select(["prompt_id", "status"])
+        .where("prompt_type", "=", "auto-highlight")
         .executeTakeFirst();
+      const seededPrompt = existingPrompt
+        ? undefined
+        : await db
+            .insertInto("prompts")
+            .values({
+              prompt: "Highlight the themes of {book_name}.",
+              status: PromptStatusEnum.active,
+              prompt_type: "auto-highlight",
+            })
+            .returning("prompt_id")
+            .executeTakeFirstOrThrow();
+      if (existingPrompt)
+        await db
+          .updateTable("prompts")
+          .set({ status: PromptStatusEnum.active })
+          .where("prompt_id", "=", existingPrompt.prompt_id)
+          .execute();
+      const enqueue = spyOn(
+        Backend.store.batchMonitoringQueue,
+        "add",
+      ).mockResolvedValue({} as any);
       const aiProvider = process.env.AI_PROVIDER;
       process.env.AI_PROVIDER = "stub";
       resetAiProviderCache();
@@ -374,8 +390,13 @@ describe("Admin Plugin", () => {
           name: "Philemon",
           status: "validating",
         });
+        expect(enqueue).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({ batchId }),
+          expect.objectContaining({ jobId: batchId }),
+        );
       } finally {
-        if (batchId) await Backend.store.batchMonitoringQueue.remove(batchId);
+        enqueue.mockRestore();
         await db
           .deleteFrom("batch_jobs")
           .where("created_by", "=", adminUser.userId)
@@ -385,6 +406,12 @@ describe("Admin Plugin", () => {
           await db
             .deleteFrom("prompts")
             .where("prompt_id", "=", seededPrompt.prompt_id)
+            .execute();
+        if (existingPrompt)
+          await db
+            .updateTable("prompts")
+            .set({ status: existingPrompt.status })
+            .where("prompt_id", "=", existingPrompt.prompt_id)
             .execute();
         if (aiProvider === undefined)
           Reflect.deleteProperty(process.env, "AI_PROVIDER");

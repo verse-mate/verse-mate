@@ -19,6 +19,7 @@ describe("User", () => {
   const testClient = getTestClient<typeof plugin>(plugin);
 
   beforeAll(async () => {
+    await Backend.store.cache.delete("rate-limit:signup:unknown");
     const { data, error } = await testClient.auth.signup.post(authSignupInput);
     if (error) throw error;
 
