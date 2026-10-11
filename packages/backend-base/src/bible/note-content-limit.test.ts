@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 import cacheConstants from "../shared/cache.constants";
 import shared from "../shared/shared.plugin";
@@ -100,10 +100,44 @@ describe("note content length", () => {
       content: "c".repeat(LIMIT),
     });
     expect(response.status).toBe(200);
+    const after = (await notesOfUser()).find((n) => n.note_id === note.note_id);
+    expect(after?.content).toBe("c".repeat(LIMIT));
   });
 
   it("counts the limit in UTF-16 code units", async () => {
-    const response = await addNote("\u{1F600}".repeat(LIMIT / 2 + 1));
-    expect(response.status).toBe(422);
+    const over = await addNote("\u{1F600}".repeat(LIMIT / 2 + 1));
+    expect(over.status).toBe(422);
+    const atLimit = await addNote("\u{1F600}".repeat(LIMIT / 2));
+    expect(atLimit.status).toBe(200);
+  });
+});
+
+describe("note text in server logs", () => {
+  it("leaves the note text out of what adding and updating a note logs", async () => {
+    const marker = `private-${faker.string.alphanumeric(24)}`;
+    const updated = `${marker}-updated`;
+    const logged: unknown[] = [];
+    const spies = (["log", "info", "error", "warn"] as const).map((level) =>
+      spyOn(console, level).mockImplementation((...args: unknown[]) => {
+        logged.push(...args);
+      }),
+    );
+    try {
+      const added = await addNote(marker);
+      expect(added.status).toBe(200);
+      const note = (await notesOfUser()).find((n) => n.content === marker);
+      if (!note) throw new Error("note was not stored");
+      const response = await send("PUT", "update", {
+        note_id: note.note_id,
+        content: updated,
+      });
+      expect(response.status).toBe(200);
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+    const text = logged
+      .map((arg) => (typeof arg === "string" ? arg : Bun.inspect(arg)))
+      .join("\n");
+    expect(text).not.toContain(marker);
   });
 });

@@ -642,7 +642,7 @@ const plugin = new Elysia()
       .post(
         "/book/note/add",
         async ({ body, store: { bibleService } }) => {
-          console.log("Adding note:", body);
+          console.log("Adding note for user:", body.user_id);
 
           const content =
             typeof body.content === "string" ? body.content.trim() : "";
@@ -700,7 +700,7 @@ const plugin = new Elysia()
       .put(
         "/book/note/update",
         async ({ body, store: { bibleService } }) => {
-          console.log("Updating note:", body);
+          console.log("Updating note:", body.note_id);
 
           if (!body.note_id || !body.content) {
             console.error("Missing required fields for updating note");
