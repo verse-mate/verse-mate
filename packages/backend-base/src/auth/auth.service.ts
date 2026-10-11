@@ -271,8 +271,8 @@ export class AuthService {
             throw new ConflictError(
               "The account's email changed while signing in. Sign in again.",
             );
-          const proven = this.isConfirmed(locked);
-          if (!proven)
+          const confirmed = locked.emailVerified;
+          if (!confirmed)
             await trx
               .deleteFrom("user_sso_accounts")
               .where("user_id", "=", locked.id)
@@ -302,13 +302,12 @@ export class AuthService {
                 "This sign-in is linked to another account.",
               );
           }
-          const updates: Record<string, unknown> = proven
-            ? {}
-            : {
-                emailVerified: true,
-                email_verified_at: sql`now()`,
-                ...(locked.password ? { password: null } : {}),
-              };
+          const updates: Record<string, unknown> = {
+            ...(this.isConfirmed(locked)
+              ? {}
+              : { emailVerified: true, email_verified_at: sql`now()` }),
+            ...(!confirmed && locked.password ? { password: null } : {}),
+          };
           if (picture && picture !== locked.imageSrc) {
             updates.imageSrc = picture;
             updates.picture_source = provider as any;
@@ -319,7 +318,7 @@ export class AuthService {
               .set(updates)
               .where("id", "=", locked.id)
               .execute();
-          if (!proven) await this.logoutAll(locked.id);
+          if (!confirmed) await this.logoutAll(locked.id);
           return { ...locked, ...updates, emailVerified: true } as User;
         });
 
@@ -692,7 +691,7 @@ export class AuthService {
           .executeTakeFirst();
         if (Number(written.numUpdatedRows) === 0) return false;
 
-        if (!this.isConfirmed(user))
+        if (!user.emailVerified)
           await trx
             .deleteFrom("user_sso_accounts")
             .where("user_id", "=", user.id)

@@ -361,7 +361,7 @@ describe("a provider sign-in that adopts an existing account", () => {
     ]);
   });
 
-  it("treats a confirmation from before the stamp existed as unproven", async () => {
+  it("keeps the password and links of an account confirmed before the stamp existed, and stamps it", async () => {
     const { id, email } = await account({
       emailVerified: true,
       password: true,
@@ -374,20 +374,20 @@ describe("a provider sign-in that adopts an existing account", () => {
     await links.create({
       user_id: id,
       provider: SsoProviderEnum.apple,
-      provider_user_id: `planted-${id}`,
+      provider_user_id: `earlier-${id}`,
       email,
     });
 
     await google(`owner-${id}`, email);
 
-    expect((await row(id)).password).toBeNull();
+    expect((await row(id)).password).not.toBeNull();
     expect((await row(id)).email_verified_at).not.toBeNull();
     expect(
       await links.findByProviderAndProviderId(
         SsoProviderEnum.apple,
-        `planted-${id}`,
+        `earlier-${id}`,
       ),
-    ).toBeFalsy();
+    ).toBeTruthy();
   });
 
   it("keeps a confirmed account's password and other links", async () => {
