@@ -11,6 +11,7 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
+import { authRateLimiters } from "../common/rate-limit.middleware";
 import type { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import cacheConstants from "../shared/cache.constants";
 import type { JWT, cache, db } from "../shared/shared.plugin";
@@ -185,7 +186,6 @@ export class AuthService {
       );
 
     if (existingSsoAccount) {
-      // SSO account is already linked, get the user and login
       const user = await this.db
         .getOrCreateConnection()
         .selectFrom("user")
@@ -193,20 +193,54 @@ export class AuthService {
         .selectAll()
         .executeTakeFirstOrThrow();
 
-      // Update profile picture if it changed
-      if (picture && picture !== user.imageSrc) {
-        await this.db
+      if (!emailVerified && normalizedEmail) {
+        const otherLinks = await this.db
+          .getOrCreateConnection()
+          .selectFrom("user_sso_accounts")
+          .select("id")
+          .where("user_id", "=", user.id)
+          .where("provider_user_id", "!=", providerUserId)
+          .executeTakeFirst();
+        if (user.password || otherLinks)
+          throw new ConflictError(
+            "The sign-in provider has not verified this email. Sign in another way instead.",
+          );
+      }
+
+      const confirms =
+        emailVerified &&
+        (!user.emailVerified || !user.email_verified_at) &&
+        user.email.trim().toLowerCase() === normalizedEmail;
+      const changed = picture && picture !== user.imageSrc;
+      if (confirms || changed) {
+        const written = await this.db
           .getOrCreateConnection()
           .updateTable("user")
           .set({
-            imageSrc: picture,
-            picture_source: provider as any,
+            ...(changed
+              ? { imageSrc: picture, picture_source: provider as any }
+              : {}),
+            ...(confirms
+              ? { emailVerified: true, email_verified_at: sql`now()` }
+              : {}),
           })
           .where("id", "=", user.id)
-          .execute();
+          .$if(Boolean(confirms), (qb) =>
+            qb.where(sql`lower(trim(email))`, "=", normalizedEmail),
+          )
+          .executeTakeFirst();
+        if (confirms && Number(written.numUpdatedRows) === 0)
+          throw new ConflictError(
+            "The account's email changed while signing in. Sign in again.",
+          );
       }
 
-      return this.loginUser(user, jwt, userAgent, ipAddress);
+      return this.loginUser(
+        confirms ? { ...user, emailVerified: true } : user,
+        jwt,
+        userAgent,
+        ipAddress,
+      );
     }
 
     // Step 2: Check if a user with this email already exists (case-insensitive)
@@ -218,65 +252,75 @@ export class AuthService {
       .executeTakeFirst();
 
     if (user) {
-      // User exists, create SSO link to existing account
-      // Handle potential unique constraint race conditions
-      try {
-        await this.userSsoAccountRepository.create({
-          user_id: user.id,
-          provider,
-          provider_user_id: providerUserId,
-          email: normalizedEmail,
+      if (!emailVerified)
+        throw new ConflictError(
+          "The sign-in provider has not verified this email. Verify it with the provider or sign in another way.",
+        );
+      const userToLogin = await this.db
+        .getOrCreateConnection()
+        .transaction()
+        .execute(async (trx) => {
+          const locked = await trx
+            .selectFrom("user")
+            .selectAll()
+            .where("id", "=", user.id)
+            .where(sql`lower(trim(email))`, "=", normalizedEmail)
+            .forUpdate()
+            .executeTakeFirst();
+          if (!locked)
+            throw new ConflictError(
+              "The account's email changed while signing in. Sign in again.",
+            );
+          const confirmed = locked.emailVerified;
+          if (!confirmed)
+            await trx
+              .deleteFrom("user_sso_accounts")
+              .where("user_id", "=", locked.id)
+              .execute();
+          const linked = await trx
+            .insertInto("user_sso_accounts")
+            .values({
+              user_id: locked.id,
+              provider,
+              provider_user_id: providerUserId,
+              email: normalizedEmail,
+            })
+            .onConflict((oc) =>
+              oc.columns(["provider", "provider_user_id"]).doNothing(),
+            )
+            .returning("user_id")
+            .executeTakeFirst();
+          if (!linked) {
+            const owner = await trx
+              .selectFrom("user_sso_accounts")
+              .select("user_id")
+              .where("provider", "=", provider)
+              .where("provider_user_id", "=", providerUserId)
+              .executeTakeFirstOrThrow();
+            if (owner.user_id !== locked.id)
+              throw new ConflictError(
+                "This sign-in is linked to another account.",
+              );
+          }
+          const updates: Record<string, unknown> = {
+            ...(this.isConfirmed(locked)
+              ? {}
+              : { emailVerified: true, email_verified_at: sql`now()` }),
+            ...(!confirmed && locked.password ? { password: null } : {}),
+          };
+          if (picture && picture !== locked.imageSrc) {
+            updates.imageSrc = picture;
+            updates.picture_source = provider as any;
+          }
+          if (Object.keys(updates).length > 0)
+            await trx
+              .updateTable("user")
+              .set(updates)
+              .where("id", "=", locked.id)
+              .execute();
+          if (!confirmed) await this.logoutAll(locked.id);
+          return { ...locked, ...updates, emailVerified: true } as User;
         });
-      } catch (e) {
-        // If unique constraint violation, check if link already exists
-        const existing =
-          await this.userSsoAccountRepository.findByProviderAndProviderId(
-            provider,
-            providerUserId,
-          );
-        if (!existing) {
-          throw e;
-        }
-        // Link already exists, continue with login
-      }
-
-      // Update user if email was not verified but SSO email is verified,
-      // or if profile picture changed
-      const updates: any = {};
-
-      // Security (audit #1): an existing password account on this email that was
-      // never verified is the account-pre-registration pattern — an attacker may
-      // have signed up the victim's email with their own password, waiting for
-      // the real owner to arrive via SSO. Do NOT silently adopt that password:
-      // null it and revoke its sessions before linking + auto-verifying, so the
-      // attacker keeps no foothold. A legitimately verified password user is
-      // untouched and keeps their password.
-      if (user.password && !user.emailVerified) {
-        updates.password = null;
-        await this.logoutAll(user.id);
-      }
-
-      if (!user.emailVerified && emailVerified) {
-        updates.emailVerified = true;
-      }
-      if (picture && picture !== user.imageSrc) {
-        updates.imageSrc = picture;
-        updates.picture_source = provider;
-      }
-
-      let userToLogin: User = user;
-
-      if (Object.keys(updates).length > 0) {
-        await this.db
-          .getOrCreateConnection()
-          .updateTable("user")
-          .set(updates)
-          .where("id", "=", user.id)
-          .execute();
-
-        // Update local user object
-        userToLogin = { ...user, ...updates };
-      }
 
       return this.loginUser(userToLogin, jwt, userAgent, ipAddress);
     }
@@ -423,6 +467,10 @@ export class AuthService {
     return true;
   }
 
+  private isConfirmed(user: Pick<User, "emailVerified" | "email_verified_at">) {
+    return user.emailVerified && user.email_verified_at !== null;
+  }
+
   public async logoutAll(userId: string): Promise<boolean> {
     // Delete all access tokens from Redis. Per D-005 there are no refresh
     // tokens in DB to clean up — access token IS the session.
@@ -445,7 +493,7 @@ export class AuthService {
     const uuid = randomUUID();
     await this.cache.set(
       cacheConstants.verifyEmail(uuid),
-      { id: userId },
+      { id: userId, email: user.email.trim().toLowerCase() },
       "1h",
     );
 
@@ -566,7 +614,7 @@ export class AuthService {
     const uuid = randomUUID();
     await this.cache.set(
       cacheConstants.resetPassword(uuid),
-      { id: user.id },
+      { id: user.id, email: user.email.trim().toLowerCase() },
       "1h",
     );
 
@@ -585,22 +633,33 @@ export class AuthService {
     return true;
   }
 
+  private async resetPasswordHolder(token: string) {
+    const payload = await this.cache.get<{ id: string; email?: string }>(
+      cacheConstants.resetPassword(token),
+    );
+    if (!payload?.email) return undefined;
+    const user = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .where("id", "=", payload.id)
+      .where(sql`lower(trim(email))`, "=", payload.email)
+      .selectAll()
+      .executeTakeFirst();
+    return user ? { user, email: payload.email } : undefined;
+  }
+
   public async resetPasswordVerify(token: string) {
-    const cacheKey = cacheConstants.resetPassword(token);
-
-    const payload = await this.cache.get<{ id: string }>(cacheKey);
-
-    return Boolean(payload);
+    return Boolean(await this.resetPasswordHolder(token));
   }
 
   public async resetPassword(
     authResetPasswordInput: AuthResetPasswordInput,
   ): Promise<boolean> {
-    const cacheKey = cacheConstants.resetPassword(authResetPasswordInput.key);
-    const payload = await this.cache.get<{ id: string }>(cacheKey);
-    if (!payload) {
+    const holder = await this.resetPasswordHolder(authResetPasswordInput.key);
+    if (!holder) {
       return false;
     }
+    const { user, email } = holder;
 
     const hashedPassword = await Bun.password.hash(
       authResetPasswordInput.password,
@@ -609,32 +668,45 @@ export class AuthService {
         cost: this.jwtConstants.hashSalt,
       },
     );
-    await this.cache.delete(cacheKey);
-    await this.logoutAll(payload.id);
+    await this.cache.delete(
+      cacheConstants.resetPassword(authResetPasswordInput.key),
+    );
 
-    const user = await this.db
+    return this.db
       .getOrCreateConnection()
-      .selectFrom("user")
-      .where("id", "=", payload.id)
-      .selectAll()
-      .executeTakeFirst();
+      .transaction()
+      .execute(async (trx) => {
+        const locked = await trx
+          .selectFrom("user")
+          .selectAll()
+          .where("id", "=", user.id)
+          .where(sql`lower(trim(email))`, "=", email)
+          .forUpdate()
+          .executeTakeFirst();
+        if (!locked) return false;
 
-    if (!user) {
-      // TODO: Return Error
-      return false;
-    }
+        await trx
+          .updateTable("user")
+          .set({
+            email: locked.email,
+            password: hashedPassword,
+            emailVerified: true,
+            email_verified_at: this.isConfirmed(locked)
+              ? locked.email_verified_at
+              : sql`now()`,
+          })
+          .where("id", "=", locked.id)
+          .execute();
 
-    await this.db
-      .getOrCreateConnection()
-      .updateTable("user")
-      .set({
-        email: user.email,
-        password: hashedPassword,
-      })
-      .where("id", "=", user.id)
-      .execute();
-
-    return true;
+        if (!locked.emailVerified)
+          await trx
+            .deleteFrom("user_sso_accounts")
+            .where("user_id", "=", user.id)
+            .where(sql`lower(trim(email))`, "!=", email)
+            .execute();
+        await this.logoutAll(user.id);
+        return true;
+      });
   }
 
   public async verifyEmail({
@@ -657,14 +729,16 @@ export class AuthService {
       throw new NotFoundError("User not found");
     }
 
-    if (user.emailVerified) {
+    if (user.emailVerified && user.email_verified_at) {
       throw new ConflictError("User already verified");
     }
 
     const cacheKey = cacheConstants.verifyEmail(token);
-    const payload = await this.cache.get<{ id: string }>(cacheKey);
+    const payload = await this.cache.get<{ id: string; email?: string }>(
+      cacheKey,
+    );
 
-    if (!payload) {
+    if (!payload || payload.email !== user.email.trim().toLowerCase()) {
       throw new ValidationError("Invalid verification token");
     }
 
@@ -679,16 +753,20 @@ export class AuthService {
 
     await this.cache.delete(cacheKey);
 
-    await this.db
+    const confirmed = await this.db
       .getOrCreateConnection()
       .updateTable("user")
       .set({
         emailVerified: true,
+        email_verified_at: sql`now()`,
       })
       .where("id", "=", user.id)
-      .execute();
+      .where(sql`lower(trim(email))`, "=", payload.email)
+      .executeTakeFirst();
+    if (Number(confirmed.numUpdatedRows) === 0)
+      throw new ValidationError("Invalid verification token");
 
-    return this.loginUser(user, jwt);
+    return this.loginUser({ ...user, emailVerified: true }, jwt);
   }
 
   public async updateProfile(
@@ -739,14 +817,38 @@ export class AuthService {
     if (typeof email === "string")
       updatePayload.email = email.toLowerCase().trim();
 
+    const current = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .select("email")
+      .where("id", "=", userId)
+      .executeTakeFirst();
+    const emailChanged =
+      updatePayload.email !== undefined &&
+      current !== undefined &&
+      updatePayload.email !== current.email.trim().toLowerCase();
+
+    if (emailChanged)
+      await authRateLimiters.sendEmailVerification({
+        store: { cache: this.cache },
+        set: {},
+        currentUserId: userId,
+      });
+
     if (Object.keys(updatePayload).length > 0) {
       await this.db
         .getOrCreateConnection()
         .updateTable("user")
-        .set(updatePayload)
+        .set(
+          emailChanged
+            ? { ...updatePayload, emailVerified: false }
+            : updatePayload,
+        )
         .where("id", "=", userId)
         .execute();
     }
+
+    if (emailChanged) await this.sendVerifyEmail(userId);
 
     // Return the updated user information
     return this.getUserById(userId);
@@ -816,6 +918,12 @@ export class AuthService {
       .getOrCreateConnection()
       .transaction()
       .execute(async (trx) => {
+        await trx
+          .selectFrom("user")
+          .select("id")
+          .where("id", "=", userId)
+          .forUpdate()
+          .execute();
         // Delete dependent data first (order matters for foreign key constraints)
         // 1. Explanation ratings
         await trx

@@ -283,6 +283,20 @@ describe("GoogleSSOProvider", () => {
       expect(userInfo.lastName).toBe("User");
     });
 
+    it("an email_verified claim of the string false, or no claim at all, is not verified", async () => {
+      for (const claim of ["false", undefined]) {
+        const userInfo = await provider.getUserInfo({
+          idToken: "mock-token",
+          claims: {
+            sub: "google-user-123",
+            email: "someone@example.test",
+            ...(claim === undefined ? {} : { email_verified: claim }),
+          },
+        });
+        expect(userInfo.emailVerified).toBe(false);
+      }
+    });
+
     it("should throw ValidationError if required claims are missing", async () => {
       const tokenPayload: SSOTokenPayload = {
         idToken: "mock-token",
