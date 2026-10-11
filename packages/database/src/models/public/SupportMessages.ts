@@ -33,6 +33,8 @@ export default interface SupportMessagesTable {
     Date | string | null,
     Date | string | null
   >;
+
+  slack_ts: ColumnType<string | null, string | null, string | null>;
 }
 
 export type SupportMessages = Selectable<SupportMessagesTable>;
