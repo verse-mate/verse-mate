@@ -244,11 +244,83 @@ describe("OfflineService", () => {
 
   describe("getCommentaryData", () => {
     it("returns commentaries from the repository", async () => {
-      const data = await service.getCommentaryData("en");
+      const data = await service.getCommentaryData("en", null);
 
       expect(mockRepo.getAllExplanations).toHaveBeenCalledWith("en");
       expect(data).toHaveLength(1);
       expect(data[0].type).toBe("summary");
+    });
+  });
+
+  describe("getCommentaryData audio", () => {
+    function audio(explanationId: number) {
+      return {
+        explanation_id: explanationId,
+        voice: "alloy",
+        language_code: "en",
+        content_hash: `hash-${explanationId}`,
+        duration_seconds: 30,
+        storage_key: `explanation-audio/${explanationId}/alloy/en/hash.mp3`,
+      };
+    }
+
+    function chapterEntry(
+      explanationId: number,
+      bookId: number,
+      chapterNumber: number,
+    ) {
+      return {
+        explanation_id: explanationId,
+        book_id: bookId,
+        chapter_number: chapterNumber,
+        verse_start: null,
+        verse_end: null,
+        type: "summary",
+        explanation: "Text",
+        language_code: "en",
+        audios: [audio(explanationId)],
+      };
+    }
+
+    function serviceWithAudio() {
+      const repo = createMockRepository({
+        getAllExplanations: mock(() =>
+          Promise.resolve([
+            chapterEntry(1, 1, 1),
+            chapterEntry(2, 1, 2),
+            chapterEntry(3, 2, 1),
+          ]),
+        ),
+      });
+      const storage = {
+        getGlobalObjectUrl: mock(({ key }: { key: string }) =>
+          Promise.resolve(`https://storage.test/${key}?sig=1`),
+        ),
+      };
+      return {
+        storage,
+        service: new OfflineService(repo, mockCache as any, storage as any),
+      };
+    }
+
+    it("gives a guest audio only for the chapter guests may hear", async () => {
+      const { service: svc, storage } = serviceWithAudio();
+      const data = await svc.getCommentaryData("en", null);
+
+      expect(data.map((e) => e.audios.length)).toEqual([1, 0, 0]);
+      expect(data[0].audios[0].audio_url).toContain(
+        "explanation-audio/1/alloy/en/hash.mp3",
+      );
+      expect(storage.getGlobalObjectUrl).toHaveBeenCalledTimes(1);
+      expect(data.map((e) => e.explanation)).toEqual(["Text", "Text", "Text"]);
+    });
+
+    it("gives a signed-in reader audio for every chapter", async () => {
+      const { service: svc, storage } = serviceWithAudio();
+      const data = await svc.getCommentaryData("en", "user-1");
+
+      expect(data.map((e) => e.audios.length)).toEqual([1, 1, 1]);
+      expect(storage.getGlobalObjectUrl).toHaveBeenCalledTimes(3);
     });
   });
 

@@ -39,21 +39,24 @@ export class AudioRepository {
   async upsert(row: NewExplanationAudios): Promise<ExplanationAudios> {
     return this.db
       .getOrCreateConnection()
-      .transaction()
-      .execute(async (tx) => {
-        await tx
-          .deleteFrom("explanation_audios")
-          .where("explanation_id", "=", row.explanation_id)
-          .where("voice", "=", row.voice)
-          .where("language_code", "=", row.language_code)
-          .execute();
-
-        return tx
-          .insertInto("explanation_audios")
-          .values(row)
-          .returningAll()
-          .executeTakeFirstOrThrow();
-      });
+      .insertInto("explanation_audios")
+      .values(row)
+      .onConflict((oc) =>
+        oc
+          .columns(["explanation_id", "voice", "language_code"])
+          .doUpdateSet((eb) => ({
+            storage_key: eb.ref("excluded.storage_key"),
+            duration_seconds: eb.ref("excluded.duration_seconds"),
+            character_count: eb.ref("excluded.character_count"),
+            content_hash: eb.ref("excluded.content_hash"),
+            tts_provider: eb.ref("excluded.tts_provider"),
+            tts_model: eb.ref("excluded.tts_model"),
+            is_stale: eb.ref("excluded.is_stale"),
+            generated_at: eb.ref("excluded.generated_at"),
+          })),
+      )
+      .returningAll()
+      .executeTakeFirstOrThrow();
   }
 
   async markStale(explanationId: number): Promise<void> {

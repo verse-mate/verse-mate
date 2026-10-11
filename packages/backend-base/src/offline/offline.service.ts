@@ -1,3 +1,4 @@
+import { isGuestAudioChapter } from "../bible/audio/guest-scope";
 import type { cache } from "../shared/shared.plugin";
 import type { ObjectStorageService } from "../shared/storage/storage.service";
 import type {
@@ -86,12 +87,16 @@ export class OfflineService {
    */
   async getCommentaryData(
     languageCode: string,
+    currentUserId: string | null,
   ): Promise<OfflineCommentaryEntry[]> {
     const explanations =
       await this.offlineRepository.getAllExplanations(languageCode);
     return Promise.all(
       explanations.map(async (e) => {
-        const audios = e.audios ?? [];
+        const audios =
+          currentUserId || isGuestAudioChapter(e.book_id, e.chapter_number)
+            ? e.audios ?? []
+            : [];
         const withUrls = await Promise.all(
           audios.map(async (a) => ({
             explanation_id: a.explanation_id,

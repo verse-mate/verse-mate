@@ -1,9 +1,7 @@
-import { bearer } from "@elysiajs/bearer";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
 import { ApiError } from "../common/errors";
-import { UserService } from "../user/user.service";
 
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
@@ -62,15 +60,12 @@ const posthogService = new PosthogService({ logger });
  * Used in global error handler to add user context to exceptions
  */
 async function maybeCurrentUserId({
-  bearer: bearerToken,
-  query,
+  bearer: token,
   jwt: jwtVerifier,
 }: {
   bearer: string | undefined;
-  query: { accessToken?: string };
   jwt: JWT;
 }): Promise<string | null> {
-  const token = bearerToken ?? query?.accessToken;
   if (!token) return null;
 
   try {
@@ -86,8 +81,14 @@ async function maybeCurrentUserId({
 
 // const storage = new ObjectStorageService();
 
+const BEARER_PREFIX = "Bearer ";
+
 const setup = new Elysia({ name: "shared" })
-  .use(bearer())
+  .derive({ as: "global" }, ({ headers: { authorization } }) => ({
+    bearer: authorization?.startsWith(BEARER_PREFIX)
+      ? authorization.slice(BEARER_PREFIX.length)
+      : undefined,
+  }))
   .use(jwt)
   .state("db", Database)
   .state("cache", redisClient)
@@ -96,14 +97,7 @@ const setup = new Elysia({ name: "shared" })
   .decorate("posthog", posthogService)
   .onError(
     { as: "global" },
-    async ({
-      bearer: bearerToken,
-      query,
-      jwt: jwtVerifier,
-      error,
-      code,
-      path,
-    }) => {
+    async ({ bearer: bearerToken, jwt: jwtVerifier, error, code, path }) => {
       // NOT_FOUND is expected HTTP behavior (404s), not an application exception
       if (code === "NOT_FOUND") return;
       if (
@@ -115,7 +109,6 @@ const setup = new Elysia({ name: "shared" })
 
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,
-        query: query as { accessToken?: string },
         jwt: jwtVerifier,
       });
       const reported =
@@ -129,50 +122,7 @@ const setup = new Elysia({ name: "shared" })
         $current_url: path,
       });
     },
-  )
-  .derive(async ({ jwt, cookie: { auth }, store }) => {
-    let payload: any;
-    try {
-      payload = await jwt.verify(auth?.value as string | undefined);
-    } catch {
-      console.warn("JWT verification failed");
-      return { user: null };
-    }
-
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      typeof (payload as any).id !== "string" ||
-      !(payload as any).id
-    ) {
-      return { user: null };
-    }
-
-    try {
-      const userService = new UserService(store.db);
-      const user = await userService.findOne((payload as any).id);
-      if (!user) return { user: null };
-      return { user };
-    } catch {
-      console.error("Failed to load user from store");
-      return { user: null };
-    }
-  })
-  // @ts-ignore - Elysia macro types are complex and not fully inferred
-  .macro(({ onBeforeHandle }: any) => ({
-    isAuthenticated() {
-      onBeforeHandle(({ user, set }: any) => {
-        if (!user) {
-          set.status = 401;
-          return {
-            error: "UNAUTHORIZED",
-            message: "Authentication required",
-            details: undefined,
-          };
-        }
-      });
-    },
-  }));
+  );
 
 import { audioCleanupQueue } from "../bible/audio/audio-cleanup.queue";
 import {
