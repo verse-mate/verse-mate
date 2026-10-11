@@ -4,6 +4,7 @@ import { faker } from "@faker-js/faker";
 import { db as Database } from "database";
 
 import cacheConstants from "../shared/cache.constants";
+import { signupPassword } from "../shared/signup-password";
 import { getTestClient } from "../shared/test-client";
 import Backend, { type AuthPlugin } from "./auth.plugin";
 import type { AuthPayload } from "./entities/auth.entity";
@@ -28,7 +29,7 @@ describe("Auth", () => {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password(),
+    password: signupPassword(),
   };
   const changePasswordValue = faker.internet.password();
 
@@ -192,10 +193,8 @@ describe("Auth", () => {
     let tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
       [];
-    // We should have tokens from: signup, verify-email, login, and change-password's login
-    // But in practice, we may have fewer if tokens expire or get replaced
-    expect(tokens.length).toBeGreaterThanOrEqual(1);
-    expect(tokens).toContain(signupAuthPayload?.accessToken ?? "");
+    expect(tokens).toContain(loginAuthPayload?.accessToken ?? "");
+    expect(tokens).not.toContain(signupAuthPayload?.accessToken);
 
     const { data: logoutSignup } = await client.auth.logout.post(
       {},
@@ -210,8 +209,7 @@ describe("Auth", () => {
     tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
       [];
-    // After logging out one token, we should have fewer tokens
-    expect(tokens.length).toBeGreaterThanOrEqual(0);
+    expect(tokens).not.toContain(signupAuthPayload?.accessToken);
 
     const { data: logoutLogin, error: logoutLoginError } =
       await client.auth.logout.post(
@@ -228,8 +226,8 @@ describe("Auth", () => {
     tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
       [];
-    // After logging out another token, we should have even fewer tokens
-    expect(tokens.length).toBeGreaterThanOrEqual(0);
+    expect(tokens).not.toContain(signupAuthPayload?.accessToken);
+    expect(tokens).not.toContain(loginAuthPayload?.accessToken);
   });
 
   it("logout all", async () => {
@@ -344,7 +342,7 @@ describe("Auth - Rate Limiting", () => {
       email: faker.internet.email().toLocaleLowerCase(),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password(),
+      password: signupPassword(),
     };
 
     // Clear any existing rate limit cache for signup
@@ -510,7 +508,7 @@ describe("Auth - Rate Limiting", () => {
       email: testEmail,
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password(),
+      password: signupPassword(),
     });
     if (signupError) throw signupError;
 
@@ -604,7 +602,7 @@ describe("Auth - Security (audit fixes)", () => {
       email: aEmail,
       firstName: "A",
       lastName: "A",
-      password: faker.internet.password(),
+      password: signupPassword(),
     });
     if (aErr) throw aErr;
     expect(aData?.accessToken).toBeDefined();
@@ -615,7 +613,7 @@ describe("Auth - Security (audit fixes)", () => {
       email: faker.internet.email().toLocaleLowerCase(),
       firstName: "B",
       lastName: "B",
-      password: faker.internet.password(),
+      password: signupPassword(),
     });
     const tokenB = lastVerifyToken;
     expect(tokenB).toBeTruthy();

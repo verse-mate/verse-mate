@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import authPlugin from "../auth/auth.plugin";
+import { signupPassword } from "../shared/signup-password";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./user.plugin";
 
@@ -11,7 +12,7 @@ describe("Recently Viewed Books", () => {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password(),
+    password: signupPassword(),
   };
   const plugin = Backend.use(authPlugin);
   // @ts-ignore - TODO: Fix this
@@ -289,7 +290,7 @@ describe("Recently Viewed Books", () => {
       email: faker.internet.email().toLocaleLowerCase(),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password(),
+      password: signupPassword(),
     };
     const { data: signupData, error: signupError } =
       await testClient.auth.signup.post(freshUserSignup);
