@@ -1,3 +1,4 @@
+export { assertLanguageCode, isLanguageCode } from "./language-code";
 export {
   canonicalizeLanguageCode,
   resolveLanguageCode,
