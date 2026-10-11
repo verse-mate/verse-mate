@@ -59,6 +59,11 @@ export type SSOCallbackQuery = Static<typeof SSOCallbackQuery>;
 
 export const AuthSSOExchangeInput = t.Object({
   code: t.String({ minLength: 22, maxLength: 128 }),
+  verifier: t.String({
+    minLength: 43,
+    maxLength: 128,
+    pattern: "^[A-Za-z0-9_-]+$",
+  }),
 });
 
 export type AuthSSOExchangeInput = Static<typeof AuthSSOExchangeInput>;

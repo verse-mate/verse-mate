@@ -40,7 +40,18 @@ import {
   createRedirectResponse,
   extractClientIp,
   getSSOConfig,
+  isSSOChallenge,
 } from "./sso/sso.utils";
+
+const SSO_START_FAILED = {
+  error: "invalid_state",
+  errorDescription: "Sign-in could not start, please try again",
+};
+
+const SSO_STATE_INVALID = {
+  error: "invalid_state",
+  errorDescription: "Invalid or expired state parameter",
+};
 
 const plugin = new Elysia()
   .use(shared)
@@ -388,7 +399,7 @@ const plugin = new Elysia()
       .post(
         "/sso/exchange",
         async ({ body, store: { authService }, jwt }): Promise<AuthPayload> =>
-          authService.redeemSSOExchangeCode(body.code, jwt),
+          authService.redeemSSOExchangeCode(body.code, body.verifier, jwt),
         {
           body: AuthSSOExchangeInput,
           beforeHandle: authRateLimiters.ssoExchange,
@@ -409,7 +420,7 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/google/redirect",
-        async ({ store: { cache } }) => {
+        async ({ query, store: { cache } }) => {
           const config = getSSOConfig();
           if (!config.googleClientId) {
             throw new ValidationError(
@@ -417,13 +428,21 @@ const plugin = new Elysia()
             );
           }
 
-          // Generate state parameter for CSRF protection
+          if (!isSSOChallenge(query.challenge)) {
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", SSO_START_FAILED),
+            );
+          }
+
           const state = randomUUID();
 
-          // Store state in Redis with 10-minute TTL
           await cache.set(
             cacheConstants.ssoState(state),
-            { provider: "google", createdAt: Date.now() },
+            {
+              provider: "google",
+              challenge: query.challenge,
+              createdAt: Date.now(),
+            },
             `${SSO_STATE_TTL}s`,
           );
 
@@ -480,6 +499,7 @@ const plugin = new Elysia()
           // Check state in Redis
           const storedState = await cache.get<{
             provider: string;
+            challenge?: string;
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
@@ -501,6 +521,13 @@ const plugin = new Elysia()
 
           // Delete used state to prevent replay attacks
           await cache.delete(cacheConstants.ssoState(state));
+
+          const challenge = storedState.challenge;
+          if (!isSSOChallenge(challenge)) {
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("google", SSO_STATE_INVALID),
+            );
+          }
 
           // Verify authorization code is present
           if (!code) {
@@ -535,7 +562,10 @@ const plugin = new Elysia()
 
             return createRedirectResponse(
               buildFrontendCallbackUrl("google", {
-                code: await authService.issueSSOExchangeCode(authPayload),
+                code: await authService.issueSSOExchangeCode(
+                  authPayload,
+                  challenge,
+                ),
               }),
             );
           } catch (err) {
@@ -565,7 +595,7 @@ const plugin = new Elysia()
        */
       .get(
         "/sso/apple/redirect",
-        async ({ store: { cache } }) => {
+        async ({ query, store: { cache } }) => {
           const config = getSSOConfig();
           if (!config.appleClientId) {
             throw new ValidationError(
@@ -573,13 +603,21 @@ const plugin = new Elysia()
             );
           }
 
-          // Generate state parameter for CSRF protection
+          if (!isSSOChallenge(query.challenge)) {
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", SSO_START_FAILED),
+            );
+          }
+
           const state = randomUUID();
 
-          // Store state in Redis with 10-minute TTL
           await cache.set(
             cacheConstants.ssoState(state),
-            { provider: "apple", createdAt: Date.now() },
+            {
+              provider: "apple",
+              challenge: query.challenge,
+              createdAt: Date.now(),
+            },
             `${SSO_STATE_TTL}s`,
           );
 
@@ -636,6 +674,7 @@ const plugin = new Elysia()
           // Check state in Redis
           const storedState = await cache.get<{
             provider: string;
+            challenge?: string;
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
@@ -657,6 +696,13 @@ const plugin = new Elysia()
 
           // Delete used state to prevent replay attacks
           await cache.delete(cacheConstants.ssoState(state));
+
+          const challenge = storedState.challenge;
+          if (!isSSOChallenge(challenge)) {
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", SSO_STATE_INVALID),
+            );
+          }
 
           // Verify authorization code is present
           if (!code) {
@@ -691,7 +737,10 @@ const plugin = new Elysia()
 
             return createRedirectResponse(
               buildFrontendCallbackUrl("apple", {
-                code: await authService.issueSSOExchangeCode(authPayload),
+                code: await authService.issueSSOExchangeCode(
+                  authPayload,
+                  challenge,
+                ),
               }),
             );
           } catch (err) {
@@ -754,6 +803,7 @@ const plugin = new Elysia()
           // Check state in Redis
           const storedState = await cache.get<{
             provider: string;
+            challenge?: string;
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
@@ -768,6 +818,13 @@ const plugin = new Elysia()
 
           // Delete used state to prevent replay attacks
           await cache.delete(cacheConstants.ssoState(state));
+
+          const challenge = storedState.challenge;
+          if (!isSSOChallenge(challenge)) {
+            return createRedirectResponse(
+              buildFrontendCallbackUrl("apple", SSO_STATE_INVALID),
+            );
+          }
 
           // Apple can send either code or id_token
           const tokenToVerify = code || id_token;
@@ -840,7 +897,10 @@ const plugin = new Elysia()
 
             return createRedirectResponse(
               buildFrontendCallbackUrl("apple", {
-                code: await authService.issueSSOExchangeCode(authPayload),
+                code: await authService.issueSSOExchangeCode(
+                  authPayload,
+                  challenge,
+                ),
               }),
             );
           } catch (err) {

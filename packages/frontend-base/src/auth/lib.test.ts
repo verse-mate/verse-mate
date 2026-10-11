@@ -12,16 +12,19 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { createHash } from "node:crypto";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
   SSO_ERROR_MESSAGES,
+  SSO_VERIFIER_KEY,
   clearAuthTokens,
   getSSOErrorMessage,
   getSSORedirectDestination,
   handleSSOCallback,
   parseSSOCallbackParams,
   setupPostLoginBehavior,
+  startSSOSignIn,
   storeSSOTokens,
 } from "./lib";
 
@@ -31,6 +34,12 @@ const rejectExchange = async (): Promise<never> => {
 
 // Mock browser APIs for testing
 const mockLocalStorage: Record<string, string> = {};
+const mockSessionStorage: Record<string, string> = {};
+const PENDING_VERIFIER = "v".repeat(43);
+
+function startedSignIn() {
+  mockSessionStorage[SSO_VERIFIER_KEY] = PENDING_VERIFIER;
+}
 const mockCookies: string[] = [];
 
 // Setup browser environment mocks
@@ -48,6 +57,16 @@ function setupBrowserMocks() {
       for (const key in mockLocalStorage) {
         delete mockLocalStorage[key];
       }
+    },
+  };
+
+  (global as any).sessionStorage = {
+    getItem: (key: string) => mockSessionStorage[key] ?? null,
+    setItem: (key: string, value: string) => {
+      mockSessionStorage[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete mockSessionStorage[key];
     },
   };
 
@@ -80,6 +99,9 @@ function setupBrowserMocks() {
 function clearBrowserMocks() {
   for (const key in mockLocalStorage) {
     delete mockLocalStorage[key];
+  }
+  for (const key in mockSessionStorage) {
+    delete mockSessionStorage[key];
   }
   mockCookies.length = 0;
 }
@@ -343,6 +365,7 @@ describe("SSO Callback Utilities", () => {
 
   describe("handleSSOCallback", () => {
     it("should complete full success flow", async () => {
+      startedSignIn();
       const params = new URLSearchParams({
         accessToken: "success-token",
         refreshToken: "success-refresh",
@@ -359,6 +382,7 @@ describe("SSO Callback Utilities", () => {
 
     it("should preserve original destination from localStorage", async () => {
       mockLocalStorage.redirectTo = "/bible?bookId=5&verseId=10";
+      startedSignIn();
 
       const params = new URLSearchParams({
         accessToken: "token",
@@ -385,6 +409,7 @@ describe("SSO Callback Utilities", () => {
     });
 
     it("should setup post-login behavior on success", async () => {
+      startedSignIn();
       const params = new URLSearchParams({
         accessToken: "token",
         verified: "true",
@@ -415,24 +440,27 @@ describe("SSO callback code exchange", () => {
     expect(result).toEqual({ success: true, code: "one-time-code" });
   });
 
-  it("trades the code for the session and stores it", async () => {
-    const exchanged: string[] = [];
+  it("trades the code and the pending verifier for the session and stores it", async () => {
+    const exchanged: string[][] = [];
     mockLocalStorage.redirectTo = "/admin/prompts";
+    startedSignIn();
 
     const result = await handleSSOCallback(
       new URLSearchParams({ code: "one-time-code" }),
-      async (code) => {
-        exchanged.push(code);
+      async (code, verifier) => {
+        exchanged.push([code, verifier]);
         return { accessToken: "session-token", verified: true };
       },
     );
 
-    expect(exchanged).toEqual(["one-time-code"]);
+    expect(exchanged).toEqual([["one-time-code", PENDING_VERIFIER]]);
+    expect(mockSessionStorage[SSO_VERIFIER_KEY]).toBeUndefined();
     expect(result).toEqual({ success: true, redirectUrl: "/admin/prompts" });
     expect(mockCookies.some((c) => c.includes("session-token"))).toBe(true);
   });
 
   it("fails without storing anything when the exchange is refused", async () => {
+    startedSignIn();
     const result = await handleSSOCallback(
       new URLSearchParams({ code: "used-code" }),
       async () => {
@@ -445,7 +473,8 @@ describe("SSO callback code exchange", () => {
     expect(mockCookies).toHaveLength(0);
   });
 
-  it("still accepts the token parameter older callbacks send", async () => {
+  it("still accepts the token parameter older callbacks send when this tab started sign-in", async () => {
+    startedSignIn();
     const result = await handleSSOCallback(
       new URLSearchParams({ accessToken: "legacy-token", verified: "true" }),
       async () => {
@@ -455,6 +484,77 @@ describe("SSO callback code exchange", () => {
 
     expect(result.success).toBe(true);
     expect(mockCookies.some((c) => c.includes("legacy-token"))).toBe(true);
+    expect(mockSessionStorage[SSO_VERIFIER_KEY]).toBeUndefined();
+  });
+
+  it("refuses a code when this tab never started sign-in, without calling the exchange", async () => {
+    let calls = 0;
+
+    const result = await handleSSOCallback(
+      new URLSearchParams({ code: "planted-code" }),
+      async () => {
+        calls++;
+        return { accessToken: "attacker-session", verified: true };
+      },
+    );
+
+    expect(calls).toBe(0);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("auth_failed");
+    expect(mockCookies).toHaveLength(0);
+  });
+
+  it("refuses a token parameter when this tab never started sign-in and stores nothing", async () => {
+    const result = await handleSSOCallback(
+      new URLSearchParams({ accessToken: "planted-token", verified: "true" }),
+      rejectExchange,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("auth_failed");
+    expect(mockCookies).toHaveLength(0);
+    expect(mockLocalStorage.postLoginRedirect).toBeUndefined();
+  });
+
+  it("removes the pending verifier even when the callback carries an error", async () => {
+    startedSignIn();
+
+    await handleSSOCallback(
+      new URLSearchParams({ error: "access_denied" }),
+      rejectExchange,
+    );
+
+    expect(mockSessionStorage[SSO_VERIFIER_KEY]).toBeUndefined();
+  });
+});
+
+describe("starting SSO sign-in", () => {
+  beforeEach(() => {
+    setupBrowserMocks();
+    clearBrowserMocks();
+  });
+
+  afterEach(() => {
+    clearBrowserMocks();
+  });
+
+  it("keeps a fresh verifier and sends its SHA-256 challenge to the redirect", async () => {
+    await startSSOSignIn("https://api.example.test/auth/sso/google/redirect");
+
+    const verifier = mockSessionStorage[SSO_VERIFIER_KEY];
+    expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    const expected = createHash("sha256").update(verifier).digest("base64url");
+    expect((global as any).window.location.href).toBe(
+      `https://api.example.test/auth/sso/google/redirect?challenge=${expected}`,
+    );
+  });
+
+  it("uses a new verifier for every sign-in", async () => {
+    await startSSOSignIn("/api/auth/sso/apple/redirect");
+    const first = mockSessionStorage[SSO_VERIFIER_KEY];
+    await startSSOSignIn("/api/auth/sso/apple/redirect");
+
+    expect(mockSessionStorage[SSO_VERIFIER_KEY]).not.toBe(first);
   });
 });
 

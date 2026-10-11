@@ -4,6 +4,7 @@ import { exchangeSSOCode } from "frontend-base/src/api/auth";
 import {
   getSSOErrorMessage,
   handleSSOCallback,
+  startSSOSignIn,
 } from "frontend-base/src/auth/lib";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -165,9 +166,8 @@ function AppleCallbackContent() {
     });
   }, [searchParams]);
 
-  // Handle retry - redirect back to Apple OAuth
   const handleRetry = () => {
-    window.location.href = "/api/auth/sso/apple/redirect";
+    void startSSOSignIn("/api/auth/sso/apple/redirect");
   };
 
   return (
