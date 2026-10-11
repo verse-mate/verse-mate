@@ -39,7 +39,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -284,7 +284,7 @@ describe("Auth", () => {
         const uuid = message.text.split("?key=").at(-1);
         expect(uuid).toBeDefined();
         token = uuid ?? "";
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
 
@@ -347,7 +347,7 @@ describe("Auth - Rate Limiting", () => {
 
     // Mock sendEmail for all signup attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // Make 3 successful signup attempts (rate limit max)
@@ -488,7 +488,7 @@ describe("Auth - Rate Limiting", () => {
 
     // Mock sendEmail for all attempts
     spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
-      Promise.resolve(),
+      Promise.resolve({ delivered: true }),
     );
 
     // First, create a user so forgot-password can find them
@@ -570,7 +570,7 @@ describe("Auth - Security (audit fixes)", () => {
         if (message.text.includes("?key=")) {
           lastVerifyToken = message.text.split("?key=").at(-1) ?? "";
         }
-        return Promise.resolve();
+        return Promise.resolve({ delivered: true });
       },
     );
     await Backend.store.cache.delete("rate-limit:signup:unknown");

@@ -5,7 +5,11 @@ import {
   CoachClassSchema,
   ReportSchema,
 } from "./coach.schema";
-import { type CoachReport, CoachService } from "./coach.service";
+import {
+  type CoachReport,
+  type CoachSendResult,
+  CoachService,
+} from "./coach.service";
 import { CoachClassDto } from "./dto/coach.dto";
 
 // buildTrends is a pure static — exercise it without a DB connection.
@@ -443,5 +447,61 @@ describe("Coach class schemas", () => {
         zoomLink: "",
       }),
     ).toBe(true);
+  });
+});
+
+describe("CoachService.addNote records whether the email went out", () => {
+  function noteDb() {
+    const saved: Array<Record<string, unknown>> = [];
+    const builder: Record<string, unknown> = new Proxy(
+      {},
+      {
+        get(_t, prop) {
+          if (prop === "values")
+            return (row: Record<string, unknown>) => {
+              saved.push(row);
+              return builder;
+            };
+          if (prop === "execute") return async () => [];
+          if (prop === "executeTakeFirst") return async () => undefined;
+          if (prop === "executeTakeFirstOrThrow")
+            return async () => ({
+              id: "note",
+              ...saved[saved.length - 1],
+              created_at: new Date(),
+            });
+          return () => builder;
+        },
+      },
+    );
+    const db = {
+      getOrCreateConnection: () => ({
+        selectFrom: () => builder,
+        insertInto: () => builder,
+      }),
+    } as unknown as ConstructorParameters<typeof CoachService>[0];
+    return { db, saved };
+  }
+
+  async function addNoteWith(result: CoachSendResult) {
+    const { db, saved } = noteDb();
+    const svc = new CoachService(db, {
+      sendEmail: async () => result,
+    });
+    const coach = (await svc.listCoaches()).find((c) => c.sessionCount > 0);
+    const [report] = (await svc.getReportsById(coach?.id ?? "")) ?? [];
+    await svc.addNote(coach?.id ?? "", report.id, null, "Note body");
+    return saved.at(-1)?.emailed;
+  }
+
+  it("a delivered send is saved as emailed", async () => {
+    expect(await addNoteWith({ delivered: true })).toBe(true);
+  });
+
+  it("a refused or failed send is saved as not emailed", async () => {
+    expect(
+      await addNoteWith({ delivered: false, error: "refused: recipient" }),
+    ).toBe(false);
+    expect(await addNoteWith({ delivered: false, status: 500 })).toBe(false);
   });
 });
