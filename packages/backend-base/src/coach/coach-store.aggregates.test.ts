@@ -61,9 +61,9 @@ describe("trends / roster / monthly read the store", () => {
       .insertInto("coach_reports")
       .values(datasetToRows({ coaches: [bundled] }))
       .execute();
-    await repo.upsert(storeRow("agg-1", "2026-10-03", 60));
-    await repo.upsert(storeRow("agg-2", "2026-10-10", 80));
-    await repo.bumpMeta("2026-10-10");
+    await repo.upsert(storeRow("agg-1", "2099-01-03", 60));
+    await repo.upsert(storeRow("agg-2", "2099-01-10", 80));
+    await repo.bumpMeta("2099-01-10");
   });
   afterAll(clear);
 
@@ -83,15 +83,15 @@ describe("trends / roster / monthly read the store", () => {
     const roster = await service.listCoaches();
     const entry = roster.find((c) => c.id === COACH);
     expect(entry?.sessionCount).toBe(bundled.reports.length + 2);
-    expect(entry?.latest?.date).toBe("2026-10-10");
+    expect(entry?.latest?.date).toBe("2099-01-10");
     expect(entry?.latest?.score).toBe(80);
   });
 
   it("the monthly rollup includes a session published to the store", async () => {
-    const monthly = await service.getMonthly("2026-10");
+    const monthly = await service.getMonthly("2099-01");
     const leader = monthly.leaders.find((l) => l.id === COACH);
     expect(leader?.sessions).toBe(2);
     expect(leader?.avgScore).toBe(70);
-    expect(monthly.availableMonths).toContain("2026-10");
+    expect(monthly.availableMonths).toContain("2099-01");
   });
 });
