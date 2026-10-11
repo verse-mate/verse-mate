@@ -468,6 +468,31 @@ describe("coach routes are rate limited per caller", () => {
     expect(statuses.slice(0, 120).every((s) => s === 200)).toBe(true);
     expect(statuses[120]).toBe(429);
   });
+
+  it("anonymous callers in one IPv6 /64 share one budget once proxy hops are set", async () => {
+    const bucket = "rate-limit:coach:ip:2001:db8:1:2::/64";
+    const previous = process.env.TRUSTED_PROXY_HOPS;
+    process.env.TRUSTED_PROXY_HOPS = "1";
+    await redisClient.delete(bucket);
+    const statuses: number[] = [];
+    try {
+      for (let i = 0; i < 121; i += 1) {
+        const res = await app.handle(
+          new Request("http://localhost/coach/admin/pipeline-failures", {
+            headers: { "x-forwarded-for": `2001:db8:1:2::${i.toString(16)}` },
+          }),
+        );
+        statuses.push(res.status);
+      }
+    } finally {
+      if (previous === undefined)
+        Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
+      else process.env.TRUSTED_PROXY_HOPS = previous;
+      await redisClient.delete(bucket);
+    }
+    expect(statuses.slice(0, 120).every((s) => s === 401)).toBe(true);
+    expect(statuses[120]).toBe(429);
+  });
 });
 
 describe("the admin reads one leader's reports a page and a report at a time", () => {
