@@ -47,6 +47,30 @@ end
 return #list - #kept
 `;
 
+const TAKE = `
+local raw = redis.call("GET", KEYS[1])
+if raw then redis.call("DEL", KEYS[1]) end
+return raw
+`;
+
+const TAKE_WHEN = `
+local guard = redis.call("GET", KEYS[2])
+if not guard then return nil end
+local ok, decoded = pcall(cjson.decode, guard)
+if not ok or type(decoded) ~= "table" or decoded[ARGV[1]] ~= ARGV[2] then return nil end
+local raw = redis.call("GET", KEYS[1])
+if raw then redis.call("DEL", KEYS[1]) end
+return raw
+`;
+
+const DELETE_WHEN = `
+local raw = redis.call("GET", KEYS[1])
+if not raw then return 0 end
+local ok, decoded = pcall(cjson.decode, raw)
+if not ok or type(decoded) ~= "table" or decoded[ARGV[1]] ~= ARGV[2] then return 0 end
+return redis.call("DEL", KEYS[1])
+`;
+
 function parseTtl(ttl: string): number {
   const ttlMs = ms(ttl);
   if (typeof ttlMs !== "number" || !Number.isFinite(ttlMs) || ttlMs <= 0)
@@ -185,10 +209,61 @@ class RedisClient {
   async take<T>(key: string): Promise<T | null> {
     await this.connect();
     try {
-      const value = await this.client.getDel(key);
-      return value ? JSON.parse(value) : null;
+      const value = await this.client.eval(TAKE, { keys: [key] });
+      return typeof value === "string" ? JSON.parse(value) : null;
     } catch (error) {
       console.error("Error taking key from Redis:", error);
+      throw error;
+    }
+  }
+
+  async takeWhen<T>(
+    key: string,
+    guard: { key: string; field: string; value: string },
+  ): Promise<T | null> {
+    await this.connect();
+    try {
+      const value = await this.client.eval(TAKE_WHEN, {
+        keys: [key, guard.key],
+        arguments: [guard.field, guard.value],
+      });
+      return typeof value === "string" ? JSON.parse(value) : null;
+    } catch (error) {
+      console.error("Error taking key from Redis:", error);
+      throw error;
+    }
+  }
+
+  async deleteWhen(
+    key: string,
+    field: string,
+    value: string,
+  ): Promise<boolean> {
+    await this.connect();
+    try {
+      return (
+        Number(
+          await this.client.eval(DELETE_WHEN, {
+            keys: [key],
+            arguments: [field, value],
+          }),
+        ) > 0
+      );
+    } catch (error) {
+      console.error("Error deleting key from Redis:", error);
+      throw error;
+    }
+  }
+
+  async claim(key: string, ttl: string): Promise<boolean> {
+    await this.connect();
+    try {
+      return (
+        (await this.client.set(key, "1", { PX: parseTtl(ttl), NX: true })) ===
+        "OK"
+      );
+    } catch (error) {
+      console.error("Error claiming key in Redis:", error);
       throw error;
     }
   }

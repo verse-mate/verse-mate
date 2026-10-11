@@ -37,6 +37,18 @@ function keySentTo(email: string): string {
   return mail?.text.split("?key=").at(-1) ?? "";
 }
 
+async function mailedKey(email: string): Promise<string> {
+  for (let i = 0; i < 100; i += 1) {
+    const key = keySentTo(email);
+    if (key) return key;
+    await Bun.sleep(10);
+  }
+  throw new Error("no mail arrived");
+}
+
+const moveTo = (id: string, email: string) =>
+  conn.updateTable("user").set({ email }).where("id", "=", id).execute();
+
 async function account(
   values: { email?: string; emailVerified?: boolean; password?: boolean } = {},
 ) {
@@ -107,8 +119,11 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  for (const id of created)
+  for (const id of created) {
     await cache.delete(`rate-limit:send-email-verification:${id}`);
+    await cache.delete(cacheConstants.emailChangeMailsSent(id));
+    await cache.delete(cacheConstants.emailChangePending(id));
+  }
   if (created.length > 0)
     await conn.deleteFrom("user").where("id", "in", created).execute();
   created = [];
@@ -373,7 +388,7 @@ describe("email confirmation through the route", () => {
 
   it("after a change of address, the provider account the user signed up with still reaches the same account", async () => {
     const original = address("signed-up");
-    await google(`signed-up-${original}`, original);
+    const signedUp = await google(`signed-up-${original}`, original);
     const { id } = await conn
       .selectFrom("user")
       .select("id")
@@ -381,12 +396,12 @@ describe("email confirmation through the route", () => {
       .executeTakeFirstOrThrow();
     created.push(id);
     const next = address("next");
-    await service().updateProfile(id, { email: next });
-    await service().verifyEmail({
-      token: keySentTo(next),
-      jwt: jwt as never,
-      currentUserId: id,
-    });
+    const auth = service();
+    auth.emailChangeSettleMs = 0;
+    await auth.updateProfile(id, { email: next }, signedUp.accessToken);
+    expect(await auth.confirmEmailChange(await mailedKey(next), original)).toBe(
+      "confirmed",
+    );
 
     const again = await google(`signed-up-${original}`, original);
 
@@ -413,23 +428,11 @@ describe("the confirmation mail limit", () => {
     await send(second.id);
     expect(keySentTo(second.email)).not.toBe("");
   });
-
-  it("covers renames too: the sixth address change within the hour is refused and leaves the address alone", async () => {
-    const { id } = await account({ emailVerified: true });
-    for (let i = 0; i < 5; i += 1)
-      await service().updateProfile(id, { email: address(`rename${i}`) });
-    const fifth = (await row(id)).email;
-
-    await expect(
-      service().updateProfile(id, { email: address("sixth") }),
-    ).rejects.toMatchObject({ status: 429 });
-    expect((await row(id)).email).toBe(fifth);
-    expect(mails).toHaveLength(5);
-  });
 });
 
-describe("the rename limit through the route", () => {
-  it("answers 429 with a retry time and keeps the address", async () => {
+describe("the email change limit through the route", () => {
+  it("answers 429 with a retry time after three change mails and keeps the address", async () => {
+    Backend.store.authService.emailChangeSettleMs = 0;
     const client = getTestClient<AuthPlugin>(Backend);
     const { id, email } = await account({
       emailVerified: true,
@@ -440,17 +443,15 @@ describe("the rename limit through the route", () => {
       password: PASSWORD,
     });
     const headers = { authorization: `Bearer ${data?.accessToken}` };
-    for (let i = 0; i < 5; i += 1) {
-      const res = await client.auth.profile.put(
-        { email: address(`route${i}`) },
-        { headers },
-      );
+    for (let i = 0; i < 3; i += 1) {
+      const to = address(`route${i}`);
+      const res = await client.auth.profile.put({ email: to }, { headers });
       expect(res.error).toBeNull();
+      await mailedKey(to);
     }
-    const fifth = (await row(id)).email;
 
     const blocked = await client.auth.profile.put(
-      { email: address("route-sixth") },
+      { email: address("route-fourth") },
       { headers },
     );
 
@@ -458,7 +459,7 @@ describe("the rename limit through the route", () => {
     expect(
       (blocked.error?.value as { retryAfter?: number }).retryAfter,
     ).toBeGreaterThan(0);
-    expect((await row(id)).email).toBe(fifth);
+    expect((await row(id)).email).toBe(email);
   });
 });
 
@@ -469,7 +470,7 @@ describe("a password reset link", () => {
     const key = keySentTo(email);
     expect(await service().resetPasswordVerify(key)).toBe(true);
 
-    await service().updateProfile(id, { email: address("victim") });
+    await moveTo(id, address("victim"));
 
     expect(await service().resetPasswordVerify(key)).toBe(false);
     expect(
@@ -482,7 +483,7 @@ describe("a password reset link", () => {
     await service().forgotPassword({ email: squatter.email });
     const key = keySentTo(squatter.email);
     const victim = address("victim");
-    await service().updateProfile(squatter.id, { email: victim });
+    await moveTo(squatter.id, victim);
 
     await google(`victim-${squatter.id}`, victim);
 
@@ -562,7 +563,7 @@ describe("a password reset link", () => {
       .executeTakeFirstOrThrow();
     created.push(id);
     const victim = address("victim");
-    await service().updateProfile(id, { email: victim });
+    await moveTo(id, victim);
 
     await service().forgotPassword({ email: victim });
     expect(
@@ -762,7 +763,7 @@ describe("a provider sign-in that adopts an existing account", () => {
       .where("email", "=", original)
       .executeTakeFirstOrThrow();
     created.push(id);
-    await service().updateProfile(id, { email: address("moved") });
+    await moveTo(id, address("moved"));
 
     await google(`moved-${original}`, original);
 
