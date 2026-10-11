@@ -73,7 +73,7 @@ class RedisClient {
           reconnectStrategy: (retries: number) => {
             if (retries > 10) {
               console.log(
-                `Max retry attempts reached. Please check your Redis server at ${redisUrl}`,
+                `Max retry attempts reached. Please check your Redis server at ${url.host}`,
               );
               return false;
             }
@@ -86,7 +86,7 @@ class RedisClient {
           reconnectStrategy: (retries: number) => {
             if (retries > 10) {
               console.log(
-                `Max retry attempts reached. Please check your Redis server at ${redisUrl}`,
+                `Max retry attempts reached. Please check your Redis server at ${url.host}`,
               );
               return false;
             }
@@ -183,8 +183,13 @@ class RedisClient {
 
   async take<T>(key: string): Promise<T | null> {
     await this.connect();
-    const value = await this.client.getDel(key);
-    return value ? JSON.parse(value) : null;
+    try {
+      const value = await this.client.getDel(key);
+      return value ? JSON.parse(value) : null;
+    } catch (error) {
+      console.error("Error taking key from Redis:", error);
+      throw error;
+    }
   }
 
   async setPersistent(key: string, value: object): Promise<string | null> {
