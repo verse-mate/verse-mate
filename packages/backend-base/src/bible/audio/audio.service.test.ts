@@ -21,6 +21,8 @@ import {
 } from "./audio.repository";
 import { AudioService } from "./audio.service";
 
+const DEFAULT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
+
 // ---------------------------------------------------------------------------
 // Test doubles
 // ---------------------------------------------------------------------------
@@ -230,6 +232,7 @@ type ChapterRow = {
 type LanguageRow = {
   language_code: string;
   is_enabled: boolean;
+  explanation_count: number;
 };
 
 function makeFakeDb(params: {
@@ -250,9 +253,11 @@ function makeFakeDb(params: {
       select: () => api,
       selectAll: () => api,
       where: (col: string, op: string, val: unknown) => {
-        filtered = filtered.filter((r: any) =>
-          op === "in" ? (val as unknown[]).includes(r[col]) : r[col] === val,
-        );
+        filtered = filtered.filter((r: any) => {
+          if (op === "in") return (val as unknown[]).includes(r[col]);
+          if (op === ">") return r[col] > (val as number);
+          return r[col] === val;
+        });
         return api;
       },
       executeTakeFirst: async () => filtered[0],
@@ -323,9 +328,9 @@ describe("AudioService", () => {
       const service = makeService();
       await repo.upsert({
         explanation_id: 42,
-        voice: "alloy",
+        voice: DEFAULT_VOICE,
         language_code: "en",
-        storage_key: "explanation-audio/42/alloy/en/hash.mp3",
+        storage_key: `explanation-audio/42/${DEFAULT_VOICE}/en/hash.mp3`,
         duration_seconds: 10,
         character_count: 50,
         content_hash: "hash",
@@ -336,16 +341,16 @@ describe("AudioService", () => {
 
       const result = await service.getOrQueueAudio({
         explanation_id: 42,
-        voice: "alloy",
+        voice: DEFAULT_VOICE,
         currentUserId: "u-1",
       });
 
       expect(result.kind).toBe("ready");
       if (result.kind === "ready") {
         expect(result.audio.url).toContain(
-          "explanation-audio/42/alloy/en/hash.mp3",
+          `explanation-audio/42/${DEFAULT_VOICE}/en/hash.mp3`,
         );
-        expect(result.audio.voice).toBe("alloy");
+        expect(result.audio.voice).toBe(DEFAULT_VOICE);
         expect(result.audio.duration_seconds).toBe(10);
       }
       expect(queue.addCalls.length).toBe(0);
@@ -514,7 +519,7 @@ describe("AudioService", () => {
       });
       queue.jobs.get(first.job.job_id)?.complete(row.audio_id);
 
-      const status = await service.getJobStatus(first.job.job_id);
+      const status = await service.getJobStatus(first.job.job_id, "u-1");
       expect(status.status).toBe("completed");
       // Reader DTO doesn't expose audio_id — verify via URL + duration.
       expect(status.audio?.url).toContain("explanation-audio/42/alloy/en");
@@ -530,7 +535,7 @@ describe("AudioService", () => {
       if (first.kind !== "queued") throw new Error("expected queued");
       queue.jobs.get(first.job.job_id)?.fail("synth died");
 
-      const status = await service.getJobStatus(first.job.job_id);
+      const status = await service.getJobStatus(first.job.job_id, "u-1");
       expect(status.status).toBe("failed");
       expect(status.error_code).toBe("GENERATION_FAILED");
     });
@@ -538,29 +543,34 @@ describe("AudioService", () => {
     it("throws NotFoundError for unknown job id", async () => {
       const service = makeService();
       await expect(
-        service.getJobStatus("audio-gen:999:alloy:en"),
+        service.getJobStatus(`audio-gen:999:${DEFAULT_VOICE}:en`, "u-1"),
       ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 
   describe("offered variants", () => {
     const languages: LanguageRow[] = [
-      { language_code: "pt", is_enabled: true },
-      { language_code: "fr", is_enabled: false },
+      { language_code: "pt", is_enabled: true, explanation_count: 10 },
+      { language_code: "fr", is_enabled: false, explanation_count: 10 },
+      { language_code: "de", is_enabled: true, explanation_count: 0 },
+      { language_code: "../x", is_enabled: true, explanation_count: 10 },
     ];
 
-    async function expectRejected(params: {
-      voice?: string;
-      language?: string;
-    }) {
-      const service = makeService(
+    function service() {
+      return makeService(
         new FakeOpenAiProvider(),
         [genesis1],
         [explanation],
         languages,
       );
+    }
+
+    async function expectRejected(params: {
+      voice?: string;
+      language?: string;
+    }) {
       await expect(
-        service.getOrQueueAudio({
+        service().getOrQueueAudio({
           explanation_id: 42,
           currentUserId: "u-1",
           ...params,
@@ -570,51 +580,129 @@ describe("AudioService", () => {
       expect(storage.uploaded.length).toBe(0);
     }
 
-    it("rejects a language that is neither the explanation's nor enabled", async () => {
-      await expectRejected({ language: "de" });
+    async function queuedLanguage(language: string) {
+      const result = await service().getOrQueueAudio({
+        explanation_id: 42,
+        language,
+        currentUserId: "u-1",
+      });
+      expect(result.kind).toBe("queued");
+      return queue.addCalls[0].data.language_code;
+    }
+
+    it("rejects a language nobody offers", async () => {
+      await expectRejected({ language: "es" });
     });
 
     it("rejects a disabled language", async () => {
       await expectRejected({ language: "fr" });
     });
 
-    it("rejects a regional form nobody offers", async () => {
+    it("rejects an enabled language with no explanations", async () => {
+      await expectRejected({ language: "de" });
+    });
+
+    it("rejects a regional form of the explanation's language nobody offers", async () => {
       await expectRejected({ language: "en-GB" });
     });
 
-    it("rejects a language carrying path segments", async () => {
+    it("rejects a language carrying path segments, even one stored as enabled", async () => {
       await expectRejected({ language: "en/../../x" });
+      await expectRejected({ language: "../x" });
     });
 
-    it("rejects a voice the provider does not offer", async () => {
+    it.each(["EN", "en-us", ""])(
+      "rejects the malformed language %p",
+      async (language) => {
+        await expectRejected({ language });
+      },
+    );
+
+    it("rejects any voice other than the product's voice", async () => {
+      await expectRejected({
+        voice: "alloy" === DEFAULT_VOICE ? "nova" : "alloy",
+      });
       await expectRejected({ voice: "nobody" });
+      await expectRejected({ voice: `${DEFAULT_VOICE}/../x` });
     });
 
-    it("rejects a voice carrying path segments", async () => {
-      await expectRejected({ voice: "alloy/../x" });
-    });
-
-    it.each([
-      ["en", "en"],
-      ["en-US", "en-US"],
-      ["pt", "pt"],
-      ["pt-BR", "pt-BR"],
-    ])("accepts the offered language %s", async (language, stored) => {
-      const service = makeService(
-        new FakeOpenAiProvider(),
-        [genesis1],
-        [explanation],
-        languages,
-      );
-      const result = await service.getOrQueueAudio({
+    it("accepts the product's voice when sent explicitly", async () => {
+      const result = await service().getOrQueueAudio({
         explanation_id: 42,
-        language,
-        voice: "alloy",
+        voice: DEFAULT_VOICE,
         currentUserId: "u-1",
       });
       expect(result.kind).toBe("queued");
-      expect(queue.addCalls[0].data.language_code).toBe(stored);
+      expect(queue.addCalls[0].data.voice).toBe(DEFAULT_VOICE);
     });
+
+    it.each(["en", "en-US"])(
+      "keeps the explanation's own form %s",
+      async (language) => {
+        expect(await queuedLanguage(language)).toBe(language);
+      },
+    );
+
+    it.each(["pt", "pt-BR"])(
+      "serves the explanation's language for the offered language %s",
+      async (language) => {
+        expect(await queuedLanguage(language)).toBe("en");
+      },
+    );
+
+    it("does not create a new variant for another offered language", async () => {
+      await service().getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+      });
+      await service().getOrQueueAudio({
+        explanation_id: 42,
+        language: "pt-BR",
+        currentUserId: "u-1",
+      });
+      expect(queue.addCalls.length).toBe(1);
+    });
+  });
+
+  describe("job status guest scope", () => {
+    async function queuedJob(chapters: ChapterRow[], exp: ExplanationRow) {
+      const service = makeService(new FakeOpenAiProvider(), chapters, [exp]);
+      const result = await service.getOrQueueAudio({
+        explanation_id: exp.explanation_id,
+        currentUserId: "u-1",
+      });
+      if (result.kind !== "queued") throw new Error("expected queued");
+      return { service, jobId: result.job.job_id };
+    }
+
+    it("refuses a guest the job of a chapter outside the guest scope", async () => {
+      const exp2: ExplanationRow = { ...explanation, chapter_id: 2 };
+      const { service, jobId } = await queuedJob([genesis2], exp2);
+      await expect(service.getJobStatus(jobId, null)).rejects.toBeInstanceOf(
+        UnauthorizedError,
+      );
+    });
+
+    it("answers a signed-in reader for any chapter", async () => {
+      const exp2: ExplanationRow = { ...explanation, chapter_id: 2 };
+      const { service, jobId } = await queuedJob([genesis2], exp2);
+      expect((await service.getJobStatus(jobId, "u-1")).status).toBe("queued");
+    });
+
+    it("answers a guest inside the guest scope", async () => {
+      const { service, jobId } = await queuedJob([genesis1], explanation);
+      expect((await service.getJobStatus(jobId, null)).status).toBe("queued");
+    });
+
+    it.each(["not-a-job", "audio-gen:abc:x:en", "bull:audio-generation:1"])(
+      "answers 404 for the malformed job id %p",
+      async (jobId) => {
+        const service = makeService();
+        await expect(service.getJobStatus(jobId, "u-1")).rejects.toBeInstanceOf(
+          NotFoundError,
+        );
+      },
+    );
   });
 
   describe("synthesis limit hook", () => {

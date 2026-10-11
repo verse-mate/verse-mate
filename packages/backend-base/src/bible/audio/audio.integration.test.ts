@@ -29,6 +29,7 @@ import {
 import { AudioService } from "./audio.service";
 
 const BUCKET = process.env.OBJECT_STORAGE_BUCKET ?? "saas-starter-dev";
+const DEFAULT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
 
 // The fixture MP3 lives under apps/backend (TASK-001 decision — it's the
 // deployable unit's fixture). Tests run from packages/backend-base, so
@@ -136,7 +137,6 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const result = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: "integration-user-1",
       });
@@ -147,11 +147,11 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
       // br-audio-007: reader payload is the narrow four-field shape.
       expect(result.audio).not.toHaveProperty("tts_provider");
       expect(result.audio).not.toHaveProperty("storage_key");
-      expect(result.audio.voice).toBe("stub");
+      expect(result.audio.voice).toBe(DEFAULT_VOICE);
       expect(result.audio.language_code).toBe("en");
       expect(result.audio.url).toContain(BUCKET);
       expect(result.audio.url).toContain(
-        `explanation-audio/${testExplanationId}/stub/en/`,
+        `explanation-audio/${testExplanationId}/${DEFAULT_VOICE}/en/`,
       );
 
       // Verify the presigned URL actually resolves to the object we just
@@ -172,13 +172,11 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const first = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: "integration-user-1",
       });
       const second = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: "integration-user-1",
       });
@@ -204,7 +202,6 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const result = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "stub",
         language: "en",
         currentUserId: null,
       });
@@ -230,7 +227,6 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
 
       const result = await service.getOrQueueAudio({
         explanation_id: testExplanationId,
-        voice: "alloy",
         language: "en",
         currentUserId: "integration-user-openai",
       });
