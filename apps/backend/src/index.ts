@@ -1,4 +1,3 @@
-import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import {
   adminPlugin,
@@ -7,6 +6,7 @@ import {
   bibleBrainPlugin,
   biblePlugin,
   coachPlugin,
+  corsPlugin,
   dailyVersePlugin,
   healthCheckPlugin,
   jesusPlugin,
@@ -43,7 +43,7 @@ const app = new Elysia()
   .use(offlinePlugin)
   .use(healthCheckPlugin)
   .use(versionPolicyPlugin)
-  .use(cors())
+  .use(corsPlugin)
   .use(
     openapi({
       documentation: {
