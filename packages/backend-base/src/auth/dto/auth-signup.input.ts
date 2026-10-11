@@ -11,6 +11,7 @@ export const AuthSignupInput = t.Object({
   }),
   email: t.String({
     format: "email",
+    maxLength: 254,
     default: "",
   }),
   password: t.String({
