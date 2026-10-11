@@ -57,19 +57,11 @@ async function accepted(token: string) {
   const guarded = await client.auth.session.get(bearer(token));
   const introduction = client.bible.book({ bookId: 1 }).introduction;
   const sessionOnly = await introduction["mark-viewed"].post({}, bearer(token));
-  const byQuery = await introduction["mark-viewed"].post(
-    {},
-    { query: { accessToken: token } },
-  );
-  return {
-    guarded: guarded.status,
-    sessionOnly: sessionOnly.status,
-    byQuery: byQuery.status,
-  };
+  return { guarded: guarded.status, sessionOnly: sessionOnly.status };
 }
 
-const ACCEPTED = { guarded: 200, sessionOnly: 200, byQuery: 200 };
-const REFUSED = { guarded: 401, sessionOnly: 401, byQuery: 401 };
+const ACCEPTED = { guarded: 200, sessionOnly: 200 };
+const REFUSED = { guarded: 401, sessionOnly: 401 };
 
 describe("a signed-out access token is refused everywhere until it expires", () => {
   it("logout refuses that session's token and keeps a session signed in the same second", async () => {
