@@ -35,6 +35,7 @@ import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
 const SESSION_LIFETIME = "90d";
 const SESSION_LIMIT = 50;
 const EMAIL_CHANGE_LIFETIME = "1h";
+const EMAIL_CHANGE_WINDOW_SECONDS = 60 * 60;
 const EMAIL_CHANGE_MAILS_PER_HOUR = 3;
 const EMAIL_CHANGE_TRIES = 5;
 const UNIQUE_VIOLATION = "23505";
@@ -939,12 +940,14 @@ export class AuthService {
     if (to !== from) {
       const cacheKey = cacheConstants.emailChangeMailsSent(userId);
       const sent = (await this.cache.get<number>(cacheKey)) ?? 0;
-      if (sent >= EMAIL_CHANGE_MAILS_PER_HOUR)
+      if (sent >= EMAIL_CHANGE_MAILS_PER_HOUR) {
+        const retryAfter = await this.cache.ttl(cacheKey).catch(() => -1);
         throw {
           status: 429,
           message: "Too many email changes. Try again later.",
-          cacheKey,
+          ...(retryAfter > 0 ? { retryAfter } : {}),
         };
+      }
     }
 
     const names: Partial<Pick<User, "firstName" | "lastName">> = {};
@@ -993,7 +996,7 @@ export class AuthService {
 
     const sent = await this.cache.increment(
       cacheConstants.emailChangeMailsSent(userId),
-      EMAIL_CHANGE_LIFETIME,
+      EMAIL_CHANGE_WINDOW_SECONDS,
     );
     if (sent > EMAIL_CHANGE_MAILS_PER_HOUR) return;
 
@@ -1063,7 +1066,7 @@ export class AuthService {
     if (holder.email.trim().toLowerCase() !== typedEmail.trim().toLowerCase()) {
       const tries = await this.cache.increment(
         cacheConstants.emailChangeTries(hash),
-        EMAIL_CHANGE_LIFETIME,
+        EMAIL_CHANGE_WINDOW_SECONDS,
       );
       if (tries >= EMAIL_CHANGE_TRIES)
         await this.cache.delete(cacheConstants.emailChangeKey(hash));
