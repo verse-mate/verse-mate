@@ -15,7 +15,7 @@ describe("createErrorHandler - Rate Limit Detection", () => {
     const rateLimitError = {
       status: 429,
       message: "Too many signup attempts, please try again later",
-      cacheKey: "rate-limit:signup:127.0.0.1",
+      retryAfter: 3600,
     };
 
     const context = {
@@ -46,7 +46,7 @@ describe("createErrorHandler - Rate Limit Detection", () => {
     const rateLimitError = {
       status: 429,
       message: "Too many login attempts, please try again in a minute",
-      cacheKey: "rate-limit:login:test@example.com",
+      retryAfter: 60,
     };
 
     const context = {
@@ -63,7 +63,7 @@ describe("createErrorHandler - Rate Limit Detection", () => {
     );
   });
 
-  it("should calculate retryAfter from cache TTL", async () => {
+  it("should pass retryAfter through, capped at a day", async () => {
     const errorHandler = createErrorHandler("test plugin");
     const mockSet = { status: 200 };
     const mockCache = {
@@ -73,7 +73,7 @@ describe("createErrorHandler - Rate Limit Detection", () => {
     const rateLimitError = {
       status: 429,
       message: "Rate limited",
-      cacheKey: "rate-limit:test:key",
+      retryAfter: 1800,
     };
 
     const context = {
@@ -85,11 +85,29 @@ describe("createErrorHandler - Rate Limit Detection", () => {
 
     const response = await errorHandler(context);
 
-    expect(mockCache.ttl).toHaveBeenCalledWith("rate-limit:test:key");
     expect(response.retryAfter).toBe(1800);
+    expect(mockCache.ttl).not.toHaveBeenCalled();
+    const capped = await errorHandler({
+      ...context,
+      error: { ...rateLimitError, retryAfter: 90 * 24 * 60 * 60 },
+    });
+    expect(capped.retryAfter).toBe(24 * 60 * 60);
   });
 
-  it("should handle rate limit errors without cacheKey", async () => {
+  it("should drop a retryAfter that is not a positive number", async () => {
+    const errorHandler = createErrorHandler("test plugin");
+    for (const retryAfter of [0, -5, "60"]) {
+      const response = await errorHandler({
+        code: "UNKNOWN",
+        error: { status: 429, message: "Rate limited", retryAfter },
+        set: { status: 200 },
+        store: {},
+      });
+      expect(response.retryAfter).toBeUndefined();
+    }
+  });
+
+  it("should handle rate limit errors without retryAfter", async () => {
     const errorHandler = createErrorHandler("test plugin");
     const mockSet = { status: 200 };
     const mockCache = {
@@ -113,7 +131,6 @@ describe("createErrorHandler - Rate Limit Detection", () => {
     expect(mockSet.status).toBe(429);
     expect(response.error).toBe("TOO_MANY_REQUESTS");
     expect(response.message).toBe("Rate limited");
-    // retryAfter should be undefined when cacheKey is missing
     expect(response.retryAfter).toBeUndefined();
   });
 
