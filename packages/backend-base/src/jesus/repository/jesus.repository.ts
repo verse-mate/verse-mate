@@ -1,6 +1,7 @@
 import type Database from "database/src/models/Database";
 import { type ExpressionBuilder, sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
+import { containsPattern } from "../../shared/utils/like-pattern";
 import { JESUS_KINDS, type JesusKind } from "../jesus.constants";
 import { formatReference } from "../utils/reference.utils";
 
@@ -108,11 +109,7 @@ export class JesusRepository {
             "jesus_label_translations.entity_id",
           )
           .on("jesus_label_translations.entity_type", "=", sql.lit("period"))
-          .on(
-            "jesus_label_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_label_translations.language_code", "=", languageCode)
           .on("jesus_label_translations.is_active", "=", true),
       )
       .where("jesus_periods.is_active", "=", true)
@@ -162,11 +159,7 @@ export class JesusRepository {
             "jesus_label_translations.entity_id",
           )
           .on("jesus_label_translations.entity_type", "=", sql.lit("theme"))
-          .on(
-            "jesus_label_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_label_translations.language_code", "=", languageCode)
           .on("jesus_label_translations.is_active", "=", true),
       )
       .where("jesus_themes.is_active", "=", true)
@@ -222,11 +215,7 @@ export class JesusRepository {
             "=",
             sql.lit("collection"),
           )
-          .on(
-            "jesus_label_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_label_translations.language_code", "=", languageCode)
           .on("jesus_label_translations.is_active", "=", true),
       )
       .where("jesus_collections.is_active", "=", true);
@@ -393,7 +382,7 @@ export class JesusRepository {
       }
 
       if (filter.search?.trim()) {
-        const term = `%${filter.search.trim()}%`;
+        const term = containsPattern(filter.search.trim());
         conditions.push(
           eb.or([
             sql<boolean>`jesus_entries.title ILIKE ${term}`,
@@ -448,11 +437,7 @@ export class JesusRepository {
             "=",
             "jesus_entry_translations.entry_id",
           )
-          .on(
-            "jesus_entry_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_entry_translations.language_code", "=", languageCode)
           .on("jesus_entry_translations.is_active", "=", true),
       );
 
@@ -534,11 +519,7 @@ export class JesusRepository {
             "=",
             "jesus_entry_translations.entry_id",
           )
-          .on(
-            "jesus_entry_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_entry_translations.language_code", "=", languageCode)
           .on("jesus_entry_translations.is_active", "=", true),
       )
       .where("jesus_entries.slug", "=", slug)
@@ -727,11 +708,7 @@ export class JesusRepository {
             "jesus_label_translations.entity_id",
           )
           .on("jesus_label_translations.entity_type", "=", sql.lit("theme"))
-          .on(
-            "jesus_label_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_label_translations.language_code", "=", languageCode)
           .on("jesus_label_translations.is_active", "=", true),
       )
       .where("jesus_entry_themes.entry_id", "in", entryIds)
