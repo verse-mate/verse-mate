@@ -1,11 +1,15 @@
 import type { Context } from "elysia";
 
+import { clientIp } from "../common/client-ip";
+
 const WINDOW_MS = 60_000;
 const DEFAULT_MAX_REQUESTS = 100;
+const MAX_TRACKED = 10_000;
 
 type RateLimitHandler = (args: {
   request: Request;
   set: Context["set"];
+  server?: Context["server"];
 }) => { error: string; message: string } | undefined;
 
 /**
@@ -18,16 +22,22 @@ type RateLimitHandler = (args: {
  */
 export function createIpRateLimit(
   maxRequests: number = DEFAULT_MAX_REQUESTS,
-): RateLimitHandler {
+): RateLimitHandler & { tracked: () => number } {
   const windows = new Map<string, { count: number; resetAt: number }>();
 
-  return ({ request, set }) => {
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+  const handler: RateLimitHandler = ({ request, set, server }) => {
+    const ip = clientIp(request, server);
     const now = Date.now();
     const entry = windows.get(ip);
 
     if (!entry || now >= entry.resetAt) {
+      for (const [key, window] of windows) {
+        if (now < window.resetAt) break;
+        windows.delete(key);
+      }
+      windows.delete(ip);
+      if (windows.size >= MAX_TRACKED)
+        windows.delete(windows.keys().next().value as string);
       windows.set(ip, { count: 1, resetAt: now + WINDOW_MS });
       return;
     }
@@ -38,6 +48,7 @@ export function createIpRateLimit(
       return { error: "TOO_MANY_REQUESTS", message: "Rate limit exceeded" };
     }
   };
+  return Object.assign(handler, { tracked: () => windows.size });
 }
 
 /**
