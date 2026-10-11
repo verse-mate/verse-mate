@@ -515,3 +515,56 @@ describe("CoachService.addNote records whether the email went out", () => {
     expect(await addNoteWith({ delivered: false, status: 500 })).toBe(false);
   });
 });
+
+describe("CoachService grants coach and admin roles only to a confirmed address", () => {
+  const roster = coachDataJson as unknown as {
+    admins: string[];
+    coaches: { email: string }[];
+  };
+  const adminEmail = roster.admins[0];
+  const coachEmail = roster.coaches[0].email;
+
+  function serviceFor(
+    user: { email: string; emailVerified: boolean },
+    addedLeader?: Record<string, unknown>,
+  ) {
+    const row = {
+      id: "user-1",
+      firstName: "Test",
+      lastName: "User",
+      is_admin: false,
+      preferred_language: "en",
+      ...user,
+    };
+    const query: Record<string, unknown> = new Proxy(
+      {},
+      {
+        get(_t, prop) {
+          if (prop === "execute") return async () => [];
+          if (prop === "executeTakeFirst") return async () => addedLeader;
+          if (prop === "executeTakeFirstOrThrow") return async () => row;
+          return () => query;
+        },
+      },
+    );
+    const db = {
+      getOrCreateConnection: () => ({
+        selectFrom: () => query,
+        insertInto: () => query,
+      }),
+    } as unknown as ConstructorParameters<typeof CoachService>[0];
+    return new CoachService(db);
+  }
+
+  it("refuses the admin role to an unconfirmed account holding an admin address", async () => {
+    const svc = serviceFor({ email: adminEmail, emailVerified: false });
+    expect(await svc.isAdmin("user-1")).toBe(false);
+    expect(await svc.getMe("user-1")).toBeNull();
+  });
+
+  it("refuses the coach role to an unconfirmed account holding a roster address", async () => {
+    const svc = serviceFor({ email: coachEmail, emailVerified: false });
+    expect(await svc.isCoach("user-1")).toBe(false);
+    expect(await svc.getMe("user-1")).toBeNull();
+  });
+});
