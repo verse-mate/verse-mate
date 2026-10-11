@@ -1,6 +1,5 @@
 import type { Topics } from "database/src/models/public/Topics";
 import type { Insertable, Updateable } from "kysely";
-import { sql } from "kysely";
 import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 import { generateTopicSlug, generateUniqueSlug } from "../utils/slug.utils";
@@ -28,7 +27,7 @@ export class TopicRepository {
       .leftJoin("topic_translations", (join) =>
         join
           .onRef("topics.topic_id", "=", "topic_translations.topic_id")
-          .on("topic_translations.language_code", "=", sql.lit(languageCode))
+          .on("topic_translations.language_code", "=", languageCode)
           .on("topic_translations.is_active", "=", true),
       )
       .where("topics.category", "=", category)
@@ -73,7 +72,7 @@ export class TopicRepository {
       .leftJoin("topic_translations", (join) =>
         join
           .onRef("topics.topic_id", "=", "topic_translations.topic_id")
-          .on("topic_translations.language_code", "=", sql.lit(languageCode))
+          .on("topic_translations.language_code", "=", languageCode)
           .on("topic_translations.is_active", "=", true),
       )
       .where("topics.topic_id", "=", topicId)
@@ -124,7 +123,7 @@ export class TopicRepository {
       .leftJoin("topic_translations", (join) =>
         join
           .onRef("topics.topic_id", "=", "topic_translations.topic_id")
-          .on("topic_translations.language_code", "=", sql.lit(languageCode))
+          .on("topic_translations.language_code", "=", languageCode)
           .on("topic_translations.is_active", "=", true),
       )
       .where("topics.category", "=", category)
