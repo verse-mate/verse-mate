@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { authDerive, authGuard } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
 import { NotFoundError, UnauthorizedError } from "../common/errors";
+import { assertLanguageCode } from "../shared/i18n/language-code";
 import shared from "../shared/shared.plugin";
 import { ObjectStorageService } from "../shared/storage/storage.service";
 import { OfflineRepository } from "./offline.repository";
@@ -173,6 +174,7 @@ const plugin = new Elysia()
         "/topics/:languageCode",
         async ({ params, headers, store: { offlineService } }) => {
           const { languageCode } = params;
+          assertLanguageCode(languageCode);
 
           // Check if topics exist for this language
           const exists = await offlineService.topicsExist(languageCode);

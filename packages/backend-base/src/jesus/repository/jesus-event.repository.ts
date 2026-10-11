@@ -1,6 +1,7 @@
 import type Database from "database/src/models/Database";
 import { type ExpressionBuilder, sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
+import { containsPattern } from "../../shared/utils/like-pattern";
 import { JESUS_FACET_TYPES, type JesusFacetType } from "../jesus.constants";
 import { formatReference } from "../utils/reference.utils";
 
@@ -205,7 +206,7 @@ export class JesusEventRepository {
                 "jesus_events.event_id",
               )
               .where(
-                sql<boolean>`jesus_event_people.person ILIKE ${`%${filter.person}%`}`,
+                sql<boolean>`jesus_event_people.person ILIKE ${containsPattern(filter.person)}`,
               )
               .select("jesus_event_people.event_id"),
           ),
@@ -213,7 +214,7 @@ export class JesusEventRepository {
       }
 
       if (filter.search?.trim()) {
-        const term = `%${filter.search.trim()}%`;
+        const term = containsPattern(filter.search.trim());
         conditions.push(
           eb.or([
             sql<boolean>`jesus_events.title ILIKE ${term}`,
@@ -824,11 +825,7 @@ export class JesusEventRepository {
             "jesus_label_translations.entity_id",
           )
           .on("jesus_label_translations.entity_type", "=", sql.lit("theme"))
-          .on(
-            "jesus_label_translations.language_code",
-            "=",
-            sql.lit(languageCode),
-          )
+          .on("jesus_label_translations.language_code", "=", languageCode)
           .on("jesus_label_translations.is_active", "=", true),
       )
       .where("jesus_event_themes.event_id", "in", ids)

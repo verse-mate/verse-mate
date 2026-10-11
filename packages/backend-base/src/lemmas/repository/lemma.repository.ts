@@ -1,5 +1,4 @@
 import type { RelatedWord } from "database/src/models/public/Lemmas";
-import { sql } from "kysely";
 import type { db } from "../../shared/shared.plugin";
 import {
   isLemmaFullyTranslated,
@@ -53,11 +52,6 @@ export class LemmaRepository {
   ): Promise<LemmaCard | null> {
     const connection = this.db.getOrCreateConnection();
 
-    // Match on the bare lowercase ISO base code the translation rows are
-    // keyed on (es, de, ...). Without this an `es-MX` / `ES` request misses
-    // every `es` row and silently falls back to English. The normalized
-    // value is also guaranteed `^[a-z]{2,3}$` (or "en"), so it stays safe
-    // to inline as the `sql.lit` literal below.
     const lang = normalizeLanguageCode(languageCode);
 
     const row = await connection
@@ -65,7 +59,7 @@ export class LemmaRepository {
       .leftJoin("lemma_translations", (join) =>
         join
           .onRef("lemmas.strongs", "=", "lemma_translations.strongs")
-          .on("lemma_translations.language_code", "=", sql.lit(lang))
+          .on("lemma_translations.language_code", "=", lang)
           .on("lemma_translations.is_active", "=", true),
       )
       .where("lemmas.strongs", "=", strongs)
