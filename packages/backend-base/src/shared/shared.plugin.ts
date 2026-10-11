@@ -4,7 +4,8 @@ import { db as Database } from "database";
 import { Elysia } from "elysia";
 import { UserService } from "../user/user.service";
 
-import { answerError } from "../common/error-handler";
+import { answerError, isRouteNotFound } from "../common/error-handler";
+import { ApiError } from "../common/errors";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
@@ -98,8 +99,11 @@ const setup = new Elysia({ name: "shared" })
       code,
       path,
     }) => {
-      // NOT_FOUND is expected HTTP behavior (404s), not an application exception
-      if (code === "NOT_FOUND") return;
+      if (
+        code === "NOT_FOUND" &&
+        (error instanceof ApiError || isRouteNotFound(error))
+      )
+        return;
       if (
         !(error instanceof Error) &&
         (error as { status?: unknown }).status === 429

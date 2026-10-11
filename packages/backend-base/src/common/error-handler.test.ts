@@ -1,5 +1,5 @@
 import { describe, expect, it, mock, spyOn } from "bun:test";
-import { Elysia, t } from "elysia";
+import { Elysia, status, t } from "elysia";
 
 import { PosthogService } from "../shared/posthog.service";
 import shared from "../shared/shared.plugin";
@@ -323,6 +323,12 @@ function routes(app: Elysia) {
     .get("/upstream-limit", () => {
       throw withCode("secret detail", { status: 429, retryAfter: 5 });
     })
+    .get("/forbidden", () => {
+      throw status(403, { error: "FORBIDDEN", message: "Not yours" });
+    })
+    .get("/bad-response", () => ({ count: "many" }) as never, {
+      response: { 200: t.Object({ count: t.Number() }) },
+    })
     .post("/typed", ({ body }) => body, {
       body: t.Object({ password: t.String({ minLength: 20 }) }),
     });
@@ -359,11 +365,48 @@ for (const [name, app] of Object.entries(plugins))
       message: "An unexpected error occurred",
     });
 
-    for (const code of ["NOT_FOUND", "VALIDATION", "PARSE", "42P01"])
+    const answers: Record<string, { status: number; body: string }> = {
+      NOT_FOUND: { status: 500, body: generic },
+      VALIDATION: {
+        status: 422,
+        body: JSON.stringify({
+          error: "VALIDATION_ERROR",
+          message: "Invalid request data",
+        }),
+      },
+      PARSE: {
+        status: 400,
+        body: JSON.stringify({
+          error: "BAD_REQUEST",
+          message: "Invalid request",
+        }),
+      },
+      "42P01": { status: 500, body: generic },
+    };
+    for (const [code, answer] of Object.entries(answers))
       it(`an Error carrying its own code ${code}`, async () => {
-        const { body } = await call(`/coded/${code}`);
-        expect(body).not.toContain("secret");
+        expect(await call(`/coded/${code}`)).toEqual(answer);
       });
+
+    it("a thrown status keeps its status and body", async () => {
+      const { status, body } = await call("/forbidden");
+      expect(status).toBe(403);
+      expect(JSON.parse(body)).toEqual({
+        error: "FORBIDDEN",
+        message: "Not yours",
+      });
+    });
+
+    it("an answer its own route schema rejects is the server's fault", async () => {
+      expect(await call("/bad-response")).toEqual({
+        status: 500,
+        body: generic,
+      });
+    });
+
+    it("an unknown path stays 404", async () => {
+      expect((await call("/missing")).status).toBe(404);
+    });
 
     it("a database error with its own SQLSTATE code answers the generic 500", async () => {
       expect(await call("/coded/42P01")).toEqual({
@@ -380,13 +423,12 @@ for (const [name, app] of Object.entries(plugins))
       expect(await call("/storage")).toEqual({ status: 500, body: generic });
     });
 
-    it("an upstream error carrying status 429 keeps the status, not its text", async () => {
+    it("an upstream error carrying status 429 keeps the status, not its text or wait", async () => {
       const { status, body } = await call("/upstream-limit");
       expect(status).toBe(429);
       expect(JSON.parse(body)).toEqual({
         error: "TOO_MANY_REQUESTS",
         message: "Too many requests",
-        retryAfter: 5,
       });
     });
 
@@ -414,27 +456,61 @@ for (const [name, app] of Object.entries(plugins))
     });
   });
 
-describe("an unexpected error is still reported", () => {
-  it("once, with its code and path", async () => {
+describe("what reaches error reporting", () => {
+  const reported = async (withHandler: boolean, thrown: () => unknown) => {
     const captured = spyOn(
       PosthogService.prototype,
       "captureException",
     ).mockImplementation(() => {});
-    const logged = spyOn(console, "error").mockImplementation(() => {});
+    const quiet = [
+      spyOn(console, "error").mockImplementation(() => {}),
+      spyOn(console, "debug").mockImplementation(() => {}),
+    ];
     try {
-      const app = new Elysia().use(
-        new Elysia().use(shared).get("/pg", () => {
-          throw withCode("relation x does not exist", { code: "42P01" });
-        }) as unknown as Elysia,
-      );
-      await app.handle(new Request("http://localhost/pg"));
-      expect(captured).toHaveBeenCalledTimes(1);
-      expect(captured.mock.calls[0][2]).toEqual(
-        expect.objectContaining({ code: "42P01", $current_url: "/pg" }),
-      );
+      const base = new Elysia().use(shared);
+      const plugin = (
+        withHandler ? base.onError(createErrorHandler("test plugin")) : base
+      ).get("/boom", () => {
+        throw thrown();
+      });
+      await new Elysia()
+        .use(plugin as unknown as Elysia)
+        .handle(new Request("http://localhost/boom"));
+      return captured.mock.calls.map((call) => call[2]);
     } finally {
       captured.mockRestore();
-      logged.mockRestore();
+      for (const spy of quiet) spy.mockRestore();
     }
-  });
+  };
+
+  for (const withHandler of [false, true]) {
+    const name = withHandler ? "with the shared handler" : "without it";
+    it(`a database error is reported once, with its code and path (${name})`, async () => {
+      const calls = await reported(withHandler, () =>
+        withCode("relation x does not exist", { code: "42P01" }),
+      );
+      expect(calls).toEqual([
+        expect.objectContaining({ code: "42P01", $current_url: "/boom" }),
+      ]);
+    });
+
+    it(`an upstream 429 is reported, the limiter's own refusal is not (${name})`, async () => {
+      expect(
+        await reported(withHandler, () =>
+          withCode("upstream", { status: 429 }),
+        ),
+      ).toHaveLength(1);
+      expect(
+        await reported(withHandler, () => ({ status: 429, message: "Slow" })),
+      ).toHaveLength(0);
+    });
+
+    it(`an Error carrying its own NOT_FOUND code is reported (${name})`, async () => {
+      expect(
+        await reported(withHandler, () =>
+          withCode("secret detail", { code: "NOT_FOUND" }),
+        ),
+      ).toHaveLength(1);
+    });
+  }
 });
