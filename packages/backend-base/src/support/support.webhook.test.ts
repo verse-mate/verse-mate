@@ -10,6 +10,7 @@ import {
 } from "bun:test";
 import crypto from "node:crypto";
 import { faker } from "@faker-js/faker";
+import SupportStatusEnum from "database/src/models/public/SupportStatusEnum";
 import shared from "../shared/shared.plugin";
 import { SupportService } from "./services/support.service";
 import supportPlugin from "./support.plugin";
@@ -76,7 +77,11 @@ beforeAll(async () => {
   threadTs = `${nowSeconds()}.${faker.string.numeric(6)}`;
   await conn
     .insertInto("support_conversations")
-    .values({ user_id: userId, slack_thread_ts: threadTs, status: "open" })
+    .values({
+      user_id: userId,
+      slack_thread_ts: threadTs,
+      status: SupportStatusEnum.open,
+    })
     .execute();
 });
 
