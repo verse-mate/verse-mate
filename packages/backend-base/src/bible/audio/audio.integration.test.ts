@@ -26,6 +26,7 @@ import {
   AUDIO_GENERATION_QUEUE,
   type AudioGenerationJobData,
 } from "./audio-generation.queue";
+import { AudioRepository } from "./audio.repository";
 import { AudioService } from "./audio.service";
 
 const BUCKET = process.env.OBJECT_STORAGE_BUCKET ?? "saas-starter-dev";
@@ -206,6 +207,74 @@ describe("AudioService — integration (MinIO + Postgres + Redis)", () => {
         currentUserId: null,
       });
       expect(result.kind).toBe("ready");
+    });
+
+    it("parallel upserts of one variant all resolve to a single row", async () => {
+      const repository = new AudioRepository(Database);
+      const variant = {
+        explanation_id: testExplanationId,
+        voice: DEFAULT_VOICE,
+        language_code: "en-GB",
+      };
+      const row = (n: number) => ({
+        ...variant,
+        storage_key: `audio/test/${testExplanationId}-${n}.mp3`,
+        duration_seconds: 1,
+        character_count: TEST_TEXT.length,
+        content_hash: "a".repeat(64),
+        tts_provider: "stub",
+        tts_model: "stub",
+      });
+
+      for (let round = 0; round < 5; round++) {
+        const results = await Promise.allSettled(
+          Array.from({ length: 8 }, (_, n) => repository.upsert(row(n))),
+        );
+        expect(results.map((r) => r.status)).toEqual(
+          Array(8).fill("fulfilled"),
+        );
+      }
+
+      const stored = await Database.getOrCreateConnection()
+        .selectFrom("explanation_audios")
+        .select(["audio_id", "storage_key"])
+        .where("explanation_id", "=", testExplanationId)
+        .where("voice", "=", variant.voice)
+        .where("language_code", "=", variant.language_code)
+        .execute();
+      expect(stored).toHaveLength(1);
+    });
+
+    it("an upsert keeps the row id and replaces its content", async () => {
+      const repository = new AudioRepository(Database);
+      const base = {
+        explanation_id: testExplanationId,
+        voice: DEFAULT_VOICE,
+        language_code: "en-AU",
+        duration_seconds: 1,
+        character_count: TEST_TEXT.length,
+        tts_provider: "stub",
+        tts_model: "stub",
+      };
+      const first = await repository.upsert({
+        ...base,
+        storage_key: "audio/test/first.mp3",
+        content_hash: "a".repeat(64),
+      });
+      await repository.markStale(testExplanationId);
+      const second = await repository.upsert({
+        ...base,
+        storage_key: "audio/test/second.mp3",
+        content_hash: "b".repeat(64),
+      });
+
+      expect(second.audio_id).toBe(first.audio_id);
+      expect(second.storage_key).toBe("audio/test/second.mp3");
+      expect(second.content_hash).toBe("b".repeat(64));
+      expect(second.is_stale).toBe(false);
+      expect(second.generated_at.getTime()).toBeGreaterThanOrEqual(
+        first.generated_at.getTime(),
+      );
     });
   });
 
