@@ -73,18 +73,18 @@ const app = new Elysia({
 // Export type before .listen() to preserve full type information for Eden Treaty
 export type App = typeof app;
 
+await verifyRedisOrExit({
+  cache: redis,
+  queue: bullmqRedisConnection,
+  redisUrl: configuredRedisUrl(),
+  timeoutMs: REDIS_STARTUP_TIMEOUT_MS,
+  exit: (code) => process.exit(code),
+});
+
 app.listen(process.env.PORT || 3000, async () => {
   console.log(
     `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`,
   );
-
-  await verifyRedisOrExit({
-    cache: redis,
-    queue: bullmqRedisConnection,
-    redisUrl: configuredRedisUrl(),
-    timeoutMs: REDIS_STARTUP_TIMEOUT_MS,
-    exit: (code) => process.exit(code),
-  });
 
   // Asynchronously refresh language stats on startup (fire-and-forget with timeout)
   console.log("🚀 Triggering initial language stats refresh on startup...");
