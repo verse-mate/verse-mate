@@ -42,7 +42,8 @@ async function downThenRollBack() {
       await down(trx as never);
       const { rows } = await sql<{ n: number }>`
         select count(*)::int as n from information_schema.columns
-        where table_name = 'user' and column_name = 'email_verified_at'
+        where table_schema = current_schema() and table_name = 'user'
+          and column_name = 'email_verified_at'
       `.execute(trx);
       columnLeft = rows[0].n;
       throw new RolledBack();

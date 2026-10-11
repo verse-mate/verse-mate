@@ -316,6 +316,40 @@ describe("a password reset link", () => {
     expect((await row(id)).password).not.toBeNull();
   });
 
+  it("on an account confirmed before the stamp existed keeps its links and stamps it", async () => {
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    await service().forgotPassword({ email });
+
+    expect(
+      await service().resetPassword({
+        key: keySentTo(email),
+        password: "a-fresh-password",
+      }),
+    ).toBe(true);
+
+    expect((await row(id)).email_verified_at).not.toBeNull();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `elsewhere-${id}`,
+      ),
+    ).toBeTruthy();
+  });
+
   it("on an unconfirmed account drops provider links made for another address, so the previous holder keeps no way in", async () => {
     const attacker = address("attacker");
     await google(`attacker-${attacker}`, attacker);
@@ -359,6 +393,26 @@ describe("a provider sign-in that adopts an existing account", () => {
     expect(await cache.get<string[]>(cacheConstants.accessToken(id))).toEqual([
       `token-${id}`,
     ]);
+  });
+
+  it("drops the sign-in links an unconfirmed account already had", async () => {
+    const { id, email } = await account({ password: true });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `planted-${id}`,
+      email,
+    });
+
+    await google(`owner-${id}`, email);
+
+    expect((await row(id)).password).toBeNull();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `planted-${id}`,
+      ),
+    ).toBeFalsy();
   });
 
   it("keeps the password and links of an account confirmed before the stamp existed, and stamps it", async () => {
