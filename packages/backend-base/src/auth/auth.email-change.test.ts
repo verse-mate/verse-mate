@@ -531,6 +531,70 @@ describe("confirming an email change", () => {
     expect((await client.auth.session.get({ headers })).status).toBe(200);
   });
 
+  it("leaves the account where it was when the undo link cannot be stored", async () => {
+    const user = await account();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    spyOn(cache, "appendToJsonArray").mockImplementationOnce(() =>
+      Promise.reject(new Error("cache down")),
+    );
+
+    expect((await confirm(key, user.email)).status).toBe(500);
+
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect(mails.filter((m) => m.to === user.email)).toHaveLength(0);
+    expect(
+      await cache.get(cacheConstants.emailChangeReverts(user.id)),
+    ).toBeNull();
+  });
+
+  it("forgets a pending change whose session signed out, and a later save from another session mails a new link", async () => {
+    Backend.store.authService.emailChangeSettleMs = 100;
+    const user = await account();
+    const next = address("next");
+    const { headers } = await requestChange(user, next);
+    await client.auth.logout.post(undefined, { headers });
+    const other = await signIn(user.email);
+
+    expect(
+      (await client.auth.session.get({ headers: other })).data,
+    ).toMatchObject({ pendingEmail: null });
+    await client.auth.profile.put({ email: next }, { headers: other });
+    const key = keyIn((await mailTo(next)).text);
+
+    expect((await confirm(key, user.email)).status).toBe(200);
+  });
+
+  it("refuses a password sign-in whose account moved to another address while the password was checked", async () => {
+    const user = await account();
+    const service = Backend.store.authService as unknown as {
+      loginUser: (...args: unknown[]) => Promise<{ accessToken: string }>;
+    };
+    const loginUser = service.loginUser.bind(service);
+    let issued = "";
+    spyOn(service, "loginUser").mockImplementationOnce(async (...args) => {
+      const session = await loginUser(...args);
+      issued = session.accessToken;
+      await conn
+        .updateTable("user")
+        .set({ email: address("moved") })
+        .where("id", "=", user.id)
+        .execute();
+      return session;
+    });
+
+    const login = await client.auth.login.post({
+      email: user.email,
+      password: PASSWORD,
+    });
+
+    expect(login.status).toBe(401);
+    expect(
+      (await cache.get<string[]>(cacheConstants.accessToken(user.id))) ?? [],
+    ).not.toContain(issued);
+  });
+
   it("mails nothing when the session that asked for the change signed out before the mail went out", async () => {
     Backend.store.authService.emailChangeSettleMs = 100;
     const user = await account();
@@ -560,7 +624,7 @@ describe("confirming an email change", () => {
     ).toBeNull();
   });
 
-  it("leaves the account where it was when the undo link cannot be stored", async () => {
+  it("leaves the account where it was, with no undo link or reservation, when the move fails after they were stored", async () => {
     const user = await account();
     const next = address("next");
     const { headers } = await requestChange(user, next);
@@ -779,6 +843,11 @@ async function changeAndConfirm(
   return { next, revertKey: revertKeyIn((await mailTo(current)).text) };
 }
 
+const reservationOf = (value: string) =>
+  cacheConstants.emailChangeReserved(
+    new Bun.CryptoHasher("sha256").update(value).digest("hex"),
+  );
+
 const passwordOf = async (id: string) =>
   (
     await conn
@@ -888,19 +957,25 @@ describe("undoing an email change from the old address", () => {
       user,
       first,
     );
-    const { next: third } = await changeAndConfirm(user, second);
-    spyOn(cache, "removeFromJsonArray").mockImplementationOnce(() =>
+    const { next: third, revertKey: last } = await changeAndConfirm(
+      user,
+      second,
+    );
+    spyOn(Backend.store.authService, "logoutAll").mockImplementationOnce(() =>
       Promise.reject(new Error("cache down")),
     );
 
     expect((await revert(middle)).status).toBe(500);
 
     expect(await row(user.id)).toMatchObject({ email: third });
+    expect(await cache.get(reservationOf(first))).toBeTruthy();
     const headers = await signIn(third);
     expect(
       (await client.auth.account.delete({ password: PASSWORD }, { headers }))
         .status,
     ).toBe(409);
+    expect((await revert(last)).status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: second });
     expect((await revert(middle)).status).toBe(200);
     expect(await row(user.id)).toMatchObject({ email: first });
     expect((await revert(own)).status).toBe(200);
@@ -917,6 +992,7 @@ describe("undoing an email change from the old address", () => {
     expect((await revert(revertKey)).status).toBe(500);
 
     expect(await row(user.id)).toMatchObject({ email: next });
+    expect(await cache.get(reservationOf(user.email))).toBeTruthy();
     expect((await revert(revertKey)).status).toBe(200);
     expect(await row(user.id)).toMatchObject({ email: user.email });
   });
