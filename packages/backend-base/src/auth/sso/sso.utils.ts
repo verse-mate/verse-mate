@@ -91,11 +91,27 @@ export interface FrontendCallbackParams {
   errorDescription?: string;
 }
 
+function originOf(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return undefined;
+  }
+}
+
+export function ssoReturnOrigin(requested: unknown): string | undefined {
+  const admin = originOf(process.env.ADMIN_URL);
+  return admin !== undefined && requested === admin ? admin : undefined;
+}
+
 export function buildFrontendCallbackUrl(
   provider: "google" | "apple",
   params: FrontendCallbackParams,
+  returnOrigin?: unknown,
 ): string {
   const config = getSSOConfig();
+  const appUrl = ssoReturnOrigin(returnOrigin) ?? config.frontendUrl;
   const searchParams = new URLSearchParams();
 
   if (params.code) {
@@ -108,7 +124,7 @@ export function buildFrontendCallbackUrl(
     searchParams.set("error_description", params.errorDescription);
   }
 
-  return `${config.frontendUrl}/auth/callback/${provider}?${searchParams.toString()}`;
+  return `${appUrl}/auth/callback/${provider}?${searchParams.toString()}`;
 }
 
 /**

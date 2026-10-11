@@ -148,6 +148,14 @@ export const authRateLimiters = {
     message: "Too many SSO attempts, please try again in a minute",
   }),
 
+  ssoRedirect: createRateLimit({
+    windowSeconds: 60,
+    max: 20,
+    keyGenerator: (context) =>
+      `sso-redirect:${clientBucket(context.request, context.server)}`,
+    message: "Too many sign-in attempts, please try again in a minute",
+  }),
+
   ssoExchange: createRateLimit({
     windowSeconds: 60,
     max: 20,

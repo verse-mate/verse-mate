@@ -18,7 +18,9 @@ import { ssoProviderFactory } from "./sso-provider.factory";
 import type { SSOProvider } from "./sso-provider.interface";
 
 const FRONTEND_URL = "http://localhost:3000";
+const ADMIN_URL = "http://localhost:3100";
 const EXCHANGE_LIMIT_KEY = "rate-limit:sso-exchange:unknown";
+const REDIRECT_LIMIT_KEY = "rate-limit:sso-redirect:unknown";
 const VALIDATION_STATUS = 422;
 
 type Provider = "google" | "apple";
@@ -72,11 +74,13 @@ describe("SSO web callback code exchange", () => {
       (name) => stubProvider(name, email, providerUserId),
     );
     await cache.delete(EXCHANGE_LIMIT_KEY);
+    await cache.delete(REDIRECT_LIMIT_KEY);
   });
 
   afterEach(() => {
     providerSpy.mockRestore();
     setSystemTime();
+    Reflect.deleteProperty(process.env, "ADMIN_URL");
   });
 
   afterAll(async () => {
@@ -86,6 +90,7 @@ describe("SSO web callback code exchange", () => {
       .where("email", "in", emails)
       .execute();
     await cache.delete(EXCHANGE_LIMIT_KEY);
+    await cache.delete(REDIRECT_LIMIT_KEY);
     process.env = originalEnv;
   });
 
@@ -105,8 +110,15 @@ describe("SSO web callback code exchange", () => {
     return new URL(response.headers.get("location") ?? "");
   }
 
-  async function startSignIn(provider: Provider, challenge?: string) {
-    const query = challenge === undefined ? "" : `?challenge=${challenge}`;
+  async function startSignIn(
+    provider: Provider,
+    challenge?: string,
+    returnTo?: string,
+  ) {
+    const params = new URLSearchParams();
+    if (challenge !== undefined) params.set("challenge", challenge);
+    if (returnTo !== undefined) params.set("returnTo", returnTo);
+    const query = params.size > 0 ? `?${params}` : "";
     return Backend.handle(
       new Request(`http://localhost/auth/sso/${provider}/redirect${query}`, {
         method: "GET",
@@ -115,8 +127,7 @@ describe("SSO web callback code exchange", () => {
     );
   }
 
-  async function googleCallback(challenge?: string) {
-    const state = await storeState("google", challenge);
+  async function googleCallbackFor(state: string) {
     const response = await Backend.handle(
       new Request(
         `http://localhost/auth/sso/google/callback?code=provider-code&state=${state}`,
@@ -124,6 +135,10 @@ describe("SSO web callback code exchange", () => {
       ),
     );
     return locationOf(response);
+  }
+
+  async function googleCallback(challenge?: string) {
+    return googleCallbackFor(await storeState("google", challenge));
   }
 
   async function appleGetCallback(challenge?: string) {
@@ -218,6 +233,84 @@ describe("SSO web callback code exchange", () => {
         expect(stored?.challenge).toBe(challenge);
       });
     }
+
+    it("limits sign-in starts to 20 a minute per client", async () => {
+      const statuses: number[] = [];
+      for (let i = 0; i < 21; i++) {
+        const response = await startSignIn("google", "short");
+        statuses.push(response.status);
+      }
+
+      expect(statuses.slice(0, 20).every((status) => status === 302)).toBe(
+        true,
+      );
+      expect(statuses[20]).toBe(429);
+    });
+  });
+
+  describe("returning to the app that started sign-in", () => {
+    async function signInFrom(provider: Provider, returnTo: string) {
+      const started = await startSignIn(
+        provider,
+        challengeOf(newVerifier()),
+        returnTo,
+      );
+      const state = locationOf(started).searchParams.get("state") ?? "";
+      if (provider === "google") return googleCallbackFor(state);
+      const response = await Backend.handle(
+        new Request("http://localhost/auth/sso/apple/callback", {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            state,
+            code: "provider-code",
+          }).toString(),
+          redirect: "manual",
+        }),
+      );
+      return locationOf(response);
+    }
+
+    for (const provider of ["google", "apple"] as const) {
+      it(`sends an admin-started ${provider} sign-in back to the admin app`, async () => {
+        process.env.ADMIN_URL = `${ADMIN_URL}/`;
+
+        const location = await signInFrom(provider, ADMIN_URL);
+
+        expect(location.origin + location.pathname).toBe(
+          `${ADMIN_URL}/auth/callback/${provider}`,
+        );
+        expect(location.searchParams.get("code")).toBeTruthy();
+      });
+    }
+
+    it("sends a sign-in that asks for any other origin to the portal", async () => {
+      process.env.ADMIN_URL = ADMIN_URL;
+
+      const location = await signInFrom("google", "https://elsewhere.example");
+
+      expect(location.origin).toBe(FRONTEND_URL);
+      expect(location.searchParams.get("code")).toBeTruthy();
+    });
+
+    it("sends every sign-in to the portal when ADMIN_URL is unset", async () => {
+      const location = await signInFrom("google", ADMIN_URL);
+
+      expect(location.origin).toBe(FRONTEND_URL);
+      expect(location.searchParams.get("code")).toBeTruthy();
+    });
+
+    it("shows a sign-in that cannot start on the admin app that started it", async () => {
+      process.env.ADMIN_URL = ADMIN_URL;
+
+      const response = await startSignIn("apple", undefined, ADMIN_URL);
+
+      const location = locationOf(response);
+      expect(location.origin + location.pathname).toBe(
+        `${ADMIN_URL}/auth/callback/apple`,
+      );
+      expect(location.searchParams.get("error")).toBe("invalid_state");
+    });
   });
 
   describe("provider callbacks", () => {
@@ -264,6 +357,38 @@ describe("SSO web callback code exchange", () => {
         expect(providerSpy).not.toHaveBeenCalled();
       });
     }
+
+    it("mints one code when the same state arrives twice at once", async () => {
+      const state = await storeState("google", challengeOf(newVerifier()));
+
+      const locations = await Promise.all([
+        googleCallbackFor(state),
+        googleCallbackFor(state),
+      ]);
+
+      const codes = locations.filter((location) =>
+        location.searchParams.has("code"),
+      );
+      expect(codes).toHaveLength(1);
+      expect(providerSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("signs in from the state the redirect route stored through to the exchange", async () => {
+      const verifier = newVerifier();
+      const started = await startSignIn("google", challengeOf(verifier));
+      const state = locationOf(started).searchParams.get("state") ?? "";
+
+      const location = await googleCallbackFor(state);
+      const code = location.searchParams.get("code") ?? "";
+      const response = await exchange({ code, verifier });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as { accessToken: string };
+      const me = await client.auth.user.get({
+        headers: { authorization: `Bearer ${body.accessToken}` },
+      });
+      expect(me.data?.id).toBeTruthy();
+    });
 
     it("keeps the code in Redis for at most 60 seconds", async () => {
       const { code } = await signedInCode();
