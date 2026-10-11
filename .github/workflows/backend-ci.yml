@@ -7,11 +7,6 @@
 #   DOCKER_CONFIG_JSON       - Docker config JSON with registry auth (from ~/.docker/config.json)
 #   DO_REGISTRY              - DigitalOcean registry URL (e.g., registry.digitalocean.com)
 #   DO_REGISTRY_IMAGE        - Base image name (without -backend suffix)
-#   OBJECT_STORAGE_ACCESS_KEY_ID     - Object storage credentials
-#   OBJECT_STORAGE_SECRET_ACCESS_KEY - Object storage credentials
-#   OBJECT_STORAGE_ENDPOINT          - Object storage endpoint URL
-#   OBJECT_STORAGE_BUCKET            - Object storage bucket name
-#   OBJECT_STORAGE_REGION            - Object storage region
 
 name: Backend CI/CD
 
@@ -148,18 +143,12 @@ jobs:
 
   # ============================================
   # TEST JOB
-  # Runs tests with PostgreSQL and Redis service containers
+  # Runs tests with PostgreSQL, Redis and MinIO containers
   # ============================================
   test:
     name: Test
     runs-on: ubuntu-latest
     needs: [compile]
-    # NOTE: non-blocking until the pre-existing backend test failures are
-    # resolved (14 failing on main, incl. integration tests that need a MinIO
-    # service container not yet wired into CI). Tests still RUN and are visible
-    # on every PR (see the pull_request trigger). Make this blocking once the
-    # suite is green — tracked as a follow-up.
-    continue-on-error: true
 
     services:
       postgres:
@@ -192,11 +181,11 @@ jobs:
       ENVIRONMENT: test
       # Dummy key for tests - actual API calls should be mocked
       OPENAI_API_KEY: sk-test-dummy-key-for-ci
-      OBJECT_STORAGE_ACCESS_KEY_ID: ${{ secrets.OBJECT_STORAGE_ACCESS_KEY_ID }}
-      OBJECT_STORAGE_SECRET_ACCESS_KEY: ${{ secrets.OBJECT_STORAGE_SECRET_ACCESS_KEY }}
-      OBJECT_STORAGE_ENDPOINT: ${{ secrets.OBJECT_STORAGE_ENDPOINT }}
-      OBJECT_STORAGE_BUCKET: ${{ secrets.OBJECT_STORAGE_BUCKET }}
-      OBJECT_STORAGE_REGION: ${{ secrets.OBJECT_STORAGE_REGION }}
+      OBJECT_STORAGE_ACCESS_KEY_ID: minioadmin
+      OBJECT_STORAGE_SECRET_ACCESS_KEY: minioadmin
+      OBJECT_STORAGE_ENDPOINT: http://localhost:9000
+      OBJECT_STORAGE_BUCKET: saas-starter-dev
+      OBJECT_STORAGE_REGION: us-east-1
 
     steps:
       - name: Checkout code
@@ -223,14 +212,26 @@ jobs:
           cp apps/backend/.env.example packages/database/.env
           cp packages/backend-base/.env.example packages/backend-base/.env
 
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER="$OBJECT_STORAGE_ACCESS_KEY_ID" \
+            -e MINIO_ROOT_PASSWORD="$OBJECT_STORAGE_SECRET_ACCESS_KEY" \
+            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          for attempt in $(seq 1 30); do
+            curl -sf "$OBJECT_STORAGE_ENDPOINT/minio/health/live" && break
+            sleep 2
+          done
+          docker exec minio mc alias set local http://localhost:9000 \
+            "$OBJECT_STORAGE_ACCESS_KEY_ID" "$OBJECT_STORAGE_SECRET_ACCESS_KEY"
+          docker exec minio mc mb --ignore-existing "local/$OBJECT_STORAGE_BUCKET"
+
       - name: Run database migrations and seeds
         run: |
           cd packages/database && bun migrate:deploy && bun db:seed && bun seed:themes
 
       - name: Run tests
-        # Non-blocking until the pre-existing suite failures are fixed (see the
-        # note on the job above). Per-test pass/fail is still visible in logs.
-        run: cd packages/backend-base && bun test || true
+        run: cd packages/backend-base && bun test
 
       - name: Cleanup environment files
         if: always()
