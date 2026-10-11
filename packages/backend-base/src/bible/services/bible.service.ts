@@ -1113,7 +1113,7 @@ export class BibleService {
     }
   }
 
-  async updateNote(noteId: string, content: string) {
+  async updateNote(noteId: string, content: string, userId: string) {
     console.log("=== BibleService.updateNote ===");
     console.log(
       "Updating note ID:",
@@ -1126,6 +1126,7 @@ export class BibleService {
       const { success } = await this.bibleRepository.updateNote(
         noteId,
         content,
+        userId,
       );
       console.log("Note update success:", success);
       return { success };
@@ -1135,12 +1136,12 @@ export class BibleService {
     }
   }
 
-  async deleteNote(noteId: string) {
+  async deleteNote(noteId: string, userId: string) {
     console.log("=== BibleService.deleteNote ===");
     console.log("Deleting note ID:", noteId);
 
     try {
-      const { success } = await this.bibleRepository.deleteNote(noteId);
+      const { success } = await this.bibleRepository.deleteNote(noteId, userId);
       console.log("Note deletion success:", success);
       return { success };
     } catch (error) {
