@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
+import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 
 import authPlugin from "../auth/auth.plugin";
 import { createTestUser } from "../shared/test-helpers";
@@ -72,10 +73,26 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
     owner = await createTestUser();
     other = await createTestUser();
 
-    const explanation = await plugin.store.db
-      .getOrCreateConnection()
-      .selectFrom("explanations")
-      .select("explanation_id")
+    const connection = plugin.store.db.getOrCreateConnection();
+    const chapter = await connection
+      .selectFrom("chapters")
+      .select("chapter_id")
+      .where("book_id", "=", 1)
+      .where("chapter_number", "=", 1)
+      .executeTakeFirstOrThrow();
+    const explanation = await connection
+      .insertInto("explanations")
+      .values({
+        type: ExplanationTypeEnum.summary,
+        explanation: faker.lorem.paragraph(),
+        chapter_id: chapter.chapter_id,
+        version: 1,
+        is_active: false,
+        created_by_admin: true,
+        parent_explanation_id: null,
+        language_code: "en",
+      })
+      .returning("explanation_id")
       .executeTakeFirstOrThrow();
     explanationId = explanation.explanation_id;
 
@@ -130,7 +147,16 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
     expect(rating.status).toBe(200);
   });
 
-  afterAll(() => {
+  afterAll(async () => {
+    const connection = Backend.store.db.getOrCreateConnection();
+    await connection
+      .deleteFrom("explanation_ratings")
+      .where("explanation_id", "=", explanationId)
+      .execute();
+    await connection
+      .deleteFrom("explanations")
+      .where("explanation_id", "=", explanationId)
+      .execute();
     Backend.store.db.closeConnection();
     Backend.store.cache.disconnect();
   });
