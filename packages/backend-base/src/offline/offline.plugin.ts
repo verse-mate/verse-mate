@@ -1,30 +1,13 @@
 import { Elysia, t } from "elysia";
 import { authDerive, authGuard } from "../auth/auth.utils";
 import { createErrorHandler } from "../common/error-handler";
-import {
-  NotFoundError,
-  UnauthorizedError,
-  ValidationError,
-} from "../common/errors";
+import { NotFoundError, UnauthorizedError } from "../common/errors";
+import { assertLanguageCode } from "../shared/i18n/language-code";
 import shared from "../shared/shared.plugin";
 import { ObjectStorageService } from "../shared/storage/storage.service";
 import { OfflineRepository } from "./offline.repository";
 import { OfflineService } from "./offline.service";
 import { OfflineManifestSchema } from "./schemas/offline-response.schema";
-
-const LANGUAGE_CODE_PATTERN = /^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{1,8})*$/;
-const LANGUAGE_CODE_MAX_LENGTH = 10;
-
-function assertLanguageCode(languageCode: string) {
-  if (
-    languageCode.length > LANGUAGE_CODE_MAX_LENGTH ||
-    !LANGUAGE_CODE_PATTERN.test(languageCode)
-  ) {
-    throw new ValidationError(
-      "Invalid language code format. Expected format: 'en' or 'en-US'.",
-    );
-  }
-}
 
 const plugin = new Elysia()
   .use(shared)

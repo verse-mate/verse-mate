@@ -52,9 +52,6 @@ export class LemmaRepository {
   ): Promise<LemmaCard | null> {
     const connection = this.db.getOrCreateConnection();
 
-    // Match on the bare lowercase ISO base code the translation rows are
-    // keyed on (es, de, ...). Without this an `es-MX` / `ES` request misses
-    // every `es` row and silently falls back to English.
     const lang = normalizeLanguageCode(languageCode);
 
     const row = await connection

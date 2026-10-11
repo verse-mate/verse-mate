@@ -14,6 +14,7 @@ import {
 import { StandardErrorResponses } from "../common/response-schemas";
 import { DailyVerseService } from "../daily-verse/services/daily-verse.service";
 import { batchProcessingQueue } from "../queue/batch-processing.queue";
+import { assertLanguageCode } from "../shared/i18n/language-code";
 import shared from "../shared/shared.plugin";
 import { TopicService } from "../topics/services/topic.service";
 import adminAudioPlugin from "./admin-audio.plugin";
@@ -94,6 +95,9 @@ const plugin = new Elysia()
         app.patch(
           "/preferences",
           async ({ body, currentUserId, store: { db } }) => {
+            if (body.preferred_language !== undefined) {
+              assertLanguageCode(body.preferred_language);
+            }
             const result = await db
               .getOrCreateConnection()
               .updateTable("user")
