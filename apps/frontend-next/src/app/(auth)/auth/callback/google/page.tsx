@@ -6,6 +6,7 @@ import {
   handleSSOCallback,
   startSSOSignIn,
 } from "frontend-base/src/auth/lib";
+import { $env } from "frontend-envs";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import styles from "../callback.module.css";
@@ -127,7 +128,7 @@ function GoogleCallbackContent() {
   }, [searchParams]);
 
   const handleRetry = () => {
-    void startSSOSignIn("/api/auth/sso/google/redirect");
+    void startSSOSignIn(`${$env.get().apiUrl}/auth/sso/google/redirect`);
   };
 
   return (

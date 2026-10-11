@@ -6,6 +6,7 @@ import {
   handleSSOCallback,
   startSSOSignIn,
 } from "frontend-base/src/auth/lib";
+import { $env } from "frontend-envs";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import styles from "../callback.module.css";
@@ -167,7 +168,7 @@ function AppleCallbackContent() {
   }, [searchParams]);
 
   const handleRetry = () => {
-    void startSSOSignIn("/api/auth/sso/apple/redirect");
+    void startSSOSignIn(`${$env.get().apiUrl}/auth/sso/apple/redirect`);
   };
 
   return (
