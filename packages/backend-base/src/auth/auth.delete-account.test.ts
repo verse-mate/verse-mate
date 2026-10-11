@@ -389,24 +389,27 @@ describe("Auth - Delete Account", () => {
       .returning("id")
       .executeTakeFirstOrThrow();
 
-    const { data, error } = await deleteAccount(user);
+    try {
+      const { data, error } = await deleteAccount(user);
 
-    expect(error).toBeFalsy();
-    expect(data?.success).toBe(true);
-    expect(
-      await db
-        .selectFrom("user")
-        .select("id")
-        .where("id", "=", user.id)
-        .executeTakeFirst(),
-    ).toBeUndefined();
-    const kept = await db
-      .selectFrom("batch_jobs")
-      .select(["id", "created_by"])
-      .where("id", "=", job.id)
-      .executeTakeFirst();
-    expect(kept).toEqual({ id: job.id, created_by: null } as any);
-    await db.deleteFrom("batch_jobs").where("id", "=", job.id).execute();
+      expect(error).toBeFalsy();
+      expect(data?.success).toBe(true);
+      expect(
+        await db
+          .selectFrom("user")
+          .select("id")
+          .where("id", "=", user.id)
+          .executeTakeFirst(),
+      ).toBeUndefined();
+      const kept = await db
+        .selectFrom("batch_jobs")
+        .select(["id", "created_by"])
+        .where("id", "=", job.id)
+        .executeTakeFirst();
+      expect(kept).toEqual({ id: job.id, created_by: null } as any);
+    } finally {
+      await db.deleteFrom("batch_jobs").where("id", "=", job.id).execute();
+    }
   });
 
   it("should require authentication to delete account", async () => {

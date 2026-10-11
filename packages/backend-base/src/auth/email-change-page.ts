@@ -61,7 +61,7 @@ export function confirmEmailChangeForm(key: string, wrongAddress = false) {
       wrongAddress
         ? "<p>That is not the account's current email address. Try again.</p>"
         : "<p>To finish moving your VerseMate account to this address, enter the email address the account uses now.</p>"
-    }<form method="post">
+    }<form method="post" action="confirm-email-change">
 <input type="hidden" name="key" value="${escapeHtml(key)}">
 <label for="email">Current email address</label>
 <input type="email" id="email" name="email" required autocomplete="email">
@@ -83,5 +83,24 @@ export function emailChangeConfirmed() {
     200,
     "Your email address was changed",
     "<p>Your VerseMate account now uses this address. You were signed out everywhere, so sign in again with your new address.</p>",
+  );
+}
+
+export function revertEmailChangeForm(key: string) {
+  return page(
+    200,
+    "Undo the email change",
+    `<p>This moves your VerseMate account back to this email address, removes its password and signs it out everywhere. Afterwards, set a new password with "Forgot password".</p><form method="post" action="revert-email-change">
+<input type="hidden" name="key" value="${escapeHtml(key)}">
+<button type="submit">Undo the change</button>
+</form>`,
+  );
+}
+
+export function emailChangeReverted() {
+  return page(
+    200,
+    "The change was undone",
+    '<p>Your VerseMate account uses this email address again and was signed out everywhere. Set a new password with "Forgot password" in VerseMate to sign in.</p>',
   );
 }
