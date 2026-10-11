@@ -1,3 +1,5 @@
+import { ValidationError } from "../../common/errors";
+
 /**
  * resolveLanguageCode — alias resolver for BCP-47 language tags.
  *
@@ -21,8 +23,6 @@
  */
 
 /** Default region for each base language code where multiple regions might exist. */
-import { ValidationError } from "../../common/errors";
-
 const DEFAULT_REGIONS: Record<string, string> = {
   en: "US",
   pt: "BR",

@@ -875,28 +875,76 @@ describe("the sign-in answer does not tell whether an account exists", () => {
     expect(data?.accessToken).toBeString();
   });
 
-  it("a password reset typed in another case reaches the account", async () => {
-    let sent = 0;
+  it("a password reset typed in another case reaches the account, preferring an exact match", async () => {
+    const mails: string[] = [];
+    let token = "";
     const sendEmail = spyOn(
       Backend.store.notification,
       "sendEmail",
-    ).mockImplementation(() => {
-      sent += 1;
+    ).mockImplementation((message) => {
+      mails.push(message.to.email);
+      token = message.text.split("?key=").at(-1) ?? "";
       return Promise.resolve({ delivered: true });
     });
+    const local = `reset${faker.string.alphanumeric(10).toLowerCase()}`;
+    const lower = `${local}@example.test`;
+    const mixed = `${local.slice(0, 3).toUpperCase()}${local.slice(3)}@example.test`;
+    const oldPassword = "OldPassw0rd!";
+    const hash = await Bun.password.hash(oldPassword, {
+      algorithm: "bcrypt",
+      cost: 4,
+    });
+    created.push(lower, mixed);
+    const digest = createHash("sha256").update(lower).digest("base64url");
     try {
-      const known = await account(faker.internet.password());
-      const { data } = await client.auth["forgot-password"].post(
-        { email: known.toUpperCase() },
-        { headers: { "x-forwarded-for": "192.0.2.78" } },
-      );
+      await connection()
+        .insertInto("user")
+        .values([
+          {
+            email: mixed,
+            firstName: "Older",
+            lastName: "Account",
+            password: hash,
+            createdAt: "2020-01-01T00:00:00Z",
+          },
+          {
+            email: lower,
+            firstName: "Newer",
+            lastName: "Account",
+            password: hash,
+          },
+        ])
+        .execute();
+      const reset = (email: string) =>
+        client.auth["forgot-password"].post(
+          { email },
+          { headers: { "x-forwarded-for": "192.0.2.78" } },
+        );
+
+      await reset(lower.toUpperCase());
+      await reset(mixed);
+      await reset(lower);
+      expect(mails).toEqual([mixed, mixed, lower]);
+
+      const newPassword = "NewPassw0rd!";
+      const { data } = await client.auth["reset-password"].post({
+        key: token,
+        password: newPassword,
+      });
       expect(data).toEqual({ success: true });
-      expect(sent).toBe(1);
+      const signIn = async (email: string, password: string) =>
+        (await client.auth.login.post({ email, password })).status;
+      expect(await signIn(lower, newPassword)).toBe(200);
+      expect(await signIn(mixed, oldPassword)).toBe(200);
+      expect(await signIn(mixed, newPassword)).toBe(401);
     } finally {
       sendEmail.mockRestore();
-      await Backend.store.cache.delete(
+      for (const key of [
         "rate-limit:forgot-password-ip:192.0.2.78",
-      );
+        `rate-limit:forgot-password:${digest}:192.0.2.78`,
+        `rate-limit:forgot-password-email:${digest}`,
+      ])
+        await Backend.store.cache.delete(key);
     }
   });
 
@@ -1024,5 +1072,38 @@ describe("password reset limits through the route", () => {
     for (let i = 0; i < 4; i++) other.push(await reset(otherAddress));
     expect(other).toEqual([200, 200, 200, 429]);
     expect(await reset(victimAddress)).toBe(200);
+  });
+
+  it("an address over its hourly limit does not use up the email's ceiling", async () => {
+    const addresses = [1, 2, 3, 4].map(
+      (n) => `198.18.${octet()}.${n * 50 + (octet() % 40)}`,
+    );
+    const keys: string[] = [];
+    try {
+      for (const address of addresses) {
+        keys.push(`rate-limit:forgot-password-ip:${address}`);
+        keys.push(
+          `rate-limit:forgot-password:${createHash("sha256").update(email).digest("base64url")}:${address}`,
+        );
+        for (let i = 0; i < 20; i++) {
+          const other = faker.internet.email().toLocaleLowerCase();
+          const digest = createHash("sha256").update(other).digest("base64url");
+          keys.push(
+            `rate-limit:forgot-password:${digest}:${address}`,
+            `rate-limit:forgot-password-email:${digest}`,
+          );
+          await client.auth["forgot-password"].post(
+            { email: other },
+            { headers: { "x-forwarded-for": address } },
+          );
+        }
+        const refused = [];
+        for (let i = 0; i < 3; i++) refused.push(await reset(address));
+        expect(refused).toEqual([429, 429, 429]);
+      }
+      expect(await reset(victimAddress)).toBe(200);
+    } finally {
+      for (const key of keys) await cache.delete(key);
+    }
   });
 });

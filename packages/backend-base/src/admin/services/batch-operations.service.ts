@@ -133,7 +133,7 @@ export class BatchOperationService {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-discovery");
     if (!prompt) {
-      throw new NotFoundError("No active topic-discovery prompt found.");
+      throw new ConflictError("No active topic-discovery prompt found.");
     }
 
     const discoveryTopicType = category || "all";
@@ -253,7 +253,7 @@ export class BatchOperationService {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-references");
     if (!prompt) {
-      throw new NotFoundError("No active topic-references prompt found.");
+      throw new ConflictError("No active topic-references prompt found.");
     }
 
     const batchRequests: BatchJobRequest[] = topics.map((topic) => ({
@@ -341,26 +341,6 @@ export class BatchOperationService {
   ) {
     const connection = this.db.getOrCreateConnection();
 
-    // 1. Create the Parent Batch Job
-    const parentBatch = await connection
-      .insertInto("batch_jobs")
-      .values({
-        batch_type: "topic-explanations-parent",
-        status: "in_progress",
-        model,
-        created_by: adminUserId,
-        bible_version: languageCode,
-        explanation_types: explanationTypes,
-        topic_category: category || null,
-        topic_id: topicId || null,
-        max_output_tokens: maxOutputTokens,
-      })
-      .returning("id")
-      .executeTakeFirstOrThrow();
-
-    const parentBatchId = parentBatch.id;
-
-    // 2. Find all topics that have active references
     let query = connection
       .selectFrom("topics")
       .innerJoin(
@@ -407,6 +387,24 @@ export class BatchOperationService {
           : "No topics found with active references to generate explanations for.",
       );
     }
+
+    const parentBatch = await connection
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "topic-explanations-parent",
+        status: "in_progress",
+        model,
+        created_by: adminUserId,
+        bible_version: languageCode,
+        explanation_types: explanationTypes,
+        topic_category: category || null,
+        topic_id: topicId || null,
+        max_output_tokens: maxOutputTokens,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    const parentBatchId = parentBatch.id;
 
     // Update the parent batch with the total number of child batches to be created.
     await connection
@@ -1095,7 +1093,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!rephrasePrompt) {
-      throw new NotFoundError(
+      throw new ConflictError(
         "No active rephrase prompt found in the database.",
       );
     }
@@ -1375,7 +1373,7 @@ export class BatchOperationService {
     if (!translatePrompt) {
       const error = "No active translate prompt found in the database.";
       console.error(`[BATCH] ${error}`);
-      throw new NotFoundError(error);
+      throw new ConflictError(error);
     }
 
     console.log("[BATCH] Found active translate prompt");
@@ -2309,7 +2307,7 @@ export class BatchOperationService {
 
     const systemPrompt = await this.promptRepository.getActivePrompt();
     if (!systemPrompt) {
-      throw new NotFoundError("No active system prompt found");
+      throw new ConflictError("No active system prompt found");
     }
 
     const version = await connection
@@ -5009,7 +5007,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!translatePrompt) {
-      throw new NotFoundError("No active topic-translate prompt found");
+      throw new ConflictError("No active topic-translate prompt found");
     }
 
     const language = getLanguageName(target_language_code);
@@ -5217,7 +5215,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!translatePrompt) {
-      throw new NotFoundError("No active topic-translate prompt found");
+      throw new ConflictError("No active topic-translate prompt found");
     }
 
     const language = getLanguageName(target_language_code);
@@ -5686,7 +5684,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!highlightPrompt) {
-      throw new NotFoundError("No active auto-highlight prompt found.");
+      throw new ConflictError("No active auto-highlight prompt found.");
     }
 
     const batchRequests: BatchJobRequest[] = [
@@ -6025,7 +6023,7 @@ export class BatchOperationService {
     if (!studyPrompt) {
       const error = "No active translate-study prompt found in the database.";
       console.error(`[BATCH] ${error}`);
-      throw new NotFoundError(error);
+      throw new ConflictError(error);
     }
     const instruction = studyPrompt.prompt.replace("{language}", languageName);
 
