@@ -4,11 +4,7 @@ import { db as Database } from "database";
 import { Elysia } from "elysia";
 import { UserService } from "../user/user.service";
 
-import {
-  isUnexpectedError,
-  unexpectedErrorResponse,
-} from "../common/error-handler";
-import { ApiError } from "../common/errors";
+import { answerError } from "../common/error-handler";
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
 import { batchMonitoringWorker } from "../queue/queue";
@@ -81,14 +77,7 @@ async function maybeCurrentUserId({
 
 const answeredErrors = new Elysia({ name: "answered-errors" }).onError(
   { as: "global" },
-  ({ code, error, path, set }) => {
-    if (error instanceof ApiError) {
-      set.status = error.status;
-      return error.toResponse();
-    }
-    if (isUnexpectedError(code, error))
-      return unexpectedErrorResponse(path, error, set);
-  },
+  ({ code, error, path, set }) => answerError(path, code, error, set),
 );
 
 const setup = new Elysia({ name: "shared" })
@@ -111,7 +100,11 @@ const setup = new Elysia({ name: "shared" })
     }) => {
       // NOT_FOUND is expected HTTP behavior (404s), not an application exception
       if (code === "NOT_FOUND") return;
-      if ((error as { status?: unknown }).status === 429) return;
+      if (
+        !(error instanceof Error) &&
+        (error as { status?: unknown }).status === 429
+      )
+        return;
 
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,

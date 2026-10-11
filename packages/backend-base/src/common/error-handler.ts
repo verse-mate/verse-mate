@@ -1,22 +1,20 @@
+import { ElysiaCustomStatusResponse, NotFoundError } from "elysia";
+
 import { ApiError } from "./errors";
 
-const ELYSIA_REQUEST_ERRORS = new Set([
-  "VALIDATION",
-  "NOT_FOUND",
+const REQUEST_ERRORS = new Set([
   "PARSE",
   "INVALID_COOKIE_SIGNATURE",
   "INVALID_FILE_TYPE",
 ]);
+const MAX_RETRY_AFTER = 24 * 60 * 60;
 
-export const isUnexpectedError = (code: unknown, error: unknown): boolean =>
-  error instanceof Error &&
-  !(error instanceof ApiError) &&
-  !ELYSIA_REQUEST_ERRORS.has(String(code));
+type ResponseSet = { status?: number | string };
 
 export function unexpectedErrorResponse(
   source: string,
   error: unknown,
-  set: { status?: number | string },
+  set: ResponseSet,
 ) {
   console.error(`Unhandled error in ${source}:`, error);
   set.status = 500;
@@ -24,6 +22,78 @@ export function unexpectedErrorResponse(
     error: "INTERNAL_SERVER_ERROR",
     message: "An unexpected error occurred",
   };
+}
+
+const statusOf = (error: unknown): unknown =>
+  typeof error === "object" && error !== null
+    ? (error as { status?: unknown }).status
+    : undefined;
+
+function rateLimitResponse(source: string, error: object, set: ResponseSet) {
+  set.status = 429;
+  const { retryAfter: wait, message: text } = error as {
+    retryAfter?: unknown;
+    message?: unknown;
+  };
+  const retryAfter =
+    typeof wait === "number" && wait > 0
+      ? Math.min(wait, MAX_RETRY_AFTER)
+      : undefined;
+  const message =
+    !(error instanceof Error) && typeof text === "string"
+      ? text
+      : "Too many requests";
+
+  if (process.env.NODE_ENV !== "production") {
+    console.debug(
+      `Rate limit hit in ${source}${retryAfter ? ` (retry after ${retryAfter}s)` : ""}: ${message}`,
+    );
+  }
+
+  return {
+    error: "TOO_MANY_REQUESTS",
+    message,
+    ...(typeof retryAfter === "number" ? { retryAfter } : {}),
+  };
+}
+
+export function answerError(
+  source: string,
+  code: unknown,
+  error: unknown,
+  set: ResponseSet,
+) {
+  if (error instanceof ApiError) {
+    if (error.status >= 500) return unexpectedErrorResponse(source, error, set);
+    set.status = error.status;
+    return error.toResponse();
+  }
+  if (code === "VALIDATION") {
+    set.status = 422;
+    return {
+      error: "VALIDATION_ERROR",
+      message: "Invalid request data",
+    };
+  }
+  if (REQUEST_ERRORS.has(String(code))) {
+    const status = statusOf(error);
+    set.status =
+      typeof status === "number" && status >= 400 && status < 500
+        ? status
+        : 400;
+    return {
+      error: "BAD_REQUEST",
+      message: "Invalid request",
+    };
+  }
+  if (statusOf(error) === 429)
+    return rateLimitResponse(source, error as object, set);
+  if (
+    error instanceof ElysiaCustomStatusResponse ||
+    error instanceof NotFoundError
+  )
+    return undefined;
+  return unexpectedErrorResponse(source, error, set);
 }
 
 /**
@@ -35,64 +105,16 @@ export function unexpectedErrorResponse(
 export const createErrorHandler = (pluginName: string) => {
   return async (context: any) => {
     const { code, error, set } = context;
-    // Handle custom API errors
-    if (error instanceof ApiError) {
-      set.status = error.status;
-      return error.toResponse();
+    if (code === "NOT_FOUND" && !(error instanceof ApiError)) {
+      set.status = 404;
+      return {
+        error: "NOT_FOUND",
+        message: "Route not found",
+      };
     }
-
-    // Handle Elysia built-in errors
-    switch (code) {
-      case "VALIDATION":
-        set.status = 422;
-        return {
-          error: "VALIDATION_ERROR",
-          message: "Invalid request data",
-        };
-      case "NOT_FOUND":
-        set.status = 404;
-        return {
-          error: "NOT_FOUND",
-          message: "Route not found",
-        };
-      default:
-        // Detect rate limit errors (plain objects with status: 429)
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          "status" in error &&
-          (error as any).status === 429
-        ) {
-          set.status = 429;
-
-          const MAX_RETRY_AFTER = 24 * 60 * 60;
-          const retryAfter =
-            typeof (error as any).retryAfter === "number" &&
-            (error as any).retryAfter > 0
-              ? Math.min((error as any).retryAfter, MAX_RETRY_AFTER)
-              : undefined;
-
-          if (process.env.NODE_ENV !== "production") {
-            const msg =
-              typeof (error as any).message === "string"
-                ? (error as any).message
-                : "Too many requests";
-            console.debug(
-              `Rate limit hit in ${pluginName}${retryAfter ? ` (retry after ${retryAfter}s)` : ""}: ${msg}`,
-            );
-          }
-
-          return {
-            error: "TOO_MANY_REQUESTS",
-            message:
-              typeof (error as any).message === "string"
-                ? (error as any).message
-                : "Too many requests",
-            ...(typeof retryAfter === "number" ? { retryAfter } : {}),
-          };
-        }
-
-        return unexpectedErrorResponse(pluginName, error, set);
-    }
+    return (
+      answerError(pluginName, code, error, set) ??
+      unexpectedErrorResponse(pluginName, error, set)
+    );
   };
 };
