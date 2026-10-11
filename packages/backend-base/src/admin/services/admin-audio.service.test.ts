@@ -15,7 +15,10 @@ import {
   type AudioGenerationJobData,
   audioGenerationJobId,
 } from "../../bible/audio/audio-generation.queue";
+import { ValidationError } from "../../common/errors";
 import { AdminAudioService } from "./admin-audio.service";
+
+const DEFAULT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
 
 class FakeQueue {
   public addCalls: Array<{
@@ -156,16 +159,39 @@ describe("AdminAudioService.bulkRegenerate", () => {
     ]);
   });
 
-  it("explicit voice + language override per-explanation defaults", async () => {
+  it("an explicit regional form of the explanations' language is queued as given", async () => {
     await makeService().bulkRegenerate({
-      explanationIds: [1, 4],
-      voice: "nova",
-      language: "pt",
+      explanationIds: [1, 2],
+      voice: DEFAULT_VOICE,
+      language: "en-US",
     });
-    expect(queue.addCalls.every((c) => c.data.voice === "nova")).toBe(true);
-    expect(queue.addCalls.every((c) => c.data.language_code === "pt")).toBe(
+    expect(queue.addCalls).toHaveLength(2);
+    expect(queue.addCalls.every((c) => c.data.voice === DEFAULT_VOICE)).toBe(
       true,
     );
+    expect(queue.addCalls.every((c) => c.data.language_code === "en-US")).toBe(
+      true,
+    );
+  });
+
+  it("refuses a voice the product does not offer and queues nothing", async () => {
+    await expect(
+      makeService().bulkRegenerate({
+        explanationIds: [1, 2],
+        voice: DEFAULT_VOICE === "nova" ? "alloy" : "nova",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(queue.addCalls).toHaveLength(0);
+  });
+
+  it("refuses a language outside any selected explanation's forms and queues nothing", async () => {
+    await expect(
+      makeService().bulkRegenerate({
+        explanationIds: [1, 4],
+        language: "pt",
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(queue.addCalls).toHaveLength(0);
   });
 
   it("already-in-flight job is not re-enqueued (br-audio-006 dedup)", async () => {

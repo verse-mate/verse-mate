@@ -598,8 +598,8 @@ describe("AudioService", () => {
       await expectRejected({ language: "fr" });
     });
 
-    it("rejects an enabled language with no explanations", async () => {
-      await expectRejected({ language: "de" });
+    it("serves the explanation's language for an enabled language with no explanations", async () => {
+      expect(await queuedLanguage("de")).toBe("en");
     });
 
     it("rejects a regional form of the explanation's language nobody offers", async () => {
@@ -703,6 +703,35 @@ describe("AudioService", () => {
         );
       },
     );
+
+    it.each([
+      `audio-gen:99999999999:${DEFAULT_VOICE}:en`,
+      `audio-gen:2147483648:${DEFAULT_VOICE}:en`,
+      `audio-gen:00000000042:${DEFAULT_VOICE}:en`,
+    ])(
+      "answers 404 for the out-of-range job id %p without a lookup",
+      async (jobId) => {
+        let lookups = 0;
+        const service = new AudioService(
+          {
+            getOrCreateConnection: () => {
+              lookups += 1;
+              throw new Error("integer out of range");
+            },
+          } as never,
+          storage as unknown as ObjectStorageService,
+          new FakeOpenAiProvider(),
+          queue as unknown as Queue<AudioGenerationJobData>,
+          repo,
+        );
+        for (const user of [null, "u-1"]) {
+          await expect(
+            service.getJobStatus(jobId, user),
+          ).rejects.toBeInstanceOf(NotFoundError);
+        }
+        expect(lookups).toBe(0);
+      },
+    );
   });
 
   describe("synthesis limit hook", () => {
@@ -775,6 +804,51 @@ describe("AudioService", () => {
         beforeSynthesis,
       });
       expect(calls).toBe(0);
+    });
+  });
+
+  describe("queued job synthesis", () => {
+    function jobService(exp: ExplanationRow = explanation) {
+      return makeService(new FakeOpenAiProvider(), [genesis1], [exp]);
+    }
+
+    it.each([
+      {
+        voice: DEFAULT_VOICE === "nova" ? "alloy" : "nova",
+        language_code: "en",
+      },
+      { voice: DEFAULT_VOICE, language_code: "pt-BR" },
+      { voice: DEFAULT_VOICE, language_code: "en/../x" },
+    ])("refuses the variant %p the product does not offer", async (variant) => {
+      await expect(
+        jobService().synthesizeQueuedJob({ explanation_id: 42, ...variant }),
+      ).rejects.toBeInstanceOf(ValidationError);
+      expect(storage.uploaded.length).toBe(0);
+      expect(repo.upsertCalls).toBe(0);
+    });
+
+    it.each(["en", "en-US"])(
+      "synthesizes the product voice in the explanation's form %s",
+      async (language_code) => {
+        const row = await jobService().synthesizeQueuedJob({
+          explanation_id: 42,
+          voice: DEFAULT_VOICE,
+          language_code,
+        });
+        expect(row.language_code).toBe(language_code);
+        expect(row.character_count).toBe(explanation.explanation.length);
+        expect(storage.uploaded.length).toBe(1);
+      },
+    );
+
+    it("fails for an explanation that no longer exists", async () => {
+      await expect(
+        jobService().synthesizeQueuedJob({
+          explanation_id: 7,
+          voice: DEFAULT_VOICE,
+          language_code: "en",
+        }),
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
   });
 

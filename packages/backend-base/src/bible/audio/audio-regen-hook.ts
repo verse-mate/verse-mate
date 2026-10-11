@@ -1,7 +1,11 @@
 import { db as Database } from "database";
 import type ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import { ObjectStorageService } from "../../shared/storage/storage.service";
-import { AudioService, type AudioVariant } from "./audio.service";
+import {
+  AudioService,
+  type AudioVariant,
+  isProductVariant,
+} from "./audio.service";
 
 /**
  * TASK-003: replace an explanation's active row with a new version in a
@@ -76,7 +80,9 @@ export async function replaceExplanationWithAudioHook(params: {
 
       const uniqueVariants = Array.from(
         new Map(
-          allVariants.map((v) => [`${v.voice}:${v.language_code}`, v]),
+          allVariants
+            .filter((v) => isProductVariant(params.language_code, v))
+            .map((v) => [`${v.voice}:${v.language_code}`, v]),
         ).values(),
       );
 
