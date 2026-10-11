@@ -33,6 +33,7 @@ import {
 } from "./schemas/auth-response.schema";
 import { ssoProviderFactory } from "./sso/sso-provider.factory";
 import {
+  type FrontendCallbackParams,
   SSO_STATE_TTL,
   buildAppleOAuthUrl,
   buildFrontendCallbackUrl,
@@ -41,6 +42,7 @@ import {
   extractClientIp,
   getSSOConfig,
   isSSOChallenge,
+  ssoReturnOrigin,
 } from "./sso/sso.utils";
 
 const SSO_START_FAILED = {
@@ -430,7 +432,11 @@ const plugin = new Elysia()
 
           if (!isSSOChallenge(query.challenge)) {
             return createRedirectResponse(
-              buildFrontendCallbackUrl("google", SSO_START_FAILED),
+              buildFrontendCallbackUrl(
+                "google",
+                SSO_START_FAILED,
+                query.returnTo,
+              ),
             );
           }
 
@@ -441,6 +447,7 @@ const plugin = new Elysia()
             {
               provider: "google",
               challenge: query.challenge,
+              returnOrigin: ssoReturnOrigin(query.returnTo),
               createdAt: Date.now(),
             },
             `${SSO_STATE_TTL}s`,
@@ -451,6 +458,7 @@ const plugin = new Elysia()
           return createRedirectResponse(authUrl);
         },
         {
+          beforeHandle: authRateLimiters.ssoRedirect,
           response: {
             302: t.Any(),
             ...StandardErrorResponses,
@@ -497,9 +505,10 @@ const plugin = new Elysia()
           }
 
           // Check state in Redis
-          const storedState = await cache.get<{
+          const storedState = await cache.take<{
             provider: string;
             challenge?: string;
+            returnOrigin?: string;
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
@@ -519,20 +528,22 @@ const plugin = new Elysia()
             );
           }
 
-          // Delete used state to prevent replay attacks
-          await cache.delete(cacheConstants.ssoState(state));
+          const callbackUrl = (params: FrontendCallbackParams) =>
+            buildFrontendCallbackUrl(
+              "google",
+              params,
+              storedState.returnOrigin,
+            );
 
           const challenge = storedState.challenge;
           if (!isSSOChallenge(challenge)) {
-            return createRedirectResponse(
-              buildFrontendCallbackUrl("google", SSO_STATE_INVALID),
-            );
+            return createRedirectResponse(callbackUrl(SSO_STATE_INVALID));
           }
 
           // Verify authorization code is present
           if (!code) {
             return createRedirectResponse(
-              buildFrontendCallbackUrl("google", {
+              callbackUrl({
                 error: "missing_code",
                 errorDescription: "Missing authorization code",
               }),
@@ -561,7 +572,7 @@ const plugin = new Elysia()
             );
 
             return createRedirectResponse(
-              buildFrontendCallbackUrl("google", {
+              callbackUrl({
                 code: await authService.issueSSOExchangeCode(
                   authPayload,
                   challenge,
@@ -572,7 +583,7 @@ const plugin = new Elysia()
             // Log error internally but don't expose details to frontend
             console.error("Google SSO callback error:", err);
             return createRedirectResponse(
-              buildFrontendCallbackUrl("google", {
+              callbackUrl({
                 error: "auth_failed",
                 errorDescription: "OAuth authentication failed",
               }),
@@ -605,7 +616,11 @@ const plugin = new Elysia()
 
           if (!isSSOChallenge(query.challenge)) {
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", SSO_START_FAILED),
+              buildFrontendCallbackUrl(
+                "apple",
+                SSO_START_FAILED,
+                query.returnTo,
+              ),
             );
           }
 
@@ -616,6 +631,7 @@ const plugin = new Elysia()
             {
               provider: "apple",
               challenge: query.challenge,
+              returnOrigin: ssoReturnOrigin(query.returnTo),
               createdAt: Date.now(),
             },
             `${SSO_STATE_TTL}s`,
@@ -626,6 +642,7 @@ const plugin = new Elysia()
           return createRedirectResponse(authUrl);
         },
         {
+          beforeHandle: authRateLimiters.ssoRedirect,
           response: {
             302: t.Any(),
             ...StandardErrorResponses,
@@ -672,9 +689,10 @@ const plugin = new Elysia()
           }
 
           // Check state in Redis
-          const storedState = await cache.get<{
+          const storedState = await cache.take<{
             provider: string;
             challenge?: string;
+            returnOrigin?: string;
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
@@ -694,20 +712,18 @@ const plugin = new Elysia()
             );
           }
 
-          // Delete used state to prevent replay attacks
-          await cache.delete(cacheConstants.ssoState(state));
+          const callbackUrl = (params: FrontendCallbackParams) =>
+            buildFrontendCallbackUrl("apple", params, storedState.returnOrigin);
 
           const challenge = storedState.challenge;
           if (!isSSOChallenge(challenge)) {
-            return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", SSO_STATE_INVALID),
-            );
+            return createRedirectResponse(callbackUrl(SSO_STATE_INVALID));
           }
 
           // Verify authorization code is present
           if (!code) {
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
+              callbackUrl({
                 error: "missing_code",
                 errorDescription: "Missing authorization code",
               }),
@@ -736,7 +752,7 @@ const plugin = new Elysia()
             );
 
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
+              callbackUrl({
                 code: await authService.issueSSOExchangeCode(
                   authPayload,
                   challenge,
@@ -747,7 +763,7 @@ const plugin = new Elysia()
             // Log error internally but don't expose details to frontend
             console.error("Apple SSO callback error:", err);
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
+              callbackUrl({
                 error: "auth_failed",
                 errorDescription: "OAuth authentication failed",
               }),
@@ -801,9 +817,10 @@ const plugin = new Elysia()
           }
 
           // Check state in Redis
-          const storedState = await cache.get<{
+          const storedState = await cache.take<{
             provider: string;
             challenge?: string;
+            returnOrigin?: string;
             createdAt: number;
           }>(cacheConstants.ssoState(state));
 
@@ -816,21 +833,19 @@ const plugin = new Elysia()
             );
           }
 
-          // Delete used state to prevent replay attacks
-          await cache.delete(cacheConstants.ssoState(state));
+          const callbackUrl = (params: FrontendCallbackParams) =>
+            buildFrontendCallbackUrl("apple", params, storedState.returnOrigin);
 
           const challenge = storedState.challenge;
           if (!isSSOChallenge(challenge)) {
-            return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", SSO_STATE_INVALID),
-            );
+            return createRedirectResponse(callbackUrl(SSO_STATE_INVALID));
           }
 
           // Apple can send either code or id_token
           const tokenToVerify = code || id_token;
           if (!tokenToVerify) {
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
+              callbackUrl({
                 error: "missing_code",
                 errorDescription: "Missing authorization code or ID token",
               }),
@@ -896,7 +911,7 @@ const plugin = new Elysia()
             );
 
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
+              callbackUrl({
                 code: await authService.issueSSOExchangeCode(
                   authPayload,
                   challenge,
@@ -907,7 +922,7 @@ const plugin = new Elysia()
             // Log error internally but don't expose details to frontend
             console.error("Apple SSO callback error (POST):", err);
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
+              callbackUrl({
                 error: "auth_failed",
                 errorDescription: "OAuth authentication failed",
               }),
