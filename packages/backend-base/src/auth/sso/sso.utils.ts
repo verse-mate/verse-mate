@@ -10,6 +10,8 @@ import { clientIp } from "../../common/client-ip";
 // OAuth state TTL in seconds (10 minutes)
 export const SSO_STATE_TTL = 600;
 
+export const SSO_EXCHANGE_CODE_TTL = 60;
+
 /**
  * SSO configuration interface
  */
@@ -72,23 +74,12 @@ export function buildAppleOAuthUrl(state: string): string {
   return `https://appleid.apple.com/auth/authorize?${params.toString()}`;
 }
 
-/**
- * Parameters for building frontend callback URL
- */
 export interface FrontendCallbackParams {
-  accessToken?: string;
-  verified?: boolean;
+  code?: string;
   error?: string;
   errorDescription?: string;
 }
 
-/**
- * Build frontend callback URL with tokens or error
- *
- * @param provider - SSO provider (google or apple)
- * @param params - Callback parameters (tokens or error)
- * @returns Full frontend callback URL
- */
 export function buildFrontendCallbackUrl(
   provider: "google" | "apple",
   params: FrontendCallbackParams,
@@ -96,11 +87,8 @@ export function buildFrontendCallbackUrl(
   const config = getSSOConfig();
   const searchParams = new URLSearchParams();
 
-  if (params.accessToken) {
-    searchParams.set("accessToken", params.accessToken);
-  }
-  if (params.verified !== undefined) {
-    searchParams.set("verified", String(params.verified));
+  if (params.code) {
+    searchParams.set("code", params.code);
   }
   if (params.error) {
     searchParams.set("error", params.error);

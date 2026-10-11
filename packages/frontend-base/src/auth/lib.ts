@@ -41,6 +41,7 @@ export const SUPPORT_EMAIL = "support@my-domain.com";
  */
 export interface SSOCallbackResult {
   success: boolean;
+  code?: string;
   accessToken?: string;
   refreshToken?: string;
   verified?: boolean;
@@ -89,13 +90,17 @@ export function parseSSOCallbackParams(
       ? new URLSearchParams(searchParams)
       : searchParams;
 
+  const code = params.get("code");
   const accessToken = params.get("accessToken");
   const refreshToken = params.get("refreshToken");
   const verified = params.get("verified");
   const error = params.get("error");
   const errorDescription = params.get("error_description");
 
-  // Check if we have tokens (success case)
+  if (code) {
+    return { success: true, code };
+  }
+
   if (accessToken) {
     return {
       success: true,
@@ -239,46 +244,49 @@ export function setupPostLoginBehavior(): void {
   }
 }
 
-/**
- * Complete SSO callback flow: parse params, store tokens, and get redirect URL.
- * This is a convenience function that combines all the SSO callback handling steps.
- *
- * @param searchParams - URL search parameters from the callback
- * @returns Object with success status and redirect URL or error message
- */
-export function handleSSOCallback(searchParams: string | URLSearchParams): {
+export type SSOCodeExchange = (
+  code: string,
+) => Promise<{ accessToken: string; verified: boolean }>;
+
+async function sessionTokenFrom(
+  result: SSOCallbackResult,
+  exchangeCode: SSOCodeExchange,
+): Promise<string | undefined> {
+  if (!result.code) return result.accessToken;
+  try {
+    return (await exchangeCode(result.code)).accessToken;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function handleSSOCallback(
+  searchParams: string | URLSearchParams,
+  exchangeCode: SSOCodeExchange,
+): Promise<{
   success: boolean;
   redirectUrl?: string;
   error?: string;
   errorMessage?: string;
-} {
-  const result = parseSSOCallbackParams(searchParams);
+}> {
+  const parsed = parseSSOCallbackParams(searchParams);
 
-  if (result.success && result.accessToken) {
-    // Store tokens
-    storeSSOTokens(result.accessToken, result.refreshToken);
-
-    // Setup post-login behavior
-    setupPostLoginBehavior();
-
-    // Get redirect destination
-    const redirectUrl = getSSORedirectDestination();
-
-    return {
-      success: true,
-      redirectUrl,
-    };
+  if (parsed.success) {
+    const accessToken = await sessionTokenFrom(parsed, exchangeCode);
+    if (accessToken) {
+      storeSSOTokens(accessToken, parsed.refreshToken);
+      setupPostLoginBehavior();
+      return { success: true, redirectUrl: getSSORedirectDestination() };
+    }
   }
 
-  // Handle error
-  const errorMessage = getSSOErrorMessage(
-    result.error || "unknown_error",
-    result.errorDescription,
-  );
-
+  const error = parsed.success ? "auth_failed" : parsed.error;
   return {
     success: false,
-    error: result.error,
-    errorMessage,
+    error,
+    errorMessage: getSSOErrorMessage(
+      error || "unknown_error",
+      parsed.errorDescription,
+    ),
   };
 }

@@ -25,6 +25,10 @@ import {
   storeSSOTokens,
 } from "./lib";
 
+const rejectExchange = async (): Promise<never> => {
+  throw new Error("no code in these callbacks");
+};
+
 // Mock browser APIs for testing
 const mockLocalStorage: Record<string, string> = {};
 const mockCookies: string[] = [];
@@ -338,14 +342,14 @@ describe("SSO Callback Utilities", () => {
   });
 
   describe("handleSSOCallback", () => {
-    it("should complete full success flow", () => {
+    it("should complete full success flow", async () => {
       const params = new URLSearchParams({
         accessToken: "success-token",
         refreshToken: "success-refresh",
         verified: "true",
       });
 
-      const result = handleSSOCallback(params);
+      const result = await handleSSOCallback(params, rejectExchange);
 
       expect(result.success).toBe(true);
       expect(result.redirectUrl).toBe("/");
@@ -353,7 +357,7 @@ describe("SSO Callback Utilities", () => {
       expect(mockCookies.some((c) => c.includes("success-token"))).toBe(true);
     });
 
-    it("should preserve original destination from localStorage", () => {
+    it("should preserve original destination from localStorage", async () => {
       mockLocalStorage.redirectTo = "/bible?bookId=5&verseId=10";
 
       const params = new URLSearchParams({
@@ -361,35 +365,96 @@ describe("SSO Callback Utilities", () => {
         verified: "true",
       });
 
-      const result = handleSSOCallback(params);
+      const result = await handleSSOCallback(params, rejectExchange);
 
       expect(result.success).toBe(true);
       expect(result.redirectUrl).toBe("/bible?bookId=5&verseId=10");
     });
 
-    it("should return error details on failure", () => {
+    it("should return error details on failure", async () => {
       const params = new URLSearchParams({
         error: "access_denied",
         error_description: "User denied",
       });
 
-      const result = handleSSOCallback(params);
+      const result = await handleSSOCallback(params, rejectExchange);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("access_denied");
       expect(result.errorMessage).toBeDefined();
     });
 
-    it("should setup post-login behavior on success", () => {
+    it("should setup post-login behavior on success", async () => {
       const params = new URLSearchParams({
         accessToken: "token",
         verified: "true",
       });
 
-      handleSSOCallback(params);
+      await handleSSOCallback(params, rejectExchange);
 
       expect(mockLocalStorage.postLoginRedirect).toBeDefined();
     });
+  });
+});
+
+describe("SSO callback code exchange", () => {
+  beforeEach(() => {
+    setupBrowserMocks();
+    clearBrowserMocks();
+  });
+
+  afterEach(() => {
+    clearBrowserMocks();
+  });
+
+  it("prefers the single-use code over a token in the address", () => {
+    const result = parseSSOCallbackParams(
+      new URLSearchParams({ code: "one-time-code", accessToken: "legacy" }),
+    );
+
+    expect(result).toEqual({ success: true, code: "one-time-code" });
+  });
+
+  it("trades the code for the session and stores it", async () => {
+    const exchanged: string[] = [];
+    mockLocalStorage.redirectTo = "/admin/prompts";
+
+    const result = await handleSSOCallback(
+      new URLSearchParams({ code: "one-time-code" }),
+      async (code) => {
+        exchanged.push(code);
+        return { accessToken: "session-token", verified: true };
+      },
+    );
+
+    expect(exchanged).toEqual(["one-time-code"]);
+    expect(result).toEqual({ success: true, redirectUrl: "/admin/prompts" });
+    expect(mockCookies.some((c) => c.includes("session-token"))).toBe(true);
+  });
+
+  it("fails without storing anything when the exchange is refused", async () => {
+    const result = await handleSSOCallback(
+      new URLSearchParams({ code: "used-code" }),
+      async () => {
+        throw new Error("Invalid or expired sign-in code");
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("auth_failed");
+    expect(mockCookies).toHaveLength(0);
+  });
+
+  it("still accepts the token parameter older callbacks send", async () => {
+    const result = await handleSSOCallback(
+      new URLSearchParams({ accessToken: "legacy-token", verified: "true" }),
+      async () => {
+        throw new Error("not called");
+      },
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockCookies.some((c) => c.includes("legacy-token"))).toBe(true);
   });
 });
 
