@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import type { cache } from "../shared/shared.plugin";
-import { clientBucket, trustedProxyHops } from "./client-ip";
+import { clientBucket, clientChain, trustedProxyHops } from "./client-ip";
 
 interface RateLimitOptions {
   /**
@@ -92,7 +92,7 @@ export const authRateLimiters = {
     windowSeconds: 3600,
     max: 3,
     keyGenerator: (context) =>
-      `signup:${clientBucket(context.request, context.server)}`,
+      `signup:${clientChain(context.request, context.server)}`,
     message: "Too many signup attempts, please try again later",
   }),
 

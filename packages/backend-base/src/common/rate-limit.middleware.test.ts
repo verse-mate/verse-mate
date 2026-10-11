@@ -227,6 +227,7 @@ describe("the limiter counts atomically", () => {
 });
 
 describe("TRUSTED_PROXY_HOPS is loud when it cannot be read", () => {
+  beforeEach(() => forgetClientIpLogs());
   const request = new Request("http://localhost/", {
     headers: { "x-forwarded-for": "192.0.2.1, 192.0.2.2, 192.0.2.3" },
   });
@@ -375,21 +376,28 @@ const socketOf = (address: string) => ({
 describe("with TRUSTED_PROXY_HOPS unset, every limiter reads the client as main did", () => {
   beforeEach(() => hops(undefined));
 
-  const mainSignup = (h: Record<string, string>) =>
+  type Headers = Record<string, string>;
+  const mainSignup = (h: Headers) =>
     h["x-forwarded-for"] || h["x-real-ip"] || "unknown";
-  const mainFirst = (h: Record<string, string>) =>
+  const mainFirst = (h: Headers) =>
     (h["x-forwarded-for"] ?? "")
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean)[0] ||
     h["x-real-ip"] ||
     undefined;
-  const mainPerRoute = (h: Record<string, string>) =>
+  const mainPerRoute = (h: Headers) =>
     h["x-forwarded-for"]
       ? h["x-forwarded-for"].split(",")[0].trim()
       : "unknown";
+  const main = (h: Headers) => ({
+    signup: mainSignup(h),
+    sso: mainFirst(h) ?? "unknown",
+    session: mainFirst(h),
+    perRoute: mainPerRoute(h),
+  });
 
-  async function read(headers: Record<string, string>) {
+  async function read(headers: Headers) {
     const signup = recordingCache();
     const sso = recordingCache();
     await hit(authRateLimiters.signup, signup as never, PROXY, headers);
@@ -403,50 +411,54 @@ describe("with TRUSTED_PROXY_HOPS unset, every limiter reads the client as main 
     };
   }
 
-  it("a single forwarded address", async () => {
-    const h = { "x-forwarded-for": CLIENT };
-    expect(await read(h)).toEqual({
-      signup: mainSignup(h),
-      sso: mainFirst(h) as string,
-      session: mainFirst(h),
-      perRoute: mainPerRoute(h),
+  const cases: [string, Headers, Partial<ReturnType<typeof main>>][] = [
+    ["a single forwarded address", { "x-forwarded-for": CLIENT }, {}],
+    ["a forwarded chain", { "x-forwarded-for": `${CLIENT}, ${PROXY}` }, {}],
+    [
+      "X-Forwarded-For and X-Real-IP together",
+      { "x-forwarded-for": CLIENT, "x-real-ip": "192.0.2.9" },
+      {},
+    ],
+    [
+      "X-Real-IP alone: the per-route limiter reads it too, where main shared one unknown bucket",
+      { "x-real-ip": CLIENT },
+      { perRoute: CLIENT },
+    ],
+    [
+      "no header at all: the socket, where main shared one unknown bucket",
+      {},
+      { signup: PROXY, sso: PROXY, session: PROXY, perRoute: PROXY },
+    ],
+  ];
+
+  for (const [name, headers, differences] of cases)
+    it(name, async () => {
+      expect(await read(headers)).toEqual({ ...main(headers), ...differences });
     });
-  });
 
-  it("a forwarded chain: the first entry, which main's signup key folded in with the rest", async () => {
-    const h = { "x-forwarded-for": `${CLIENT}, ${PROXY}` };
-    expect(await read(h)).toEqual({
-      signup: CLIENT,
-      sso: mainFirst(h) as string,
-      session: mainFirst(h),
-      perRoute: mainPerRoute(h),
+  it("a caller who prepends someone's address does not share that person's signup bucket", async () => {
+    const victim = await read({ "x-forwarded-for": CLIENT });
+    const attacker = await read({
+      "x-forwarded-for": `${CLIENT}, 203.0.113.66`,
     });
-    expect(mainSignup(h).startsWith(CLIENT)).toBe(true);
+    expect(attacker.signup).not.toBe(victim.signup);
   });
 
-  it("X-Real-IP alone, as main read it for signup, SSO and the session", async () => {
-    const h = { "x-real-ip": CLIENT };
-    const got = await read(h);
-    expect(got.signup).toBe(mainSignup(h));
-    expect(got.sso).toBe(mainFirst(h) as string);
-    expect(got.session).toBe(mainFirst(h) as string);
-    expect(got.perRoute).toBe(CLIENT);
+  it("a proxy that writes unknown first keys signup on the address after it", async () => {
+    expect(
+      (await read({ "x-forwarded-for": `unknown, ${CLIENT}` })).signup,
+    ).toBe(CLIENT);
   });
 
-  it("no header at all: the socket, where main shared one unknown bucket", async () => {
-    expect(await read({})).toEqual({
-      signup: PROXY,
-      sso: PROXY,
-      session: PROXY,
-      perRoute: PROXY,
-    });
-  });
-
-  it("an IPv6 client keeps its full address", () => {
+  it("an IPv6 client keeps its full address, in lower case", () => {
     const request = new Request("http://localhost/", {
-      headers: { "x-forwarded-for": "2001:db8:1:2::7" },
+      headers: { "x-forwarded-for": "2001:DB8:1:2::7" },
     });
     expect(clientBucket(request, socketOf(PROXY))).toBe("2001:db8:1:2::7");
+  });
+
+  it("with no request source at all the session address is empty, not unknown", () => {
+    expect(extractClientIp(new Request("http://localhost/"))).toBeUndefined();
   });
 });
 
@@ -461,6 +473,49 @@ describe("a limiter key is always an address, whatever the header holds", () => 
     const junk = `${"a".repeat(15_000)}`;
     expect(read({ "x-forwarded-for": junk, "x-real-ip": CLIENT })).toBe(CLIENT);
     expect(read({ "x-forwarded-for": junk })).toBe(PROXY);
+    expect(read({ "x-forwarded-for": `fe80::1%${"z".repeat(15_000)}` })).toBe(
+      PROXY,
+    );
+    expect(read({ "x-forwarded-for": "fe80::1%eth0" })).toBe(PROXY);
+  });
+
+  it("an entry that would overflow the /64 arithmetic is not an address", () => {
+    hops("1");
+    for (const entry of [
+      "1:2:3:4:5:6:7:8%a:b:c:d::",
+      "fe80::1%a:b:c:d:e:f:1:2:3",
+    ])
+      expect(
+        clientBucket(
+          new Request("http://localhost/", {
+            headers: { "x-forwarded-for": `${entry}, ${CLIENT}` },
+          }),
+          socketOf(PROXY),
+        ),
+      ).toBe(CLIENT);
+    hops("2");
+    expect(
+      clientBucket(
+        new Request("http://localhost/", {
+          headers: {
+            "x-forwarded-for": "1:2:3:4:5:6:7:8%a:b:c:d::, 192.0.2.4",
+          },
+        }),
+        socketOf(PROXY),
+      ),
+    ).toBe(PROXY);
+  });
+
+  it("every spelling of a v4-mapped address reads as plain IPv4", () => {
+    hops(undefined);
+    for (const mapped of [
+      "::ffff:198.51.100.7",
+      "::FFFF:198.51.100.7",
+      "0:0:0:0:0:ffff:198.51.100.7",
+      "::ffff:c633:6407",
+      "[::ffff:198.51.100.7]:80",
+    ])
+      expect(read({ "x-forwarded-for": mapped })).toBe(CLIENT);
   });
 
   it("ports and brackets are dropped, and a v4-mapped socket reads as plain IPv4", () => {
@@ -496,6 +551,58 @@ describe("a limiter key is always an address, whatever the header holds", () => 
 describe("once the proxy count is set, an IPv6 host cannot step around the limits inside its own network", () => {
   beforeEach(() => hops("1"));
 
+  const inNetwork = (n: number) => `2001:db8:1:2::${n.toString(16)}`;
+
+  for (const [name, limiter, max] of [
+    ["signup", authRateLimiters.signup, 3],
+    ["SSO", authRateLimiters.sso, 10],
+  ] as const)
+    it(`${name}: addresses in one /64 share a bucket; another /64 does not`, async () => {
+      const cache = memoryCache();
+      const results = [];
+      for (let i = 1; i <= max + 1; i++)
+        results.push(
+          await hit(limiter, cache, PROXY, { "x-forwarded-for": inNetwork(i) }),
+        );
+      expect(results.at(-1)).toBe(429);
+      expect(
+        await hit(limiter, cache, PROXY, {
+          "x-forwarded-for": "2001:db8:1:3::1",
+        }),
+      ).toBe("ok");
+    });
+
+  it("login: one account gets five guesses per /64, not per address", async () => {
+    const cache = memoryCache();
+    const results = [];
+    for (let i = 1; i <= 6; i++)
+      results.push(
+        await hit(
+          authRateLimiters.login,
+          cache,
+          PROXY,
+          { "x-forwarded-for": inNetwork(i) },
+          { email: "someone@example.test" },
+        ),
+      );
+    expect(results.at(-1)).toBe(429);
+  });
+
+  it("the per-route limiter: addresses in one /64 are one caller", () => {
+    const limiter = createIpRateLimit(1);
+    const from = (address: string) =>
+      limiter({
+        request: new Request("http://localhost/", {
+          headers: { "x-forwarded-for": address },
+        }),
+        set: {},
+        server: socketOf(PROXY),
+      } as never);
+    expect(from(inNetwork(1))).toBeUndefined();
+    expect(from(inNetwork(2))).toBeDefined();
+    expect(from("2001:db8:1:3::1")).toBeUndefined();
+  });
+
   it("addresses in one /64 share a sign-in bucket; another /64 does not", async () => {
     const cache = memoryCache();
     const from = (address: string) =>
@@ -523,6 +630,7 @@ describe("once the proxy count is set, an IPv6 host cannot step around the limit
     expect(bucket("2001:db8::1")).toBe("2001:db8:0:0::/64");
     expect(bucket("::1")).toBe("0:0:0:0::/64");
     expect(bucket("64:ff9b::192.0.2.1")).toBe("64:ff9b:0:0::/64");
+    expect(bucket("1:2::3:4:5:6.7.8.9")).toBe("1:2:0:3::/64");
     expect(bucket(CLIENT)).toBe(CLIENT);
   });
 });
@@ -535,17 +643,56 @@ describe("a proxy count higher than the chain is reported", () => {
     forgetClientIpLogs();
     const errors = spyOn(console, "error").mockImplementation(() => {});
     try {
-      for (const header of [CLIENT, CLIENT, "", `192.0.2.1, ${CLIENT}`])
+      const picked = [CLIENT, CLIENT, "", `192.0.2.1, ${CLIENT}`].map(
+        (header) =>
+          clientIp(
+            new Request("http://localhost/", {
+              headers: header ? { "x-forwarded-for": header } : {},
+            }),
+            socketOf(PROXY),
+          ),
+      );
+      expect(picked).toEqual([CLIENT, CLIENT, PROXY, "192.0.2.1"]);
+      const lines = errors.mock.calls.flat().join("\n");
+      expect(lines.match(/carried \d+/g)).toEqual(["carried 1", "carried 0"]);
+      expect(lines).toContain("too high");
+      expect(lines).not.toContain(CLIENT);
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it("a chain exactly as long as the setting is not reported", () => {
+    forgetClientIpLogs();
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      for (const [setting, header] of [
+        ["1", CLIENT],
+        ["2", `${CLIENT}, 192.0.2.1`],
+      ]) {
+        hops(setting);
         clientIp(
           new Request("http://localhost/", {
-            headers: header ? { "x-forwarded-for": header } : {},
+            headers: { "x-forwarded-for": header },
           }),
           socketOf(PROXY),
         );
-      const lines = errors.mock.calls.flat().join("\n");
-      expect(lines.match(/carried \d+/g)).toEqual(["carried 1"]);
-      expect(lines).toContain("too high");
-      expect(lines).not.toContain(CLIENT);
+      }
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it("one proxy that appends nothing is reported, since every caller would share its address", () => {
+    hops("1");
+    forgetClientIpLogs();
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      for (let i = 0; i < 3; i++)
+        clientIp(new Request("http://localhost/"), socketOf(PROXY));
+      expect(errors).toHaveBeenCalledTimes(1);
+      expect(errors.mock.calls.flat().join(" ")).toContain("carried 0");
     } finally {
       errors.mockRestore();
     }
@@ -591,6 +738,46 @@ describe("a refused request carries no email or address", () => {
     const keys = cache.keys.join(" ").toLowerCase();
     expect(keys).not.toContain("someone");
     expect(keys).not.toContain("example");
+  });
+
+  it("the forgot-password key is the email as typed, as before", async () => {
+    const cache = recordingCache();
+    for (const email of ["someone@example.test", "Someone@example.test"])
+      await hit(
+        authRateLimiters.forgotPassword,
+        cache as never,
+        CLIENT,
+        {},
+        {
+          email,
+        },
+      );
+    expect(cache.keys[0]).not.toBe(cache.keys[1]);
+  });
+
+  it("a wait that cannot be read leaves the refusal without one", async () => {
+    for (const ttl of [
+      () => Promise.reject(new Error("ttl failed")),
+      async () => -2,
+    ]) {
+      const limiter = createRateLimit({
+        windowSeconds: 60,
+        max: 0,
+        keyGenerator: () => "no-ttl",
+      });
+      let refusal: unknown;
+      await limiter({
+        request: new Request("http://localhost/"),
+        store: { cache: { increment: async () => 1, ttl } },
+        set: {},
+      }).catch((e: unknown) => {
+        refusal = e;
+      });
+      expect(refusal).toEqual({
+        status: 429,
+        message: "Too many requests, please try again later",
+      });
+    }
   });
 
   it("the forgot-password key holds a digest too", async () => {
