@@ -61,6 +61,9 @@ const digest = (value: unknown): string =>
     .update(String(value ?? ""))
     .digest("base64url");
 
+const signupClient = (chain: string): string =>
+  chain.includes(",") ? digest(chain) : chain;
+
 const normalizedEmail = (value: unknown): string =>
   String(value ?? "")
     .trim()
@@ -107,7 +110,7 @@ export const authRateLimiters = {
     windowSeconds: 3600,
     max: 3,
     keyGenerator: (context) =>
-      `signup:${digest(clientChain(context.request, context.server))}`,
+      `signup:${signupClient(clientChain(context.request, context.server))}`,
     message: "Too many signup attempts, please try again later",
   }),
 

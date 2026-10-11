@@ -467,7 +467,19 @@ describe("with TRUSTED_PROXY_HOPS unset, every limiter reads the client as main 
     expect(attacker.signup).not.toBe(victim.signup);
   });
 
-  it("the signup key is a digest of that chain, so its length is fixed", async () => {
+  it("a single address is the signup key as it is, as for every other limiter", async () => {
+    const cache = recordingCache();
+    await hit(authRateLimiters.signup, cache as never, PROXY, {
+      "x-forwarded-for": CLIENT,
+    });
+    await hit(authRateLimiters.signup, cache as never, PROXY);
+    expect(cache.keys).toEqual([
+      `rate-limit:signup:${CLIENT}`,
+      `rate-limit:signup:${PROXY}`,
+    ]);
+  });
+
+  it("a chain of addresses is keyed by its digest, so its length is fixed", async () => {
     const cache = recordingCache();
     const chain = Array.from(
       { length: 500 },
