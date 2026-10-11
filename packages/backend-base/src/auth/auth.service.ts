@@ -328,11 +328,6 @@ export class AuthService {
               "The account's email changed while signing in. Sign in again.",
             );
           const confirmed = locked.emailVerified;
-          if (!confirmed)
-            await trx
-              .deleteFrom("user_sso_accounts")
-              .where("user_id", "=", locked.id)
-              .execute();
           const linked = await trx
             .insertInto("user_sso_accounts")
             .values({
@@ -544,9 +539,13 @@ export class AuthService {
       .where(sql`lower(trim(email))`, "=", address)
       .executeTakeFirst();
     if (Number(stamped.numUpdatedRows) === 0) return null;
-    if (proof.by === "account-holder") return { signOutOthers: false };
 
-    if (proof.by === "provider")
+    let unproven = trx
+      .deleteFrom("user_sso_accounts")
+      .where("user_id", "=", user.id);
+    if (proof.by === "account-holder")
+      unproven = unproven.where(sql`lower(trim(email))`, "=", address);
+    if (proof.by === "provider") {
       await trx
         .updateTable("user_sso_accounts")
         .set({ email: address })
@@ -554,15 +553,20 @@ export class AuthService {
         .where("provider", "=", proof.provider)
         .where("provider_user_id", "=", proof.providerUserId)
         .execute();
-    const dropped = await trx
-      .deleteFrom("user_sso_accounts")
-      .where("user_id", "=", user.id)
-      .$if(proof.by === "provider" || user.emailVerified, (qb) =>
-        qb.where(sql`lower(trim(email))`, "!=", address),
-      )
-      .executeTakeFirst();
+      unproven = unproven.where((eb) =>
+        eb.not(
+          eb.and([
+            eb("provider", "=", proof.provider),
+            eb("provider_user_id", "=", proof.providerUserId),
+          ]),
+        ),
+      );
+    }
+    const dropped = await unproven.executeTakeFirst();
     const linksDropped = Number(dropped.numDeletedRows);
-    const signOutOthers = linksDropped > 0 || !user.emailVerified;
+    const signOutOthers =
+      linksDropped > 0 ||
+      (proof.by !== "account-holder" && !user.emailVerified);
     if (signOutOthers)
       console.info("Address confirmation took the account back", {
         userId: user.id,
@@ -793,7 +797,7 @@ export class AuthService {
 
         await trx
           .updateTable("user")
-          .set({ email: locked.email, password: hashedPassword })
+          .set({ password: hashedPassword })
           .where("id", "=", locked.id)
           .execute();
 
@@ -865,6 +869,7 @@ export class AuthService {
         }),
       );
     if (!confirmed) throw new ValidationError("Invalid verification token");
+    if (confirmed.signOutOthers) await this.logoutAll(user.id);
 
     return this.loginUser({ ...user, emailVerified: true }, jwt);
   }
@@ -1010,9 +1015,6 @@ export class AuthService {
       }
     }
 
-    // Clear all access tokens from Redis first (before transaction)
-    await this.cache.delete(cacheConstants.accessToken(userId));
-
     // Delete all user data in a transaction to ensure atomicity
     await this.db
       .getOrCreateConnection()
@@ -1038,12 +1040,6 @@ export class AuthService {
         // 1. Explanation ratings
         await trx
           .deleteFrom("explanation_ratings")
-          .where("user_id", "=", userId)
-          .execute();
-
-        // 2. Conversations (will cascade to messages via FK)
-        await trx
-          .deleteFrom("conversations")
           .where("user_id", "=", userId)
           .execute();
 
@@ -1098,7 +1094,7 @@ export class AuthService {
         await trx.deleteFrom("user").where("id", "=", userId).execute();
       });
 
-    // Transaction completed successfully
+    await this.cache.delete(cacheConstants.accessToken(userId));
   }
 
   // TODO: Implement refresh accessToken (keep alive)
