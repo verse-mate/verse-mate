@@ -11,7 +11,11 @@ import {
   applyStudyTermDictionary,
   buildStudyTermDictMap,
 } from "../../bible/services/study-term-dictionary";
-import { ValidationError } from "../../common/errors";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "../../common/errors";
 import { BATCH_MONITORING_QUEUE } from "../../queue/batch-monitoring.queue";
 import { type AiProvider, getAiProvider } from "../../shared/ai";
 import {
@@ -129,7 +133,7 @@ export class BatchOperationService {
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-discovery");
     if (!prompt) {
-      throw new Error("No active topic-discovery prompt found.");
+      throw new NotFoundError("No active topic-discovery prompt found.");
     }
 
     const discoveryTopicType = category || "all";
@@ -243,13 +247,13 @@ export class BatchOperationService {
     const topics = await query.execute();
 
     if (topics.length === 0) {
-      throw new Error("No topics found that need references.");
+      throw new NotFoundError("No topics found that need references.");
     }
 
     const prompt =
       await this.promptRepository.getUserPromptByType("topic-references");
     if (!prompt) {
-      throw new Error("No active topic-references prompt found.");
+      throw new NotFoundError("No active topic-references prompt found.");
     }
 
     const batchRequests: BatchJobRequest[] = topics.map((topic) => ({
@@ -397,7 +401,7 @@ export class BatchOperationService {
       console.error(
         "[BATCH] No topics found that need explanations. Throwing error.",
       );
-      throw new Error(
+      throw new NotFoundError(
         skipExisting
           ? "No topics found that need new explanations. Ensure that the 'References' batch has been run and that explanations do not already exist for the selected topics."
           : "No topics found with active references to generate explanations for.",
@@ -618,7 +622,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      throw new Error(`Book "${bookName}" not found in database`);
+      throw new NotFoundError(`Book "${bookName}" not found in database`);
     }
 
     console.log(
@@ -830,7 +834,7 @@ export class BatchOperationService {
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     if (type === "book" && !bookName) {
-      throw new Error(
+      throw new ValidationError(
         "Book name is required for a book-specific rephrase batch.",
       );
     }
@@ -911,7 +915,9 @@ export class BatchOperationService {
       );
     }
 
-    throw new Error("Invalid rephrase batch type or missing book name.");
+    throw new ValidationError(
+      "Invalid rephrase batch type or missing book name.",
+    );
   }
 
   async generateTranslateBatch(
@@ -928,7 +934,7 @@ export class BatchOperationService {
     maxOutputTokens = DEFAULT_MAX_OUTPUT_TOKENS,
   ) {
     if (type === "book" && !bookName) {
-      throw new Error(
+      throw new ValidationError(
         "Book name is required for a book-specific translate batch.",
       );
     }
@@ -1045,7 +1051,9 @@ export class BatchOperationService {
       );
     }
 
-    throw new Error("Invalid translate batch type or missing book name.");
+    throw new ValidationError(
+      "Invalid translate batch type or missing book name.",
+    );
   }
 
   private async createBookRephraseBatch(
@@ -1066,7 +1074,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      throw new Error(`Book "${bookName}" not found.`);
+      throw new NotFoundError(`Book "${bookName}" not found.`);
     }
 
     const version = await connection
@@ -1076,7 +1084,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!version) {
-      throw new Error(`Bible version "${bibleVersion}" not found.`);
+      throw new NotFoundError(`Bible version "${bibleVersion}" not found.`);
     }
 
     const rephrasePrompt = await connection
@@ -1087,7 +1095,9 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!rephrasePrompt) {
-      throw new Error("No active rephrase prompt found in the database.");
+      throw new NotFoundError(
+        "No active rephrase prompt found in the database.",
+      );
     }
 
     const activeExplanations = await connection
@@ -1316,7 +1326,7 @@ export class BatchOperationService {
     if (!book) {
       const error = `Book "${bookName}" not found.`;
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new NotFoundError(error);
     }
 
     console.log(`[BATCH] Found book: ${bookName} with ID: ${book.book_id}`);
@@ -1330,7 +1340,7 @@ export class BatchOperationService {
     if (!sourceVersion) {
       const error = `Source Bible version with language "${sourceLanguageCode}" not found.`;
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new NotFoundError(error);
     }
 
     console.log(
@@ -1365,7 +1375,7 @@ export class BatchOperationService {
     if (!translatePrompt) {
       const error = "No active translate prompt found in the database.";
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new NotFoundError(error);
     }
 
     console.log("[BATCH] Found active translate prompt");
@@ -1808,7 +1818,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!batchJob) {
-      throw new Error(`Batch job ${batchId} not found.`);
+      throw new NotFoundError(`Batch job ${batchId} not found.`);
     }
 
     if (
@@ -1923,7 +1933,7 @@ export class BatchOperationService {
     }
 
     if (!batchJob.openai_batch_id) {
-      throw new Error(
+      throw new ConflictError(
         `Book batch ${batchId} does not have an OpenAI batch ID.`,
       );
     }
@@ -2299,7 +2309,7 @@ export class BatchOperationService {
 
     const systemPrompt = await this.promptRepository.getActivePrompt();
     if (!systemPrompt) {
-      throw new Error("No active system prompt found");
+      throw new NotFoundError("No active system prompt found");
     }
 
     const version = await connection
@@ -2309,7 +2319,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!version) {
-      throw new Error("Invalid bible version");
+      throw new NotFoundError("Invalid bible version");
     }
 
     const language = getLanguageName(version.language_code);
@@ -2321,7 +2331,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      throw new Error(`Book ${bookId} not found`);
+      throw new NotFoundError(`Book ${bookId} not found`);
     }
 
     console.log(
@@ -2345,7 +2355,7 @@ export class BatchOperationService {
     const chapters = await chaptersQuery.execute();
 
     if (!chapters || chapters.length === 0) {
-      throw new Error(
+      throw new NotFoundError(
         `No chapters found for book ${bookId}${chapterNumbers ? ` with numbers: ${chapterNumbers.join(", ")}` : ""}`,
       );
     }
@@ -2474,7 +2484,7 @@ export class BatchOperationService {
     }
 
     if (batchRequests.length === 0) {
-      throw new Error(
+      throw new NotFoundError(
         `No requests to process for ${book.name}. All explanations may already exist.`,
       );
     }
@@ -4987,7 +4997,7 @@ export class BatchOperationService {
     console.log(`[BATCH] Found ${topics.length} topics to translate`);
 
     if (topics.length === 0) {
-      throw new Error("No topics found to translate");
+      throw new NotFoundError("No topics found to translate");
     }
 
     // Get topic-translate prompt
@@ -4999,7 +5009,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!translatePrompt) {
-      throw new Error("No active topic-translate prompt found");
+      throw new NotFoundError("No active topic-translate prompt found");
     }
 
     const language = getLanguageName(target_language_code);
@@ -5171,7 +5181,7 @@ export class BatchOperationService {
     console.log(`[BATCH] Found ${topics.length} topics`);
 
     if (topics.length === 0) {
-      throw new Error("No topics found to translate");
+      throw new NotFoundError("No topics found to translate");
     }
 
     // Get source explanations
@@ -5193,7 +5203,7 @@ export class BatchOperationService {
     );
 
     if (sourceExplanations.length === 0) {
-      throw new Error(
+      throw new NotFoundError(
         `No source explanations found in ${source_language_code}`,
       );
     }
@@ -5207,7 +5217,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!translatePrompt) {
-      throw new Error("No active topic-translate prompt found");
+      throw new NotFoundError("No active topic-translate prompt found");
     }
 
     const language = getLanguageName(target_language_code);
@@ -5614,7 +5624,7 @@ export class BatchOperationService {
 
     // bookName is required for single book batch
     if (!bookName) {
-      throw new Error("Book name is required for single book batch");
+      throw new ValidationError("Book name is required for single book batch");
     }
 
     // For single book, we check skipExisting inside the helper
@@ -5645,7 +5655,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!book) {
-      throw new Error(`Book "${bookName}" not found.`);
+      throw new NotFoundError(`Book "${bookName}" not found.`);
     }
 
     if (skipExisting) {
@@ -5676,7 +5686,7 @@ export class BatchOperationService {
       .executeTakeFirst();
 
     if (!highlightPrompt) {
-      throw new Error("No active auto-highlight prompt found.");
+      throw new NotFoundError("No active auto-highlight prompt found.");
     }
 
     const batchRequests: BatchJobRequest[] = [
@@ -6015,7 +6025,7 @@ export class BatchOperationService {
     if (!studyPrompt) {
       const error = "No active translate-study prompt found in the database.";
       console.error(`[BATCH] ${error}`);
-      throw new Error(error);
+      throw new NotFoundError(error);
     }
     const instruction = studyPrompt.prompt.replace("{language}", languageName);
 
