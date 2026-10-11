@@ -316,7 +316,7 @@ describe("a password reset link", () => {
     expect((await row(id)).password).not.toBeNull();
   });
 
-  it("on an account confirmed before the stamp existed keeps its links and stamps it", async () => {
+  it("on an account confirmed before the stamp existed drops links made for another address, keeps its own, and stamps it", async () => {
     const { id, email } = await account({
       emailVerified: true,
       password: true,
@@ -332,6 +332,12 @@ describe("a password reset link", () => {
       provider_user_id: `elsewhere-${id}`,
       email: address("elsewhere"),
     });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `own-${id}`,
+      email: email.toUpperCase(),
+    });
     await service().forgotPassword({ email });
 
     expect(
@@ -346,6 +352,12 @@ describe("a password reset link", () => {
       await links.findByProviderAndProviderId(
         SsoProviderEnum.google,
         `elsewhere-${id}`,
+      ),
+    ).toBeFalsy();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `own-${id}`,
       ),
     ).toBeTruthy();
   });
@@ -415,7 +427,7 @@ describe("a provider sign-in that adopts an existing account", () => {
     ).toBeFalsy();
   });
 
-  it("keeps the password and links of an account confirmed before the stamp existed, and stamps it", async () => {
+  it("on an account confirmed before the stamp existed keeps the password and its own links, drops links made for another address, signs out other sessions, and stamps it", async () => {
     const { id, email } = await account({
       emailVerified: true,
       password: true,
@@ -431,6 +443,13 @@ describe("a provider sign-in that adopts an existing account", () => {
       provider_user_id: `earlier-${id}`,
       email,
     });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    await service().login({ email, password: PASSWORD }, jwt as never);
 
     await google(`owner-${id}`, email);
 
@@ -442,6 +461,15 @@ describe("a provider sign-in that adopts an existing account", () => {
         `earlier-${id}`,
       ),
     ).toBeTruthy();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `elsewhere-${id}`,
+      ),
+    ).toBeFalsy();
+    expect(await cache.get<string[]>(cacheConstants.accessToken(id))).toEqual([
+      `token-${id}`,
+    ]);
   });
 
   it("keeps a confirmed account's password and other links", async () => {
