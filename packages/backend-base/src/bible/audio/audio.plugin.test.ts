@@ -59,7 +59,7 @@ async function chapterId(bookId: number, chapterNumber: number) {
   return chapter.chapter_id;
 }
 
-async function explanation(chapter: number) {
+async function explanation(chapter: number, is_active = true) {
   const { explanation_id } = await conn
     .insertInto("explanations")
     .values({
@@ -67,7 +67,7 @@ async function explanation(chapter: number) {
       explanation: faker.lorem.sentence(),
       chapter_id: chapter,
       version: nextVersion++,
-      is_active: false,
+      is_active,
       created_by_admin: true,
       parent_explanation_id: null,
       language_code: "en",
@@ -310,6 +310,46 @@ describe("GET /bible/explanation/audio/:explanationId offered languages", () => 
         .where("language_code", "=", OFFERED_LANGUAGE)
         .execute();
     }
+  });
+});
+
+describe("GET /bible/explanation/audio/:explanationId replaced versions", () => {
+  it("answers 404 without spending a slot when a replaced version has no audio", async () => {
+    const ip = guestAddress();
+    const id = await explanation(genesis1ChapterId, false);
+    const response = await getAudio(id, { headers: { "x-forwarded-for": ip } });
+    expect(response.status).toBe(404);
+    expect(await storedVariants(id)).toHaveLength(0);
+    expect(await cache.ttl(`rate-limit:audio-synthesis:ip:${ip}`)).toBeLessThan(
+      0,
+    );
+    expect(await cache.ttl(OVERALL_KEY)).toBeLessThan(0);
+  });
+
+  it("serves the audio a replaced version already has, even when marked stale", async () => {
+    const ip = guestAddress();
+    const id = await explanation(genesis1ChapterId);
+    expect(
+      (await getAudio(id, { headers: { "x-forwarded-for": ip } })).status,
+    ).toBe(200);
+    await conn
+      .updateTable("explanations")
+      .set({ is_active: false })
+      .where("explanation_id", "=", id)
+      .execute();
+    await conn
+      .updateTable("explanation_audios")
+      .set({ is_stale: true })
+      .where("explanation_id", "=", id)
+      .execute();
+    await cache.delete(OVERALL_KEY);
+
+    const response = await getAudio(id, { headers: { "x-forwarded-for": ip } });
+    expect(response.status).toBe(200);
+    const [stored] = await storedVariants(id);
+    expect((await response.json()).audio.url).toContain(stored.storage_key);
+    expect(await storedVariants(id)).toHaveLength(1);
+    expect(await cache.ttl(OVERALL_KEY)).toBeLessThan(0);
   });
 });
 

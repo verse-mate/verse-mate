@@ -223,6 +223,7 @@ type ExplanationRow = {
   explanation: string;
   chapter_id: number;
   language_code: string;
+  is_active: boolean;
 };
 type ChapterRow = {
   chapter_id: number;
@@ -285,6 +286,7 @@ describe("AudioService", () => {
     explanation: "In the beginning God created the heavens and the earth.",
     chapter_id: 1,
     language_code: "en",
+    is_active: true,
   };
   const genesis1: ChapterRow = {
     chapter_id: 1,
@@ -850,6 +852,80 @@ describe("AudioService", () => {
         }),
       ).rejects.toBeInstanceOf(NotFoundError);
     });
+    it("refuses an explanation version that was replaced", async () => {
+      await expect(
+        jobService({ ...explanation, is_active: false }).synthesizeQueuedJob({
+          explanation_id: 42,
+          voice: DEFAULT_VOICE,
+          language_code: "en",
+        }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+      expect(storage.uploaded.length).toBe(0);
+      expect(repo.upsertCalls).toBe(0);
+    });
+  });
+
+  describe("replaced explanation versions", () => {
+    const replaced: ExplanationRow = { ...explanation, is_active: false };
+
+    function storedRow(is_stale: boolean) {
+      return repo.upsert({
+        explanation_id: 42,
+        voice: DEFAULT_VOICE,
+        language_code: "en",
+        storage_key: `explanation-audio/42/${DEFAULT_VOICE}/en/hash.mp3`,
+        duration_seconds: 10,
+        character_count: 50,
+        content_hash: "hash",
+        tts_provider: "openai",
+        tts_model: "tts-1-hd",
+        is_stale,
+      });
+    }
+
+    it.each([true, false])(
+      "serves the audio already made for it (stale: %p)",
+      async (is_stale) => {
+        await storedRow(is_stale);
+        let calls = 0;
+        const result = await makeService(
+          new FakeOpenAiProvider(),
+          [genesis1],
+          [replaced],
+        ).getOrQueueAudio({
+          explanation_id: 42,
+          currentUserId: null,
+          beforeSynthesis: async () => {
+            calls += 1;
+          },
+        });
+        expect(result.kind).toBe("ready");
+        expect(calls).toBe(0);
+        expect(queue.addCalls.length).toBe(0);
+      },
+    );
+
+    it.each([
+      ["queue", new FakeOpenAiProvider()],
+      ["stub", new FakeStubProvider()],
+    ] as const)(
+      "answers not found and synthesizes nothing when it has no audio (%s provider)",
+      async (_name, provider) => {
+        let calls = 0;
+        await expect(
+          makeService(provider, [genesis1], [replaced]).getOrQueueAudio({
+            explanation_id: 42,
+            currentUserId: "u-1",
+            beforeSynthesis: async () => {
+              calls += 1;
+            },
+          }),
+        ).rejects.toBeInstanceOf(NotFoundError);
+        expect(calls).toBe(0);
+        expect(queue.addCalls.length).toBe(0);
+        expect(storage.uploaded.length).toBe(0);
+      },
+    );
   });
 
   describe("storageKeyFor / contentHashOf helpers", () => {
