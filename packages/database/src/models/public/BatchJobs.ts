@@ -50,7 +50,7 @@ export default interface BatchJobsTable {
 
   actual_cost: ColumnType<number | null, number | null, number | null>;
 
-  created_by: ColumnType<UserId, UserId, UserId>;
+  created_by: ColumnType<UserId | null, UserId | null, UserId | null>;
 
   created_at: ColumnType<Date, Date | string | undefined, Date | string>;
 
