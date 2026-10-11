@@ -102,16 +102,11 @@ const plugin = new Elysia()
       )
 
       // GET /offline/commentaries/:languageCode - Download all commentaries for a language
-      .resolve(authDerive)
       .get(
         "/commentaries/:languageCode",
-        async ({
-          params,
-          headers,
-          currentUserId,
-          store: { offlineService },
-        }) => {
+        async ({ params, headers, bearer, jwt, store }) => {
           const { languageCode } = params;
+          const { offlineService } = store;
 
           // Check if commentaries exist for this language
           const exists = await offlineService.commentaryExists(languageCode);
@@ -134,7 +129,7 @@ const plugin = new Elysia()
             }
           }
 
-          // Get data
+          const { currentUserId } = await authDerive({ bearer, jwt, store });
           const data = await offlineService.getCommentaryData(
             languageCode,
             currentUserId,
