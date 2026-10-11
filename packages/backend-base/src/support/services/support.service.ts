@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { WebClient } from "@slack/web-api";
 import type SupportSenderEnum from "database/src/models/public/SupportSenderEnum";
+import { NotFoundError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 import { SupportRepository } from "../repository/support.repository";
 
@@ -108,11 +109,10 @@ export class SupportService {
     conversationId: string,
     text: string,
   ) {
-    // 1. Verify conversation belongs to user
     const conversation =
       await this.supportRepository.getConversationById(conversationId);
     if (!conversation || conversation.user_id !== userId) {
-      throw new Error("Conversation not found");
+      throw new NotFoundError("Conversation not found");
     }
 
     // 2. Save message to DB
@@ -198,11 +198,10 @@ export class SupportService {
   }
 
   async getMessages(conversationId: string, userId: string) {
-    // Verify ownership
     const conversation =
       await this.supportRepository.getConversationById(conversationId);
     if (!conversation || conversation.user_id !== userId) {
-      throw new Error("Conversation not found");
+      throw new NotFoundError("Conversation not found");
     }
 
     const messages =

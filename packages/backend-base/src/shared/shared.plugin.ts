@@ -2,6 +2,7 @@ import { bearer } from "@elysiajs/bearer";
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
+import { ApiError } from "../common/errors";
 import { UserService } from "../user/user.service";
 
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
@@ -105,6 +106,11 @@ const setup = new Elysia({ name: "shared" })
     }) => {
       // NOT_FOUND is expected HTTP behavior (404s), not an application exception
       if (code === "NOT_FOUND") return;
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403)
+      )
+        return;
       if ((error as { status?: unknown }).status === 429) return;
 
       const distinctId = await maybeCurrentUserId({
