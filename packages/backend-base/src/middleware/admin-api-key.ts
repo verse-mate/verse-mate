@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import type { Context } from "elysia";
 
-function digest(value: string): Buffer {
-  return crypto.createHash("sha256").update(value).digest();
+function digest(value: string) {
+  return new Uint8Array(crypto.createHash("sha256").update(value).digest());
 }
 
 function matchesKey(given: string | null, expected: string): boolean {
