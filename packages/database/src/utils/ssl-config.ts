@@ -6,7 +6,9 @@ function postgresUrl(): URL | null {
   try {
     return new URL(raw);
   } catch {
-    return null;
+    throw new Error(
+      "POSTGRES_URL is not a valid URL: percent-encode reserved characters in the user name and password",
+    );
   }
 }
 
