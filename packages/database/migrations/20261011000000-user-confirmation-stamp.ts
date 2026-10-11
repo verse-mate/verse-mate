@@ -32,6 +32,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
 
 export async function down(db: Kysely<Database>): Promise<void> {
   await sql`SET LOCAL lock_timeout = '5s'`.execute(db);
+  await sql`LOCK TABLE "user" IN SHARE ROW EXCLUSIVE MODE`.execute(db);
   if (process.env.ROLLBACK_DISCARD_CONFIRMATION_STAMPS !== "1") {
     const { rows } = await sql<{ stamped: number }>`
       SELECT count(*)::int AS stamped FROM "user"
