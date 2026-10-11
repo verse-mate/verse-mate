@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
+import { Elysia } from "elysia";
 
 import {
   ConflictError,
@@ -240,7 +241,7 @@ describe("email confirmation", () => {
 });
 
 describe("email confirmation through the route", () => {
-  it("only stamps: the account keeps its other sessions and every sign-in link", async () => {
+  it("with no link for its own address, only stamps: the account keeps its other sessions and links made for another address", async () => {
     const client = getTestClient<AuthPlugin>(Backend);
     const { id, email } = await account({ password: true });
     await links.create({
@@ -273,6 +274,65 @@ describe("email confirmation through the route", () => {
         `before-${id}`,
       ),
     ).toBeTruthy();
+  });
+
+  it("drops links stored for the address it confirms and signs out the other sessions, keeping links made for another address", async () => {
+    const client = getTestClient<AuthPlugin>(Backend);
+    const { id, email } = await legacyAccount();
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `same-address-${id}`,
+      email: email.toUpperCase(),
+    });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `before-${id}`,
+      email: address("before"),
+    });
+    const { data } = await client.auth.login.post({
+      email,
+      password: PASSWORD,
+    });
+    const caller = data?.accessToken ?? "";
+    await seedSession(id, "another-device");
+    await service().sendVerifyEmail(id);
+    const audit = spyOn(console, "info");
+
+    try {
+      const confirmed = await client.auth["verify-email"].post(
+        { token: keySentTo(email) },
+        { headers: { authorization: `Bearer ${caller}` } },
+      );
+
+      expect(confirmed.error).toBeNull();
+      expect(audit).toHaveBeenCalledWith(
+        "Address confirmation took the account back",
+        {
+          userId: id,
+          proof: "account-holder",
+          linksDropped: 1,
+          signOutOthers: true,
+        },
+      );
+      expect((await row(id)).email_verified_at).not.toBeNull();
+      expect(await sessionsOf(id)).toEqual([confirmed.data?.accessToken ?? ""]);
+      expect(
+        await links.findByProviderAndProviderId(
+          SsoProviderEnum.google,
+          `same-address-${id}`,
+        ),
+      ).toBeFalsy();
+      expect(
+        await links.findByProviderAndProviderId(
+          SsoProviderEnum.apple,
+          `before-${id}`,
+        ),
+      ).toBeTruthy();
+    } finally {
+      audit.mockRestore();
+    }
   });
 
   it("after a change of address, the provider account the user signed up with still reaches the same account", async () => {
@@ -410,7 +470,7 @@ describe("a password reset link", () => {
     expect((await row(id)).password).not.toBeNull();
   });
 
-  it("on an account confirmed before the stamp existed drops links made for another address, keeps its own, and stamps it", async () => {
+  it("on an account confirmed before the stamp existed drops every sign-in link, its own address included, and stamps it", async () => {
     const { id, email } = await account({
       emailVerified: true,
       password: true,
@@ -453,7 +513,7 @@ describe("a password reset link", () => {
         SsoProviderEnum.apple,
         `own-${id}`,
       ),
-    ).toBeTruthy();
+    ).toBeFalsy();
   });
 
   it("on an unconfirmed account drops provider links made for another address, so the previous holder keeps no way in", async () => {
@@ -521,7 +581,7 @@ describe("a provider sign-in that adopts an existing account", () => {
     ).toBeFalsy();
   });
 
-  it("on an account confirmed before the stamp existed keeps the password and its own links, drops links made for another address, signs out other sessions, and stamps it", async () => {
+  it("on an account confirmed before the stamp existed keeps the password and the identity signing in, drops every other link, signs out other sessions, and stamps it", async () => {
     const { id, email } = await legacyAccount();
     await links.create({
       user_id: id,
@@ -543,10 +603,16 @@ describe("a provider sign-in that adopts an existing account", () => {
     expect((await row(id)).email_verified_at).not.toBeNull();
     expect(
       await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `owner-${id}`,
+      ),
+    ).toBeTruthy();
+    expect(
+      await links.findByProviderAndProviderId(
         SsoProviderEnum.apple,
         `earlier-${id}`,
       ),
-    ).toBeTruthy();
+    ).toBeFalsy();
     expect(
       await links.findByProviderAndProviderId(
         SsoProviderEnum.google,
@@ -828,9 +894,30 @@ describe("a sign-in that lands while the address owner takes the account back", 
   const resettingWhileIssuing = (key: string) => ({
     sign: async (p: { sub: string }) => {
       await service().resetPassword({ key, password: "the-owners-choice" });
-      return `token-${p.sub}`;
+      await seedSession(p.sub, "owner-after-reset");
+      return `holder-${p.sub}`;
     },
   });
+
+  function signingInAfterRevoke(id: string, signIn: () => Promise<string>) {
+    const revoke = cache.delete.bind(cache);
+    const signedIn: { session?: string } = {};
+    const race = spyOn(cache, "delete").mockImplementation(
+      async (target: string) => {
+        const revoked = await revoke(target);
+        if (target === cacheConstants.accessToken(id)) {
+          race.mockRestore();
+          signedIn.session = await signIn().catch(() => undefined);
+        }
+        return revoked;
+      },
+    );
+    return { race, signedIn };
+  }
+
+  const holderJwt = {
+    sign: async (p: { sub: string }) => `holder-${p.sub}`,
+  };
 
   async function forget(email: string) {
     const extra = await conn
@@ -857,7 +944,7 @@ describe("a sign-in that lands while the address owner takes the account back", 
       ),
     ).rejects.toBeInstanceOf(ConflictError);
 
-    expect(await sessionsOf(id)).toBeNull();
+    expect(await sessionsOf(id)).toEqual(["owner-after-reset"]);
     expect(
       (
         await conn
@@ -879,20 +966,25 @@ describe("a sign-in that lands while the address owner takes the account back", 
       ),
     ).rejects.toBeInstanceOf(UnauthorizedError);
 
-    expect(await sessionsOf(id)).toBeNull();
+    expect(await sessionsOf(id)).toEqual(["owner-after-reset"]);
   });
 
   it("sees the reset committed by the time sessions are revoked", async () => {
     const { id, holder, key } = await takeover();
-    const revoke = cache.delete.bind(cache);
-    const race = spyOn(cache, "delete").mockImplementation(
-      async (target: string) => {
-        if (target === cacheConstants.accessToken(id)) {
-          race.mockRestore();
-          await google(`holder-${id}`, holder).catch(() => undefined);
-        }
-        return revoke(target);
-      },
+    const { race, signedIn } = signingInAfterRevoke(
+      id,
+      async () =>
+        (
+          await service().loginWithSSO(
+            SsoProviderEnum.google,
+            {
+              providerUserId: `holder-${id}`,
+              email: holder,
+              emailVerified: true,
+            },
+            holderJwt as never,
+          )
+        ).accessToken,
     );
 
     try {
@@ -902,25 +994,27 @@ describe("a sign-in that lands while the address owner takes the account back", 
       await forget(holder);
     }
 
-    expect(await sessionsOf(id)).toBeNull();
+    expect(signedIn.session).toBeDefined();
+    expect(signedIn.session).not.toBe(`holder-${id}`);
+    expect((await sessionsOf(id)) ?? []).not.toContain(`holder-${id}`);
   });
 
   it("sees the owner's provider adoption committed by the time sessions are revoked", async () => {
     const { id, email, holder } = await takeover();
-    const revoke = cache.delete.bind(cache);
-    let holderSession: string | undefined;
-    const race = spyOn(cache, "delete").mockImplementation(
-      async (target: string) => {
-        const revoked = await revoke(target);
-        if (target === cacheConstants.accessToken(id)) {
-          race.mockRestore();
-          holderSession = await google(`holder-${id}`, holder).then(
-            (session) => session.accessToken,
-            () => undefined,
-          );
-        }
-        return revoked;
-      },
+    const { race, signedIn } = signingInAfterRevoke(
+      id,
+      async () =>
+        (
+          await service().loginWithSSO(
+            SsoProviderEnum.google,
+            {
+              providerUserId: `holder-${id}`,
+              email: holder,
+              emailVerified: true,
+            },
+            holderJwt as never,
+          )
+        ).accessToken,
     );
 
     try {
@@ -930,8 +1024,62 @@ describe("a sign-in that lands while the address owner takes the account back", 
       await forget(holder);
     }
 
-    expect(holderSession).toBeDefined();
-    expect(await sessionsOf(id)).not.toContain(holderSession);
+    expect(signedIn.session).toBeDefined();
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
+  });
+
+  it("sees the owner's sign-in through an identity already linked committed by the time sessions are revoked", async () => {
+    const { id, email, holder } = await takeover();
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `owner-${id}`,
+      email,
+    });
+    const { race, signedIn } = signingInAfterRevoke(
+      id,
+      async () =>
+        (
+          await service().loginWithSSO(
+            SsoProviderEnum.google,
+            {
+              providerUserId: `holder-${id}`,
+              email: holder,
+              emailVerified: true,
+            },
+            holderJwt as never,
+          )
+        ).accessToken,
+    );
+
+    try {
+      await google(`owner-${id}`, email);
+    } finally {
+      race.mockRestore();
+      await forget(holder);
+    }
+
+    expect(signedIn.session).toBeDefined();
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
+  });
+
+  it("with a password the owner's provider adoption removes gets no session, and the owner keeps theirs", async () => {
+    const { id, email } = await account({ password: true });
+    const adoptingWhileIssuing = {
+      sign: async (p: { sub: string }) => {
+        await google(`owner-${id}`, email);
+        return `squatter-${p.sub}`;
+      },
+    };
+
+    await expect(
+      service().login(
+        { email, password: PASSWORD },
+        adoptingWhileIssuing as never,
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedError);
+
+    expect(await sessionsOf(id)).toEqual([`token-${id}`]);
   });
 
   it("a password reset signs out every session, on a confirmed account too", async () => {
@@ -1046,6 +1194,10 @@ describe("the session list", () => {
       headers: { authorization: `Bearer ${one}` },
     });
 
+    const jtiOf = (token: string) =>
+      JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString()).jti;
+    expect(typeof jtiOf(one)).toBe("string");
+    expect(jtiOf(one)).not.toBe(jtiOf(two));
     expect(one).not.toBe(two);
     const still = await client.auth.session.get({
       headers: { authorization: `Bearer ${two}` },
@@ -1077,6 +1229,32 @@ describe("the session list", () => {
 
     expect(session.error).toBeNull();
     expect(await sessionsOf(id)).toEqual([later]);
+  });
+
+  it("accepts and ends a session issued before sessions carried their own id", async () => {
+    const client = getTestClient<AuthPlugin>(Backend);
+    const { id } = await account({ emailVerified: true, password: true });
+    const issuedBefore = await new Elysia()
+      .use(shared)
+      .get("/", ({ jwt }) => jwt.sign({ sub: id }))
+      .handle(new Request("http://localhost/"))
+      .then((response) => response.text());
+    expect(
+      JSON.parse(
+        Buffer.from(issuedBefore.split(".")[1], "base64url").toString(),
+      ).jti,
+    ).toBeUndefined();
+    await cache.set(cacheConstants.accessToken(id), [issuedBefore], "90d");
+
+    const session = await client.auth.session.get({
+      headers: { authorization: `Bearer ${issuedBefore}` },
+    });
+    await client.auth.logout.post(undefined, {
+      headers: { authorization: `Bearer ${issuedBefore}` },
+    });
+
+    expect(session.error).toBeNull();
+    expect(await sessionsOf(id)).toBeNull();
   });
 
   it("a new list lives for the session lifetime", async () => {
@@ -1179,27 +1357,74 @@ describe("requests the previous holder started before the owner took the account
     expect((await row(id)).email_verified_at).not.toBeNull();
   });
 
-  it("an account deletion that needs no password does not delete the account once the owner confirmed it", async () => {
+  function beforeDeleting(race: () => Promise<unknown>) {
+    const begin = conn.transaction.bind(conn);
+    const hook = spyOn(conn, "transaction").mockImplementation(() => {
+      hook.mockRestore();
+      const builder = begin();
+      return {
+        execute: async (work: Parameters<typeof builder.execute>[0]) => {
+          await race();
+          return builder.execute(work);
+        },
+      } as never;
+    });
+    return hook;
+  }
+
+  it("an account deletion that needs no password does not delete the account once the owner confirmed it, and signs nobody out", async () => {
     const { id, email } = await account();
-    const revoke = cache.delete.bind(cache);
-    const race = spyOn(cache, "delete").mockImplementation(
-      async (target: string) => {
-        if (target === cacheConstants.accessToken(id)) {
-          race.mockRestore();
-          await google(`owner-${id}`, email);
-        }
-        return revoke(target);
-      },
-    );
+    await seedSession(id, "device-a");
+    const hook = beforeDeleting(() => google(`owner-${id}`, email));
 
     try {
       await expect(service().deleteAccount(id)).rejects.toBeInstanceOf(
         ConflictError,
       );
     } finally {
-      race.mockRestore();
+      hook.mockRestore();
     }
     expect((await row(id)).email_verified_at).not.toBeNull();
+    expect(await sessionsOf(id)).toContain(`token-${id}`);
+  });
+
+  it("an account deletion does not delete an account whose address changed meanwhile", async () => {
+    const { id } = await account({ emailVerified: true, password: true });
+    await seedSession(id, "device-a");
+    const elsewhere = address("moved");
+    const hook = beforeDeleting(() =>
+      conn
+        .updateTable("user")
+        .set({ email: elsewhere })
+        .where("id", "=", id)
+        .execute(),
+    );
+
+    try {
+      await expect(
+        service().deleteAccount(id, PASSWORD),
+      ).rejects.toBeInstanceOf(ConflictError);
+    } finally {
+      hook.mockRestore();
+    }
+    expect((await row(id)).email).toBe(elsewhere);
+    expect(await sessionsOf(id)).toEqual(["device-a"]);
+  });
+
+  it("an account deletion signs out every session once the account is gone", async () => {
+    const { id } = await account({ emailVerified: true, password: true });
+    await seedSession(id, "device-a");
+
+    await service().deleteAccount(id, PASSWORD);
+
+    expect(await sessionsOf(id)).toBeNull();
+    expect(
+      await conn
+        .selectFrom("user")
+        .select("id")
+        .where("id", "=", id)
+        .executeTakeFirst(),
+    ).toBeUndefined();
   });
 });
 
@@ -1246,7 +1471,7 @@ describe("closing the remaining ways back in", () => {
     ).toBeFalsy();
   });
 
-  it("keeps at most fifty sessions, dropping the oldest", async () => {
+  it("keeps at most fifty sessions, dropping the oldest, and renews the list's lifetime", async () => {
     const { id, email } = await account({
       emailVerified: true,
       password: true,
@@ -1263,6 +1488,28 @@ describe("closing the remaining ways back in", () => {
     expect(sessions).toHaveLength(50);
     expect(sessions).not.toContain("device-0");
     expect(sessions?.at(-1)).toBe(`token-${id}`);
+    expect(await cache.ttl(cacheConstants.accessToken(id))).toBeGreaterThan(
+      90 * 86400 - 60,
+    );
+  });
+
+  it("brings a list already past fifty sessions down to the newest fifty", async () => {
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    await cache.set(
+      cacheConstants.accessToken(id),
+      Array.from({ length: 55 }, (_, n) => `device-${n}`),
+      "1h",
+    );
+
+    await service().login({ email, password: PASSWORD }, jwt as never);
+
+    expect(await sessionsOf(id)).toEqual([
+      ...Array.from({ length: 49 }, (_, n) => `device-${n + 6}`),
+      `token-${id}`,
+    ]);
   });
 
   it("records who was taken back and how, without the address", async () => {
@@ -1285,6 +1532,110 @@ describe("closing the remaining ways back in", () => {
     } finally {
       audit.mockRestore();
     }
+  });
+
+  it("records a reset that takes a never-confirmed account back, even with no link to drop", async () => {
+    const { id, email } = await account({ password: true });
+    await service().forgotPassword({ email });
+    const audit = spyOn(console, "info");
+
+    try {
+      await service().resetPassword({
+        key: keySentTo(email),
+        password: "the-owners-choice",
+      });
+      expect(audit).toHaveBeenCalledWith(
+        "Address confirmation took the account back",
+        {
+          userId: id,
+          proof: "password-reset",
+          linksDropped: 0,
+          signOutOthers: true,
+        },
+      );
+    } finally {
+      audit.mockRestore();
+    }
+  });
+
+  it("records nothing when a confirmation takes nothing back", async () => {
+    const { id, email } = await legacyAccount();
+    await service().sendVerifyEmail(id);
+    const audit = spyOn(console, "info");
+
+    try {
+      await service().verifyEmail({
+        token: keySentTo(email),
+        jwt: jwt as never,
+        currentUserId: id,
+      });
+      expect(audit).not.toHaveBeenCalledWith(
+        "Address confirmation took the account back",
+        expect.anything(),
+      );
+    } finally {
+      audit.mockRestore();
+    }
+  });
+
+  it("does not take a provider's picture through a link dropped after the sign-in checked it", async () => {
+    const { id, email } = await account({ emailVerified: true });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `holder-${id}`,
+      email,
+    });
+    const update = conn.updateTable.bind(conn);
+    const race = spyOn(conn, "updateTable").mockImplementation(((
+      table: "user",
+    ) => {
+      race.mockRestore();
+      return {
+        set: (values: never) => ({
+          where: (...first: never[]) => ({
+            where: (...second: never[]) => ({
+              execute: async () => {
+                await conn
+                  .deleteFrom("user_sso_accounts")
+                  .where("user_id", "=", id)
+                  .execute();
+                return update(table)
+                  .set(values)
+                  .where(...(first as [never, never, never]))
+                  .where(...(second as [never]))
+                  .execute();
+              },
+            }),
+          }),
+        }),
+      };
+    }) as never);
+
+    try {
+      await service().loginWithSSO(
+        SsoProviderEnum.google,
+        {
+          providerUserId: `holder-${id}`,
+          email,
+          emailVerified: true,
+          picture: "https://example.test/holder.png",
+        },
+        jwt as never,
+      );
+    } finally {
+      race.mockRestore();
+    }
+
+    expect(
+      (
+        await conn
+          .selectFrom("user")
+          .select("imageSrc")
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow()
+      ).imageSrc,
+    ).toBeNull();
   });
 });
 
