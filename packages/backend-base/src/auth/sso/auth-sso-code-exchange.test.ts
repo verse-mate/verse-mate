@@ -19,6 +19,7 @@ import type { SSOProvider } from "./sso-provider.interface";
 
 const FRONTEND_URL = "http://localhost:3000";
 const EXCHANGE_LIMIT_KEY = "rate-limit:sso-exchange:unknown";
+const VALIDATION_STATUS = 422;
 
 type Provider = "google" | "apple";
 
@@ -125,7 +126,7 @@ describe("SSO web callback code exchange", () => {
     return locationOf(response);
   }
 
-  async function appleGetCallback(challenge: string) {
+  async function appleGetCallback(challenge?: string) {
     const state = await storeState("apple", challenge);
     const response = await Backend.handle(
       new Request(
@@ -136,7 +137,7 @@ describe("SSO web callback code exchange", () => {
     return locationOf(response);
   }
 
-  async function applePostCallback(challenge: string) {
+  async function applePostCallback(challenge?: string) {
     const state = await storeState("apple", challenge);
     const response = await Backend.handle(
       new Request("http://localhost/auth/sso/apple/callback", {
@@ -250,13 +251,19 @@ describe("SSO web callback code exchange", () => {
       expect(location.searchParams.get("code")).toBeTruthy();
     });
 
-    it("issues no code for a state started without a challenge", async () => {
-      const location = await googleCallback();
+    for (const [label, callback] of [
+      ["a Google", () => googleCallback()],
+      ["an Apple GET", () => appleGetCallback()],
+      ["an Apple form_post", () => applePostCallback()],
+    ] as const) {
+      it(`issues no code for ${label} state started without a challenge`, async () => {
+        const location = await callback();
 
-      expect(location.searchParams.has("code")).toBe(false);
-      expect(location.searchParams.get("error")).toBe("invalid_state");
-      expect(providerSpy).not.toHaveBeenCalled();
-    });
+        expect(location.searchParams.has("code")).toBe(false);
+        expect(location.searchParams.get("error")).toBe("invalid_state");
+        expect(providerSpy).not.toHaveBeenCalled();
+      });
+    }
 
     it("keeps the code in Redis for at most 60 seconds", async () => {
       const { code } = await signedInCode();
@@ -354,20 +361,29 @@ describe("SSO web callback code exchange", () => {
         "a verifier outside the base64url alphabet",
         { code: faker.string.alphanumeric(43), verifier: `${"a".repeat(42)}+` },
       ],
+      ["a missing code", { verifier: newVerifier() }],
       [
-        "a code shorter than 22 characters",
-        { code: faker.string.alphanumeric(21), verifier: newVerifier() },
+        "a code of 42 characters",
+        { code: faker.string.alphanumeric(42), verifier: newVerifier() },
       ],
       [
-        "a code longer than 128 characters",
-        { code: faker.string.alphanumeric(129), verifier: newVerifier() },
+        "a code of 44 characters",
+        { code: faker.string.alphanumeric(44), verifier: newVerifier() },
+      ],
+      [
+        "a 43-character code with a plus sign",
+        { code: `${faker.string.alphanumeric(42)}+`, verifier: newVerifier() },
+      ],
+      [
+        "a 43-character code with a dot",
+        { code: `${faker.string.alphanumeric(42)}.`, verifier: newVerifier() },
       ],
     ] as const) {
-      it(`answers ${label} with a client error`, async () => {
+      it(`rejects ${label} as invalid input before looking the code up`, async () => {
         const response = await exchange(body);
 
-        expect(response.status).toBeGreaterThanOrEqual(400);
-        expect(response.status).toBeLessThan(500);
+        expect(response.status).not.toBe(401);
+        expect(response.status).toBe(VALIDATION_STATUS);
       });
     }
 
