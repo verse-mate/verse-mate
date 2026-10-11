@@ -4,6 +4,8 @@ import type SupportSenderEnum from "database/src/models/public/SupportSenderEnum
 import type { db } from "../../shared/shared.plugin";
 import { SupportRepository } from "../repository/support.repository";
 
+const SLACK_REQUEST_MAX_AGE_SECONDS = 5 * 60;
+
 export class SupportService {
   private slackClient: WebClient;
   private channelId: string;
@@ -13,6 +15,11 @@ export class SupportService {
     this.slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
     this.channelId = process.env.SLACK_SUPPORT_CHANNEL_ID || "";
     this.supportRepository = new SupportRepository(db);
+    if (!process.env.SLACK_SIGNING_SECRET) {
+      console.warn(
+        "SLACK_SIGNING_SECRET is not set: the Slack support webhook will refuse every request",
+      );
+    }
   }
 
   async handleNewConversation(userId: string, text: string, subject?: string) {
@@ -174,11 +181,13 @@ export class SupportService {
 
   verifySlackSignature(signature: string, timestamp: string, body: string) {
     const signingSecret = process.env.SLACK_SIGNING_SECRET;
-    if (!signingSecret) {
-      console.warn(
-        "SLACK_SIGNING_SECRET not set, skipping signature verification",
-      );
-      return true;
+    if (!signingSecret || !/^\d+$/.test(timestamp)) {
+      return false;
+    }
+
+    const ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));
+    if (ageSeconds > SLACK_REQUEST_MAX_AGE_SECONDS) {
+      return false;
     }
 
     const baseString = `v0:${timestamp}:${body}`;
