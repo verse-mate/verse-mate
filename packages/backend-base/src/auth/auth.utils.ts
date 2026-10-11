@@ -90,7 +90,10 @@ export const requireCurrentUser = (
   if (!currentUserId) {
     throw new UnauthorizedError("Authentication required");
   }
-  if (claimedUserId !== undefined && claimedUserId !== currentUserId) {
+  if (
+    claimedUserId !== undefined &&
+    claimedUserId.toLowerCase() !== currentUserId.toLowerCase()
+  ) {
     throw new ForbiddenError("You can only access your own data");
   }
   return currentUserId;
