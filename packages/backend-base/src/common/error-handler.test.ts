@@ -1,6 +1,9 @@
-import { describe, expect, it, mock } from "bun:test";
+import { describe, expect, it, mock, spyOn } from "bun:test";
+import { Elysia, t } from "elysia";
+
+import shared from "../shared/shared.plugin";
 import { createErrorHandler } from "./error-handler";
-import { UnauthorizedError } from "./errors";
+import { NotFoundError, UnauthorizedError } from "./errors";
 
 describe("createErrorHandler - Rate Limit Detection", () => {
   it("should detect plain objects with status 429 and return proper response", async () => {
@@ -209,12 +212,91 @@ describe("createErrorHandler - Rate Limit Detection", () => {
       store: {},
     };
 
-    const response = await errorHandler(context);
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    let response: unknown;
+    try {
+      response = await errorHandler(context);
+      expect(Bun.inspect(logged.mock.calls)).toContain("Something went wrong");
+    } finally {
+      logged.mockRestore();
+    }
 
     expect(mockSet.status).toBe(500);
     expect(response).toEqual({
       error: "INTERNAL_SERVER_ERROR",
-      message: "Something went wrong",
+      message: "An unexpected error occurred",
     });
+  });
+
+  it("answers the same for a thrown value that is not an Error", async () => {
+    const errorHandler = createErrorHandler("test plugin");
+    const set = { status: 200 };
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const response = await errorHandler({
+        code: "UNKNOWN",
+        error: "connection to 10.0.0.5 refused",
+        set,
+      });
+      expect(set.status).toBe(500);
+      expect(response).toEqual({
+        error: "INTERNAL_SERVER_ERROR",
+        message: "An unexpected error occurred",
+      });
+    } finally {
+      logged.mockRestore();
+    }
+  });
+});
+
+describe("a route without its own error handler", () => {
+  const app = new Elysia()
+    .use(shared)
+    .get("/boom", () => {
+      throw new Error("relation users_private does not exist");
+    })
+    .get("/known", () => {
+      throw new NotFoundError("Chapter not found");
+    })
+    .get("/limited", () => {
+      throw { status: 429, message: "Slow down" };
+    })
+    .get("/typed", ({ query }) => query, {
+      query: t.Object({ n: t.Numeric() }),
+    });
+
+  const call = async (path: string) => {
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const response = await app.handle(new Request(`http://localhost${path}`));
+      return {
+        status: response.status,
+        body: await response.text(),
+        logged: Bun.inspect(logged.mock.calls),
+      };
+    } finally {
+      logged.mockRestore();
+    }
+  };
+
+  it("answers an unexpected error with a generic 500 and logs the detail", async () => {
+    const { status, body, logged } = await call("/boom");
+    expect(status).toBe(500);
+    expect(JSON.parse(body)).toEqual({
+      error: "INTERNAL_SERVER_ERROR",
+      message: "An unexpected error occurred",
+    });
+    expect(logged).toContain("relation users_private does not exist");
+  });
+
+  it("leaves API errors, rate limits and validation answers as they were", async () => {
+    const known = await call("/known");
+    expect(known.status).toBe(404);
+    expect(JSON.parse(known.body)).toEqual({
+      error: "NOT_FOUND",
+      message: "Chapter not found",
+    });
+    expect((await call("/limited")).status).toBe(429);
+    expect((await call("/typed?n=abc")).status).toBe(422);
   });
 });

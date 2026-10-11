@@ -1,5 +1,31 @@
 import { ApiError } from "./errors";
 
+const ELYSIA_REQUEST_ERRORS = new Set([
+  "VALIDATION",
+  "NOT_FOUND",
+  "PARSE",
+  "INVALID_COOKIE_SIGNATURE",
+  "INVALID_FILE_TYPE",
+]);
+
+export const isUnexpectedError = (code: unknown, error: unknown): boolean =>
+  error instanceof Error &&
+  !(error instanceof ApiError) &&
+  !ELYSIA_REQUEST_ERRORS.has(String(code));
+
+export function unexpectedErrorResponse(
+  source: string,
+  error: unknown,
+  set: { status?: number | string },
+) {
+  console.error(`Unhandled error in ${source}:`, error);
+  set.status = 500;
+  return {
+    error: "INTERNAL_SERVER_ERROR",
+    message: "An unexpected error occurred",
+  };
+}
+
 /**
  * Shared error handler for all Elysia plugins
  * Handles ApiError instances and Elysia built-in errors consistently
@@ -66,16 +92,7 @@ export const createErrorHandler = (pluginName: string) => {
           };
         }
 
-        // Handle other unexpected errors
-        console.error(`Unhandled error in ${pluginName}:`, error);
-        set.status = 500;
-        return {
-          error: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred",
-        };
+        return unexpectedErrorResponse(pluginName, error, set);
     }
   };
 };
