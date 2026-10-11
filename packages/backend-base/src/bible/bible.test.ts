@@ -159,11 +159,9 @@ describe("Bible Plugin", () => {
       expect(nasb?.language_code).toBe("en");
       expect(nasb?.testament_coverage).toBeDefined();
 
-      // Curated open versions seeded by migration are discoverable, including
-      // the NT-only Ukrainian translation.
       const ukrkl = data?.versions.find((v) => v.version_key === "UKRKL");
       expect(ukrkl).toBeDefined();
-      expect(ukrkl?.testament_coverage).toBe("nt");
+      expect(ukrkl?.testament_coverage).toBe("full");
     });
 
     it("GET /bible/book/explanation/:bookId/:chapterNumber - returns the explanation shape", async () => {
