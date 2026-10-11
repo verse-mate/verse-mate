@@ -43,7 +43,6 @@ export interface SSOCallbackResult {
   success: boolean;
   code?: string;
   accessToken?: string;
-  refreshToken?: string;
   verified?: boolean;
   error?: string;
   errorDescription?: string;
@@ -92,7 +91,6 @@ export function parseSSOCallbackParams(
 
   const code = params.get("code");
   const accessToken = params.get("accessToken");
-  const refreshToken = params.get("refreshToken");
   const verified = params.get("verified");
   const error = params.get("error");
   const errorDescription = params.get("error_description");
@@ -102,12 +100,7 @@ export function parseSSOCallbackParams(
   }
 
   if (accessToken) {
-    return {
-      success: true,
-      accessToken,
-      refreshToken: refreshToken || undefined,
-      verified: verified === "true",
-    };
+    return { success: true, accessToken, verified: verified === "true" };
   }
 
   // Error case
@@ -263,18 +256,56 @@ export async function ssoChallengeFor(verifier: string): Promise<string> {
   return base64url(new Uint8Array(digest));
 }
 
+export const SSO_VERIFIER_MAX_AGE_MS = 600_000;
+
+export const SSO_START_FAILED_DESCRIPTION =
+  "Sign-in could not start, please try again";
+
+interface PendingVerifier {
+  verifier: string;
+  startedAt: number;
+}
+
+function callbackPageFor(redirectUrl: string): string {
+  const provider =
+    /\/sso\/(google|apple)\/redirect/.exec(redirectUrl)?.[1] ?? "google";
+  const query = new URLSearchParams({
+    error: "invalid_state",
+    error_description: SSO_START_FAILED_DESCRIPTION,
+  });
+  return `/auth/callback/${provider}?${query}`;
+}
+
 export async function startSSOSignIn(redirectUrl: string): Promise<void> {
-  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
-  sessionStorage.setItem(SSO_VERIFIER_KEY, verifier);
-  const challenge = await ssoChallengeFor(verifier);
-  window.location.href = `${redirectUrl}?challenge=${challenge}`;
+  try {
+    const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = await ssoChallengeFor(verifier);
+    const pending: PendingVerifier = { verifier, startedAt: Date.now() };
+    sessionStorage.setItem(SSO_VERIFIER_KEY, JSON.stringify(pending));
+    window.location.href = `${redirectUrl}?challenge=${challenge}`;
+  } catch {
+    window.location.href = callbackPageFor(redirectUrl);
+  }
+}
+
+function freshVerifier(stored: string | null): string | null {
+  if (!stored) return null;
+  try {
+    const { verifier, startedAt } = JSON.parse(stored) as PendingVerifier;
+    if (typeof verifier !== "string" || typeof startedAt !== "number") {
+      return null;
+    }
+    return Date.now() - startedAt <= SSO_VERIFIER_MAX_AGE_MS ? verifier : null;
+  } catch {
+    return null;
+  }
 }
 
 function takePendingVerifier(): string | null {
   try {
-    const verifier = sessionStorage.getItem(SSO_VERIFIER_KEY);
+    const stored = sessionStorage.getItem(SSO_VERIFIER_KEY);
     sessionStorage.removeItem(SSO_VERIFIER_KEY);
-    return verifier;
+    return freshVerifier(stored);
   } catch {
     return null;
   }
@@ -314,7 +345,7 @@ export async function handleSSOCallback(
   if (parsed.success) {
     const accessToken = await sessionTokenFrom(parsed, verifier, exchangeCode);
     if (accessToken) {
-      storeSSOTokens(accessToken, parsed.refreshToken);
+      storeSSOTokens(accessToken);
       setupPostLoginBehavior();
       return { success: true, redirectUrl: getSSORedirectDestination() };
     }
