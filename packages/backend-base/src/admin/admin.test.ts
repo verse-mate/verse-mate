@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
 
 import authPlugin from "../auth/auth.plugin";
+import { resetAiProviderCache } from "../shared/ai";
 import { getTestClient } from "../shared/test-client";
 import { createTestUser } from "../shared/test-helpers";
 import Backend from "./admin.plugin";
@@ -152,17 +154,14 @@ describe("Admin Plugin", () => {
       });
 
       expect(error).toBeFalsy();
-      expect(data).toBeTruthy();
-      expect(Array.isArray(data)).toBe(true);
-      expect(data.length).toBeGreaterThanOrEqual(6);
-
-      if (data && data.length > 0) {
-        expect(data[0]).toHaveProperty("theme_id");
-        expect(data[0]).toHaveProperty("name");
-        expect(data[0]).toHaveProperty("color");
-        expect(data[0]).toHaveProperty("is_active");
-        testThemeId = data[0].theme_id;
-      }
+      expect(data?.success).toBe(true);
+      const themes = data?.data ?? [];
+      expect(themes.length).toBeGreaterThanOrEqual(6);
+      expect(themes[0]).toHaveProperty("theme_id");
+      expect(themes[0]).toHaveProperty("name");
+      expect(themes[0]).toHaveProperty("color");
+      expect(themes[0]).toHaveProperty("is_active");
+      testThemeId = themes[0].theme_id;
     });
 
     it("GET /admin/highlight-themes/all - non-admin cannot access", async () => {
@@ -206,7 +205,9 @@ describe("Admin Plugin", () => {
         },
       });
 
-      const updated = themes?.find((t: any) => t.theme_id === testThemeId);
+      const updated = themes?.data?.find(
+        (t: any) => t.theme_id === testThemeId,
+      );
       expect(updated?.is_active).toBe(false);
 
       // Revert
@@ -323,28 +324,73 @@ describe("Admin Plugin", () => {
     });
 
     it("POST /admin/batch-auto-highlights - admin can create batch", async () => {
-      const { data, error } = await testClient.admin[
-        "batch-auto-highlights"
-      ].post(
-        {
-          type: "book",
-          model: "gpt-4o-mini",
-          effort: "low",
-          bookName: "Philemon", // Small book for testing
-        },
-        {
-          headers: {
-            authorization: `Bearer ${adminUser.accessToken}`,
-          },
-        },
-      );
+      const db = Backend.store.db.getOrCreateConnection();
+      const seededPrompt = await db
+        .insertInto("prompts")
+        .values({
+          prompt: "Highlight the themes of {book_name}.",
+          status: PromptStatusEnum.active,
+          prompt_type: "auto-highlight",
+        })
+        .onConflict((oc) => oc.column("prompt_type").doNothing())
+        .returning("prompt_id")
+        .executeTakeFirst();
+      const aiProvider = process.env.AI_PROVIDER;
+      process.env.AI_PROVIDER = "stub";
+      resetAiProviderCache();
+      let batchId: string | undefined;
 
-      expect(error).toBeFalsy();
-      expect(data).toBeTruthy();
-      expect(data?.success).toBe(true);
-      expect(data?.data).toBeDefined();
-      // Should have book_batch_id since we specified a book
-      expect(data?.data?.book_batch_id).toBeDefined();
+      try {
+        const { data, error } = await testClient.admin[
+          "batch-auto-highlights"
+        ].post(
+          {
+            type: "book",
+            model: "gpt-4o-mini",
+            effort: "low",
+            bookName: "Philemon",
+          },
+          {
+            headers: {
+              authorization: `Bearer ${adminUser.accessToken}`,
+            },
+          },
+        );
+
+        expect(error).toBeFalsy();
+        expect(data?.success).toBe(true);
+        batchId = data?.data?.id;
+        expect(batchId).toBeTruthy();
+
+        const job = await db
+          .selectFrom("batch_jobs")
+          .innerJoin("books", "books.book_id", "batch_jobs.book_id")
+          .select(["batch_jobs.batch_type", "books.name", "batch_jobs.status"])
+          .where("batch_jobs.openai_batch_id", "=", batchId ?? "")
+          .where("batch_jobs.created_by", "=", adminUser.userId)
+          .executeTakeFirst();
+        expect(job).toEqual({
+          batch_type: "auto-highlight",
+          name: "Philemon",
+          status: "validating",
+        });
+      } finally {
+        if (batchId) await Backend.store.batchMonitoringQueue.remove(batchId);
+        await db
+          .deleteFrom("batch_jobs")
+          .where("created_by", "=", adminUser.userId)
+          .where("batch_type", "=", "auto-highlight")
+          .execute();
+        if (seededPrompt)
+          await db
+            .deleteFrom("prompts")
+            .where("prompt_id", "=", seededPrompt.prompt_id)
+            .execute();
+        if (aiProvider === undefined)
+          Reflect.deleteProperty(process.env, "AI_PROVIDER");
+        else process.env.AI_PROVIDER = aiProvider;
+        resetAiProviderCache();
+      }
     });
 
     it("POST /admin/batch-auto-highlights - non-admin cannot create batch", async () => {
