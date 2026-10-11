@@ -62,6 +62,15 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
       { provider: "google", token: "not-a-token", platform: "mobile" },
       forwarded,
     );
+    await fetch(`${base()}/auth/sso/google/redirect?challenge=x`, {
+      redirect: "manual",
+      headers: forwarded ? { "x-forwarded-for": forwarded } : {},
+    });
+    await post(
+      "/auth/sso/exchange",
+      { code: "A".repeat(43), verifier: "B".repeat(43) },
+      forwarded,
+    );
     return [...keys];
   }
 
@@ -96,7 +105,7 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
         .execute();
   });
 
-  it("TRUSTED_PROXY_HOPS=0: signup, login and SSO key on the socket and ignore X-Forwarded-For", async () => {
+  it("TRUSTED_PROXY_HOPS=0: signup, login, SSO, SSO start and SSO exchange key on the socket and ignore X-Forwarded-For", async () => {
     process.env.TRUSTED_PROXY_HOPS = "0";
     const got = await limiterKeys(FORWARDED);
     expect(got.map((k) => k.split(":")[1])).toEqual([
@@ -105,6 +114,8 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
       "login-net",
       "login",
       "sso",
+      "sso-redirect",
+      "sso-exchange",
     ]);
     expectKeys(got, LOOPBACK);
   });
@@ -112,14 +123,14 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
   it("TRUSTED_PROXY_HOPS=1 without a forwarded address: the socket, not a shared unknown bucket", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const got = await limiterKeys();
-    expect(got).toHaveLength(5);
+    expect(got).toHaveLength(7);
     expectKeys(got, LOOPBACK);
   });
 
   it("TRUSTED_PROXY_HOPS=1: the address the proxy appended", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const got = await limiterKeys(`203.0.113.1, ${FORWARDED}`);
-    expect(got).toHaveLength(5);
+    expect(got).toHaveLength(7);
     expectKeys(got, new RegExp(`:${FORWARDED.replaceAll(".", "\\.")}$`));
   });
 

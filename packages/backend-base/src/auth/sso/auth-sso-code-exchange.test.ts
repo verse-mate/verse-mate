@@ -235,16 +235,13 @@ describe("SSO web callback code exchange", () => {
     }
 
     it("limits sign-in starts to 20 a minute per client", async () => {
-      const statuses: number[] = [];
-      for (let i = 0; i < 21; i++) {
+      const errors: Array<string | null> = [];
+      for (let i = 0; i < 20; i++) {
         const response = await startSignIn("google", "short");
-        statuses.push(response.status);
+        errors.push(locationOf(response).searchParams.get("error"));
       }
 
-      expect(statuses.slice(0, 20).every((status) => status === 302)).toBe(
-        true,
-      );
-      expect(statuses[20]).toBe(302);
+      expect(errors.every((error) => error === "invalid_state")).toBe(true);
       const refused = locationOf(
         await startSignIn("google", challengeOf(newVerifier())),
       );
@@ -398,6 +395,25 @@ describe("SSO web callback code exchange", () => {
         expect(await cache.get(cacheConstants.ssoState(state))).toBeNull();
       });
     }
+
+    it("still shows a provider refusal on the portal when Redis is down", async () => {
+      const take = spyOn(cache, "take").mockRejectedValue(
+        new Error("Redis unavailable"),
+      );
+      try {
+        const response = await Backend.handle(
+          new Request(
+            `http://localhost/auth/sso/google/callback?error=access_denied&state=${faker.string.uuid()}`,
+            { method: "GET", redirect: "manual" },
+          ),
+        );
+
+        expect(response.status).toBe(302);
+        expect(locationOf(response).origin).toBe(FRONTEND_URL);
+      } finally {
+        take.mockRestore();
+      }
+    });
 
     it("sends a provider refusal with an unknown state to the portal", async () => {
       process.env.ADMIN_URL = ADMIN_URL;

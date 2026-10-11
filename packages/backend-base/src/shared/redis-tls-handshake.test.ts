@@ -128,7 +128,7 @@ describe("Redis TLS handshake", () => {
     return new Promise<Handshake>((resolve, reject) => {
       const timer = setTimeout(
         () => reject(new Error("the client neither sent data nor refused")),
-        5000,
+        3000,
       );
       settle = (outcome) => {
         clearTimeout(timer);
