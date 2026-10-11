@@ -227,6 +227,7 @@ PY
       SELECT id, 'apple', 'synthetic-a-' || id, 'someone-else@example.test' FROM \"user\"
       WHERE \"firstName\" IN ('Renamed', 'Mixed') AND \"lastName\" = 'Leader';
     INSERT INTO coach_leaders (email, name) VALUES ('portal-added@example.test', 'Portal Added');
+    UPDATE \"user\" SET email_verified_at = NULL;
   " -v l1="$l1" -v l2="$l2" -v l3="$l3" -v l4="$l4" -v l5="$l5" -v l6="$l6" -v admin="$admin" >/dev/null
   docker exec "$PG" pg_dump -U rehearsal -d rehearsal -Fc -f /tmp/synthetic.dump
   docker cp "$PG:/tmp/synthetic.dump" "$OUT"
