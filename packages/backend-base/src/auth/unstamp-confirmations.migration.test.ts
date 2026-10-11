@@ -17,7 +17,11 @@ afterEach(async () => {
   created = [];
 });
 
-async function stamped(options: { linkedFor?: string; stampedAt?: string }) {
+async function stamped(options: {
+  linkedFor?: string;
+  stampedAt?: string;
+  spaced?: boolean;
+}) {
   const email = `unstamp-${faker.string.uuid()}@example.test`;
   const { id } = await conn
     .insertInto("user")
@@ -31,61 +35,97 @@ async function stamped(options: { linkedFor?: string; stampedAt?: string }) {
       .set({ email_verified_at: new Date(options.stampedAt) })
       .where("id", "=", id)
       .execute();
+  const own = email.toUpperCase();
   await conn
     .insertInto("user_sso_accounts")
     .values({
       user_id: id,
       provider: SsoProviderEnum.google,
       provider_user_id: `unstamp-${id}`,
-      email: options.linkedFor ?? email.toUpperCase(),
+      email: options.linkedFor ?? (options.spaced ? `  ${own} ` : own),
     })
     .execute();
   return id;
 }
 
-async function stampsAfterUp(ids: string[]) {
-  let stamps: Array<{ id: string; email_verified_at: Date | null }> = [];
+type AfterUp = {
+  emailVerified: boolean;
+  email_verified_at: Date | null;
+  links: number;
+};
+
+async function afterUp(ids: string[]) {
+  const seen = new Map<string, AfterUp>();
   const outcome = await conn
     .transaction()
     .execute(async (trx) => {
-      await up(trx as never);
-      stamps = await trx
-        .selectFrom("user")
-        .select(["id", "email_verified_at"])
-        .where("id", "in", ids)
-        .execute();
+      await up(trx);
+      for (const id of ids) {
+        const user = await trx
+          .selectFrom("user")
+          .select(["emailVerified", "email_verified_at"])
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow();
+        const links = await trx
+          .selectFrom("user_sso_accounts")
+          .select("id")
+          .where("user_id", "=", id)
+          .execute();
+        seen.set(id, { ...user, links: links.length });
+      }
       throw new RolledBack();
     })
     .catch((error: unknown) => error);
   expect(outcome).toBeInstanceOf(RolledBack);
-  return new Map(stamps.map((s) => [s.id, s.email_verified_at]));
+  return seen;
 }
 
 describe("clearing confirmations stamped while a link for another address stayed", () => {
-  it("clears only stamps written since the stamp existed on accounts that keep such a link", async () => {
+  it("clears only stamps written since the stamp existed on accounts that keep such a link, and touches nothing else", async () => {
     const { rows } = await sql<{ at: string }>`
       SELECT "timestamp" AS at FROM kysely_migration
       WHERE name = '20261011000000-user-confirmation-stamp'
     `.execute(conn);
     const stampExisted = new Date(rows[0].at).getTime();
-    const before = new Date(stampExisted - 60_000).toISOString();
     const foreign = `elsewhere-${faker.string.uuid()}@example.test`;
 
     const keptForeign = await stamped({ linkedFor: foreign });
-    const ownLinkOnly = await stamped({});
+    const stampedAtStart = await stamped({
+      linkedFor: foreign,
+      stampedAt: new Date(stampExisted).toISOString(),
+    });
     const stampedBefore = await stamped({
       linkedFor: foreign,
-      stampedAt: before,
+      stampedAt: new Date(stampExisted - 60_000).toISOString(),
     });
+    const ownLinkOnly = await stamped({});
+    const ownLinkSpaced = await stamped({ spaced: true });
+    expect(
+      (
+        await conn
+          .selectFrom("user")
+          .select("email_verified_at")
+          .where("id", "=", keptForeign)
+          .executeTakeFirstOrThrow()
+      ).email_verified_at,
+    ).not.toBeNull();
 
-    const after = await stampsAfterUp([
+    const after = await afterUp([
       keptForeign,
-      ownLinkOnly,
+      stampedAtStart,
       stampedBefore,
+      ownLinkOnly,
+      ownLinkSpaced,
     ]);
 
-    expect(after.get(keptForeign)).toBeNull();
-    expect(after.get(ownLinkOnly)).not.toBeNull();
-    expect(after.get(stampedBefore)).not.toBeNull();
+    expect(after.get(keptForeign)).toEqual({
+      emailVerified: true,
+      email_verified_at: null,
+      links: 1,
+    });
+    expect(after.get(stampedAtStart)?.email_verified_at).toBeNull();
+    expect(after.get(stampedBefore)?.email_verified_at).not.toBeNull();
+    expect(after.get(ownLinkOnly)?.email_verified_at).not.toBeNull();
+    expect(after.get(ownLinkSpaced)?.email_verified_at).not.toBeNull();
   });
 });
