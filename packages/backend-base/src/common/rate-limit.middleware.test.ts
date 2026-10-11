@@ -581,14 +581,16 @@ describe("a limiter key is always an address, whatever the header holds", () => 
         } as never),
       ).toBeUndefined();
     }
-    const hex = () => Math.floor(Math.random() * 0x10000).toString(16);
-    const octet = () => Math.floor(Math.random() * 256);
+    let seed = 7;
+    const random = () => {
+      seed = (seed * 1_103_515_245 + 12_345) % 2 ** 31;
+      return seed / 2 ** 31;
+    };
+    const hex = () => Math.floor(random() * 0x10000).toString(16);
+    const octet = () => Math.floor(random() * 256);
     for (let i = 0; i < 5_000; i++) {
-      const groups = Array.from(
-        { length: 1 + Math.floor(Math.random() * 5) },
-        hex,
-      );
-      const cut = Math.floor(Math.random() * (groups.length + 1));
+      const groups = Array.from({ length: 1 + Math.floor(random() * 5) }, hex);
+      const cut = Math.floor(random() * (groups.length + 1));
       const entry = `${groups.slice(0, cut).join(":")}::${groups.slice(cut).join(":")}${cut < groups.length ? ":" : ""}${octet()}.${octet()}.${octet()}.${octet()}`;
       expect(() =>
         clientIp(
