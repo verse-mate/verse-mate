@@ -3,6 +3,7 @@ import { faker } from "@faker-js/faker";
 import { db as Database } from "database";
 import { TopicRepository } from "./topic.repository";
 
+const FIXTURE_CODE_PATTERN = "q'%";
 const languageCode = `q'${faker.string.alpha(4).toLowerCase()}`;
 
 describe("TopicRepository with a language code that needs escaping", () => {
@@ -11,11 +12,20 @@ describe("TopicRepository with a language code that needs escaping", () => {
   const translatedName = faker.lorem.words(3);
   let topic: { topic_id: string; category: string; slug: string };
 
+  const removeFixtures = () =>
+    conn()
+      .deleteFrom("topic_translations")
+      .where("language_code", "like", FIXTURE_CODE_PATTERN)
+      .execute();
+
   beforeAll(async () => {
+    await removeFixtures();
+
     topic = await conn()
       .selectFrom("topics")
       .where("is_active", "=", true)
       .select(["topic_id", "category", "slug"])
+      .orderBy("topic_id")
       .executeTakeFirstOrThrow();
 
     await conn()
@@ -30,10 +40,7 @@ describe("TopicRepository with a language code that needs escaping", () => {
   });
 
   afterAll(async () => {
-    await conn()
-      .deleteFrom("topic_translations")
-      .where("language_code", "=", languageCode)
-      .execute();
+    await removeFixtures();
     Database.closeConnection();
   });
 
