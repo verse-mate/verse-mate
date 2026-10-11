@@ -360,6 +360,8 @@ async function roundTrip(): Promise<boolean> {
     const lastOther = names.findLastIndex(
       (n, i) => i < lastCoach && !isCoach(n),
     );
+    if (lastCoach < 0 || lastOther < 0)
+      throw new Error("no coach migration block to round-trip");
     const block = names.slice(lastOther + 1, lastCoach + 1);
     const beforeBlock = names[lastOther];
     console.log(
