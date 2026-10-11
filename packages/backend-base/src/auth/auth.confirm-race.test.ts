@@ -5,6 +5,7 @@ import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 import { sql } from "database";
 
 import { ConflictError } from "../common/errors";
+import cacheConstants from "../shared/cache.constants";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
 import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
@@ -138,5 +139,88 @@ describe("a confirmation stamps only the address it proved, even when a rename r
         shared.store.db,
       ).findByProviderAndProviderId(SsoProviderEnum.google, providerUserId),
     ).toBeFalsy();
+  });
+  it("a sign-in through a linked identity: a rename landing while it waits for the row confirms nothing and drops nothing", async () => {
+    const { id, email } = await account(false);
+    const links = new UserSsoAccountRepository(shared.store.db);
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `linked-${id}`,
+      email,
+    });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `elsewhere-${id}`,
+      email: `elsewhere-${faker.string.uuid()}@example.test`,
+    });
+    await shared.store.cache.set(
+      cacheConstants.accessToken(id),
+      ["device-a"],
+      "1h",
+    );
+    const service = new AuthService(
+      shared.store.db,
+      shared.store.cache,
+      shared.store.notification,
+    );
+    const { attempt } = await conn.transaction().execute(async (trx) => {
+      await trx
+        .selectFrom("user")
+        .select("id")
+        .where("id", "=", id)
+        .forUpdate()
+        .execute();
+      const { rows } = await sql<{
+        pid: number;
+      }>`select pg_backend_pid() as pid`.execute(trx);
+      const attempt = service
+        .loginWithSSO(
+          SsoProviderEnum.google,
+          {
+            providerUserId: `linked-${id}`,
+            email,
+            emailVerified: true,
+            picture: "https://example.test/p.png",
+          },
+          jwt as never,
+        )
+        .then(
+          () => undefined,
+          (error: unknown) => error,
+        );
+      await waitUntilBlockedBy(rows[0].pid);
+      await trx
+        .updateTable("user")
+        .set({ email: ROSTER })
+        .where("id", "=", id)
+        .execute();
+      return { attempt };
+    });
+
+    expect(await attempt).toBeInstanceOf(ConflictError);
+    expect(await stampOf(id)).toMatchObject({
+      email: ROSTER,
+      email_verified_at: null,
+    });
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `elsewhere-${id}`,
+      ),
+    ).toBeTruthy();
+    expect(
+      await shared.store.cache.get<string[]>(cacheConstants.accessToken(id)),
+    ).toEqual(["device-a"]);
+    expect(
+      (
+        await conn
+          .selectFrom("user")
+          .select("imageSrc")
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow()
+      ).imageSrc,
+    ).toBeNull();
   });
 });

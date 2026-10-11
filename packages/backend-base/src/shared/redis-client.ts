@@ -12,6 +12,46 @@ return count
 // Check if URL uses SSL (rediss://)
 const isSSLUrl = (url: string) => url.startsWith("rediss://");
 
+const APPEND_TO_JSON_ARRAY = `
+local raw = redis.call("GET", KEYS[1])
+local list = raw and cjson.decode(raw) or {}
+table.insert(list, ARGV[1])
+while #list > tonumber(ARGV[3]) do table.remove(list, 1) end
+redis.call("SET", KEYS[1], cjson.encode(list), "PX", ARGV[2])
+return #list
+`;
+
+const REMOVE_FROM_JSON_ARRAY = `
+local raw = redis.call("GET", KEYS[1])
+if not raw then return 0 end
+local list = cjson.decode(raw)
+local kept = {}
+for _, item in ipairs(list) do
+  if item ~= ARGV[1] then table.insert(kept, item) end
+end
+if #kept == #list then return 0 end
+if #kept == 0 then
+  redis.call("DEL", KEYS[1])
+else
+  local ttl = redis.call("PTTL", KEYS[1])
+  if ttl > 0 then
+    redis.call("SET", KEYS[1], cjson.encode(kept), "PX", ttl)
+  elseif ttl == -1 then
+    redis.call("SET", KEYS[1], cjson.encode(kept))
+  else
+    redis.call("DEL", KEYS[1])
+  end
+end
+return #list - #kept
+`;
+
+function parseTtl(ttl: string): number {
+  const ttlMs = ms(ttl);
+  if (typeof ttlMs !== "number" || !Number.isFinite(ttlMs) || ttlMs <= 0)
+    throw new Error(`Invalid TTL provided: "${ttl}"`);
+  return ttlMs;
+}
+
 class RedisClient {
   private client: RedisClientType;
 
@@ -120,10 +160,7 @@ class RedisClient {
   async set(key: string, value: object, ttl: string): Promise<string | null> {
     await this.connect();
     try {
-      const ttlMs = ms(ttl);
-      if (typeof ttlMs !== "number" || !Number.isFinite(ttlMs) || ttlMs <= 0) {
-        throw new Error(`Invalid TTL provided: "${ttl}"`);
-      }
+      const ttlMs = parseTtl(ttl);
 
       let payload: string;
       try {
@@ -160,6 +197,38 @@ class RedisClient {
       return await this.client.del(key);
     } catch (error) {
       console.error("Error deleting key from Redis:", error);
+      throw error;
+    }
+  }
+
+  async appendToJsonArray(
+    key: string,
+    value: string,
+    ttl: string,
+    limit: number,
+  ): Promise<void> {
+    await this.connect();
+    const ttlMs = parseTtl(ttl);
+    try {
+      await this.client.eval(APPEND_TO_JSON_ARRAY, {
+        keys: [key],
+        arguments: [value, String(ttlMs), String(limit)],
+      });
+    } catch (error) {
+      console.error("Error appending to a Redis array:", error);
+      throw error;
+    }
+  }
+
+  async removeFromJsonArray(key: string, value: string): Promise<void> {
+    await this.connect();
+    try {
+      await this.client.eval(REMOVE_FROM_JSON_ARRAY, {
+        keys: [key],
+        arguments: [value],
+      });
+    } catch (error) {
+      console.error("Error removing from a Redis array:", error);
       throw error;
     }
   }
