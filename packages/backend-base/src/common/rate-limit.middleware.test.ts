@@ -1072,7 +1072,7 @@ describe("the per-route IP limiter does not grow without bound", () => {
   });
 });
 
-describe("the confirmation email cannot be used to flood an address", () => {
+describe("the confirmation email limit counts per account", () => {
   it("one account gets five confirmation emails an hour, and another account is not affected", async () => {
     const cache = memoryCache();
     const send = (userId: string) =>
