@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 
 import type { cache } from "../shared/shared.plugin";
-import { clientBucket, clientChain, trustedProxyHops } from "./client-ip";
+import {
+  clientBucket,
+  clientChain,
+  clientNetwork,
+  trustedProxyHops,
+} from "./client-ip";
 
 interface RateLimitOptions {
   /**
@@ -84,6 +89,16 @@ export const authRateLimiters = {
       max: 30,
       keyGenerator: (context) =>
         `login-ip:${clientBucket(context.request, context.server)}`,
+      message: "Too many login attempts, please try again in a minute",
+    }),
+  ),
+
+  loginNetwork: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 60,
+      max: 300,
+      keyGenerator: (context) =>
+        `login-net:${clientNetwork(context.request, context.server)}`,
       message: "Too many login attempts, please try again in a minute",
     }),
   ),

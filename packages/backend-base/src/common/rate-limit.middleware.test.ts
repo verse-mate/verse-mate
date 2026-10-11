@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { extractClientIp } from "../auth/sso/sso.utils";
 import { createIpRateLimit } from "../middleware/rate-limit";
 import redisClient from "../shared/redis-client";
-import { clientBucket, clientIp, forgetClientIpLogs } from "./client-ip";
+import {
+  clientBucket,
+  clientIp,
+  clientNetwork,
+  forgetClientIpLogs,
+} from "./client-ip";
 import { authRateLimiters, createRateLimit } from "./rate-limit.middleware";
 
 const PROXY = "10.10.10.10";
@@ -572,6 +577,28 @@ describe("once the proxy count is set, an IPv6 host cannot step around the limit
       ).toBe("ok");
     });
 
+  it("login: a /48 gets 300 attempts a minute however many /64s it spreads them over", async () => {
+    const cache = memoryCache();
+    const from = (address: string) =>
+      hit(authRateLimiters.loginNetwork, cache, PROXY, {
+        "x-forwarded-for": address,
+      });
+    const results = [];
+    for (let i = 0; i <= 300; i++)
+      results.push(await from(`2001:db8:ab:${i.toString(16)}::1`));
+    expect(results.slice(0, 300).every((r) => r === "ok")).toBe(true);
+    expect(results[300]).toBe(429);
+    expect(await from("2001:db8:ac::1")).toBe("ok");
+    expect(
+      clientNetwork(
+        new Request("http://localhost/", {
+          headers: { "x-forwarded-for": CLIENT },
+        }),
+        socketOf(PROXY),
+      ),
+    ).toBe(CLIENT);
+  });
+
   it("login: one account gets five guesses per /64, not per address", async () => {
     const cache = memoryCache();
     const results = [];
@@ -850,6 +877,9 @@ describe("the counter keeps a fixed window and fails closed", () => {
     expect(await hit(authRateLimiters.loginIp, down as never, CLIENT)).toBe(
       "ok",
     );
+    expect(
+      await hit(authRateLimiters.loginNetwork, down as never, CLIENT),
+    ).toBe("ok");
   });
 });
 

@@ -16,7 +16,7 @@ import redisClient from "../shared/redis-client";
 import versionPolicyPlugin from "../versionPolicy.plugin";
 
 const FORWARDED = "198.51.100.23";
-const LOOPBACK = /:(127\.0\.0\.1|::1|0:0:0:0::\/64)$/;
+const LOOPBACK = /:(127\.0\.0\.1|::1|0:0:0:0::\/64|0:0:0::\/48)$/;
 
 describe("on a listening server, every limiter reads the socket, whatever the route handler names", () => {
   const keys: string[] = [];
@@ -96,6 +96,7 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     const got = await limiterKeys(FORWARDED);
     expect(got.map((k) => k.split(":")[1])).toEqual([
       "signup",
+      "login-net",
       "login-ip",
       "login",
       "sso",
@@ -106,14 +107,14 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
   it("TRUSTED_PROXY_HOPS=1 without a forwarded address: the socket, not a shared unknown bucket", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const got = await limiterKeys();
-    expect(got).toHaveLength(4);
+    expect(got).toHaveLength(5);
     for (const key of got) expect(key).toMatch(LOOPBACK);
   });
 
   it("TRUSTED_PROXY_HOPS=1: the address the proxy appended", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const got = await limiterKeys(`203.0.113.1, ${FORWARDED}`);
-    expect(got).toHaveLength(4);
+    expect(got).toHaveLength(5);
     for (const key of got) expect(key).toEndWith(`:${FORWARDED}`);
   });
 
@@ -128,10 +129,11 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     expect(response.status).toBe(200);
   });
 
-  it("an email longer than the column is refused before any limiter or lookup", async () => {
+  it("an email longer than the column is refused before any limiter or lookup, and the report carries no body", async () => {
     const long = `${"a".repeat(239)}@example.test`;
     expect(long).toHaveLength(252);
     keys.length = 0;
+    const errors = spyOn(console, "error").mockImplementation(() => {});
     for (const [path, body] of [
       ["/auth/login", { email: long, password: "x" }],
       ["/auth/forgot-password", { email: long }],
@@ -141,6 +143,13 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
       ],
     ] as const)
       expect((await post(path, body)).status).toBe(422);
+    const reported = errors.mock.calls
+      .map((call) => Bun.inspect(call))
+      .join("\n");
+    errors.mockRestore();
+    expect(reported).toContain("validation failed on body");
+    expect(reported).not.toContain("example.test");
+    expect(reported).not.toContain("Passw0rd");
     expect(keys).toEqual([]);
     const fits = `${"a".repeat(237)}@example.test`;
     expect(fits).toHaveLength(250);

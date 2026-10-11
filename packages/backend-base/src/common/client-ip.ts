@@ -86,7 +86,7 @@ export function clientIp(
   return address(chain[Math.max(0, chain.length - 1 - hops)]) ?? socket;
 }
 
-function prefix64(ip: string): string {
+function prefix(ip: string, bits: 48 | 64): string {
   const [head, tail] = ip.split("::");
   const groups = (part = "") => part.split(":").filter(Boolean);
   const front = groups(head);
@@ -96,17 +96,32 @@ function prefix64(ip: string): string {
       ? front
       : [...front, ...Array(8 - front.length - back.length).fill("0"), ...back];
   return `${full
-    .slice(0, 4)
+    .slice(0, bits / 16)
     .map((g) => Number.parseInt(g, 16).toString(16))
-    .join(":")}::/64`;
+    .join(":")}::/${bits}`;
+}
+
+function network(
+  request: Request,
+  server: AddressSource | null | undefined,
+  bits: 48 | 64,
+): string {
+  const ip = clientIp(request, server);
+  return trustedProxyHops() !== null && isIP(ip) === 6 ? prefix(ip, bits) : ip;
 }
 
 export function clientBucket(
   request: Request,
   server?: AddressSource | null,
 ): string {
-  const ip = clientIp(request, server);
-  return trustedProxyHops() !== null && isIP(ip) === 6 ? prefix64(ip) : ip;
+  return network(request, server, 64);
+}
+
+export function clientNetwork(
+  request: Request,
+  server?: AddressSource | null,
+): string {
+  return network(request, server, 48);
 }
 
 export function clientChain(
