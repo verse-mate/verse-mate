@@ -37,6 +37,8 @@ import { AudioService } from "./audio.service";
 // collide with real Bible seeds or with other integration tests that
 // share the same (chapter, type) scope. Must fit varchar(10).
 const TEST_LANG = `x${(Date.now() % 1_000_000).toString(36)}`.slice(0, 10);
+const PRODUCT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
+const OTHER_VOICE = PRODUCT_VOICE === "nova" ? "alloy" : "nova";
 
 let testExplanationId: number;
 let testChapterId: number;
@@ -68,16 +70,16 @@ async function insertFixtureExplanation(): Promise<void> {
   testExplanationId = inserted.explanation_id;
 }
 
-async function seedTwoAudioVariants(explanationId: number): Promise<void> {
+async function seedAudioVariants(explanationId: number): Promise<void> {
   const conn = Database.getOrCreateConnection();
   await conn
     .insertInto("explanation_audios")
     .values([
       {
         explanation_id: explanationId,
-        voice: "alloy",
+        voice: PRODUCT_VOICE,
         language_code: TEST_LANG,
-        storage_key: `explanation-audio/${explanationId}/alloy/en/hash1.mp3`,
+        storage_key: `explanation-audio/${explanationId}/${PRODUCT_VOICE}/en/hash1.mp3`,
         duration_seconds: 10,
         character_count: 50,
         content_hash: "hash1",
@@ -87,12 +89,24 @@ async function seedTwoAudioVariants(explanationId: number): Promise<void> {
       },
       {
         explanation_id: explanationId,
-        voice: "nova",
+        voice: OTHER_VOICE,
         language_code: TEST_LANG,
-        storage_key: `explanation-audio/${explanationId}/nova/en/hash2.mp3`,
+        storage_key: `explanation-audio/${explanationId}/${OTHER_VOICE}/en/hash2.mp3`,
         duration_seconds: 12,
         character_count: 50,
         content_hash: "hash2",
+        tts_provider: "openai",
+        tts_model: "tts-1-hd",
+        is_stale: false,
+      },
+      {
+        explanation_id: explanationId,
+        voice: PRODUCT_VOICE,
+        language_code: "pt-BR",
+        storage_key: `explanation-audio/${explanationId}/${PRODUCT_VOICE}/pt-BR/hash3.mp3`,
+        duration_seconds: 11,
+        character_count: 50,
+        content_hash: "hash3",
         tts_provider: "openai",
         tts_model: "tts-1-hd",
         is_stale: false,
@@ -152,7 +166,7 @@ describe("replaceExplanationWithAudioHook — integration", () => {
       queue,
     );
     await insertFixtureExplanation();
-    await seedTwoAudioVariants(testExplanationId);
+    await seedAudioVariants(testExplanationId);
   });
 
   afterAll(async () => {
@@ -161,7 +175,7 @@ describe("replaceExplanationWithAudioHook — integration", () => {
     await queue.close();
   });
 
-  it("replaces the explanation, marks old audio rows stale, and enqueues two jobs", async () => {
+  it("replaces the explanation, marks old audio rows stale, and enqueues only the product variant", async () => {
     const oldId = testExplanationId;
 
     const { newExplanationId, enqueuedJobIds } =
@@ -198,7 +212,7 @@ describe("replaceExplanationWithAudioHook — integration", () => {
       .selectAll()
       .where("explanation_id", "=", oldId)
       .execute();
-    expect(oldAudios).toHaveLength(2);
+    expect(oldAudios).toHaveLength(3);
     expect(oldAudios.every((a) => a.is_stale === true)).toBe(true);
 
     const newAudios = await Database.getOrCreateConnection()
@@ -208,22 +222,13 @@ describe("replaceExplanationWithAudioHook — integration", () => {
       .execute();
     expect(newAudios).toHaveLength(0);
 
-    // (3) Two jobs enqueued, one per variant, with deterministic ids.
-    expect(enqueuedJobIds).toHaveLength(2);
-    expect(enqueuedJobIds).toContain(
+    expect(enqueuedJobIds).toEqual([
       audioGenerationJobId({
         explanation_id: newExplanationId,
-        voice: "alloy",
+        voice: PRODUCT_VOICE,
         language_code: TEST_LANG,
       }),
-    );
-    expect(enqueuedJobIds).toContain(
-      audioGenerationJobId({
-        explanation_id: newExplanationId,
-        voice: "nova",
-        language_code: TEST_LANG,
-      }),
-    );
+    ]);
 
     for (const jobId of enqueuedJobIds) {
       const job = await queue.getJob(jobId);
@@ -249,9 +254,9 @@ describe("replaceExplanationWithAudioHook — integration", () => {
       .insertInto("explanation_audios")
       .values({
         explanation_id: active.explanation_id,
-        voice: "alloy",
+        voice: PRODUCT_VOICE,
         language_code: TEST_LANG,
-        storage_key: `explanation-audio/${active.explanation_id}/alloy/en/h.mp3`,
+        storage_key: `explanation-audio/${active.explanation_id}/${PRODUCT_VOICE}/en/h.mp3`,
         duration_seconds: 5,
         character_count: 10,
         content_hash: "h",
