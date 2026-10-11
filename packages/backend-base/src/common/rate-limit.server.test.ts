@@ -11,10 +11,12 @@ import { db as Database } from "database";
 import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
+import { ipRateLimit } from "../middleware/rate-limit";
 import redisClient from "../shared/redis-client";
 import versionPolicyPlugin from "../versionPolicy.plugin";
 
 const FORWARDED = "198.51.100.23";
+const LOOPBACK = /:(127\.0\.0\.1|::1|0:0:0:0::\/64)$/;
 
 describe("on a listening server, every limiter reads the socket, whatever the route handler names", () => {
   const keys: string[] = [];
@@ -98,17 +100,14 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
       "login",
       "sso",
     ]);
-    for (const key of got) {
-      expect(key).not.toEndWith(":unknown");
-      expect(key).not.toContain(FORWARDED);
-    }
+    for (const key of got) expect(key).toMatch(LOOPBACK);
   });
 
   it("TRUSTED_PROXY_HOPS=1 without a forwarded address: the socket, not a shared unknown bucket", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const got = await limiterKeys();
     expect(got).toHaveLength(4);
-    for (const key of got) expect(key).not.toEndWith(":unknown");
+    for (const key of got) expect(key).toMatch(LOOPBACK);
   });
 
   it("TRUSTED_PROXY_HOPS=1: the address the proxy appended", async () => {
@@ -118,16 +117,35 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     for (const key of got) expect(key).toEndWith(`:${FORWARDED}`);
   });
 
-  it("TRUSTED_PROXY_HOPS=0: the per-route limiter counts one socket as one caller", async () => {
+  it("the per-route limiter reads the socket too, so callers without one never share its bucket", async () => {
     process.env.TRUSTED_PROXY_HOPS = "0";
-    const statuses: number[] = [];
-    for (let i = 0; i < 101; i++) {
-      const response = await fetch(`${base()}/api/version-policy`, {
-        headers: { "x-forwarded-for": `198.51.100.${i % 250}` },
-      });
-      statuses.push(response.status);
-    }
-    expect(statuses.slice(0, 100).every((s) => s === 200)).toBe(true);
-    expect(statuses[100]).toBe(429);
+    for (let i = 0; i <= 100; i++)
+      ipRateLimit({
+        request: new Request("http://localhost/api/version-policy"),
+        set: { headers: {} },
+      } as never);
+    const response = await fetch(`${base()}/api/version-policy`);
+    expect(response.status).toBe(200);
+  });
+
+  it("an email longer than the column is refused before any limiter or lookup", async () => {
+    const long = `${"a".repeat(239)}@example.test`;
+    expect(long).toHaveLength(252);
+    keys.length = 0;
+    for (const [path, body] of [
+      ["/auth/login", { email: long, password: "x" }],
+      ["/auth/forgot-password", { email: long }],
+      [
+        "/auth/signup",
+        { email: long, firstName: "A", lastName: "B", password: "Passw0rd!x" },
+      ],
+    ] as const)
+      expect((await post(path, body)).status).toBe(422);
+    expect(keys).toEqual([]);
+    const fits = `${"a".repeat(237)}@example.test`;
+    expect(fits).toHaveLength(250);
+    expect(
+      (await post("/auth/login", { email: fits, password: "x" })).status,
+    ).not.toBe(422);
   });
 });

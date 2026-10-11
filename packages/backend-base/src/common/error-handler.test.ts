@@ -94,6 +94,19 @@ describe("createErrorHandler - Rate Limit Detection", () => {
     expect(capped.retryAfter).toBe(24 * 60 * 60);
   });
 
+  it("should drop a retryAfter that is not a positive number", async () => {
+    const errorHandler = createErrorHandler("test plugin");
+    for (const retryAfter of [0, -5, "60"]) {
+      const response = await errorHandler({
+        code: "UNKNOWN",
+        error: { status: 429, message: "Rate limited", retryAfter },
+        set: { status: 200 },
+        store: {},
+      });
+      expect(response.retryAfter).toBeUndefined();
+    }
+  });
+
   it("should handle rate limit errors without retryAfter", async () => {
     const errorHandler = createErrorHandler("test plugin");
     const mockSet = { status: 200 };
