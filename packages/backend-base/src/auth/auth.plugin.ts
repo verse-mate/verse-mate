@@ -25,6 +25,8 @@ import {
   confirmEmailChangeForm,
   emailChangeConfirmed,
   emailChangeLinkUnusable,
+  emailChangeReverted,
+  revertEmailChangeForm,
 } from "./email-change-page";
 import type { AuthPayload } from "./entities/auth.entity";
 import {
@@ -359,6 +361,40 @@ const plugin = new Elysia()
             key: t.String({ maxLength: 200 }),
             email: t.String({ maxLength: 320 }),
           }),
+          beforeHandle: authRateLimiters.confirmEmailChange,
+          response: {
+            200: t.Any(),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .get(
+        "/revert-email-change",
+        async ({ query, store: { authService } }) =>
+          (await authService.emailChangeRevertUsable(query.key))
+            ? revertEmailChangeForm(query.key)
+            : emailChangeLinkUnusable(),
+        {
+          query: t.Object({
+            key: t.String({ maxLength: 200 }),
+          }),
+          response: {
+            200: t.Any(),
+            ...StandardErrorResponses,
+          },
+        },
+      )
+      .post(
+        "/revert-email-change",
+        async ({ body, store: { authService } }) =>
+          (await authService.revertEmailChange(body.key))
+            ? emailChangeReverted()
+            : emailChangeLinkUnusable(),
+        {
+          body: t.Object({
+            key: t.String({ maxLength: 200 }),
+          }),
+          beforeHandle: authRateLimiters.confirmEmailChange,
           response: {
             200: t.Any(),
             ...StandardErrorResponses,

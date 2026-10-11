@@ -38,7 +38,8 @@ beforeEach(() => {
 
 afterEach(async () => {
   for (const id of created) {
-    await cache.delete(`rate-limit:email-change:${id}`);
+    await cache.delete(cacheConstants.emailChangeMailsSent(id));
+    await cache.delete(cacheConstants.emailChangeRequests(id));
     await cache.delete(cacheConstants.emailChangePending(id));
   }
   if (created.length > 0)
@@ -230,7 +231,119 @@ describe("a profile update that changes the email", () => {
 
     expect(blocked.status).toBe(429);
     expect(mails).toHaveLength(3);
-    expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect(await row(user.id)).toMatchObject({
+      email: user.email,
+      firstName: "E",
+    });
+  });
+
+  it("counts mails that tell an address an account already exists toward the limit", async () => {
+    const user = await account();
+    const headers = await signIn(user.email);
+    for (let i = 0; i < 3; i += 1) {
+      const owner = await account();
+      await client.auth.profile.put({ email: owner.email }, { headers });
+      await mailTo(owner.email);
+    }
+
+    const blocked = await client.auth.profile.put(
+      { email: (await account()).email },
+      { headers },
+    );
+
+    expect(blocked.status).toBe(429);
+  });
+
+  it("keeps the mailed link and sends no new mail when a later save repeats the pending address", async () => {
+    const user = await account();
+    const next = address("next");
+    const { headers } = await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+
+    const again = await client.auth.profile.put(
+      { email: next, firstName: "Again" },
+      { headers },
+    );
+    await Bun.sleep(50);
+
+    expect(again.data).toMatchObject({
+      firstName: "Again",
+      pendingEmail: next,
+    });
+    expect((await confirmPage(key)).status).toBe(200);
+    expect(mails.filter((m) => m.to === next)).toHaveLength(1);
+  });
+
+  it("mails again when a later save repeats a pending address whose mail was not delivered", async () => {
+    const user = await account();
+    const next = address("next");
+    const send = spyOn(Backend.store.notification, "sendEmail");
+    send.mockImplementationOnce(() =>
+      Promise.resolve({ delivered: false, error: "provider down" }),
+    );
+    const { headers } = await requestChange(user, next);
+    await Bun.sleep(50);
+    expect(mails).toHaveLength(0);
+
+    await client.auth.profile.put({ email: next }, { headers });
+    const key = keyIn((await mailTo(next)).text);
+
+    expect((await confirmPage(key)).status).toBe(200);
+  });
+
+  it("sends at most three change mails when many saves arrive at once", async () => {
+    const user = await account();
+    const headers = await signIn(user.email);
+
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        client.auth.profile.put({ email: address(`burst${i}`) }, { headers }),
+      ),
+    );
+    await Bun.sleep(200);
+
+    expect(mails.length).toBeLessThanOrEqual(3);
+  });
+
+  it("drops the pending address when its mail finds the hourly limit already used", async () => {
+    Backend.store.authService.emailChangeSettleMs = 100;
+    const user = await account();
+    const next = address("next");
+    const { headers, res } = await requestChange(user, next);
+    expect(res.data).toMatchObject({ pendingEmail: next });
+    for (let i = 0; i < 3; i += 1)
+      await cache.increment(cacheConstants.emailChangeMailsSent(user.id), 3600);
+    await Bun.sleep(250);
+
+    expect(mails).toHaveLength(0);
+    expect((await client.auth.session.get({ headers })).data).toMatchObject({
+      pendingEmail: null,
+    });
+  });
+
+  it("refuses an account that keeps asking for changes within the hour", async () => {
+    const user = await account();
+    const headers = await signIn(user.email);
+    for (let i = 0; i < 30; i += 1)
+      await cache.increment(cacheConstants.emailChangeRequests(user.id), 3600);
+
+    const blocked = await client.auth.profile.put(
+      { email: address("one-more") },
+      { headers },
+    );
+
+    expect(blocked.status).toBe(429);
+    expect((await client.auth.session.get({ headers })).data).toMatchObject({
+      pendingEmail: null,
+    });
+  });
+
+  it("mails one address at most three change links an hour, whichever accounts ask", async () => {
+    const target = address("target");
+    for (let i = 0; i < 4; i += 1) await requestChange(await account(), target);
+    await Bun.sleep(100);
+
+    expect(mails.filter((m) => m.to === target)).toHaveLength(3);
   });
 });
 
@@ -272,7 +385,7 @@ describe("the confirmation page", () => {
 });
 
 describe("confirming an email change", () => {
-  it("moves and stamps the account, signs out every session, notifies the old address, and works once", async () => {
+  it("moves and stamps the account, signs out every session, notifies the old address, and works once, answering a repeat with the same page", async () => {
     const user = await account();
     const next = address("next");
     const { headers } = await requestChange(user, next);
@@ -290,7 +403,9 @@ describe("confirming an email change", () => {
     expect(notice.subject).toContain("changed");
     expect(notice.text).not.toContain(next);
     const replay = await confirm(key, user.email);
-    expect(replay.status).toBe(404);
+    expect(replay.status).toBe(200);
+    expect(mails.filter((m) => m.to === user.email)).toHaveLength(1);
+    expect((await confirm(key, address("guess"))).status).toBe(404);
     const after = await signIn(next);
     expect(
       (await client.auth.session.get({ headers: after })).data,
@@ -303,16 +418,118 @@ describe("confirming an email change", () => {
     await requestChange(user, next);
     const key = keyIn((await mailTo(next)).text);
 
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 4; i += 1) {
       const wrong = await confirm(key, address("guess"));
       expect(wrong.status).toBe(400);
       expect(await row(user.id)).toMatchObject({ email: user.email });
     }
+    const fifth = await confirm(key, address("guess"));
     const right = await confirm(key, user.email);
 
+    expect(fifth.status).toBe(404);
     expect(right.status).toBe(404);
+    expect((await confirmPage(key)).status).toBe(404);
     expect(await row(user.id)).toMatchObject({ email: user.email });
     expect(mails.filter((m) => m.to === user.email)).toHaveLength(0);
+  });
+
+  it("lets only five of many simultaneous attempts compare the address", async () => {
+    const user = await account();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+
+    const answers = await Promise.all([
+      ...Array.from({ length: 19 }, () => confirm(key, address("guess"))),
+      confirm(key, user.email),
+    ]);
+
+    expect(answers.filter((a) => a.status !== 404).length).toBeLessThanOrEqual(
+      5,
+    );
+    const moved = (await row(user.id)).email === next;
+    expect(answers.at(-1)?.status).toBe(moved ? 200 : 404);
+  });
+
+  it("answers both of two simultaneous confirmations with the right address as confirmed, and moves the account once", async () => {
+    const user = await account();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+
+    const answers = await Promise.all([
+      confirm(key, user.email),
+      confirm(key, user.email),
+    ]);
+    const later = await confirm(key, user.email);
+
+    expect(answers.map((a) => a.status)).toEqual([200, 200]);
+    expect(later.status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: next });
+    expect(mails.filter((m) => m.to === user.email)).toHaveLength(1);
+  });
+
+  it("shows the confirmed page when the notice to the old address cannot be sent", async () => {
+    const user = await account();
+    const next = address("next");
+    const { headers } = await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    spyOn(Backend.store.notification, "sendEmail").mockImplementation(() =>
+      Promise.reject(new Error("mailer down")),
+    );
+
+    const res = await confirm(key, user.email);
+
+    expect(res.status).toBe(200);
+    expect(await row(user.id)).toMatchObject({ email: next });
+    expect((await client.auth.session.get({ headers })).status).toBe(401);
+  });
+
+  it("keeps a change asked while an earlier confirmation is finishing", async () => {
+    const user = await account();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+    const newer = {
+      requestId: faker.string.uuid(),
+      from: next,
+      to: address("third"),
+      requestedAt: Date.now(),
+    };
+    const service = Backend.store.authService;
+    const logoutAll = service.logoutAll.bind(service);
+    spyOn(service, "logoutAll").mockImplementationOnce(async (id) => {
+      await cache.set(cacheConstants.emailChangePending(id), newer, "1h");
+      return logoutAll(id);
+    });
+
+    expect((await confirm(key, user.email)).status).toBe(200);
+
+    expect(
+      await cache.get<typeof newer>(cacheConstants.emailChangePending(user.id)),
+    ).toEqual(newer);
+  });
+
+  it("moves only one of two accounts confirming the same address at once", async () => {
+    const first = await account();
+    const second = await account();
+    const target = address("contested");
+    await requestChange(first, target);
+    const firstKey = keyIn((await mailTo(target)).text);
+    mails = [];
+    await requestChange(second, target);
+    const secondKey = keyIn((await mailTo(target)).text);
+
+    const answers = await Promise.all([
+      confirm(firstKey, first.email),
+      confirm(secondKey, second.email),
+    ]);
+
+    expect(answers.map((a) => a.status).sort()).toEqual([200, 404]);
+    const moved = [await row(first.id), await row(second.id)].filter(
+      (r) => r.email === target,
+    );
+    expect(moved).toHaveLength(1);
   });
 
   it("refuses the key of an older request once a newer change was asked for", async () => {
@@ -402,6 +619,173 @@ describe("confirming an email change", () => {
         `old-${user.id}`,
       ),
     ).toBeTruthy();
+  });
+});
+
+const revertKeyIn = (text: string) =>
+  text.match(/revert-email-change\?key=([A-Za-z0-9_-]+)/)?.[1] ?? "";
+
+const revertPage = (key: string) =>
+  Backend.handle(
+    new Request(
+      `http://localhost/auth/revert-email-change?key=${encodeURIComponent(key)}`,
+    ),
+  );
+
+const revert = (key: string) =>
+  Backend.handle(
+    new Request("http://localhost/auth/revert-email-change", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ key }),
+    }),
+  );
+
+async function changeAndConfirm(user: { id: string; email: string }) {
+  const next = address("next");
+  await requestChange(user, next);
+  const key = keyIn((await mailTo(next)).text);
+  expect((await confirm(key, user.email)).status).toBe(200);
+  return { next, revertKey: revertKeyIn((await mailTo(user.email)).text) };
+}
+
+describe("undoing an email change from the old address", () => {
+  it("moves the account back, removes the password and the sign-in links added since, signs out everywhere, and works once", async () => {
+    const user = await account();
+    const links = new UserSsoAccountRepository(db);
+    await links.create({
+      user_id: user.id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `before-${user.id}`,
+      email: user.email,
+    });
+    const { next, revertKey } = await changeAndConfirm(user);
+    const afterChange = await signIn(next);
+    await links.create({
+      user_id: user.id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `after-${user.id}`,
+      email: next,
+    });
+
+    const page = await revertPage(revertKey);
+    expect(page.status).toBe(200);
+    expect(page.headers.get("cache-control")).toBe("no-store");
+    expect(await page.text()).not.toContain("<script");
+    const res = await revert(revertKey);
+
+    expect(res.status).toBe(200);
+    const back = await conn
+      .selectFrom("user")
+      .select(["email", "password", "email_verified_at"])
+      .where("id", "=", user.id)
+      .executeTakeFirstOrThrow();
+    expect(back.email).toBe(user.email);
+    expect(back.password).toBeNull();
+    expect(
+      (await client.auth.session.get({ headers: afterChange })).status,
+    ).toBe(401);
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `after-${user.id}`,
+      ),
+    ).toBeFalsy();
+    expect((await revert(revertKey)).status).toBe(404);
+    expect((await revertPage(revertKey)).status).toBe(404);
+  });
+
+  it("still works after the account was moved again", async () => {
+    const user = await account();
+    const { next, revertKey } = await changeAndConfirm(user);
+    const third = address("third");
+    await conn
+      .updateTable("user")
+      .set({ email: third })
+      .where("id", "=", user.id)
+      .execute();
+
+    expect((await revert(revertKey)).status).toBe(200);
+
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect(next).not.toBe(third);
+  });
+
+  it("keeps the old address from being taken by a signup or another account while the link lives", async () => {
+    const user = await account();
+    await changeAndConfirm(user);
+    mails = [];
+
+    const signup = Backend.store.authService.signup(
+      {
+        email: user.email,
+        password: "Signup1234",
+        firstName: "S",
+        lastName: "U",
+      },
+      jwt as never,
+    );
+    await expect(signup).rejects.toMatchObject({ status: 409 });
+    const other = await account();
+    await requestChange(other, user.email);
+    const mail = await mailTo(user.email);
+
+    expect(mail.text).toContain("already has");
+    expect(keyIn(mail.text)).toBe("");
+  });
+
+  it("refuses an unknown key", async () => {
+    expect((await revertPage("not-a-real-key")).status).toBe(404);
+    expect((await revert("not-a-real-key")).status).toBe(404);
+  });
+});
+
+describe("confirming an email change on an account that was never confirmed", () => {
+  it("removes the password, as any first confirmation of a contested address does", async () => {
+    const user = await account();
+    await conn
+      .updateTable("user")
+      .set({ emailVerified: false })
+      .where("id", "=", user.id)
+      .execute();
+    const next = address("next");
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+
+    expect((await confirm(key, user.email)).status).toBe(200);
+
+    const moved = await conn
+      .selectFrom("user")
+      .select(["email", "password"])
+      .where("id", "=", user.id)
+      .executeTakeFirstOrThrow();
+    expect(moved).toEqual({ email: next, password: null });
+  });
+});
+
+describe("confirming an email change and provider links", () => {
+  it("drops a provider link stored for the new address when the change confirms", async () => {
+    const user = await account();
+    const next = address("next");
+    const links = new UserSsoAccountRepository(db);
+    await links.create({
+      user_id: user.id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `new-${user.id}`,
+      email: next,
+    });
+    await requestChange(user, next);
+    const key = keyIn((await mailTo(next)).text);
+
+    expect((await confirm(key, user.email)).status).toBe(200);
+
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `new-${user.id}`,
+      ),
+    ).toBeFalsy();
+    expect((await row(user.id)).email_verified_at).not.toBeNull();
   });
 });
 

@@ -26,6 +26,30 @@ function emailChangeMailsSent(userId: string): string {
   return `rate-limit:email-change:${userId}`;
 }
 
+function emailChangeRequests(userId: string): string {
+  return `rate-limit:email-change-requests:${userId}`;
+}
+
+function emailChangeMailsTo(addressHash: string): string {
+  return `rate-limit:email-change-to:${addressHash}`;
+}
+
+function emailChangeMailing(requestId: string): string {
+  return `emailChange:mailing:${requestId}`;
+}
+
+function emailChangeRevert(hash: string): string {
+  return `emailChange:revert:${hash}`;
+}
+
+function emailChangeReserved(addressHash: string): string {
+  return `emailChange:reserved:${addressHash}`;
+}
+
+function emailChangeDone(hash: string): string {
+  return `emailChange:done:${hash}`;
+}
+
 /**
  * OAuth state parameter for CSRF protection
  * Used in SSO redirect/callback flow.
@@ -54,6 +78,12 @@ const cacheConstants = {
   emailChangePending,
   emailChangeTries,
   emailChangeMailsSent,
+  emailChangeRequests,
+  emailChangeMailsTo,
+  emailChangeMailing,
+  emailChangeDone,
+  emailChangeRevert,
+  emailChangeReserved,
   ssoState,
   dailyVersePick,
 };

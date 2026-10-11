@@ -78,7 +78,7 @@ export function EmailChangeAccountExists() {
   );
 }
 
-export function EmailChanged() {
+export function EmailChanged({ href }: { href: string }) {
   return (
     <Layout
       preview="Your VerseMate email address was changed"
@@ -88,8 +88,18 @@ export function EmailChanged() {
         The email address on your VerseMate account was changed, and the account
         was signed out on every device.
       </Text>
+      <Text style={text}>
+        If you did not make this change, undo it within 7 days. The account
+        moves back to this address and every session is signed out.
+      </Text>
+      <Section style={{ textAlign: "center", margin: "28px 0" }}>
+        <Link style={button} href={href}>
+          Undo this change
+        </Link>
+      </Section>
       <Text style={muted}>
-        If you did not make this change, contact VerseMate support right away.
+        After undoing it, set a new password with "Forgot password" before you
+        sign in.
       </Text>
     </Layout>
   );
