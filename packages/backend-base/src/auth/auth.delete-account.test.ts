@@ -266,8 +266,7 @@ describe("Auth - Delete Account", () => {
     expect(ssoAccount).toHaveLength(0);
   });
 
-  it("should delete all user-related data from all tables", async () => {
-    // Create a fresh user with comprehensive data
+  const signUpAnother = async () => {
     const testUser = {
       email: faker.internet.email().toLowerCase(),
       firstName: faker.person.firstName(),
@@ -279,38 +278,155 @@ describe("Auth - Delete Account", () => {
       Promise.resolve({ delivered: true }),
     );
 
-    const { data: signupData } = await signUp(testUser);
-    if (!signupData) throw new Error("Signup failed");
-
+    const { data: signupData, error } = await signUp(testUser);
+    if (error || !signupData) throw error ?? new Error("Signup failed");
     const { data: userData } = await client.auth.user.get({
-      headers: {
-        authorization: `Bearer ${signupData.accessToken}`,
-      },
+      headers: { authorization: `Bearer ${signupData.accessToken}` },
     });
     if (!userData?.id) throw new Error("Failed to get user ID");
+    return {
+      id: userData.id,
+      password: testUser.password,
+      accessToken: signupData.accessToken,
+    };
+  };
 
-    // Note: Comprehensive test data insertion skipped due to schema constraints
-    // The service method handles all table cleanup, which is tested via the API endpoint
-
-    // Delete account
-    const { error: deleteError } = await client.auth.account.delete(
-      { password: testUser.password },
-      {
-        headers: {
-          authorization: `Bearer ${signupData.accessToken}`,
-        },
-      },
+  const deleteAccount = (user: { password: string; accessToken: string }) =>
+    client.auth.account.delete(
+      { password: user.password },
+      { headers: { authorization: `Bearer ${user.accessToken}` } },
     );
 
-    expect(deleteError).toBeFalsy();
+  it("should delete all user-related data from all tables", async () => {
+    const user = await signUpAnother();
+    const chapter = await db
+      .selectFrom("chapters")
+      .select(["chapter_id", "book_id", "chapter_number"])
+      .orderBy("chapter_id")
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto("user_sso_accounts")
+      .values({
+        user_id: user.id,
+        provider: "google" as any,
+        provider_user_id: faker.string.uuid(),
+        email: faker.internet.email().toLowerCase(),
+      })
+      .execute();
+    await db
+      .insertInto("notes")
+      .values({
+        user_id: user.id,
+        chapter_id: chapter.chapter_id,
+        content: faker.lorem.sentence(),
+      })
+      .execute();
+    await db
+      .insertInto("favorites")
+      .values({
+        user_id: user.id,
+        chapter_id: chapter.chapter_id,
+        type: "chapter" as any,
+      })
+      .execute();
+    await db
+      .insertInto("verse_highlights")
+      .values({
+        user_id: user.id,
+        chapter_id: chapter.chapter_id,
+        book_id: chapter.book_id,
+        chapter_number: chapter.chapter_number,
+        start_verse: 1,
+        end_verse: 2,
+      })
+      .execute();
+    await db
+      .insertInto("user_progress")
+      .values({
+        user_id: user.id,
+        book_id: chapter.book_id,
+        chapter_id: chapter.chapter_id,
+      })
+      .execute();
+    await db
+      .insertInto("user_recently_viewed_books")
+      .values({ user_id: user.id, book_id: chapter.book_id })
+      .execute();
+    await db
+      .insertInto("device_tokens")
+      .values({
+        user_id: user.id,
+        token: faker.string.alphanumeric(32),
+        platform: "ios",
+      })
+      .execute();
 
-    // Verify user was deleted (this confirms the transaction completed successfully)
-    const deletedUser = await db
-      .selectFrom("user")
-      .where("id", "=", userData.id)
-      .selectAll()
-      .executeTakeFirst();
-    expect(deletedUser).toBeUndefined();
+    const { error: deleteError } = await deleteAccount(user);
+
+    expect(deleteError).toBeFalsy();
+    expect(
+      await db
+        .selectFrom("user")
+        .select("id")
+        .where("id", "=", user.id)
+        .executeTakeFirst(),
+    ).toBeUndefined();
+    for (const table of [
+      "user_sso_accounts",
+      "notes",
+      "favorites",
+      "verse_highlights",
+      "user_progress",
+      "user_recently_viewed_books",
+      "device_tokens",
+    ] as const) {
+      const left = await db
+        .selectFrom(table)
+        .select("user_id")
+        .where("user_id", "=", user.id)
+        .execute();
+      expect({ table, left: left.length }).toEqual({ table, left: 0 });
+    }
+    expect(
+      await cacheService.get<string[]>(cacheConstants.accessToken(user.id)),
+    ).toBeFalsy();
+  });
+
+  it("deletes an account that created a batch job and keeps the job without its creator", async () => {
+    const user = await signUpAnother();
+    const job = await db
+      .insertInto("batch_jobs")
+      .values({
+        batch_type: "explanation",
+        bible_version: "NASB1995",
+        model: "gpt-4",
+        explanation_types: [],
+        created_by: user.id,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    try {
+      const { data, error } = await deleteAccount(user);
+
+      expect(error).toBeFalsy();
+      expect(data?.success).toBe(true);
+      expect(
+        await db
+          .selectFrom("user")
+          .select("id")
+          .where("id", "=", user.id)
+          .executeTakeFirst(),
+      ).toBeUndefined();
+      const kept = await db
+        .selectFrom("batch_jobs")
+        .select(["id", "created_by"])
+        .where("id", "=", job.id)
+        .executeTakeFirst();
+      expect(kept).toEqual({ id: job.id, created_by: null } as any);
+    } finally {
+      await db.deleteFrom("batch_jobs").where("id", "=", job.id).execute();
+    }
   });
 
   it("should require authentication to delete account", async () => {

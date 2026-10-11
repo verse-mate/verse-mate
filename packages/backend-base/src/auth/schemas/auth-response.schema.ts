@@ -13,6 +13,7 @@ export const UserSchema = t.Object({
   preferred_language: t.Union([t.String(), t.Null()]),
   imageSrc: t.Union([t.String(), t.Null()]),
   hasPassword: t.Boolean(),
+  pendingEmail: t.Union([t.String(), t.Null()]),
 });
 
 /**
