@@ -147,8 +147,6 @@ const plugin = new Elysia()
             async ({
               currentUserId,
               body,
-              bearer,
-              query,
               store: { authService },
               jwt,
             }): Promise<AuthPayload> => {
@@ -159,7 +157,6 @@ const plugin = new Elysia()
                 currentUserId,
                 token: body.token,
                 jwt,
-                session: bearer ?? query.accessToken,
               });
             },
             {

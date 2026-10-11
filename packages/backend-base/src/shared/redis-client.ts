@@ -4,6 +4,31 @@ import { type RedisClientType, createClient } from "redis";
 // Check if URL uses SSL (rediss://)
 const isSSLUrl = (url: string) => url.startsWith("rediss://");
 
+const APPEND_TO_LIST = `
+local raw = redis.call("GET", KEYS[1])
+local list = raw and cjson.decode(raw) or {}
+table.insert(list, ARGV[1])
+redis.call("SET", KEYS[1], cjson.encode(list), "PX", ARGV[2])
+return #list
+`;
+
+const REMOVE_FROM_LIST = `
+local raw = redis.call("GET", KEYS[1])
+if not raw then return 0 end
+local list = cjson.decode(raw)
+local kept = {}
+for _, item in ipairs(list) do
+  if item ~= ARGV[1] then table.insert(kept, item) end
+end
+if #kept == #list then return 0 end
+if #kept == 0 then
+  redis.call("DEL", KEYS[1])
+else
+  redis.call("SET", KEYS[1], cjson.encode(kept), "KEEPTTL")
+end
+return #list - #kept
+`;
+
 class RedisClient {
   private client: RedisClientType;
 
@@ -154,6 +179,25 @@ class RedisClient {
       console.error("Error deleting key from Redis:", error);
       throw error;
     }
+  }
+
+  async appendToList(key: string, value: string, ttl: string): Promise<void> {
+    await this.connect();
+    const ttlMs = ms(ttl);
+    if (typeof ttlMs !== "number" || !Number.isFinite(ttlMs) || ttlMs <= 0)
+      throw new Error(`Invalid TTL provided: "${ttl}"`);
+    await this.client.eval(APPEND_TO_LIST, {
+      keys: [key],
+      arguments: [value, String(ttlMs)],
+    });
+  }
+
+  async removeFromList(key: string, value: string): Promise<void> {
+    await this.connect();
+    await this.client.eval(REMOVE_FROM_LIST, {
+      keys: [key],
+      arguments: [value],
+    });
   }
 
   async ttl(key: string): Promise<number> {

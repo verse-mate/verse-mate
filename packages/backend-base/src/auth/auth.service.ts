@@ -29,6 +29,11 @@ import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
 
 const SESSION_LIFETIME = "90d";
 
+type AddressProof =
+  | { by: "account-holder" }
+  | { by: "password-reset" }
+  | { by: "provider"; provider: SsoProviderEnum; providerUserId: string };
+
 function resetPasswordURL(key: string): string {
   return `${process.env.APP_URL ?? ""}/reset-password?key=${key}`;
 }
@@ -121,15 +126,9 @@ export class AuthService {
       sub: user.id,
     });
 
-    // Store access token in Redis
-    const allAccessToken =
-      (await this.cache.get<string[]>(cacheConstants.accessToken(user.id))) ||
-      [];
-    allAccessToken.push(accessToken);
-
-    await this.cache.set(
+    await this.cache.appendToList(
       cacheConstants.accessToken(user.id),
-      allAccessToken,
+      accessToken,
       SESSION_LIFETIME,
     );
 
@@ -146,7 +145,21 @@ export class AuthService {
     ipAddress?: string,
   ): Promise<AuthPayload> {
     const user = await this.validateUser(authLoginInput);
-    return this.loginUser(user, jwt, userAgent, ipAddress);
+    const session = await this.loginUser(user, jwt, userAgent, ipAddress);
+    const current = await this.db
+      .getOrCreateConnection()
+      .selectFrom("user")
+      .select("password")
+      .where("id", "=", user.id)
+      .executeTakeFirst();
+    if (current?.password !== user.password) {
+      await this.cache.removeFromList(
+        cacheConstants.accessToken(user.id),
+        session.accessToken,
+      );
+      throw new UnauthorizedError("Invalid credentials");
+    }
+    return session;
   }
 
   /**
@@ -215,21 +228,32 @@ export class AuthService {
         emailVerified &&
         !this.isConfirmed(user) &&
         user.email.trim().toLowerCase() === normalizedEmail;
-      if (
-        confirms &&
-        !(await this.db
+      if (confirms) {
+        const confirmation = await this.db
           .getOrCreateConnection()
           .transaction()
-          .execute((trx) =>
-            this.confirmAddress(trx, user.id, normalizedEmail, {
+          .execute(async (trx) => {
+            const locked = await trx
+              .selectFrom("user")
+              .select(["id", "emailVerified", "email_verified_at"])
+              .where("id", "=", user.id)
+              .where(sql`lower(trim(email))`, "=", normalizedEmail)
+              .forUpdate()
+              .executeTakeFirst();
+            if (!locked) return null;
+            if (this.isConfirmed(locked)) return { signOutOthers: false };
+            return this.confirmAddress(trx, locked, normalizedEmail, {
+              by: "provider",
               provider,
               providerUserId,
-            }),
-          ))
-      )
-        throw new ConflictError(
-          "The account's email changed while signing in. Sign in again.",
-        );
+            });
+          });
+        if (!confirmation)
+          throw new ConflictError(
+            "The account's email changed while signing in. Sign in again.",
+          );
+        if (confirmation.signOutOthers) await this.logoutAll(user.id);
+      }
       if (picture && picture !== user.imageSrc)
         await this.db
           .getOrCreateConnection()
@@ -238,12 +262,30 @@ export class AuthService {
           .where("id", "=", user.id)
           .execute();
 
-      return this.loginUser(
+      const session = await this.loginUser(
         confirms ? { ...user, emailVerified: true } : user,
         jwt,
         userAgent,
         ipAddress,
       );
+      const stillLinked = await this.db
+        .getOrCreateConnection()
+        .selectFrom("user_sso_accounts")
+        .select("id")
+        .where("user_id", "=", user.id)
+        .where("provider", "=", provider)
+        .where("provider_user_id", "=", providerUserId)
+        .executeTakeFirst();
+      if (!stillLinked) {
+        await this.cache.removeFromList(
+          cacheConstants.accessToken(user.id),
+          session.accessToken,
+        );
+        throw new ConflictError(
+          "The account changed while signing in. Sign in again.",
+        );
+      }
+      return session;
     }
 
     // Step 2: Check if a user with this email already exists (case-insensitive)
@@ -259,7 +301,7 @@ export class AuthService {
         throw new ConflictError(
           "The sign-in provider has not verified this email. Verify it with the provider or sign in another way.",
         );
-      const userToLogin = await this.db
+      const { userToLogin, signOutOthers } = await this.db
         .getOrCreateConnection()
         .transaction()
         .execute(async (trx) => {
@@ -318,14 +360,24 @@ export class AuthService {
               .set(updates)
               .where("id", "=", locked.id)
               .execute();
-          if (!this.isConfirmed(locked))
-            await this.confirmAddress(trx, locked.id, normalizedEmail, {
-              provider,
-              providerUserId,
-            });
-          return { ...locked, ...updates, emailVerified: true } as User;
+          const confirmation = this.isConfirmed(locked)
+            ? { signOutOthers: false }
+            : await this.confirmAddress(trx, locked, normalizedEmail, {
+                by: "provider",
+                provider,
+                providerUserId,
+              });
+          return {
+            userToLogin: {
+              ...locked,
+              ...updates,
+              emailVerified: true,
+            } as User,
+            signOutOthers: confirmation?.signOutOthers ?? false,
+          };
         });
 
+      if (signOutOthers) await this.logoutAll(userToLogin.id);
       return this.loginUser(userToLogin, jwt, userAgent, ipAddress);
     }
 
@@ -448,26 +500,10 @@ export class AuthService {
       return false;
     }
 
-    const cacheKey = cacheConstants.accessToken(validBearer.sub);
-    const allAccessTokens = await this.cache.get<string[]>(cacheKey);
-    if (allAccessTokens?.includes(accessToken)) {
-      const updated = allAccessTokens.filter((t) => t !== accessToken);
-
-      if (updated.length === 0) {
-        // Delete the key when empty to avoid extending TTL unnecessarily
-        await this.cache.delete(cacheKey);
-      } else {
-        // Preserve original TTL to avoid extending other tokens' validity
-        const ttlSeconds = await this.cache.ttl(cacheKey).catch(() => -1);
-        if (ttlSeconds && ttlSeconds > 0) {
-          await this.cache.set(cacheKey, updated, `${ttlSeconds}s`);
-        } else {
-          // If TTL unavailable or expired, delete to force re-auth on next check
-          await this.cache.delete(cacheKey);
-        }
-      }
-    }
-
+    await this.cache.removeFromList(
+      cacheConstants.accessToken(validBearer.sub),
+      accessToken,
+    );
     return true;
   }
 
@@ -477,48 +513,35 @@ export class AuthService {
 
   private async confirmAddress(
     trx: Transaction<Database>,
-    userId: string,
+    user: Pick<User, "id" | "emailVerified">,
     address: string,
-    keep: {
-      provider?: SsoProviderEnum;
-      providerUserId?: string;
-      session?: string;
-    } = {},
-  ): Promise<boolean> {
+    proof: AddressProof,
+  ): Promise<{ signOutOthers: boolean } | null> {
     const stamped = await trx
       .updateTable("user")
       .set({ emailVerified: true, email_verified_at: sql`now()` })
-      .where("id", "=", userId)
+      .where("id", "=", user.id)
       .where(sql`lower(trim(email))`, "=", address)
       .executeTakeFirst();
-    if (Number(stamped.numUpdatedRows) === 0) return false;
+    if (Number(stamped.numUpdatedRows) === 0) return null;
+    if (proof.by === "account-holder") return { signOutOthers: false };
 
-    const { provider, providerUserId } = keep;
-    await trx
+    if (proof.by === "provider")
+      await trx
+        .updateTable("user_sso_accounts")
+        .set({ email: address })
+        .where("user_id", "=", user.id)
+        .where("provider", "=", proof.provider)
+        .where("provider_user_id", "=", proof.providerUserId)
+        .execute();
+    const dropped = await trx
       .deleteFrom("user_sso_accounts")
-      .where("user_id", "=", userId)
+      .where("user_id", "=", user.id)
       .where(sql`lower(trim(email))`, "!=", address)
-      .$if(Boolean(provider && providerUserId), (qb) =>
-        qb.where((eb) =>
-          eb.not(
-            eb.and([
-              eb("provider", "=", provider as SsoProviderEnum),
-              eb("provider_user_id", "=", providerUserId as string),
-            ]),
-          ),
-        ),
-      )
-      .execute();
-    await this.signOutOtherSessions(userId, keep.session);
-    return true;
-  }
-
-  private async signOutOtherSessions(userId: string, keep?: string) {
-    const key = cacheConstants.accessToken(userId);
-    const sessions = await this.cache.get<string[]>(key);
-    if (keep && sessions?.includes(keep))
-      await this.cache.set(key, [keep], SESSION_LIFETIME);
-    else await this.cache.delete(key);
+      .executeTakeFirst();
+    return {
+      signOutOthers: Number(dropped.numDeletedRows) > 0 || !user.emailVerified,
+    };
   }
 
   public async logoutAll(userId: string): Promise<boolean> {
@@ -722,7 +745,7 @@ export class AuthService {
       cacheConstants.resetPassword(authResetPasswordInput.key),
     );
 
-    return this.db
+    const reset = await this.db
       .getOrCreateConnection()
       .transaction()
       .execute(async (trx) => {
@@ -742,22 +765,23 @@ export class AuthService {
           .execute();
 
         if (!this.isConfirmed(locked))
-          await this.confirmAddress(trx, locked.id, email);
-        await this.logoutAll(user.id);
+          await this.confirmAddress(trx, locked, email, {
+            by: "password-reset",
+          });
         return true;
       });
+    if (reset) await this.logoutAll(user.id);
+    return reset;
   }
 
   public async verifyEmail({
     token,
     jwt,
     currentUserId,
-    session,
   }: {
     token: string;
     jwt: JWT;
     currentUserId: string;
-    session?: string;
   }): Promise<AuthPayload> {
     const user = await this.db
       .getOrCreateConnection()
@@ -798,8 +822,8 @@ export class AuthService {
       .getOrCreateConnection()
       .transaction()
       .execute((trx) =>
-        this.confirmAddress(trx, user.id, payload.email as string, {
-          session,
+        this.confirmAddress(trx, user, user.email.trim().toLowerCase(), {
+          by: "account-holder",
         }),
       );
     if (!confirmed) throw new ValidationError("Invalid verification token");
