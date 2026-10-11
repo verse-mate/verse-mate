@@ -515,7 +515,10 @@ describe("CoachService grants coach and admin roles only to a confirmed address"
   const adminEmail = roster.admins[0];
   const coachEmail = roster.coaches[0].email;
 
-  function serviceFor(user: { email: string; emailVerified: boolean }) {
+  function serviceFor(
+    user: { email: string; emailVerified: boolean },
+    addedLeader?: Record<string, unknown>,
+  ) {
     const row = {
       id: "user-1",
       firstName: "Test",
@@ -529,7 +532,7 @@ describe("CoachService grants coach and admin roles only to a confirmed address"
       {
         get(_t, prop) {
           if (prop === "execute") return async () => [];
-          if (prop === "executeTakeFirst") return async () => undefined;
+          if (prop === "executeTakeFirst") return async () => addedLeader;
           if (prop === "executeTakeFirstOrThrow") return async () => row;
           return () => query;
         },
@@ -567,5 +570,25 @@ describe("CoachService grants coach and admin roles only to a confirmed address"
         "user-1",
       ),
     ).toBe(true);
+  });
+
+  it("applies the same rule to a leader an admin added", async () => {
+    const leader = {
+      id: "00000000-0000-4000-8000-000000000001",
+      email: "added.leader@example.org",
+      name: "Added Leader",
+      group_name: null,
+      coach_name: null,
+    };
+    const unconfirmed = serviceFor(
+      { email: leader.email, emailVerified: false },
+      leader,
+    );
+    const confirmed = serviceFor(
+      { email: leader.email, emailVerified: true },
+      leader,
+    );
+    expect(await unconfirmed.isCoach("user-1")).toBe(false);
+    expect(await confirmed.isCoach("user-1")).toBe(true);
   });
 });
