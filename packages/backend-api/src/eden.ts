@@ -167,6 +167,9 @@ const fetcher = async (
   return response;
 };
 
+export const authFetch = (url: string, init?: RequestInit) =>
+  fetcher(url, init);
+
 export const api = treaty<App>($env.get().apiUrl, {
   fetcher: fetcher as typeof fetch,
   onResponse(response) {

@@ -1,5 +1,12 @@
+import { createHash } from "node:crypto";
+
 import type { cache } from "../shared/shared.plugin";
-import { clientIp, trustedProxyHops } from "./client-ip";
+import {
+  clientBucket,
+  clientChain,
+  clientNetwork,
+  trustedProxyHops,
+} from "./client-ip";
 
 interface RateLimitOptions {
   /**
@@ -28,9 +35,9 @@ export const createRateLimit = (options: RateLimitOptions) => {
     message = "Too many requests, please try again later",
   } = options;
 
-  return async (context: any) => {
+  return async ({ server, ...context }: any) => {
     const cache: cache = context.store.cache;
-    const key = keyGenerator(context);
+    const key = keyGenerator({ ...context, server });
     const cacheKey = `rate-limit:${key}`;
 
     const count = await cache.increment(cacheKey, windowSeconds);
@@ -39,11 +46,23 @@ export const createRateLimit = (options: RateLimitOptions) => {
       context.set.status = 429;
       const stableMessage =
         typeof message === "string" ? message : "Too many requests";
-      // Include cacheKey to allow TTL lookup for retryAfter
-      throw { status: 429, message: stableMessage, cacheKey };
+      const retryAfter = await cache.ttl(cacheKey).catch(() => -1);
+      throw {
+        status: 429,
+        message: stableMessage,
+        ...(retryAfter > 0 ? { retryAfter } : {}),
+      };
     }
   };
 };
+
+const digest = (value: unknown): string =>
+  createHash("sha256")
+    .update(String(value ?? ""))
+    .digest("base64url");
+
+const signupClient = (chain: string): string =>
+  chain.includes(",") ? digest(chain) : chain;
 
 const normalizedEmail = (value: unknown): string =>
   String(value ?? "")
@@ -62,7 +81,7 @@ export const authRateLimiters = {
       windowSeconds: 60,
       max: 5,
       keyGenerator: (context) =>
-        `login:${normalizedEmail(context.body?.email)}:${clientIp(context.request, context.server)}`,
+        `login:${digest(normalizedEmail(context.body?.email))}:${clientBucket(context.request, context.server)}`,
       message: "Too many login attempts, please try again in a minute",
     }),
   ),
@@ -72,7 +91,17 @@ export const authRateLimiters = {
       windowSeconds: 60,
       max: 30,
       keyGenerator: (context) =>
-        `login-ip:${clientIp(context.request, context.server)}`,
+        `login-ip:${clientBucket(context.request, context.server)}`,
+      message: "Too many login attempts, please try again in a minute",
+    }),
+  ),
+
+  loginNetwork: onceProxyHopsAreSet(
+    createRateLimit({
+      windowSeconds: 60,
+      max: 300,
+      keyGenerator: (context) =>
+        `login-net:${clientNetwork(context.request, context.server)}`,
       message: "Too many login attempts, please try again in a minute",
     }),
   ),
@@ -81,7 +110,7 @@ export const authRateLimiters = {
     windowSeconds: 3600,
     max: 3,
     keyGenerator: (context) =>
-      `signup:${clientIp(context.request, context.server)}`,
+      `signup:${signupClient(clientChain(context.request, context.server))}`,
     message: "Too many signup attempts, please try again later",
   }),
 
@@ -91,7 +120,7 @@ export const authRateLimiters = {
   forgotPassword: createRateLimit({
     windowSeconds: 3600,
     max: 3,
-    keyGenerator: (context) => `forgot-password:${context.body.email}`,
+    keyGenerator: (context) => `forgot-password:${digest(context.body.email)}`,
     message: "Too many password reset requests, please try again later",
   }),
 
@@ -101,7 +130,7 @@ export const authRateLimiters = {
     windowSeconds: 60,
     max: 10,
     keyGenerator: (context) =>
-      `sso:${clientIp(context.request, context.server)}`,
+      `sso:${clientBucket(context.request, context.server)}`,
     message: "Too many SSO attempts, please try again in a minute",
   }),
 

@@ -1,6 +1,6 @@
 import type { Context } from "elysia";
 
-import { clientIp } from "../common/client-ip";
+import { clientBucket } from "../common/client-ip";
 
 const WINDOW_MS = 60_000;
 const DEFAULT_MAX_REQUESTS = 100;
@@ -26,7 +26,7 @@ export function createIpRateLimit(
   const windows = new Map<string, { count: number; resetAt: number }>();
 
   const handler: RateLimitHandler = ({ request, set, server }) => {
-    const ip = clientIp(request, server);
+    const ip = clientBucket(request, server);
     const now = Date.now();
     const entry = windows.get(ip);
 
