@@ -1,6 +1,7 @@
 import { jwt as ElysiaJwt } from "@elysiajs/jwt";
 import { db as Database } from "database";
 import { Elysia } from "elysia";
+import { ApiError } from "../common/errors";
 
 import { batchMonitoringQueue } from "../queue/batch-monitoring.queue";
 import { EmailNotificationConsumer } from "../queue/consumers/email-notification.consumer";
@@ -99,6 +100,11 @@ const setup = new Elysia({ name: "shared" })
     async ({ bearer: bearerToken, jwt: jwtVerifier, error, code, path }) => {
       // NOT_FOUND is expected HTTP behavior (404s), not an application exception
       if (code === "NOT_FOUND") return;
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403)
+      )
+        return;
       if ((error as { status?: unknown }).status === 429) return;
 
       const distinctId = await maybeCurrentUserId({

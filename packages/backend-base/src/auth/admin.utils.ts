@@ -1,4 +1,5 @@
 import type { Context } from "elysia";
+import cacheConstants from "../shared/cache.constants";
 import type { JWT, cache, db } from "../shared/shared.plugin";
 
 export const adminGuard = {
@@ -6,7 +7,7 @@ export const adminGuard = {
     bearer,
     set,
     jwt,
-    store: { db },
+    store: { cache, db },
   }: {
     bearer: string | undefined;
     set: Context["set"];
@@ -21,6 +22,14 @@ export const adminGuard = {
     if (!validBearer || !validBearer.sub) {
       set.status = 401;
       return new Error("Invalid bearer token");
+    }
+
+    const allTokens = await cache.get<string[]>(
+      cacheConstants.accessToken(validBearer.sub),
+    );
+    if (!allTokens?.includes(bearer ?? "")) {
+      set.status = 401;
+      return new Error("Bearer token not in redis");
     }
 
     // Check if user is admin
