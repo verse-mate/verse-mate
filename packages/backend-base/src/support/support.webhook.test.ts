@@ -12,6 +12,7 @@ import {
 } from "bun:test";
 import crypto from "node:crypto";
 import { faker } from "@faker-js/faker";
+import type { WebClient } from "@slack/web-api";
 import SupportSenderEnum from "database/src/models/public/SupportSenderEnum";
 import SupportStatusEnum from "database/src/models/public/SupportStatusEnum";
 import { Elysia } from "elysia";
@@ -37,6 +38,9 @@ const restoreSecret = () => {
     process.env.SLACK_SIGNING_SECRET = originalSecret;
   }
 };
+
+const slackClientOf = (service: SupportService) =>
+  (service as unknown as { slackClient: WebClient }).slackClient;
 
 const sign = (timestamp: string, body: string, secret = SECRET) =>
   `v0=${crypto
@@ -438,7 +442,7 @@ describe("Messages sent to Slack", () => {
   const disguisedLink = "<https://phish.example/login|Re-authenticate here>";
 
   const capture = (service: SupportService) =>
-    spyOn(service["slackClient"].chat, "postMessage").mockResolvedValue({
+    spyOn(slackClientOf(service).chat, "postMessage").mockResolvedValue({
       ok: true,
       ts: `${NOW}.${faker.string.numeric(6)}`,
     } as never);
