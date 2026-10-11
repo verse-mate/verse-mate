@@ -110,6 +110,10 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (explanationIds.length > 0) {
+    await conn
+      .deleteFrom("explanation_audio_progress")
+      .where("explanation_id", "in", explanationIds)
+      .execute();
     const rows = await conn
       .selectFrom("explanation_audios")
       .select("storage_key")
@@ -243,5 +247,55 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
       headers: { "x-forwarded-for": guestAddress() },
     });
     expect(guest.status).toBe(200);
+  });
+});
+
+describe("access token transport", () => {
+  function saveProgress(
+    explanationId: number,
+    options: { query?: string; headers?: Record<string, string> },
+  ) {
+    return plugin.handle(
+      new Request(
+        `http://localhost/bible/explanation/audio/${explanationId}/progress${options.query ?? ""}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json", ...options.headers },
+          body: JSON.stringify({
+            position_seconds: 60,
+            duration_seconds: 600,
+            reason: "pause",
+          }),
+        },
+      ),
+    );
+  }
+
+  async function savedProgress(userId: string, explanationId: number) {
+    return conn
+      .selectFrom("explanation_audio_progress")
+      .select("position_seconds")
+      .where("user_id", "=", userId)
+      .where("explanation_id", "=", explanationId)
+      .execute();
+  }
+
+  it("ignores access tokens sent in the query string", async () => {
+    const user = await signedInUser();
+    const id = await explanation(genesis1ChapterId);
+
+    for (const name of ["accessToken", "access_token"]) {
+      const viaQuery = await saveProgress(id, {
+        query: `?${name}=${encodeURIComponent(user.token)}`,
+      });
+      expect(viaQuery.status).toBe(204);
+      expect(await savedProgress(user.id, id)).toHaveLength(0);
+    }
+
+    const viaHeader = await saveProgress(id, {
+      headers: { authorization: `Bearer ${user.token}` },
+    });
+    expect(viaHeader.status).toBe(200);
+    expect(await savedProgress(user.id, id)).toHaveLength(1);
   });
 });

@@ -40,21 +40,15 @@ export const authGuard = {
  */
 export const authDerive = async ({
   jwt,
-  bearer,
-  query,
+  bearer: token,
   store: { cache },
 }: {
   bearer: string | undefined;
   jwt: JWT;
-  query: {
-    accessToken?: string;
-  };
   store: {
     cache: cache;
   };
 }): Promise<{ currentUserId: string | null }> => {
-  const token = bearer ?? query.accessToken;
-
   if (!token) {
     return { currentUserId: null };
   }
