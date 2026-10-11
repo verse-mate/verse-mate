@@ -8,7 +8,10 @@ import {
   audioGenerationQueue,
 } from "../../bible/audio/audio-generation.queue";
 import { AudioRepository } from "../../bible/audio/audio.repository";
-import { isProductVariant } from "../../bible/audio/audio.service";
+import {
+  DEFAULT_VOICE_EN,
+  isProductVariant,
+} from "../../bible/audio/audio.service";
 import { NotFoundError, ValidationError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
@@ -56,8 +59,6 @@ export interface BulkRegenerateInput {
   language?: string;
 }
 
-const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy";
-
 /**
  * TASK-006 admin surface for the audio feature. Lives inside the admin
  * plugin so every endpoint is covered by the existing adminGuard; the
@@ -89,11 +90,16 @@ export class AdminAudioService {
     const explanations = await this.db
       .getOrCreateConnection()
       .selectFrom("explanations")
-      .select(["explanation_id", "language_code"])
+      .select(["explanation_id", "language_code", "is_active"])
       .where("explanation_id", "in", ids)
       .execute();
 
     const jobs = explanations.map((explanation) => {
+      if (!explanation.is_active) {
+        throw new ValidationError(
+          `Explanation ${explanation.explanation_id} was replaced by a newer version`,
+        );
+      }
       const data: AudioGenerationJobData = {
         explanation_id: explanation.explanation_id,
         voice: input.voice ?? DEFAULT_VOICE_EN,
@@ -111,11 +117,13 @@ export class AdminAudioService {
     for (const data of jobs) {
       const jobId = audioGenerationJobId(data);
       const existing = await this.queue.getJob(jobId);
-      const stillInFlight =
+      const finished =
         existing &&
-        !(await existing.isCompleted()) &&
-        !(await existing.isFailed());
-      if (!stillInFlight) {
+        ((await existing.isCompleted()) || (await existing.isFailed()));
+      if (finished) {
+        await existing.remove();
+      }
+      if (!existing || finished) {
         await this.queue.add(AUDIO_GENERATION_QUEUE, data, {
           jobId,
           removeOnComplete: { count: 100 },

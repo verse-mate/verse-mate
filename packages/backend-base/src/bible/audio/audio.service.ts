@@ -30,7 +30,7 @@ import {
 import { isGuestAudioChapter } from "./guest-scope";
 
 const ESTIMATED_READY_SECONDS = 8;
-const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy"; // br-audio-009
+export const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy";
 
 export type KyselyTransaction = Transaction<Database>;
 
@@ -168,8 +168,13 @@ export class AudioService {
 
     // Cache hit (br-audio-002 canonical variant; br-audio-003 lazy)
     const current = await this.repository.findCurrent(variantKey);
-    if (current && !current.is_stale) {
+    if (current && (!current.is_stale || !explanation.is_active)) {
       return { kind: "ready", audio: await this.toDto(current) };
+    }
+    if (!explanation.is_active) {
+      throw new NotFoundError(
+        `Explanation ${params.explanation_id} has no audio`,
+      );
     }
 
     // br-audio-007: stub short-circuit — bypass queue, synthesize inline.
@@ -340,7 +345,7 @@ export class AudioService {
     data: AudioGenerationJobData,
   ): Promise<ExplanationAudios> {
     const explanation = await this.loadExplanation(data.explanation_id);
-    if (!explanation) {
+    if (!explanation?.is_active) {
       throw new NotFoundError(`Explanation ${data.explanation_id} not found`);
     }
     if (!isProductVariant(explanation.language_code, data)) {
@@ -384,7 +389,13 @@ export class AudioService {
     return this.db
       .getOrCreateConnection()
       .selectFrom("explanations")
-      .select(["explanation_id", "explanation", "chapter_id", "language_code"])
+      .select([
+        "explanation_id",
+        "explanation",
+        "chapter_id",
+        "language_code",
+        "is_active",
+      ])
       .where("explanation_id", "=", explanationId)
       .executeTakeFirst();
   }
