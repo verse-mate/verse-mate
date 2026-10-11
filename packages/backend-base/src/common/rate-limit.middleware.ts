@@ -124,6 +124,14 @@ export const authRateLimiters = {
     message: "Too many SSO attempts, please try again in a minute",
   }),
 
+  sendEmailVerification: createRateLimit({
+    windowSeconds: 3600,
+    max: 5,
+    keyGenerator: (context) =>
+      `send-email-verification:${context.currentUserId || "unknown"}`,
+    message: "Too many confirmation emails, please try again later",
+  }),
+
   /**
    * Delete account rate limiter: 3 attempts per user per hour
    * Prevents abuse of account deletion endpoint while allowing legitimate retries
