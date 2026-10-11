@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import type { Queue } from "bullmq";
 import type { ExplanationAudios } from "database/src/models/public/ExplanationAudios";
-import { NotFoundError, UnauthorizedError } from "../../common/errors";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../common/errors";
 import type { ObjectStorageService } from "../../shared/storage/storage.service";
 import type {
   SynthesizeInput,
@@ -223,22 +227,32 @@ type ChapterRow = {
   book_id: number;
   chapter_number: number;
 };
+type LanguageRow = {
+  language_code: string;
+  is_enabled: boolean;
+};
 
 function makeFakeDb(params: {
   explanations: ExplanationRow[];
   chapters: ChapterRow[];
+  languages?: LanguageRow[];
 }) {
-  function selectFrom(table: "explanations" | "chapters") {
-    const rows: Array<ExplanationRow | ChapterRow> =
-      table === "explanations"
-        ? [...params.explanations]
-        : [...params.chapters];
-    let filtered = rows;
+  function selectFrom(
+    table: "explanations" | "chapters" | "explanation_languages",
+  ) {
+    const tables = {
+      explanations: params.explanations,
+      chapters: params.chapters,
+      explanation_languages: params.languages ?? [],
+    };
+    let filtered: unknown[] = [...tables[table]];
     const api: any = {
       select: () => api,
       selectAll: () => api,
-      where: (col: string, _op: string, val: unknown) => {
-        filtered = filtered.filter((r: any) => r[col] === val);
+      where: (col: string, op: string, val: unknown) => {
+        filtered = filtered.filter((r: any) =>
+          op === "in" ? (val as unknown[]).includes(r[col]) : r[col] === val,
+        );
         return api;
       },
       executeTakeFirst: async () => filtered[0],
@@ -292,8 +306,9 @@ describe("AudioService", () => {
     provider: TtsProvider = new FakeOpenAiProvider(),
     chapters: ChapterRow[] = [genesis1],
     explanations: ExplanationRow[] = [explanation],
+    languages: LanguageRow[] = [],
   ) {
-    const db = makeFakeDb({ explanations, chapters });
+    const db = makeFakeDb({ explanations, chapters, languages });
     return new AudioService(
       db,
       storage as unknown as ObjectStorageService,
@@ -525,6 +540,153 @@ describe("AudioService", () => {
       await expect(
         service.getJobStatus("audio-gen:999:alloy:en"),
       ).rejects.toBeInstanceOf(NotFoundError);
+    });
+  });
+
+  describe("offered variants", () => {
+    const languages: LanguageRow[] = [
+      { language_code: "pt", is_enabled: true },
+      { language_code: "fr", is_enabled: false },
+    ];
+
+    async function expectRejected(params: {
+      voice?: string;
+      language?: string;
+    }) {
+      const service = makeService(
+        new FakeOpenAiProvider(),
+        [genesis1],
+        [explanation],
+        languages,
+      );
+      await expect(
+        service.getOrQueueAudio({
+          explanation_id: 42,
+          currentUserId: "u-1",
+          ...params,
+        }),
+      ).rejects.toBeInstanceOf(ValidationError);
+      expect(queue.addCalls.length).toBe(0);
+      expect(storage.uploaded.length).toBe(0);
+    }
+
+    it("rejects a language that is neither the explanation's nor enabled", async () => {
+      await expectRejected({ language: "de" });
+    });
+
+    it("rejects a disabled language", async () => {
+      await expectRejected({ language: "fr" });
+    });
+
+    it("rejects a regional form nobody offers", async () => {
+      await expectRejected({ language: "en-GB" });
+    });
+
+    it("rejects a language carrying path segments", async () => {
+      await expectRejected({ language: "en/../../x" });
+    });
+
+    it("rejects a voice the provider does not offer", async () => {
+      await expectRejected({ voice: "nobody" });
+    });
+
+    it("rejects a voice carrying path segments", async () => {
+      await expectRejected({ voice: "alloy/../x" });
+    });
+
+    it.each([
+      ["en", "en"],
+      ["en-US", "en-US"],
+      ["pt", "pt"],
+      ["pt-BR", "pt-BR"],
+    ])("accepts the offered language %s", async (language, stored) => {
+      const service = makeService(
+        new FakeOpenAiProvider(),
+        [genesis1],
+        [explanation],
+        languages,
+      );
+      const result = await service.getOrQueueAudio({
+        explanation_id: 42,
+        language,
+        voice: "alloy",
+        currentUserId: "u-1",
+      });
+      expect(result.kind).toBe("queued");
+      expect(queue.addCalls[0].data.language_code).toBe(stored);
+    });
+  });
+
+  describe("synthesis limit hook", () => {
+    it("runs before a new job is queued", async () => {
+      const service = makeService();
+      let calls = 0;
+      await service.getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+        beforeSynthesis: async () => {
+          calls += 1;
+        },
+      });
+      expect(calls).toBe(1);
+      expect(queue.addCalls.length).toBe(1);
+    });
+
+    it("runs before inline stub synthesis", async () => {
+      const service = makeService(new FakeStubProvider());
+      let calls = 0;
+      await service.getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+        beforeSynthesis: async () => {
+          calls += 1;
+        },
+      });
+      expect(calls).toBe(1);
+      expect(storage.uploaded.length).toBe(1);
+    });
+
+    it("stops the miss when it throws", async () => {
+      const service = makeService();
+      await expect(
+        service.getOrQueueAudio({
+          explanation_id: 42,
+          currentUserId: "u-1",
+          beforeSynthesis: async () => {
+            throw new Error("limited");
+          },
+        }),
+      ).rejects.toThrow("limited");
+      expect(queue.addCalls.length).toBe(0);
+    });
+
+    it("does not run for cached audio or a job already in flight", async () => {
+      const service = makeService();
+      let calls = 0;
+      const beforeSynthesis = async () => {
+        calls += 1;
+      };
+      await service.getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+        beforeSynthesis,
+      });
+      await service.getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+        beforeSynthesis,
+      });
+      expect(calls).toBe(1);
+
+      const stub = makeService(new FakeStubProvider());
+      await stub.getOrQueueAudio({ explanation_id: 42, currentUserId: "u-1" });
+      calls = 0;
+      await stub.getOrQueueAudio({
+        explanation_id: 42,
+        currentUserId: "u-1",
+        beforeSynthesis,
+      });
+      expect(calls).toBe(0);
     });
   });
 
