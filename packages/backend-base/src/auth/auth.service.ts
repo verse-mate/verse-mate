@@ -120,9 +120,9 @@ export class AuthService {
     userAgent?: string,
     ipAddress?: string,
   ): Promise<AuthPayload> {
-    // Create short-lived access token (15 minutes)
     const accessToken = await jwt.sign({
       sub: user.id,
+      jti: randomUUID(),
     });
 
     // Store access token in Redis
@@ -946,12 +946,6 @@ export class AuthService {
         // 1. Explanation ratings
         await trx
           .deleteFrom("explanation_ratings")
-          .where("user_id", "=", userId)
-          .execute();
-
-        // 2. Conversations (will cascade to messages via FK)
-        await trx
-          .deleteFrom("conversations")
           .where("user_id", "=", userId)
           .execute();
 

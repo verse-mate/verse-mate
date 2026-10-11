@@ -5,19 +5,11 @@ import {
   describe,
   expect,
   it,
-  mock,
   spyOn,
 } from "bun:test";
+import { randomUUID } from "node:crypto";
 import { Elysia } from "elysia";
 import { type OfflineManifest, OfflineRepository } from "../offline.repository";
-
-// Set Env vars to prevent shared plugin crash if mock fails
-process.env.ENVIRONMENT = "test";
-process.env.EMAIL_FROM = "test@example.com";
-process.env.MAILGUN_API_KEY = "test";
-process.env.MAILGUN_DOMAIN = "test.com";
-process.env.POSTHOG_API_KEY = "test";
-process.env.POSTHOG_HOST = "test";
 
 const mockManifest: OfflineManifest = {
   bible_versions: [
@@ -35,39 +27,9 @@ const mockManifest: OfflineManifest = {
 
 const mockLastModified = new Date("2025-01-01T00:00:00Z");
 
-// In-memory cache for the mock shared plugin
-const cacheStore = new Map<string, any>();
-const mockCache = {
-  get: async (key: string) => cacheStore.get(key) ?? null,
-  set: async (key: string, value: any) => {
-    cacheStore.set(key, value);
-  },
-  delete: async (key: string) => {
-    cacheStore.delete(key);
-  },
-};
-
-const SIGNED_IN_USER = "offline-reader";
-const VALID_TOKEN = "valid-token";
-const REVOKED_TOKEN = "revoked-token";
-const mockJwt = {
-  verify: async (token: string) =>
-    token === VALID_TOKEN || token === REVOKED_TOKEN
-      ? { sub: SIGNED_IN_USER }
-      : false,
-};
-
-mock.module("../../shared/shared.plugin", () => ({
-  default: new Elysia({ name: "shared" })
-    .derive({ as: "global" }, ({ headers: { authorization } }) => ({
-      bearer: authorization?.startsWith("Bearer ")
-        ? authorization.slice("Bearer ".length)
-        : undefined,
-    }))
-    .decorate("jwt", mockJwt)
-    .state("db", {} as any)
-    .state("cache", mockCache),
-}));
+const SIGNED_IN_USER = `offline-reader-${randomUUID()}`;
+let validToken: string;
+let revokedToken: string;
 
 function commentary(chapterNumber: number) {
   return {
@@ -123,15 +85,21 @@ describe("Offline Plugin", () => {
   let app: any;
 
   beforeAll(async () => {
-    cacheStore.clear();
-    cacheStore.set(`accessToken:${SIGNED_IN_USER}`, [VALID_TOKEN]);
-    // Dynamic import to ensure mocks and env vars are active
     const { default: offlinePlugin } = await import("../offline.plugin");
+    const { cache } = offlinePlugin.store;
+    const { jwt } = offlinePlugin.decorator;
+    await cache.delete("offline:manifest");
+    validToken = await jwt.sign({ sub: SIGNED_IN_USER, jti: randomUUID() });
+    revokedToken = await jwt.sign({ sub: SIGNED_IN_USER, jti: randomUUID() });
+    await cache.set(`accessToken:${SIGNED_IN_USER}`, [validToken], "15m");
     app = new Elysia().use(offlinePlugin);
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     for (const spy of Object.values(repositorySpies)) spy.mockRestore();
+    const { default: offlinePlugin } = await import("../offline.plugin");
+    await offlinePlugin.store.cache.delete(`accessToken:${SIGNED_IN_USER}`);
+    await offlinePlugin.store.cache.delete("offline:manifest");
   });
 
   beforeEach(() => {
@@ -148,13 +116,16 @@ describe("Offline Plugin", () => {
     expect(body.bible_versions[0].key).toBe("NASB1995");
   });
 
-  it("GET /offline/bible/:versionKey returns gzip data", async () => {
+  it("GET /offline/bible/:versionKey returns the verses as JSON", async () => {
     const response = await app.handle(
       new Request("http://localhost/offline/bible/NASB1995"),
     );
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Encoding")).toContain("gzip");
+    expect(response.headers.get("Content-Encoding")).toBeNull();
     expect(response.headers.get("Content-Type")).toContain("application/json");
+    expect(await response.json()).toEqual([
+      { book_id: 1, chapter_number: 1, verse_number: 1, text: "Test" },
+    ]);
   });
 
   it("GET /offline/bible/:versionKey returns 404 for invalid version", async () => {
@@ -242,7 +213,7 @@ describe("Offline Plugin", () => {
 
   it("GET /offline/commentaries/:languageCode lists every audio to a signed-in reader, privately", async () => {
     const response = await getCommentaries({
-      authorization: `Bearer ${VALID_TOKEN}`,
+      authorization: `Bearer ${validToken}`,
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe(
@@ -256,7 +227,7 @@ describe("Offline Plugin", () => {
 
   it("GET /offline/commentaries/:languageCode treats a revoked token as a guest", async () => {
     const response = await getCommentaries({
-      authorization: `Bearer ${REVOKED_TOKEN}`,
+      authorization: `Bearer ${revokedToken}`,
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=86400");
