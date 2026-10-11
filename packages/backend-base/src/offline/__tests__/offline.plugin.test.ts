@@ -137,4 +137,26 @@ describe("Offline Plugin", () => {
     );
     expect(response.status).toBe(200);
   });
+
+  it.each(["en'", "en%20OR%201", "e", "english-language", "en;", "%22en%22"])(
+    "GET /offline/topics/%s refuses a malformed language code with 400",
+    async (code) => {
+      const response = await app.handle(
+        new Request(`http://localhost/offline/topics/${code}`),
+      );
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toBe("VALIDATION_ERROR");
+    },
+  );
+
+  it.each(["en", "en-US", "pt-BR", "fil", "zh-Hans"])(
+    "GET /offline/topics/%s accepts a well-formed language code",
+    async (code) => {
+      const response = await app.handle(
+        new Request(`http://localhost/offline/topics/${code}`),
+      );
+      expect(response.status).toBe(404);
+    },
+  );
 });
