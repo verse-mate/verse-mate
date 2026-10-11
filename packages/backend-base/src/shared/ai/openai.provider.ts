@@ -10,18 +10,45 @@ import type {
   AiProvider,
   AiResponseOptions,
   AiResponseResult,
+  AiTranscription,
 } from "./ai-provider.interface";
 
+const REASONING_MODEL = /^(gpt-5(?!-chat)|o\d)/;
+const STREAM_IDLE_MS = 90_000;
+const STREAM_TOTAL_MS = 15 * 60_000;
+const INLINE_IMAGE = /^data:image\/(png|jpeg|webp|gif);base64,/;
+
+interface OpenAiStreamEvent {
+  type: string;
+  delta?: string;
+  message?: string;
+  response?: {
+    model?: string;
+    usage?: {
+      input_tokens: number;
+      output_tokens: number;
+      total_tokens: number;
+    };
+    incomplete_details?: { reason?: string };
+    error?: { message?: string };
+  };
+}
+
 /**
- * OpenAI implementation of AiProvider. Uses the `openai` SDK + chat completions API.
+ * OpenAI implementation of AiProvider. Uses the `openai` SDK; chat requests go
+ * through the Responses API, streamed.
  *
  * Apikey from `OPEN_AI_KEY` env. Models passed through as-is.
  */
 export class OpenAiProvider implements AiProvider {
   readonly name = "openai";
   private readonly client: OpenAI;
+  private readonly idleMs: number;
+  private readonly totalMs: number;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, timing?: { idleMs?: number; totalMs?: number }) {
+    this.idleMs = timing?.idleMs ?? STREAM_IDLE_MS;
+    this.totalMs = timing?.totalMs ?? STREAM_TOTAL_MS;
     const key = apiKey ?? process.env.OPEN_AI_KEY;
     if (!key) {
       throw new Error(
@@ -31,28 +58,164 @@ export class OpenAiProvider implements AiProvider {
     this.client = new OpenAI({ apiKey: key });
   }
 
-  async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
-    const completion = await this.client.chat.completions.create({
-      model: opts.model,
-      messages: opts.messages,
-      ...(opts.temperature !== undefined && { temperature: opts.temperature }),
-      ...(opts.maxTokens !== undefined && { max_tokens: opts.maxTokens }),
-      ...(opts.responseFormat && { response_format: opts.responseFormat }),
+  async transcribeAudio(opts: {
+    file: File | Blob;
+    model?: string;
+  }): Promise<AiTranscription> {
+    const result = await this.client.audio.transcriptions.create({
+      file: opts.file as File,
+      model: opts.model ?? "whisper-1",
+      response_format: "verbose_json",
+      timestamp_granularities: ["segment"],
     });
+    return {
+      segments: (result.segments ?? []).map((s) => ({
+        start: s.start,
+        end: s.end,
+        text: s.text,
+      })),
+    };
+  }
 
-    const choice = completion.choices[0];
-    if (!choice?.message?.content) {
+  async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+    const images = opts.messages.flatMap((m) => m.images ?? []);
+    if (images.some((url) => !INLINE_IMAGE.test(url)))
+      throw new Error(
+        `OpenAI images must be inline data: image URLs for model=${opts.model}`,
+      );
+    const reasons = REASONING_MODEL.test(opts.model);
+    const abort = new AbortController();
+    let stalled = false;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const quiet = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => {
+        stalled = true;
+        abort.abort();
+      }, this.idleMs);
+    };
+    const total = setTimeout(() => abort.abort(), this.totalMs);
+    try {
+      return await this.streamChat(opts, reasons, abort.signal, quiet, () =>
+        stalled
+          ? `no data for ${this.idleMs} ms`
+          : abort.signal.aborted
+            ? `ran past the ${this.totalMs} ms limit`
+            : null,
+      );
+    } finally {
+      clearTimeout(idle);
+      clearTimeout(total);
+    }
+  }
+
+  private async streamChat(
+    opts: AiChatOptions,
+    reasons: boolean,
+    signal: AbortSignal,
+    heard: () => void,
+    stoppedBecause: () => string | null,
+  ): Promise<AiChatResponse> {
+    const stream = await (this.client as any).responses
+      .create(
+        {
+          model: opts.model,
+          input: opts.messages.map((m) =>
+            m.role === "user" && m.images?.length
+              ? {
+                  role: "user",
+                  content: [
+                    { type: "input_text", text: m.content },
+                    ...m.images.map((url) => ({
+                      type: "input_image",
+                      image_url: url,
+                    })),
+                  ],
+                }
+              : { role: m.role, content: m.content },
+          ),
+          ...(opts.temperature != null && { temperature: opts.temperature }),
+          ...(reasons && {
+            reasoning: {
+              ...(opts.reasoningEffort != null && {
+                effort: opts.reasoningEffort,
+              }),
+              summary: "auto",
+            },
+          }),
+          ...(opts.maxTokens !== undefined && {
+            max_output_tokens: opts.maxTokens,
+          }),
+          ...(opts.responseFormat && {
+            text: { format: { type: opts.responseFormat.type } },
+          }),
+          store: false,
+          stream: true,
+        },
+        { signal },
+      )
+      .catch((error: unknown) => {
+        const stopped = stoppedBecause();
+        if (stopped)
+          throw new Error(
+            `OpenAI stream stopped for model=${opts.model}: ${stopped}`,
+          );
+        throw error;
+      });
+
+    let content = "";
+    let model = "";
+    let usage:
+      | { input_tokens: number; output_tokens: number; total_tokens: number }
+      | undefined;
+    let completed = false;
+    heard();
+    for await (const event of stream as AsyncIterable<OpenAiStreamEvent>) {
+      heard();
+      if (event.type === "response.output_text.delta") {
+        content += event.delta ?? "";
+      } else if (event.type === "response.completed") {
+        completed = true;
+        model = event.response?.model ?? model;
+        usage = event.response?.usage;
+      } else if (
+        event.type === "response.failed" ||
+        event.type === "response.incomplete" ||
+        event.type === "error"
+      ) {
+        const reason =
+          event.response?.incomplete_details?.reason ??
+          event.response?.error?.message ??
+          event.message ??
+          event.type;
+        throw new Error(
+          `OpenAI did not complete the response for model=${opts.model}: ${reason}`,
+        );
+      }
+    }
+    const stopped = completed ? null : stoppedBecause();
+    if (stopped) {
+      throw new Error(
+        `OpenAI stream stopped for model=${opts.model}: ${stopped}`,
+      );
+    }
+    if (!completed) {
+      throw new Error(
+        `OpenAI stream ended before completing for model=${opts.model}`,
+      );
+    }
+    if (!content) {
       throw new Error(`OpenAI returned no content for model=${opts.model}`);
     }
 
     return {
-      content: choice.message.content,
-      model: completion.model,
-      ...(completion.usage && {
+      content,
+      model: model || opts.model,
+      ...(usage && {
         usage: {
-          promptTokens: completion.usage.prompt_tokens,
-          completionTokens: completion.usage.completion_tokens,
-          totalTokens: completion.usage.total_tokens,
+          promptTokens: usage.input_tokens,
+          completionTokens: usage.output_tokens,
+          totalTokens: usage.total_tokens,
         },
       }),
     };

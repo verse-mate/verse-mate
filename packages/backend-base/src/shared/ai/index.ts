@@ -3,6 +3,7 @@ export type {
   AiChatOptions,
   AiChatResponse,
   AiProvider,
+  AiTranscription,
 } from "./ai-provider.interface";
 export {
   getAiProvider,
