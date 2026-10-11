@@ -2306,9 +2306,6 @@ export class BatchOperationService {
     const connection = this.db.getOrCreateConnection();
 
     const systemPrompt = await this.promptRepository.getActivePrompt();
-    if (!systemPrompt) {
-      throw new ConflictError("No active system prompt found");
-    }
 
     const version = await connection
       .selectFrom("bible_versions")

@@ -6,6 +6,8 @@ type RecentlyViewedSync = NonNullable<
   >["data"]
 >;
 
-export const routeDataCarriesNoErrorShape: "error" extends keyof RecentlyViewedSync
-  ? never
-  : true = true;
+export const routeDataCarriesNoErrorShape: [
+  Extract<RecentlyViewedSync, { error: unknown }>,
+] extends [never]
+  ? true
+  : never = true;
