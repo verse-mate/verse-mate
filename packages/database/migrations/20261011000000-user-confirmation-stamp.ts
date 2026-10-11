@@ -2,6 +2,7 @@ import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
 
 export async function up(db: Kysely<Database>): Promise<void> {
+  await sql`SET LOCAL lock_timeout = '5s'`.execute(db);
   await db.schema
     .alterTable("user")
     .addColumn("email_verified_at", "timestamptz")
@@ -30,6 +31,18 @@ export async function up(db: Kysely<Database>): Promise<void> {
 }
 
 export async function down(db: Kysely<Database>): Promise<void> {
+  await sql`SET LOCAL lock_timeout = '5s'`.execute(db);
+  if (process.env.ROLLBACK_DISCARD_CONFIRMATION_STAMPS !== "1") {
+    const { rows } = await sql<{ stamped: number }>`
+      SELECT count(*)::int AS stamped FROM "user"
+      WHERE email_verified_at IS NOT NULL
+    `.execute(db);
+    const stamped = rows[0]?.stamped ?? 0;
+    if (stamped > 0)
+      throw new Error(
+        `Refusing to drop user.email_verified_at: ${stamped} account(s) carry a confirmation stamp. Set ROLLBACK_DISCARD_CONFIRMATION_STAMPS=1 to drop them.`,
+      );
+  }
   await sql`DROP TRIGGER IF EXISTS stamp_email_verified_at ON "user"`.execute(
     db,
   );
