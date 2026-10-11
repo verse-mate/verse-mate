@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { getAiProvider, resetAiProviderCache } from "./ai-provider.factory";
+import type { AiChatOptions } from "./ai-provider.interface";
+import { OpenAiProvider } from "./openai.provider";
 import { StubAiProvider } from "./stub.provider";
 
 describe("AiProvider factory", () => {
@@ -140,5 +142,448 @@ describe("StubAiProvider responsesCreate", () => {
       maxOutputTokens: 5000,
     });
     expect(a.outputText).toBe(b.outputText);
+  });
+});
+
+type StreamEvent = Record<string, unknown>;
+
+function* eventsOf(
+  parts: string[],
+  usage = { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
+): Generator<StreamEvent> {
+  yield { type: "response.created", response: { model: "gpt-5-served" } };
+  yield { type: "response.reasoning_summary_text.delta", delta: "thinking" };
+  for (const part of parts)
+    yield { type: "response.output_text.delta", delta: part };
+  yield {
+    type: "response.completed",
+    response: { model: "gpt-5-served", usage },
+  };
+}
+
+async function* streamOf(events: Iterable<StreamEvent>) {
+  for (const event of events) yield event;
+}
+
+function providerSending(
+  sent: Record<string, unknown>[],
+  events: () => Iterable<StreamEvent> = () => eventsOf(["{", "}"]),
+  timing?: { idleMs?: number; totalMs?: number },
+) {
+  const provider = new OpenAiProvider("test-key", timing);
+  (provider as unknown as { client: unknown }).client = {
+    responses: {
+      create: async (body: Record<string, unknown>) => {
+        sent.push(body);
+        return streamOf(events());
+      },
+    },
+  };
+  return provider;
+}
+
+describe("OpenAiProvider chatComplete", () => {
+  async function sentFor(opts: Partial<AiChatOptions>) {
+    const sent: Record<string, unknown>[] = [];
+    await providerSending(sent).chatComplete({
+      model: "gpt-5",
+      messages: [{ role: "user", content: "hi" }],
+      ...opts,
+    });
+    return sent[0];
+  }
+
+  it("streams through the Responses API with reasoning summaries, so a long reasoning phase keeps sending data, and stores nothing", async () => {
+    expect(await sentFor({})).toMatchObject({
+      model: "gpt-5",
+      stream: true,
+      store: false,
+      reasoning: { summary: "auto" },
+    });
+  });
+
+  it("a model that does not reason gets no reasoning summary request", async () => {
+    const sent = await sentFor({ model: "gpt-4.1-mini" });
+    expect(sent).not.toHaveProperty("reasoning");
+  });
+
+  it("assembles the streamed text, the served model and the usage", async () => {
+    const sent: Record<string, unknown>[] = [];
+    const response = await providerSending(sent, () =>
+      eventsOf(['{"a":', "1}"], {
+        input_tokens: 10,
+        output_tokens: 4,
+        total_tokens: 14,
+      }),
+    ).chatComplete({
+      model: "gpt-5",
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(response).toEqual({
+      content: '{"a":1}',
+      model: "gpt-5-served",
+      usage: { promptTokens: 10, completionTokens: 4, totalTokens: 14 },
+    });
+  });
+
+  it("system prompts travel as input messages, where JSON mode looks for the word json", async () => {
+    const sent = await sentFor({
+      messages: [
+        { role: "system", content: "Return JSON." },
+        { role: "user", content: "hi" },
+      ],
+      responseFormat: { type: "json_object" },
+    });
+    expect(sent.input).toEqual([
+      { role: "system", content: "Return JSON." },
+      { role: "user", content: "hi" },
+    ]);
+    expect(sent).toMatchObject({ text: { format: { type: "json_object" } } });
+    expect(sent).not.toHaveProperty("instructions");
+  });
+
+  it("images on a user message become input images beside its text", async () => {
+    const sent = await sentFor({
+      messages: [
+        {
+          role: "user",
+          content: "look",
+          images: ["data:image/jpeg;base64,AAA"],
+        },
+      ],
+    });
+    expect(sent.input).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "input_text", text: "look" },
+          { type: "input_image", image_url: "data:image/jpeg;base64,AAA" },
+        ],
+      },
+    ]);
+  });
+
+  it("a token limit is sent as max_output_tokens, never max_tokens", async () => {
+    const sent = await sentFor({ maxTokens: 1200 });
+    expect(sent).toMatchObject({ max_output_tokens: 1200 });
+    expect(sent).not.toHaveProperty("max_tokens");
+    expect(sent).not.toHaveProperty("max_completion_tokens");
+  });
+
+  it("null settings send neither key, the same request as none at all", async () => {
+    const withNulls = await sentFor({
+      temperature: null,
+      reasoningEffort: null,
+    });
+    expect(withNulls).not.toHaveProperty("temperature");
+    expect(withNulls.reasoning).toEqual({ summary: "auto" });
+    expect(withNulls).toEqual(await sentFor({}));
+  });
+
+  it("set settings are passed through", async () => {
+    expect(
+      await sentFor({ temperature: 0.2, reasoningEffort: "low" }),
+    ).toMatchObject({
+      temperature: 0.2,
+      reasoning: { effort: "low", summary: "auto" },
+    });
+  });
+
+  it("an empty streamed answer is an error naming the model", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await expect(
+      providerSending(sent, () => eventsOf([])).chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("OpenAI returned no content for model=gpt-5");
+  });
+
+  it("a failed or incomplete response is an error, not a partial answer", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await expect(
+      providerSending(sent, function* () {
+        yield { type: "response.output_text.delta", delta: '{"a":' };
+        yield {
+          type: "response.incomplete",
+          response: { incomplete_details: { reason: "max_output_tokens" } },
+        };
+      }).chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("max_output_tokens");
+  });
+
+  it("a stream that ends without completing is an error, never a partial answer", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await expect(
+      providerSending(sent, function* () {
+        yield { type: "response.output_text.delta", delta: '{"strengths":[' };
+      }).chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("ended before completing");
+  });
+
+  it("a failed response and an error event are errors", async () => {
+    for (const event of [
+      {
+        type: "response.failed",
+        response: { error: { message: "server_error" } },
+      },
+      { type: "error", message: "rate limited" },
+    ]) {
+      const sent: Record<string, unknown>[] = [];
+      await expect(
+        providerSending(sent, function* () {
+          yield event;
+        }).chatComplete({
+          model: "gpt-5",
+          messages: [{ role: "user", content: "hi" }],
+        }),
+      ).rejects.toThrow("did not complete");
+    }
+  });
+
+  it("a stream that stops sending events is aborted after the idle limit and reported as stalled", async () => {
+    const provider = new OpenAiProvider("test-key", { idleMs: 50 });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async (_body: unknown, options: { signal: AbortSignal }) =>
+          (async function* () {
+            yield { type: "response.output_text.delta", delta: "{" };
+            await new Promise<void>((resolve) =>
+              options.signal.addEventListener("abort", () => resolve()),
+            );
+          })(),
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("no data for 50 ms");
+  });
+
+  it("gpt-5-chat models get no reasoning request, since they do not reason", async () => {
+    const sent = await sentFor({ model: "gpt-5-chat-latest" });
+    expect(sent).not.toHaveProperty("reasoning");
+  });
+
+  it("the idle limit does not run while the request waits for its response to start, which the SDK's own timeout covers", async () => {
+    const provider = new OpenAiProvider("test-key", { idleMs: 20 });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 60));
+          return streamOf(eventsOf(['{"ok":true}']));
+        },
+      },
+    };
+    const response = await provider.chatComplete({
+      model: "gpt-5",
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(response.content).toBe('{"ok":true}');
+  });
+
+  it("a stream running past the total limit is stopped with a message naming the limit", async () => {
+    const provider = new OpenAiProvider("test-key", {
+      idleMs: 1000,
+      totalMs: 60,
+    });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async (_body: unknown, options: { signal: AbortSignal }) =>
+          (async function* () {
+            while (!options.signal.aborted) {
+              yield { type: "response.output_text.delta", delta: "." };
+              await new Promise((resolve) => setTimeout(resolve, 10));
+            }
+          })(),
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("ran past the 60 ms limit");
+  });
+
+  it("a request that fails to start is reported as that failure", async () => {
+    const provider = new OpenAiProvider("test-key", {
+      idleMs: 10,
+      totalMs: 20,
+    });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async () => {
+          throw new Error("401 invalid key");
+        },
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("401 invalid key");
+  });
+
+  it("a request still starting when the total limit passes is reported as running past the limit", async () => {
+    const provider = new OpenAiProvider("test-key", { totalMs: 30 });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: (_body: unknown, options: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) =>
+            options.signal.addEventListener("abort", () =>
+              reject(new Error("Request was aborted.")),
+            ),
+          ),
+      },
+    };
+    await expect(
+      provider.chatComplete({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "hi" }],
+      }),
+    ).rejects.toThrow("ran past the 30 ms limit");
+  });
+});
+
+describe("OpenAiProvider chatComplete limits and reasons", () => {
+  const ask = {
+    model: "gpt-5",
+    messages: [{ role: "user" as const, content: "hi" }],
+  };
+
+  it("each event resets the idle limit, so a slow but steady stream completes", async () => {
+    async function* steady(signal: AbortSignal) {
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 15));
+        if (signal.aborted) return;
+        yield { type: "response.output_text.delta", delta: "x" };
+      }
+      yield { type: "response.completed", response: { model: "gpt-5" } };
+    }
+    const provider = new OpenAiProvider("test-key", {
+      idleMs: 40,
+      totalMs: 5_000,
+    });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async (_body: unknown, { signal }: { signal: AbortSignal }) =>
+          steady(signal),
+      },
+    };
+    const result = await provider.chatComplete(ask);
+    expect(result.content).toBe("xxxxxxxx");
+  });
+
+  it("an image that is not an inline data URL is refused before any request", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await expect(
+      providerSending(sent).chatComplete({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "user",
+            content: "look",
+            images: ["https://example.test/a.png"],
+          },
+        ],
+      }),
+    ).rejects.toThrow("inline data: image URLs");
+    expect(sent).toEqual([]);
+  });
+
+  it("an inline image is sent", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await providerSending(sent).chatComplete({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "user",
+          content: "look",
+          images: ["data:image/jpeg;base64,AAAA"],
+        },
+      ],
+    });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("a failed response names the reason the API gave", async () => {
+    const sent: Record<string, unknown>[] = [];
+    const provider = providerSending(sent, () => [
+      {
+        type: "response.failed",
+        response: { error: { message: "server_error" } },
+      },
+    ]);
+    await expect(provider.chatComplete(ask)).rejects.toThrow("server_error");
+  });
+
+  it("a completed event without a model or usage falls back to the requested model and omits usage", async () => {
+    const sent: Record<string, unknown>[] = [];
+    const provider = providerSending(sent, () => [
+      { type: "response.output_text.delta", delta: "ok" },
+      { type: "response.completed", response: {} },
+    ]);
+    const result = await provider.chatComplete(ask);
+    expect(result).toEqual({ content: "ok", model: "gpt-5" });
+  });
+});
+
+describe("OpenAiProvider transcribeAudio", () => {
+  function transcriber(result: unknown) {
+    const sent: Record<string, unknown>[] = [];
+    const provider = new OpenAiProvider("test-key");
+    (provider as unknown as { client: unknown }).client = {
+      audio: {
+        transcriptions: {
+          create: async (body: Record<string, unknown>) => {
+            sent.push(body);
+            return result;
+          },
+        },
+      },
+    };
+    return { provider, sent };
+  }
+
+  it("asks for timed segments from whisper-1 by default and returns them", async () => {
+    const { provider, sent } = transcriber({
+      text: "a b",
+      segments: [
+        { id: 0, start: 0, end: 1.5, text: "a", tokens: [] },
+        { id: 1, start: 1.5, end: 3, text: "b", tokens: [] },
+      ],
+    });
+    const file = new Blob(["audio"]);
+    const result = await provider.transcribeAudio({ file });
+    expect(sent[0]).toMatchObject({
+      file,
+      model: "whisper-1",
+      response_format: "verbose_json",
+      timestamp_granularities: ["segment"],
+    });
+    expect(result.segments).toEqual([
+      { start: 0, end: 1.5, text: "a" },
+      { start: 1.5, end: 3, text: "b" },
+    ]);
+  });
+
+  it("passes a chosen model and returns no segments when the API gives none", async () => {
+    const { provider, sent } = transcriber({ text: "" });
+    const result = await provider.transcribeAudio({
+      file: new Blob(["audio"]),
+      model: "gpt-4o-transcribe",
+    });
+    expect(sent[0].model).toBe("gpt-4o-transcribe");
+    expect(result.segments).toEqual([]);
   });
 });
