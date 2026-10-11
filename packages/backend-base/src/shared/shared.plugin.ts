@@ -111,13 +111,20 @@ const setup = new Elysia({ name: "shared" })
         (error.status === 401 || error.status === 403)
       )
         return;
+      if ((error as { status?: unknown }).status === 429) return;
 
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,
         query: query as { accessToken?: string },
         jwt: jwtVerifier,
       });
-      posthogService.captureException(error, distinctId ?? "anonymous", {
+      const reported =
+        code === "VALIDATION"
+          ? new Error(
+              `validation failed on ${error.type} ${error.valueError?.path ?? ""}`.trim(),
+            )
+          : error;
+      posthogService.captureException(reported, distinctId ?? "anonymous", {
         code,
         $current_url: path,
       });
