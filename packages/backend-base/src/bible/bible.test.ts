@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { Elysia } from "elysia";
 
 import HighlightColorEnum from "database/src/models/public/HighlightColorEnum";
 import authPlugin from "../auth/auth.plugin";
@@ -8,7 +9,7 @@ import Backend from "./bible.plugin";
 
 describe("Bible Plugin", () => {
   let testUser: Awaited<ReturnType<typeof createTestUser>>;
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - Combined plugin types
   const testClient = getTestClient<typeof plugin>(plugin);
 

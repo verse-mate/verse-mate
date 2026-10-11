@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import PromptStatusEnum from "database/src/models/public/PromptStatusEnum";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
 import { resetAiProviderCache } from "../shared/ai";
@@ -10,7 +11,7 @@ import Backend from "./admin.plugin";
 describe("Admin Plugin", () => {
   let adminUser: Awaited<ReturnType<typeof createTestUser>>;
   let regularUser: Awaited<ReturnType<typeof createTestUser>>;
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - Combined plugin types
   const testClient = getTestClient<typeof plugin>(plugin);
 

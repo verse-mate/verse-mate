@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
 import { signupPassword } from "../shared/signup-password";
@@ -14,7 +15,7 @@ describe("Recently Viewed Books", () => {
     lastName: faker.person.lastName(),
     password: signupPassword(),
   };
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - TODO: Fix this
   const testClient = getTestClient<typeof plugin>(plugin);
 

@@ -1,11 +1,12 @@
 import { afterAll, describe, expect, it } from "bun:test";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./topic.plugin";
 
 describe("Topics Plugin", () => {
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - Combined plugin types
   const testClient = getTestClient<typeof plugin>(plugin);
 
