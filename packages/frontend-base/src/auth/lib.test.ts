@@ -19,6 +19,7 @@ import {
   SSO_ERROR_MESSAGES,
   SSO_VERIFIER_KEY,
   clearAuthTokens,
+  completeSSOCallback,
   getSSOErrorMessage,
   getSSORedirectDestination,
   handleSSOCallback,
@@ -36,6 +37,8 @@ const rejectExchange = async (): Promise<never> => {
 const mockLocalStorage: Record<string, string> = {};
 const mockSessionStorage: Record<string, string> = {};
 const PENDING_VERIFIER = "v".repeat(43);
+const ADMIN_ORIGIN = "https://admin.example.test";
+const API_URL = "https://api.example.test";
 
 function startedSignIn(secondsAgo = 0) {
   mockSessionStorage[SSO_VERIFIER_KEY] = JSON.stringify({
@@ -99,6 +102,7 @@ function setupBrowserMocks() {
     innerWidth: 1920,
     location: {
       href: "",
+      origin: ADMIN_ORIGIN,
     },
   };
 }
@@ -610,7 +614,7 @@ describe("starting SSO sign-in", () => {
 
   it("keeps a fresh verifier and sends its SHA-256 challenge to the redirect", async () => {
     const before = Date.now();
-    await startSSOSignIn("https://api.example.test/auth/sso/google/redirect");
+    await startSSOSignIn(API_URL, "google");
 
     const stored = JSON.parse(mockSessionStorage[SSO_VERIFIER_KEY]);
     expect(stored.startedAt).toBeGreaterThanOrEqual(before);
@@ -618,15 +622,29 @@ describe("starting SSO sign-in", () => {
     const verifier = pendingVerifier();
     expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
     const expected = createHash("sha256").update(verifier).digest("base64url");
-    expect((global as any).window.location.href).toBe(
-      `https://api.example.test/auth/sso/google/redirect?challenge=${expected}`,
+    const target = new URL((global as any).window.location.href);
+    expect(target.origin + target.pathname).toBe(
+      `${API_URL}/auth/sso/google/redirect`,
     );
+    expect(target.searchParams.get("challenge")).toBe(expected);
   });
 
+  for (const provider of ["google", "apple"] as const) {
+    it(`asks the ${provider} redirect to come back to this app`, async () => {
+      await startSSOSignIn(API_URL, provider);
+
+      const target = new URL((global as any).window.location.href);
+      expect(target.origin + target.pathname).toBe(
+        `${API_URL}/auth/sso/${provider}/redirect`,
+      );
+      expect(target.searchParams.get("returnTo")).toBe(ADMIN_ORIGIN);
+    });
+  }
+
   it("uses a new verifier for every sign-in", async () => {
-    await startSSOSignIn("https://api.example.test/auth/sso/apple/redirect");
+    await startSSOSignIn(API_URL, "apple");
     const first = pendingVerifier();
-    await startSSOSignIn("https://api.example.test/auth/sso/apple/redirect");
+    await startSSOSignIn(API_URL, "apple");
 
     expect(pendingVerifier()).not.toBe(first);
   });
@@ -639,9 +657,7 @@ describe("starting SSO sign-in", () => {
         configurable: true,
       });
       try {
-        await startSSOSignIn(
-          `https://api.example.test/auth/sso/${provider}/redirect`,
-        );
+        await startSSOSignIn(API_URL, provider);
       } finally {
         Object.defineProperty(globalThis, "crypto", {
           value: original,
@@ -668,7 +684,7 @@ describe("starting SSO sign-in", () => {
       throw new Error("QuotaExceededError");
     };
 
-    await startSSOSignIn("https://api.example.test/auth/sso/google/redirect");
+    await startSSOSignIn(API_URL, "google");
 
     const target = new URL(
       (global as any).window.location.href,
@@ -682,7 +698,7 @@ describe("starting SSO sign-in", () => {
     (global as any).sessionStorage.setItem = () => {
       throw new Error("QuotaExceededError");
     };
-    await startSSOSignIn("https://api.example.test/auth/sso/apple/redirect");
+    await startSSOSignIn(API_URL, "apple");
     const target = new URL(
       (global as any).window.location.href,
       "https://app.example.test",
@@ -721,5 +737,52 @@ describe("Token Cookie Constants", () => {
   it("should export correct cookie names", () => {
     expect(ACCESS_TOKEN_COOKIE).toBe("accessToken");
     expect(REFRESH_TOKEN_COOKIE).toBe("refreshToken");
+  });
+});
+
+describe("completing SSO sign-in on the callback page", () => {
+  const steps: string[] = [];
+
+  beforeEach(() => {
+    setupBrowserMocks();
+    clearBrowserMocks();
+    steps.length = 0;
+    (global as any).window.location.pathname = "/auth/callback/google";
+    (global as any).window.history = {
+      state: { page: 1 },
+      replaceState: (state: unknown, _unused: string, url: string) => {
+        steps.push(`replaceState ${JSON.stringify(state)} ${url}`);
+      },
+    };
+  });
+
+  afterEach(() => {
+    clearBrowserMocks();
+  });
+
+  it("clears the code from the address bar before it exchanges the code", async () => {
+    startedSignIn();
+    const exchange = async (code: string) => {
+      steps.push(`exchange ${code}`);
+      return { accessToken: "header.payload.signature", verified: true };
+    };
+
+    const result = await completeSSOCallback("?code=one-time-code", exchange);
+
+    expect(steps).toEqual([
+      'replaceState {"page":1} /auth/callback/google',
+      "exchange one-time-code",
+    ]);
+    expect(result.success).toBe(true);
+  });
+
+  it("clears the address bar when the provider reports an error too", async () => {
+    const result = await completeSSOCallback(
+      "?error=access_denied",
+      rejectExchange,
+    );
+
+    expect(steps).toEqual(['replaceState {"page":1} /auth/callback/google']);
+    expect(result.success).toBe(false);
   });
 });

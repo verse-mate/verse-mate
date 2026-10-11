@@ -2,8 +2,8 @@
 
 import { exchangeSSOCode } from "frontend-base/src/api/auth";
 import {
+  completeSSOCallback,
   getSSOErrorMessage,
-  handleSSOCallback,
   startSSOSignIn,
 } from "frontend-base/src/auth/lib";
 import { $env } from "frontend-envs";
@@ -105,30 +105,25 @@ function GoogleCallbackContent() {
       return;
     }
 
-    const params = new URLSearchParams(searchParams.toString());
-    window.history.replaceState(
-      window.history.state,
-      "",
-      window.location.pathname,
+    completeSSOCallback(searchParams.toString(), exchangeSSOCode).then(
+      (result) => {
+        if (result.success && result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+        } else {
+          setIsLoading(false);
+          setError({
+            code: result.error || "unknown_error",
+            message:
+              result.errorMessage ||
+              getSSOErrorMessage(result.error || "unknown_error"),
+          });
+        }
+      },
     );
-
-    handleSSOCallback(params, exchangeSSOCode).then((result) => {
-      if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else {
-        setIsLoading(false);
-        setError({
-          code: result.error || "unknown_error",
-          message:
-            result.errorMessage ||
-            getSSOErrorMessage(result.error || "unknown_error"),
-        });
-      }
-    });
   }, [searchParams]);
 
   const handleRetry = () => {
-    void startSSOSignIn(`${$env.get().apiUrl}/auth/sso/google/redirect`);
+    void startSSOSignIn($env.get().apiUrl, "google");
   };
 
   return (
