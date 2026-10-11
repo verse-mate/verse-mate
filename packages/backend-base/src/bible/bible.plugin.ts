@@ -46,6 +46,7 @@ import { BibleService } from "./services/bible.service";
 import { PromptService } from "./services/prompt.service";
 
 const model = "gpt-5-nano";
+const NOTE_CONTENT_MAX_LENGTH = 20_000;
 
 // Lazy AiProvider singleton — module-level use means we can't construct in
 // the constructor body; eager init would fail in test envs without OPEN_AI_KEY.
@@ -688,7 +689,7 @@ const plugin = new Elysia()
             book_id: t.Number(),
             chapter_number: t.Number(),
             verse_id: t.Optional(t.Number()),
-            content: t.String(),
+            content: t.String({ maxLength: NOTE_CONTENT_MAX_LENGTH }),
           }),
           response: {
             200: NoteAddSchema,
@@ -716,7 +717,7 @@ const plugin = new Elysia()
         {
           body: t.Object({
             note_id: t.String({ format: "uuid" }),
-            content: t.String(),
+            content: t.String({ maxLength: NOTE_CONTENT_MAX_LENGTH }),
           }),
           response: {
             200: NoteUpdateSchema,
