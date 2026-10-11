@@ -4,6 +4,7 @@ import { db as Database } from "database";
 import { JesusEventRepository } from "./jesus-event.repository";
 import { JesusRepository } from "./jesus.repository";
 
+const FIXTURE_CODE_PATTERN = "q'%";
 const languageCode = `q'${faker.string.alpha(4).toLowerCase()}`;
 
 describe("Jesus repositories with a language code that needs escaping", () => {
@@ -21,13 +22,33 @@ describe("Jesus repositories with a language code that needs escaping", () => {
     entryTheme: faker.lorem.words(3),
     eventTheme: faker.lorem.words(3),
     entryTitle: faker.lorem.sentence(),
+    person: `${faker.person.firstName()} ${faker.string.alphanumeric(8)}`,
   };
 
+  const removeFixtures = () =>
+    Promise.all([
+      conn()
+        .deleteFrom("jesus_label_translations")
+        .where("language_code", "like", FIXTURE_CODE_PATTERN)
+        .execute(),
+      conn()
+        .deleteFrom("jesus_entry_translations")
+        .where("language_code", "like", FIXTURE_CODE_PATTERN)
+        .execute(),
+      conn()
+        .deleteFrom("jesus_event_people")
+        .where("person", "=", labels.person)
+        .execute(),
+    ]);
+
   beforeAll(async () => {
+    await removeFixtures();
+
     const period = await conn()
       .selectFrom("jesus_periods")
       .where("is_active", "=", true)
       .select("period_id")
+      .orderBy("period_id")
       .executeTakeFirstOrThrow();
     periodId = period.period_id;
 
@@ -35,6 +56,7 @@ describe("Jesus repositories with a language code that needs escaping", () => {
       .selectFrom("jesus_collections")
       .where("is_active", "=", true)
       .select("collection_id")
+      .orderBy("collection_id")
       .executeTakeFirstOrThrow();
     collectionId = collection.collection_id;
 
@@ -57,6 +79,7 @@ describe("Jesus repositories with a language code that needs escaping", () => {
         "jesus_entries.slug",
         "jesus_themes.theme_id",
       ])
+      .orderBy("jesus_entries.entry_id")
       .executeTakeFirstOrThrow();
 
     event = await conn()
@@ -66,9 +89,16 @@ describe("Jesus repositories with a language code that needs escaping", () => {
         "jesus_themes.theme_id",
         "jesus_event_themes.theme_id",
       )
+      .innerJoin(
+        "jesus_events",
+        "jesus_events.event_id",
+        "jesus_event_themes.event_id",
+      )
       .where("jesus_themes.is_active", "=", true)
+      .where("jesus_events.is_active", "=", true)
       .where("jesus_themes.theme_id", "!=", entry.theme_id)
       .select(["jesus_event_themes.event_id", "jesus_themes.theme_id"])
+      .orderBy("jesus_event_themes.event_id")
       .executeTakeFirstOrThrow();
 
     await conn()
@@ -106,6 +136,11 @@ describe("Jesus repositories with a language code that needs escaping", () => {
       .execute();
 
     await conn()
+      .insertInto("jesus_event_people")
+      .values({ event_id: event.event_id, person: labels.person })
+      .execute();
+
+    await conn()
       .insertInto("jesus_entry_translations")
       .values({
         entry_id: entry.entry_id,
@@ -117,14 +152,7 @@ describe("Jesus repositories with a language code that needs escaping", () => {
   });
 
   afterAll(async () => {
-    await conn()
-      .deleteFrom("jesus_label_translations")
-      .where("language_code", "=", languageCode)
-      .execute();
-    await conn()
-      .deleteFrom("jesus_entry_translations")
-      .where("language_code", "=", languageCode)
-      .execute();
+    await removeFixtures();
     Database.closeConnection();
   });
 
@@ -171,5 +199,28 @@ describe("Jesus repositories with a language code that needs escaping", () => {
     );
     expect(events).toHaveLength(1);
     expect(events[0].themes.map((t) => t.name)).toContain(labels.eventTheme);
+  });
+
+  it("listEntries treats LIKE wildcards in a search as plain text", async () => {
+    const all = await repository.countEntries();
+    const entries = await repository.listEntries(
+      { search: "%" },
+      { limit: all },
+    );
+    expect(
+      entries.every((e) => `${e.title}${e.summary}${e.quote}`.includes("%")),
+    ).toBe(true);
+    expect(entries.length).toBeLessThan(all);
+  });
+
+  it("listEvents treats LIKE wildcards in search and person as plain text", async () => {
+    const all = await eventRepository.countEvents();
+    expect(await eventRepository.countEvents({ search: "_" })).toBeLessThan(
+      all,
+    );
+    expect(
+      await eventRepository.countEvents({ person: labels.person }),
+    ).toBeGreaterThan(0);
+    expect(await eventRepository.countEvents({ person: "%" })).toBe(0);
   });
 });
