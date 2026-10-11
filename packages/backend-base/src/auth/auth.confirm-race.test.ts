@@ -31,11 +31,11 @@ async function account(emailVerified: boolean) {
   return { id, email };
 }
 
-async function waitForARowLock() {
+async function waitUntilBlockedBy(pid: number) {
   for (let i = 0; i < 100; i += 1) {
     const { rows } = await sql<{ waiting: number }>`
       select count(*)::int as waiting from pg_stat_activity
-      where datname = current_database() and wait_event_type = 'Lock'
+      where ${pid}::int = any(pg_blocking_pids(pid))
     `.execute(conn);
     if (rows[0].waiting > 0) return;
     await Bun.sleep(20);
@@ -105,6 +105,9 @@ describe("a confirmation stamps only the address it proved, even when a rename r
         .where("id", "=", id)
         .forUpdate()
         .execute();
+      const { rows } = await sql<{
+        pid: number;
+      }>`select pg_backend_pid() as pid`.execute(trx);
       const attempt = service
         .loginWithSSO(
           SsoProviderEnum.google,
@@ -115,7 +118,7 @@ describe("a confirmation stamps only the address it proved, even when a rename r
           () => undefined,
           (error: unknown) => error,
         );
-      await waitForARowLock();
+      await waitUntilBlockedBy(rows[0].pid);
       await trx
         .updateTable("user")
         .set({ email: ROSTER })

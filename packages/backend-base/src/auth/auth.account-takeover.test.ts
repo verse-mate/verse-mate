@@ -6,6 +6,8 @@ import { ConflictError, ValidationError } from "../common/errors";
 import { authRateLimiters } from "../common/rate-limit.middleware";
 import cacheConstants from "../shared/cache.constants";
 import shared from "../shared/shared.plugin";
+import { getTestClient } from "../shared/test-client";
+import Backend, { type AuthPlugin } from "./auth.plugin";
 import { AuthService } from "./auth.service";
 import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
 
@@ -14,7 +16,7 @@ const conn = db.getOrCreateConnection();
 const cache = shared.store.cache;
 const links = new UserSsoAccountRepository(db);
 const jwt = { sign: async (p: { sub: string }) => `token-${p.sub}` };
-const PASSWORD = "correct-horse-battery";
+const PASSWORD = "correct-horse-1";
 
 let mails: Array<{ to: string; text: string }> = [];
 let created: string[] = [];
@@ -236,6 +238,40 @@ describe("the confirmation mail limit", () => {
   });
 });
 
+describe("the rename limit through the route", () => {
+  it("answers 429 with a retry time and keeps the address", async () => {
+    const client = getTestClient<AuthPlugin>(Backend);
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    const { data } = await client.auth.login.post({
+      email,
+      password: PASSWORD,
+    });
+    const headers = { authorization: `Bearer ${data?.accessToken}` };
+    for (let i = 0; i < 5; i += 1) {
+      const res = await client.auth.profile.put(
+        { email: address(`route${i}`) },
+        { headers },
+      );
+      expect(res.error).toBeNull();
+    }
+    const fifth = (await row(id)).email;
+
+    const blocked = await client.auth.profile.put(
+      { email: address("route-sixth") },
+      { headers },
+    );
+
+    expect(blocked.status).toBe(429);
+    expect(
+      (blocked.error?.value as { retryAfter?: number }).retryAfter,
+    ).toBeGreaterThan(0);
+    expect((await row(id)).email).toBe(fifth);
+  });
+});
+
 describe("a password reset link", () => {
   it("stops working once the account moves to another address", async () => {
     const { id, email } = await account({ password: true });
@@ -264,6 +300,20 @@ describe("a password reset link", () => {
       await service().resetPassword({ key, password: "taken-over-1" }),
     ).toBe(false);
     expect((await row(squatter.id)).password).toBeNull();
+  });
+
+  it("proves the address, so a later provider sign-in keeps the password just set", async () => {
+    const { id, email } = await account({ password: true });
+    await service().forgotPassword({ email });
+    await service().resetPassword({
+      key: keySentTo(email),
+      password: "chosen-by-the-owner",
+    });
+    expect((await row(id)).email_verified_at).not.toBeNull();
+
+    await google(`after-reset-${id}`, email);
+
+    expect((await row(id)).password).not.toBeNull();
   });
 
   it("on an unconfirmed account drops provider links made for another address, so the previous holder keeps no way in", async () => {
@@ -361,6 +411,34 @@ describe("a provider sign-in that adopts an existing account", () => {
         `apple-${id}`,
       ),
     ).toBeTruthy();
+  });
+
+  it("refuses when the provider identity is already linked to another account", async () => {
+    const other = await account({ emailVerified: true });
+    const target = await account();
+    const providerUserId = `shared-${target.id}`;
+    await links.create({
+      user_id: other.id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: providerUserId,
+      email: other.email,
+    });
+    const adopting = service();
+    const lookup = (
+      adopting as unknown as {
+        userSsoAccountRepository: UserSsoAccountRepository;
+      }
+    ).userSsoAccountRepository;
+    spyOn(lookup, "findByProviderAndProviderId").mockResolvedValue(undefined);
+
+    await expect(
+      adopting.loginWithSSO(
+        SsoProviderEnum.google,
+        { providerUserId, email: target.email, emailVerified: true, name: "T" },
+        jwt as never,
+      ),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect((await row(target.id)).emailVerified).toBe(false);
   });
 
   it("does not confirm a linked account that moved to an address the provider never saw", async () => {
