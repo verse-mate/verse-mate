@@ -10,7 +10,7 @@ import {
 } from "kysely";
 import { Pool } from "pg";
 
-import { DISCARD_FLAG } from "../../migrations/20260825120000-create-coach-reports-store";
+import { DISCARD_FLAG } from "../../migrations/20261011010000-coach-reports-and-roster";
 import { getCleanConnectionString, getSSLConfig } from "../utils/ssl-config";
 
 const MIGRATIONS = path.join(import.meta.dir, "../../migrations");
@@ -62,14 +62,8 @@ async function schemaDump(db: Kysely<unknown>): Promise<string> {
 
 const SESSION = `INSERT INTO coach_intake_sessions (source_session_id, session_date) VALUES ('roundtrip', '2026-01-01')`;
 const REPORT = `INSERT INTO coach_reports (id, coach_id, session_date, source_session_id, summary, metrics, body) VALUES ('roundtrip', 'roundtrip', '2026-01-01', 'roundtrip', '{}', '{}', '{}')`;
-const AMENDMENT =
-  "INSERT INTO coach_report_amendments (report_id, revision, previous, changes";
-const RUN =
-  "INSERT INTO coach_calibration_runs (model_version, composite_mae, dimensions_within_one, comparisons, reports";
-const sessionWith = (set: string) =>
-  `${SESSION}; UPDATE coach_intake_sessions SET ${set}`;
-const reportWith = (set: string) =>
-  `${REPORT}; UPDATE coach_reports SET ${set}`;
+const USER = (email: string) =>
+  `INSERT INTO "user" (email, "firstName", "lastName") VALUES ('${email}', 'R', 'T')`;
 
 type Refusal = {
   seed: string;
@@ -77,197 +71,168 @@ type Refusal = {
   rewrites?: true;
 };
 
-const REFUSALS: Record<string, Refusal> = {
-  "20260901166000-coach-monthly-send-claims": {
-    seed: "INSERT INTO coach_monthly_reports (kind, month, summary, state, sending_at) VALUES ('program', '2026-01', '{}', 'sending', now())",
-    tables: ["coach_monthly_reports"],
-  },
-  "20260901165000-coach-upload-claims": {
-    seed: "INSERT INTO coach_uploads (coach_id, class_key, class_name, session_date, file_name, file_bytes, content_type, parts, attempts) VALUES ('roundtrip', 'group:roundtrip', 'Roundtrip', '2026-01-05', 'a.mp4', 1, 'video/mp4', 1, 1)",
-    tables: ["coach_uploads"],
-  },
-  "20260901164000-coach-identity-binding": {
-    seed: `INSERT INTO "user" (email, "firstName", "lastName") VALUES ('roundtrip-admin@example.test', 'R', 'T'); INSERT INTO coach_admins (email, user_id) SELECT email, id FROM "user" WHERE email = 'roundtrip-admin@example.test'`,
-    tables: ["coach_admins"],
-  },
-  "20260901163000-coach-monday-reminders": {
-    seed: "INSERT INTO coach_monday_reminders (run_date, kind, coach_id, found, outcome) VALUES ('2026-01-05', 'leader', 'roundtrip', false, 'sent')",
-    tables: ["coach_monday_reminders"],
-  },
-  "20260901162000-coach-monthly-reports": {
-    seed: "INSERT INTO coach_monthly_reports (kind, month, summary, state) VALUES ('program', '2026-01', '{}', 'held')",
-    tables: ["coach_monthly_reports"],
-  },
-  "20260901161000-coach-uploads": {
-    seed: sessionWith("source = 'upload', state = 'received'"),
-    tables: ["coach_intake_sessions"],
-    rewrites: true,
-  },
-  "20260901160000-coach-rotating-leader-cue": {
-    seed: sessionWith("leader_cue = 'none'"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901159000-coach-rotating-classes": {
-    seed: "INSERT INTO coach_rotating_classes (name, group_email) VALUES ('roundtrip', 'group@example.test')",
-    tables: ["coach_rotating_classes"],
-  },
-  "20260901158000-coach-first-lesson-line": {
-    seed: reportWith("first_lesson_line = 'We start Ruth today'"),
-    tables: ["coach_reports"],
-  },
-  "20260901157000-coach-leader-email-requests": {
-    seed: "INSERT INTO coach_leader_email_requests (slug, new_email, token_hash, expires_at) VALUES ('roundtrip', 'after@example.test', 'h', now())",
-    tables: ["coach_leader_email_requests"],
-  },
-  "20260901156000-coach-machine-score": {
-    seed: `${REPORT}; INSERT INTO coach_report_dimension_scores (report_id, dimension_n, provenance, score, machine_score) VALUES ('roundtrip', 1, 'human', 2, 4)`,
-    tables: ["coach_reports"],
-  },
-  "20260901155000-coach-score-produced-by": {
-    seed: `${REPORT}; INSERT INTO coach_report_dimension_scores (report_id, dimension_n, provenance, prompt_version) VALUES ('roundtrip', 1, 'machine', 'p1')`,
-    tables: ["coach_reports"],
-  },
-  "20260901154000-coach-no-calibration-hold": {
-    seed: sessionWith("hold_kind = 'scoring-version'"),
-    tables: ["coach_intake_sessions"],
-    rewrites: true,
-  },
-  "20260901153000-coach-intake-send-unconfirmed": {
-    seed: sessionWith("send_unconfirmed = true"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901152000-coach-intake-hold-kind": {
-    seed: sessionWith("hold_kind = 'review'"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901151000-coach-intake-session-start": {
-    seed: sessionWith("session_started_at = now()"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901150000-coach-intake-parallel-run": {
-    seed: sessionWith("parallel_run = true"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901149000-coach-revision-attempted": {
-    seed: `${REPORT}; ${AMENDMENT}, coach_id, attempted_to) VALUES ('roundtrip', 1, '{}', '{}', 'roundtrip', '{reader@example.test}')`,
-    tables: ["coach_reports"],
-  },
-  "20260901148000-coach-delivery-attempted": {
-    seed: sessionWith("attempted_to = '{reader@example.test}'"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901147000-coach-delivery-published": {
-    seed: sessionWith("published = true"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901146000-coach-reminder-claims": {
-    seed: "INSERT INTO coach_reminder_sends (coach_id, reminder_date, report_id, email, sent_at) VALUES ('roundtrip', '2026-01-01', 'roundtrip', 'reader@example.test', NULL)",
-    tables: ["coach_reminder_sends"],
-    rewrites: true,
-  },
-  "20260901145000-coach-report-edits": {
-    seed: `${REPORT}; INSERT INTO coach_report_edits (report_id, changes) VALUES ('roundtrip', '{}')`,
-    tables: ["coach_reports"],
-  },
-  "20260901144000-coach-reminder-summaries": {
-    seed: "INSERT INTO coach_reminder_summaries (reminder_date) VALUES ('2026-01-01')",
-    tables: ["coach_reminder_summaries"],
-  },
-  "20260901143000-coach-reminder-sends": {
-    seed: "INSERT INTO coach_reminder_sends (coach_id, reminder_date, report_id, email) VALUES ('roundtrip', '2026-01-01', 'roundtrip', 'reader@example.test')",
-    tables: ["coach_reminder_sends"],
-  },
-  "20260901142000-coach-leader-email-changes": {
-    seed: "INSERT INTO coach_leader_email_changes (slug, previous_email, new_email) VALUES ('roundtrip', 'before@example.test', 'after@example.test')",
-    tables: ["coach_leader_email_changes"],
-  },
-  "20260901141000-coach-intake-release-required": {
-    seed: sessionWith("release_required = true"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901140000-coach-amendment-leader": {
-    seed: `${REPORT}; ${AMENDMENT}, coach_id) VALUES ('roundtrip', 1, '{}', '{}', 'roundtrip')`,
-    tables: ["coach_reports"],
-  },
-  "20260901139000-coach-revision-claim": {
-    seed: `${REPORT}; ${AMENDMENT}, sending_at) VALUES ('roundtrip', 1, '{}', '{}', now())`,
-    tables: ["coach_reports"],
-  },
-  "20260901138000-coach-report-amendments": {
-    seed: `${REPORT}; ${AMENDMENT}) VALUES ('roundtrip', 1, '{}', '{}')`,
-    tables: ["coach_reports"],
-  },
-  "20260901137000-coach-first-lesson": {
-    seed: reportWith("first_lesson = true"),
-    tables: ["coach_reports"],
-  },
-  "20260901136000-coach-delivery-skipped": {
-    seed: sessionWith("skipped_recipients = '{reader@example.test}'"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901135000-coach-intake-admin-attribution": {
-    seed: sessionWith("matched_by = 'admin', coach_id = 'roundtrip'"),
-    tables: ["coach_intake_sessions"],
-    rewrites: true,
-  },
-  "20260901134000-coach-delivery-recipients": {
-    seed: sessionWith("delivered_to = '{reader@example.test}'"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901133000-coach-calibration-per-leader": {
-    seed: `${RUN}, per_leader) VALUES ('roundtrip', 0, 1, 1, 1, '{}')`,
-    tables: ["coach_calibration_runs"],
-  },
-  "20260901132000-coach-report-held": {
-    seed: reportWith("held = true"),
-    tables: ["coach_reports"],
-  },
-  "20260901131000-coach-intake-hold-reason": {
-    seed: sessionWith("hold_reason = 'held for review'"),
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901130000-coach-calibration-runs": {
-    seed: `${RUN}) VALUES ('roundtrip', 0, 1, 1, 1)`,
-    tables: ["coach_calibration_runs"],
-  },
-  "20260901129000-coach-pipeline-states": {
-    seed: sessionWith("state = 'delivering', coach_id = 'roundtrip'"),
-    tables: ["coach_intake_sessions"],
-    rewrites: true,
-  },
-  "20260901127000-coach-report-evidence": {
-    seed: reportWith("evidence = '{}'"),
-    tables: ["coach_reports"],
-  },
-  "20260901126000-coach-intake-sessions": {
-    seed: SESSION,
-    tables: ["coach_intake_sessions"],
-  },
-  "20260901125000-coach-session-archive": {
-    seed: "INSERT INTO coach_session_assets (coach_id, source_session_id, kind, storage_key) VALUES ('roundtrip', 'roundtrip', 'transcript', 'roundtrip')",
-    tables: ["coach_session_assets"],
-  },
-  "20260901124000-coach-score-provenance": {
-    seed: `${REPORT}; INSERT INTO coach_report_dimension_scores (report_id, dimension_n, provenance) VALUES ('roundtrip', 1, 'machine')`,
-    tables: ["coach_reports"],
-  },
-  "20260901122000-coach-monthly-leader-summaries": {
-    seed: "INSERT INTO coach_monthly_leader_summaries (coach_id, month, summary) VALUES ('roundtrip', '2026-01', '{}')",
-    tables: ["coach_monthly_leader_summaries"],
-  },
-  "20260901121000-coach-monthly-narratives": {
-    seed: "INSERT INTO coach_monthly_narratives (month) VALUES ('2026-01')",
-    tables: ["coach_monthly_narratives"],
-  },
-  "20260901120000-coach-roster-in-database": {
-    seed: "INSERT INTO coach_leaders (email, slug) VALUES ('leader@example.test', 'roundtrip')",
-    tables: ["coach_leaders"],
-  },
-  "20260825120000-create-coach-reports-store": {
-    seed: REPORT,
-    tables: ["coach_reports"],
-  },
-};
+const REPORTS_AND_ROSTER = "20261011010000-coach-reports-and-roster";
+const SESSION_PIPELINE = "20261011020000-coach-session-pipeline";
+const UPLOADS_ROTATING = "20261011030000-coach-uploads-rotating-schedules";
+const IDENTITY_BINDING = "20261011040000-coach-identity-binding";
+
+const REFUSALS: [string, Refusal][] = [
+  [
+    IDENTITY_BINDING,
+    {
+      seed: `${USER("roundtrip-admin@example.test")}; INSERT INTO coach_admins (email, user_id) SELECT email, id FROM "user" WHERE email = 'roundtrip-admin@example.test'`,
+      tables: ["coach_admins"],
+    },
+  ],
+  [
+    IDENTITY_BINDING,
+    {
+      seed: "INSERT INTO coach_leader_email_changes (slug, previous_email, new_email) VALUES ('roundtrip', 'before@example.test', 'after@example.test')",
+      tables: ["coach_leader_email_changes"],
+    },
+  ],
+  [
+    IDENTITY_BINDING,
+    {
+      seed: "INSERT INTO coach_leader_email_requests (slug, new_email, token_hash, expires_at) VALUES ('roundtrip', 'after@example.test', 'h', now())",
+      tables: ["coach_leader_email_requests"],
+    },
+  ],
+  [
+    IDENTITY_BINDING,
+    {
+      seed: `${USER("roundtrip-cleared@example.test")}; INSERT INTO coach_confirmation_clears (user_id, email, source) SELECT id, email, 'sweep' FROM "user" WHERE email = 'roundtrip-cleared@example.test'`,
+      tables: ["coach_confirmation_clears"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: `${SESSION}; UPDATE coach_intake_sessions SET source = 'upload', state = 'received'`,
+      tables: ["coach_intake_sessions"],
+      rewrites: true,
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: `${SESSION}; UPDATE coach_intake_sessions SET leader_cue = 'none'`,
+      tables: ["coach_intake_sessions"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: "INSERT INTO coach_leaders (email, rotating_only) VALUES ('leader@example.test', true)",
+      tables: ["coach_leaders"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: "INSERT INTO coach_uploads (coach_id, class_key, class_name, session_date, file_name, file_bytes, content_type, parts, attempts) VALUES ('roundtrip', 'group:roundtrip', 'Roundtrip', '2026-01-05', 'a.mp4', 1, 'video/mp4', 1, 1)",
+      tables: ["coach_uploads"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: "INSERT INTO coach_rotating_classes (name, group_email) VALUES ('roundtrip', 'group@example.test')",
+      tables: ["coach_rotating_classes"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: "INSERT INTO coach_reminder_sends (coach_id, reminder_date, report_id, email, sent_at) VALUES ('roundtrip', '2026-01-01', 'roundtrip', 'reader@example.test', NULL)",
+      tables: ["coach_reminder_sends"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: "INSERT INTO coach_reminder_summaries (reminder_date) VALUES ('2026-01-01')",
+      tables: ["coach_reminder_summaries"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: "INSERT INTO coach_monthly_reports (kind, month, summary, state, sending_at) VALUES ('program', '2026-01', '{}', 'sending', now())",
+      tables: ["coach_monthly_reports"],
+    },
+  ],
+  [
+    UPLOADS_ROTATING,
+    {
+      seed: "INSERT INTO coach_monday_reminders (run_date, kind, coach_id, found, outcome) VALUES ('2026-01-05', 'leader', 'roundtrip', false, 'sent')",
+      tables: ["coach_monday_reminders"],
+    },
+  ],
+  [
+    SESSION_PIPELINE,
+    {
+      seed: SESSION,
+      tables: ["coach_intake_sessions"],
+    },
+  ],
+  [
+    SESSION_PIPELINE,
+    {
+      seed: "INSERT INTO coach_session_assets (coach_id, source_session_id, kind, storage_key) VALUES ('roundtrip', 'roundtrip', 'transcript', 'roundtrip')",
+      tables: ["coach_session_assets"],
+    },
+  ],
+  [
+    SESSION_PIPELINE,
+    {
+      seed: "INSERT INTO coach_calibration_runs (model_version, composite_mae, dimensions_within_one, comparisons, reports) VALUES ('roundtrip', 0, 1, 1, 1)",
+      tables: ["coach_calibration_runs"],
+    },
+  ],
+  [
+    SESSION_PIPELINE,
+    {
+      seed: `${REPORT}; INSERT INTO coach_report_amendments (report_id, revision, coach_id, previous, changes) VALUES ('roundtrip', 1, 'roundtrip', '{}', '{}')`,
+      tables: ["coach_reports"],
+    },
+  ],
+  [
+    SESSION_PIPELINE,
+    {
+      seed: `${REPORT}; INSERT INTO coach_report_edits (report_id, changes) VALUES ('roundtrip', '{}')`,
+      tables: ["coach_reports"],
+    },
+  ],
+  [
+    REPORTS_AND_ROSTER,
+    {
+      seed: REPORT,
+      tables: ["coach_reports"],
+    },
+  ],
+  [
+    REPORTS_AND_ROSTER,
+    {
+      seed: "INSERT INTO coach_monthly_narratives (month) VALUES ('2026-01')",
+      tables: ["coach_monthly_narratives"],
+    },
+  ],
+  [
+    REPORTS_AND_ROSTER,
+    {
+      seed: "INSERT INTO coach_monthly_leader_summaries (coach_id, month, summary) VALUES ('roundtrip', '2026-01', '{}')",
+      tables: ["coach_monthly_leader_summaries"],
+    },
+  ],
+  [
+    REPORTS_AND_ROSTER,
+    {
+      seed: "INSERT INTO coach_leaders (email, slug) VALUES ('leader@example.test', 'roundtrip')",
+      tables: ["coach_leaders"],
+    },
+  ],
+];
 
 async function clear(db: Kysely<unknown>, tables: string[]): Promise<void> {
   for (const table of tables)
@@ -285,9 +250,11 @@ async function refusals(
   const discard = process.env[DISCARD_FLAG];
   delete process.env[DISCARD_FLAG];
   try {
-    for (const name of [...block].reverse()) {
-      const refusal = REFUSALS[name];
-      if (!refusal) continue;
+    for (const [name, refusal] of REFUSALS) {
+      if (!block.includes(name)) {
+        failures.push(`${name}: not in the coach block`);
+        continue;
+      }
       settled(`down to ${name}`, await migrator.migrateTo(name));
       for (const statement of refusal.seed.split("; "))
         await sql.raw(statement).execute(db);

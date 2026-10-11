@@ -1,9 +1,14 @@
 # Rolling back the coach pipeline migrations
 
-The coach pipeline migrations are the contiguous block from
-`20260825120000-create-coach-reports-store` to the newest `*-coach-*` file in
-`packages/database/migrations`. This page says what each down does to data, and how to
-check that the block survives a full down and up.
+The coach pipeline migrations are the five `*-coach-*` files after
+`20261011000000-user-confirmation-stamp` in `packages/database/migrations`. That first file
+(the `user.email_verified_at` stamp) ships with the account confirmation change, not with
+the coach, and is not part of this block. This page says what each down does to data, and
+how to check that the block survives a full down and up.
+
+The dates are placeholders: before the merge, each of the five files is renamed to the merge
+day (keeping their order and the order after the newest migration on `main`), and the names
+below change with them.
 
 ## Check the round trip
 
@@ -19,113 +24,47 @@ dump (columns, constraints, indexes, triggers, functions) taken after each up. I
 checks every down below that guards data: it brings the database to that migration,
 seeds one row the down would lose or rewrite, and expects the down to refuse. A down
 that drops data must then go through with `COACH_ROLLBACK_DISCARD_DATA=1`; a down that
-rewrites rows must go through once the row is gone. Last it runs every migration up
-again and compares the schema with the first up once more. It exits 1 naming the first
-difference or each down that ran over its seeded row, and always drops the throwaway
-database. It never connects to the database `POSTGRES_URL` names; it connects to
-`postgres` on the same server only to create and drop the throwaway one.
+would leave rows the older schema cannot hold must go through once the row is gone. Last
+it runs every migration up again and compares the schema with the first up once more. It
+exits 1 naming the first difference or each down that ran over its seeded row, and always
+drops the throwaway database. It never connects to the database `POSTGRES_URL` names; it
+connects to `postgres` on the same server only to create and drop the throwaway one.
 
 ## What each down does to data
 
-Every down that would rewrite rows, or drop data nothing rebuilds, checks first and
-refuses, naming the table and what to do. The two downs that drop rebuildable data
-without a check are listed last. Take a dump of the coach tables before any rollback in
-an environment whose data matters.
+Take a dump of the coach tables before any rollback in an environment whose data matters.
+A down that would drop data nothing rebuilds refuses while that data exists, naming the
+table and what to do. To roll back anyway, dump the tables, then run the down with
+`COACH_ROLLBACK_DISCARD_DATA=1` in its environment; any other value refuses. A column
+holds data when it holds anything but the value a fresh up gives it (NULL, `false`, an
+empty list, an empty string).
 
-### Downs that refuse while rows they would rewrite exist
-
-These used to change rows the rollback keeps. Now they refuse while such rows exist,
-listing them, and no flag overrides that: settle the rows by hand on the current code,
-then rerun the down.
-
-| Migration | Refuses while | What to do |
+| Migration | Refuses while (the flag overrides) | Also |
 |---|---|---|
-| `20260901129000-coach-pipeline-states` | any session is `scoring_failed`, `delivery_pending`, `delivering` or `delivery_failed` (`SELECT state, count(*) FROM coach_intake_sessions GROUP BY state`) | Let each delivery finish on the current code. Settle each failed one by hand: record whether its recipients got the report, then move it to `delivered` or delete it. Turning these back into `scored` would make them claimable again on the older code, which could mail recipients twice. |
-| `20260901135000-coach-intake-admin-attribution` | any session has `matched_by = 'admin'` | Record those assignments, then set `matched_by` on each to the value the older code should see. |
-| `20260901146000-coach-reminder-claims` | any reminder claim has no confirmed send (`sent_at IS NULL`) | Check with the mail provider whether each went out. Set `sent_at` on the ones that did and delete the ones that did not. Deleting them blindly would let the older code send them again. |
-| `20260901154000-coach-no-calibration-hold` | any session is held for its scoring version (`hold_kind = 'scoring-version'`) | Release each one on the current code, or delete it. The older code has no such hold, so dropping it would let the report be delivered with no admin review. |
+| `20261011050000-coach-clear-unproven-confirmations` | never | Restores the confirmations the sweep and the roster triggers cleared, from `coach_confirmation_clears` (below). |
+| `20261011040000-coach-identity-binding` | a leader or admin is bound to an account (`user_id` on `coach_leaders` or `coach_admins`); `coach_confirmation_clears`, `coach_leader_email_requests` or `coach_leader_email_changes` holds rows | Drops the clearing function and the triggers on `coach_leaders` and `coach_admins`. A pending address change can no longer be confirmed. Clear records the M6 down could not restore are lost with the flag. |
+| `20261011030000-coach-uploads-rotating-schedules` | `coach_uploads`, `coach_rotating_classes`, `coach_reminder_sends`, `coach_reminder_summaries`, `coach_monthly_reports` or `coach_monday_reminders` holds rows; a leader is `rotating_only`; a session holds an upload or rotating-class column (`source = 'upload'`, `class_key`, `meeting_link`, `rotating_class_id`, `leader_cue`, `leader_cue_line`, `duplicate_of`, `duplicate_dismissed_at`) | Refuses with no override while a session is `received`, `upload_failed` or `duplicate`, or was matched by `rotating_class` or `upload`: the older schema cannot hold it. Dump those sessions and delete each one, or settle it on the current code. Uploaded recordings stay in the bucket, unreferenced. |
+| `20261011020000-coach-session-pipeline` | `coach_intake_sessions`, `coach_session_assets`, `coach_calibration_runs`, `coach_report_amendments` or `coach_report_edits` holds rows | Stored recordings and transcripts stay in the bucket, unreferenced. |
+| `20261011010000-coach-reports-and-roster` | `coach_reports`, `coach_monthly_narratives` or `coach_monthly_leader_summaries` holds rows; a roster column on `coach_leaders` holds data (`slug`, `is_coach`, `zoom_link`, `is_benchmark`, `title_match`, `alt_emails`, `not_teaching_attested_at`, `not_teaching_attested_by`) | Drops without a check `coach_report_dimension_scores` (their reports are guarded), `coach_dataset_meta` (derived from the reports) and `coach_admins` (configuration the roster backfill fills at every deploy, short enough to re-enter). |
 
-### Downs that refuse to drop data unless told to
+## The confirmation sweep and its down
 
-Each down below refuses while its table holds rows, or while its columns hold anything
-but the value a fresh up gives them (NULL, `false`, an empty list, an empty string),
-because nothing rebuilds that data. To roll back anyway, dump the tables, then run the
-down with `COACH_ROLLBACK_DISCARD_DATA=1` in its environment; any other value refuses.
+`20261011040000-coach-identity-binding` creates `coach_clear_unproven_confirmation` and the
+triggers that call it when an address joins the roster or the admin list.
+`20261011050000-coach-clear-unproven-confirmations` runs it once over every roster and admin
+address. Each clear is recorded in `coach_confirmation_clears`: the account, its address as
+it was, the provider links removed with it, and whether the sweep (`sweep`) or a trigger
+(`joined`, which is how the deploy backfill clears the bundled leaders) made it.
 
-#### Tables
+```sql
+SELECT source, email, jsonb_array_length(removed_links) AS links, cleared_at
+FROM coach_confirmation_clears ORDER BY cleared_at;
+```
 
-All rows of the table are lost.
-
-| Migration | Table |
-|---|---|
-| `20260825120000-create-coach-reports-store` | `coach_reports` (`coach_dataset_meta` is dropped with it without a check: it is derived from the reports) |
-| `20260901121000-coach-monthly-narratives` | `coach_monthly_narratives` |
-| `20260901122000-coach-monthly-leader-summaries` | `coach_monthly_leader_summaries` |
-| `20260901124000-coach-score-provenance` | `coach_report_dimension_scores` (human corrections included) |
-| `20260901125000-coach-session-archive` | `coach_session_assets` (the stored objects stay in the bucket, unreferenced) |
-| `20260901126000-coach-intake-sessions` | `coach_intake_sessions` |
-| `20260901130000-coach-calibration-runs` | `coach_calibration_runs` |
-| `20260901138000-coach-report-amendments` | `coach_report_amendments` |
-| `20260901142000-coach-leader-email-changes` | `coach_leader_email_changes` |
-| `20260901143000-coach-reminder-sends` | `coach_reminder_sends` |
-| `20260901144000-coach-reminder-summaries` | `coach_reminder_summaries` |
-| `20260901145000-coach-report-edits` | `coach_report_edits` |
-| `20260901157000-coach-leader-email-requests` | `coach_leader_email_requests` (pending and resolved address changes; a pending one can no longer be confirmed) |
-| `20260901159000-coach-rotating-classes` | `coach_rotating_classes` and their leaders |
-| `20260901161000-coach-uploads` | `coach_uploads` (the uploaded recordings stay in the bucket, unreferenced) |
-| `20260901162000-coach-monthly-reports` | `coach_monthly_reports` (produced, held and sent summaries and program reports) |
-| `20260901163000-coach-monday-reminders` | `coach_monday_reminders` |
-
-#### Columns
-
-The column's values are lost; the rows stay.
-
-| Migration | Table: columns |
-|---|---|
-| `20260901120000-coach-roster-in-database` | `coach_leaders`: `slug`, `is_coach`, `zoom_link`, `is_benchmark`, `title_match`, `alt_emails`, `not_teaching_attested_at`, `not_teaching_attested_by` |
-| `20260901127000-coach-report-evidence` | `coach_reports`: `evidence` |
-| `20260901131000-coach-intake-hold-reason` | `coach_intake_sessions`: `hold_reason` |
-| `20260901132000-coach-report-held` | `coach_reports`: `held` |
-| `20260901133000-coach-calibration-per-leader` | `coach_calibration_runs`: `per_leader` |
-| `20260901134000-coach-delivery-recipients` | `coach_intake_sessions`: `delivered_to` |
-| `20260901136000-coach-delivery-skipped` | `coach_intake_sessions`: `skipped_recipients` |
-| `20260901137000-coach-first-lesson` | `coach_reports`: `first_lesson`, `first_lesson_source`, `passage_book` |
-| `20260901139000-coach-revision-claim` | `coach_report_amendments`: `sending_at` |
-| `20260901140000-coach-amendment-leader` | `coach_report_amendments`: `coach_id` |
-| `20260901141000-coach-intake-release-required` | `coach_intake_sessions`: `release_required` |
-| `20260901147000-coach-delivery-published` | `coach_intake_sessions`: `published` |
-| `20260901148000-coach-delivery-attempted` | `coach_intake_sessions`: `attempted_to` |
-| `20260901149000-coach-revision-attempted` | `coach_report_amendments`: `attempted_to` |
-| `20260901150000-coach-intake-parallel-run` | `coach_intake_sessions`: `parallel_run` (a parallel-run session becomes deliverable on older code) |
-| `20260901151000-coach-intake-session-start` | `coach_intake_sessions`: `session_started_at` |
-| `20260901152000-coach-intake-hold-kind` | `coach_intake_sessions`: `hold_kind` |
-| `20260901153000-coach-intake-send-unconfirmed` | `coach_intake_sessions`: `send_unconfirmed` |
-| `20260901155000-coach-score-produced-by` | `coach_report_dimension_scores`: `language_model`, `prompt_version`, `generation_settings` |
-| `20260901156000-coach-machine-score` | `coach_report_dimension_scores`: `machine_score` (refuses only while a human-corrected row holds one; on a machine row it equals `score`, which the up copies again) |
-| `20260901158000-coach-first-lesson-line` | `coach_reports`: `first_lesson_line` (the line that showed a first lesson) |
-| `20260901160000-coach-rotating-leader-cue` | `coach_intake_sessions`: `leader_cue`, `leader_cue_line` |
-| `20260901161000-coach-uploads` | `coach_intake_sessions`: `source`, `class_key`, `meeting_link`, `duplicate_of`, `duplicate_dismissed_at` (refuses while an upload session, a received, failed or duplicate state, or a class key exists) |
-| `20260901164000-coach-identity-binding` | `coach_leaders.user_id`, `coach_admins.user_id` (refuses while any record or admin is bound) |
-| `20260901165000-coach-upload-claims` | `coach_uploads`: `attempts`, `claimed_at` |
-| `20260901166000-coach-monthly-send-claims` | `coach_monthly_reports`: `sending_at` |
-
-### Downs that drop data without a check
-
-- `20260901123000-coach-admin-role` drops `coach_admins`. Its rows are configuration
-  that the roster backfill fills at every deploy, and the list is short enough to
-  re-enter.
-- `20260901146000-coach-reminder-claims` drops `coach_reminder_sends.claimed_at` once no
-  unconfirmed claim is left. Its up sets it from `sent_at` again.
-
-### Downs that touch no data
-
-`20260901167000-coach-confirmation-cleared-where-unproven` drops its function and the
-triggers on `coach_leaders` and `coach_admins`. The email confirmations its up and its
-triggers cleared stay cleared: those accounts confirm again through the link.
-
-`20260901128000-coach-one-report-per-session` drops an index only.
-
-`20260901154000-coach-no-calibration-hold` allows the `calibration` hold kind again once
-no session holds the `scoring-version` kind (above). Its up turned every calibration hold
-into a `scoring-version` hold, still held until an admin releases it, and the down does not
-turn them back.
+The down of `20261011050000-coach-clear-unproven-confirmations` restores every record it
+still can: where the account still exists, still has the recorded address (ignoring case
+and surrounding spaces) and is still unconfirmed, it confirms the account again (with no
+confirmation stamp, as before the clear) and puts back the removed provider links that are
+not linked to an account again since. It deletes the records it restored and logs how many
+accounts and links it restored, how many links it skipped, and how many records it left:
+an account that changed address or confirmed again since is left as it is.
