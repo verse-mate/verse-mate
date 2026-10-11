@@ -295,7 +295,11 @@ const plugin = new Elysia()
         },
         {
           body: AuthForgotPasswordInput,
-          beforeHandle: authRateLimiters.forgotPassword,
+          beforeHandle: [
+            authRateLimiters.forgotPassword,
+            authRateLimiters.forgotPasswordIp,
+            authRateLimiters.forgotPasswordEmail,
+          ],
           response: {
             200: SuccessResponse,
             ...StandardErrorResponses,

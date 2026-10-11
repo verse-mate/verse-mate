@@ -1,11 +1,12 @@
 import { afterAll, describe, expect, it } from "bun:test";
+import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./topic.plugin";
 
 describe("Topics Plugin", () => {
-  const plugin = Backend.use(authPlugin);
+  const plugin = new Elysia().use(Backend).use(authPlugin);
   // @ts-ignore - Combined plugin types
   const testClient = getTestClient<typeof plugin>(plugin);
 
@@ -325,8 +326,11 @@ describe("Topics Plugin", () => {
         bibleVersion: "INVALID_VERSION",
       });
 
-      expect(error).toBeTruthy();
-      expect(status).toBe(500); // Server error for invalid version
+      expect(status).toBe(400);
+      expect((error as any)?.value).toEqual({
+        error: "VALIDATION_ERROR",
+        message: "Invalid bible version: INVALID_VERSION",
+      });
     });
   });
 });

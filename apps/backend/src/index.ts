@@ -1,4 +1,3 @@
-import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import {
   adminPlugin,
@@ -7,6 +6,7 @@ import {
   bibleBrainPlugin,
   biblePlugin,
   coachPlugin,
+  corsPlugin,
   dailyVersePlugin,
   healthCheckPlugin,
   jesusPlugin,
@@ -24,7 +24,11 @@ import { db } from "database";
 import { Elysia } from "elysia";
 import redis from "./lib/redis";
 
-const app = new Elysia()
+const MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024;
+
+const app = new Elysia({
+  serve: { maxRequestBodySize: MAX_REQUEST_BODY_BYTES },
+})
   // Handle favicon.ico requests to prevent NOT_FOUND errors from browsers
   .get("/favicon.ico", () => new Response(null, { status: 204 }))
   .use(authPlugin)
@@ -43,7 +47,7 @@ const app = new Elysia()
   .use(offlinePlugin)
   .use(healthCheckPlugin)
   .use(versionPolicyPlugin)
-  .use(cors())
+  .use(corsPlugin)
   .use(
     openapi({
       documentation: {
