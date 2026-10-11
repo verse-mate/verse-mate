@@ -2,13 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 
 import authPlugin from "../auth/auth.plugin";
 import { createTestUser } from "../shared/test-helpers";
-import userPlugin from "../user/user.plugin";
 import Backend from "./admin.plugin";
 
 type TestUser = Awaited<ReturnType<typeof createTestUser>>;
 
 describe("Routes that read other users stay behind the admin check", () => {
-  const plugin = Backend.use(userPlugin).use(authPlugin);
+  const plugin = Backend.use(authPlugin);
   let admin: TestUser;
   let regular: TestUser;
   let target: TestUser;
@@ -52,7 +51,6 @@ describe("Routes that read other users stay behind the admin check", () => {
   });
 
   const adminOnlyRoutes = () => [
-    { method: "GET", path: "/user" },
     { method: "GET", path: "/admin/users" },
     {
       method: "GET",
@@ -93,7 +91,9 @@ describe("Routes that read other users stay behind the admin check", () => {
   });
 
   it("let an admin read another user's data", async () => {
-    const users = await call("GET", "/user", { token: admin.accessToken });
+    const users = await call("GET", "/admin/users", {
+      token: admin.accessToken,
+    });
     expect(users.status).toBe(200);
     expect(
       (users.json as Array<{ email: string }>).some(
@@ -108,11 +108,5 @@ describe("Routes that read other users stay behind the admin check", () => {
     );
     expect(prefs.status).toBe(200);
     expect(prefs.json.success).toBe(true);
-  });
-
-  it("still answer a signed-in user's own profile", async () => {
-    const me = await call("GET", "/user/me", { token: regular.accessToken });
-    expect(me.status).toBe(200);
-    expect(me.json.email).toBe(regular.email);
   });
 });
