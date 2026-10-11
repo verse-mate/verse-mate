@@ -137,6 +137,25 @@ describe("Bible Plugin", () => {
       expect(typeof firstChapter?.chapterNumber).toBe("number");
     });
 
+    it.each([
+      [1, "Genesis"],
+      [19, "Psalms"],
+      [40, "Matthew"],
+      [43, "John"],
+      [66, "Revelation"],
+    ])(
+      "GET /bible/book/%i/1 - serves %s at its canonical book id",
+      async (bookId, name) => {
+        // @ts-ignore - Dynamic path parameter
+        const { data, error } = await testClient.bible.book[bookId][1].get({
+          query: { versionKey: "NASB1995" },
+        });
+
+        expect(error).toBeFalsy();
+        expect(data?.book?.name).toBe(name);
+      },
+    );
+
     it("GET /bible/book/:bookId/:chapterNumber - accepts bible_version alias", async () => {
       // @ts-ignore - Dynamic path parameter
       const { data, error } = await testClient.bible.book[1][1].get({
