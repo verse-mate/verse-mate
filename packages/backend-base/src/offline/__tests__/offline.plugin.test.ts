@@ -7,6 +7,7 @@ import {
   it,
   spyOn,
 } from "bun:test";
+import { randomUUID } from "node:crypto";
 import { Elysia } from "elysia";
 import { type OfflineManifest, OfflineRepository } from "../offline.repository";
 
@@ -26,6 +27,33 @@ const mockManifest: OfflineManifest = {
 
 const mockLastModified = new Date("2025-01-01T00:00:00Z");
 
+const SIGNED_IN_USER = `offline-reader-${randomUUID()}`;
+let validToken: string;
+let revokedToken: string;
+
+function commentary(chapterNumber: number) {
+  return {
+    explanation_id: chapterNumber,
+    book_id: 1,
+    chapter_number: chapterNumber,
+    verse_start: null,
+    verse_end: null,
+    type: "summary",
+    explanation: "Test",
+    language_code: "en",
+    audios: [
+      {
+        explanation_id: chapterNumber,
+        voice: "alloy",
+        language_code: "en",
+        content_hash: "a".repeat(64),
+        duration_seconds: 1,
+        storage_key: `audio/test/${chapterNumber}.mp3`,
+      },
+    ],
+  };
+}
+
 const repositoryStubs = {
   buildManifest: async () => mockManifest,
   getAllVerses: async (key: string) =>
@@ -33,7 +61,8 @@ const repositoryStubs = {
       ? [{ book_id: 1, chapter_number: 1, verse_number: 1, text: "Test" }]
       : [],
   getBibleVersionUpdatedAt: async () => mockLastModified,
-  getAllExplanations: async () => [],
+  getAllExplanations: async (languageCode: string) =>
+    languageCode === "en" ? [commentary(1), commentary(2)] : [],
   getCommentaryUpdatedAt: async () => null,
   getAllTopics: async () => ({ topics: [], references: [], explanations: [] }),
   getTopicsUpdatedAt: async () => null,
@@ -57,12 +86,19 @@ describe("Offline Plugin", () => {
 
   beforeAll(async () => {
     const { default: offlinePlugin } = await import("../offline.plugin");
-    await offlinePlugin.store.cache.delete("offline:manifest");
+    const { cache } = offlinePlugin.store;
+    const { jwt } = offlinePlugin.decorator;
+    await cache.delete("offline:manifest");
+    validToken = await jwt.sign({ sub: SIGNED_IN_USER, jti: randomUUID() });
+    revokedToken = await jwt.sign({ sub: SIGNED_IN_USER, jti: randomUUID() });
+    await cache.set(`accessToken:${SIGNED_IN_USER}`, [validToken], "15m");
     app = new Elysia().use(offlinePlugin);
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     for (const spy of Object.values(repositorySpies)) spy.mockRestore();
+    const { default: offlinePlugin } = await import("../offline.plugin");
+    await offlinePlugin.store.cache.delete(`accessToken:${SIGNED_IN_USER}`);
   });
 
   beforeEach(() => {
@@ -149,4 +185,51 @@ describe("Offline Plugin", () => {
       expect(response.status).toBe(404);
     },
   );
+
+  function getCommentaries(headers: Record<string, string> = {}) {
+    return app.handle(
+      new Request("http://localhost/offline/commentaries/en", { headers }),
+    );
+  }
+
+  function chaptersWithAudio(
+    body: { chapter_number: number; audios: unknown[] }[],
+  ) {
+    return body
+      .filter((entry) => entry.audios.length > 0)
+      .map((entry) => entry.chapter_number);
+  }
+
+  it("GET /offline/commentaries/:languageCode lists audio to a guest only for the guest chapter", async () => {
+    const response = await getCommentaries();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=86400");
+    expect(response.headers.get("Vary")).toBe("Authorization");
+    const body = await response.json();
+    expect(body).toHaveLength(2);
+    expect(chaptersWithAudio(body)).toEqual([1]);
+  });
+
+  it("GET /offline/commentaries/:languageCode lists every audio to a signed-in reader, privately", async () => {
+    const response = await getCommentaries({
+      authorization: `Bearer ${validToken}`,
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe(
+      "private, max-age=86400",
+    );
+    expect(response.headers.get("Vary")).toBe("Authorization");
+    const body = await response.json();
+    expect(chaptersWithAudio(body)).toEqual([1, 2]);
+    expect(body[1].audios[0].audio_url).toContain("audio/test/2.mp3");
+  });
+
+  it("GET /offline/commentaries/:languageCode treats a revoked token as a guest", async () => {
+    const response = await getCommentaries({
+      authorization: `Bearer ${revokedToken}`,
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=86400");
+    expect(chaptersWithAudio(await response.json())).toEqual([1]);
+  });
 });
