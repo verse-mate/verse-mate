@@ -2,7 +2,7 @@ import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
 import { refuseToDrop } from "./20261011010000-coach-reports-and-roster";
 
-export const BOT_STATES = [
+const BOT_STATES = [
   "observed",
   "held",
   "retrieval_failed",
@@ -15,7 +15,7 @@ export const BOT_STATES = [
   "delivery_failed",
 ];
 
-export const BOT_MATCHED_BY = [
+const BOT_MATCHED_BY = [
   "title_match",
   "name",
   "alt_email",

@@ -62,177 +62,201 @@ async function schemaDump(db: Kysely<unknown>): Promise<string> {
 
 const SESSION = `INSERT INTO coach_intake_sessions (source_session_id, session_date) VALUES ('roundtrip', '2026-01-01')`;
 const REPORT = `INSERT INTO coach_reports (id, coach_id, session_date, source_session_id, summary, metrics, body) VALUES ('roundtrip', 'roundtrip', '2026-01-01', 'roundtrip', '{}', '{}', '{}')`;
+const LEADER = `INSERT INTO coach_leaders (email) VALUES ('leader@example.test')`;
 const USER = (email: string) =>
   `INSERT INTO "user" (email, "firstName", "lastName") VALUES ('${email}', 'R', 'T')`;
+const session = (set: string) =>
+  `${SESSION}; UPDATE coach_intake_sessions SET ${set}`;
+const leader = (set: string) => `${LEADER}; UPDATE coach_leaders SET ${set}`;
+const row = (table: string, seed: string): Refusal => ({
+  seed,
+  tables: [table],
+  names: table,
+});
 
 type Refusal = {
   seed: string;
   tables: string[];
-  rewrites?: true;
+  names: string;
+  hard?: true;
 };
-
-const REPORTS_AND_ROSTER = "20261011010000-coach-reports-and-roster";
-const SESSION_PIPELINE = "20261011020000-coach-session-pipeline";
-const UPLOADS_ROTATING = "20261011030000-coach-uploads-rotating-schedules";
-const IDENTITY_BINDING = "20261011040000-coach-identity-binding";
 
 const REFUSALS: [string, Refusal][] = [
   [
-    IDENTITY_BINDING,
-    {
-      seed: `${USER("roundtrip-admin@example.test")}; INSERT INTO coach_admins (email, user_id) SELECT email, id FROM "user" WHERE email = 'roundtrip-admin@example.test'`,
-      tables: ["coach_admins"],
-    },
+    "coach-clear-unproven-confirmations",
+    row(
+      "coach_confirmation_clears",
+      `${USER("roundtrip-swept@example.test")}; INSERT INTO coach_confirmation_clears (user_id, email, password_fingerprint, source) SELECT id, email, md5(''), 'sweep' FROM "user" WHERE email = 'roundtrip-swept@example.test'`,
+    ),
   ],
   [
-    IDENTITY_BINDING,
-    {
-      seed: "INSERT INTO coach_leader_email_changes (slug, previous_email, new_email) VALUES ('roundtrip', 'before@example.test', 'after@example.test')",
-      tables: ["coach_leader_email_changes"],
-    },
+    "coach-identity-binding",
+    row(
+      "coach_admins",
+      `${USER("roundtrip-admin@example.test")}; INSERT INTO coach_admins (email, user_id) SELECT email, id FROM "user" WHERE email = 'roundtrip-admin@example.test'`,
+    ),
   ],
   [
-    IDENTITY_BINDING,
-    {
-      seed: "INSERT INTO coach_leader_email_requests (slug, new_email, token_hash, expires_at) VALUES ('roundtrip', 'after@example.test', 'h', now())",
-      tables: ["coach_leader_email_requests"],
-    },
+    "coach-identity-binding",
+    row(
+      "coach_leaders",
+      `${USER("roundtrip-leader@example.test")}; INSERT INTO coach_leaders (email, user_id) SELECT email, id FROM "user" WHERE email = 'roundtrip-leader@example.test'`,
+    ),
   ],
   [
-    IDENTITY_BINDING,
-    {
-      seed: `${USER("roundtrip-cleared@example.test")}; INSERT INTO coach_confirmation_clears (user_id, email, source) SELECT id, email, 'sweep' FROM "user" WHERE email = 'roundtrip-cleared@example.test'`,
-      tables: ["coach_confirmation_clears"],
-    },
+    "coach-identity-binding",
+    row(
+      "coach_leader_email_changes",
+      "INSERT INTO coach_leader_email_changes (slug, previous_email, new_email) VALUES ('roundtrip', 'before@example.test', 'after@example.test')",
+    ),
   ],
   [
-    UPLOADS_ROTATING,
+    "coach-identity-binding",
+    row(
+      "coach_leader_email_requests",
+      "INSERT INTO coach_leader_email_requests (slug, new_email, token_hash, expires_at) VALUES ('roundtrip', 'after@example.test', 'h', now())",
+    ),
+  ],
+  [
+    "coach-identity-binding",
+    row(
+      "coach_confirmation_clears",
+      `${USER("roundtrip-cleared@example.test")}; INSERT INTO coach_confirmation_clears (user_id, email, password_fingerprint, source) SELECT id, email, md5(''), 'sweep' FROM "user" WHERE email = 'roundtrip-cleared@example.test'`,
+    ),
+  ],
+  ...[
+    "state = 'received'",
+    "state = 'upload_failed'",
+    "state = 'duplicate'",
+    "matched_by = 'rotating_class'",
+    "matched_by = 'upload'",
+  ].map((set): [string, Refusal] => [
+    "coach-uploads-rotating-schedules",
     {
-      seed: `${SESSION}; UPDATE coach_intake_sessions SET source = 'upload', state = 'received'`,
+      seed: session(set),
       tables: ["coach_intake_sessions"],
-      rewrites: true,
+      names: "the older code cannot hold",
+      hard: true,
     },
-  ],
+  ]),
+  ...[
+    "source = 'upload'",
+    "class_key = 'group:roundtrip'",
+    "meeting_link = 'https://example.test/meet'",
+    "leader_cue = 'none'",
+    "leader_cue_line = 'Ruth, would you read?'",
+    "duplicate_of = 'roundtrip-other'",
+    "duplicate_dismissed_at = now()",
+  ].map((set): [string, Refusal] => [
+    "coach-uploads-rotating-schedules",
+    row("coach_intake_sessions", session(set)),
+  ]),
   [
-    UPLOADS_ROTATING,
-    {
-      seed: `${SESSION}; UPDATE coach_intake_sessions SET leader_cue = 'none'`,
-      tables: ["coach_intake_sessions"],
-    },
+    "coach-uploads-rotating-schedules",
+    row("coach_leaders", leader("rotating_only = true")),
   ],
+  ...[
+    [
+      "coach_uploads",
+      "INSERT INTO coach_uploads (coach_id, class_key, class_name, session_date, file_name, file_bytes, content_type, parts, attempts) VALUES ('roundtrip', 'group:roundtrip', 'Roundtrip', '2026-01-05', 'a.mp4', 1, 'video/mp4', 1, 1)",
+    ],
+    [
+      "coach_rotating_classes",
+      "INSERT INTO coach_rotating_classes (name, group_email) VALUES ('roundtrip', 'group@example.test')",
+    ],
+    [
+      "coach_reminder_sends",
+      "INSERT INTO coach_reminder_sends (coach_id, reminder_date, report_id, email, sent_at) VALUES ('roundtrip', '2026-01-01', 'roundtrip', 'reader@example.test', NULL)",
+    ],
+    [
+      "coach_reminder_summaries",
+      "INSERT INTO coach_reminder_summaries (reminder_date) VALUES ('2026-01-01')",
+    ],
+    [
+      "coach_monthly_reports",
+      "INSERT INTO coach_monthly_reports (kind, month, summary, state, sending_at) VALUES ('program', '2026-01', '{}', 'sending', now())",
+    ],
+    [
+      "coach_monday_reminders",
+      "INSERT INTO coach_monday_reminders (run_date, kind, coach_id, found, outcome) VALUES ('2026-01-05', 'leader', 'roundtrip', false, 'sent')",
+    ],
+  ].map(([table, seed]): [string, Refusal] => [
+    "coach-uploads-rotating-schedules",
+    row(table, seed),
+  ]),
+  ...[
+    ["coach_intake_sessions", SESSION],
+    [
+      "coach_session_assets",
+      "INSERT INTO coach_session_assets (coach_id, source_session_id, kind, storage_key) VALUES ('roundtrip', 'roundtrip', 'transcript', 'roundtrip')",
+    ],
+    [
+      "coach_calibration_runs",
+      "INSERT INTO coach_calibration_runs (model_version, composite_mae, dimensions_within_one, comparisons, reports) VALUES ('roundtrip', 0, 1, 1, 1)",
+    ],
+  ].map(([table, seed]): [string, Refusal] => [
+    "coach-session-pipeline",
+    row(table, seed),
+  ]),
   [
-    UPLOADS_ROTATING,
-    {
-      seed: "INSERT INTO coach_leaders (email, rotating_only) VALUES ('leader@example.test', true)",
-      tables: ["coach_leaders"],
-    },
-  ],
-  [
-    UPLOADS_ROTATING,
-    {
-      seed: "INSERT INTO coach_uploads (coach_id, class_key, class_name, session_date, file_name, file_bytes, content_type, parts, attempts) VALUES ('roundtrip', 'group:roundtrip', 'Roundtrip', '2026-01-05', 'a.mp4', 1, 'video/mp4', 1, 1)",
-      tables: ["coach_uploads"],
-    },
-  ],
-  [
-    UPLOADS_ROTATING,
-    {
-      seed: "INSERT INTO coach_rotating_classes (name, group_email) VALUES ('roundtrip', 'group@example.test')",
-      tables: ["coach_rotating_classes"],
-    },
-  ],
-  [
-    UPLOADS_ROTATING,
-    {
-      seed: "INSERT INTO coach_reminder_sends (coach_id, reminder_date, report_id, email, sent_at) VALUES ('roundtrip', '2026-01-01', 'roundtrip', 'reader@example.test', NULL)",
-      tables: ["coach_reminder_sends"],
-    },
-  ],
-  [
-    UPLOADS_ROTATING,
-    {
-      seed: "INSERT INTO coach_reminder_summaries (reminder_date) VALUES ('2026-01-01')",
-      tables: ["coach_reminder_summaries"],
-    },
-  ],
-  [
-    UPLOADS_ROTATING,
-    {
-      seed: "INSERT INTO coach_monthly_reports (kind, month, summary, state, sending_at) VALUES ('program', '2026-01', '{}', 'sending', now())",
-      tables: ["coach_monthly_reports"],
-    },
-  ],
-  [
-    UPLOADS_ROTATING,
-    {
-      seed: "INSERT INTO coach_monday_reminders (run_date, kind, coach_id, found, outcome) VALUES ('2026-01-05', 'leader', 'roundtrip', false, 'sent')",
-      tables: ["coach_monday_reminders"],
-    },
-  ],
-  [
-    SESSION_PIPELINE,
-    {
-      seed: SESSION,
-      tables: ["coach_intake_sessions"],
-    },
-  ],
-  [
-    SESSION_PIPELINE,
-    {
-      seed: "INSERT INTO coach_session_assets (coach_id, source_session_id, kind, storage_key) VALUES ('roundtrip', 'roundtrip', 'transcript', 'roundtrip')",
-      tables: ["coach_session_assets"],
-    },
-  ],
-  [
-    SESSION_PIPELINE,
-    {
-      seed: "INSERT INTO coach_calibration_runs (model_version, composite_mae, dimensions_within_one, comparisons, reports) VALUES ('roundtrip', 0, 1, 1, 1)",
-      tables: ["coach_calibration_runs"],
-    },
-  ],
-  [
-    SESSION_PIPELINE,
+    "coach-session-pipeline",
     {
       seed: `${REPORT}; INSERT INTO coach_report_amendments (report_id, revision, coach_id, previous, changes) VALUES ('roundtrip', 1, 'roundtrip', '{}', '{}')`,
       tables: ["coach_reports"],
+      names: "coach_report_amendments",
     },
   ],
   [
-    SESSION_PIPELINE,
+    "coach-session-pipeline",
     {
       seed: `${REPORT}; INSERT INTO coach_report_edits (report_id, changes) VALUES ('roundtrip', '{}')`,
       tables: ["coach_reports"],
+      names: "coach_report_edits",
     },
+  ],
+  ["coach-reports-and-roster", row("coach_reports", REPORT)],
+  [
+    "coach-reports-and-roster",
+    row(
+      "coach_monthly_narratives",
+      "INSERT INTO coach_monthly_narratives (month) VALUES ('2026-01')",
+    ),
   ],
   [
-    REPORTS_AND_ROSTER,
-    {
-      seed: REPORT,
-      tables: ["coach_reports"],
-    },
+    "coach-reports-and-roster",
+    row(
+      "coach_monthly_leader_summaries",
+      "INSERT INTO coach_monthly_leader_summaries (coach_id, month, summary) VALUES ('roundtrip', '2026-01', '{}')",
+    ),
   ],
-  [
-    REPORTS_AND_ROSTER,
-    {
-      seed: "INSERT INTO coach_monthly_narratives (month) VALUES ('2026-01')",
-      tables: ["coach_monthly_narratives"],
-    },
-  ],
-  [
-    REPORTS_AND_ROSTER,
-    {
-      seed: "INSERT INTO coach_monthly_leader_summaries (coach_id, month, summary) VALUES ('roundtrip', '2026-01', '{}')",
-      tables: ["coach_monthly_leader_summaries"],
-    },
-  ],
-  [
-    REPORTS_AND_ROSTER,
-    {
-      seed: "INSERT INTO coach_leaders (email, slug) VALUES ('leader@example.test', 'roundtrip')",
-      tables: ["coach_leaders"],
-    },
-  ],
+  ...[
+    "slug = 'roundtrip'",
+    "is_coach = false",
+    "zoom_link = 'https://example.test/zoom'",
+    "is_benchmark = true",
+    "title_match = '{roundtrip}'",
+    "alt_emails = '{alt@example.test}'",
+    "not_teaching_attested_at = now()",
+    `not_teaching_attested_by = (SELECT id FROM "user" ORDER BY "createdAt" LIMIT 1)`,
+  ].map((set): [string, Refusal] => [
+    "coach-reports-and-roster",
+    row("coach_leaders", leader(set)),
+  ]),
 ];
+
+function refusedBy(
+  name: string,
+  outcome: MigrationResultSet,
+  names: string,
+): boolean {
+  const result = outcome.results?.find((r) => r.migrationName === name);
+  const message = String(outcome.error);
+  return (
+    result?.status === "Error" &&
+    message.includes("rerun the down") &&
+    message.includes(names)
+  );
+}
 
 async function clear(db: Kysely<unknown>, tables: string[]): Promise<void> {
   for (const table of tables)
@@ -250,34 +274,35 @@ async function refusals(
   const discard = process.env[DISCARD_FLAG];
   delete process.env[DISCARD_FLAG];
   try {
-    for (const [name, refusal] of REFUSALS) {
-      if (!block.includes(name)) {
-        failures.push(`${name}: not in the coach block`);
+    for (const [suffix, refusal] of REFUSALS) {
+      const name = block.find((n) => n.endsWith(`-${suffix}`));
+      if (!name) {
+        failures.push(`${suffix}: no such migration in the coach block`);
         continue;
       }
       settled(`down to ${name}`, await migrator.migrateTo(name));
       for (const statement of refusal.seed.split("; "))
         await sql.raw(statement).execute(db);
       const refused = await migrator.migrateDown();
-      const outcome = refused.results?.find((r) => r.migrationName === name);
-      if (
-        outcome?.status !== "Error" ||
-        !String(refused.error).includes("rerun the down")
-      ) {
-        failures.push(`${name}: its down ran over a seeded row`);
+      if (!refusedBy(name, refused, refusal.names)) {
+        failures.push(
+          `${name}: its down did not refuse a seeded row naming ${refusal.names} (${refused.error ?? "no error"})`,
+        );
         await clear(db, refusal.tables);
         continue;
       }
-      if (refusal.rewrites) {
+      process.env[DISCARD_FLAG] = "1";
+      const flagged = await migrator.migrateDown();
+      delete process.env[DISCARD_FLAG];
+      if (refusal.hard) {
+        if (!refusedBy(name, flagged, refusal.names))
+          failures.push(
+            `${name}: ${DISCARD_FLAG} let its down past a row it must refuse`,
+          );
         await clear(db, refusal.tables);
         settled(`${name} down once clear`, await migrator.migrateDown());
       } else {
-        process.env[DISCARD_FLAG] = "1";
-        settled(
-          `${name} down with ${DISCARD_FLAG}`,
-          await migrator.migrateDown(),
-        );
-        delete process.env[DISCARD_FLAG];
+        settled(`${name} down with ${DISCARD_FLAG}`, flagged);
         await clear(db, refusal.tables);
       }
       console.log(`${name}: refused a seeded row (${refused.error})`);
@@ -298,7 +323,11 @@ function firstDifference(a: string, b: string): string {
 
 async function roundTrip(): Promise<boolean> {
   const configured = new URL(getCleanConnectionString());
-  if (!LOCAL_HOSTS.has(configured.hostname))
+  if (
+    !LOCAL_HOSTS.has(configured.hostname) ||
+    configured.searchParams.has("host") ||
+    configured.searchParams.has("hostaddr")
+  )
     throw new Error(
       `refusing to create a throwaway database on ${configured.hostname}: POSTGRES_URL must point at a local server`,
     );

@@ -81,6 +81,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
       col.notNull().references("user.id").onDelete("cascade"),
     )
     .addColumn("email", "text", (col) => col.notNull())
+    .addColumn("password_fingerprint", "text", (col) => col.notNull())
     .addColumn("removed_links", "jsonb", (col) =>
       col.notNull().defaultTo(sql`'[]'::jsonb`),
     )
@@ -100,7 +101,7 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await sql`
     CREATE FUNCTION coach_clear_unproven_confirmation(address text, origin text) RETURNS void AS $$
       WITH cleared AS (
-        SELECT u.id, u.email FROM "user" u
+        SELECT u.id, u.email, md5(coalesce(u.password, '')) AS password_fingerprint FROM "user" u
         WHERE lower(trim(u.email)) = lower(trim(address))
           AND u."emailVerified"
           AND u.email_verified_at IS NULL
@@ -118,15 +119,15 @@ export async function up(db: Kysely<Database>): Promise<void> {
         WHERE s.user_id = c.id AND lower(trim(s.email)) <> lower(trim(c.email))
         RETURNING s.*
       ), recorded AS (
-        INSERT INTO coach_confirmation_clears (user_id, email, removed_links, source)
-        SELECT c.id, c.email,
+        INSERT INTO coach_confirmation_clears (user_id, email, password_fingerprint, removed_links, source)
+        SELECT c.id, c.email, c.password_fingerprint,
           coalesce((SELECT jsonb_agg(to_jsonb(f)) FROM foreign_links f WHERE f.user_id = c.id), '[]'::jsonb),
           origin
         FROM cleared c
       )
       UPDATE "user" SET "emailVerified" = false
       WHERE id IN (SELECT id FROM cleared)
-    $$ LANGUAGE sql
+    $$ LANGUAGE sql SET search_path = public, pg_temp
   `.execute(db);
   await sql`
     CREATE FUNCTION coach_address_joined() RETURNS trigger AS $$
