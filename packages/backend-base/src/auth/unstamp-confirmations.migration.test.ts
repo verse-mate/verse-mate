@@ -9,7 +9,8 @@ import type { Transaction } from "kysely";
 import shared from "../shared/shared.plugin";
 
 const conn = shared.store.db.getOrCreateConnection();
-const DAY = 86_400_000;
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
 let created: string[] = [];
 
 class RolledBack extends Error {}
@@ -28,7 +29,7 @@ async function stampExisted() {
   return new Date(rows[0].at).getTime();
 }
 
-type Link = { address?: string; createdAt: number };
+type Link = { address?: (email: string) => string; createdAt: number };
 
 async function account(options: {
   links: Link[];
@@ -65,7 +66,7 @@ async function account(options: {
         user_id: id,
         provider: n === 0 ? SsoProviderEnum.google : SsoProviderEnum.apple,
         provider_user_id: `unstamp-${n}-${id}`,
-        email: link.address ?? email,
+        email: link.address ? link.address(email) : email,
         created_at: sql`${new Date(link.createdAt).toISOString()}::timestamptz AT TIME ZONE 'UTC'`,
       })
       .execute();
@@ -112,7 +113,7 @@ async function afterUp(
   return seen;
 }
 
-const foreign = () => `elsewhere-${faker.string.uuid()}@example.test`;
+const foreign = () => () => `elsewhere-${faker.string.uuid()}@example.test`;
 
 describe("clearing confirmations that rest on a link nobody proved", () => {
   it("clears stamps on accounts keeping a link for another address or a link made before linking required a verified address, and deletes no link", async () => {
@@ -129,6 +130,9 @@ describe("clearing confirmations that rest on a link nobody proved", () => {
     const oldOwnLink = await account({
       links: [{ createdAt: existed - 30 * DAY }],
     });
+    const ownLinkInMargin = await account({
+      links: [{ createdAt: existed + HOUR }],
+    });
     const ownAndForeign = await account({
       links: [{ createdAt: later }, { address: foreign(), createdAt: later }],
     });
@@ -136,6 +140,7 @@ describe("clearing confirmations that rest on a link nobody proved", () => {
       keptForeign,
       stampedEarly,
       oldOwnLink,
+      ownLinkInMargin,
       ownAndForeign,
     ]);
 
@@ -150,6 +155,7 @@ describe("clearing confirmations that rest on a link nobody proved", () => {
       stamped: false,
       links: 1,
     });
+    expect(after.get(ownLinkInMargin)?.stamped).toBe(false);
     expect(after.get(ownAndForeign)).toEqual({
       emailVerified: true,
       stamped: false,
@@ -157,30 +163,65 @@ describe("clearing confirmations that rest on a link nobody proved", () => {
     });
   });
 
-  it("keeps stamps resting only on links made since, whatever the case or spacing of either address, and leaves unstamped rows alone", async () => {
+  it("keeps stamps resting only on links made a day after the stamp existed, whatever the case or spacing of either address", async () => {
     const existed = await stampExisted();
     const later = existed + 2 * DAY;
 
     const ownLink = await account({ links: [{ createdAt: later }] });
+    const pastMargin = await account({
+      links: [{ createdAt: existed + DAY + HOUR }],
+    });
+    const linkShouting = await account({
+      links: [
+        {
+          createdAt: later,
+          address: (email) => `  ${email.toUpperCase()} `,
+        },
+      ],
+    });
     const ownLinkShouting = await account({
       links: [{ createdAt: later }],
       userEmail: (email) => `  ${email.toUpperCase()} `,
     });
     const noLink = await account({ links: [] });
-    const unstamped = await account({
-      links: [{ address: foreign(), createdAt: later }],
-      unstamped: true,
-    });
-    const after = await afterUp([ownLink, ownLinkShouting, noLink, unstamped]);
+    const after = await afterUp([
+      ownLink,
+      pastMargin,
+      linkShouting,
+      ownLinkShouting,
+      noLink,
+    ]);
 
     expect(after.get(ownLink)?.stamped).toBe(true);
+    expect(after.get(pastMargin)?.stamped).toBe(true);
+    expect(after.get(linkShouting)?.stamped).toBe(true);
     expect(after.get(ownLinkShouting)?.stamped).toBe(true);
     expect(after.get(noLink)?.stamped).toBe(true);
-    expect(after.get(unstamped)).toEqual({
-      emailVerified: true,
-      stamped: false,
-      links: 1,
+  });
+
+  it("does not write to rows that carry no stamp", async () => {
+    const unstamped = await account({
+      links: [{ address: foreign(), createdAt: Date.now() }],
+      unstamped: true,
     });
+    const version = () =>
+      sql<{
+        version: string;
+      }>`SELECT xmin::text AS version FROM "user" WHERE id = ${unstamped}`;
+    const before = (await version().execute(conn)).rows[0].version;
+    let after = "";
+
+    const outcome = await conn
+      .transaction()
+      .execute(async (trx) => {
+        await up(trx);
+        after = (await version().execute(trx)).rows[0].version;
+        throw new RolledBack();
+      })
+      .catch((error: unknown) => error);
+
+    expect(outcome).toBeInstanceOf(RolledBack);
+    expect(after).toBe(before);
   });
 
   it("treats every link as made before when the stamp migration's record is missing", async () => {
