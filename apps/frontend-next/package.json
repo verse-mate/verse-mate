@@ -22,13 +22,13 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.6.5",
+    "@opennextjs/cloudflare": "^1.17.1",
     "@types/node": "^20.14.13",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "postcss-nested": "^6.2.0",
     "sharp": "^0.35.5",
     "typescript": "^5.5.4",
-    "wrangler": "^4.28.1"
+    "wrangler": "^4.65.0"
   }
 }
