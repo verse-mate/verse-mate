@@ -1,4 +1,12 @@
-import { beforeAll, describe, expect, it, spyOn } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  mock,
+  spyOn,
+} from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import cacheConstants from "../shared/cache.constants";
@@ -10,6 +18,10 @@ describe("Auth - Delete Account", () => {
   const client = getTestClient<AuthPlugin>(Backend);
   const cacheService = Backend.store.cache;
   const db = Backend.store.db.getOrCreateConnection();
+
+  afterAll(() => {
+    mock.restore();
+  });
 
   const signUp = async (input: {
     email: string;

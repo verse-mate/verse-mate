@@ -8,6 +8,7 @@ import {
 } from "bun:test";
 import { faker } from "@faker-js/faker";
 
+import cacheConstants from "../shared/cache.constants";
 import { signupPassword } from "../shared/signup-password";
 import { getTestClient } from "../shared/test-client";
 import Backend, { type AuthPlugin } from "./auth.plugin";
@@ -23,8 +24,15 @@ describe("Auth - session tokens", () => {
   const emails: string[] = [];
 
   afterAll(async () => {
-    if (emails.length)
-      await db.deleteFrom("user").where("email", "in", emails).execute();
+    if (!emails.length) return;
+    const users = await db
+      .selectFrom("user")
+      .select("id")
+      .where("email", "in", emails)
+      .execute();
+    for (const { id } of users)
+      await Backend.store.cache.delete(cacheConstants.accessToken(id));
+    await db.deleteFrom("user").where("email", "in", emails).execute();
   });
 
   const accountWithPassword = async () => {
@@ -64,6 +72,11 @@ describe("Auth - session tokens", () => {
       { headers: { authorization: `Bearer ${first.data.accessToken}` } },
     );
     expect(signedOut.error).toBeFalsy();
+
+    const signedOutSession = await client.auth.user.get({
+      headers: { authorization: `Bearer ${first.data.accessToken}` },
+    });
+    expect(signedOutSession.status).toBe(401);
 
     const stillSignedIn = await client.auth.user.get({
       headers: { authorization: `Bearer ${second.data.accessToken}` },
