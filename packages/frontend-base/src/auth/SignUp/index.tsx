@@ -59,7 +59,7 @@ export function SignUp({ onSwitch }: SignUpProps) {
         }
       }
     }
-    void startSSOSignIn(`${apiUrl}/auth/sso/google/redirect`);
+    void startSSOSignIn(apiUrl, "google");
   }, [apiUrl]);
 
   const handleAppleClick = useCallback(() => {
@@ -79,7 +79,7 @@ export function SignUp({ onSwitch }: SignUpProps) {
         }
       }
     }
-    void startSSOSignIn(`${apiUrl}/auth/sso/apple/redirect`);
+    void startSSOSignIn(apiUrl, "apple");
   }, [apiUrl]);
 
   // Determine if error is SSO-related for custom action suggestion

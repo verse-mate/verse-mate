@@ -2,8 +2,8 @@
 
 import { exchangeSSOCode } from "frontend-base/src/api/auth";
 import {
+  completeSSOCallback,
   getSSOErrorMessage,
-  handleSSOCallback,
   startSSOSignIn,
 } from "frontend-base/src/auth/lib";
 import { $env } from "frontend-envs";
@@ -142,33 +142,28 @@ function AppleCallbackContent() {
       return;
     }
 
-    const params = new URLSearchParams(searchParams.toString());
-    window.history.replaceState(
-      window.history.state,
-      "",
-      window.location.pathname,
+    completeSSOCallback(searchParams.toString(), exchangeSSOCode).then(
+      (result) => {
+        if (result.success && result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+        } else {
+          setIsLoading(false);
+
+          const errorCode = result.error || "unknown_error";
+          setError({
+            code: errorCode,
+            message: getAppleErrorMessage(
+              errorCode,
+              searchParams.get("error_description") || undefined,
+            ),
+          });
+        }
+      },
     );
-
-    handleSSOCallback(params, exchangeSSOCode).then((result) => {
-      if (result.success && result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else {
-        setIsLoading(false);
-
-        const errorCode = result.error || "unknown_error";
-        setError({
-          code: errorCode,
-          message: getAppleErrorMessage(
-            errorCode,
-            params.get("error_description") || undefined,
-          ),
-        });
-      }
-    });
   }, [searchParams]);
 
   const handleRetry = () => {
-    void startSSOSignIn(`${$env.get().apiUrl}/auth/sso/apple/redirect`);
+    void startSSOSignIn($env.get().apiUrl, "apple");
   };
 
   return (

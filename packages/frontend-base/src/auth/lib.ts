@@ -266,9 +266,9 @@ interface PendingVerifier {
   startedAt: number;
 }
 
-function callbackPageFor(redirectUrl: string): string {
-  const provider =
-    /\/sso\/(google|apple)\/redirect/.exec(redirectUrl)?.[1] ?? "google";
+export type SSOProviderName = "google" | "apple";
+
+function callbackPageFor(provider: SSOProviderName): string {
   const query = new URLSearchParams({
     error: "invalid_state",
     error_description: SSO_START_FAILED_DESCRIPTION,
@@ -276,15 +276,22 @@ function callbackPageFor(redirectUrl: string): string {
   return `/auth/callback/${provider}?${query}`;
 }
 
-export async function startSSOSignIn(redirectUrl: string): Promise<void> {
+export async function startSSOSignIn(
+  apiUrl: string,
+  provider: SSOProviderName,
+): Promise<void> {
   try {
     const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
     const challenge = await ssoChallengeFor(verifier);
     const pending: PendingVerifier = { verifier, startedAt: Date.now() };
     sessionStorage.setItem(SSO_VERIFIER_KEY, JSON.stringify(pending));
-    window.location.href = `${redirectUrl}?challenge=${challenge}`;
+    const query = new URLSearchParams({
+      challenge,
+      returnTo: window.location.origin,
+    });
+    window.location.href = `${apiUrl}/auth/sso/${provider}/redirect?${query}`;
   } catch {
-    window.location.href = callbackPageFor(redirectUrl);
+    window.location.href = callbackPageFor(provider);
   }
 }
 
@@ -360,4 +367,16 @@ export async function handleSSOCallback(
       parsed.errorDescription,
     ),
   };
+}
+
+export function completeSSOCallback(
+  search: string,
+  exchangeCode: SSOCodeExchange,
+): ReturnType<typeof handleSSOCallback> {
+  window.history.replaceState(
+    window.history.state,
+    "",
+    window.location.pathname,
+  );
+  return handleSSOCallback(search, exchangeCode);
 }

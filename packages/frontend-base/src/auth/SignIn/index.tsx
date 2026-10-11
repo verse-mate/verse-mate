@@ -87,7 +87,7 @@ export function SignIn({ onSwitch, mode = "end_user" }: SignInProps) {
         }
       }
     }
-    void startSSOSignIn(`${apiUrl}/auth/sso/google/redirect`);
+    void startSSOSignIn(apiUrl, "google");
   }, [apiUrl]);
 
   const handleAppleClick = useCallback(() => {
@@ -103,7 +103,7 @@ export function SignIn({ onSwitch, mode = "end_user" }: SignInProps) {
         }
       }
     }
-    void startSSOSignIn(`${apiUrl}/auth/sso/apple/redirect`);
+    void startSSOSignIn(apiUrl, "apple");
   }, [apiUrl]);
 
   // Determine if error is SSO-related for custom action suggestion
