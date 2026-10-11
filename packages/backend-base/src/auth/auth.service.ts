@@ -676,22 +676,29 @@ export class AuthService {
       .getOrCreateConnection()
       .transaction()
       .execute(async (trx) => {
-        const written = await trx
-          .updateTable("user")
-          .set({
-            email: user.email,
-            password: hashedPassword,
-            emailVerified: true,
-            email_verified_at: this.isConfirmed(user)
-              ? user.email_verified_at
-              : sql`now()`,
-          })
+        const locked = await trx
+          .selectFrom("user")
+          .selectAll()
           .where("id", "=", user.id)
           .where(sql`lower(trim(email))`, "=", email)
+          .forUpdate()
           .executeTakeFirst();
-        if (Number(written.numUpdatedRows) === 0) return false;
+        if (!locked) return false;
 
-        if (!user.emailVerified)
+        await trx
+          .updateTable("user")
+          .set({
+            email: locked.email,
+            password: hashedPassword,
+            emailVerified: true,
+            email_verified_at: this.isConfirmed(locked)
+              ? locked.email_verified_at
+              : sql`now()`,
+          })
+          .where("id", "=", locked.id)
+          .execute();
+
+        if (!locked.emailVerified)
           await trx
             .deleteFrom("user_sso_accounts")
             .where("user_id", "=", user.id)
