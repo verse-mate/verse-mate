@@ -1,6 +1,6 @@
 import { type Kysely, sql } from "kysely";
 import type Database from "../src/models/Database";
-import { DISCARD_FLAG } from "./20261011010000-coach-reports-and-roster";
+import { DISCARD_FLAG } from "./20261011070000-coach-reports-and-roster";
 
 export const RESTORE_FLAG = "COACH_ROLLBACK_RESTORE_CONFIRMATIONS";
 
