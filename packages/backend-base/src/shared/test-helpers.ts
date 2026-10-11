@@ -3,6 +3,7 @@ import { faker } from "@faker-js/faker";
 import authPlugin from "../auth/auth.plugin";
 import biblePlugin from "../bible/bible.plugin";
 import { getTestClient } from "./test-client";
+import { signupCompliantPassword } from "./test-password";
 
 /**
  * Test helper to create authenticated users with optional admin role
@@ -17,17 +18,11 @@ export async function createTestUser(options?: {
   const plugin = biblePlugin.use(authPlugin);
   const testClient = getTestClient<typeof plugin>(plugin);
 
-  // Generate user data.
-  // The signup policy requires >=8 chars with at least one letter AND one
-  // digit (^(?=.*\d)(?=.*[a-zA-Z]).{8,}$). faker.internet.password() can return
-  // an all-letter string, which intermittently fails that validation and
-  // flakes every test that creates a user. Prefix a known letter+digit and cap
-  // to the 20-char max so the password is always compliant.
   const authSignupInput = {
     email: email || faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: `Aa1${faker.internet.password()}`.slice(0, 20),
+    password: signupCompliantPassword(),
   };
 
   // Clear rate limit cache to allow signup (other tests may have used up the limit)

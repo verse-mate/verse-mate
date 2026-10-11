@@ -5,6 +5,7 @@ import { db as Database } from "database";
 
 import cacheConstants from "../shared/cache.constants";
 import { getTestClient } from "../shared/test-client";
+import { signupCompliantPassword } from "../shared/test-password";
 import Backend, { type AuthPlugin } from "./auth.plugin";
 import type { AuthPayload } from "./entities/auth.entity";
 
@@ -28,9 +29,9 @@ describe("Auth", () => {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password(),
+    password: signupCompliantPassword(),
   };
-  const changePasswordValue = faker.internet.password();
+  const changePasswordValue = signupCompliantPassword();
 
   it("signup", async () => {
     let token = "";
@@ -343,7 +344,7 @@ describe("Auth - Rate Limiting", () => {
       email: faker.internet.email().toLocaleLowerCase(),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password(),
+      password: signupCompliantPassword(),
     };
 
     // Clear any existing rate limit cache for signup
@@ -509,7 +510,7 @@ describe("Auth - Rate Limiting", () => {
       email: testEmail,
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password(),
+      password: signupCompliantPassword(),
     });
     if (signupError) throw signupError;
 
@@ -603,7 +604,7 @@ describe("Auth - Security (audit fixes)", () => {
       email: aEmail,
       firstName: "A",
       lastName: "A",
-      password: faker.internet.password(),
+      password: signupCompliantPassword(),
     });
     if (aErr) throw aErr;
     expect(aData?.accessToken).toBeDefined();
@@ -614,7 +615,7 @@ describe("Auth - Security (audit fixes)", () => {
       email: faker.internet.email().toLocaleLowerCase(),
       firstName: "B",
       lastName: "B",
-      password: faker.internet.password(),
+      password: signupCompliantPassword(),
     });
     const tokenB = lastVerifyToken;
     expect(tokenB).toBeTruthy();
@@ -652,7 +653,7 @@ describe("the answers the portal's email confirmation reads", () => {
       },
     );
     const email = faker.internet.email().toLocaleLowerCase();
-    const password = faker.internet.password();
+    const password = signupCompliantPassword();
     await Backend.store.db
       .getOrCreateConnection()
       .insertInto("user")
@@ -714,7 +715,7 @@ describe("the answers the portal's email confirmation reads", () => {
       },
     );
     const email = faker.internet.email().toLocaleLowerCase();
-    const password = faker.internet.password();
+    const password = signupCompliantPassword();
     const conn = Backend.store.db.getOrCreateConnection();
     const { id } = await conn
       .insertInto("user")
@@ -759,7 +760,7 @@ describe("the confirmation email limit through the route", () => {
       Promise.resolve({ delivered: true }),
     );
     const email = faker.internet.email().toLocaleLowerCase();
-    const password = faker.internet.password();
+    const password = signupCompliantPassword();
     await Backend.store.db
       .getOrCreateConnection()
       .insertInto("user")
