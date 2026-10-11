@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
+import { createErrorHandler } from "../common/error-handler";
 import { UnauthorizedError } from "../common/errors";
 import { StandardErrorResponses } from "../common/response-schemas";
 import shared from "../shared/shared.plugin";
@@ -37,6 +38,7 @@ const SupportMessagesResponseSchema = t.Object({
 
 const plugin = new Elysia()
   .use(shared)
+  .onError(createErrorHandler("support plugin"))
   .state((state) => {
     return {
       ...state,

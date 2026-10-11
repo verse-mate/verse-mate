@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 
+import { Elysia } from "elysia";
+import { adminGuard } from "../auth/admin.utils";
 import authPlugin from "../auth/auth.plugin";
+import shared from "../shared/shared.plugin";
 import { createTestUser } from "../shared/test-helpers";
 import Backend from "./admin.plugin";
 
@@ -108,5 +111,31 @@ describe("Routes that read other users stay behind the admin check", () => {
     );
     expect(prefs.status).toBe(200);
     expect(prefs.json.success).toBe(true);
+  });
+
+  it("adminGuard on its own refuses a logged-out admin token", async () => {
+    const probe = new Elysia()
+      .use(shared)
+      .guard(adminGuard, (app) => app.get("/admin-probe", () => "ok"));
+    const loggedOut = await createTestUser({ isAdmin: true });
+
+    const before = await probe.handle(
+      new Request("http://localhost/admin-probe", {
+        headers: { authorization: `Bearer ${loggedOut.accessToken}` },
+      }),
+    );
+    expect(before.status).toBe(200);
+
+    const logout = await call("POST", "/auth/logout", {
+      token: loggedOut.accessToken,
+    });
+    expect(logout.status).toBe(200);
+
+    const after = await probe.handle(
+      new Request("http://localhost/admin-probe", {
+        headers: { authorization: `Bearer ${loggedOut.accessToken}` },
+      }),
+    );
+    expect(after.status).toBe(401);
   });
 });

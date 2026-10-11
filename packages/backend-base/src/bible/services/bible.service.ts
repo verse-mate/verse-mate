@@ -1084,7 +1084,7 @@ export class BibleService {
     content: string;
   }) {
     console.log("=== BibleService.addNote ===");
-    console.log("Adding note:", noteData);
+    console.log("Adding note for user:", noteData.user_id);
 
     try {
       // Resolve a real chapter_id and fail fast if not found
