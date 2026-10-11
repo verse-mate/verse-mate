@@ -355,15 +355,20 @@ async function roundTrip(): Promise<boolean> {
       }),
     });
     const names = (await migrator.getMigrations()).map((m) => m.name);
-    const lastOther = names.findLastIndex((n) => !/coach/i.test(n));
-    const block = names.slice(lastOther + 1);
+    const isCoach = (n: string) => /coach/i.test(n);
+    const lastCoach = names.findLastIndex(isCoach);
+    const lastOther = names.findLastIndex(
+      (n, i) => i < lastCoach && !isCoach(n),
+    );
+    const block = names.slice(lastOther + 1, lastCoach + 1);
+    const beforeBlock = names[lastOther];
     console.log(
       `coach block: ${block.length} migrations, ${block[0]} .. ${block.at(-1)}`,
     );
 
     settled("up", await migrator.migrateToLatest());
     const before = await schemaDump(db);
-    settled("down", await migrator.migrateTo(names[lastOther]));
+    settled("down", await migrator.migrateTo(beforeBlock));
     settled("up again", await migrator.migrateToLatest());
     const after = await schemaDump(db);
 
