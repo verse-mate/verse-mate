@@ -20,9 +20,7 @@ const FORWARDED = "198.51.100.23";
 const LOOPBACK = /:(127\.0\.0\.1|::1|0:0:0:0::\/64|0:0:0::\/48)$/;
 
 function expectKeys(keys: string[], address: RegExp) {
-  const [signup, ...rest] = keys;
-  expect(signup).toMatch(/^rate-limit:signup:[\w-]{43}$/);
-  for (const key of rest) expect(key).toMatch(address);
+  for (const key of keys) expect(key).toMatch(address);
 }
 
 describe("on a listening server, every limiter reads the socket, whatever the route handler names", () => {
