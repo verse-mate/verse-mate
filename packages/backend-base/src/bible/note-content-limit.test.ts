@@ -74,17 +74,36 @@ describe("note content length", () => {
   it("stores a new note at the limit", async () => {
     const response = await addNote("a".repeat(LIMIT));
     expect(response.status).toBe(200);
-    expect(await notesOfUser()).toHaveLength(1);
+    const stored = await notesOfUser();
+    expect(stored.some((n) => n.content.length === LIMIT)).toBe(true);
   });
 
   it("refuses an update longer than the limit with 422", async () => {
-    const [note] = await notesOfUser();
+    await addNote("original");
+    const note = (await notesOfUser()).find((n) => n.content === "original");
+    if (!note) throw new Error("note was not stored");
     const response = await send("PUT", "update", {
       note_id: note.note_id,
       content: "b".repeat(LIMIT + 1),
     });
     expect(response.status).toBe(422);
-    const [after] = await notesOfUser();
-    expect(after.content).toBe(note.content);
+    const after = (await notesOfUser()).find((n) => n.note_id === note.note_id);
+    expect(after?.content).toBe("original");
+  });
+
+  it("stores an update at the limit", async () => {
+    await addNote("short");
+    const note = (await notesOfUser()).find((n) => n.content === "short");
+    if (!note) throw new Error("note was not stored");
+    const response = await send("PUT", "update", {
+      note_id: note.note_id,
+      content: "c".repeat(LIMIT),
+    });
+    expect(response.status).toBe(200);
+  });
+
+  it("counts the limit in UTF-16 code units", async () => {
+    const response = await addNote("\u{1F600}".repeat(LIMIT / 2 + 1));
+    expect(response.status).toBe(422);
   });
 });
