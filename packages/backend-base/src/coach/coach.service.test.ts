@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Value } from "@sinclair/typebox/value";
+import coachDataJson from "./coach.data.json";
 import {
   AdminCoachClassSchema,
   CoachClassSchema,
@@ -503,5 +504,91 @@ describe("CoachService.addNote records whether the email went out", () => {
       await addNoteWith({ delivered: false, error: "refused: recipient" }),
     ).toBe(false);
     expect(await addNoteWith({ delivered: false, status: 500 })).toBe(false);
+  });
+});
+
+describe("CoachService grants coach and admin roles only to a confirmed address", () => {
+  const roster = coachDataJson as unknown as {
+    admins: string[];
+    coaches: { email: string }[];
+  };
+  const adminEmail = roster.admins[0];
+  const coachEmail = roster.coaches[0].email;
+
+  function serviceFor(
+    user: { email: string; emailVerified: boolean },
+    addedLeader?: Record<string, unknown>,
+  ) {
+    const row = {
+      id: "user-1",
+      firstName: "Test",
+      lastName: "User",
+      is_admin: false,
+      preferred_language: "en",
+      ...user,
+    };
+    const query: Record<string, unknown> = new Proxy(
+      {},
+      {
+        get(_t, prop) {
+          if (prop === "execute") return async () => [];
+          if (prop === "executeTakeFirst") return async () => addedLeader;
+          if (prop === "executeTakeFirstOrThrow") return async () => row;
+          return () => query;
+        },
+      },
+    );
+    const db = {
+      getOrCreateConnection: () => ({
+        selectFrom: () => query,
+        insertInto: () => query,
+      }),
+    } as unknown as ConstructorParameters<typeof CoachService>[0];
+    return new CoachService(db);
+  }
+
+  it("refuses the admin role to an unconfirmed account holding an admin address", async () => {
+    const svc = serviceFor({ email: adminEmail, emailVerified: false });
+    expect(await svc.isAdmin("user-1")).toBe(false);
+    expect(await svc.getMe("user-1")).toBeNull();
+  });
+
+  it("refuses the coach role to an unconfirmed account holding a roster address", async () => {
+    const svc = serviceFor({ email: coachEmail, emailVerified: false });
+    expect(await svc.isCoach("user-1")).toBe(false);
+    expect(await svc.getMe("user-1")).toBeNull();
+  });
+
+  it("grants both roles once the address is confirmed", async () => {
+    expect(
+      await serviceFor({ email: adminEmail, emailVerified: true }).isAdmin(
+        "user-1",
+      ),
+    ).toBe(true);
+    expect(
+      await serviceFor({ email: coachEmail, emailVerified: true }).isCoach(
+        "user-1",
+      ),
+    ).toBe(true);
+  });
+
+  it("applies the same rule to a leader an admin added", async () => {
+    const leader = {
+      id: "00000000-0000-4000-8000-000000000001",
+      email: "added.leader@example.org",
+      name: "Added Leader",
+      group_name: null,
+      coach_name: null,
+    };
+    const unconfirmed = serviceFor(
+      { email: leader.email, emailVerified: false },
+      leader,
+    );
+    const confirmed = serviceFor(
+      { email: leader.email, emailVerified: true },
+      leader,
+    );
+    expect(await unconfirmed.isCoach("user-1")).toBe(false);
+    expect(await confirmed.isCoach("user-1")).toBe(true);
   });
 });
