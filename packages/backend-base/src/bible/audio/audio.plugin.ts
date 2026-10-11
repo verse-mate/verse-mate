@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../../auth/auth.utils";
 import { createErrorHandler } from "../../common/error-handler";
+import { createRateLimit } from "../../common/rate-limit.middleware";
 import { StandardErrorResponses } from "../../common/response-schemas";
 import shared from "../../shared/shared.plugin";
 import { ObjectStorageService } from "../../shared/storage/storage.service";
@@ -13,6 +14,31 @@ import {
   AudioResponseSchema,
 } from "./audio.schemas";
 import { AudioService } from "./audio.service";
+
+function clientAddress(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for") ?? "";
+  const first = forwarded
+    .split(",")
+    .map((part) => part.trim())
+    .find(Boolean);
+  return first || request.headers.get("x-real-ip") || "unknown";
+}
+
+const synthesisRateLimit = createRateLimit({
+  windowSeconds: 600,
+  max: 30,
+  keyGenerator: ({
+    currentUserId,
+    request,
+  }: {
+    currentUserId: string | null;
+    request: Request;
+  }) =>
+    currentUserId
+      ? `audio-synthesis:user:${currentUserId}`
+      : `audio-synthesis:ip:${clientAddress(request)}`,
+  message: "Too many new audio requests, please try again later",
+});
 
 const plugin = new Elysia({ name: "audio" })
   .use(shared)
@@ -27,18 +53,14 @@ const plugin = new Elysia({ name: "audio" })
       .resolve({ as: "scoped" }, authDerive)
       .get(
         "/:explanationId",
-        async ({
-          params,
-          query,
-          store: { audioService },
-          currentUserId,
-          set,
-        }) => {
-          const result = await audioService.getOrQueueAudio({
+        async ({ params, query, store, currentUserId, set, request }) => {
+          const result = await store.audioService.getOrQueueAudio({
             explanation_id: params.explanationId,
             voice: query.voice,
             language: query.language,
             currentUserId,
+            beforeSynthesis: () =>
+              synthesisRateLimit({ store, set, request, currentUserId }),
           });
 
           if (result.kind === "ready") {

@@ -2,7 +2,12 @@ import type { Queue } from "bullmq";
 import type Database from "database/src/models/Database";
 import type { ExplanationAudios } from "database/src/models/public/ExplanationAudios";
 import type { Transaction } from "kysely";
-import { NotFoundError, UnauthorizedError } from "../../common/errors";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../common/errors";
+import { resolveLanguageCode } from "../../shared/i18n/resolve-language-code";
 import type { db } from "../../shared/shared.plugin";
 import type { ObjectStorageService } from "../../shared/storage/storage.service";
 import { createTtsProvider } from "../../shared/tts/tts-provider.factory";
@@ -26,6 +31,14 @@ const GUEST_ALLOWED_CHAPTER_NUMBER = 1;
 const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy"; // br-audio-009
 
 export type KyselyTransaction = Transaction<Database>;
+
+function languageForms(code: string): string[] {
+  try {
+    return resolveLanguageCode(code);
+  } catch {
+    return [code];
+  }
+}
 
 export interface AudioVariant {
   voice: string;
@@ -105,6 +118,7 @@ export class AudioService {
     voice?: string;
     language?: string;
     currentUserId: string | null;
+    beforeSynthesis?: () => Promise<void>;
   }): Promise<AudioReadResult> {
     const explanation = await this.loadExplanation(params.explanation_id);
     if (!explanation) {
@@ -125,6 +139,19 @@ export class AudioService {
       }
     }
 
+    if (
+      params.language !== undefined &&
+      !(await this.isOfferedLanguage(language, explanation.language_code))
+    ) {
+      throw new ValidationError("This language is not offered for audio");
+    }
+    if (
+      params.voice !== undefined &&
+      !(await this.isOfferedVoice(voice, language))
+    ) {
+      throw new ValidationError("This voice is not offered for audio");
+    }
+
     const variantKey: AudioVariantKey = {
       explanation_id: explanation.explanation_id,
       voice,
@@ -139,6 +166,7 @@ export class AudioService {
 
     // br-audio-007: stub short-circuit — bypass queue, synthesize inline.
     if (this.provider.name === "stub") {
+      await params.beforeSynthesis?.();
       const row = await this.synthesizeAndStore(
         explanation.explanation,
         variantKey,
@@ -173,6 +201,7 @@ export class AudioService {
       !(await existing.isCompleted()) &&
       !(await existing.isFailed());
     if (!stillInFlight) {
+      await params.beforeSynthesis?.();
       await this.queue.add(AUDIO_GENERATION_QUEUE, data, {
         jobId,
         removeOnComplete: { count: 100 },
@@ -323,6 +352,31 @@ export class AudioService {
       .select(["explanation_id", "explanation", "chapter_id", "language_code"])
       .where("explanation_id", "=", explanationId)
       .executeTakeFirst();
+  }
+
+  private async isOfferedLanguage(
+    language: string,
+    explanationLanguage: string,
+  ): Promise<boolean> {
+    if (languageForms(explanationLanguage).includes(language)) return true;
+    const enabled = await this.db
+      .getOrCreateConnection()
+      .selectFrom("explanation_languages")
+      .select("language_code")
+      .where("is_enabled", "=", true)
+      .execute();
+    return enabled.some((row) =>
+      languageForms(row.language_code).includes(language),
+    );
+  }
+
+  private async isOfferedVoice(
+    voice: string,
+    language: string,
+  ): Promise<boolean> {
+    if (voice === DEFAULT_VOICE_EN) return true;
+    const voices = await this.provider.listVoices(language.split("-")[0]);
+    return voices.some((v) => v.id === voice);
   }
 
   private async isGuestAllowed(chapterId: number): Promise<boolean> {
