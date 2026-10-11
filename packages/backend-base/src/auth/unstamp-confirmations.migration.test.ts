@@ -2,15 +2,12 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 import { sql } from "database";
 import { up } from "database/migrations/20261011130000-unstamp-confirmations-kept-with-foreign-links";
-import type Database from "database/src/models/Database";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
-import type { Transaction } from "kysely";
 
 import shared from "../shared/shared.plugin";
 
 const conn = shared.store.db.getOrCreateConnection();
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
+const DAY = 86_400_000;
 let created: string[] = [];
 
 class RolledBack extends Error {}
@@ -79,15 +76,11 @@ type AfterUp = {
   links: number;
 };
 
-async function afterUp(
-  ids: string[],
-  before?: (trx: Transaction<Database>) => Promise<void>,
-) {
+async function afterUp(ids: string[]) {
   const seen = new Map<string, AfterUp>();
   const outcome = await conn
     .transaction()
     .execute(async (trx) => {
-      if (before) await before(trx);
       await up(trx);
       for (const id of ids) {
         const user = await trx
@@ -115,88 +108,67 @@ async function afterUp(
 
 const foreign = () => () => `elsewhere-${faker.string.uuid()}@example.test`;
 
-describe("clearing confirmations that rest on a link nobody proved", () => {
-  it("clears stamps on accounts keeping a link for another address or a link made before linking required a verified address, and deletes no link", async () => {
+describe("clearing confirmations that rest on a sign-in link", () => {
+  it("clears the stamp on every stamped account that keeps any sign-in link, whatever its address or age, and deletes no link", async () => {
     const existed = await stampExisted();
-    const later = existed + 2 * DAY;
 
     const keptForeign = await account({
-      links: [{ address: foreign(), createdAt: later }],
+      links: [{ address: foreign(), createdAt: existed + 2 * DAY }],
     });
     const stampedEarly = await account({
-      links: [{ address: foreign(), createdAt: later }],
+      links: [{ address: foreign(), createdAt: existed + 2 * DAY }],
       stampedAt: existed - 60_000,
     });
     const oldOwnLink = await account({
       links: [{ createdAt: existed - 30 * DAY }],
     });
-    const ownLinkInMargin = await account({
-      links: [{ createdAt: existed + HOUR }],
+    const recentOwnLink = await account({
+      links: [{ createdAt: existed + 2 * DAY }],
+    });
+    const ownLinkShouting = await account({
+      links: [{ createdAt: existed + 2 * DAY }],
+      userEmail: (email) => `  ${email.toUpperCase()} `,
     });
     const ownAndForeign = await account({
-      links: [{ createdAt: later }, { address: foreign(), createdAt: later }],
+      links: [
+        { createdAt: existed + 2 * DAY },
+        { address: foreign(), createdAt: existed + 2 * DAY },
+      ],
     });
     const after = await afterUp([
       keptForeign,
       stampedEarly,
       oldOwnLink,
-      ownLinkInMargin,
+      recentOwnLink,
+      ownLinkShouting,
       ownAndForeign,
     ]);
 
-    expect(after.get(keptForeign)).toEqual({
-      emailVerified: true,
-      stamped: false,
-      links: 1,
-    });
-    expect(after.get(stampedEarly)?.stamped).toBe(false);
-    expect(after.get(oldOwnLink)).toEqual({
-      emailVerified: true,
-      stamped: false,
-      links: 1,
-    });
-    expect(after.get(ownLinkInMargin)?.stamped).toBe(false);
-    expect(after.get(ownAndForeign)).toEqual({
-      emailVerified: true,
-      stamped: false,
-      links: 2,
-    });
+    for (const [id, links] of [
+      [keptForeign, 1],
+      [stampedEarly, 1],
+      [oldOwnLink, 1],
+      [recentOwnLink, 1],
+      [ownLinkShouting, 1],
+      [ownAndForeign, 2],
+    ] as const)
+      expect(after.get(id)).toEqual({
+        emailVerified: true,
+        stamped: false,
+        links,
+      });
   });
 
-  it("keeps stamps resting only on links made a day after the stamp existed, whatever the case or spacing of either address", async () => {
-    const existed = await stampExisted();
-    const later = existed + 2 * DAY;
-
-    const ownLink = await account({ links: [{ createdAt: later }] });
-    const pastMargin = await account({
-      links: [{ createdAt: existed + DAY + HOUR }],
-    });
-    const linkShouting = await account({
-      links: [
-        {
-          createdAt: later,
-          address: (email) => `  ${email.toUpperCase()} `,
-        },
-      ],
-    });
-    const ownLinkShouting = await account({
-      links: [{ createdAt: later }],
-      userEmail: (email) => `  ${email.toUpperCase()} `,
-    });
+  it("keeps the stamp on accounts with no sign-in link", async () => {
     const noLink = await account({ links: [] });
-    const after = await afterUp([
-      ownLink,
-      pastMargin,
-      linkShouting,
-      ownLinkShouting,
-      noLink,
-    ]);
 
-    expect(after.get(ownLink)?.stamped).toBe(true);
-    expect(after.get(pastMargin)?.stamped).toBe(true);
-    expect(after.get(linkShouting)?.stamped).toBe(true);
-    expect(after.get(ownLinkShouting)?.stamped).toBe(true);
-    expect(after.get(noLink)?.stamped).toBe(true);
+    const after = await afterUp([noLink]);
+
+    expect(after.get(noLink)).toEqual({
+      emailVerified: true,
+      stamped: true,
+      links: 0,
+    });
   });
 
   it("does not write to rows that carry no stamp", async () => {
@@ -222,20 +194,5 @@ describe("clearing confirmations that rest on a link nobody proved", () => {
 
     expect(outcome).toBeInstanceOf(RolledBack);
     expect(after).toBe(before);
-  });
-
-  it("treats every link as made before when the stamp migration's record is missing", async () => {
-    const ownLink = await account({
-      links: [{ createdAt: (await stampExisted()) + 2 * DAY }],
-    });
-
-    const after = await afterUp([ownLink], async (trx) => {
-      await sql`
-        DELETE FROM kysely_migration
-        WHERE name = '20261011000000-user-confirmation-stamp'
-      `.execute(trx);
-    });
-
-    expect(after.get(ownLink)?.stamped).toBe(false);
   });
 });
