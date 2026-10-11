@@ -208,8 +208,7 @@ describe("Auth", () => {
     tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
       [];
-    // After logging out one token, we should have fewer tokens
-    expect(tokens.length).toBeGreaterThanOrEqual(0);
+    expect(tokens).not.toContain(signupAuthPayload?.accessToken);
 
     const { data: logoutLogin, error: logoutLoginError } =
       await client.auth.logout.post(
@@ -226,8 +225,8 @@ describe("Auth", () => {
     tokens =
       (await cacheService.get<string[]>(cacheConstants.accessToken(data.id))) ??
       [];
-    // After logging out another token, we should have even fewer tokens
-    expect(tokens.length).toBeGreaterThanOrEqual(0);
+    expect(tokens).not.toContain(signupAuthPayload?.accessToken);
+    expect(tokens).not.toContain(loginAuthPayload?.accessToken);
   });
 
   it("logout all", async () => {
