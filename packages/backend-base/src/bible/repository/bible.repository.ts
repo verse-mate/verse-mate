@@ -1324,9 +1324,9 @@ export class BibleRepository {
         .deleteFrom("verse_highlights")
         .where("highlight_id", "=", highlight_id)
         .where("user_id", "=", user_id)
-        .execute();
+        .executeTakeFirst();
 
-      return { success: result.length > 0 };
+      return { success: Number(result.numDeletedRows) > 0 };
     } catch (error) {
       console.error("Error removing highlight:", error);
       return { success: false };
@@ -1505,7 +1505,7 @@ export class BibleRepository {
     }
   }
 
-  async updateNote(noteId: string, content: string) {
+  async updateNote(noteId: string, content: string, userId: string) {
     try {
       console.log("=== BibleRepository.updateNote ===");
       const connection = this.db.getOrCreateConnection();
@@ -1516,6 +1516,7 @@ export class BibleRepository {
         .updateTable("notes")
         .set({ content, updated_at: now })
         .where("note_id", "=", noteId)
+        .where("user_id", "=", userId)
         .executeTakeFirst();
 
       const success = Number(result.numUpdatedRows) > 0;
@@ -1526,7 +1527,7 @@ export class BibleRepository {
     }
   }
 
-  async deleteNote(noteId: string) {
+  async deleteNote(noteId: string, userId: string) {
     try {
       console.log("=== BibleRepository.deleteNote ===");
       const connection = this.db.getOrCreateConnection();
@@ -1535,6 +1536,7 @@ export class BibleRepository {
       const result = await (connection as any)
         .deleteFrom("notes")
         .where("note_id", "=", noteId)
+        .where("user_id", "=", userId)
         .executeTakeFirst();
 
       const success = Number(result.numDeletedRows) > 0;
