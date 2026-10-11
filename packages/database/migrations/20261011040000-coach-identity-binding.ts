@@ -132,10 +132,10 @@ export async function up(db: Kysely<Database>): Promise<void> {
   await sql`
     CREATE FUNCTION coach_address_joined() RETURNS trigger AS $$
     BEGIN
-      PERFORM coach_clear_unproven_confirmation(NEW.email, 'joined');
+      PERFORM public.coach_clear_unproven_confirmation(NEW.email, 'joined');
       RETURN NULL;
     END
-    $$ LANGUAGE plpgsql
+    $$ LANGUAGE plpgsql SET search_path = public, pg_temp
   `.execute(db);
   for (const table of ["coach_leaders", "coach_admins"])
     await sql`

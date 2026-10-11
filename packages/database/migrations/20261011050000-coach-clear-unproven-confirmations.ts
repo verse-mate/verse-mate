@@ -8,7 +8,7 @@ export async function clearUnprovenRosterConfirmations(
   db: Kysely<Database>,
 ): Promise<void> {
   await sql`
-    SELECT coach_clear_unproven_confirmation(email, 'sweep')
+    SELECT public.coach_clear_unproven_confirmation(email, 'sweep')
     FROM (SELECT email FROM coach_leaders UNION SELECT email FROM coach_admins) a
   `.execute(db);
 }
