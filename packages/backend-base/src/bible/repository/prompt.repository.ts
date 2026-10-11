@@ -56,7 +56,7 @@ export class PromptRepository {
       .executeTakeFirst();
 
     if (!prompt) {
-      throw new Error(`Active prompt of type '${type}' not found`);
+      throw new NotFoundError(`Active prompt of type '${type}' not found`);
     }
 
     return {

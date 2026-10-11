@@ -352,7 +352,7 @@ const plugin = new Elysia()
               "/batch-topic-references",
               async ({ body, currentUserId, store }) => {
                 if (!currentUserId) {
-                  throw new Error("Unauthorized");
+                  throw new UnauthorizedError("Unauthorized");
                 }
                 const batchOperationService = store.getBatchOperationService();
                 return await batchOperationService.generateTopicReferencesBatch(
@@ -384,7 +384,7 @@ const plugin = new Elysia()
               "/batch-topic-discovery",
               async ({ body, currentUserId, store }) => {
                 if (!currentUserId) {
-                  throw new Error("Unauthorized");
+                  throw new UnauthorizedError("Unauthorized");
                 }
                 const batchOperationService = store.getBatchOperationService();
                 return await batchOperationService.generateTopicDiscoveryBatch(
@@ -453,29 +453,19 @@ const plugin = new Elysia()
                   set.status = 401;
                   return { error: "Unauthorized" };
                 }
-                try {
-                  const batchOperationService =
-                    store.getBatchOperationService();
-                  return await batchOperationService.generateTopicExplanationsBatch(
-                    body.model,
-                    currentUserId,
-                    body.languageCode,
-                    body.explanationTypes,
-                    body.effort || "medium",
-                    body.category,
-                    body.topicId,
-                    body.includeReferencesInSummary || false,
-                    body.includeReferencesInDetailed || false,
-                    body.skipExisting ?? true, // Default to true to maintain behavior
-                  );
-                } catch (error: any) {
-                  console.error(
-                    "[PLUGIN] Caught error from BatchOperationService:",
-                    error.message,
-                  );
-                  set.status = 400;
-                  return { error: error.message };
-                }
+                const batchOperationService = store.getBatchOperationService();
+                return await batchOperationService.generateTopicExplanationsBatch(
+                  body.model,
+                  currentUserId,
+                  body.languageCode,
+                  body.explanationTypes,
+                  body.effort || "medium",
+                  body.category,
+                  body.topicId,
+                  body.includeReferencesInSummary || false,
+                  body.includeReferencesInDetailed || false,
+                  body.skipExisting ?? true,
+                );
               },
               {
                 body: t.Object({

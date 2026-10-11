@@ -1,5 +1,6 @@
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import { UserPromptRepository } from "../bible/repository/user-prompt.repository";
+import { ValidationError } from "../common/errors";
 import { defaultUserPromptTemplates } from "./prompts";
 
 export const getExplanationTypePrompt = async (
@@ -56,5 +57,5 @@ export const getExplanationTypePrompt = async (
     };
   }
 
-  throw new Error(`No prompt template found for type: ${type}`);
+  throw new ValidationError(`No prompt template found for type: ${type}`);
 };
