@@ -1,4 +1,11 @@
-import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
+import {
+  afterAll,
+  afterEach,
+  describe,
+  expect,
+  it,
+  setSystemTime,
+} from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import { signupPassword } from "../shared/signup-password";
@@ -13,9 +20,17 @@ describe("Auth - session tokens", () => {
     setSystemTime();
   });
 
+  const emails: string[] = [];
+
+  afterAll(async () => {
+    if (emails.length)
+      await db.deleteFrom("user").where("email", "in", emails).execute();
+  });
+
   const accountWithPassword = async () => {
     const email = faker.internet.email().toLowerCase();
     const password = signupPassword();
+    emails.push(email);
     await db
       .insertInto("user")
       .values({
