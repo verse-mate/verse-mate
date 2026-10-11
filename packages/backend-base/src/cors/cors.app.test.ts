@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
 import biblePlugin from "../bible/bible.plugin";
 import healthCheckPlugin from "../healthcheck/healthcheck.plugin";
-import offlinePlugin from "../offline/offline.plugin";
 import userPlugin from "../user/user.plugin";
 import versionPolicyPlugin from "../versionPolicy.plugin";
 import { createCorsPlugin } from "./cors.plugin";
@@ -20,7 +19,6 @@ const app = new Elysia()
   )
   .use(userPlugin)
   .use(biblePlugin)
-  .use(offlinePlugin)
   .use(healthCheckPlugin)
   .use(versionPolicyPlugin)
   .use(createCorsPlugin({ ENVIRONMENT: "production" }));
