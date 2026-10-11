@@ -700,7 +700,12 @@ export class CoachService {
     try {
       if (this.notification && record.email) {
         const portalUrl = `${process.env.APP_URL ?? ""}/coach`;
-        await this.notification.sendEmail({
+        // Read the result. Mailgun failures are RETURNED, not thrown (that is
+        // the whole point of SendResult), so the surrounding catch never fires
+        // for a real send failure, and this recorded `emailed: true` for a 401
+        // or a 500. The admin then saw the note marked as emailed and believed
+        // the leader had been notified.
+        const sent = (await this.notification.sendEmail({
           to: { email: record.email, name: record.name },
           subject: `Coaching note — ${report.session}`,
           text: body,
@@ -712,8 +717,8 @@ export class CoachService {
               portalUrl,
             }),
           ),
-        });
-        emailed = true;
+        })) as CoachSendResult | undefined;
+        emailed = sent?.delivered === true;
       }
     } catch (err) {
       console.log("[CoachService] note email failed:", err);
