@@ -41,7 +41,7 @@ const WAITING_ON_A_PERSON: readonly HoldKind[] = [
 ];
 
 export const waitingOnAPersonLast = sql<boolean>`COALESCE(hold_kind IN (${sql.join(
-  WAITING_ON_A_PERSON.map((k) => sql.lit(k)),
+  WAITING_ON_A_PERSON,
 )}), false)`;
 
 export const STALE_DELIVERY_CLAIM = sql<Date>`NOW() - interval '15 minutes'`;
@@ -196,14 +196,14 @@ export const stuck = (eb: Sessions) =>
 
 export const scoringVersionOf = (reportId: Expression<unknown>) => sql<unknown>`(
   SELECT CASE
-    WHEN COUNT(DISTINCT s.language_model) FILTER (WHERE s.dimension_n <> ${sql.lit(VISUAL_AIDS_DIMENSION)}) = 1
+    WHEN COUNT(DISTINCT s.language_model) FILTER (WHERE s.dimension_n <> ${VISUAL_AIDS_DIMENSION}) = 1
      AND COUNT(DISTINCT s.prompt_version) = 1
      AND COUNT(DISTINCT s.generation_settings) = 1
     THEN jsonb_build_object(
-      'languageModel', MIN(s.language_model) FILTER (WHERE s.dimension_n <> ${sql.lit(VISUAL_AIDS_DIMENSION)}),
+      'languageModel', MIN(s.language_model) FILTER (WHERE s.dimension_n <> ${VISUAL_AIDS_DIMENSION}),
       'promptVersion', MIN(s.prompt_version),
       'settings', MIN(s.generation_settings::text)::jsonb,
-      'visionModel', MIN(s.language_model) FILTER (WHERE s.dimension_n = ${sql.lit(VISUAL_AIDS_DIMENSION)})
+      'visionModel', MIN(s.language_model) FILTER (WHERE s.dimension_n = ${VISUAL_AIDS_DIMENSION})
     )
   END
   FROM coach_report_dimension_scores s

@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { authDerive } from "../auth/auth.utils";
-import { clientIp } from "../common/client-ip";
+import { clientBucket } from "../common/client-ip";
 import { isEmailAddress } from "../common/email-address";
 import { createErrorHandler } from "../common/error-handler";
 import {
@@ -73,7 +73,8 @@ const caller = (context: {
   request: Request;
   server?: { requestIP(request: Request): { address: string } | null } | null;
 }) =>
-  context.currentUserId ?? `ip:${clientIp(context.request, context.server)}`;
+  context.currentUserId ??
+  `ip:${clientBucket(context.request, context.server)}`;
 
 const coachRateLimit = createRateLimit({
   windowSeconds: 60,
