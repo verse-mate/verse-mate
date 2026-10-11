@@ -30,6 +30,9 @@ const originalSecret = process.env.SLACK_SIGNING_SECRET;
 let userId: string | undefined;
 let threadTs: string;
 let warn: Mock<typeof console.warn>;
+let seq = 0;
+
+const nextTs = () => `${NOW}.${String(++seq).padStart(6, "0")}`;
 
 const restoreSecret = () => {
   if (originalSecret === undefined) {
@@ -77,7 +80,7 @@ const replyEvent = (text: string, event: Record<string, unknown> = {}) =>
       type: "message",
       channel: CHANNEL,
       thread_ts: threadTs,
-      ts: `${NOW}.${faker.string.numeric(6)}`,
+      ts: nextTs(),
       text,
       ...event,
     },
@@ -118,7 +121,7 @@ beforeAll(async () => {
     .returning("id")
     .executeTakeFirstOrThrow();
   userId = user.id;
-  threadTs = `${NOW}.${faker.string.numeric(6)}`;
+  threadTs = `${NOW - 1}.${faker.string.numeric(6)}`;
   const conversation = await conn
     .insertInto("support_conversations")
     .values({
@@ -164,7 +167,7 @@ afterEach(() => {
 describe("Slack support webhook: accepted requests", () => {
   it("stores a reply signed over the raw body", async () => {
     const text = faker.lorem.sentence();
-    const body = `{ "type": "event_callback",  "event": { "type": "message", "channel": "${CHANNEL}", "thread_ts": "${threadTs}", "ts": "${NOW}.000001", "text": "${text}" } }`;
+    const body = `{ "type": "event_callback",  "event": { "type": "message", "channel": "${CHANNEL}", "thread_ts": "${threadTs}", "ts": "${NOW - 2}.000001", "text": "${text}" } }`;
 
     const res = await signedPost(body);
 
@@ -221,6 +224,12 @@ describe("Slack support webhook: accepted requests", () => {
     const body = replyEvent(text);
 
     const first = await post(body, signedHeaders(body));
+    const deliveredAt = new Date("2020-01-01T00:00:00Z");
+    await conn
+      .updateTable("support_conversations")
+      .set({ last_message_at: deliveredAt })
+      .where("slack_thread_ts", "=", threadTs)
+      .execute();
     const retry = await post(body, {
       ...signedHeaders(body),
       "x-slack-retry-num": "1",
@@ -230,6 +239,21 @@ describe("Slack support webhook: accepted requests", () => {
     expect(first.status).toBe(200);
     expect(retry.status).toBe(200);
     expect((await storedTexts()).filter((t) => t === text)).toHaveLength(1);
+    const conversation = await conn
+      .selectFrom("support_conversations")
+      .where("slack_thread_ts", "=", threadTs)
+      .select("last_message_at")
+      .executeTakeFirstOrThrow();
+    expect(conversation.last_message_at).toEqual(deliveredAt);
+  });
+
+  it("stores Slack's entity-encoded text as the agent typed it", async () => {
+    const res = await signedPost(
+      replyEvent("Q &amp; A &lt;here&gt;, literally &amp;lt;b&amp;gt;"),
+    );
+
+    expect(res.status).toBe(200);
+    expect(await storedTexts()).toContain("Q & A <here>, literally &lt;b&gt;");
   });
 });
 
@@ -399,11 +423,25 @@ describe("Slack support webhook: signed events that are not support replies", ()
     await expectIgnored(await signedPost(replyEvent(text, override)), text);
   });
 
-  it("ignores a message without text", async () => {
-    const res = await signedPost(replyEvent("", { text: undefined }));
+  it.each([
+    ["no text", undefined],
+    ["empty text", ""],
+    ["blank text", "   "],
+  ])("ignores a message with %s", async (_, text) => {
+    const before = await storedTexts();
+
+    const res = await signedPost(replyEvent("", { text }));
 
     expect(res.status).toBe(200);
-    expect(await storedTexts()).not.toContain("");
+    expect(await storedTexts()).toEqual(before);
+  });
+
+  it("logs the channel of a message from another channel", async () => {
+    await signedPost(
+      replyEvent(faker.lorem.sentence(), { channel: "C0FOREIGN" }),
+    );
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("C0FOREIGN"));
   });
 });
 
@@ -444,7 +482,7 @@ describe("Messages sent to Slack", () => {
   const capture = (service: SupportService) =>
     spyOn(slackClientOf(service).chat, "postMessage").mockResolvedValue({
       ok: true,
-      ts: `${NOW}.${faker.string.numeric(6)}`,
+      ts: nextTs(),
     } as never);
 
   const sentText = (postMessage: ReturnType<typeof capture>) =>
@@ -469,21 +507,152 @@ describe("Messages sent to Slack", () => {
     expect(sent).not.toContain("<https://phish.example");
   });
 
+  it("escapes Slack control sequences in the user's name and email", async () => {
+    const uid = userId as string;
+    const original = await conn
+      .selectFrom("user")
+      .where("id", "=", uid)
+      .select(["firstName", "lastName"])
+      .executeTakeFirstOrThrow();
+    await conn
+      .updateTable("user")
+      .set({ firstName: "<!here>", lastName: "Eve & Co" })
+      .where("id", "=", uid)
+      .execute();
+    const service = new SupportService(shared.store.db);
+    const postMessage = capture(service);
+
+    try {
+      await service.handleNewConversation(uid, faker.lorem.sentence());
+    } finally {
+      await conn
+        .updateTable("user")
+        .set(original)
+        .where("id", "=", uid)
+        .execute();
+    }
+
+    const sent = sentText(postMessage);
+    expect(sent).toContain("&lt;!here&gt; Eve &amp; Co");
+    expect(sent).not.toContain("<!here>");
+  });
+
+  const conversationId = async () =>
+    (
+      await conn
+        .selectFrom("support_conversations")
+        .where("slack_thread_ts", "=", threadTs)
+        .select("id")
+        .executeTakeFirstOrThrow()
+    ).id;
+
   it("escapes Slack control sequences in a follow-up message and stores the original", async () => {
     const service = new SupportService(shared.store.db);
     const postMessage = capture(service);
-    const conversation = await conn
-      .selectFrom("support_conversations")
-      .where("slack_thread_ts", "=", threadTs)
-      .select("id")
-      .executeTakeFirstOrThrow();
     const text = `${ping} & ${disguisedLink}`;
 
-    await service.handleUserMessage(userId as string, conversation.id, text);
+    await service.handleUserMessage(
+      userId as string,
+      await conversationId(),
+      text,
+    );
 
     const sent = sentText(postMessage);
     expect(sent).toContain("&lt;!channel&gt; please look &amp; &lt;https://");
     expect(sent).not.toContain("<!channel>");
     expect(await storedTexts()).toContain(text);
+  });
+
+  const sectionTexts = (postMessage: ReturnType<typeof capture>) =>
+    (
+      (
+        postMessage.mock.calls[0][0] as {
+          blocks?: { text?: { text: string } }[];
+        }
+      ).blocks ?? []
+    ).map((block) => block.text?.text ?? "");
+
+  const decodeEntities = (value: string) =>
+    value.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+  it("splits a long new conversation into sections Slack accepts", async () => {
+    const service = new SupportService(shared.store.db);
+    const postMessage = capture(service);
+    const text = `${"<&>".repeat(2000)}${faker.lorem.paragraphs(20)}`;
+
+    await service.handleNewConversation(userId as string, text);
+
+    const [header, ...body] = sectionTexts(postMessage);
+    expect(header).toContain("New Support Request");
+    expect(body.length).toBeGreaterThan(1);
+    for (const section of [header, ...body]) {
+      expect(section.length).toBeLessThanOrEqual(3000);
+    }
+    expect(decodeEntities(body.join(""))).toBe(text);
+  });
+
+  it("splits a long follow-up message into sections and stores it in full", async () => {
+    const service = new SupportService(shared.store.db);
+    const postMessage = capture(service);
+    const text = `${"&".repeat(5000)} ${faker.lorem.paragraphs(10)}`;
+
+    await service.handleUserMessage(
+      userId as string,
+      await conversationId(),
+      text,
+    );
+
+    const sections = sectionTexts(postMessage);
+    expect(sections.length).toBeGreaterThan(1);
+    for (const section of sections) {
+      expect(section.length).toBeLessThanOrEqual(3000);
+    }
+    expect(decodeEntities(sections.join(""))).toBe(text);
+    expect(await storedTexts()).toContain(text);
+  });
+
+  it("keeps the Slack id out of the messages a user reads", async () => {
+    const service = new SupportService(shared.store.db);
+
+    const messages = await service.getMessages(
+      await conversationId(),
+      userId as string,
+    );
+
+    expect(messages.length).toBeGreaterThan(0);
+    for (const message of messages) {
+      expect(message).not.toHaveProperty("slack_ts");
+    }
+  });
+});
+
+describe("Support message limits", () => {
+  const send = (path: string, body: Record<string, unknown>) =>
+    supportPlugin.handle(
+      new Request(`http://localhost${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
+
+  it.each([
+    ["/support/conversations"],
+    [`/support/conversations/${faker.string.uuid()}/messages`],
+  ])("accepts 20,000 characters and refuses more on %s", async (path) => {
+    const atLimit = await send(path, { text: "a".repeat(20_000) });
+    const overLimit = await send(path, { text: "a".repeat(20_001) });
+
+    expect(atLimit.status).not.toBe(422);
+    expect(overLimit.status).toBe(422);
+  });
+
+  it("refuses a subject longer than the stored column", async () => {
+    const res = await send("/support/conversations", {
+      text: "help",
+      subject: "s".repeat(256),
+    });
+
+    expect(res.status).toBe(422);
   });
 });

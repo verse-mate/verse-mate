@@ -90,19 +90,31 @@ export class SupportRepository {
   ) {
     return await this.db
       .getOrCreateConnection()
-      .insertInto("support_messages")
-      .values({
-        conversation_id: conversationId,
-        user_id: userId,
-        text,
-        sender: "support" as SupportSenderEnum,
-        slack_ts: slackTs,
-      })
-      .onConflict((oc) =>
-        oc.columns(["conversation_id", "slack_ts"]).doNothing(),
-      )
-      .returningAll()
-      .executeTakeFirst();
+      .transaction()
+      .execute(async (trx) => {
+        const saved = await trx
+          .insertInto("support_messages")
+          .values({
+            conversation_id: conversationId,
+            user_id: userId,
+            text,
+            sender: "support" as SupportSenderEnum,
+            slack_ts: slackTs,
+          })
+          .onConflict((oc) =>
+            oc.columns(["conversation_id", "slack_ts"]).doNothing(),
+          )
+          .returningAll()
+          .executeTakeFirst();
+        if (saved) {
+          await trx
+            .updateTable("support_conversations")
+            .set({ last_message_at: sql`CURRENT_TIMESTAMP` })
+            .where("id", "=", conversationId)
+            .execute();
+        }
+        return saved;
+      });
   }
 
   async getMessagesByConversationId(conversationId: string) {
@@ -110,7 +122,14 @@ export class SupportRepository {
       .getOrCreateConnection()
       .selectFrom("support_messages")
       .where("conversation_id", "=", conversationId)
-      .selectAll()
+      .select([
+        "id",
+        "conversation_id",
+        "user_id",
+        "text",
+        "sender",
+        "created_at",
+      ])
       .orderBy("created_at", "asc")
       .execute();
   }
