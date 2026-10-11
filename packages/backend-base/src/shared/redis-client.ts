@@ -1,6 +1,7 @@
 import ms from "ms";
 import { type RedisClientType, createClient } from "redis";
 import { redisTlsOptions } from "./redis-tls";
+import { DEFAULT_REDIS_URL, configuredRedisUrl } from "./redis-url";
 
 const COUNT_WITHIN_WINDOW = `
 local current = redis.call('GET', KEYS[1])
@@ -56,7 +57,7 @@ function parseTtl(ttl: string): number {
 class RedisClient {
   private client: RedisClientType;
 
-  constructor(redisUrl = "redis://localhost:6379") {
+  constructor(redisUrl = DEFAULT_REDIS_URL) {
     const url = new URL(redisUrl);
     const password = url.password || undefined;
     const useSSL = isSSLUrl(redisUrl);
@@ -265,8 +266,5 @@ class RedisClient {
   }
 }
 
-const redisUrl = process.env.REDIS_URL ?? "redis://:abcd1234@localhost:6379/0";
-
-// Export both the class and instance with explicit typing
 export { RedisClient };
-export default new RedisClient(redisUrl);
+export default new RedisClient(configuredRedisUrl());

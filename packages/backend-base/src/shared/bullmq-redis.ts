@@ -1,7 +1,6 @@
 import IORedis from "ioredis";
 import { redisTlsOptions } from "./redis-tls";
-
-const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+import { configuredRedisUrl } from "./redis-url";
 
 export function createBullmqRedisConnection(url: string) {
   return new IORedis(url, {
@@ -24,6 +23,8 @@ export function createBullmqRedisConnection(url: string) {
   });
 }
 
-export const bullmqRedisConnection = createBullmqRedisConnection(redisUrl);
+export const bullmqRedisConnection = createBullmqRedisConnection(
+  configuredRedisUrl(),
+);
 
 export default bullmqRedisConnection;
