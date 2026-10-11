@@ -1,1 +1,1 @@
-export { api, getAccessToken } from "./eden";
+export { api, authFetch, getAccessToken } from "./eden";
