@@ -3,8 +3,12 @@
 The coach pipeline migrations are the five `*-coach-*` files after
 `20261011000000-user-confirmation-stamp` in `packages/database/migrations`. That first file
 (the `user.email_verified_at` stamp) ships with the account confirmation change, not with
-the coach, and is not part of this block. This page says what each down does to data, and
-how to check that the block survives a full down and up.
+the coach, and is not part of this block. Its down refuses while any account carries a
+confirmation stamp, unless run with `ROLLBACK_DISCARD_CONFIRMATION_STAMPS=1`: dropping the
+stamps would make every confirmation made since the deploy look unproven, and the sweep run
+again would clear all of them. This page says what each down does to data, and how to check
+that the block survives a full down and up (the round trip stops above that first file, so it
+never runs its down).
 
 The dates are placeholders: before the merge, each of the five files is renamed to the merge
 day, keeping their order, after the newest migration on `main` and after

@@ -16,6 +16,7 @@ import type {
 const REASONING_MODEL = /^(gpt-5(?!-chat)|o\d)/;
 const STREAM_IDLE_MS = 90_000;
 const STREAM_TOTAL_MS = 15 * 60_000;
+const INLINE_IMAGE = /^data:image\/(png|jpeg|webp|gif);base64,/;
 
 interface OpenAiStreamEvent {
   type: string;
@@ -77,6 +78,11 @@ export class OpenAiProvider implements AiProvider {
   }
 
   async chatComplete(opts: AiChatOptions): Promise<AiChatResponse> {
+    const images = opts.messages.flatMap((m) => m.images ?? []);
+    if (images.some((url) => !INLINE_IMAGE.test(url)))
+      throw new Error(
+        `OpenAI images must be inline data: image URLs for model=${opts.model}`,
+      );
     const reasons = REASONING_MODEL.test(opts.model);
     const abort = new AbortController();
     let stalled = false;

@@ -454,3 +454,136 @@ describe("OpenAiProvider chatComplete", () => {
     ).rejects.toThrow("ran past the 30 ms limit");
   });
 });
+
+describe("OpenAiProvider chatComplete limits and reasons", () => {
+  const ask = {
+    model: "gpt-5",
+    messages: [{ role: "user" as const, content: "hi" }],
+  };
+
+  it("each event resets the idle limit, so a slow but steady stream completes", async () => {
+    async function* steady(signal: AbortSignal) {
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 15));
+        if (signal.aborted) return;
+        yield { type: "response.output_text.delta", delta: "x" };
+      }
+      yield { type: "response.completed", response: { model: "gpt-5" } };
+    }
+    const provider = new OpenAiProvider("test-key", {
+      idleMs: 40,
+      totalMs: 5_000,
+    });
+    (provider as unknown as { client: unknown }).client = {
+      responses: {
+        create: async (_body: unknown, { signal }: { signal: AbortSignal }) =>
+          steady(signal),
+      },
+    };
+    const result = await provider.chatComplete(ask);
+    expect(result.content).toBe("xxxxxxxx");
+  });
+
+  it("an image that is not an inline data URL is refused before any request", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await expect(
+      providerSending(sent).chatComplete({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "user",
+            content: "look",
+            images: ["https://example.test/a.png"],
+          },
+        ],
+      }),
+    ).rejects.toThrow("inline data: image URLs");
+    expect(sent).toEqual([]);
+  });
+
+  it("an inline image is sent", async () => {
+    const sent: Record<string, unknown>[] = [];
+    await providerSending(sent).chatComplete({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "user",
+          content: "look",
+          images: ["data:image/jpeg;base64,AAAA"],
+        },
+      ],
+    });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("a failed response names the reason the API gave", async () => {
+    const sent: Record<string, unknown>[] = [];
+    const provider = providerSending(sent, () => [
+      {
+        type: "response.failed",
+        response: { error: { message: "server_error" } },
+      },
+    ]);
+    await expect(provider.chatComplete(ask)).rejects.toThrow("server_error");
+  });
+
+  it("a completed event without a model or usage falls back to the requested model and omits usage", async () => {
+    const sent: Record<string, unknown>[] = [];
+    const provider = providerSending(sent, () => [
+      { type: "response.output_text.delta", delta: "ok" },
+      { type: "response.completed", response: {} },
+    ]);
+    const result = await provider.chatComplete(ask);
+    expect(result).toEqual({ content: "ok", model: "gpt-5" });
+  });
+});
+
+describe("OpenAiProvider transcribeAudio", () => {
+  function transcriber(result: unknown) {
+    const sent: Record<string, unknown>[] = [];
+    const provider = new OpenAiProvider("test-key");
+    (provider as unknown as { client: unknown }).client = {
+      audio: {
+        transcriptions: {
+          create: async (body: Record<string, unknown>) => {
+            sent.push(body);
+            return result;
+          },
+        },
+      },
+    };
+    return { provider, sent };
+  }
+
+  it("asks for timed segments from whisper-1 by default and returns them", async () => {
+    const { provider, sent } = transcriber({
+      text: "a b",
+      segments: [
+        { id: 0, start: 0, end: 1.5, text: "a", tokens: [] },
+        { id: 1, start: 1.5, end: 3, text: "b", tokens: [] },
+      ],
+    });
+    const file = new Blob(["audio"]);
+    const result = await provider.transcribeAudio({ file });
+    expect(sent[0]).toMatchObject({
+      file,
+      model: "whisper-1",
+      response_format: "verbose_json",
+      timestamp_granularities: ["segment"],
+    });
+    expect(result.segments).toEqual([
+      { start: 0, end: 1.5, text: "a" },
+      { start: 1.5, end: 3, text: "b" },
+    ]);
+  });
+
+  it("passes a chosen model and returns no segments when the API gives none", async () => {
+    const { provider, sent } = transcriber({ text: "" });
+    const result = await provider.transcribeAudio({
+      file: new Blob(["audio"]),
+      model: "gpt-4o-transcribe",
+    });
+    expect(sent[0].model).toBe("gpt-4o-transcribe");
+    expect(result.segments).toEqual([]);
+  });
+});
