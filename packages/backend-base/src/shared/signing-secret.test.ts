@@ -99,6 +99,20 @@ describe("the signing secret rule", () => {
     }
   });
 
+  it("a long secret is returned exactly as configured", () => {
+    expect(production(`  ${unique}  `)()).toBe(`  ${unique}  `);
+  });
+
+  it("the old public default is refused everywhere, padded or not", () => {
+    for (const ENVIRONMENT of ["development", "test", "production"])
+      expect(() =>
+        signingSecret({
+          ENVIRONMENT,
+          AUTH_ACCESS_TOKEN_SECRET: "my-super-secret\n",
+        }),
+      ).toThrow("AUTH_ACCESS_TOKEN_SECRET");
+  });
+
   it("only production applies the length rule", () => {
     for (const ENVIRONMENT of ["development", "test", "staging", undefined])
       expect(
