@@ -244,7 +244,33 @@ describe("SSO web callback code exchange", () => {
       expect(statuses.slice(0, 20).every((status) => status === 302)).toBe(
         true,
       );
-      expect(statuses[20]).toBe(429);
+      expect(statuses[20]).toBe(302);
+      const refused = locationOf(
+        await startSignIn("google", challengeOf(newVerifier())),
+      );
+      expect(refused.origin + refused.pathname).toBe(
+        `${FRONTEND_URL}/auth/callback/google`,
+      );
+      expect(refused.searchParams.get("error")).toBe("rate_limited");
+      expect(refused.searchParams.has("state")).toBe(false);
+    });
+
+    it("shows a refused sign-in start on the admin app that started it", async () => {
+      process.env.ADMIN_URL = ADMIN_URL;
+      for (let i = 0; i < 20; i++) await startSignIn("apple", "short");
+
+      const response = await startSignIn(
+        "apple",
+        challengeOf(newVerifier()),
+        ADMIN_URL,
+      );
+
+      expect(response.status).toBe(302);
+      const location = locationOf(response);
+      expect(location.origin + location.pathname).toBe(
+        `${ADMIN_URL}/auth/callback/apple`,
+      );
+      expect(location.searchParams.get("error")).toBe("rate_limited");
     });
   });
 
@@ -298,6 +324,92 @@ describe("SSO web callback code exchange", () => {
 
       expect(location.origin).toBe(FRONTEND_URL);
       expect(location.searchParams.get("code")).toBeTruthy();
+    });
+
+    for (const adminUrl of ["localhost:3100", "javascript:alert(1)"]) {
+      it(`sends returnTo=null to the portal when ADMIN_URL is ${adminUrl}`, async () => {
+        process.env.ADMIN_URL = adminUrl;
+
+        const location = await signInFrom("google", "null");
+
+        expect(location.origin).toBe(FRONTEND_URL);
+        expect(location.searchParams.get("code")).toBeTruthy();
+      });
+    }
+
+    async function adminStartedState(provider: Provider) {
+      process.env.ADMIN_URL = ADMIN_URL;
+      const started = await startSignIn(
+        provider,
+        challengeOf(newVerifier()),
+        ADMIN_URL,
+      );
+      return locationOf(started).searchParams.get("state") ?? "";
+    }
+
+    const providerRefusals: Array<
+      [string, Provider, (state: string) => Request]
+    > = [
+      [
+        "Google",
+        "google",
+        (state) =>
+          new Request(
+            `http://localhost/auth/sso/google/callback?error=access_denied&state=${state}`,
+            { method: "GET", redirect: "manual" },
+          ),
+      ],
+      [
+        "Apple GET",
+        "apple",
+        (state) =>
+          new Request(
+            `http://localhost/auth/sso/apple/callback?error=user_cancelled_authorize&state=${state}`,
+            { method: "GET", redirect: "manual" },
+          ),
+      ],
+      [
+        "Apple form_post",
+        "apple",
+        (state) =>
+          new Request("http://localhost/auth/sso/apple/callback", {
+            method: "POST",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              state,
+              error: "user_cancelled_authorize",
+            }).toString(),
+            redirect: "manual",
+          }),
+      ],
+    ];
+
+    for (const [label, provider, refusal] of providerRefusals) {
+      it(`sends an admin-started sign-in the ${label} provider refused back to the admin app and consumes its state`, async () => {
+        const state = await adminStartedState(provider);
+
+        const response = await Backend.handle(refusal(state));
+
+        const location = locationOf(response);
+        expect(location.origin + location.pathname).toBe(
+          `${ADMIN_URL}/auth/callback/${provider}`,
+        );
+        expect(location.searchParams.get("error")).toBeTruthy();
+        expect(await cache.get(cacheConstants.ssoState(state))).toBeNull();
+      });
+    }
+
+    it("sends a provider refusal with an unknown state to the portal", async () => {
+      process.env.ADMIN_URL = ADMIN_URL;
+
+      const response = await Backend.handle(
+        new Request(
+          `http://localhost/auth/sso/google/callback?error=access_denied&state=${faker.string.uuid()}`,
+          { method: "GET", redirect: "manual" },
+        ),
+      );
+
+      expect(locationOf(response).origin).toBe(FRONTEND_URL);
     });
 
     it("shows a sign-in that cannot start on the admin app that started it", async () => {

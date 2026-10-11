@@ -11,7 +11,7 @@ import {
   SuccessResponse,
 } from "../common/response-schemas";
 import cacheConstants from "../shared/cache.constants";
-import shared from "../shared/shared.plugin";
+import shared, { type cache as cacheStore } from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
 import { authDerive, authGuard } from "./auth.utils";
 import { AuthChangePasswordInput } from "./dto/auth-change-password.input";
@@ -54,6 +54,42 @@ const SSO_STATE_INVALID = {
   error: "invalid_state",
   errorDescription: "Invalid or expired state parameter",
 };
+
+const SSO_RATE_LIMITED = {
+  error: "rate_limited",
+  errorDescription: "Too many sign-in attempts, please try again in a minute",
+};
+
+async function takeStateReturnOrigin(
+  cache: cacheStore,
+  state: string | undefined,
+): Promise<string | undefined> {
+  if (!state) return undefined;
+  const storedState = await cache.take<{ returnOrigin?: string }>(
+    cacheConstants.ssoState(state),
+  );
+  return storedState?.returnOrigin;
+}
+
+const limitSSORedirect =
+  (provider: "google" | "apple") =>
+  async ({ server, ...context }: any) => {
+    try {
+      await authRateLimiters.ssoRedirect({ server, ...context });
+    } catch (refused) {
+      if ((refused as { status?: number } | null)?.status !== 429) {
+        throw refused;
+      }
+      context.set.status = 302;
+      return createRedirectResponse(
+        buildFrontendCallbackUrl(
+          provider,
+          SSO_RATE_LIMITED,
+          context.query?.returnTo,
+        ),
+      );
+    }
+  };
 
 const plugin = new Elysia()
   .use(shared)
@@ -458,7 +494,7 @@ const plugin = new Elysia()
           return createRedirectResponse(authUrl);
         },
         {
-          beforeHandle: authRateLimiters.ssoRedirect,
+          beforeHandle: limitSSORedirect("google"),
           response: {
             302: t.Any(),
             ...StandardErrorResponses,
@@ -487,10 +523,14 @@ const plugin = new Elysia()
             // Log minimal info to avoid sensitive data in logs
             console.warn("Google OAuth callback failed");
             return createRedirectResponse(
-              buildFrontendCallbackUrl("google", {
-                error: "oauth_error",
-                errorDescription: "OAuth authentication failed",
-              }),
+              buildFrontendCallbackUrl(
+                "google",
+                {
+                  error: "oauth_error",
+                  errorDescription: "OAuth authentication failed",
+                },
+                await takeStateReturnOrigin(cache, state),
+              ),
             );
           }
 
@@ -642,7 +682,7 @@ const plugin = new Elysia()
           return createRedirectResponse(authUrl);
         },
         {
-          beforeHandle: authRateLimiters.ssoRedirect,
+          beforeHandle: limitSSORedirect("apple"),
           response: {
             302: t.Any(),
             ...StandardErrorResponses,
@@ -671,10 +711,14 @@ const plugin = new Elysia()
             // Log minimal info to avoid sensitive data in logs
             console.warn("Apple OAuth callback failed");
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
-                error: "oauth_error",
-                errorDescription: "OAuth authentication failed",
-              }),
+              buildFrontendCallbackUrl(
+                "apple",
+                {
+                  error: "oauth_error",
+                  errorDescription: "OAuth authentication failed",
+                },
+                await takeStateReturnOrigin(cache, state),
+              ),
             );
           }
 
@@ -799,10 +843,14 @@ const plugin = new Elysia()
           if (error) {
             console.error("Apple OAuth error (POST):", error);
             return createRedirectResponse(
-              buildFrontendCallbackUrl("apple", {
-                error: error,
-                errorDescription: "OAuth authentication failed",
-              }),
+              buildFrontendCallbackUrl(
+                "apple",
+                {
+                  error: error,
+                  errorDescription: "OAuth authentication failed",
+                },
+                await takeStateReturnOrigin(cache, state),
+              ),
             );
           }
 

@@ -94,7 +94,9 @@ export interface FrontendCallbackParams {
 function originOf(url: string | undefined): string | undefined {
   if (!url) return undefined;
   try {
-    return new URL(url).origin;
+    const parsed = new URL(url);
+    const web = parsed.protocol === "https:" || parsed.protocol === "http:";
+    return web && parsed.origin !== "null" ? parsed.origin : undefined;
   } catch {
     return undefined;
   }
