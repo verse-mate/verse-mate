@@ -547,6 +547,7 @@ describe("confirming an email change", () => {
     expect(
       await cache.get(cacheConstants.emailChangeReverts(user.id)),
     ).toBeNull();
+    expect(await cache.get(reservationOf(user.email))).toBeNull();
   });
 
   it("forgets a pending change whose session signed out, and a later save from another session mails a new link", async () => {
@@ -980,6 +981,50 @@ describe("undoing an email change from the old address", () => {
     expect(await row(user.id)).toMatchObject({ email: first });
     expect((await revert(own)).status).toBe(200);
     expect(await row(user.id)).toMatchObject({ email: user.email });
+  });
+
+  it("puts back the later undo links it already took when taking another fails", async () => {
+    const user = await account();
+    const { next: first, revertKey: own } = await changeAndConfirm(user);
+    const { next: second, revertKey: middle } = await changeAndConfirm(
+      user,
+      first,
+    );
+    await changeAndConfirm(user, second);
+    const take = cache.take.bind(cache);
+    let calls = 0;
+    const failing = spyOn(cache, "take").mockImplementation((k) => {
+      calls += 1;
+      return calls === 3 ? Promise.reject(new Error("cache down")) : take(k);
+    });
+
+    expect((await revert(own)).status).toBe(500);
+    failing.mockRestore();
+
+    expect((await revertPage(middle)).status).toBe(200);
+    expect((await revertPage(own)).status).toBe(200);
+  });
+
+  it("reports the undo as done when the clean-up after it fails", async () => {
+    const user = await account();
+    const { revertKey } = await changeAndConfirm(user);
+    const service = Backend.store.authService;
+    const logoutAll = AuthService.prototype.logoutAll.bind(service);
+    let calls = 0;
+    const failing = spyOn(service, "logoutAll").mockImplementation((id) => {
+      calls += 1;
+      return calls === 2
+        ? Promise.reject(new Error("cache down"))
+        : logoutAll(id);
+    });
+
+    const res = await revert(revertKey);
+    failing.mockRestore();
+
+    expect(res.status).toBe(200);
+
+    expect(await row(user.id)).toMatchObject({ email: user.email });
+    expect((await mailTo(user.email)).subject).toContain("changed");
   });
 
   it("keeps the link when signing the sessions out fails during the undo", async () => {

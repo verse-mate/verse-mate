@@ -1214,7 +1214,8 @@ export class AuthService {
     const peek = await this.cache.get<EmailChangeRevert>(recordKey);
     if (!peek) return false;
     let taken: EmailChangeRevert | null = null;
-    let later: Array<{ hash: string; record: EmailChangeRevert }> = [];
+    let startedFrom = "";
+    const later: Array<{ hash: string; record: EmailChangeRevert }> = [];
     let reverted: { record: EmailChangeRevert; previous: string } | null;
     try {
       reverted = await this.db
@@ -1230,6 +1231,7 @@ export class AuthService {
           const record = await this.cache.take<EmailChangeRevert>(recordKey);
           if (!record || !locked) return null;
           taken = record;
+          startedFrom = locked.email;
           const other = await trx
             .selectFrom("user")
             .select("id")
@@ -1266,17 +1268,16 @@ export class AuthService {
             .where("id", "=", locked.id)
             .where(sql`lower(trim(email))`, "=", record.from)
             .execute();
-          later = await this.takeLaterReverts(record.userId, hash);
+          await this.takeLaterReverts(record.userId, hash, later);
           await this.logoutAll(record.userId);
           return { record, previous: locked.email.trim().toLowerCase() };
         });
     } catch (error) {
-      if (taken) await this.restoreRevert(recordKey, taken);
-      for (const dropped of later)
-        await this.restoreRevert(
-          cacheConstants.emailChangeRevert(dropped.hash),
-          dropped.record,
-        );
+      if (taken)
+        await this.restoreReverts(peek.userId, startedFrom, [
+          { hash, record: taken },
+          ...later,
+        ]);
       if ((error as { code?: string }).code === UNIQUE_VIOLATION) return false;
       throw error;
     }
@@ -1288,15 +1289,12 @@ export class AuthService {
     try {
       await this.logoutAll(record.userId);
       await this.cache.delete(cacheConstants.emailChangePending(record.userId));
-      const index = cacheConstants.emailChangeReverts(record.userId);
-      for (const dropped of [{ hash, record }, ...later]) {
-        await this.cache.deleteWhen(
-          cacheConstants.emailChangeReserved(hashKey(dropped.record.from)),
-          "userId",
-          record.userId,
-        );
-        await this.cache.removeFromJsonArray(index, dropped.hash);
-      }
+      await this.releaseReverts(record.userId, [{ hash, record }, ...later]);
+    } catch (error) {
+      console.error("Email change undo cleanup failed", {
+        userId: record.userId,
+        error,
+      });
     } finally {
       for (const to of new Set([record.to, previous]))
         if (to !== record.from) await this.mailEmailChangeUndone(to);
@@ -1310,19 +1308,61 @@ export class AuthService {
       await this.cache.set(recordKey, record, String(remainingMs));
   }
 
-  private async takeLaterReverts(userId: string, hash: string) {
+  private async takeLaterReverts(
+    userId: string,
+    hash: string,
+    taken: Array<{ hash: string; record: EmailChangeRevert }>,
+  ) {
     const hashes =
       (await this.cache.get<string[]>(
         cacheConstants.emailChangeReverts(userId),
       )) ?? [];
-    const taken: Array<{ hash: string; record: EmailChangeRevert }> = [];
     for (const later of hashes.slice(hashes.indexOf(hash) + 1)) {
       const record = await this.cache.take<EmailChangeRevert>(
         cacheConstants.emailChangeRevert(later),
       );
       if (record) taken.push({ hash: later, record });
     }
-    return taken;
+  }
+
+  private async restoreReverts(
+    userId: string,
+    startedFrom: string,
+    reverts: Array<{ hash: string; record: EmailChangeRevert }>,
+  ) {
+    await this.db
+      .getOrCreateConnection()
+      .transaction()
+      .execute(async (trx) => {
+        const row = await trx
+          .selectFrom("user")
+          .select("email")
+          .where("id", "=", userId)
+          .forUpdate()
+          .executeTakeFirst();
+        if (row?.email !== startedFrom)
+          return this.releaseReverts(userId, reverts);
+        for (const revert of reverts)
+          await this.restoreRevert(
+            cacheConstants.emailChangeRevert(revert.hash),
+            revert.record,
+          );
+      });
+  }
+
+  private async releaseReverts(
+    userId: string,
+    reverts: Array<{ hash: string; record: EmailChangeRevert }>,
+  ) {
+    const index = cacheConstants.emailChangeReverts(userId);
+    for (const revert of reverts) {
+      await this.cache.deleteWhen(
+        cacheConstants.emailChangeReserved(hashKey(revert.record.from)),
+        "userId",
+        userId,
+      );
+      await this.cache.removeFromJsonArray(index, revert.hash);
+    }
   }
 
   private async liveRevertSeconds(userId: string): Promise<number> {
