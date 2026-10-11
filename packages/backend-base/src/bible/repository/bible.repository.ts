@@ -1324,9 +1324,9 @@ export class BibleRepository {
         .deleteFrom("verse_highlights")
         .where("highlight_id", "=", highlight_id)
         .where("user_id", "=", user_id)
-        .execute();
+        .executeTakeFirst();
 
-      return { success: result.length > 0 };
+      return { success: Number(result.numDeletedRows) > 0 };
     } catch (error) {
       console.error("Error removing highlight:", error);
       return { success: false };

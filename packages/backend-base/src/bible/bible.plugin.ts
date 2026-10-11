@@ -8,7 +8,10 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../common/errors";
-import { StandardErrorResponses } from "../common/response-schemas";
+import {
+  AuthErrorResponses,
+  StandardErrorResponses,
+} from "../common/response-schemas";
 import { type AiProvider, getAiProvider } from "../shared/ai";
 import shared from "../shared/shared.plugin";
 import { parseBibleData } from "./bible";
@@ -472,6 +475,7 @@ const plugin = new Elysia()
           response: {
             200: RatingSaveSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -494,6 +498,7 @@ const plugin = new Elysia()
           response: {
             200: RatingSaveSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -531,6 +536,7 @@ const plugin = new Elysia()
           response: {
             200: RatingsSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -555,6 +561,7 @@ const plugin = new Elysia()
           response: {
             200: LastChapterReadSaveSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -575,6 +582,7 @@ const plugin = new Elysia()
           response: {
             200: LastChapterReadSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -608,6 +616,7 @@ const plugin = new Elysia()
           response: {
             200: BookmarksSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -641,6 +650,7 @@ const plugin = new Elysia()
           response: {
             200: NotesSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -648,16 +658,11 @@ const plugin = new Elysia()
         "/book/note/add",
         async ({ body, currentUserId, store: { bibleService } }) => {
           const userId = requireCurrentUser(currentUserId, body.user_id);
-          console.log("Adding note:", body);
+          console.log("Adding note for user:", userId);
 
           const content =
             typeof body.content === "string" ? body.content.trim() : "";
-          if (
-            !body.user_id ||
-            !body.book_id ||
-            !body.chapter_number ||
-            !content
-          ) {
+          if (!body.book_id || !body.chapter_number || !content) {
             console.error("Missing required fields for adding note");
             throw new ValidationError("Missing required fields");
           }
@@ -700,6 +705,7 @@ const plugin = new Elysia()
           response: {
             200: NoteAddSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -707,7 +713,7 @@ const plugin = new Elysia()
         "/book/note/update",
         async ({ body, currentUserId, store: { bibleService } }) => {
           const userId = requireCurrentUser(currentUserId);
-          console.log("Updating note:", body);
+          console.log("Updating note:", body.note_id);
 
           if (!body.note_id || !body.content) {
             console.error("Missing required fields for updating note");
@@ -730,6 +736,7 @@ const plugin = new Elysia()
           response: {
             200: NoteUpdateSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -758,6 +765,7 @@ const plugin = new Elysia()
           response: {
             200: NoteDeleteSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -767,11 +775,7 @@ const plugin = new Elysia()
           const userId = requireCurrentUser(currentUserId, body.user_id);
           console.log("Adding bookmark:", body);
 
-          if (
-            !body.user_id ||
-            !body.book_id ||
-            body.chapter_number === undefined
-          ) {
+          if (!body.book_id || body.chapter_number === undefined) {
             console.error("Missing required fields for adding bookmark");
             throw new ValidationError("Missing required fields");
           }
@@ -795,24 +799,21 @@ const plugin = new Elysia()
           response: {
             200: BookmarkActionSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
       .delete(
         "/book/bookmark/remove",
         async ({ query, currentUserId, store: { bibleService } }) => {
-          const user_id = requireCurrentUser(currentUserId, query.user_id);
+          const userId = requireCurrentUser(currentUserId, query.user_id);
           console.log("Removing bookmark - query params:", query);
 
           const book_id = Number(query.book_id);
           const chapter_number = Number(query.chapter_number);
           const insight_type = query.insight_type;
 
-          if (
-            !user_id ||
-            Number.isNaN(book_id) ||
-            Number.isNaN(chapter_number)
-          ) {
+          if (Number.isNaN(book_id) || Number.isNaN(chapter_number)) {
             console.error(
               "Missing or invalid required fields for removing bookmark",
             );
@@ -820,7 +821,7 @@ const plugin = new Elysia()
           }
 
           const { success } = await bibleService.removeBookmark({
-            user_id,
+            user_id: userId,
             book_id,
             chapter_number,
             insight_type,
@@ -838,6 +839,7 @@ const plugin = new Elysia()
           response: {
             200: BookmarkActionSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -853,11 +855,7 @@ const plugin = new Elysia()
             console.warn(`Unexpected method override: ${methodOverride}`);
           }
 
-          if (
-            !body.user_id ||
-            !body.book_id ||
-            body.chapter_number === undefined
-          ) {
+          if (!body.book_id || body.chapter_number === undefined) {
             console.error("Missing required fields for removing bookmark");
             throw new ValidationError("Missing required fields");
           }
@@ -881,6 +879,7 @@ const plugin = new Elysia()
           response: {
             200: BookmarkActionSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -923,6 +922,7 @@ const plugin = new Elysia()
           response: {
             200: HighlightsSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -977,6 +977,7 @@ const plugin = new Elysia()
           response: {
             200: HighlightsSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -984,10 +985,9 @@ const plugin = new Elysia()
         "/highlight/add",
         async ({ body, currentUserId, store: { bibleService } }) => {
           const userId = requireCurrentUser(currentUserId, body.user_id);
-          console.log("Adding highlight:", body);
+          console.log("Adding highlight for user:", userId);
 
           if (
-            !body.user_id ||
             !body.book_id ||
             !body.chapter_number ||
             !body.start_verse ||
@@ -1049,6 +1049,7 @@ const plugin = new Elysia()
           response: {
             200: HighlightAddSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -1101,6 +1102,7 @@ const plugin = new Elysia()
           response: {
             200: HighlightUpdateSchema,
             ...StandardErrorResponses,
+            ...AuthErrorResponses,
           },
         },
       )
@@ -1238,7 +1240,6 @@ const plugin = new Elysia()
             is_enabled: t.Optional(t.Boolean()),
             custom_color: t.Optional(t.String()),
             relevance_threshold: t.Optional(t.Number()),
-            admin_override: t.Optional(t.Boolean()),
           }),
         },
       ),

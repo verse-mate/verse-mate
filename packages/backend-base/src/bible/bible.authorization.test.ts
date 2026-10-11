@@ -88,12 +88,14 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
         content: ownerNoteContent,
       },
     });
+    expect(note.status).toBe(200);
     ownerNoteId = note.json.note.note_id;
 
-    await call("POST", "/bible/book/bookmark/add", {
+    const bookmark = await call("POST", "/bible/book/bookmark/add", {
       token: owner.accessToken,
       body: { user_id: owner.userId, book_id: 1, chapter_number: 3 },
     });
+    expect(bookmark.status).toBe(200);
 
     const highlight = await call("POST", "/bible/highlight/add", {
       token: owner.accessToken,
@@ -106,14 +108,16 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
         color: "yellow",
       },
     });
+    expect(highlight.status).toBe(200);
     ownerHighlightId = highlight.json.highlight.highlight_id;
 
-    await call("POST", "/bible/book/chapter/save-last-read", {
+    const lastRead = await call("POST", "/bible/book/chapter/save-last-read", {
       token: owner.accessToken,
       body: { user_id: owner.userId, book_id: 1, chapter_number: 2 },
     });
+    expect(lastRead.status).toBe(200);
 
-    await call("POST", "/bible/book/explanation/save-rating", {
+    const rating = await call("POST", "/bible/book/explanation/save-rating", {
       token: owner.accessToken,
       body: {
         user: { id: owner.userId },
@@ -123,6 +127,7 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
         rating: 4,
       },
     });
+    expect(rating.status).toBe(200);
   });
 
   afterAll(() => {
@@ -165,11 +170,20 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
 
     it("refuse a caller with a revoked token", async () => {
       const revoked = await createTestUser();
-      await call("POST", "/auth/logout", { token: revoked.accessToken });
-      const res = await call("GET", `/bible/book/notes/${revoked.userId}`, {
+      const before = await call("GET", `/bible/book/notes/${revoked.userId}`, {
         token: revoked.accessToken,
       });
-      expect(res.status).toBe(401);
+      expect(before.status).toBe(200);
+
+      const logout = await call("POST", "/auth/logout", {
+        token: revoked.accessToken,
+      });
+      expect(logout.status).toBe(200);
+
+      const after = await call("GET", `/bible/book/notes/${revoked.userId}`, {
+        token: revoked.accessToken,
+      });
+      expect(after.status).toBe(401);
     });
 
     it("refuse another signed-in user asking for the owner's data", async () => {
@@ -314,6 +328,12 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
       expect(favorites[0]).toMatchObject({ book_id: 1, chapter_number: 3 });
 
       expect((await ownerHighlight())?.color).toBe("yellow");
+      const highlights = await call(
+        "GET",
+        `/bible/highlights/${owner.userId}`,
+        { token: owner.accessToken },
+      );
+      expect(highlights.json.highlights.length).toBe(1);
 
       const lastRead = await call("POST", "/bible/book/chapter/last-read", {
         token: owner.accessToken,
@@ -407,6 +427,14 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
       expect(color.status).toBe(200);
       expect(color.json.success).toBe(false);
 
+      const removeHighlight = await call(
+        "DELETE",
+        `/bible/highlight/${ownerHighlightId}`,
+        { token: other.accessToken },
+      );
+      expect(removeHighlight.status).toBe(200);
+      expect(removeHighlight.json.success).toBe(false);
+
       const notes = await ownerNotes();
       expect(notes.find((n) => n.note_id === ownerNoteId)?.content).toBe(
         ownerNoteContent,
@@ -443,12 +471,16 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
         },
       });
       const noteId = added.json.note.note_id;
+      const newContent = faker.lorem.sentence();
 
       const update = await call("PUT", "/bible/book/note/update", {
         token: owner.accessToken,
-        body: { note_id: noteId, content: faker.lorem.sentence() },
+        body: { note_id: noteId, content: newContent },
       });
       expect(update.json.success).toBe(true);
+      expect(
+        (await ownerNotes()).find((n) => n.note_id === noteId)?.content,
+      ).toBe(newContent);
 
       const remove = await call(
         "DELETE",
@@ -456,6 +488,117 @@ describe("Bible Plugin - user-scoped routes answer only the signed-in user", () 
         { token: owner.accessToken },
       );
       expect(remove.json.success).toBe(true);
+      expect((await ownerNotes()).some((n) => n.note_id === noteId)).toBe(
+        false,
+      );
+    });
+  });
+
+  describe("the owner's own writes", () => {
+    it("remove a bookmark through POST and through DELETE", async () => {
+      for (const chapter of [10, 11]) {
+        const add = await call("POST", "/bible/book/bookmark/add", {
+          token: owner.accessToken,
+          body: { user_id: owner.userId, book_id: 1, chapter_number: chapter },
+        });
+        expect(add.status).toBe(200);
+      }
+
+      const viaPost = await call("POST", "/bible/book/bookmark/remove", {
+        token: owner.accessToken,
+        body: { user_id: owner.userId, book_id: 1, chapter_number: 10 },
+      });
+      expect(viaPost.status).toBe(200);
+      expect(viaPost.json.success).toBe(true);
+
+      const viaDelete = await call(
+        "DELETE",
+        `/bible/book/bookmark/remove?user_id=${owner.userId}&book_id=1&chapter_number=11`,
+        { token: owner.accessToken },
+      );
+      expect(viaDelete.status).toBe(200);
+      expect(viaDelete.json.success).toBe(true);
+
+      const chapters = (await ownerFavorites())
+        .filter((f) => f.book_id === 1)
+        .map((f) => f.chapter_number);
+      expect(chapters).not.toContain(10);
+      expect(chapters).not.toContain(11);
+    });
+
+    it("update their rating and last-read chapter", async () => {
+      const update = await call(
+        "PUT",
+        "/bible/book/explanation/update-rating",
+        {
+          token: owner.accessToken,
+          body: {
+            user: { id: owner.userId },
+            book_id: 1,
+            chapter_number: 1,
+            explanation_id: explanationId,
+            rating: 2,
+          },
+        },
+      );
+      expect(update.status).toBe(200);
+
+      const ratings = await call("POST", "/bible/book/explanation/ratings", {
+        token: owner.accessToken,
+        body: {
+          user: { id: owner.userId },
+          book_id: 1,
+          chapter_number: 1,
+          explanation_id: explanationId,
+        },
+      });
+      expect(ratings.json.userRating).toBe(2);
+
+      const save = await call("POST", "/bible/book/chapter/save-last-read", {
+        token: owner.accessToken,
+        body: { user_id: owner.userId, book_id: 2, chapter_number: 3 },
+      });
+      expect(save.status).toBe(200);
+
+      const lastRead = await call("POST", "/bible/book/chapter/last-read", {
+        token: owner.accessToken,
+        body: { user_id: owner.userId },
+      });
+      expect(lastRead.json.result.book_id).toBe(2);
+    });
+
+    it("accept their own id written in upper case", async () => {
+      const res = await call(
+        "GET",
+        `/bible/book/notes/${owner.userId.toUpperCase()}`,
+        { token: owner.accessToken },
+      );
+      expect(res.status).toBe(200);
+    });
+
+    it("cannot set the admin override on their own theme preference", async () => {
+      const themes = await call("GET", "/bible/highlight-themes");
+      const themeId = themes.json.data[0]?.theme_id;
+      expect(themeId).toBeDefined();
+
+      const patch = await call(
+        "PATCH",
+        `/bible/user/theme-preferences/${themeId}`,
+        {
+          token: owner.accessToken,
+          body: { is_enabled: true, admin_override: true },
+        },
+      );
+      expect(patch.status).toBe(200);
+
+      const prefs = await call("GET", "/bible/user/theme-preferences", {
+        token: owner.accessToken,
+      });
+      const pref = prefs.json.data.find(
+        (p: { theme_id: number }) => p.theme_id === themeId,
+      );
+      expect(pref).toBeDefined();
+      expect(pref.admin_override).not.toBe(true);
     });
   });
 });
