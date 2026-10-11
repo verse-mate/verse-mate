@@ -1,4 +1,9 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import {
+  createHash,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from "node:crypto";
 import { sql } from "database";
 import type Database from "database/src/models/Database";
 import type SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
@@ -32,6 +37,7 @@ import type { AuthSignupInput } from "./dto/auth-signup.input";
 import type { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 import type { SSOUserInfo } from "./sso/sso-provider.interface";
+import { SSO_EXCHANGE_CODE_TTL, ssoChallengeOf } from "./sso/sso.utils";
 import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
 
 const SESSION_LIFETIME = "90d";
@@ -89,6 +95,18 @@ type AddressProof =
   | { by: "account-holder" }
   | { by: "password-reset" }
   | { by: "provider"; provider: SsoProviderEnum; providerUserId: string };
+
+interface SSOExchangeEntry extends AuthPayload {
+  issuedAt: number;
+  challenge: string;
+}
+
+function verifierMatches(verifier: string, challenge: unknown): boolean {
+  if (typeof challenge !== "string") return false;
+  const expected = new TextEncoder().encode(challenge);
+  const actual = new TextEncoder().encode(ssoChallengeOf(verifier));
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
 
 function resetPasswordURL(key: string): string {
   return `${process.env.APP_URL ?? ""}/reset-password?key=${key}`;
@@ -583,6 +601,53 @@ export class AuthService {
           ? pending.to
           : null,
     };
+  }
+
+  public async issueSSOExchangeCode(
+    payload: AuthPayload,
+    challenge: string,
+  ): Promise<string> {
+    const code = randomBytes(32).toString("base64url");
+    const entry: SSOExchangeEntry = {
+      accessToken: payload.accessToken,
+      verified: payload.verified,
+      issuedAt: Date.now(),
+      challenge,
+    };
+    await this.cache.set(
+      cacheConstants.ssoExchangeCode(code),
+      entry,
+      `${SSO_EXCHANGE_CODE_TTL}s`,
+    );
+    return code;
+  }
+
+  public async redeemSSOExchangeCode(
+    code: string,
+    verifier: string,
+    jwt: JWT,
+  ): Promise<AuthPayload> {
+    const entry = await this.cache.take<SSOExchangeEntry>(
+      cacheConstants.ssoExchangeCode(code),
+    );
+    if (
+      !entry ||
+      Date.now() - entry.issuedAt > SSO_EXCHANGE_CODE_TTL * 1000 ||
+      !verifierMatches(verifier, entry.challenge) ||
+      !(await this.isLiveSession(entry.accessToken, jwt))
+    ) {
+      throw new UnauthorizedError("Invalid or expired sign-in code");
+    }
+    return { accessToken: entry.accessToken, verified: entry.verified };
+  }
+
+  private async isLiveSession(accessToken: string, jwt: JWT) {
+    const claims = await jwt.verify(accessToken);
+    if (!claims || !claims.sub) return false;
+    const sessions = await this.cache.get<string[]>(
+      cacheConstants.accessToken(claims.sub),
+    );
+    return sessions?.includes(accessToken) ?? false;
   }
 
   public async logout(accessToken: string, jwt: JWT): Promise<boolean> {

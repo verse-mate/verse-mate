@@ -65,6 +65,11 @@ function ssoState(state: string): string {
   return `${env}:ssoState:${state}`;
 }
 
+function ssoExchangeCode(code: string): string {
+  const env = process.env.NODE_ENV ?? "dev";
+  return `${env}:ssoCode:${code}`;
+}
+
 /**
  * Verse-of-the-Day selected pick for a date. `userId` is null in v1 (global
  * pick) and carries the user id in v2 personalization, so the key shape is
@@ -90,6 +95,7 @@ const cacheConstants = {
   emailChangeReverts,
   emailChangeReserved,
   ssoState,
+  ssoExchangeCode,
   dailyVersePick,
 };
 

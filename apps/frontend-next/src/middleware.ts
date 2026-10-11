@@ -13,12 +13,14 @@ function withNoStore(response: NextResponse): NextResponse {
   return response;
 }
 
+function isCallbackPath(pathname: string): boolean {
+  return (
+    pathname === "/auth/callback" || pathname.startsWith("/auth/callback/")
+  );
+}
+
 function isPublicPath(pathname: string): boolean {
-  if (pathname === LOGIN_PATH) return true;
-  if (pathname === "/auth/callback" || pathname.startsWith("/auth/callback/")) {
-    return true;
-  }
-  return false;
+  return pathname === LOGIN_PATH || isCallbackPath(pathname);
 }
 
 function redirectToLogin(request: NextRequest): NextResponse {
@@ -73,7 +75,11 @@ export async function middleware(request: NextRequest) {
         return redirectAdminRequired(request);
       }
     }
-    return withNoStore(NextResponse.next());
+    const response = withNoStore(NextResponse.next());
+    if (isCallbackPath(path)) {
+      response.headers.set("Referrer-Policy", "no-referrer");
+    }
+    return response;
   }
 
   if (!accessToken) {
