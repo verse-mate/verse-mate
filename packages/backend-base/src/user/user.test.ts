@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { faker } from "@faker-js/faker";
 
 import authPlugin from "../auth/auth.plugin";
+import { signupPassword } from "../shared/signup-password";
 import { getTestClient } from "../shared/test-client";
 import Backend from "./user.plugin";
 
@@ -11,7 +12,7 @@ describe("User", () => {
     email: faker.internet.email().toLocaleLowerCase(),
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password(),
+    password: signupPassword(),
   };
   const plugin = Backend.use(authPlugin);
   // @ts-ignore - TODO: Fix this
