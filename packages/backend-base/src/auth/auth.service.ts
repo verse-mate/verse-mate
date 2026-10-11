@@ -860,14 +860,24 @@ export class AuthService {
 
     await this.cache.delete(cacheKey);
 
+    const address = user.email.trim().toLowerCase();
     const confirmed = await this.db
       .getOrCreateConnection()
       .transaction()
-      .execute((trx) =>
-        this.confirmAddress(trx, user, user.email.trim().toLowerCase(), {
+      .execute(async (trx) => {
+        const locked = await trx
+          .selectFrom("user")
+          .select(["id", "emailVerified", "email_verified_at"])
+          .where("id", "=", user.id)
+          .where(sql`lower(trim(email))`, "=", address)
+          .forUpdate()
+          .executeTakeFirst();
+        if (!locked) return null;
+        if (this.isConfirmed(locked)) return { signOutOthers: false };
+        return this.confirmAddress(trx, locked, address, {
           by: "account-holder",
-        }),
-      );
+        });
+      });
     if (!confirmed) throw new ValidationError("Invalid verification token");
     if (confirmed.signOutOthers) await this.logoutAll(user.id);
 
@@ -972,7 +982,7 @@ export class AuthService {
    * - SSO account links
    * - Reading progress and history
    * - Notes, highlights, and favorites
-   * - Conversations and ratings
+   * - Ratings
    * - Theme preferences
    *
    * @param userId - The ID of the user to delete
