@@ -21,6 +21,15 @@ describe("Redis TLS options for the queue connection", () => {
     });
   });
 
+  it("turns literal \\n escapes in the CA into line breaks", () => {
+    process.env.REDIS_CA_CERT = CA.replace(/\n/g, "\\n");
+
+    expect(redisTlsOptions(MANAGED_URL)).toEqual({
+      rejectUnauthorized: true,
+      ca: CA,
+    });
+  });
+
   it("verifies against the system CAs when no CA is configured", () => {
     Reflect.deleteProperty(process.env, "REDIS_CA_CERT");
 
