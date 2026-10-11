@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
+import { createHash } from "node:crypto";
 
 import { extractClientIp } from "../auth/sso/sso.utils";
 import { createIpRateLimit } from "../middleware/rate-limit";
 import redisClient from "../shared/redis-client";
 import {
   clientBucket,
+  clientChain,
   clientIp,
   clientNetwork,
   forgetClientIpLogs,
@@ -403,13 +405,11 @@ describe("with TRUSTED_PROXY_HOPS unset, every limiter reads the client as main 
   });
 
   async function read(headers: Headers) {
-    const signup = recordingCache();
     const sso = recordingCache();
-    await hit(authRateLimiters.signup, signup as never, PROXY, headers);
     await hit(authRateLimiters.sso, sso as never, PROXY, headers);
     const request = new Request("http://localhost/", { headers });
     return {
-      signup: signup.keys[0].replace("rate-limit:signup:", ""),
+      signup: clientChain(request, socketOf(PROXY)),
       sso: sso.keys[0].replace("rate-limit:sso:", ""),
       session: extractClientIp(request, socketOf(PROXY)),
       perRoute: clientBucket(request, socketOf(PROXY)),
@@ -447,6 +447,20 @@ describe("with TRUSTED_PROXY_HOPS unset, every limiter reads the client as main 
       "x-forwarded-for": `${CLIENT}, 203.0.113.66`,
     });
     expect(attacker.signup).not.toBe(victim.signup);
+  });
+
+  it("the signup key is a digest of that chain, so its length is fixed", async () => {
+    const cache = recordingCache();
+    const chain = Array.from(
+      { length: 500 },
+      (_, i) => `10.0.${i >> 8}.${i & 255}`,
+    ).join(", ");
+    await hit(authRateLimiters.signup, cache as never, PROXY, {
+      "x-forwarded-for": chain,
+    });
+    expect(cache.keys).toEqual([
+      `rate-limit:signup:${createHash("sha256").update(chain).digest("base64url")}`,
+    ]);
   });
 
   it("a proxy that writes unknown first keys signup on the address after it", async () => {
@@ -509,6 +523,52 @@ describe("a limiter key is always an address, whatever the header holds", () => 
         socketOf(PROXY),
       ),
     ).toBe(PROXY);
+  });
+
+  it("an address the URL parser refuses is not an address, and never throws", () => {
+    hops(undefined);
+    const refused = [
+      "1:2::3:4:5.6.7.8",
+      "1:2:3::4:5.6.7.8",
+      "::1:2:3:4:5.6.7.8",
+      "ba:b5::ab0:19:4.254.47.235",
+      "2001::1:1:0:1.2.3.4",
+      "0::1:1:0:1.2.3.4",
+      "[1:0::1:0:1.2.3.4]:80",
+    ];
+    for (const entry of refused) {
+      const request = new Request("http://localhost/", {
+        headers: { "x-forwarded-for": `${entry}, ${CLIENT}` },
+      });
+      expect(clientIp(request, socketOf(PROXY))).toBe(PROXY);
+      expect(clientChain(request, socketOf(PROXY))).toBe(CLIENT);
+      expect(extractClientIp(request, socketOf(PROXY))).toBe(PROXY);
+      expect(
+        createIpRateLimit(1)({
+          request,
+          set: {},
+          server: socketOf(PROXY),
+        } as never),
+      ).toBeUndefined();
+    }
+    const hex = () => Math.floor(Math.random() * 0x10000).toString(16);
+    const octet = () => Math.floor(Math.random() * 256);
+    for (let i = 0; i < 5_000; i++) {
+      const groups = Array.from(
+        { length: 1 + Math.floor(Math.random() * 5) },
+        hex,
+      );
+      const cut = Math.floor(Math.random() * (groups.length + 1));
+      const entry = `${groups.slice(0, cut).join(":")}::${groups.slice(cut).join(":")}${cut < groups.length ? ":" : ""}${octet()}.${octet()}.${octet()}.${octet()}`;
+      expect(() =>
+        clientIp(
+          new Request("http://localhost/", {
+            headers: { "x-forwarded-for": entry },
+          }),
+          socketOf(PROXY),
+        ),
+      ).not.toThrow();
+    }
   });
 
   it("every spelling of a v4-mapped address reads as plain IPv4", () => {
@@ -599,6 +659,18 @@ describe("once the proxy count is set, an IPv6 host cannot step around the limit
     ).toBe(CLIENT);
   });
 
+  it("login: one /64 cannot spend its /48's allowance, since the address limit counts first", async () => {
+    const cache = memoryCache();
+    const attempt = async (address: string) => {
+      const headers = { "x-forwarded-for": address };
+      const ip = await hit(authRateLimiters.loginIp, cache, PROXY, headers);
+      if (ip !== "ok") return ip;
+      return hit(authRateLimiters.loginNetwork, cache, PROXY, headers);
+    };
+    for (let i = 0; i < 300; i++) await attempt("2001:db8:ab:1::1");
+    expect(await attempt("2001:db8:ab:2::1")).toBe("ok");
+  });
+
   it("login: one account gets five guesses per /64, not per address", async () => {
     const cache = memoryCache();
     const results = [];
@@ -681,9 +753,28 @@ describe("a proxy count higher than the chain is reported", () => {
       );
       expect(picked).toEqual([CLIENT, CLIENT, PROXY, "192.0.2.1"]);
       const lines = errors.mock.calls.flat().join("\n");
-      expect(lines.match(/carried \d+/g)).toEqual(["carried 1", "carried 0"]);
+      expect(lines.match(/carried \d+/g)).toEqual(["carried 1"]);
+      expect(lines).toContain("no forwarded address");
       expect(lines).toContain("too high");
       expect(lines).not.toContain(CLIENT);
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it("a health check without forwarded addresses does not hide a later short chain", () => {
+    hops("2");
+    forgetClientIpLogs();
+    const errors = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      for (const header of ["", CLIENT])
+        clientIp(
+          new Request("http://localhost/", {
+            headers: header ? { "x-forwarded-for": header } : {},
+          }),
+          socketOf(PROXY),
+        );
+      expect(errors.mock.calls.flat().join("\n")).toContain("carried 1");
     } finally {
       errors.mockRestore();
     }
@@ -719,7 +810,9 @@ describe("a proxy count higher than the chain is reported", () => {
       for (let i = 0; i < 3; i++)
         clientIp(new Request("http://localhost/"), socketOf(PROXY));
       expect(errors).toHaveBeenCalledTimes(1);
-      expect(errors.mock.calls.flat().join(" ")).toContain("carried 0");
+      expect(errors.mock.calls.flat().join(" ")).toContain(
+        "no forwarded address",
+      );
     } finally {
       errors.mockRestore();
     }

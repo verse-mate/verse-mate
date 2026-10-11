@@ -11,12 +11,19 @@ import { db as Database } from "database";
 import { Elysia } from "elysia";
 
 import authPlugin from "../auth/auth.plugin";
-import { ipRateLimit } from "../middleware/rate-limit";
+import { createIpRateLimit } from "../middleware/rate-limit";
 import redisClient from "../shared/redis-client";
 import versionPolicyPlugin from "../versionPolicy.plugin";
+import { authRateLimiters } from "./rate-limit.middleware";
 
 const FORWARDED = "198.51.100.23";
 const LOOPBACK = /:(127\.0\.0\.1|::1|0:0:0:0::\/64|0:0:0::\/48)$/;
+
+function expectKeys(keys: string[], address: RegExp) {
+  const [signup, ...rest] = keys;
+  expect(signup).toMatch(/^rate-limit:signup:[\w-]{43}$/);
+  for (const key of rest) expect(key).toMatch(address);
+}
 
 describe("on a listening server, every limiter reads the socket, whatever the route handler names", () => {
   const keys: string[] = [];
@@ -96,37 +103,57 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     const got = await limiterKeys(FORWARDED);
     expect(got.map((k) => k.split(":")[1])).toEqual([
       "signup",
-      "login-net",
       "login-ip",
+      "login-net",
       "login",
       "sso",
     ]);
-    for (const key of got) expect(key).toMatch(LOOPBACK);
+    expectKeys(got, LOOPBACK);
   });
 
   it("TRUSTED_PROXY_HOPS=1 without a forwarded address: the socket, not a shared unknown bucket", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const got = await limiterKeys();
     expect(got).toHaveLength(5);
-    for (const key of got) expect(key).toMatch(LOOPBACK);
+    expectKeys(got, LOOPBACK);
   });
 
   it("TRUSTED_PROXY_HOPS=1: the address the proxy appended", async () => {
     process.env.TRUSTED_PROXY_HOPS = "1";
     const got = await limiterKeys(`203.0.113.1, ${FORWARDED}`);
     expect(got).toHaveLength(5);
-    for (const key of got) expect(key).toEndWith(`:${FORWARDED}`);
+    expectKeys(got, new RegExp(`:${FORWARDED.replaceAll(".", "\\.")}$`));
   });
 
   it("the per-route limiter reads the socket too, so callers without one never share its bucket", async () => {
     process.env.TRUSTED_PROXY_HOPS = "0";
-    for (let i = 0; i <= 100; i++)
-      ipRateLimit({
-        request: new Request("http://localhost/api/version-policy"),
+    const limiter = createIpRateLimit(1);
+    const route = new Elysia()
+      .get("/per-route", () => "ok", { beforeHandle: limiter })
+      .listen(0);
+    try {
+      limiter({
+        request: new Request("http://localhost/per-route"),
         set: { headers: {} },
       } as never);
-    const response = await fetch(`${base()}/api/version-policy`);
-    expect(response.status).toBe(200);
+      const response = await fetch(
+        `http://localhost:${route.server?.port}/per-route`,
+      );
+      expect(response.status).toBe(200);
+    } finally {
+      route.server?.stop(true);
+    }
+  });
+
+  it("the login route counts the address before the network", () => {
+    const login = authPlugin.routes.find(
+      (route) => route.path === "/auth/login" && route.method === "POST",
+    ) as unknown as { hooks: { beforeHandle: { fn: unknown }[] } };
+    expect(login.hooks.beforeHandle.map((hook) => hook.fn)).toEqual([
+      authRateLimiters.loginIp,
+      authRateLimiters.loginNetwork,
+      authRateLimiters.login,
+    ]);
   });
 
   it("an email longer than the column is refused before any limiter or lookup, and the report carries no body", async () => {
@@ -134,19 +161,26 @@ describe("on a listening server, every limiter reads the socket, whatever the ro
     expect(long).toHaveLength(252);
     keys.length = 0;
     const errors = spyOn(console, "error").mockImplementation(() => {});
-    for (const [path, body] of [
-      ["/auth/login", { email: long, password: "x" }],
-      ["/auth/forgot-password", { email: long }],
-      [
-        "/auth/signup",
-        { email: long, firstName: "A", lastName: "B", password: "Passw0rd!x" },
-      ],
-    ] as const)
-      expect((await post(path, body)).status).toBe(422);
-    const reported = errors.mock.calls
-      .map((call) => Bun.inspect(call))
-      .join("\n");
-    errors.mockRestore();
+    let reported = "";
+    try {
+      for (const [path, body] of [
+        ["/auth/login", { email: long, password: "x" }],
+        ["/auth/forgot-password", { email: long }],
+        [
+          "/auth/signup",
+          {
+            email: long,
+            firstName: "A",
+            lastName: "B",
+            password: "Passw0rd!x",
+          },
+        ],
+      ] as const)
+        expect((await post(path, body)).status).toBe(422);
+      reported = errors.mock.calls.map((call) => Bun.inspect(call)).join("\n");
+    } finally {
+      errors.mockRestore();
+    }
     expect(reported).toContain("validation failed on body");
     expect(reported).not.toContain("example.test");
     expect(reported).not.toContain("Passw0rd");

@@ -7,6 +7,7 @@ interface AddressSource {
 let reportedHops = "";
 let smallestLogged = Number.POSITIVE_INFINITY;
 let smallestShort = Number.POSITIVE_INFINITY;
+let reportedEmptyChain = false;
 
 export function trustedProxyHops(): number | null {
   const raw = (process.env.TRUSTED_PROXY_HOPS ?? "").trim();
@@ -25,6 +26,7 @@ export function forgetClientIpLogs(): void {
   reportedHops = "";
   smallestLogged = Number.POSITIVE_INFINITY;
   smallestShort = Number.POSITIVE_INFINITY;
+  reportedEmptyChain = false;
 }
 
 function logForwardedCount(count: number): void {
@@ -36,11 +38,28 @@ function logForwardedCount(count: number): void {
 }
 
 function logShortChain(count: number, hops: number): void {
-  if (count >= hops || count >= smallestShort) return;
+  if (count >= hops) return;
+  if (count === 0) {
+    if (reportedEmptyChain) return;
+    reportedEmptyChain = true;
+    console.error(
+      `[CLIENT-IP] TRUSTED_PROXY_HOPS is ${hops} but a request carried no forwarded address; a proxy that appends nothing puts every caller on its address, unless this was a health check that reached the app directly`,
+    );
+    return;
+  }
+  if (count >= smallestShort) return;
   smallestShort = count;
   console.error(
-    `[CLIENT-IP] TRUSTED_PROXY_HOPS is ${hops} but a request carried ${count} forwarded address(es); the value is too high, the request skipped a proxy, or it is a health check that reached the app directly`,
+    `[CLIENT-IP] TRUSTED_PROXY_HOPS is ${hops} but a request carried ${count} forwarded address(es); the value is too high or the request skipped a proxy`,
   );
+}
+
+function canonicalIpv6(value: string): string | undefined {
+  try {
+    return new URL(`http://[${value}]`).hostname.slice(1, -1);
+  } catch {
+    return undefined;
+  }
 }
 
 function address(entry: string | null | undefined): string | undefined {
@@ -52,7 +71,8 @@ function address(entry: string | null | undefined): string | undefined {
   const family = isIP(value);
   if (family === 4) return value;
   if (family !== 6 || value.includes("%")) return undefined;
-  const canonical = new URL(`http://[${value}]`).hostname.slice(1, -1);
+  const canonical = canonicalIpv6(value);
+  if (canonical === undefined) return undefined;
   const mapped = canonical.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
   if (!mapped) return canonical;
   const [high, low] = [mapped[1], mapped[2]].map((g) => Number.parseInt(g, 16));

@@ -105,6 +105,7 @@ const setup = new Elysia({ name: "shared" })
     }) => {
       // NOT_FOUND is expected HTTP behavior (404s), not an application exception
       if (code === "NOT_FOUND") return;
+      if ((error as { status?: unknown }).status === 429) return;
 
       const distinctId = await maybeCurrentUserId({
         bearer: bearerToken,
@@ -114,7 +115,7 @@ const setup = new Elysia({ name: "shared" })
       const reported =
         code === "VALIDATION"
           ? new Error(
-              `validation failed on ${(error as { type?: string }).type ?? "request"}`,
+              `validation failed on ${error.type} ${error.valueError?.path ?? ""}`.trim(),
             )
           : error;
       posthogService.captureException(reported, distinctId ?? "anonymous", {
