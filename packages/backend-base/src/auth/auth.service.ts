@@ -564,6 +564,19 @@ export class AuthService {
     }
     const dropped = await unproven.executeTakeFirst();
     const linksDropped = Number(dropped.numDeletedRows);
+    if (proof.by === "account-holder") {
+      const keptElsewhere = await trx
+        .selectFrom("user_sso_accounts")
+        .select("id")
+        .where("user_id", "=", user.id)
+        .executeTakeFirst();
+      if (keptElsewhere)
+        await trx
+          .updateTable("user")
+          .set({ email_verified_at: null })
+          .where("id", "=", user.id)
+          .execute();
+    }
     const signOutOthers =
       linksDropped > 0 ||
       (proof.by !== "account-holder" && !user.emailVerified);
