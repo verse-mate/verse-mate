@@ -108,13 +108,16 @@ describe("Offline Plugin", () => {
     expect(body.bible_versions[0].key).toBe("NASB1995");
   });
 
-  it("GET /offline/bible/:versionKey returns gzip data", async () => {
+  it("GET /offline/bible/:versionKey returns the verses as JSON", async () => {
     const response = await app.handle(
       new Request("http://localhost/offline/bible/NASB1995"),
     );
     expect(response.status).toBe(200);
-    expect(response.headers.get("Content-Encoding")).toContain("gzip");
+    expect(response.headers.get("Content-Encoding")).toBeNull();
     expect(response.headers.get("Content-Type")).toContain("application/json");
+    expect(await response.json()).toEqual([
+      { book_id: 1, chapter_number: 1, verse_number: 1, text: "Test" },
+    ]);
   });
 
   it("GET /offline/bible/:versionKey returns 404 for invalid version", async () => {
