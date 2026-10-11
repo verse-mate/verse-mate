@@ -931,12 +931,6 @@ export class AuthService {
           .where("user_id", "=", userId)
           .execute();
 
-        // 2. Conversations (will cascade to messages via FK)
-        await trx
-          .deleteFrom("conversations")
-          .where("user_id", "=", userId)
-          .execute();
-
         // 3. Favorites
         await trx
           .deleteFrom("favorites")
