@@ -1,5 +1,6 @@
 import ms from "ms";
 import { type RedisClientType, createClient } from "redis";
+import { redisTlsOptions } from "./redis-tls";
 
 const COUNT_WITHIN_WINDOW = `
 local current = redis.call('GET', KEYS[1])
@@ -60,7 +61,6 @@ class RedisClient {
     const password = url.password || undefined;
     const useSSL = isSSLUrl(redisUrl);
 
-    // For SSL connections, use separate socket config to handle self-signed certs.
     // `keepAlive: 30_000` keeps the connection alive against DigitalOcean's
     // 5-minute idle TCP timeout; without it the cache client cycles
     // through "Socket closed unexpectedly → reconnect" every 5 minutes
@@ -68,7 +68,7 @@ class RedisClient {
     const socketConfig = useSSL
       ? {
           tls: true as const,
-          rejectUnauthorized: false,
+          ...redisTlsOptions(redisUrl),
           keepAlive: 30_000,
           reconnectStrategy: (retries: number) => {
             if (retries > 10) {
