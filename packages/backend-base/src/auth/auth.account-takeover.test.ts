@@ -211,6 +211,48 @@ describe("email confirmation", () => {
   });
 });
 
+describe("email confirmation through the route", () => {
+  it("keeps the caller's session, signs out the account's other sessions and drops links made for another address", async () => {
+    const client = getTestClient<AuthPlugin>(Backend);
+    const { id, email } = await account({ password: true });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    const { data } = await client.auth.login.post({
+      email,
+      password: PASSWORD,
+    });
+    const caller = data?.accessToken ?? "";
+    const sessions = await cache.get<string[]>(cacheConstants.accessToken(id));
+    await cache.set(
+      cacheConstants.accessToken(id),
+      [...(sessions ?? []), "another-device"],
+      "1h",
+    );
+    await service().sendVerifyEmail(id);
+
+    const confirmed = await client.auth["verify-email"].post(
+      { token: keySentTo(email) },
+      { headers: { authorization: `Bearer ${caller}` } },
+    );
+
+    expect(confirmed.error).toBeNull();
+    expect((await row(id)).email_verified_at).not.toBeNull();
+    const after = await cache.get<string[]>(cacheConstants.accessToken(id));
+    expect(after).toContain(caller);
+    expect(after).not.toContain("another-device");
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `elsewhere-${id}`,
+      ),
+    ).toBeFalsy();
+  });
+});
+
 describe("the confirmation mail limit", () => {
   it("is counted per account: another account still gets its mail", async () => {
     const first = await account();
@@ -493,6 +535,51 @@ describe("a provider sign-in that adopts an existing account", () => {
         `apple-${id}`,
       ),
     ).toBeTruthy();
+  });
+
+  it("through an identity already linked, stamps an account confirmed before the stamp existed, keeps that identity and drops other links made for another address", async () => {
+    const { id, email } = await account({
+      emailVerified: true,
+      password: true,
+    });
+    await conn
+      .updateTable("user")
+      .set({ email_verified_at: null })
+      .where("id", "=", id)
+      .execute();
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.google,
+      provider_user_id: `owner-${id}`,
+      email: address("before"),
+    });
+    await links.create({
+      user_id: id,
+      provider: SsoProviderEnum.apple,
+      provider_user_id: `elsewhere-${id}`,
+      email: address("elsewhere"),
+    });
+    await service().login({ email, password: PASSWORD }, jwt as never);
+
+    await google(`owner-${id}`, email);
+
+    expect((await row(id)).email_verified_at).not.toBeNull();
+    expect((await row(id)).password).not.toBeNull();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.google,
+        `owner-${id}`,
+      ),
+    ).toBeTruthy();
+    expect(
+      await links.findByProviderAndProviderId(
+        SsoProviderEnum.apple,
+        `elsewhere-${id}`,
+      ),
+    ).toBeFalsy();
+    expect(await cache.get<string[]>(cacheConstants.accessToken(id))).toEqual([
+      `token-${id}`,
+    ]);
   });
 
   it("refuses when the provider identity is already linked to another account", async () => {
