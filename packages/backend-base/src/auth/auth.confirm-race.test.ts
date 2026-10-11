@@ -2,8 +2,12 @@ import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { faker } from "@faker-js/faker";
 import SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
 
+import { sql } from "database";
+
+import { ConflictError } from "../common/errors";
 import shared from "../shared/shared.plugin";
 import { AuthService } from "./auth.service";
+import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
 
 const conn = shared.store.db.getOrCreateConnection();
 const jwt = { sign: async (p: { sub: string }) => `token-${p.sub}` };
@@ -25,6 +29,18 @@ async function account(emailVerified: boolean) {
     .executeTakeFirstOrThrow();
   created.push(id);
   return { id, email };
+}
+
+async function waitForARowLock() {
+  for (let i = 0; i < 100; i += 1) {
+    const { rows } = await sql<{ waiting: number }>`
+      select count(*)::int as waiting from pg_stat_activity
+      where datname = current_database() and wait_event_type = 'Lock'
+    `.execute(conn);
+    if (rows[0].waiting > 0) return;
+    await Bun.sleep(20);
+  }
+  throw new Error("the sign-in never waited for the locked row");
 }
 
 const renameTo = (id: string, email: string) =>
@@ -74,43 +90,50 @@ describe("a confirmation stamps only the address it proved, even when a rename r
     });
   });
 
-  it("a provider sign-in on an existing account: a rename landing before the write confirms nothing", async () => {
+  it("a provider sign-in on an existing account: a rename landing while it waits for the row links and confirms nothing", async () => {
     const { id, email } = await account(false);
     const service = new AuthService(
       shared.store.db,
       shared.store.cache,
       shared.store.notification,
     );
-    const repo = (
-      service as unknown as {
-        userSsoAccountRepository: { create: (...a: unknown[]) => unknown };
-      }
-    ).userSsoAccountRepository;
-    const realCreate = repo.create.bind(repo);
-    const race = spyOn(repo, "create").mockImplementation(async (...a) => {
-      const linked = await realCreate(...a);
-      await renameTo(id, ROSTER);
-      return linked;
-    });
-    try {
-      await service
+    const providerUserId = `race-${id}`;
+    const { attempt } = await conn.transaction().execute(async (trx) => {
+      await trx
+        .selectFrom("user")
+        .select("id")
+        .where("id", "=", id)
+        .forUpdate()
+        .execute();
+      const attempt = service
         .loginWithSSO(
           SsoProviderEnum.google,
-          {
-            providerUserId: `race-${id}`,
-            email,
-            emailVerified: true,
-            name: "R",
-          },
+          { providerUserId, email, emailVerified: true, name: "R" },
           jwt as never,
         )
-        .catch(() => undefined);
-    } finally {
-      race.mockRestore();
-    }
+        .then(
+          () => undefined,
+          (error: unknown) => error,
+        );
+      await waitForARowLock();
+      await trx
+        .updateTable("user")
+        .set({ email: ROSTER })
+        .where("id", "=", id)
+        .execute();
+      return { attempt };
+    });
+
+    expect(await attempt).toBeInstanceOf(ConflictError);
     expect(await stampOf(id)).toMatchObject({
       email: ROSTER,
+      emailVerified: false,
       email_verified_at: null,
     });
+    expect(
+      await new UserSsoAccountRepository(
+        shared.store.db,
+      ).findByProviderAndProviderId(SsoProviderEnum.google, providerUserId),
+    ).toBeFalsy();
   });
 });

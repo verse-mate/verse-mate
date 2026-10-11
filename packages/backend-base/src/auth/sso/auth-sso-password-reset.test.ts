@@ -126,7 +126,7 @@ describe("SSO Password Reset Integration", () => {
         const resetKey = faker.string.uuid();
         await cache.set(
           cacheConstants.resetPassword(resetKey),
-          { id: ssoUser.id },
+          { id: ssoUser.id, email: ssoUserEmail },
           "1h",
         );
 
@@ -200,7 +200,7 @@ describe("SSO Password Reset Integration", () => {
         const resetKey = faker.string.uuid();
         await cache.set(
           cacheConstants.resetPassword(resetKey),
-          { id: ssoUser.id },
+          { id: ssoUser.id, email: ssoUserEmail },
           "1h",
         );
 
