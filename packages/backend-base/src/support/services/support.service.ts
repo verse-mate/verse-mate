@@ -234,8 +234,9 @@ export class SupportService {
       .digest("hex");
     const computedSignature = `v0=${hmac}`;
 
-    const sigBuffer = Buffer.from(signature);
-    const compBuffer = Buffer.from(computedSignature);
+    const encoder = new TextEncoder();
+    const sigBuffer = encoder.encode(signature);
+    const compBuffer = encoder.encode(computedSignature);
 
     if (sigBuffer.length !== compBuffer.length) {
       return false;
