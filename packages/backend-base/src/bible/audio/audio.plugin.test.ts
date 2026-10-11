@@ -1,11 +1,22 @@
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "bun:test";
 import { resolve } from "node:path";
 import { faker } from "@faker-js/faker";
 import ExplanationTypeEnum from "database/src/models/public/ExplanationTypeEnum";
 import cacheConstants from "../../shared/cache.constants";
 import shared from "../../shared/shared.plugin";
 import { ObjectStorageService } from "../../shared/storage/storage.service";
-import plugin from "./audio.plugin";
+import {
+  audioGenerationJobId,
+  audioGenerationQueue,
+} from "./audio-generation.queue";
+import plugin, { SYNTHESIS_LIMIT } from "./audio.plugin";
 
 const previousEnv = {
   TTS_PROVIDER: process.env.TTS_PROVIDER,
@@ -19,7 +30,8 @@ process.env.EXPLANATION_AUDIO_STUB_PATH = resolve(
 );
 Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
 
-const SYNTHESIS_LIMIT = 30;
+const PER_CALLER = SYNTHESIS_LIMIT.perCaller;
+const OVERALL_KEY = `rate-limit:${SYNTHESIS_LIMIT.overallKey}`;
 const DEFAULT_VOICE = process.env.TTS_VOICE_EN ?? "alloy";
 const OFFERED_LANGUAGE = "qz";
 
@@ -31,6 +43,7 @@ const explanationIds: number[] = [];
 const userIds: string[] = [];
 const rateLimitKeys: string[] = [];
 
+let insertedLanguage = false;
 let nextVersion = faker.number.int({ min: 100_000, max: 900_000 });
 let genesis1ChapterId: number;
 let genesis2ChapterId: number;
@@ -121,9 +134,10 @@ function restoreEnv() {
 }
 
 beforeAll(async () => {
+  expect((plugin.store as any).audioService.provider.name).toBe("stub");
   genesis1ChapterId = await chapterId(1, 1);
   genesis2ChapterId = await chapterId(1, 2);
-  await conn
+  const inserted = await conn
     .insertInto("explanation_languages")
     .values({
       language_code: OFFERED_LANGUAGE,
@@ -132,16 +146,25 @@ beforeAll(async () => {
       explanation_count: 1,
       is_enabled: true,
     })
+    .onConflict((oc) => oc.column("language_code").doNothing())
+    .returning("language_code")
     .execute();
-  expect((plugin.store as any).audioService.provider.name).toBe("stub");
+  insertedLanguage = inserted.length > 0;
+});
+
+beforeEach(async () => {
+  await cache.delete(OVERALL_KEY);
 });
 
 afterAll(async () => {
   restoreEnv();
-  await conn
-    .deleteFrom("explanation_languages")
-    .where("language_code", "=", OFFERED_LANGUAGE)
-    .execute();
+  await cache.delete(OVERALL_KEY);
+  if (insertedLanguage) {
+    await conn
+      .deleteFrom("explanation_languages")
+      .where("language_code", "=", OFFERED_LANGUAGE)
+      .execute();
+  }
   if (explanationIds.length > 0) {
     await conn
       .deleteFrom("explanation_audio_progress")
@@ -238,6 +261,29 @@ describe("GET /bible/explanation/audio/:explanationId offered languages", () => 
     expect(await storedVariants(id)).toHaveLength(1);
   });
 
+  it("serves an enabled language that has no explanations yet", async () => {
+    const id = await explanation(genesis1ChapterId);
+    await conn
+      .updateTable("explanation_languages")
+      .set({ explanation_count: 0 })
+      .where("language_code", "=", OFFERED_LANGUAGE)
+      .execute();
+    try {
+      const response = await getAudio(id, {
+        query: { language: OFFERED_LANGUAGE },
+        headers: { "x-forwarded-for": guestAddress() },
+      });
+      expect(response.status).toBe(200);
+      expect((await response.json()).audio.language_code).toBe("en");
+    } finally {
+      await conn
+        .updateTable("explanation_languages")
+        .set({ explanation_count: 1 })
+        .where("language_code", "=", OFFERED_LANGUAGE)
+        .execute();
+    }
+  });
+
   it("refuses an offered language once it is disabled", async () => {
     const id = await explanation(genesis1ChapterId);
     await conn
@@ -290,6 +336,57 @@ describe("GET /bible/explanation/audio/jobs/:jobId", () => {
     const response = await getJob("bull:audio-generation:1");
     expect(response.status).toBe(404);
   });
+
+  it("answers 404 to a guest for a job id beyond the id range", async () => {
+    const response = await getJob(`audio-gen:99999999999:${DEFAULT_VOICE}:en`);
+    expect(response.status).toBe(404);
+  });
+
+  it("reports a queued job to a guest inside the guest scope", async () => {
+    const id = await explanation(genesis1ChapterId);
+    const data = {
+      explanation_id: id,
+      voice: DEFAULT_VOICE,
+      language_code: "en",
+    };
+    const jobId = audioGenerationJobId(data);
+    const job = await audioGenerationQueue.add("audio-generation", data, {
+      jobId,
+      delay: 600_000,
+    });
+    try {
+      const response = await getJob(jobId);
+      expect(response.status).toBe(200);
+      expect((await response.json()).job).toEqual({
+        job_id: jobId,
+        status: "queued",
+      });
+    } finally {
+      await job.remove();
+    }
+  });
+});
+
+describe("explanation id range", () => {
+  it.each(["99999999999", "2147483648", "0", "1.5"])(
+    "refuses the explanation id %p before any lookup",
+    async (explanationId) => {
+      const responses = await Promise.all([
+        plugin.handle(
+          new Request(
+            `http://localhost/bible/explanation/audio/${explanationId}`,
+            { headers: { "x-forwarded-for": guestAddress() } },
+          ),
+        ),
+        plugin.handle(
+          new Request(
+            `http://localhost/bible/explanation/audio/${explanationId}/progress`,
+          ),
+        ),
+      ]);
+      expect(responses.map((r) => r.status)).toEqual([422, 422]);
+    },
+  );
 });
 
 describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
@@ -300,7 +397,7 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
       (await getAudio(first, { headers: { "x-forwarded-for": ip } })).status,
     ).toBe(200);
 
-    for (let attempt = 2; attempt <= SYNTHESIS_LIMIT; attempt++) {
+    for (let attempt = 2; attempt <= PER_CALLER; attempt++) {
       const response = await getAudio(await explanation(genesis1ChapterId), {
         headers: { "x-forwarded-for": ip },
       });
@@ -331,7 +428,7 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
   it("holds the limit for a signed-in reader under parallel misses from many addresses", async () => {
     const user = await signedInUser();
     const ids = await Promise.all(
-      Array.from({ length: SYNTHESIS_LIMIT + 10 }, () =>
+      Array.from({ length: PER_CALLER + 10 }, () =>
         explanation(genesis2ChapterId),
       ),
     );
@@ -345,9 +442,17 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
         }),
       ),
     );
-    const statuses = responses.map((r) => r.status);
-    expect(statuses.filter((s) => s === 200)).toHaveLength(SYNTHESIS_LIMIT);
-    expect(statuses.filter((s) => s === 429)).toHaveLength(10);
+    const statuses = responses.map((r) => r.status).sort();
+    expect(statuses).toEqual([
+      ...Array(PER_CALLER).fill(200),
+      ...Array(10).fill(429),
+    ]);
+    const stored = await conn
+      .selectFrom("explanation_audios")
+      .select("explanation_id")
+      .where("explanation_id", "in", ids)
+      .execute();
+    expect(stored).toHaveLength(PER_CALLER);
 
     const guest = await getAudio(await explanation(genesis1ChapterId), {
       headers: { "x-forwarded-for": guestAddress() },
@@ -358,10 +463,11 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
   it("does not spend a slot on a refused language", async () => {
     const ip = guestAddress();
     const id = await explanation(genesis1ChapterId);
-    await getAudio(id, {
+    const refused = await getAudio(id, {
       query: { language: "zz-ZZ" },
       headers: { "x-forwarded-for": ip },
     });
+    expect(refused.status).toBe(400);
     expect(await cache.ttl(`rate-limit:audio-synthesis:ip:${ip}`)).toBeLessThan(
       0,
     );
@@ -373,12 +479,14 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
       const proxied = faker.internet.ipv4();
       rateLimitKeys.push(`rate-limit:audio-synthesis:ip:${proxied}`);
       const forged = () => `${faker.internet.ipv4()}, ${proxied}`;
-      await getAudio(await explanation(genesis1ChapterId), {
-        headers: { "x-forwarded-for": forged() },
-      });
-      await getAudio(await explanation(genesis1ChapterId), {
-        headers: { "x-forwarded-for": forged() },
-      });
+      const statuses = [];
+      for (let i = 0; i < 2; i++) {
+        const response = await getAudio(await explanation(genesis1ChapterId), {
+          headers: { "x-forwarded-for": forged() },
+        });
+        statuses.push(response.status);
+      }
+      expect(statuses).toEqual([200, 200]);
       const counted = await cache.get<number>(
         `rate-limit:audio-synthesis:ip:${proxied}`,
       );
@@ -386,6 +494,71 @@ describe("GET /bible/explanation/audio/:explanationId synthesis limit", () => {
     } finally {
       Reflect.deleteProperty(process.env, "TRUSTED_PROXY_HOPS");
     }
+  });
+});
+
+describe("GET /bible/explanation/audio/:explanationId overall synthesis limit", () => {
+  it("stops new synthesis for every caller once the overall limit is spent and keeps cached audio", async () => {
+    const ip = guestAddress();
+    const cachedId = await explanation(genesis1ChapterId);
+    expect(
+      (await getAudio(cachedId, { headers: { "x-forwarded-for": ip } })).status,
+    ).toBe(200);
+
+    let spent = 1;
+    while (spent < SYNTHESIS_LIMIT.overall) {
+      spent = await cache.increment(OVERALL_KEY, SYNTHESIS_LIMIT.windowSeconds);
+    }
+
+    const user = await signedInUser();
+    const fresh = await explanation(genesis2ChapterId);
+    const limitedUser = await getAudio(fresh, {
+      headers: { authorization: `Bearer ${user.token}` },
+    });
+    const limitedGuest = await getAudio(await explanation(genesis1ChapterId), {
+      headers: { "x-forwarded-for": guestAddress() },
+    });
+    expect([limitedUser.status, limitedGuest.status]).toEqual([429, 429]);
+    expect(await storedVariants(fresh)).toHaveLength(0);
+
+    const cached = await getAudio(cachedId, {
+      headers: { "x-forwarded-for": ip },
+    });
+    expect(cached.status).toBe(200);
+  });
+
+  it("does not spend the overall limit on a caller already over its own", async () => {
+    const ip = guestAddress();
+    await cache.delete(`rate-limit:audio-synthesis:ip:${ip}`);
+    for (let i = 0; i < PER_CALLER; i++) {
+      await cache.increment(
+        `rate-limit:audio-synthesis:ip:${ip}`,
+        SYNTHESIS_LIMIT.windowSeconds,
+      );
+    }
+    const response = await getAudio(await explanation(genesis1ChapterId), {
+      headers: { "x-forwarded-for": ip },
+    });
+    expect(response.status).toBe(429);
+    expect(await cache.get<number>(OVERALL_KEY)).toBeNull();
+  });
+});
+
+describe("same variant requested in parallel", () => {
+  it("stores one row and answers every request", async () => {
+    const id = await explanation(genesis1ChapterId);
+    const responses = await Promise.all(
+      [undefined, "en", OFFERED_LANGUAGE, "en", undefined].map((language) =>
+        getAudio(id, {
+          query: language ? { language } : {},
+          headers: { "x-forwarded-for": guestAddress() },
+        }),
+      ),
+    );
+    expect(responses.map((r) => r.status)).toEqual([200, 200, 200, 200, 200]);
+    const stored = await storedVariants(id);
+    expect(stored).toHaveLength(1);
+    expect(stored[0].language_code).toBe("en");
   });
 });
 
@@ -436,5 +609,24 @@ describe("access token transport", () => {
     });
     expect(viaHeader.status).toBe(200);
     expect(await savedProgress(user.id, id)).toHaveLength(1);
+  });
+
+  it("treats a reader with the token only in the query string as a guest", async () => {
+    const user = await signedInUser();
+    const id = await explanation(genesis2ChapterId);
+
+    for (const name of ["accessToken", "access_token"]) {
+      const viaQuery = await getAudio(id, {
+        query: { [name]: user.token },
+        headers: { "x-forwarded-for": guestAddress() },
+      });
+      expect(viaQuery.status).toBe(401);
+    }
+    expect(await storedVariants(id)).toHaveLength(0);
+
+    const viaHeader = await getAudio(id, {
+      headers: { authorization: `Bearer ${user.token}` },
+    });
+    expect(viaHeader.status).toBe(200);
   });
 });

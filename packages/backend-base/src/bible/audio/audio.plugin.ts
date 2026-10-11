@@ -14,16 +14,38 @@ import {
   AudioProgressSchema,
   AudioResponseSchema,
 } from "./audio.schemas";
-import { AudioService } from "./audio.service";
+import { AudioService, MAX_EXPLANATION_ID } from "./audio.service";
 
-const synthesisRateLimit = createRateLimit({
+export const SYNTHESIS_LIMIT = {
   windowSeconds: 600,
-  max: 30,
+  perCaller: 30,
+  overall: 100,
+  overallKey: "audio-synthesis:all",
+};
+
+const callerSynthesisLimit = createRateLimit({
+  windowSeconds: SYNTHESIS_LIMIT.windowSeconds,
+  max: SYNTHESIS_LIMIT.perCaller,
   keyGenerator: ({ currentUserId, request, server }) =>
     currentUserId
       ? `audio-synthesis:user:${currentUserId}`
       : `audio-synthesis:ip:${clientBucket(request, server)}`,
   message: "Too many new audio requests, please try again later",
+});
+
+const overallSynthesisLimit = createRateLimit({
+  windowSeconds: SYNTHESIS_LIMIT.windowSeconds,
+  max: SYNTHESIS_LIMIT.overall,
+  keyGenerator: () => SYNTHESIS_LIMIT.overallKey,
+  message: "Too many new audio requests, please try again later",
+});
+
+const ExplanationIdParams = t.Object({
+  explanationId: t.Numeric({
+    minimum: 1,
+    maximum: MAX_EXPLANATION_ID,
+    multipleOf: 1,
+  }),
 });
 
 const plugin = new Elysia({ name: "audio" })
@@ -53,14 +75,11 @@ const plugin = new Elysia({ name: "audio" })
             voice: query.voice,
             language: query.language,
             currentUserId,
-            beforeSynthesis: () =>
-              synthesisRateLimit({
-                store,
-                set,
-                request,
-                server,
-                currentUserId,
-              }),
+            beforeSynthesis: async () => {
+              const context = { store, set, request, server, currentUserId };
+              await callerSynthesisLimit(context);
+              await overallSynthesisLimit(context);
+            },
           });
 
           if (result.kind === "ready") {
@@ -71,7 +90,7 @@ const plugin = new Elysia({ name: "audio" })
           return { job: result.job };
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           query: t.Object({
             voice: t.Optional(t.String()),
             language: t.Optional(t.String()),
@@ -123,7 +142,7 @@ const plugin = new Elysia({ name: "audio" })
           return progress;
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           response: {
             200: AudioProgressSchema,
             404: t.Object({ error: t.String(), message: t.String() }),
@@ -162,7 +181,7 @@ const plugin = new Elysia({ name: "audio" })
           return undefined;
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           body: AudioProgressSaveBodySchema,
           response: {
             200: AudioProgressSchema,
@@ -187,7 +206,7 @@ const plugin = new Elysia({ name: "audio" })
           return undefined;
         },
         {
-          params: t.Object({ explanationId: t.Numeric() }),
+          params: ExplanationIdParams,
           response: {
             204: t.Void(),
             ...StandardErrorResponses,

@@ -7,7 +7,10 @@ import {
   UnauthorizedError,
   ValidationError,
 } from "../../common/errors";
-import { resolveLanguageCode } from "../../shared/i18n/resolve-language-code";
+import {
+  BCP47_REGEX,
+  resolveLanguageCode,
+} from "../../shared/i18n/resolve-language-code";
 import type { db } from "../../shared/shared.plugin";
 import type { ObjectStorageService } from "../../shared/storage/storage.service";
 import { createTtsProvider } from "../../shared/tts/tts-provider.factory";
@@ -24,20 +27,21 @@ import {
   contentHashOf,
   storageKeyFor,
 } from "./audio.repository";
+import { isGuestAudioChapter } from "./guest-scope";
 
 const ESTIMATED_READY_SECONDS = 8;
-const GUEST_ALLOWED_BOOK_ID = 1; // Genesis (br-audio-013)
-const GUEST_ALLOWED_CHAPTER_NUMBER = 1;
 const DEFAULT_VOICE_EN = process.env.TTS_VOICE_EN ?? "alloy"; // br-audio-009
 
 export type KyselyTransaction = Transaction<Database>;
 
-const BCP47 = /^[a-z]{2}(-[A-Z]{2})?$/;
-const JOB_ID = /^audio-gen:(\d+):[^:]+:[^:]+$/;
+const JOB_ID = /^audio-gen:([1-9]\d{0,9}):[^:]+:[^:]+$/;
+export const MAX_EXPLANATION_ID = 2_147_483_647;
 
 function explanationIdOfJob(jobId: string): number | null {
   const match = JOB_ID.exec(jobId);
-  return match ? Number(match[1]) : null;
+  if (!match) return null;
+  const id = Number(match[1]);
+  return id <= MAX_EXPLANATION_ID ? id : null;
 }
 
 function languageForms(code: string): string[] {
@@ -51,6 +55,16 @@ function languageForms(code: string): string[] {
 export interface AudioVariant {
   voice: string;
   language_code: string;
+}
+
+export function isProductVariant(
+  explanationLanguage: string,
+  variant: AudioVariant,
+): boolean {
+  return (
+    variant.voice === DEFAULT_VOICE_EN &&
+    languageForms(explanationLanguage).includes(variant.language_code)
+  );
 }
 
 /**
@@ -322,6 +336,19 @@ export class AudioService {
     return enqueued;
   }
 
+  async synthesizeQueuedJob(
+    data: AudioGenerationJobData,
+  ): Promise<ExplanationAudios> {
+    const explanation = await this.loadExplanation(data.explanation_id);
+    if (!explanation) {
+      throw new NotFoundError(`Explanation ${data.explanation_id} not found`);
+    }
+    if (!isProductVariant(explanation.language_code, data)) {
+      throw new ValidationError("This audio variant is not offered");
+    }
+    return this.synthesizeAndStore(explanation.explanation, data);
+  }
+
   async synthesizeAndStore(
     text: string,
     variant: AudioVariantKey,
@@ -370,7 +397,10 @@ export class AudioService {
     if (languageForms(explanationLanguage).includes(requested)) {
       return requested;
     }
-    if (BCP47.test(requested) && (await this.isOfferedLanguage(requested))) {
+    if (
+      BCP47_REGEX.test(requested) &&
+      (await this.isOfferedLanguage(requested))
+    ) {
       return explanationLanguage;
     }
     throw new ValidationError("This language is not offered for audio");
@@ -382,11 +412,10 @@ export class AudioService {
       .selectFrom("explanation_languages")
       .select("language_code")
       .where("is_enabled", "=", true)
-      .where("explanation_count", ">", 0)
       .execute();
     return offered.some(
       (row) =>
-        BCP47.test(row.language_code) &&
+        BCP47_REGEX.test(row.language_code) &&
         languageForms(row.language_code).includes(language),
     );
   }
@@ -406,10 +435,7 @@ export class AudioService {
       .select(["book_id", "chapter_number"])
       .where("chapter_id", "=", chapterId)
       .executeTakeFirst();
-    return (
-      chapter?.book_id === GUEST_ALLOWED_BOOK_ID &&
-      chapter?.chapter_number === GUEST_ALLOWED_CHAPTER_NUMBER
-    );
+    return isGuestAudioChapter(chapter?.book_id, chapter?.chapter_number);
   }
 
   /**

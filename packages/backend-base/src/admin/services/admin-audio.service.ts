@@ -8,7 +8,8 @@ import {
   audioGenerationQueue,
 } from "../../bible/audio/audio-generation.queue";
 import { AudioRepository } from "../../bible/audio/audio.repository";
-import { NotFoundError } from "../../common/errors";
+import { isProductVariant } from "../../bible/audio/audio.service";
+import { NotFoundError, ValidationError } from "../../common/errors";
 import type { db } from "../../shared/shared.plugin";
 
 export type AdminAudioStatus = "current" | "stale" | "missing" | "failed";
@@ -92,13 +93,22 @@ export class AdminAudioService {
       .where("explanation_id", "in", ids)
       .execute();
 
-    let queued = 0;
-    for (const explanation of explanations) {
+    const jobs = explanations.map((explanation) => {
       const data: AudioGenerationJobData = {
         explanation_id: explanation.explanation_id,
         voice: input.voice ?? DEFAULT_VOICE_EN,
         language_code: input.language ?? explanation.language_code,
       };
+      if (!isProductVariant(explanation.language_code, data)) {
+        throw new ValidationError(
+          `Explanation ${explanation.explanation_id} has no audio in this voice and language`,
+        );
+      }
+      return data;
+    });
+
+    let queued = 0;
+    for (const data of jobs) {
       const jobId = audioGenerationJobId(data);
       const existing = await this.queue.getJob(jobId);
       const stillInFlight =
