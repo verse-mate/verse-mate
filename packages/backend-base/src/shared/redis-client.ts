@@ -181,6 +181,12 @@ class RedisClient {
     }
   }
 
+  async take<T>(key: string): Promise<T | null> {
+    await this.connect();
+    const value = await this.client.getDel(key);
+    return value ? JSON.parse(value) : null;
+  }
+
   async setPersistent(key: string, value: object): Promise<string | null> {
     await this.connect();
     try {

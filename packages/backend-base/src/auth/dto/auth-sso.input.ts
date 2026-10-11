@@ -56,3 +56,9 @@ export const SSOCallbackQuery = t.Object({
 });
 
 export type SSOCallbackQuery = Static<typeof SSOCallbackQuery>;
+
+export const AuthSSOExchangeInput = t.Object({
+  code: t.String({ minLength: 22, maxLength: 128 }),
+});
+
+export type AuthSSOExchangeInput = Static<typeof AuthSSOExchangeInput>;

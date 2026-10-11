@@ -19,7 +19,11 @@ import { AuthForgotPasswordInput } from "./dto/auth-forgot-password.input";
 import { AuthLoginInput } from "./dto/auth-login.input";
 import { AuthResetPasswordInput } from "./dto/auth-reset-password.input";
 import { AuthSignupInput } from "./dto/auth-signup.input";
-import { AuthSSOInput, SSOCallbackQuery } from "./dto/auth-sso.input";
+import {
+  AuthSSOExchangeInput,
+  AuthSSOInput,
+  SSOCallbackQuery,
+} from "./dto/auth-sso.input";
 import { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 import {
@@ -381,6 +385,22 @@ const plugin = new Elysia()
           },
         },
       )
+      .post(
+        "/sso/exchange",
+        async ({ body, store: { authService }, jwt }): Promise<AuthPayload> =>
+          authService.redeemSSOExchangeCode(body.code, jwt),
+        {
+          body: AuthSSOExchangeInput,
+          beforeHandle: authRateLimiters.ssoExchange,
+          response: {
+            200: AuthPayloadSchema,
+            ...StandardErrorResponses,
+          },
+          detail: {
+            summary: "Trade a single-use SSO callback code for the session",
+          },
+        },
+      )
       /**
        * GET /auth/sso/google/redirect - Initiate Google OAuth flow
        *
@@ -513,11 +533,9 @@ const plugin = new Elysia()
               ipAddress,
             );
 
-            // Redirect to frontend with tokens
             return createRedirectResponse(
               buildFrontendCallbackUrl("google", {
-                accessToken: authPayload.accessToken,
-                verified: authPayload.verified,
+                code: await authService.issueSSOExchangeCode(authPayload),
               }),
             );
           } catch (err) {
@@ -671,11 +689,9 @@ const plugin = new Elysia()
               ipAddress,
             );
 
-            // Redirect to frontend with tokens
             return createRedirectResponse(
               buildFrontendCallbackUrl("apple", {
-                accessToken: authPayload.accessToken,
-                verified: authPayload.verified,
+                code: await authService.issueSSOExchangeCode(authPayload),
               }),
             );
           } catch (err) {
@@ -822,11 +838,9 @@ const plugin = new Elysia()
               ipAddress,
             );
 
-            // Redirect to frontend with tokens
             return createRedirectResponse(
               buildFrontendCallbackUrl("apple", {
-                accessToken: authPayload.accessToken,
-                verified: authPayload.verified,
+                code: await authService.issueSSOExchangeCode(authPayload),
               }),
             );
           } catch (err) {
