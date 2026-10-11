@@ -13,6 +13,7 @@ import {
 } from "../../utils/error-handling";
 import { useStore } from "../../utils/use-store";
 import { OrDivider, SSOButtons } from "../SSOButtons";
+import { startSSOSignIn } from "../lib";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignInForm } from "./useSignInForm";
 
@@ -86,8 +87,7 @@ export function SignIn({ onSwitch, mode = "end_user" }: SignInProps) {
         }
       }
     }
-    // Redirect to Google OAuth endpoint on backend
-    window.location.href = `${apiUrl}/auth/sso/google/redirect`;
+    void startSSOSignIn(apiUrl, "google");
   }, [apiUrl]);
 
   const handleAppleClick = useCallback(() => {
@@ -103,8 +103,7 @@ export function SignIn({ onSwitch, mode = "end_user" }: SignInProps) {
         }
       }
     }
-    // Redirect to Apple OAuth endpoint on backend
-    window.location.href = `${apiUrl}/auth/sso/apple/redirect`;
+    void startSSOSignIn(apiUrl, "apple");
   }, [apiUrl]);
 
   // Determine if error is SSO-related for custom action suggestion
