@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { sql } from "database";
 import type Database from "database/src/models/Database";
 import type SsoProviderEnum from "database/src/models/public/SsoProviderEnum";
@@ -25,7 +25,7 @@ import type { AuthSignupInput } from "./dto/auth-signup.input";
 import type { AuthUpdateProfileInput } from "./dto/auth-update-profile.input";
 import type { AuthPayload } from "./entities/auth.entity";
 import type { SSOUserInfo } from "./sso/sso-provider.interface";
-import { SSO_EXCHANGE_CODE_TTL } from "./sso/sso.utils";
+import { SSO_EXCHANGE_CODE_TTL, ssoChallengeOf } from "./sso/sso.utils";
 import { UserSsoAccountRepository } from "./sso/user-sso-account.repository";
 
 const SESSION_LIFETIME = "90d";
@@ -38,6 +38,14 @@ type AddressProof =
 
 interface SSOExchangeEntry extends AuthPayload {
   issuedAt: number;
+  challenge: string;
+}
+
+function verifierMatches(verifier: string, challenge: unknown): boolean {
+  if (typeof challenge !== "string") return false;
+  const expected = new TextEncoder().encode(challenge);
+  const actual = new TextEncoder().encode(ssoChallengeOf(verifier));
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
 function resetPasswordURL(key: string): string {
@@ -520,12 +528,16 @@ export class AuthService {
     };
   }
 
-  public async issueSSOExchangeCode(payload: AuthPayload): Promise<string> {
+  public async issueSSOExchangeCode(
+    payload: AuthPayload,
+    challenge: string,
+  ): Promise<string> {
     const code = randomBytes(32).toString("base64url");
     const entry: SSOExchangeEntry = {
       accessToken: payload.accessToken,
       verified: payload.verified,
       issuedAt: Date.now(),
+      challenge,
     };
     await this.cache.set(
       cacheConstants.ssoExchangeCode(code),
@@ -537,6 +549,7 @@ export class AuthService {
 
   public async redeemSSOExchangeCode(
     code: string,
+    verifier: string,
     jwt: JWT,
   ): Promise<AuthPayload> {
     const entry = await this.cache.take<SSOExchangeEntry>(
@@ -545,6 +558,7 @@ export class AuthService {
     if (
       !entry ||
       Date.now() - entry.issuedAt > SSO_EXCHANGE_CODE_TTL * 1000 ||
+      !verifierMatches(verifier, entry.challenge) ||
       !(await this.isLiveSession(entry.accessToken, jwt))
     ) {
       throw new UnauthorizedError("Invalid or expired sign-in code");

@@ -4,6 +4,7 @@ import { exchangeSSOCode } from "frontend-base/src/api/auth";
 import {
   getSSOErrorMessage,
   handleSSOCallback,
+  startSSOSignIn,
 } from "frontend-base/src/auth/lib";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -125,9 +126,8 @@ function GoogleCallbackContent() {
     });
   }, [searchParams]);
 
-  // Handle retry - redirect back to Google OAuth
   const handleRetry = () => {
-    window.location.href = "/api/auth/sso/google/redirect";
+    void startSSOSignIn("/api/auth/sso/google/redirect");
   };
 
   return (

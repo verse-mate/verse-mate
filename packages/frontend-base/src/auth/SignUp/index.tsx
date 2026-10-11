@@ -14,6 +14,7 @@ import {
 import { useStore } from "../../utils/use-store";
 import { PasswordRequirements } from "../PasswordRequirements";
 import { OrDivider, SSOButtons } from "../SSOButtons";
+import { startSSOSignIn } from "../lib";
 import sharedStyles from "../sharedStyles.module.css";
 import { useSignUpForm } from "./useSignUpForm";
 
@@ -58,8 +59,7 @@ export function SignUp({ onSwitch }: SignUpProps) {
         }
       }
     }
-    // Redirect to Google OAuth endpoint on backend
-    window.location.href = `${apiUrl}/auth/sso/google/redirect`;
+    void startSSOSignIn(`${apiUrl}/auth/sso/google/redirect`);
   }, [apiUrl]);
 
   const handleAppleClick = useCallback(() => {
@@ -79,8 +79,7 @@ export function SignUp({ onSwitch }: SignUpProps) {
         }
       }
     }
-    // Redirect to Apple OAuth endpoint on backend
-    window.location.href = `${apiUrl}/auth/sso/apple/redirect`;
+    void startSSOSignIn(`${apiUrl}/auth/sso/apple/redirect`);
   }, [apiUrl]);
 
   // Determine if error is SSO-related for custom action suggestion

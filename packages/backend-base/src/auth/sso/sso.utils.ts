@@ -5,12 +5,23 @@
  * and configuration management.
  */
 
+import { createHash } from "node:crypto";
 import { clientIp } from "../../common/client-ip";
 
 // OAuth state TTL in seconds (10 minutes)
 export const SSO_STATE_TTL = 600;
 
 export const SSO_EXCHANGE_CODE_TTL = 60;
+
+const SSO_CHALLENGE_FORMAT = /^[A-Za-z0-9_-]{43}$/;
+
+export function isSSOChallenge(value: unknown): value is string {
+  return typeof value === "string" && SSO_CHALLENGE_FORMAT.test(value);
+}
+
+export function ssoChallengeOf(verifier: string): string {
+  return createHash("sha256").update(verifier).digest("base64url");
+}
 
 /**
  * SSO configuration interface
