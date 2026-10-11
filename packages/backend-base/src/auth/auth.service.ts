@@ -458,7 +458,7 @@ export class AuthService {
         email: user.email,
         name: "",
       },
-      html: render(VerifyEmail()),
+      html: render(VerifyEmail({ href })),
     });
   }
 
@@ -579,7 +579,7 @@ export class AuthService {
 
       subject: "Forgot password",
       text: `Click the link to reset your password: ${href}`,
-      html: render(ResetPassword()),
+      html: render(ResetPassword({ href })),
     });
 
     return true;
